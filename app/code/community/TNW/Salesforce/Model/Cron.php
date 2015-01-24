@@ -205,7 +205,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // get customer id list from local storage
             $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
                 ->addSftypeToFilter('Website')
-                ->addStatusNoToFilter('sync_running');
+                ->addStatusNoToFilter('sync_running')
+                ->addStatusNoToFilter('sync_error');
             $list->getSelect()->limit(self::WEBSITE_BATCH_SIZE); // set limit to avoid memory leak
 
             if (count($list) > 0) {
@@ -264,7 +265,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // get customer id list from local storage
             $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
                 ->addSftypeToFilter('Customer')
-                ->addStatusNoToFilter('sync_running');
+                ->addStatusNoToFilter('sync_running')
+                ->addStatusNoToFilter('sync_error');
             $list->getSelect()->limit(self::CUSTOMER_BATCH_SIZE); // set limit to avoid memory leak
 
             if (count($list) > 0) {
@@ -328,7 +330,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // get order id list from local storage
             $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
                 ->addSftypeToFilter('Order')
-                ->addStatusNoToFilter('sync_running');
+                ->addStatusNoToFilter('sync_running')
+                ->addStatusNoToFilter('sync_error');
             $list->getSelect()->limit(self::ORDER_BATCH_SIZE); // set limit to avoid memory leak
 
             if (count($list) > 0) {
@@ -384,7 +387,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // get product id list from local storage
             $productList = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
                 ->addSftypeToFilter('Product')
-                ->addStatusNoToFilter('sync_running');
+                ->addStatusNoToFilter('sync_running')
+                ->addStatusNoToFilter('sync_error');
             $productList->getSelect()->limit(self::PRODUCT_BATCH_SIZE); // set limit to avoid memory leak
 
             if (count($productList) > 0) {
