@@ -532,12 +532,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
+        $errorMessage = '';
         if (is_array($_response->errors)) {
             Mage::helper('tnw_salesforce')->log('Failed to upsert ' . $type . '!');
             foreach ($_response->errors as $_error) {
                 if (Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_error->message);
                 }
+                $errorMessage .= $_error->message . "</br>\n";
                 Mage::helper('tnw_salesforce/email')->sendError($_error->message, $_object, $type);
                 Mage::helper('tnw_salesforce')->log("ERROR: " . $_error->message);
             }
@@ -545,10 +547,47 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             if (Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_response->errors->message);
             }
+
+            $errorMessage .= $_response->errors->message . "</br>\n";
             Mage::helper('tnw_salesforce')->log('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
             // Send Email
             Mage::helper('tnw_salesforce/email')->sendError($_response->errors->message, $_object, $type);
         }
+
+        if ($_object) {
+            $session = Mage::getSingleton('core/session');
+
+            $errors = $session->getTnwSalesforceErrors();
+
+            if (!$errors) {
+                $errors = array();
+            }
+
+            switch ($type) {
+                case 'lead':
+                case 'contact':
+                case 'account':
+                    $type = 'customer';
+                    break;
+
+                case 'opportunityProduct':
+                case 'opportunity':
+                    $type = 'order';
+                    break;
+
+                case 'productPricebook':
+                    $type = 'product';
+                    break;
+            }
+            $errors[$errorMessage][] = array(
+                'object_id' => $_object->tnw_powersync__Magento_ID__c,
+                'sf_object_type' => $type
+            );
+
+            $session->setTnwSalesforceErrors($errors);
+
+        }
+
     }
 
     public function getCurrencies()

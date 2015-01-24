@@ -88,11 +88,51 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             if (empty($objectId)) {
                 return true;
             }
-            $sql = 'DELETE FROM `' . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . '` WHERE id IN (' . join(', ', $objectId) . ')';
-            Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
+
             if (!$this->_write) {
                 $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
             }
+
+            $session = Mage::getSingleton('core/session');
+
+            $errors = $session->getTnwSalesforceErrors();
+
+            if (!empty($errors)) {
+
+                foreach ($errors as $errorMessage => $errorData) {
+                    if (empty($errorData)) {
+                        continue;
+                    }
+
+                    $sql = 'UPDATE `' . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . '`'
+                        . ' SET message=:message, sync_attempt = sync_attempt + 1, status = "sync_error" ';
+
+                    $whereSql = array();
+                    $bind = array(
+                        'message' => $errorMessage
+                    );
+
+                    foreach ($errorData as $key => $errorItem) {
+                        $whereSql[] = ' (object_id=:object_id'.$key.' AND sf_object_type=:sf_object_type'.$key.') ';
+                        foreach ($errorItem as $field => $value) {
+                            $bind[$field . $key] = $value;
+                        }
+
+                    }
+
+                    $sql .= ' WHERE ' . implode(' OR ', $whereSql);
+
+                    $this->_write->query(
+                        $sql,
+                        $bind
+                    );
+
+                    $session->unsTnwSalesforceErrors();
+                }
+            }
+
+            $sql = 'DELETE FROM `' . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . '` WHERE id IN (' . join(', ', $objectId) . ') AND status != "sync_error"';
+            Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
             $this->_write->query($sql);
 
         } catch (Exception $e) {

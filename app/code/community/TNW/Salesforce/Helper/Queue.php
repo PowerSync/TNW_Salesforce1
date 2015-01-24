@@ -101,7 +101,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     protected function _loadQueue($_type) {
         $_collection = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($_type)
-            ->addStatusNoToFilter('sync_running');
+            ->addStatusNoToFilter('sync_running')
+            ->addStatusNoToFilter('sync_error');
         if (count($this->_itemIds) > 0){
             $_collection->getSelect()->where('id IN (?)', $this->_itemIds);
         }
