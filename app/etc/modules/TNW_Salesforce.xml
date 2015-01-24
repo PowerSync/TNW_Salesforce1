@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <TNW_Salesforce>
+            <active>true</active>
+            <codePool>community</codePool>
+            <depends>
+                <Mage_Core />
+                <Mage_Sales />
+                <Mage_Customer />
+                <Mage_Catalog />
+                <!-- Aitoc_Aitcheckoutfields /-->
+            </depends>
+        </TNW_Salesforce>
+    </modules>
+</config> 

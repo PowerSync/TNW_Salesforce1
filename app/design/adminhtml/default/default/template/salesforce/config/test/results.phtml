@@ -1,0 +1,27 @@
+<?php
+/**
+  *
+  *
+  */
+?>
+<?php if ($this->isSalesforceSection() && $this->isIntegrationEnabled()): ?>
+	<div class="content-header">
+		<table cellspacing="0">
+			<tbody>
+				<tr>
+					<td>
+						<h3><?php echo $this->__('Salesforce API Integration') ?></h3>
+					</td>
+					<td class="form-buttons">
+						
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<?php
+        if ($results = $this->getChildHtml('sf_test_results')) {
+            echo $results;
+        }
+	?>
+<?php endif; ?>

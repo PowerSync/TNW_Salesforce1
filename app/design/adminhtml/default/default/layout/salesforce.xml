@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<layout>
+    <adminhtml_system_config_edit>
+		<reference name="content">
+			<block type="tnw_salesforce/adminhtml_check" name="tnw_salesforce.test.results"  before="-" template="salesforce/config/test/results.phtml">
+				<block type="tnw_salesforce/adminhtml_check_grid" name="sf_test_results" as="sf_test_results"/>
+			</block>
+		</reference>
+	</adminhtml_system_config_edit>
+    <adminhtml_salesforcesync_ordersync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_ordersync_grid" name="ordersync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_ordersync_grid>
+    <adminhtml_salesforcesync_productsync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_productsync_grid" name="productsync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_productsync_grid>
+    <adminhtml_salesforcesync_customersync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_customersync_grid" name="customersync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_customersync_grid>
+    <adminhtml_salesforcesync_queuesync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_queuesync_grid" name="queuesync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_queuesync_grid>
+</layout>   
