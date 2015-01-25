@@ -19,34 +19,45 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     }
 
     public function updateQueue($_orderIds, $_queueIds, $_results, $_orderNumbers = array()) {
-        $_toUpdate = array();
+        $_errorsSet = array();
+        $_successSet = array();
         $_keyFromOrder = (!empty($_orderNumbers)) ? true : false;
 
         foreach($_results as $_object => $_responses) {
             foreach ($_responses as $_entityKey => $_response) {
+                $_key = ($_keyFromOrder) ? $_queueIds[array_search(array_search($_entityKey, $_orderNumbers), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
                 if (array_key_exists('success', $_response) && $_response['success'] == "false") {
-                    $_key = ($_keyFromOrder) ? $_queueIds[array_search(array_search($_entityKey, $_orderNumbers), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
-
-                    if (!array_key_exists($_key, $_toUpdate)) {
-                        $_toUpdate[$_key] = array();
+                    if (!array_key_exists($_key, $_errorsSet)) {
+                        $_errorsSet[$_key] = array();
                     }
-                    $_toUpdate[$_key][] =  '(' . $_object . ') '. $_response['errors']['message'];
+                    $_errorsSet[$_key][] =  '(' . $_object . ') '. $_response['errors']['message'];
+                } else {
+                    // Reset the status from error back to running so we can delete
+                    if (!in_array($_key,$_successSet)) {
+                        $_successSet[] = $_key;
+                    }
                 }
             }
         }
 
-        if (!empty($_toUpdate)) {
-            $_sql = '';
-            foreach ($_toUpdate as $_id => $_errors) {
+        if (!$this->_write) {
+            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
+        }
+        $_sql = '';
+
+        if (!empty($_errorsSet)) {
+            foreach ($_errorsSet as $_id => $_errors) {
                 $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
                     . " SET message='" . urlencode(serialize($_errors)) . "', date_sync = '" . gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time())) . "', sync_attempt = sync_attempt + 1, status = 'sync_error' WHERE id = '" . $_id . "';";
             }
-            if (!empty($_sql)) {
-                if (!$this->_write) {
-                    $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-                }
-                $this->_write->query($_sql);
-            }
+        }
+        if (!empty($_successSet)) {
+            $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
+                . " SET message='', status = 'sync_running' WHERE id IN ('" . join("','", $_successSet) . "');";
+        }
+
+        if (!empty($_sql)) {
+            $this->_write->query($_sql);
         }
     }
 
