@@ -126,6 +126,12 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected $_websiteSfIds = array();
 
     /**
+     * Store sync results before we clear cache
+     * @var array
+     */
+    protected $_syncedResults = array();
+
+    /**
      * Initialize cache
      */
     public function _initCache()
@@ -532,14 +538,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
-        $errorMessage = '';
+        //$errorMessage = '';
         if (is_array($_response->errors)) {
             Mage::helper('tnw_salesforce')->log('Failed to upsert ' . $type . '!');
             foreach ($_response->errors as $_error) {
                 if (Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_error->message);
                 }
-                $errorMessage .= $_error->message . "</br>\n";
+                //$errorMessage .= $_error->message . "</br>\n";
                 Mage::helper('tnw_salesforce/email')->sendError($_error->message, $_object, $type);
                 Mage::helper('tnw_salesforce')->log("ERROR: " . $_error->message);
             }
@@ -548,12 +554,12 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_response->errors->message);
             }
 
-            $errorMessage .= $_response->errors->message . "</br>\n";
+            //$errorMessage .= $_response->errors->message . "</br>\n";
             Mage::helper('tnw_salesforce')->log('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
             // Send Email
             Mage::helper('tnw_salesforce/email')->sendError($_response->errors->message, $_object, $type);
         }
-
+/*
         if ($_object) {
             $session = Mage::getSingleton('core/session');
 
@@ -587,7 +593,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $session->setTnwSalesforceErrors($errors);
 
         }
-
+*/
     }
 
     public function getCurrencies()
@@ -900,5 +906,22 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         }
 
         return $_result;
+    }
+
+    /**
+     * Get results from SF sync for all objects
+     * @return array
+     */
+    public function getSyncResults() {
+        return $this->_syncedResults;
+    }
+
+    /**
+     *
+     */
+    protected function _onComplete()
+    {
+        // Store results
+        $this->_syncedResults = $this->_cache['responses'];
     }
 }

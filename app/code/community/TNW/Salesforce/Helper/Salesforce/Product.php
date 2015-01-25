@@ -66,6 +66,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
     protected function _onComplete()
     {
+        parent::_onComplete();
+
         if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();
@@ -79,7 +81,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $logger->add('Salesforce', 'PricebookEntry', $this->_cache['pricebookEntriesForUpsert'], $this->_cache['responses']['pricebooks']);
             $logger->send();
         }
+
         $this->reset();
+        $this->clearMemory();
     }
 
     /**

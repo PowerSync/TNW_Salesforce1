@@ -53,6 +53,18 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     );
 
     /**
+     * @var array
+     */
+    protected $_orderNumbers = array();
+
+    /**
+     * @return array
+     */
+    public function getOrderNumbers() {
+        return $this->_orderNumbers;
+    }
+
+    /**
      * @param string $type
      * @return bool
      */
@@ -86,6 +98,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 }
                 $this->clearMemory();
             }
+
+            $this->_orderNumbers = $this->_cache['entitiesUpdating'];
 
             $this->_prepareOpportunities();
             $this->_pushOpportunitiesToSalesforce();
@@ -121,6 +135,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     protected function _onComplete()
     {
+        parent::_onComplete();
+
         if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();

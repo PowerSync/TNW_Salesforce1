@@ -17,6 +17,39 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             $this->_mageModels['website']   =   'core/website';
         }
     }
+
+    public function updateQueue($_orderIds, $_queueIds, $_results, $_orderNumbers = array()) {
+        $_toUpdate = array();
+        $_keyFromOrder = (!empty($_orderNumbers)) ? true : false;
+
+        foreach($_results as $_object => $_responses) {
+            foreach ($_responses as $_entityKey => $_response) {
+                if (array_key_exists('success', $_response) && $_response['success'] == "false") {
+                    $_key = ($_keyFromOrder) ? $_queueIds[array_search(array_search($_entityKey, $_orderNumbers), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
+
+                    if (!array_key_exists($_key, $_toUpdate)) {
+                        $_toUpdate[$_key] = array();
+                    }
+                    $_toUpdate[$_key][] =  '(' . $_object . ') '. $_response['errors']['message'];
+                }
+            }
+        }
+
+        if (!empty($_toUpdate)) {
+            $_sql = '';
+            foreach ($_toUpdate as $_id => $_errors) {
+                $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
+                    . " SET message='" . urlencode(serialize($_errors)) . "', date_sync = '" . gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time())) . "', sync_attempt = sync_attempt + 1, status = 'sync_error' WHERE id = '" . $_id . "';";
+            }
+            if (!empty($_sql)) {
+                if (!$this->_write) {
+                    $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
+                }
+                $this->_write->query($_sql);
+            }
+        }
+    }
+
     /**
      * iterate array by reference and add commas to element
      * handy for sql queries
@@ -92,7 +125,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             if (!$this->_write) {
                 $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
             }
-
+/*
             $session = Mage::getSingleton('core/session');
 
             $errors = $session->getTnwSalesforceErrors();
@@ -130,7 +163,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                     $session->unsTnwSalesforceErrors();
                 }
             }
-
+*/
             $sql = 'DELETE FROM `' . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . '` WHERE id IN (' . join(', ', $objectId) . ') AND status != "sync_error"';
             Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
             $this->_write->query($sql);

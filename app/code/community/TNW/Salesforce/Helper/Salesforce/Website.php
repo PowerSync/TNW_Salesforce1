@@ -51,6 +51,8 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
     protected function _onComplete()
     {
+        parent::_onComplete();
+
         if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();

@@ -102,7 +102,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         $_collection = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($_type)
             ->addStatusNoToFilter('sync_running')
-            ->addStatusNoToFilter('sync_error');
+            //->addStatusNoToFilter('sync_error')
+        ;
         if (count($this->_itemIds) > 0){
             $_collection->getSelect()->where('id IN (?)', $this->_itemIds);
         }
@@ -138,7 +139,9 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     array(
                         'orderIds'      => $_objectIdSet,
                         'message'       => NULL,
-                        'type'   => 'bulk'
+                        'type'          => 'bulk',
+                        'isQueue'       => true,
+                        'queueIds'      => $_idSet
                     )
                 );
             } else {
@@ -153,6 +156,10 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
                     $manualSync->process();
                     Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' finished ##################################');
+
+                    // Update Queue
+                    $_results = $manualSync->getSyncResults();
+                    Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_objectIdSet, $_idSet, $_results);
                 }
             }
 

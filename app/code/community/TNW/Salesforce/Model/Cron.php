@@ -232,6 +232,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         $manualSync->massAdd($objectIdSet);
                         $manualSync->process();
                         Mage::helper('tnw_salesforce')->log("################################## website synchronization finished ##################################", 1, 'sf-cron');
+
+                        // Update Queue
+                        $_results = $manualSync->getSyncResults();
+                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
                     }
                 } else {
                     Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
@@ -292,6 +296,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         $manualSync->massAdd($objectIdSet);
                         $manualSync->process();
                         Mage::helper('tnw_salesforce')->log("################################## synchronization customer finished ##################################", 1, 'sf-cron');
+
+                        // Update Queue
+                        $_results = $manualSync->getSyncResults();
+                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
                     }
                 } else {
                     Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
@@ -331,7 +339,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
                 ->addSftypeToFilter('Order')
                 ->addStatusNoToFilter('sync_running')
-                ->addStatusNoToFilter('sync_error');
+            //    ->addStatusNoToFilter('sync_error')
+            ;
             $list->getSelect()->limit(self::ORDER_BATCH_SIZE); // set limit to avoid memory leak
 
             if (count($list) > 0) {
@@ -351,7 +360,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         array(
                             'orderIds'      => $objectIdSet,
                             'message'       => NULL,
-                            'type'   => 'bulk'
+                            'type'   => 'bulk',
+                            'isQueue'       => true,
+                            'queueIds'      => $idSet
                         )
                     );
                 } else {
@@ -415,6 +426,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         $manualSync->massAdd($objectIdSet);
                         $syncResult = $manualSync->process();
                         Mage::helper('tnw_salesforce')->log("################################## synchronization product finished ##################################", 1, 'sf-cron');
+
+                        // Update Queue
+                        $_results = $manualSync->getSyncResults();
+                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
                     }
                 } else {
                     Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');

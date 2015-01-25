@@ -134,27 +134,33 @@ class TNW_Salesforce_Model_Observer
         $_orderIds = $observer->getEvent()->getData('orderIds');
         $_message = $observer->getEvent()->getMessage();
         $_type = $observer->getEvent()->getType();
+        $_isQueue = $observer->getEvent()->getData('isQueue');
+        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
+
         if (count($_orderIds) == 1 && $_type == 'bulk') {
             $_type = 'salesforce';
         }
 
         Mage::helper('tnw_salesforce')->log('Pushing Order(s) ... ');
-        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_order');
+        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_order', $_queueIds);
     }
 
     public function pushOpportunity(Varien_Event_Observer $observer) {
         $_orderIds = $observer->getEvent()->getData('orderIds');
         $_message = $observer->getEvent()->getMessage();
         $_type = $observer->getEvent()->getType();
+        $_isQueue = $observer->getEvent()->getData('isQueue');
+        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
+
         if (count($_orderIds) == 1 && $_type == 'bulk') {
             $_type = 'salesforce';
         }
 
         Mage::helper('tnw_salesforce')->log('Pushing Opportunities ... ');
-        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_opportunity');
+        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_opportunity', $_queueIds);
     }
 
-    protected function _processOrderPush($_orderIds, $_message, $_model) {
+    protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds) {
         $manualSync = Mage::helper($_model);
         $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
@@ -166,10 +172,19 @@ class TNW_Salesforce_Model_Observer
         if ($manualSync->reset()) {
             if ($manualSync->massAdd($_ids)) {
                 $res = $manualSync->process('full');
-                if ($res && $_message) {
-                    Mage::helper('tnw_salesforce')->log($_message);
-                    if (Mage::helper('tnw_salesforce')->isAdmin()) {
-                        Mage::getSingleton('adminhtml/session')->addSuccess($_message);
+                if ($res) {
+                    // Update queue
+                    if (!empty($_queueIds)) {
+                        $_results = $manualSync->getSyncResults();
+                        $_orderNumbers = $manualSync->getOrderNumbers();
+                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_orderIds, $_queueIds, $_results, $_orderNumbers);
+                    }
+
+                    if ($_message) {
+                        Mage::helper('tnw_salesforce')->log($_message);
+                        if (Mage::helper('tnw_salesforce')->isAdmin()) {
+                            Mage::getSingleton('adminhtml/session')->addSuccess($_message);
+                        }
                     }
                 }
             }

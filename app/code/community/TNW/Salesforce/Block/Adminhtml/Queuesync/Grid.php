@@ -53,7 +53,7 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
         ));
 
         $this->addColumn('sf_object_type', array(
-            'header' => Mage::helper('sales')->__('Salesforce object type'),
+            'header' => Mage::helper('sales')->__('Type'),
             'width' => '80px',
             'type' => 'text',
             'index' => 'sf_object_type',
@@ -82,16 +82,16 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
 
         $this->addColumn('date_sync', array(
             'header' => Mage::helper('sales')->__('Last synchronization date'),
-            'width' => '80px',
+            'width' => '200px',
             'type' => 'datetime',
             'index' => 'date_sync',
         ));
 
         $this->addColumn('message', array(
             'header' => Mage::helper('sales')->__('Salesforce api response message'),
-            'width' => '80px',
             'type' => 'text',
             'index' => 'message',
+            'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Queuemessage'
         ));
 
         $this->addColumn('singleAction',

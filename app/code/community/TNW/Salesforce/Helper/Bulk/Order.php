@@ -816,7 +816,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $this->_closeJob($this->_cache['bulkJobs']['notes']['Id']);
             Mage::helper('tnw_salesforce')->log("Closing job: " . $this->_cache['bulkJobs']['notes']['Id']);
         }
-
         Mage::helper('tnw_salesforce')->log('Clearing bulk sync cache...');
 
         $this->_cache['bulkJobs'] = array(
