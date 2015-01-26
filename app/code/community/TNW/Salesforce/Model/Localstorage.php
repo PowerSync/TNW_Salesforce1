@@ -39,7 +39,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             }
         }
 
-        if (!$this->_write) {
+           if (!$this->_write) {
             $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
         }
         $_sql = '';
