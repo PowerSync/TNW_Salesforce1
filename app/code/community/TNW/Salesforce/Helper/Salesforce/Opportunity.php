@@ -55,13 +55,13 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     /**
      * @var array
      */
-    protected $_orderNumbers = array();
+    protected $_alternativeKeys = array();
 
     /**
      * @return array
      */
-    public function getOrderNumbers() {
-        return $this->_orderNumbers;
+    public function getAlternativeKeys() {
+        return $this->_alternativeKeys;
     }
 
     /**
@@ -99,7 +99,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $this->clearMemory();
             }
 
-            $this->_orderNumbers = $this->_cache['entitiesUpdating'];
+            $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
 
             $this->_prepareOpportunities();
             $this->_pushOpportunitiesToSalesforce();

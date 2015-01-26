@@ -18,14 +18,13 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         }
     }
 
-    public function updateQueue($_orderIds, $_queueIds, $_results, $_orderNumbers = array()) {
+    public function updateQueue($_orderIds, $_queueIds, $_results, $_alternativeKeyes = array()) {
         $_errorsSet = array();
         $_successSet = array();
-        $_keyFromOrder = (!empty($_orderNumbers)) ? true : false;
 
         foreach($_results as $_object => $_responses) {
             foreach ($_responses as $_entityKey => $_response) {
-                $_key = ($_keyFromOrder) ? $_queueIds[array_search(array_search($_entityKey, $_orderNumbers), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
+                $_key = (!empty($_alternativeKeyes)) ? $_queueIds[array_search(array_search($_entityKey, $_alternativeKeyes), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
                 if (array_key_exists('success', $_response) && $_response['success'] == "false") {
                     if (!array_key_exists($_key, $_errorsSet)) {
                         $_errorsSet[$_key] = array();

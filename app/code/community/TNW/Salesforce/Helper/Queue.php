@@ -115,7 +115,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
      * @param $_type
      * Process selected queue items
      */
-    protected function _synchronize($_type, $_module) {
+    protected function _synchronize($_type, $_module, $_getAlternativeKey = false) {
 
         $_collection = $this->_loadQueue($_type);
 
@@ -159,7 +159,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
                     // Update Queue
                     $_results = $manualSync->getSyncResults();
-                    Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_objectIdSet, $_idSet, $_results);
+                    $_alternativeKeys = ($_getAlternativeKey) ? $manualSync->getAlternativeKeys() : array();
+                    Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_objectIdSet, $_idSet, $_results, $_alternativeKeys);
                 }
             }
 

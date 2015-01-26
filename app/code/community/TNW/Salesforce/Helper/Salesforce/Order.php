@@ -13,13 +13,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     /**
      * @var array
      */
-    protected $_orderNumbers = array();
+    protected $_alternativeKeys = array();
 
     /**
      * @return array
      */
-    public function getOrderNumbers() {
-        return $this->_orderNumbers;
+    public function getAlternativeKeys() {
+        return $this->_alternativeKeys;
     }
 
     /**
@@ -57,7 +57,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $this->clearMemory();
             }
 
-            $this->_orderNumbers = $this->_cache['entitiesUpdating'];
+            $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
 
             $this->_prepareOrders($type);
 

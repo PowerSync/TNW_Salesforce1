@@ -176,8 +176,8 @@ class TNW_Salesforce_Model_Observer
                     // Update queue
                     if (!empty($_queueIds)) {
                         $_results = $manualSync->getSyncResults();
-                        $_orderNumbers = $manualSync->getOrderNumbers();
-                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_orderIds, $_queueIds, $_results, $_orderNumbers);
+                        $_alternativeKeys = $manualSync->getAlternativeKeys();
+                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_orderIds, $_queueIds, $_results, $_alternativeKeys);
                     }
 
                     if ($_message) {
