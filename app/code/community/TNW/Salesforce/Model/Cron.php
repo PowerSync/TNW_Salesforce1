@@ -35,7 +35,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     private function _isTimeToRun()
     {
         Mage::helper('tnw_salesforce')->log('========================= cron method _isTimeToRun() started =========================');
-        Mage::helper('tnw_salesforce')->log('cron time (it differs from php timezone) '.date("Y-m-d H:i:s"));
+        Mage::helper('tnw_salesforce')->log('cron time (it differs from php timezone) ' . date("Y-m-d H:i:s"));
 
         $syncType = Mage::helper('tnw_salesforce')->getObjectSyncType();
         $lastRunTime = ($this->_useCache && unserialize($this->_mageCache->load('tnw_salesforce_cron_timestamp'))) ? unserialize($this->_mageCache->load('tnw_salesforce_cron_timestamp')) : 0;
@@ -68,15 +68,15 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
                 if ((Mage::getModel('core/date')->timestamp(time()) - $lastRunTime) >= $configFrequencySeconds
                     && intval(date("H")) == intval($configTimeHour)
-                    && abs(intval(date("i")) - intval($configTimeMinute)) <= $this->_cronRunIntervalMinute) {
+                    && abs(intval(date("i")) - intval($configTimeMinute)) <= $this->_cronRunIntervalMinute
+                ) {
                     // it's time for cron
                     if ($configFrequencySeconds <= 60 * 60 * 24) {
                         // daily
                         Mage::helper('tnw_salesforce')->log('daily cron started');
 
                         return true;
-                    }
-                    elseif ($configFrequencySeconds <= 60 * 60 * 24 * 7) {
+                    } elseif ($configFrequencySeconds <= 60 * 60 * 24 * 7) {
                         // weekly
                         Mage::helper('tnw_salesforce')->log('weekly cron started');
                         // check day of week
@@ -85,8 +85,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         Mage::helper('tnw_salesforce')->log("isTime = $isTime");
 
                         return $isTime;
-                    }
-                    else {
+                    } else {
                         // monthly
                         Mage::helper('tnw_salesforce')->log('monthly cron started');
                         // check date (we run cron on 1st day of month)
@@ -195,67 +194,155 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         return;
     }
 
-    public function _syncCustomObjects() {
+    public function _syncCustomObjects()
+    {
         // Implemented for customization
     }
 
     public function _syncWebsites()
     {
         try {
-            // get customer id list from local storage
-            $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
-                ->addSftypeToFilter('Website')
-                ->addStatusNoToFilter('sync_running')
-                ->addStatusNoToFilter('sync_error');
-            $list->getSelect()->limit(self::WEBSITE_BATCH_SIZE); // set limit to avoid memory leak
 
-            if (count($list) > 0) {
-                $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-                if ($manualSync->reset()) {
-                    $manualSync->setIsCron(true);
-                    $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
-                    $idSet = array();
-                    $objectIdSet = array();
-                    foreach ($list->getData() as $item) {
-                        $idSet[] = $item['id'];
-                        $objectIdSet[] = $item['object_id'];
-                    }
-
-                    if (!empty($objectIdSet)) {
-                        // set status to 'sync_running'
-                        Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
-
-                        Mage::helper('tnw_salesforce')->log("################################## website synchronization started ##################################", 1, 'sf-cron');
-                        // sync products with sf
-                        $manualSync->massAdd($objectIdSet);
-                        $manualSync->process();
-                        Mage::helper('tnw_salesforce')->log("################################## website synchronization finished ##################################", 1, 'sf-cron');
-
-                        // Update Queue
-                        $_results = $manualSync->getSyncResults();
-                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
-                    }
-                } else {
-                    Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
-                    return false;
-                }
-            }
+            $this->syncEntity('website');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("error: website not synced: " . $e->getMessage(), 1, 'sf-cron');
             return false;
         }
 
-        // customer successfully synced
-        if (!empty($idSet)) {
-            Mage::helper('tnw_salesforce')->log("info: website total synced: " . count($idSet), 1, 'sf-cron');
-            Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
-            // TODO: Need to only remove records that successfully synchronized
-            Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
+        return true;
+    }
+
+    public function getBatchSize($type)
+    {
+        $batchSize = 0;
+        switch ($type) {
+            case 'customer':
+                $batchSize = self::CUSTOMER_BATCH_SIZE;
+                break;
+            case 'product':
+                $batchSize = self::PRODUCT_BATCH_SIZE;
+                break;
+            case 'website':
+                $batchSize = self::WEBSITE_BATCH_SIZE;
+                break;
+            case 'order':
+                $batchSize = self::ORDER_BATCH_SIZE;
+                break;
+            default:
+                throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
+                break;
         }
 
-        return true;
+        return $batchSize;
+
+    }
+
+    public function syncEntity($type)
+    {
+        $_syncType = $type;
+
+        if ($type == 'order') {
+            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+        }
+
+            // get entity id list from local storage
+        $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
+            ->addSftypeToFilter($type)
+            ->addStatusNoToFilter('sync_running')
+            ->addStatusNoToFilter('sync_error');
+
+        $page = 0;
+        $lPage = null;
+        $break = false;
+
+        $idSet = array();
+
+        $list->setPageSize($this->getBatchSize($type));
+        $lPage = $list->getLastPageNumber();
+
+        while ($break !== true) {
+
+            try {
+
+                $page++;
+
+                if ($lPage == $page) {
+                    $break = true;
+                }
+
+                $list->clear();
+                $list->setCurPage(1);
+                $list->load();
+
+                if (count($list) > 0) {
+
+                    /**
+                     * @var $manualSync TNW_Salesforce_Helper_Bulk_Order|TNW_Salesforce_Helper_Bulk_Product|TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Bulk_Website
+                     */
+                    $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
+                    if ($manualSync->reset()) {
+                        $manualSync->setIsCron(true);
+                        $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
+                        $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+
+                        $idSet = array();
+                        $objectIdSet = array();
+                        foreach ($list->getData() as $item) {
+                            $idSet[] = $item['id'];
+                            $objectIdSet[] = $item['object_id'];
+                        }
+
+                        if (!empty($objectIdSet)) {
+                            // set status to 'sync_running'
+                            Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
+
+                            if ($type == 'order') {
+
+                                Mage::dispatchEvent(
+                                    'tnw_sales_process_' . $_syncType,
+                                    array(
+                                        'orderIds' => $objectIdSet,
+                                        'message' => NULL,
+                                        'type' => 'bulk',
+                                        'isQueue' => true,
+                                        'queueIds' => $idSet
+                                    )
+                                );
+                            } else {
+
+                                Mage::helper('tnw_salesforce')->log("################################## synchronization $type started ##################################", 1, 'sf-cron');
+                                // sync products with sf
+                                $manualSync->massAdd($objectIdSet);
+                                $syncResult = $manualSync->process();
+                                Mage::helper('tnw_salesforce')->log("################################## synchronization $type finished ##################################", 1, 'sf-cron');
+
+                                // Update Queue
+                                $_results = $manualSync->getSyncResults();
+                                Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
+                            }
+                        }
+                    } else {
+                        Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
+                        return false;
+                    }
+                    // Entities successfully synced
+                    if (!empty($idSet)) {
+                        Mage::helper('tnw_salesforce')->log("info: $type total processed: " . count($idSet), 1, 'sf-cron');
+                        Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
+                        // TODO: Need to only remove records that successfully synchronized
+                        Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
+                    }
+                } else {
+                    $break = true;
+                }
+
+            } catch (Exception $e) {
+                Mage::helper('tnw_salesforce')->log("error: $type not synced: " . $e->getMessage(), 1, 'sf-cron');
+            }
+        }
+
+
+        return $this;
     }
 
     /**
@@ -266,57 +353,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     public function syncCustomer()
     {
         try {
-            // get customer id list from local storage
-            $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
-                ->addSftypeToFilter('Customer')
-                ->addStatusNoToFilter('sync_running')
-                ->addStatusNoToFilter('sync_error');
-            $list->getSelect()->limit(self::CUSTOMER_BATCH_SIZE); // set limit to avoid memory leak
-
-            if (count($list) > 0) {
-                $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
-                if ($manualSync->reset()) {
-                    $manualSync->setIsCron(true);
-                    $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
-                    $idSet = array();
-                    $objectIdSet = array();
-                    foreach ($list->getData() as $item) {
-                        $idSet[] = $item['id'];
-                        $objectIdSet[] = $item['object_id'];
-                    }
-
-                    if (!empty($objectIdSet)) {
-                        // set status to 'sync_running'
-                        Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
-
-                        Mage::helper('tnw_salesforce')->log("################################## synchronization customer started ##################################", 1, 'sf-cron');
-                        // sync products with sf
-                        $manualSync->massAdd($objectIdSet);
-                        $manualSync->process();
-                        Mage::helper('tnw_salesforce')->log("################################## synchronization customer finished ##################################", 1, 'sf-cron');
-
-                        // Update Queue
-                        $_results = $manualSync->getSyncResults();
-                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
-                    }
-                } else {
-                    Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
-                    return false;
-                }
-            }
+            $this->syncEntity('customer');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("error: product not synced: " . $e->getMessage(), 1, 'sf-cron');
+            Mage::helper('tnw_salesforce')->log("error: customer not synced: " . $e->getMessage(), 1, 'sf-cron');
             return false;
-        }
-
-        // customer successfully synced
-        if (!empty($idSet)) {
-            Mage::helper('tnw_salesforce')->log("info: customer total synced: " . count($idSet), 1, 'sf-cron');
-            Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
-            // TODO: Need to only remove records that successfully synchronized
-            Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
         }
 
         return true;
@@ -334,53 +374,12 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             Mage::helper('tnw_salesforce')->log('SKIPPING: Integration Type is not set for the order object.');
             return false;
         }
+
         try {
-            // get order id list from local storage
-            $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
-                ->addSftypeToFilter('Order')
-                ->addStatusNoToFilter('sync_running')
-            //    ->addStatusNoToFilter('sync_error')
-            ;
-            $list->getSelect()->limit(self::ORDER_BATCH_SIZE); // set limit to avoid memory leak
-
-            if (count($list) > 0) {
-                $idSet = array();
-                $objectIdSet = array();
-                foreach ($list as $item) {
-                    $idSet[] = $item->getData('id');
-                    $objectIdSet[] = $item->getData('object_id');
-                }
-
-                if (!empty($objectIdSet)) {
-                    // set status to 'sync_running'
-                    Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
-
-                    Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
-                        array(
-                            'orderIds'      => $objectIdSet,
-                            'message'       => NULL,
-                            'type'   => 'bulk',
-                            'isQueue'       => true,
-                            'queueIds'      => $idSet
-                        )
-                    );
-                } else {
-                    Mage::helper('tnw_salesforce')->log("could not get any Magneto entity Id's", 1, 'sf-cron');
-                }
-            }
+            $this->syncEntity('order');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage(), 1, 'sf-cron');
-
+            Mage::helper('tnw_salesforce')->log("error: order not synced: " . $e->getMessage(), 1, 'sf-cron');
             return false;
-        }
-
-        // order successfully synced
-        if (!empty($idSet)) {
-            Mage::helper('tnw_salesforce')->log("INFO: total orders synced: " . count($idSet), 1, 'sf-cron');
-            Mage::helper('tnw_salesforce')->log("INFO: removing synced records from the queue...", 1, 'sf-cron');
-            // TODO: Need to only remove records that successfully synchronized
-            Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
         }
 
         return true;
@@ -394,64 +393,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     public function syncProduct()
     {
         try {
-            $syncResult = false;
-            // get product id list from local storage
-            $productList = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
-                ->addSftypeToFilter('Product')
-                ->addStatusNoToFilter('sync_running')
-                ->addStatusNoToFilter('sync_error');
-            $productList->getSelect()->limit(self::PRODUCT_BATCH_SIZE); // set limit to avoid memory leak
-
-            if (count($productList) > 0) {
-                $manualSync = Mage::helper('tnw_salesforce/bulk_product');
-                if ($manualSync->reset()) {
-                    $manualSync->setIsCron(true);
-                    $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
-                    $idSet = array();
-                    $objectIdSet = array();
-                    foreach ($productList->getData() as $item) {
-                        $idSet[] = $item['id'];
-                        $objectIdSet[] = $item['object_id'];
-                    }
-
-                    if (!empty($objectIdSet)) {
-
-                        // set status to 'sync_running'
-                        Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
-
-                        Mage::helper('tnw_salesforce')->log("################################## synchronization product started ##################################", 1, 'sf-cron');
-                        // sync products with sf
-                        $manualSync->massAdd($objectIdSet);
-                        $syncResult = $manualSync->process();
-                        Mage::helper('tnw_salesforce')->log("################################## synchronization product finished ##################################", 1, 'sf-cron');
-
-                        // Update Queue
-                        $_results = $manualSync->getSyncResults();
-                        Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
-                    }
-                } else {
-                    Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
-                    return false;
-                }
-            }
+            $this->syncEntity('product');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("error: product not synced: " . $e->getMessage(), 1, 'sf-cron');
             return false;
-        }
-
-        // product successfully synced
-        if (!empty($idSet)) {
-            if ($syncResult) {
-                Mage::helper('tnw_salesforce')->log("info: products total processed: " . count($idSet), 1, 'sf-cron');
-                Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
-                // TODO: Need to only remove records that successfully synchronized
-                Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
-            } else {
-                Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet, 'new');
-                Mage::helper('tnw_salesforce')->log("ERROR: product sync process failed");
-            }
         }
 
         return true;

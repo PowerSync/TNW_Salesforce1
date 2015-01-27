@@ -25,11 +25,29 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         foreach($_results as $_object => $_responses) {
             foreach ($_responses as $_entityKey => $_response) {
                 $_key = (!empty($_alternativeKeyes)) ? $_queueIds[array_search(array_search($_entityKey, $_alternativeKeyes), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
+
+                /**
+                 * @comment change variable type to avoid problems with stdClass
+                 */
+                $_response = (array)$_response;
+
                 if (array_key_exists('success', $_response) && $_response['success'] == "false") {
                     if (!array_key_exists($_key, $_errorsSet)) {
                         $_errorsSet[$_key] = array();
                     }
-                    $_errorsSet[$_key][] =  '(' . $_object . ') '. $_response['errors']['message'];
+
+                    $errorMessage = '';
+                    if (is_array($_response['errors']) && isset($_response['errors']['message'])) {
+                        $errorMessage = $_response['errors']['message'];
+                    } elseif (is_array($_response['errors'])) {
+                        foreach ($_response['errors'] as $errorStdClass) {
+                            if (is_object($errorStdClass)) {
+                                $errorMessage .= $errorStdClass->message;
+                            }
+                        }
+                    }
+
+                    $_errorsSet[$_key][] =  '(' . $_object . ') '. $errorMessage;
                 } else {
                     // Reset the status from error back to running so we can delete
                     if (!in_array($_key,$_successSet)) {
@@ -44,10 +62,11 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         }
         $_sql = '';
 
-        if (!empty($_successSet)) {
-            $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
-                . " SET message='', status = 'sync_running' WHERE id IN ('" . join("','", $_successSet) . "');";
-        }
+// Commented because all items already have the 'sync_running' status
+//        if (!empty($_successSet)) {
+//            $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
+//                . " SET message='', status = 'sync_running' WHERE id IN ('" . join("','", $_successSet) . "');";
+//        }
 
         if (!empty($_errorsSet)) {
             foreach ($_errorsSet as $_id => $_errors) {
