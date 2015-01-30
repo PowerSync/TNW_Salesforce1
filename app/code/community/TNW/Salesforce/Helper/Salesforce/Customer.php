@@ -81,25 +81,28 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $_isLead = true;
         $_isContact = false;
         $_isPerson = false;
+
         if (
             $this->_cache['leadLookup']
-            && array_key_exists($_email, $this->_cache['leadLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
+            && array_key_exists($_email, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])
         ) {
             // Existing Lead
-            $_id = $this->_cache['leadLookup'][$_email]->Id;
+            $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
         }
         if (
             $this->_cache['contactsLookup']
-            && array_key_exists($_email, $this->_cache['contactsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['contactsLookup'])
+            && array_key_exists($_email, $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]])
         ) {
             // Existing Contact
-            $_id = $this->_cache['contactsLookup'][$_email]->Id;
+            $_id = $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
             $_isContact = true;
             $_isLead = false;
             if (
                 Mage::helper('tnw_salesforce')->usePersonAccount()
-                && property_exists($this->_cache['contactsLookup'][$_email], 'Account')
-                && property_exists($this->_cache['contactsLookup'][$_email]->Account, 'IsPersonAccount')
+                && property_exists($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'Account')
+                && property_exists($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Account, 'IsPersonAccount')
             ) {
                 $_isPerson = true;
             }
@@ -209,20 +212,21 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
         }
 
-
-        try {
-            Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before",array("data" => $this->_cache['campaignsToUpsert']));
-            $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['campaignsToUpsert']), 'CampaignMember');
-            Mage::dispatchEvent("tnw_salesforce_campaignmember_send_after",array(
-                "data" => $this->_cache['campaignsToUpsert'],
-                "result" => $_results
-            ));
-            foreach ($_results as $_key => $_result) {
-                //Report Transaction
-                $this->_cache['responses']['campaigns'][$_customerId] = $_result;
+        if (!empty($this->_cache['campaignsToUpsert'])) {
+            try {
+                Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before",array("data" => $this->_cache['campaignsToUpsert']));
+                $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['campaignsToUpsert']), 'CampaignMember');
+                Mage::dispatchEvent("tnw_salesforce_campaignmember_send_after",array(
+                    "data" => $this->_cache['campaignsToUpsert'],
+                    "result" => $_results
+                ));
+                foreach ($_results as $_key => $_result) {
+                    //Report Transaction
+                    $this->_cache['responses']['campaigns'][$_customerId] = $_result;
+                }
+            } catch (Exception $e) {
+                Mage::helper('tnw_salesforce')->log("error [add lead as campaign member to sf failed]: " . $e->getMessage());
             }
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("error [add lead as campaign member to sf failed]: " . $e->getMessage());
         }
 
         $this->_onComplete();
@@ -241,6 +245,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['campaignsToUpsert'][$_key] = $campaignMemberOb;
         }
+        Mage::helper('tnw_salesforce')->log("Campaigns prepared");
     }
 
     /**

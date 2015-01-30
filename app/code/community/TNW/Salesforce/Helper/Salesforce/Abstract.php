@@ -922,6 +922,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected function _onComplete()
     {
         // Store results
-        $this->_syncedResults = $this->_cache['responses'];
+        if (
+            array_key_exists('responses', $this->_cache)
+            && is_array($this->_cache['responses'])
+        ) {
+            $this->_syncedResults = $this->_cache['responses'];
+        }
     }
 }
