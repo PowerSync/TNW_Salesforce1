@@ -25,8 +25,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-//require_once('SforceMetaObject.php');
-
 class Salesforce_SforceMetadataClient
 {
     public $sforce;
