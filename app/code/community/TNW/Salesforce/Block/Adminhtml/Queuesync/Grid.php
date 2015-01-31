@@ -40,6 +40,7 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
             'options' => array(
                 'new' => 'New',
                 'sync_running' => 'Sync running',
+                'sync_error' => 'Error',
             ),
             'index' => 'status',
             'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Objectstatus'
