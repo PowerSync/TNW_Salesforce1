@@ -196,13 +196,21 @@ class TNW_Salesforce_Model_Observer
         }
     }
 
-    public function updateSale(Varien_Event_Observer $observer) {
+    public function updateOpportunity(Varien_Event_Observer $observer) {
         $_order = $observer->getEvent()->getData('order');
-        $_type = $observer->getEvent()->getData('type');
 
-        Mage::helper('tnw_salesforce')->log('Updating ' . ucwords($_type) . ' Status ... ');
+        Mage::helper('tnw_salesforce')->log('Updating Opportunity Status ... ');
         if ($_order && is_object($_order)) {
-            Mage::helper('tnw_salesforce/salesforce_' . $_type)->updateStatus($_order);
+            Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($_order);
+        }
+    }
+
+    public function updateOrder(Varien_Event_Observer $observer) {
+        $_order = $observer->getEvent()->getData('order');
+
+        Mage::helper('tnw_salesforce')->log('Updating Order Status ... ');
+        if ($_order && is_object($_order)) {
+            Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
         }
     }
 }

@@ -49,10 +49,9 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
                 Mage::helper('tnw_salesforce')->log("###################################### Order Status Update Start (Notes) ######################################");
                 Mage::dispatchEvent(
-                    'tnw_sales_status_update',
+                    'tnw_sales_status_update_' . $_syncType,
                     array(
-                        'order'  => $order,
-                        'type'   => $_syncType
+                        'order'  => $order
                     )
                 );
 

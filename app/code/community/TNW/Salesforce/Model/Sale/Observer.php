@@ -141,10 +141,9 @@ class TNW_Salesforce_Model_Sale_Observer
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
             Mage::helper('tnw_salesforce')->log("###################################### Order Status Update Start ######################################");
             Mage::dispatchEvent(
-                'tnw_sales_status_update',
+                'tnw_sales_status_update_' . $_syncType,
                 array(
-                    'order'  => $order,
-                    'type'   => $_syncType
+                    'order'  => $order
                 )
             );
             Mage::helper('tnw_salesforce')->log("###################################### Order Status Update End ########################################");
