@@ -91,6 +91,8 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function orderStatusUpdateTrigger($observer)
     {
+        /* My no longer be used, need to test
+         * */
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
             Mage::helper("tnw_salesforce")->log('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
@@ -138,12 +140,13 @@ class TNW_Salesforce_Model_Sale_Observer
         ) {
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
             Mage::helper('tnw_salesforce')->log("###################################### Order Status Update Start ######################################");
-            if ($_syncType == "order") {
-                Mage::helper('tnw_salesforce/salesforce_' . $_syncType)->updateStatus($order);
-            } else {
-                // Opportunity... need to deprecate
-                Mage::helper('tnw_salesforce/order')->updateStatus($order);
-            }
+            Mage::dispatchEvent(
+                'tnw_sales_status_update',
+                array(
+                    'order'  => $order,
+                    'type'   => $_syncType
+                )
+            );
             Mage::helper('tnw_salesforce')->log("###################################### Order Status Update End ########################################");
         }
     }

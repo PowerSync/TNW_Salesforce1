@@ -26,6 +26,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
 
         $event = $observer->getEvent();
         $order = Mage::getModel('sales/order')->load($event->getOid());
+        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
@@ -47,11 +48,25 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 // Process Notes
                 Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
                 Mage::helper('tnw_salesforce')->log("###################################### Order Status Update Start (Notes) ######################################");
-                Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($order);
+                Mage::dispatchEvent(
+                    'tnw_sales_status_update',
+                    array(
+                        'order'  => $order,
+                        'type'   => $_syncType
+                    )
+                );
+
                 Mage::helper('tnw_salesforce')->log("###################################### Order Status Update End (Notes) ########################################");
             } else {
                 // Never was synced, new order
-                Mage::dispatchEvent('tnw_sales_order_save', array('order' => $order));
+                Mage::dispatchEvent(
+                    'tnw_sales_process_' . $_syncType,
+                    array(
+                        'orderIds'      => array($order->getId()),
+                        'message'       => NULL,
+                        'type'   => 'salesforce'
+                    )
+                );
 
                 Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
             }

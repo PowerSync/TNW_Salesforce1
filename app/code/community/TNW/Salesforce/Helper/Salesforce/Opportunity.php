@@ -2122,4 +2122,41 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE entity_id = " . $_id . ";";
         $this->_write->query($sql);
     }
+
+    /**
+     * Get order object and update Order Status in Salesforce
+     *
+     * @param $order
+     */
+    public function updateStatus($order)
+    {
+        if (Mage::getModel('tnw_salesforce/localstorage')->getObject($order->getId())) {
+            Mage::helper('tnw_salesforce')->log("SKIPPING: Order #" . $order->getRealOrderId() . " is already queued for update.");
+            return true;
+        }
+
+        $this->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
+        $this->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+        $this->reset();
+        $this->massAdd($order->getId());
+
+        $this->_obj = new stdClass();
+        // Magento Order ID
+        $orderIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $this->_obj->$orderIdParam = $order->getRealOrderId();
+
+        $this->_updateOrderStageName($order);
+
+        if ($order->getSalesforceId()) {
+            $this->_cache['opportunitiesToUpsert'][$order->getRealOrderId()] = $this->_obj;
+
+            $this->_pushOpportunitiesToSalesforce();
+        } else {
+            // Need to do full sync instead
+            $res = $this->process('full');
+            if ($res) {
+                Mage::helper('tnw_salesforce')->log("SUCCESS: Updating Order #" . $order->getRealOrderId());
+            }
+        }
+    }
 }
