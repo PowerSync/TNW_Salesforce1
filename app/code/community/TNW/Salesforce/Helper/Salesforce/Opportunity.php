@@ -2145,6 +2145,10 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         $orderIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
         $this->_obj->$orderIdParam = $order->getRealOrderId();
 
+        // Update mapped fields
+        $this->_processMapping($order, "Opportunity");
+
+        // Update order status
         $this->_updateOrderStageName($order);
 
         if ($order->getSalesforceId()) {

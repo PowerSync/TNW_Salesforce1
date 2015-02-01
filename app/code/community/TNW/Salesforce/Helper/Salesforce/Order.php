@@ -2111,6 +2111,10 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         $orderIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
         $this->_obj->$orderIdParam = $order->getRealOrderId();
 
+        // Process custom mappings
+        $this->_processMapping($order, "Order");
+
+        // Update order status
         $this->_updateOrderStatus($order);
 
         if ($order->getSalesforceId()) {
