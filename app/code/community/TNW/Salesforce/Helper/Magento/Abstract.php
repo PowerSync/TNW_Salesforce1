@@ -146,6 +146,6 @@ class TNW_Salesforce_Helper_Magento_Abstract {
     }
 
     protected function _setTime() {
-        $this->_time = gmdate(DATE_ATOM, strtotime(Mage::getModel('core/date')->timestamp(time())));
+        $this->_time = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
     }
 }

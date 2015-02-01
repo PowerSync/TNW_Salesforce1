@@ -102,6 +102,9 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
         $_entity = $this->syncFromSalesforce();
 
+        // Update history orders and assigne to customer we just created
+        $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
+
         Mage::helper('tnw_salesforce')->log("** finished upserting " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
         // Handle success and fail
@@ -169,7 +172,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         try {
             set_time_limit(30);
 
-
             // Creating Customer Entity
             if ($this->_isNew) {
                 $_entity = Mage::getModel('customer/customer');
@@ -224,6 +226,8 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                                 Mage::helper('tnw_salesforce')->log("SKIPPING: customer code $sfValue not found in magento");
                                 continue;
                             }
+                        } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
+                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
                         } elseif ($_magentoFieldName == 'website_ids') {
                             // website ids hack
                             $_value = explode(',', $this->_salesforceObject->{$_mapping->getSfField()});
@@ -234,7 +238,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         $_value = $_mapping->getDefaultValue();
                     }
                     if ($_value) {
+                        Mage::helper('tnw_salesforce')->log('Customer: ' . $_magentoFieldName . ' = ' . $_value);
                         $_entity->setData($_magentoFieldName, $_value);
+                    } else {
+                        Mage::helper('tnw_salesforce')->log('SKIPPING Customer: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Shipping : ') === 0) {
                     // Shipping Address
@@ -242,7 +249,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
                         $_value = $this->_salesforceObject->{$_mapping->getSfField()};
                         if ($_value) {
-                            $_additional['shipping'][$_magentoFieldName] = $this->_salesforceObject->{$_mapping->getSfField()};
+                            Mage::helper('tnw_salesforce')->log('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $_value);
+                            $_additional['shipping'][$_magentoFieldName] = $_value;
+                        } else {
+                            Mage::helper('tnw_salesforce')->log('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                         }
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Billing : ') === 0) {
@@ -251,7 +261,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
                         $_value = $this->_salesforceObject->{$_mapping->getSfField()};
                         if ($_value) {
-                            $_additional['billing'][$_magentoFieldName] = $this->_salesforceObject->{$_mapping->getSfField()};
+                            Mage::helper('tnw_salesforce')->log('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $_value);
+                            $_additional['billing'][$_magentoFieldName] = $_value;
+                        } else {
+                            Mage::helper('tnw_salesforce')->log('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                         }
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Customer Group : ') === 0) {
@@ -264,6 +277,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 $_websiteSfId = $this->_salesforceObject->{$this->_prefix . 'Website__c'};
                 $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
                 if ($_websiteId) {
+                    Mage::helper('tnw_salesforce')->log('Customer: website_id = ' . $_websiteId);
                     $_entity->setData('website_id', $_websiteId);
                 }
             }
@@ -277,12 +291,33 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 $_flag = true;
             }
 
+            $_currentTime = $this->_getTime();
+            if (!$_entity->getData('updated_at') || $_entity->getData('updated_at') == '') {
+                Mage::helper('tnw_salesforce')->log('Customer: updated_at = ' . $_currentTime);
+                $_entity->setData('updated_at', $_currentTime);
+            }
             if (!$_entity->getData('created_at') || $_entity->getData('created_at') == '') {
-                $_entity->setData('created_at', $this->_getTime());
+                if (property_exists($this->_salesforceObject, 'CreatedDate')) {
+                    $_currentTime = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->CreatedDate)));
+                }
+                Mage::helper('tnw_salesforce')->log('Customer: created_at = ' . $_currentTime);
+                $_entity->setData('created_at', $_currentTime);
             }
-            if (!$_entity->getData('updated_at') || $_entity->getData('created_at') == '') {
-                $_entity->setData('updated_at', $this->_getTime());
+
+            // Set / Update sync params
+            if (property_exists($this->_salesforceObject, 'Id')) {
+                Mage::helper('tnw_salesforce')->log('Customer: salesforce_id = ' . $this->_salesforceObject->Id);
+                $_entity->setData('salesforce_id', $this->_salesforceObject->Id);
             }
+            if (property_exists($this->_salesforceObject, 'AccountId')) {
+                Mage::helper('tnw_salesforce')->log('Customer: salesforce_account_id = ' . $this->_salesforceObject->AccountId);
+                $_entity->setData('salesforce_account_id', $this->_salesforceObject->AccountId);
+            }
+            if (property_exists($this->_salesforceObject, 'IsPersonAccount') && $this->_salesforceObject->IsPersonAccount) {
+                $_entity->setData('salesforce_is_person', 1);
+            }
+
+            $_entity->setData('sf_insync', 1);
 
             // Save Customer
             $_entity->save();
@@ -537,5 +572,30 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
         }
         return NULL;
+    }
+
+    protected function _assignCustomerToOrder($_customerEmail, $_customerId)
+    {
+        if (!$_customerId || !$_customerEmail) {
+            return;
+        }
+        $orders = Mage::getModel('sales/order')->getCollection()
+            ->addAttributeToSelect('entity_id')
+            ->addFieldToFilter('customer_email', $_customerEmail)
+            ->addFieldToFilter('customer_id', array('null' => true));
+        if ($orders && !empty($orders)) {
+            $sql = "";
+            $_ordersUpdated = array();
+            foreach ($orders as $_order) {
+                $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET customer_id = " . $_customerId . " WHERE entity_id = " . $_order['entity_id'] . ";";
+                $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_grid') . "` SET customer_id = " . $_customerId . " WHERE entity_id = " . $_order['entity_id'] . ";";
+                $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_address') . "` SET customer_id = " . $_customerId . " WHERE parent_id = " . $_order['entity_id'] . ";";
+                $_ordersUpdated[] = $_order['entity_id'];
+            }
+            if (!empty($sql)) {
+                $this->_write->query($sql);
+                Mage::helper('tnw_salesforce')->log("Orders: (" . join(', ', $_ordersUpdated) . ") were associated with customer (" . $_customerEmail . ").");
+            }
+        }
     }
 }
