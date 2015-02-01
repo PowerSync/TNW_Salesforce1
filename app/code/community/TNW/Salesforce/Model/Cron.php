@@ -329,7 +329,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                     if (!empty($idSet)) {
                         Mage::helper('tnw_salesforce')->log("info: $type total processed: " . count($idSet), 1, 'sf-cron');
                         Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
-                        // TODO: Need to only remove records that successfully synchronized
+                        // Remove processed records from the queue
                         Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
                     }
                 } else {

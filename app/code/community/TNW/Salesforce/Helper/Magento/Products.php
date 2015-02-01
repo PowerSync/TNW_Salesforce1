@@ -189,6 +189,8 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                                 Mage::helper('tnw_salesforce')->log("SKIPPING: product code $sfValue not found in magento");
                                 continue;
                             }
+                        } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
+                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
                         } elseif ($_magentoFieldName == 'website_ids') {
                             // websiteids hack
                             $_value = explode(',', $object->{$_mapping->getSfField()});
@@ -201,12 +203,18 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                     } elseif ($_isNew && $_mapping->getDefaultValue()) {
                         $_value = $_mapping->getDefaultValue();
                     }
-                    $_product->setData($_magentoFieldName, $_value);
+                    if ($_value) {
+                        Mage::helper('tnw_salesforce')->log('Product: ' . $_magentoFieldName . ' = ' . $_value);
+                        $_product->setData($_magentoFieldName, $_value);
+                    } else {
+                        Mage::helper('tnw_salesforce')->log('SKIPPING Product: ' . $_magentoFieldName . ' - no value specified in Salesforce');
+                    }
                 } elseif (strpos($_mapping->getLocalField(), 'Product Inventory : ') === 0) {
                     // Inventory
                     $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
                     if (property_exists($object, $_mapping->getSfField())) {
                         $_stock[$_magentoFieldName] = $object->{$_mapping->getSfField()};
+                        Mage::helper('tnw_salesforce')->log('Product Inventory: ' . $_magentoFieldName . ' = ' . $object->{$_mapping->getSfField()});
                     }
                 }
             }
@@ -224,11 +232,17 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                 $_flag = true;
             }
 
-            if (!$_product->getData('created_at') || $_product->getData('created_at') == '') {
-                $_product->setData('created_at', $this->_getTime());
+            $_currentTime = $this->_getTime();
+            if (!$_product->getData('updated_at') || $_product->getData('updated_at') == '') {
+                Mage::helper('tnw_salesforce')->log('Product: updated_at = ' . $_currentTime);
+                $_product->setData('updated_at', $_currentTime);
             }
-            if (!$_product->getData('updated_at') || $_product->getData('created_at') == '') {
-                $_product->setData('updated_at', $this->_getTime());
+            if (!$_product->getData('created_at') || $_product->getData('created_at') == '') {
+                if (property_exists($this->_salesforceObject, 'CreatedDate')) {
+                    $_currentTime = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->CreatedDate)));
+                }
+                Mage::helper('tnw_salesforce')->log('Product: created_at = ' . $_currentTime);
+                $_product->setData('created_at', $_currentTime);
             }
 
             // Save Product
