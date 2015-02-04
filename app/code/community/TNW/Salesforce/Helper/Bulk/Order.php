@@ -219,7 +219,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         foreach ($_oIds as $_orderId) {
                             $_oIdsToRemove = array_keys($this->_cache['entitiesUpdating'], $_orderId);
                             foreach ($_oIdsToRemove as $_idToRemove) {
-                                Zend_Debug::dump($_idToRemove, 'Skipping order: ' . $this->_cache['entitiesUpdating'][$_idToRemove]);
+                                //Zend_Debug::dump($_idToRemove, 'Skipping order: ' . $this->_cache['entitiesUpdating'][$_idToRemove]);
                                 Mage::helper('tnw_salesforce')->log("SKIPPED Order: " . $_idToRemove . " - customer (" . $_email . ") could not be synchronized");
                                 unset($this->_cache['entitiesUpdating'][$_idToRemove]);
                             }
