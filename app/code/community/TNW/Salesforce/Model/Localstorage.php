@@ -18,6 +18,19 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         }
     }
 
+    public function getAllDependencies() {
+        if (!$this->_write) {
+            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
+        }
+        $_dependencies = array();
+        $_sql = "SELECT object_id, sf_object_type FROM " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " WHERE mage_object_type IN ('" . $this->_mageModels['customer'] . "', '" . $this->_mageModels['product'] . "')";
+        $_results = $this->_write->query($_sql)->fetchAll();
+        foreach ($_results as $_result) {
+            $_dependencies[$_result['sf_object_type']][] = $_result['object_id'];
+        }
+        return $_dependencies;
+    }
+
     public function updateQueue($_orderIds, $_queueIds, $_results, $_alternativeKeyes = array()) {
         $_errorsSet = array();
         $_successSet = array();

@@ -174,19 +174,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // Synchronize Websites
             $this->_syncWebsites();
 
-            // check if all products and customers synced with sf
-            // TODO: Add check to only sync orders and quotes if customer and all products from the order are in Sync
-            $total = Mage::getModel('tnw_salesforce/localstorage')->countObjectBySfType(array(
-                'Product',
-                'Customer',
-            ));
-            // we still have products or customers in localstorage, thus skip below
-            if ($total == 0) {
-                // Sync orders
-                $this->syncOrder();
+            // Sync orders
+            $this->syncOrder();
 
-                $this->_syncCustomObjects();
-            }
+            $this->_syncCustomObjects();
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Server Name is undefined!", 1, 'sf-cron');
         }
@@ -237,6 +228,24 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
     }
 
+    /**
+     * @param $_item
+     * @return int
+     * Get product Id from the cart
+     */
+    public function getProductIdFromCart($_item) {
+        $_options = unserialize($_item->getData('product_options'));
+        if(
+            $_item->getData('product_type') == 'bundle'
+            || array_key_exists('options', $_options)
+        ) {
+            $id = $_item->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+        return $id;
+    }
+
     public function syncEntity($type)
     {
         $_syncType = $type;
@@ -245,7 +254,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
         }
 
-            // get entity id list from local storage
+        // Get all products and customers from the queue
+        $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
+
+        // get entity id list from local storage
         $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($type)
             ->addStatusNoToFilter('sync_running')
@@ -288,8 +300,25 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         $idSet = array();
                         $objectIdSet = array();
                         foreach ($list->getData() as $item) {
-                            $idSet[] = $item['id'];
-                            $objectIdSet[] = $item['object_id'];
+                            $_skip = false;
+                            $_order = Mage::getModel('sales/order')->load($item['object_id']);
+
+                            if ($_order->getCustomerId() && array_key_exists('Customer', $_dependencies) && in_array($_order->getCustomerId(), $_dependencies['Customer'])) {
+                                $_skip = true;
+                            }
+                            if (!$_skip && array_key_exists('Product', $_dependencies)) {
+                                foreach ($_order->getAllVisibleItems() as $_item) {
+                                    $id = $this->getProductIdFromCart($_item);
+                                    if (in_array($id, $_dependencies['Product'])) {
+                                        $_skip = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!$_skip) {
+                                $idSet[] = $item['id'];
+                                $objectIdSet[] = $item['object_id'];
+                            }
                         }
 
                         if (!empty($objectIdSet)) {
@@ -340,7 +369,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 Mage::helper('tnw_salesforce')->log("error: $type not synced: " . $e->getMessage(), 1, 'sf-cron');
             }
         }
-
 
         return $this;
     }
