@@ -1538,7 +1538,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         if (Mage::helper('tnw_salesforce')->getCustomerNewsletterSync()) {
             $subscriber = Mage::getModel('newsletter/subscriber')->loadByEmail($_email);
-            $this->_obj->HasOptedOutOfEmail = (is_object($subscriber) && $subscriber->isSubscribed()) ? 1 : 0;
+            $this->_obj->HasOptedOutOfEmail = (!is_object($subscriber) || !$subscriber->isSubscribed()) ? 1 : 0;
         }
 
         if ($type == "Contact") {
