@@ -122,8 +122,20 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_obj->LastName = ($_customer->getLastname()) ? $_customer->getLastname() : $_email;
             $_customerId = $_subscription->getCustomerId();
         } else {
-            $this->_obj->FirstName = '';
-            $this->_obj->LastName = $_email;
+            $_name = (is_object(Mage::getSingleton('customer/session')->getCustomer())) ? Mage::getSingleton('customer/session')->getCustomer()->getName() : NULL;
+            if (!$_name) {
+                // unknown customer, skip
+                return;
+            }
+            $_customerName = explode(' ', $_name);
+            $this->_obj->FirstName = (count($_customerName) > 1) ? $_customerName[0] : '';
+
+            $_lastName = $_customerName[1];
+            if (count($_customerName) > 1) {
+                unset($_customerName[0]);
+                $_lastName = join(' ', $_customerName);
+            }
+            $this->_obj->LastName = $_lastName;
             $_customerId = $_email;
         }
         $this->_obj->HasOptedOutOfEmail = ($_status == 3 || $_type == 'delete') ? 1 : 0;
@@ -1122,8 +1134,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     unset($this->_cache['contactsToUpsert'][$this->_magentoId][$_id]);
                 }
             } else {
+                // This is a B2B Account
                 unset($this->_obj->{$this->_prefix . 'Website__c'});
                 unset($this->_obj->{$this->_prefix . 'Magento_ID__c'});
+
+                // Remove subscription flag from B2B Account
+                if (property_exists($this->_obj, 'HasOptedOutOfEmail')) {
+                    unset($this->_obj->HasOptedOutOfEmail);
+                }
             }
 
             // Check if duplicate exists
@@ -1518,6 +1536,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_obj->{$this->_magentoId} = $_customer->getId();
         }
 
+        if (Mage::helper('tnw_salesforce')->getCustomerNewsletterSync()) {
+            $subscriber = Mage::getModel('newsletter/subscriber')->loadByEmail($_email);
+            $this->_obj->HasOptedOutOfEmail = (is_object($subscriber) && $subscriber->isSubscribed()) ? 1 : 0;
+        }
+
         if ($type == "Contact") {
             //Use data in Salesforce if Magento data is blank for the First and Last name
             if (!property_exists($this->_obj, 'FirstName') || !$this->_obj->FirstName) {
@@ -1628,6 +1651,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 !Mage::helper('tnw_salesforce')->usePersonAccount()
                 || (Mage::helper('tnw_salesforce')->usePersonAccount() && Mage::helper('tnw_salesforce')->isCustomerSingleRecordType() == TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT)
             ) {
+                // This is a potential B2B Account
                 if (!property_exists($this->_obj, 'Name')) {
                     if (
                         !Mage::helper('tnw_salesforce')->canRenameAccount()
@@ -1656,9 +1680,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         property_exists($this->_cache['contactsLookup'][$sfWebsite][$_email], 'IsPersonAccount')
                         && $this->_cache['contactsLookup'][$sfWebsite][$_email]->IsPersonAccount
                     ) {
+                        // This is a potential B2C Account
                         $this->_obj->RecordTypeId = Mage::helper('tnw_salesforce')->getPersonAccountRecordType();
                         $this->_addAccountRequiredFields($_customer);
                     } else {
+                        // This is a potential B2B Account
                         $_accountName = (
                             property_exists($this->_cache['contactsLookup'][$sfWebsite][$_email], 'AccountName')
                             && $this->_cache['contactsLookup'][$sfWebsite][$_email]->AccountName
@@ -1671,6 +1697,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     }
                 } else if (!property_exists($this->_obj, 'Name')) {
                     /* New customer, where account Name is not set */
+                    // This is a potential B2C Account
                     $this->_obj->RecordTypeId = Mage::helper('tnw_salesforce')->getPersonAccountRecordType();
                     $this->_addAccountRequiredFields($_customer);
                 }
@@ -1685,21 +1712,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             ) {
                 $this->_obj->RecordTypeId = $this->_cache['contactsLookup'][$sfWebsite][$_email]->Account->RecordTypeId;
             }
-            /*
-            if (
-                property_exists($this->_obj, 'RecordTypeId')
-                && $this->_obj->RecordTypeId == Mage::helper('tnw_salesforce')->getPersonAccountRecordType()
-                && property_exists($this->_obj, $this->_magentoId)
-            ) {
-                $_pcMagentoIdFieldName = str_replace('__c', '__pc', $this->_magentoId);
-                $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{$this->_magentoId};
-                if (property_exists($this->_obj, $this->_magentoId)) {
-                    unset($this->_obj->{$this->_magentoId});
-                }
-            } else {
-                unset($this->_obj->{$this->_magentoId});
-            }
-            */
+
             // Assign OwnerId based on Company name match
             if (empty($this->_customerAccountId)) {
                 if (!property_exists($this->_obj, 'Id')) {
