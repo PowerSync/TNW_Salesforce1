@@ -78,6 +78,11 @@
                                     <action>adminhtml/salesforce_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
                                 </opportunity_cart_mapping>
+                                <status_mapping>
+                                    <title>Statuses</title>
+                                    <action>adminhtml/sales_order_status</action>
+                                    <sort_order>1000</sort_order>
+                                </status_mapping>
                             </children>
                         </order_mapping>
                         <queue_sync>

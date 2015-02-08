@@ -55,6 +55,7 @@ class TNW_Salesforce_Model_Observer
                         if (
                             $_key != $_itemsToRetain . '_mapping'
                             && $_key != $_itemsToRetain . '_cart_mapping'
+                            && $_key != 'status_mapping'
                         ) {
                             $_keysToUnset[] =  $_key;
                         }
@@ -74,6 +75,7 @@ class TNW_Salesforce_Model_Observer
                         if (
                             $_key != $_itemsToRetain . '_mapping'
                             && $_key != $_itemsToRetain . '_cart_mapping'
+                            && $_key != 'status_mapping'
                         ) {
                             $_keysToUnset[] =  $_key;
                         }

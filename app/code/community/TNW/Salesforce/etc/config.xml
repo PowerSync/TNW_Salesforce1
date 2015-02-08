@@ -435,6 +435,9 @@
                                                 <order_cart_mapping>
                                                     <title>Order Products</title>
                                                 </order_cart_mapping>
+                                                <status_mapping>
+                                                    <title>Statuses</title>
+                                                </status_mapping>
                                             </children>
                                         </order_mapping>
                                         <manual_sync>
