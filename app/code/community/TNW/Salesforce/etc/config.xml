@@ -356,6 +356,23 @@
                     </tnw_salesforce_update_order>
                 </observers>
             </tnw_sales_status_update_order>
+
+            <tnw_salesforce_sales_order_status_new_status_prepare_form>
+                <observers>
+                    <tnw_salesforce_order_status_update>
+                        <class>tnw_salesforce/observer</class>
+                        <method>updateOrderStatusForm</method>
+                    </tnw_salesforce_order_status_update>
+                </observers>
+            </tnw_salesforce_sales_order_status_new_status_prepare_form>
+            <tnw_salesforce_order_salesforce_status_save>
+                <observers>
+                    <tnw_salesforce_order_status_save>
+                        <class>tnw_salesforce/observer</class>
+                        <method>saveSfStatus</method>
+                    </tnw_salesforce_order_status_save>
+                </observers>
+            </tnw_salesforce_order_salesforce_status_save>
         </events>
     </global>
     <adminhtml>
@@ -407,16 +424,16 @@
                                             <title>Order Mappings</title>
                                             <children>
                                                 <opportunity_mapping>
-                                                    <title>Order</title>
+                                                    <title>Opportunity</title>
                                                 </opportunity_mapping>
                                                 <opportunity_cart_mapping>
-                                                    <title>Order Products</title>
+                                                    <title>Opportunity Products</title>
                                                 </opportunity_cart_mapping>
                                                 <order_mapping>
-                                                    <title>Opportunity</title>
+                                                    <title>Order</title>
                                                 </order_mapping>
                                                 <order_cart_mapping>
-                                                    <title>Opportunity Products</title>
+                                                    <title>Order Products</title>
                                                 </order_cart_mapping>
                                             </children>
                                         </order_mapping>

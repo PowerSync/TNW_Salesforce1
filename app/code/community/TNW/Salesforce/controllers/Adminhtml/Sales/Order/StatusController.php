@@ -13,14 +13,15 @@ class TNW_Salesforce_Adminhtml_Sales_Order_StatusController extends Mage_Adminht
             $collection->getSelect()
                 ->where("main_table.status = ?", $statusCode);
             foreach ($collection as $_item) {
-                $status->setSfLeadStatusCode($_item->sf_lead_status_code);
-                $status->setSfOpportunityStatusCode($_item->sf_opportunity_status_code);
-                $status->setSfOrderStatus($_item->sf_order_status);
+                foreach (Mage::getModel('tnw_salesforce/config_order_status')->getAdditionalFields() as $_field) {
+                    $status->setData($_field, $_item->{$_field});
+                }
             }
 
         } else {
             $status = false;
         }
+
         return $status;
     }
 
@@ -49,14 +50,6 @@ class TNW_Salesforce_Adminhtml_Sales_Order_StatusController extends Mage_Adminht
             $status = Mage::getModel('sales/order_status')
                 ->load($statusCode);
 
-            $orderStatusMapping = Mage::getModel('tnw_salesforce/order_status');
-            $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection();
-            $collection->getSelect()
-                ->where("main_table.status = ?", $statusCode);
-            foreach ($collection as $_item) {
-                $orderStatusMapping->load($_item->status_id);
-            }
-
             // check if status exist
             if ($isNew && $status->getStatus()) {
                 $this->_getSession()->addError(
@@ -72,11 +65,8 @@ class TNW_Salesforce_Adminhtml_Sales_Order_StatusController extends Mage_Adminht
             try {
                 $status->save();
 
-                $orderStatusMapping->setStatus($statusCode)
-                    ->setSfLeadStatusCode($this->getRequest()->getParam('sf_lead_status_code'))
-                    ->setSfOpportunityStatusCode($this->getRequest()->getParam('sf_opportunity_status_code'))
-                    ->setSfOrderStatus($this->getRequest()->getParam('sf_order_status'))
-                    ->save();
+                // TNW_Salesforce, added to save order status
+                Mage::dispatchEvent('tnw_salesforce_order_salesforce_status_save', array('status' => $statusCode, 'request' => $this->getRequest()));
 
                 $this->_getSession()->addSuccess(Mage::helper('sales')->__('The order status has been saved.'));
                 $this->_redirect('*/*/');

@@ -5,6 +5,9 @@
  */
 class TNW_Salesforce_Model_Observer
 {
+    const ORDER_PREFIX = 'order';
+    const OPPORTUNITY_PREFIX = 'opportunity';
+
     public function adjustMenu() {
         // Update Magento admin menu
         $_menu = Mage::getSingleton('admin/config')
@@ -32,24 +35,58 @@ class TNW_Salesforce_Model_Observer
         $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
         $_leverageLeads = Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
 
-        if ($_menu) {
-            $_orderNode = $_menu->descend('order_mapping')->descend('children');
-            $_customerNode = $_menu->descend('customer_mapping')->descend('children');
-        }
-        if ($_acl) {
-            $_orderAclNode = $_acl->descend('order_mapping')->descend('children');
-            $_customerAclNode = $_acl->descend('customer_mapping')->descend('children');
+        $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
+        if (defined($_constantName)) {
+            $_itemsToRetain = constant($_constantName);
+
+            if ($_menu) {
+                $_orderNode = $_menu->descend('order_mapping')->descend('children');
+                $_customerNode = $_menu->descend('customer_mapping')->descend('children');
+            }
+            if ($_acl) {
+                $_orderAclNode = $_acl->descend('order_mapping')->descend('children');
+                $_customerAclNode = $_acl->descend('customer_mapping')->descend('children');
+            }
+
+            if ($_orderAclNode) {
+                $_keysToUnset = array();
+                foreach($_orderAclNode as $_items) {
+                    foreach($_items as $_key => $_item) {
+                        if (
+                            $_key != $_itemsToRetain . '_mapping'
+                            && $_key != $_itemsToRetain . '_cart_mapping'
+                        ) {
+                            $_keysToUnset[] =  $_key;
+                        }
+                    }
+                }
+                if (!empty($_keysToUnset)) {
+                    foreach($_keysToUnset as $_key) {
+                        unset($_orderAclNode->{$_key});
+                    }
+                }
+            }
+
+            if ($_orderNode) {
+                $_keysToUnset = array();
+                foreach($_orderNode as $_items) {
+                    foreach($_items as $_key => $_item) {
+                        if (
+                            $_key != $_itemsToRetain . '_mapping'
+                            && $_key != $_itemsToRetain . '_cart_mapping'
+                        ) {
+                            $_keysToUnset[] =  $_key;
+                        }
+                    }
+                }
+                if (!empty($_keysToUnset)) {
+                    foreach($_keysToUnset as $_key) {
+                        unset($_orderNode->{$_key});
+                    }
+                }
+            }
         }
 
-        if ($_orderAclNode) {
-            unset($_orderAclNode->{$_syncObject . '_mapping'});
-            unset($_orderAclNode->{$_syncObject . '_cart_mapping'});
-        }
-
-        if ($_orderNode) {
-            unset($_orderNode->{$_syncObject . '_mapping'});
-            unset($_orderNode->{$_syncObject . '_cart_mapping'});
-        }
 
         if (!$_leverageLeads) {
             if ($_customerNode) {
@@ -212,5 +249,87 @@ class TNW_Salesforce_Model_Observer
         if ($_order && is_object($_order)) {
             Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
         }
+    }
+
+    public function updateOrderStatusForm($observer) {
+        $_form = $observer->getForm();
+
+        if (Mage::helper('tnw_salesforce')->isWorking()) {
+            $fieldset = $_form->addFieldset(
+                'sf_fieldset',
+                array(
+                    'legend' => Mage::helper('tnw_salesforce')->__('Salesforce Status')
+                ),
+                'base_fieldset'
+            );
+
+            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+            $sfFields = array();
+            $_sfData = Mage::helper('tnw_salesforce/salesforce_data');
+            $sfFields[] = array(
+                'value' => '',
+                'label' => 'Choose Salesforce Status ...'
+            );
+
+            if ($_syncType == 'order') {
+                $states = $_sfData->getPicklistValues('Order', 'Status');
+                if (!is_array($states)) {
+                    $states = array();
+                }
+                foreach ($states as $key => $field) {
+                    $sfFields[] = array(
+                        'value' => $field->label,
+                        'label' => $field->label
+                    );
+                }
+                $_field = 'sf_order_status';
+            } else {
+                $states = $_sfData->getStatus('Opportunity');
+                if (!is_array($states)) {
+                    $states = array();
+                }
+                foreach ($states as $key => $field) {
+                    $sfFields[] = array(
+                        'value' => $field->MasterLabel,
+                        'label' => $field->MasterLabel
+                    );
+                }
+                $_field = 'sf_opportunity_status_code';
+            }
+
+            $fieldset->addField($_field, 'select',
+                array(
+                    'name' => $_field,
+                    'label' => Mage::helper('tnw_salesforce')->__('Status'),
+                    'class' => 'required-entry',
+                    'required' => false,
+                    'values' => $sfFields
+                )
+            );
+
+            Mage::dispatchEvent('tnw_salesforce_sales_order_status_prepare_form_update', array('form' => $_form, 'fieldset' => $fieldset));
+        }
+    }
+
+    public function saveSfStatus($observer) {
+        $statusCode = $observer->getStatus();
+        $_request = $observer->getRequest();
+
+        $orderStatusMapping = Mage::getModel('tnw_salesforce/order_status');
+        $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection();
+        $collection->getSelect()
+            ->where("main_table.status = ?", $statusCode);
+        foreach ($collection as $_item) {
+            $orderStatusMapping->load($_item->status_id);
+        }
+        $orderStatusMapping->setStatus($statusCode);
+
+        foreach (Mage::getModel('tnw_salesforce/config_order_status')->getAdditionalFields() as $_field) {
+            if ($_request->getParam($_field)) {
+                $orderStatusMapping->setData($_field, $_request->getParam($_field));
+
+            }
+        }
+        $orderStatusMapping->save();
     }
 }

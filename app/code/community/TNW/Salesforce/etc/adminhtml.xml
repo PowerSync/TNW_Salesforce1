@@ -58,26 +58,26 @@
                             <title>Order Mappings</title>
                             <sort_order>300</sort_order>
                             <children>
-                                <opportunity_mapping>
+                                <order_mapping>
                                     <title>Order</title>
                                     <action>adminhtml/salesforce_order</action>
                                     <sort_order>50</sort_order>
-                                </opportunity_mapping>
-                                <opportunity_cart_mapping>
+                                </order_mapping>
+                                <order_cart_mapping>
                                     <title>Order Products</title>
                                     <action>adminhtml/salesforce_orderproduct</action>
                                     <sort_order>60</sort_order>
-                                </opportunity_cart_mapping>
-                                <order_mapping>
+                                </order_cart_mapping>
+                                <opportunity_mapping>
                                     <title>Opportunity</title>
                                     <action>adminhtml/salesforce_opportunity</action>
                                     <sort_order>70</sort_order>
-                                </order_mapping>
-                                <order_cart_mapping>
+                                </opportunity_mapping>
+                                <opportunity_cart_mapping>
                                     <title>Opportunity Products</title>
                                     <action>adminhtml/salesforce_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
-                                </order_cart_mapping>
+                                </opportunity_cart_mapping>
                             </children>
                         </order_mapping>
                         <queue_sync>

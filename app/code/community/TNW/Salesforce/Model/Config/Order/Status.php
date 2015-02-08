@@ -2,6 +2,22 @@
 
 class TNW_Salesforce_Model_Config_Order_Status
 {
+    protected $_additionalFields = array();
+
+    public function getAdditionalFields() {
+        if (!$this->_additionalFields) {
+            $this->_setAdditionalFields();
+        }
+        return $this->_additionalFields;
+    }
+
+    protected function _setAdditionalFields() {
+        $this->_additionalFields = array(
+            'sf_lead_status_code',
+            'sf_opportunity_status_code',
+            'sf_order_status'
+        );
+    }
 
     public function toOptionArray()
     {
