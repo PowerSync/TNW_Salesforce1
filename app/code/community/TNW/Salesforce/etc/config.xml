@@ -468,6 +468,9 @@
                                                 <customer_sync>
                                                     <title>Customers</title>
                                                 </customer_sync>
+                                                <abandoned_sync>
+                                                    <title>Abandoned cart</title>
+                                                </abandoned_sync>
                                             </children>
                                         </manual_sync>
                                         <queue_sync>

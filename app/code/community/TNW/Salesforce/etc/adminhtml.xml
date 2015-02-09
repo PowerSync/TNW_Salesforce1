@@ -26,6 +26,11 @@
                                     <action>adminhtml/salesforcesync_customersync</action>
                                     <sort_order>20</sort_order>
                                 </customer_sync>
+                                <abandoned_sync>
+                                    <title>Abandoned cart</title>
+                                    <action>adminhtml/salesforcesync_abandonedsync</action>
+                                    <sort_order>50</sort_order>
+                                </abandoned_sync>
                             </children>
                         </manual_sync>
                         <product_mapping translate="title" module="tnw_salesforce">
