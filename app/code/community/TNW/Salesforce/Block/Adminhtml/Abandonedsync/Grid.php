@@ -3,7 +3,19 @@
 class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_Block_Report_Shopcart_Abandoned_Grid
 {
 
-
+    /**
+     * Internal constructor
+     */
+    protected function _construct()
+    {
+        parent::_construct();
+        $this->setId('tnw_salesforce_abandonedsync_grid');
+        $this->setDefaultSort('sf_insync');
+        $this->setDefaultDir('ASC');
+        $this->setSaveParametersInSession(true);
+        $this->setUseAjax(true);
+        $this->setVarNameFilter('filter');
+    }
     /**
      * Prepare grid collection object
      *
@@ -121,22 +133,44 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status()
         ));
 
-        $this->addColumn('salesforce_id', array(
+        $this->addColumn('entity_id', array(
             'header' => Mage::helper('sales')->__('Quote ID'),
+            'index' => 'entity_id',
+            'filter_index' => 'main_table.entity_id',
+            'type' => 'text',
+        ));
+
+        $this->addColumn('salesforce_id', array(
+            'header' => Mage::helper('sales')->__('Opportunity ID'),
             'index' => 'salesforce_id',
+            'filter_index' => 'main_table.salesforce_id',
             'type' => 'text',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
 
+
+        if (!Mage::app()->isSingleStoreMode()) {
+            $this->addColumn('store_id', array(
+                'header' => Mage::helper('sales')->__('Purchased From (Store)'),
+                'index' => 'main_table.store_id',
+                'type' => 'store',
+                'store_view' => true,
+                'display_deleted' => true,
+                'filter_index' => '`main_table`.`store_id`',
+            ));
+        }
+
         $this->addColumn('customer_name', array(
             'header' => Mage::helper('reports')->__('Customer Name'),
             'index' => 'customer_name',
-            'sortable' => false
+            'filter_index' => 'main_table.customer_name',
+            
         ));
 
         $this->addColumn('email', array(
             'header' => Mage::helper('reports')->__('Email'),
             'index' => 'email',
+            'filter_index' => 'main_table.email',
             'sortable' => false
         ));
 
@@ -145,7 +179,8 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'width' => '80px',
             'align' => 'right',
             'index' => 'items_count',
-            'sortable' => false,
+            'filter_index' => 'main_table.items_count',
+            
             'type' => 'number'
         ));
 
@@ -154,7 +189,8 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'width' => '80px',
             'align' => 'right',
             'index' => 'items_qty',
-            'sortable' => false,
+            'filter_index' => 'main_table.items_count',
+            
             'type' => 'number'
         ));
 
@@ -176,7 +212,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'type' => 'currency',
             'currency_code' => $currencyCode,
             'index' => 'subtotal',
-            'sortable' => false,
+            
             'renderer' => 'adminhtml/report_grid_column_renderer_currency',
             'rate' => $this->getRate($currencyCode),
         ));
@@ -224,11 +260,11 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
                     array(
                         'caption' => Mage::helper('sales')->__('Sync'),
                         'url' => array('base' => '*/*/sync'),
-                        'field' => 'order_id'
+                        'field' => 'abandoned_id'
                     )
                 ),
                 'filter' => false,
-                'sortable' => false,
+                
                 'index' => 'stores',
                 'is_system' => true,
             )
@@ -247,7 +283,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
                 'sync', array(
                     'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
                     'url' => $this->getUrl('*/*/massSyncForce'),
-                    'confirm' => Mage::helper('tnw_salesforce')->__('This may duplicate any existing Opportunity Products / Notes / Contact Roles. For best results please delete existing Opportunity for this order in Salesforce!')
+                    'confirm' => Mage::helper('tnw_salesforce')->__('This may duplicate any existing Opportunity Products / Notes / Contact Roles. For best results please delete existing Opportunity for this abandoned in Salesforce!')
                 )
             );
         }

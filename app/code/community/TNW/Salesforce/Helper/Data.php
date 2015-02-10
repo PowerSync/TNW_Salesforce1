@@ -240,6 +240,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     {
         return $this->getStroreConfig(self::ORDER_OBJECT);
     }
+    // Salesforce object where Magento orders will go to
+    public function getAbandonedObject()
+    {
+        return 'opportunity';
+    }
 
     // Is debug log enabled
     public function isLogEnabled()

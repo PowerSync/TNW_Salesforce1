@@ -179,6 +179,9 @@ class TNW_Salesforce_Model_Observer
         $_message = $observer->getEvent()->getMessage();
         $_type = $observer->getEvent()->getType();
         $_isQueue = $observer->getEvent()->getData('isQueue');
+
+        $_objectType = $observer->getEvent()->getData('object_type');
+
         $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
 
         if (count($_orderIds) == 1 && $_type == 'bulk') {
@@ -201,10 +204,18 @@ class TNW_Salesforce_Model_Observer
         }
 
         Mage::helper('tnw_salesforce')->log('Pushing Opportunities ... ');
-        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_opportunity', $_queueIds);
+
+        if ($_objectType == 'abandoned') {
+            $this->_processAbandonedPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_opportunity', $_queueIds);
+        } else {
+            $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_opportunity', $_queueIds);
+        }
     }
 
     protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds) {
+        /**
+         * @var $manualSync TNW_Salesforce_Helper_Salesforce_Opportunity|TNW_Salesforce_Helper_Salesforce_Order
+         */
         $manualSync = Mage::helper($_model);
         $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));

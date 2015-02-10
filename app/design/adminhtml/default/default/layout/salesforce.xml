@@ -13,7 +13,7 @@
     </adminhtml_salesforcesync_ordersync_grid>
     <adminhtml_salesforcesync_abandonedsync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_abandonedrsync_grid" name="abandonedsync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_abandonedsync_grid" name="abandonedsync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_abandonedsync_grid>
     <adminhtml_salesforcesync_productsync_grid>
         <update handle="formkey"/>

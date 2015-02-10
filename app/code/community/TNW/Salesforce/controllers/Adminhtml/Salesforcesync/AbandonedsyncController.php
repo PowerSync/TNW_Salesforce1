@@ -67,12 +67,16 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
             Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce_abandoned')));
             Mage::app()->getResponse()->sendResponse();
         }
+
         if ($this->getRequest()->getParam('abandoned_id') > 0) {
             try {
                 $itemIds = array($this->getRequest()->getParam('abandoned_id'));
 
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    $abandoned = Mage::getModel('sales/abandoned')->load($this->getRequest()->getParam('abandoned_id'));
+                    $stores = Mage::app()->getStores(true);
+                    $storeIds = array_keys($stores);
+
+                    $abandoned = Mage::getModel('sales/quote')->setSharedStoreIds($storeIds)->load($this->getRequest()->getParam('abandoned_id'));
                     $_productIds = array();
                     foreach ($abandoned->getAllVisibleItems() as $_item) {
                         $_productIds[] = (int) $this->_getProductIdFromCart($_item);
@@ -99,6 +103,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                         'tnw_sales_process_' . $_syncType,
                         array(
                             'abandonedIds'      => $itemIds,
+                            'object_type' => 'abandoned',
                             'message'       => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
                             'type'   => 'salesforce'
                         )
@@ -189,11 +194,15 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
         }
     }
 
+    /**
+     * @param $_item Mage_Sales_Model_Quote_Item
+     * @return int
+     */
     protected function _getProductIdFromCart($_item) {
         $_options = unserialize($_item->getData('product_options'));
         if(
             $_item->getData('product_type') == 'bundle'
-            || array_key_exists('options', $_options)
+            || (is_array($_options) && array_key_exists('options', $_options))
         ) {
             $id = $_item->getData('product_id');
         } else {
