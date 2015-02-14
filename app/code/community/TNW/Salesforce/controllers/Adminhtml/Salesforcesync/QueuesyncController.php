@@ -66,7 +66,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select item(s) in the queue'));
         } else {
             try {
-                Mage::getModel('tnw_salesforce/localstorage')->deleteObject($itemIds);
+                Mage::getModel('tnw_salesforce/localstorage')->deleteObject($itemIds, true);
                 if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
                     Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('tnw_salesforce')->__('Successfully removed selected queued item(s)!'));
                 }
