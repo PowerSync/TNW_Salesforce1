@@ -282,7 +282,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 }
 
                 $list->clear();
-                $list->setCurPage($page);
+                $list->setCurPage(1);
                 $list->load();
 
                 if (count($list) > 0) {
