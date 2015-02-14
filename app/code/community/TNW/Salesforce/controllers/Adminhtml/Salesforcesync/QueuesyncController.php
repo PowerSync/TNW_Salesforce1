@@ -48,7 +48,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
     {
         if ($this->getRequest()->getParam('queue_id') > 0) {
             try {
-                Mage::getModel('tnw_salesforce/localstorage')->deleteObject(array($this->getRequest()->getParam('queue_id')));
+                Mage::getModel('tnw_salesforce/localstorage')->deleteObject(array($this->getRequest()->getParam('queue_id')), true);
                 if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
                     Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('tnw_salesforce')->__('Queued item was successfully removed!'));
                 }
