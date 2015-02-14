@@ -252,22 +252,21 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
         if ($type == 'order') {
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-        }
 
-        // Get all products and customers from the queue
-        $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
+            // Get all products and customers from the queue
+            $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
+        }
 
         // get entity id list from local storage
         $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($type)
             ->addStatusNoToFilter('sync_running')
-            ->addStatusNoToFilter('sync_error');
+            //->addStatusNoToFilter('sync_error')
+        ;
 
         $page = 0;
         $lPage = null;
         $break = false;
-
-        $idSet = array();
 
         $list->setPageSize($this->getBatchSize($type));
         $lPage = $list->getLastPageNumber();
@@ -283,7 +282,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 }
 
                 $list->clear();
-                $list->setCurPage(1);
+                $list->setCurPage($page);
                 $list->load();
 
                 if (count($list) > 0) {
@@ -301,17 +300,19 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         $objectIdSet = array();
                         foreach ($list->getData() as $item) {
                             $_skip = false;
-                            $_order = Mage::getModel('sales/order')->load($item['object_id']);
+                            if ($type == 'order') {
+                                $_order = Mage::getModel('sales/order')->load($item['object_id']);
 
-                            if ($_order->getCustomerId() && array_key_exists('Customer', $_dependencies) && in_array($_order->getCustomerId(), $_dependencies['Customer'])) {
-                                $_skip = true;
-                            }
-                            if (!$_skip && array_key_exists('Product', $_dependencies)) {
-                                foreach ($_order->getAllVisibleItems() as $_item) {
-                                    $id = $this->getProductIdFromCart($_item);
-                                    if (in_array($id, $_dependencies['Product'])) {
-                                        $_skip = true;
-                                        break;
+                                if ($_order->getCustomerId() && array_key_exists('Customer', $_dependencies) && in_array($_order->getCustomerId(), $_dependencies['Customer'])) {
+                                    $_skip = true;
+                                }
+                                if (!$_skip && array_key_exists('Product', $_dependencies)) {
+                                    foreach ($_order->getAllVisibleItems() as $_item) {
+                                        $id = $this->getProductIdFromCart($_item);
+                                        if (in_array($id, $_dependencies['Product'])) {
+                                            $_skip = true;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -342,7 +343,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                                 Mage::helper('tnw_salesforce')->log("################################## synchronization $type started ##################################", 1, 'sf-cron');
                                 // sync products with sf
                                 $manualSync->massAdd($objectIdSet);
-                                $syncResult = $manualSync->process();
+                                $manualSync->process();
                                 Mage::helper('tnw_salesforce')->log("################################## synchronization $type finished ##################################", 1, 'sf-cron');
 
                                 // Update Queue

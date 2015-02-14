@@ -974,7 +974,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     && property_exists($this->_cache['accountsLookup'][$_websiteId][$_email], 'IsPersonAccount')
                 )
             ) {
-                $this->_obj->ContactId = $this->_cache['accountsLookup'][$_websiteId][$_email]->Id;
+                $this->_obj->ContactId = (
+                    is_array($this->_cache['accountsLookup'])
+                    && array_key_exists($_websiteId, $this->_cache['accountsLookup'])
+                    && is_array($this->_cache['accountsLookup'][$_websiteId])
+                    && array_key_exists($_email, $this->_cache['accountsLookup'][$_websiteId])
+                    && is_object($this->_cache['accountsLookup'][$_websiteId][$_email])
+                    && property_exists($this->_cache['accountsLookup'][$_websiteId][$_email], 'Id')
+                ) ? $this->_cache['accountsLookup'][$_websiteId][$_email]->Id : $_customer->getSalesforceId();
             } else {
                 $this->_obj->ContactId = $_customer->getSalesforceId();
             }
