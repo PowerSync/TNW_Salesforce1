@@ -119,8 +119,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_shippingProduct = array();
     protected $_shippingProductsLookup = NULL;
 
-    //protected $_extensionType = "BASIC";
-    protected $_extensionType = "PRO";
+    //const MODULE_TYPE = 'BASIC';
+    const MODULE_TYPE = 'PRO';
 
     /**
      * sync frequency
@@ -174,10 +174,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStroreConfig(self::CATALOG_PRICE_SCOPE);
     }
 
-    //Extension Type: 1 way or 2 way
-    public function getType()
+    //Extension Type: Enterprise or Professional
+    final public function getType()
     {
-        return $this->_extensionType;
+        return self::MODULE_TYPE;
     }
 
     // License Email
@@ -228,7 +228,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStroreConfig(self::API_WSDL);
     }
 
-    // Salesforce Type: Partner or Enterprise
+    /**
+     * @deprecated
+     * Salesforce Type: Partner or Enterprise
+     * @return string
+     */
     public function getApiType()
     {
         return 'Enterprise';
