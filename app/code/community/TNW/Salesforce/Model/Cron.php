@@ -9,6 +9,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     const PRODUCT_BATCH_SIZE = 500;
     const CUSTOMER_BATCH_SIZE = 1000;
     const WEBSITE_BATCH_SIZE = 500;
+
+    /**
+     *
+     */
+    const QUEUE_DELETE_LIMIT = 50;
     /**
      * @var array
      */
@@ -233,9 +238,10 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      * @return int
      * Get product Id from the cart
      */
-    public function getProductIdFromCart($_item) {
+    public function getProductIdFromCart($_item)
+    {
         $_options = unserialize($_item->getData('product_options'));
-        if(
+        if (
             $_item->getData('product_type') == 'bundle'
             || array_key_exists('options', $_options)
         ) {
@@ -260,8 +266,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         // get entity id list from local storage
         $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($type)
-            ->addStatusNoToFilter('sync_running')
-            //->addStatusNoToFilter('sync_error')
+            ->addStatusNoToFilter('sync_running')//->addStatusNoToFilter('sync_error')
         ;
 
         $page = 0;
@@ -270,6 +275,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
         $list->setPageSize($this->getBatchSize($type));
         $lPage = $list->getLastPageNumber();
+
+        $idsSet = array();
 
         while ($break !== true) {
 
@@ -282,7 +289,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 }
 
                 $list->clear();
-                $list->setCurPage(1);
+                $list->setCurPage($page);
                 $list->load();
 
                 if (count($list) > 0) {
@@ -322,6 +329,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                             }
                         }
 
+                        $idsSet = array_merge($idSet, $idsSet);
+
                         if (!empty($objectIdSet)) {
                             // set status to 'sync_running'
                             Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
@@ -355,13 +364,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
                         return false;
                     }
-                    // Entities successfully synced
-                    if (!empty($idSet)) {
-                        Mage::helper('tnw_salesforce')->log("info: $type total processed: " . count($idSet), 1, 'sf-cron');
-                        Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
-                        // Remove processed records from the queue
-                        Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
-                    }
                 } else {
                     $break = true;
                 }
@@ -371,6 +373,22 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             }
         }
 
+        try {
+            // Entities successfully synced
+            if (!empty($idsSet)) {
+
+                $idsSet = array_chunk($idsSet, self::QUEUE_DELETE_LIMIT);
+                foreach ($idsSet as $idSet) {
+                    Mage::helper('tnw_salesforce')->log("info: $type total processed: " . count($idSet), 1, 'sf-cron');
+                    Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
+                    // Remove processed records from the queue
+                    Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
+                }
+            }
+
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("error: $type not synced: " . $e->getMessage(), 1, 'sf-cron');
+        }
         return $this;
     }
 

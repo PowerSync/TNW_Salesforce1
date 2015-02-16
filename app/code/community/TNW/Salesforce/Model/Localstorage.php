@@ -79,11 +79,10 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         }
         $_sql = '';
 
-// Commented because all items already have the 'sync_running' status
-//        if (!empty($_successSet)) {
-//            $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
-//                . " SET message='', status = 'sync_running' WHERE id IN ('" . join("','", $_successSet) . "');";
-//        }
+        if (!empty($_successSet)) {
+            $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
+                . " SET message='', status = '' WHERE id IN ('" . join("','", $_successSet) . "');";
+        }
 
         if (!empty($_errorsSet)) {
             foreach ($_errorsSet as $_id => $_errors) {
