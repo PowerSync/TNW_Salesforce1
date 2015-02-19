@@ -326,6 +326,41 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 $this->_magentoId = $_entity->getId();
             }
 
+            // Update Subscription
+            if (
+                Mage::helper('tnw_salesforce')->getCustomerNewsletterSync()
+                && (
+                    property_exists($this->_salesforceObject, 'HasOptedOutOfEmail')
+                    || property_exists($this->_salesforceObject, 'PersonHasOptedOutOfEmail')
+                )
+            ) {
+                $_field = (property_exists($this->_salesforceObject, 'HasOptedOutOfEmail')) ? 'HasOptedOutOfEmail' : 'PersonHasOptedOutOfEmail';
+                Mage::helper('tnw_salesforce')->log('Subscription value::::::: ' . $this->_salesforceObject->{$_field});
+                $subscriber = Mage::getModel('newsletter/subscriber')->loadByCustomer($_entity);
+                if (!$this->_salesforceObject->{$_field} && !$subscriber->isSubscribed()) {
+                    if ($_entity->getData('email')) {
+                        Mage::helper('tnw_salesforce')->log('Subscribing: ' . $_entity->getData('email'));
+                        $subscriber->setStatus(Mage_Newsletter_Model_Subscriber::STATUS_SUBSCRIBED);
+                        $storeId = $_entity->getStoreId();
+                        if ($_entity->getStoreId() == 0) {
+                            $storeId = Mage::app()->getWebsite($_entity->getWebsiteId())->getDefaultStore()->getId();
+                        }
+                        $subscriber
+                            ->setStoreId($storeId)
+                            ->setEmail($_entity->getEmail())
+                            ->setCustomerId($_entity->getId())
+                        ;
+                        $subscriber->save();
+                        Mage::helper('tnw_salesforce')->log('Subscribed!');
+                    } else {
+                        Mage::helper('tnw_salesforce')->log('SKIPPING Customer Subscription: Customer (' . $_entity->getData('firstname') . ' ' . $_entity->getData('lastname') . ') does not have an email in Salesforce!');
+                    }
+                } elseif ($this->_salesforceObject->{$_field} && $subscriber->isSubscribed()) {
+                    $subscriber->unsubscribe();
+                    Mage::helper('tnw_salesforce')->log($_entity->getData('email') . ' un-subscribed!');
+                }
+            }
+
             // Do Additional Stuff
             foreach($_additional as $_key => $_data) {
                 if (!empty($_data) && ($_key == 'shipping' || $_key == 'billing')) {
