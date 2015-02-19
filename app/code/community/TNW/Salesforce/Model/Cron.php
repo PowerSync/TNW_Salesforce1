@@ -299,7 +299,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                      */
                     $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
                     if ($manualSync->reset()) {
-                        $manualSync->setIsCron(true);
                         $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
                         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
@@ -352,6 +351,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                                 Mage::helper('tnw_salesforce')->log("################################## synchronization $type started ##################################", 1, 'sf-cron');
                                 // sync products with sf
                                 $manualSync->massAdd($objectIdSet);
+                                $manualSync->setIsCron(true);
                                 $manualSync->process();
                                 Mage::helper('tnw_salesforce')->log("################################## synchronization $type finished ##################################", 1, 'sf-cron');
 

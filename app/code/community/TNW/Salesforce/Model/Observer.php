@@ -203,13 +203,14 @@ class TNW_Salesforce_Model_Observer
         $manualSync = Mage::helper($_model);
         $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-        if ($_message === NULL) {
-            $manualSync->setIsCron(true);
-        }
+
         $_ids = (count($_orderIds) == 1) ? $_orderIds[0] : $_orderIds;
 
         if ($manualSync->reset()) {
             if ($manualSync->massAdd($_ids)) {
+                if ($_message === NULL) {
+                    $manualSync->setIsCron(true);
+                }
                 $res = $manualSync->process('full');
                 if ($res) {
                     // Update queue
