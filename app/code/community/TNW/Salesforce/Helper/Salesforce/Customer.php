@@ -672,7 +672,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_contactIds = array_keys($this->_cache['contactsToUpsert']['Id']);
             try {
                 Mage::dispatchEvent("tnw_salesforce_contact_send_before",array("data" => $this->_cache['contactsToUpsert']['Id']));
-                $_results = $this->_mySforceConnection->upsert($_pushOn, array_values($this->_cache['contactsToUpsert']['Id']), 'Contact');
+                $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['contactsToUpsert']['Id']), 'Contact');
                 Mage::dispatchEvent("tnw_salesforce_contact_send_after",array(
                     "data" => $this->_cache['contactsToUpsert']['Id'],
                     "result" => $_results
@@ -1090,6 +1090,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['leadsToUpsert'][$_upsertOn][$_id] = $this->_obj;
         } else if ($type == "Contact") {
+            // Set Contact AccountId as suggested by Advanced Lookup
+            if (
+                array_key_exists($_email, $this->_customerAccounts)
+                && !$_customer->getSalesforceIsPerson()
+            ) {
+                $this->_obj->AccountId = $this->_customerAccounts[$_email];
+                $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_obj->AccountId;
+            }
             if (
                 $this->_cache['contactsLookup']
                 && array_key_exists($_sfWebsite, $this->_cache['contactsLookup'])
@@ -1156,6 +1164,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     // Need to update 'accountsToContactLink'
                 }
             }
+
+            // Skip Account upsert if Advanced lookup is suggesting to use existing account
+            if (array_key_exists($_email, $this->_customerAccounts)) {
+                $_found = true;
+            }
+
             // Skip duplicate account for one of the contacts
             if (!$_found) {
                 // Make sure Name of the Account is taken from Salesforce, if found
