@@ -14,6 +14,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             return false;
         }
 
+        set_time_limit(0);
+
         $this->_itemIds = $itemIds;
 
         try {
@@ -102,7 +104,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         $_collection = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($_type)
             ->addStatusNoToFilter('sync_running')
-            //->addStatusNoToFilter('sync_error')
+            ->addStatusNoToFilter('success')
         ;
         if (count($this->_itemIds) > 0){
             $_collection->getSelect()->where('id IN (?)', $this->_itemIds);
@@ -167,7 +169,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             if (!empty($_idSet)) {
                 Mage::helper('tnw_salesforce')->log("INFO: " . $_type . " total synced: " . count($_idSet));
                 Mage::helper('tnw_salesforce')->log("INFO: removing synced rows from mysql table...");
-                Mage::getModel('tnw_salesforce/localstorage')->deleteObject($_idSet);
+                //Mage::getModel('tnw_salesforce/localstorage')->deleteObject($_idSet);
             }
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");

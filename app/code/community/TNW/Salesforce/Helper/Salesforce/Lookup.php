@@ -113,16 +113,18 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                         $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->$_magentoId : NULL;
                         $tmp->PriceBooks = array();
                         foreach ($_resultsPBE as $resultPBE) {
-                            foreach ($resultPBE->records as $_itm) {
-                                if ($_itm->Product2Id != $_item->Id) {
-                                    continue;
+                            if (is_array($resultPBE->records)) {
+                                foreach ($resultPBE->records as $_itm) {
+                                    if ($_itm->Product2Id != $_item->Id) {
+                                        continue;
+                                    }
+                                    $tmpPBE = new stdClass();
+                                    $tmpPBE->Id = $_itm->Id;
+                                    $tmpPBE->UnitPrice = $_itm->UnitPrice;
+                                    $tmpPBE->Pricebook2Id = $_itm->Pricebook2Id;
+                                    $tmpPBE->CurrencyIsoCode = (property_exists($_itm, 'CurrencyIsoCode')) ? $_itm->CurrencyIsoCode : NULL;
+                                    $tmp->PriceBooks[] = $tmpPBE;
                                 }
-                                $tmpPBE = new stdClass();
-                                $tmpPBE->Id = $_itm->Id;
-                                $tmpPBE->UnitPrice = $_itm->UnitPrice;
-                                $tmpPBE->Pricebook2Id = $_itm->Pricebook2Id;
-                                $tmpPBE->CurrencyIsoCode = (property_exists($_itm, 'CurrencyIsoCode')) ? $_itm->CurrencyIsoCode : NULL;
-                                $tmp->PriceBooks[] = $tmpPBE;
                             }
                         }
                         $returnArray[$_item->ProductCode] = $tmp;

@@ -120,6 +120,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      */
     public function backgroundProcess()
     {
+        set_time_limit(0);
+
         $this->_initCache();
         $this->_reset();
 
@@ -266,7 +268,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         // get entity id list from local storage
         $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($type)
-            ->addStatusNoToFilter('sync_running')//->addStatusNoToFilter('sync_error')
+            ->addStatusNoToFilter('sync_running')
+            ->addStatusNoToFilter('success')
+            ->setOrder('status', 'DESC')    // Leave 'error' at the end of the collection
         ;
 
         $page = 0;
@@ -289,7 +293,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 }
 
                 $list->clear();
-                $list->setCurPage($page);
+                $list->setCurPage(1);
                 $list->load();
 
                 if (count($list) > 0) {
@@ -377,12 +381,12 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // Entities successfully synced
             if (!empty($idsSet)) {
 
-                $idsSet = array_chunk($idsSet, self::QUEUE_DELETE_LIMIT);
-                foreach ($idsSet as $idSet) {
-                    Mage::helper('tnw_salesforce')->log("info: $type total processed: " . count($idSet), 1, 'sf-cron');
+                $_chunks = array_chunk($idsSet, self::QUEUE_DELETE_LIMIT);
+                foreach ($_chunks as $_chunk) {
+                    Mage::helper('tnw_salesforce')->log("info: $type total processed: " . count($_chunk), 1, 'sf-cron');
                     Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
                     // Remove processed records from the queue
-                    Mage::getModel('tnw_salesforce/localstorage')->deleteObject($idSet);
+                    Mage::getModel('tnw_salesforce/localstorage')->deleteObject($_chunk);
                 }
             }
 

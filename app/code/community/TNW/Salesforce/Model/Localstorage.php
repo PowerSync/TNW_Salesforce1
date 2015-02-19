@@ -74,14 +74,14 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             }
         }
 
-           if (!$this->_write) {
+        if (!$this->_write) {
             $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
         }
         $_sql = '';
 
         if (!empty($_successSet)) {
             $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "`"
-                . " SET message='', status = '' WHERE id IN ('" . join("','", $_successSet) . "');";
+                . " SET message='', date_sync = '" . gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time())) . "', status = 'success' WHERE id IN ('" . join("','", $_successSet) . "');";
         }
 
         if (!empty($_errorsSet)) {
@@ -92,6 +92,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         }
 
         if (!empty($_sql)) {
+            Mage::helper('tnw_salesforce')->log("SQL: " . $_sql);
             $this->_write->query($_sql);
         }
     }
@@ -161,9 +162,10 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      * @param array $objectId
      * @return bool
      */
-    public function deleteObject(array $objectId = array(), $_isForced = false)
+    public function deleteObject($objectId = array(), $_isForced = false)
     {
         try {
+            Mage::helper('tnw_salesforce')->log("Deletion Objects are empty!");
             if (empty($objectId)) {
                 return true;
             }
@@ -172,9 +174,9 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
             }
 
-            $sql = 'DELETE FROM `' . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . '` WHERE id IN (' . join(', ', $objectId) . ')';
+            $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE id IN ('" . join("', '", $objectId) . "')";
             if (!$_isForced) {
-                $sql .= ' AND status != "sync_error"';
+                $sql .= " AND status = 'success'";
             }
             Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
             $this->_write->query($sql);
