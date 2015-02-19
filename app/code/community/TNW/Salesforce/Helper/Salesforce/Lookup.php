@@ -121,7 +121,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                                 $tmpPBE->Id = $_itm->Id;
                                 $tmpPBE->UnitPrice = $_itm->UnitPrice;
                                 $tmpPBE->Pricebook2Id = $_itm->Pricebook2Id;
-                                $tmpPBE->CurrencyIsoCode = (property_exists($_itm, 'CurrencyIsoCode')) ? $_itm->CurrencyIsoCode : NULL;;
+                                $tmpPBE->CurrencyIsoCode = (property_exists($_itm, 'CurrencyIsoCode')) ? $_itm->CurrencyIsoCode : NULL;
                                 $tmp->PriceBooks[] = $tmpPBE;
                             }
                         }

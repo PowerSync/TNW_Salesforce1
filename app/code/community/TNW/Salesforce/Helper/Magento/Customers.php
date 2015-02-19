@@ -335,7 +335,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 )
             ) {
                 $_field = (property_exists($this->_salesforceObject, 'HasOptedOutOfEmail')) ? 'HasOptedOutOfEmail' : 'PersonHasOptedOutOfEmail';
-                Mage::helper('tnw_salesforce')->log('Subscription value::::::: ' . $this->_salesforceObject->{$_field});
                 $subscriber = Mage::getModel('newsletter/subscriber')->loadByCustomer($_entity);
                 if (!$this->_salesforceObject->{$_field} && !$subscriber->isSubscribed()) {
                     if ($_entity->getData('email')) {
