@@ -26,7 +26,9 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
                 $this->_processWebsites();
 
-                $this->_processOrders();
+            $this->_processAbandoned();
+
+            $this->_processOrders();
 
                 $this->_processCustomObjects();
             } else {
@@ -86,6 +88,28 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
         if ($total > 0) {
             Mage::getSingleton('adminhtml/session')->addNotice(Mage::helper("tnw_salesforce")->__("SKIPPING ORDERS: Not all products, websites and / or customers are synchronized"));
+            return false;
+        }
+
+        $this->_synchronize($_type, $_module);
+    }
+
+    /**
+     * Process Abandoned carts
+     */
+    protected function _processAbandoned() {
+        $_type = 'Abandoned';
+        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+        $_module = 'tnw_salesforce/bulk_abandoned_' . $_syncType;
+
+        $total = Mage::getModel('tnw_salesforce/localstorage')->countObjectBySfType(array(
+            'Product',
+            'Customer',
+            'Website',
+        ));
+
+        if ($total > 0) {
+            Mage::getSingleton('adminhtml/session')->addNotice(Mage::helper("tnw_salesforce")->__("SKIPPING Abandoned: Not all products, websites and / or customers are synchronized"));
             return false;
         }
 
@@ -214,8 +238,12 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             // set status to 'sync_running'
             Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_idSet);
 
-            if ($_type == 'Order') {
-                $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+            if ($_type == 'Order' || $_type == 'Abandoned') {
+                if ($_type == 'Abandoned') {
+                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+                } else {
+                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+                }
 
                 Mage::dispatchEvent(
                     'tnw_sales_process_' . $_syncType,
@@ -224,7 +252,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                         'message'       => NULL,
                         'type'          => 'bulk',
                         'isQueue'       => true,
-                        'queueIds'      => $_idSet
+                        'queueIds'      => $_idSet,
+                        'object_type'   => $_type
                     )
                 );
             } else {

@@ -2,6 +2,13 @@
 
 class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Mage_Adminhtml_Controller_Action
 {
+
+    /**
+     * Array of product ID's from each order
+     * @var array
+     */
+    protected $_productIds = array();
+
     protected function _initLayout()
     {
         if (
@@ -102,7 +109,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                     Mage::dispatchEvent(
                         'tnw_sales_process_' . $_syncType,
                         array(
-                            'abandonedIds'      => $itemIds,
+                            'ids'      => $itemIds,
                             'object_type' => 'abandoned',
                             'message'       => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
                             'type'   => 'salesforce'
@@ -141,10 +148,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
         } else {
             try {
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    $_collection = Mage::getResourceModel('sales/abandoned_item_collection');
+                    $_collection = Mage::getResourceModel('sales/quote_item_collection');
                     $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
-                        ->columns(array('sku','abandoned_id','product_id','product_type','product_options'))
-                        ->where(new Zend_Db_Expr('abandoned_id IN (' . join(',', $itemIds) . ')'));
+                        ->columns(array('sku','quote_id','product_id','product_type'))
+                        ->where(new Zend_Db_Expr('quote_id IN (' . join(',', $itemIds) . ')'));
 
                     Mage::getSingleton('core/resource_iterator')->walk(
                         $_collection->getSelect(),
@@ -171,7 +178,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                     Mage::dispatchEvent(
                         'tnw_sales_process_' . $_syncType,
                         array(
-                            'abandonedIds'      => $itemIds,
+                            'ids'      => $itemIds,
                             'message'       => Mage::helper('adminhtml')->__('Total of %d abandoned(s) were synchronized', count($itemIds)),
                             'type'   => 'bulk'
                         )

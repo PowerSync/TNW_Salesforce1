@@ -17,6 +17,8 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     const TWO_WEEKS = 7;
     const ONE_MONTH = 7;
 
+    const ABANDONED_CART_ID_PREFIX = 'ac_';
+
     const ABANDONED_SYNC = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
 
     function __construct()

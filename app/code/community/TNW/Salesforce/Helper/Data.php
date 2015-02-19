@@ -243,7 +243,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     // Salesforce object where Magento orders will go to
     public function getAbandonedObject()
     {
-        return 'opportunity';
+        return TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
     }
 
     // Is debug log enabled

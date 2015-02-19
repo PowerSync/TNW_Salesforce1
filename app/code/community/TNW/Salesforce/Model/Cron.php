@@ -199,6 +199,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // Synchronize Websites
             $this->_syncWebsites();
 
+            // Sync abandoned
+            $this->syncAbandoned();
+
             // Sync orders
             $this->syncOrder();
 
@@ -415,7 +418,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                             // set status to 'sync_running'
                             Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
 
-                            if ($type == 'order') {
+                            if ($type == 'order' || $type == 'abandoned') {
 
                                 Mage::dispatchEvent(
                                     'tnw_sales_process_' . $_syncType,
@@ -424,7 +427,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                                         'message' => NULL,
                                         'type' => 'bulk',
                                         'isQueue' => true,
-                                        'queueIds' => $idSet
+                                        'queueIds' => $idSet,
+                                        'object_type' => $type
                                     )
                                 );
                             } else {
@@ -489,6 +493,29 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
         try {
             $this->syncEntity('order');
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("error: order not synced: " . $e->getMessage(), 1, 'sf-cron');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch abandoned cart ids from local storage and sync products with sf
+     *
+     * @return bool
+     */
+    public function syncAbandoned()
+    {
+        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+        if (!$_syncType) {
+            Mage::helper('tnw_salesforce')->log('SKIPPING: Integration Type is not set for the order object.');
+            return false;
+        }
+
+        try {
+            $this->syncEntity('abandoned');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("error: order not synced: " . $e->getMessage(), 1, 'sf-cron');
             return false;
