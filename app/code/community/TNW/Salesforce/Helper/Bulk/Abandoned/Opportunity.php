@@ -1,10 +1,9 @@
-
 <?php
 
 /**
  * Class TNW_Salesforce_Helper_Bulk_Opportunity
  */
-class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
+class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity
 {
     /**
      * @var array
@@ -14,20 +13,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         'opportunity_products' => array(),
         'opportunity_contact_roles' => array(),
     );
-
-
-    /**
-     * @param $id
-     * @return Mage_Sales_Model_Quote
-     */
-    protected function _loadQuote($id)
-    {
-
-        $stores = Mage::app()->getStores(true);
-        $storeIds = array_keys($stores);
-
-        return Mage::getModel('sales/quote')->setSharedStoreIds($storeIds)->load($id);
-    }
 
     /**
      * @param array $ids
@@ -76,7 +61,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 }
                 $this->_cache['abandonedToEmail'][$_quote->getId()] = strtolower($_quote->getCustomerEmail());
 
-                if (empty($this->_cache['abandonedToEmail'][$_quote->getId()]) ) {
+                if (empty($this->_cache['abandonedToEmail'][$_quote->getId()])) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::helper("tnw_salesforce")->log("SKIPPED: Sync for quote #' . $_quote->getId() . ' failed, quote is missing an email address!");
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for quote #' . $_quote->getId() . ' failed, quote is missing an email address!');
@@ -158,7 +143,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             // Lookup Leads we may need to convert
             if (!empty($_leadsToLookup)) {
-                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_leadsToLookup,$_leadsToLookupWebsites);
+                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_leadsToLookup, $_leadsToLookupWebsites);
                 $_customersToSync = $this->_updateAccountLookupData($_customersToSync);
             }
 
@@ -178,7 +163,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 Mage::helper("tnw_salesforce")->log('Updating lookup cache...');
                 // update Lookup values
                 $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_leadsToLookup,$_leadsToLookupWebsites);
+                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_leadsToLookup, $_leadsToLookupWebsites);
                 $_customersToSync = $this->_updateAccountLookupData($_customersToSync);
             }
 
@@ -234,7 +219,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
                 $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
                 $_foundAccounts = array();
-                foreach ($this->_cache['leadLookup'] as $websiteleads){
+                foreach ($this->_cache['leadLookup'] as $websiteleads) {
                     $_foundAccounts = array_merge($_foundAccounts, $manualSync->findCustomerAccountsForGuests(array_keys($websiteleads)));
                 }
             } else {
@@ -275,7 +260,8 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
         if (is_array($this->_cache['leadLookup'])
             && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
-            && array_key_exists($_email, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])) {
+            && array_key_exists($_email, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])
+        ) {
             $leadConvert = new stdClass;
             $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
             $leadConvert->doNotCreateOpportunity = 'true';
@@ -358,7 +344,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
         // Update de duped lead conversion records
         if (!empty($this->_cache['duplicateLeadConversions'])) {
-            foreach($this->_cache['duplicateLeadConversions'] as $_what => $_source) {
+            foreach ($this->_cache['duplicateLeadConversions'] as $_what => $_source) {
                 $this->_cache['convertedLeads'][$_what] = $this->_cache['convertedLeads'][$_source];
             }
         }
@@ -408,223 +394,17 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         return $_accountId;
     }
 
-
-    protected function _assignPricebookToQuote($_quote)
-    {
-        try {
-            $_storeId = $_quote->getStoreId();
-            $_helper = Mage::helper('tnw_salesforce');
-            if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-                if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                    $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-                }
-            }
-
-            $this->_obj->Pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
-
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("INFO: Could not load pricebook based on the quote ID. Loading default pricebook based on current store ID.");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
-            if ($this->_defaultPriceBook) {
-                $this->_obj->Pricebook2Id = $this->_defaultPriceBook;
-            }
-        }
-    }
-
-    /**
-     * @param $quote Mage_Sales_Model_Quote
-     * @throws Mage_Core_Exception
-     */
-    protected function _processMapping($quote)
-    {
-        if (is_array($this->_cache['abandonedCustomers']) && array_key_exists($quote->getId(), $this->_cache['abandonedCustomers'])) {
-            $_customer = $this->_cache['abandonedCustomers'][$quote->getId()];
-        } else {
-            $this->_cache['abandonedCustomers'][$quote->getId()] = $this->_getCustomer($quote);
-            $_customer = $this->_cache['abandonedCustomers'][$quote->getId()];
-        }
-
-        if ($_customer->getGroupId()) {
-            $this->_customerGroupModel->load($_customer->getGroupId());
-        }
-
-        foreach ($this->_opportunityMapping as $_map) {
-            $_doSkip = $value = false;
-            $conf = explode(" : ", $_map->local_field);
-            $sf_field = $_map->sf_field;
-            switch ($conf[0]) {
-                case "Customer":
-
-                    $attrName = str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-                    if ($attrName == "Email") {
-                        $email = $quote->getCustomerEmail();
-                        if (!$email) {
-                            //TODO: add email
-                            $email = $_customer->getEmail();
-                        }
-                        $value = $email;
-                    } else {
-                        $attr = "get" . $attrName;
-
-                        // Make sure getAttribute is called on the object
-                        if ($_customer->getAttribute($conf[1])->getFrontendInput() == "select" && is_object($_customer->getResource())) {
-                            $newAttribute = $_customer->getResource()->getAttribute($conf[1])->getSource()->getOptionText($_customer->$attr());
-                        } else {
-                            $newAttribute = $_customer->$attr();
-                        }
-
-                        // Reformat date fields
-                        if ($_map->getBackendType() == "datetime" || $conf[1] == 'created_at') {
-                            if ($_customer->$attr()) {
-                                $timestamp = Mage::getModel('core/date')->timestamp(strtotime($_customer->$attr()));
-                                if ($conf[1] == 'created_at') {
-                                    $newAttribute = gmdate(DATE_ATOM, $timestamp);
-                                } else {
-                                    $newAttribute = date("Y-m-d", $timestamp);
-                                }
-                            } else {
-                                $_doSkip = true; //Skip this filed if empty
-                            }
-                        }
-                        if (!$_doSkip) {
-                            $value = $newAttribute;
-                        }
-                        unset($attributeInfo);
-                    }
-                    break;
-                case "Billing":
-                case "Shipping":
-                    $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-                    $var = 'get' . $conf[0] . 'Address';
-                    if (is_object($quote->$var())) {
-                        $value = $quote->$var()->$attr();
-                        if (is_array($value)) {
-                            $value = implode(", ", $value);
-                        }
-                    }
-                    break;
-                case "Custom":
-                    $store = ($quote->getStoreId()) ? Mage::getModel('core/store')->load($quote->getStoreId()) : NULL;
-                    if ($conf[1] == "current_url") {
-                        $value = Mage::helper('core/url')->getCurrentUrl();
-                    } elseif ($conf[1] == "todays_date") {
-                        $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($conf[1] == "todays_timestamp") {
-                        $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($conf[1] == "end_of_month") {
-                        $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                        $value = date("Y-m-d", $lastday);
-                    } elseif ($conf[1] == "store_view_name") {
-                        $value = (is_object($store)) ? $store->getName() : NULL;
-                    } elseif ($conf[1] == "store_group_name") {
-                        $value = (
-                            is_object($store)
-                            && is_object($store->getGroup())
-                        ) ? $store->getGroup()->getName() : NULL;
-                    } elseif ($conf[1] == "website_name") {
-                        $value = (
-                            is_object($store)
-                            && is_object($store->getWebsite())
-                        ) ? $store->getWebsite()->getName() : NULL;
-                    } else {
-                        $value = $_map->default_value;
-                        if ($value == "{{url}}") {
-                            $value = Mage::helper('core/url')->getCurrentUrl();
-                        } elseif ($value == "{{today}}") {
-                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                        } elseif ($value == "{{end of month}}") {
-                            $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                            $value = date("Y-m-d", $lastday);
-                        } elseif ($value == "{{contact id}}") {
-                            $value = $this->_contactId;
-                        } elseif ($value == "{{store view name}}") {
-                            $value = Mage::app()->getStore()->getName();
-                        } elseif ($value == "{{store group name}}") {
-                            $value = Mage::app()->getStore()->getGroup()->getName();
-                        } elseif ($value == "{{website name}}") {
-                            $value = Mage::app()->getWebsite()->getName();
-                        }
-                    }
-                    break;
-                case "Quote":
-                    if ($conf[1] == "cart_all") {
-                        $value = $this->_getDescriptionCart($quote);
-                    } elseif ($conf[1] == "number") {
-                        $value = $quote->getId();
-                    } elseif ($conf[1] == "created_at") {
-                        $value = ($quote->getCreatedAt()) ? gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($quote->getCreatedAt()))) : date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($conf[1] == "payment_method") {
-                        if (is_object($quote->getPayment())) {
-                            $paymentMethods = Mage::helper('payment')->getPaymentMethodList(true);
-                            $method = $quote->getPayment()->getMethod();
-                            if (array_key_exists($method, $paymentMethods)) {
-                                $value = $paymentMethods[$method];
-                            } else {
-                                $value = $method;
-                            }
-                        } else {
-                            Mage::helper('tnw_salesforce')->log('OPPORTUNITY MAPPING: Payment Method is not set in magento for the quote: ' . $quote->getId() . ', SKIPPING!');
-                        }
-                    } elseif ($conf[1] == "notes") {
-
-                        continue;
-                    } else {
-                        //Common attributes
-                        $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-                        $value = ($quote->getAttributeText($conf[1])) ? $quote->getAttributeText($conf[1]) : $quote->$attr();
-                        break;
-                    }
-                    break;
-                case "Customer Group":
-                    //Common attributes
-                    $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-                    $value = $this->_customerGroupModel->$attr();
-                    break;
-                case "Payment":
-                    //Common attributes
-                    $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-                    $value = $quote->getPayment()->$attr();
-                    break;
-                case "Aitoc":
-                    $modules = Mage::getConfig()->getNode('modules')->children();
-                    $value = NULL;
-                    if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-                        $aCustomAtrrList = Mage::getModel('aitcheckoutfields/transport')->loadByQuoteId($quote->getId());
-                        foreach ($aCustomAtrrList->getData() as $_key => $_data) {
-                            if ($_data['code'] == $conf[1]) {
-                                $value = $_data['value'];
-                                if ($_data['type'] == "date") {
-                                    $value = date("Y-m-d", strtotime($value));
-                                }
-                                break;
-                            }
-                        }
-                        unset($aCustomAtrrList);
-                    }
-                    break;
-                default:
-                    break;
-            }
-            if ($value) {
-                $this->_obj->$sf_field = trim($value);
-            } else {
-                Mage::helper('tnw_salesforce')->log('OPPORTUNITY MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
-            }
-        }
-        unset($collection, $_map, $quote);
-    }
-
-
     /**
      * create opportunity object
      *
-     * @param $quote
+     * @param $quote Mage_Sales_Model_Quote
      */
     protected function _setOpportunityInfo($quote)
     {
         $_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
         $_websiteId = Mage::getModel('core/store')->load($quote->getStoreId())->getWebsiteId();
 
+        $this->_updateQuoteStageName($quote);
         $_quoteNumber = $quote->getId();
         $_email = $this->_cache['abandonedToEmail'][$_quoteNumber];
 
@@ -644,8 +424,10 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $this->_obj->CurrencyIsoCode = $quote->getData('quote_currency_code');
         }
 
+        $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
         // Magento Quote ID
-        $this->_obj->{$this->_magentoId} = $_quoteNumber;
+        $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
+
         // Force configured pricebook
         $this->_assignPricebookToQuote($quote);
 
@@ -887,6 +669,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $_entityArray = array_flip($this->_cache['entitiesUpdating']);
         $sql = '';
 
+        var_dump($_entityArray);die;
         foreach ($this->_cache['batchCache']['opportunities'][$this->_magentoId] as $_key => $_batchId) {
             $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] . '/batch/' . $_batchId . '/result');
             try {

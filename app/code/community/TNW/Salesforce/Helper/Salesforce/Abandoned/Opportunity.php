@@ -464,8 +464,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     // set opp owner
                     // $this->_updateOppOwner($_result->id); // frozen until we get other working solution
 
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
-                    $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 1 WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
+                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 1, salesforce_id = '" . $_result->id . "' WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
+
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                     $this->_write->query($sql . ' commit;');
                     $this->_cache['upsertedOpportunities'][$_quoteNum] = $_result->id;
@@ -554,16 +554,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     }
                 }
             }
-            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct()) {
-                if (Mage::helper('tnw_salesforce')->getShippingProduct()) {
-                    $this->addShippingProduct($_quote, $_quoteNumber);
-                } else {
-                    Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Opportunity Shipping product is not set!", 1, "sf-errors");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Shipping Fee product to the Opportunity!');
-                    }
-                }
-            }
+
             if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
                 if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
                     $this->addDiscountProduct($_quote, $_quoteNumber);
@@ -576,7 +567,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
 
             foreach ($_quote->getAllVisibleItems() as $_item) {
-                if ((int) $_item->getQtyQuoteed() == 0) {
+                if ((int) $_item->getQty() == 0) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice("Product w/ SKU (" . $_item->getSku() . ") for quote #" . $_quoteNumber . " is not synchronized, quoteed quantity is zero!");
                     }
@@ -616,8 +607,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
 
                 $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
-                //$subtotal = number_format((($item->getPrice() * $item->getQtyQuoteed()) + $item->getTaxAmount()), 2, ".", "");
-                //$subtotal = number_format(($_item->getPrice() * $_item->getQtyQuoteed()), 2, ".", "");
+                //$subtotal = number_format((($item->getPrice() * $item->getQty()) + $item->getTaxAmount()), 2, ".", "");
+                //$subtotal = number_format(($_item->getPrice() * $_item->getQty()), 2, ".", "");
                 //$netTotal = number_format(($subtotal - $_item->getDiscountAmount()), 2, ".", "");
 
                 if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
@@ -628,12 +619,12 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
                     $netTotal = number_format(($netTotal - $_item->getData('discount_amount')), 2, ".", "");
-                    $this->_obj->UnitPrice = number_format($netTotal / $_item->getQtyQuoteed(), 2, ".", "");;
+                    $this->_obj->UnitPrice = number_format($netTotal / $_item->getQty(), 2, ".", "");;
                 } else {
-                    if ((int) $_item->getQtyQuoteed() == 0) {
+                    if ((int) $_item->getQty() == 0) {
                         $this->_obj->UnitPrice = $netTotal;
                     } else {
-                        $this->_obj->UnitPrice = $netTotal / $_item->getQtyQuoteed();
+                        $this->_obj->UnitPrice = $netTotal / $_item->getQty();
                     }
                 }
 
@@ -690,7 +681,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     }
                 }
 
-                $this->_obj->Quantity = $_item->getQtyQuoteed();
+                $this->_obj->Quantity = $_item->getQty();
 
                 /* Dump OpportunityLineItem object into the log */
                 foreach ($this->_obj as $key => $_item) {
@@ -836,66 +827,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::helper('tnw_salesforce')->log('-----------------');
     }
 
-    protected function addShippingProduct($_quote, $_quoteNumber)
-    {
-        $_storeId = $_quote->getStoreId();
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-            }
-        }
-        // Add Shipping
-        $this->_obj = new stdClass();
-
-        $_helper = Mage::helper('tnw_salesforce');
-        $_shippingProductPricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::QUOTE_SHIPPING_PRODUCT);
-
-        $_cartItemFound = false;
-        if (
-            is_array($this->_cache['opportunityLookup']) &&
-            array_key_exists($_quoteNumber, $this->_cache['opportunityLookup']) &&
-            property_exists($this->_cache['opportunityLookup'][$_quoteNumber], 'OpportunityLineItems')
-            && is_object($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems)
-            && property_exists($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems, 'records')
-        ) {
-            foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems->records as $_cartItem) {
-                if ($_cartItem->PricebookEntryId == $_shippingProductPricebookEntryId) {
-                    $_cartItemFound = $_cartItem->Id;
-                    break;
-                }
-            }
-        }
-        if ($_cartItemFound) {
-            $this->_obj->Id = $_cartItemFound;
-        }
-
-        $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
-        $this->_obj->UnitPrice = number_format(($_quote->getShippingAmount()), 2, ".", "");
-        if (!property_exists($this->_obj, "Id")) {
-            //$_currentStoreId = Mage::app()->getStore()->getStoreId();
-            if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-            } else {
-                $_storeId = $_quote->getStoreId();
-            }
-
-            $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::QUOTE_SHIPPING_PRODUCT);
-        }
-        $defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-        if ($defaultServiceDate) {
-            $this->_obj->ServiceDate = $defaultServiceDate;
-        }
-        $this->_obj->Description = 'Shipping & Handling';
-        $this->_obj->Quantity = 1;
-
-        /* Dump OpportunityLineItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
-        }
-        $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
-        Mage::helper('tnw_salesforce')->log('-----------------');
-    }
-
     protected function doesCartItemExistInOpportunity($_quoteNumber, $_item, $_sku)
     {
         $_cartItemFound = false;
@@ -905,7 +836,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     property_exists($_cartItem, 'PricebookEntry')
                     && property_exists($_cartItem->PricebookEntry, 'ProductCode')
                     && $_cartItem->PricebookEntry->ProductCode == $_sku
-                    && $_cartItem->Quantity == (float)$_item->getQtyQuoteed()
+                    && $_cartItem->Quantity == (float)$_item->getQty()
                 ) {
                     $_cartItemFound = $_cartItem->Id;
                     break;
@@ -994,6 +925,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     protected function _pushOpportunityLineItems($chunk = array())
     {
+        if (empty($this->_cache['upsertedOpportunities'])) {
+            return false;
+        }
         $_quoteNumbers = array_flip($this->_cache['upsertedOpportunities']);
         try {
             $results = $this->_mySforceConnection->upsert("Id", $chunk, 'OpportunityLineItem');
@@ -1365,7 +1299,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             case "Cart":
                 if ($cartItem) {
                     if ($conf[1] == "total_product_price") {
-                        $subtotal = number_format((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQtyQuoteed()), 2, ".", "");
+                        $subtotal = number_format((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQty()), 2, ".", "");
                         $value = number_format(($subtotal - $cartItem->getDiscountAmount()), 2, ".", "");
                     } else {
                         $value = $cartItem->getData($conf[1]);
@@ -1660,7 +1594,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         //foreach ($quote->getAllItems() as $itemId=>$item) {
         foreach ($quote->getAllVisibleItems() as $itemId => $item) {
-            $descriptionCart .= $item->getSku() . ", " . number_format($item->getQtyQuoteed()) . ", " . $item->getName();
+            $descriptionCart .= $item->getSku() . ", " . number_format($item->getQty()) . ", " . $item->getName();
             //Price
             $unitPrice = number_format(($item->getPrice()), 2, ".", "");
             $descriptionCart .= ", " . $_currencyCode . $unitPrice;
@@ -1668,7 +1602,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $tax = number_format(($item->getTaxAmount()), 2, ".", "");
             $descriptionCart .= ", " . $_currencyCode . $tax;
             //Subtotal
-            $subtotal = number_format((($item->getPrice() + $item->getTaxAmount()) * $item->getQtyQuoteed()), 2, ".", "");
+            $subtotal = number_format((($item->getPrice() + $item->getTaxAmount()) * $item->getQty()), 2, ".", "");
             $descriptionCart .= ", " . $_currencyCode . $subtotal;
             //Net Total
             $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
@@ -1687,6 +1621,22 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
+     * @param $order
+     */
+    protected function _updateQuoteStageName($quote)
+    {
+        ## Status integration
+
+        $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
+
+        if ($stage = Mage::getStoreConfig('', $quote->getStore())) {
+            $this->_obj->StageName = $stage;
+        }
+
+        return $this;
+    }
+
+    /**
      * create opportunity object
      *
      * @param $quote Mage_Sales_Model_Quote
@@ -1696,6 +1646,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 //        $_websiteId = Mage::getModel('core/store')->load($quote->getStoreId())->getWebsiteId();
         $_websiteId = $quote->getStoreId();
 
+        $this->_updateQuoteStageName($quote);
         $_quoteNumber = $quote->getId();
         $_customer = $this->_cache['abandonedCustomers'][$_quoteNumber];
 
@@ -1715,8 +1666,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
         $this->_obj->$syncParam = true;
 
+        $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
         // Magento Quote ID
-        $this->_obj->{$this->_magentoId} = $_quoteNumber;
+        $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
 
         // Use existing Opportunity if creating from Quote
         $modules = Mage::getConfig()->getNode('modules')->children();

@@ -81,6 +81,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
         $collection->addFieldToSelect('created_at');
         $collection->addFieldToSelect('updated_at');
         $collection->addFieldToSelect('remote_ip');
+        $collection->addFieldToSelect('salesforce_id');
 
         $collection->addFieldToFilter('items_count', array('neq' => '0'))
             ->addFieldToFilter('main_table.is_active', '1')
@@ -97,6 +98,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             $this->addFieldToFilter('store_id', array('in' => $this->_storeIds));
         }
 
+//        echo $collection->getSelect()->__toString();die;
         $this->setCollection($collection);
         return $this->__prepareCollection();
     }
