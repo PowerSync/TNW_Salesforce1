@@ -211,7 +211,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         if (!empty($this->_sqlToRun)) {
             try {
-                $this->_write->query($this->_sqlToRun);
+                if (!$this->_write) {
+                    $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
+                }
+                $this->_write->query($this->_sqlToRun . 'commit;');
             } catch (Exception $e) {
                 Mage::helper('tnw_salesforce')->log("Exception: " . $e->getMessage());
             }

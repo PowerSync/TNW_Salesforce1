@@ -33,6 +33,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     private $_cronRunIntervalMinute = 5;
 
     /**
+     * @var null
+     */
+    protected $_write = NULL;
+
+    /**
      * we check sf sync type settings and decide if it's time to run cron
      *
      * @return bool
@@ -254,6 +259,17 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         return $id;
     }
 
+    /**
+     * Delete synced records from the queue
+     */
+    protected function _deleteSuccessfulRecords() {
+        if (!is_object($this->_write)) {
+            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
+        }
+        $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
+        $this->_write->query($sql . 'commit;');
+    }
+
     public function syncEntity($type)
     {
         $_syncType = $type;
@@ -265,12 +281,14 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
         }
 
+        $this->_deleteSuccessfulRecords();
+
         // get entity id list from local storage
         $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($type)
             ->addStatusNoToFilter('sync_running')
             ->addStatusNoToFilter('success')
-            ->setOrder('status', 'DESC')    // Leave 'error' at the end of the collection
+            ->setOrder('status', 'ASC')    // Leave 'error' at the end of the collection
         ;
 
         $page = 0;
@@ -377,22 +395,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             }
         }
 
-        try {
-            // Entities successfully synced
-            if (!empty($idsSet)) {
-
-                $_chunks = array_chunk($idsSet, self::QUEUE_DELETE_LIMIT);
-                foreach ($_chunks as $_chunk) {
-                    Mage::helper('tnw_salesforce')->log("info: $type total processed: " . count($_chunk), 1, 'sf-cron');
-                    Mage::helper('tnw_salesforce')->log("info: removing synced rows from mysql table...", 1, 'sf-cron');
-                    // Remove processed records from the queue
-                    Mage::getModel('tnw_salesforce/localstorage')->deleteObject($_chunk);
-                }
-            }
-
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("error: $type not synced: " . $e->getMessage(), 1, 'sf-cron');
-        }
         return $this;
     }
 

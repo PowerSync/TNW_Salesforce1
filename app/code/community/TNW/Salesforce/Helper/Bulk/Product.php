@@ -26,10 +26,19 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         Mage::helper('tnw_salesforce')->log("---------- Start: Magento Update ----------");
         $this->_sqlToRun = "";
         $ids = array();
+
         foreach ($this->_cache['toSaveInMagento'] as $_magentoId => $_product) {
             $_product->salesforceId = (property_exists($_product, 'productId')) ? $_product->productId : NULL;
             $_product->pricebookEntityIds = (property_exists($_product, 'pricebookEntityIds')) ? $_product->pricebookEntityIds : array();
             $_product->SfInSync = (property_exists($_product, 'syncComplete')) ? $_product->syncComplete : 0;
+
+            if (
+                array_key_exists('Standard', $_product->pricebookEntityIds)
+                && array_key_exists(0, $_product->pricebookEntityIds)
+                && $_product->pricebookEntityIds['Standard'] == $_product->pricebookEntityIds[0]
+            ) {
+                unset($_product->pricebookEntityIds[0]);
+            }
 
             $this->updateMagentoEntityValue($_magentoId, $_product->salesforceId, 'salesforce_id');
             $this->updateMagentoEntityValue($_magentoId, $_product->SfInSync, 'sf_insync', 'catalog_product_entity_int', 0);
@@ -48,6 +57,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $ids[] = $_magentoId;
 
             $this->clearMemory();
+            unset($_product);
         }
 
         if (!empty($this->_sqlToRun)) {

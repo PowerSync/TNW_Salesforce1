@@ -105,6 +105,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             ->addSftypeToFilter($_type)
             ->addStatusNoToFilter('sync_running')
             ->addStatusNoToFilter('success')
+            ->setOrder('status', 'ASC')
         ;
         if (count($this->_itemIds) > 0){
             $_collection->getSelect()->where('id IN (?)', $this->_itemIds);
