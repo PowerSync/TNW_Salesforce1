@@ -89,6 +89,10 @@ class TNW_Salesforce_Model_Observer
             }
         }
 
+        // Remove Sync Queue menu item
+        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
+            unset($_menu->queue_sync);
+        }
 
         if (!$_leverageLeads) {
             if ($_customerNode) {
