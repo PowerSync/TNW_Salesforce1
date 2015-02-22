@@ -17,9 +17,9 @@ class TNW_Salesforce_Block_Adminhtml_Cron extends Mage_Adminhtml_Block_System_Co
 
         $_lastTimestamp = 0;
         if ($_useCache) {
-            $_lastTimestamp = (unserialize($_mageCache->load('tnw_salesforce_cron_timestamp'))) ? unserialize($_mageCache->load('tnw_salesforce_cron_timestamp')) : 0;
+            $_lastTimestamp = ($_mageCache->load('tnw_salesforce_cron_timestamp')) ? unserialize($_mageCache->load('tnw_salesforce_cron_timestamp')) : 0;
         }
 
-        return date("l jS \of F Y h:i:s A", $_lastTimestamp);
+        return ($_lastTimestamp === 0) ? 'UNKNOWN' : date("l jS \of F Y h:i:s A", $_lastTimestamp);
     }
 }

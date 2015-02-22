@@ -121,21 +121,17 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
-
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    // pass data to local storage
-                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($itemIds, 'Product', 'product');
-                    if (!$res) {
-                        Mage::getSingleton('adminhtml/session')->addError('Could not add products to the queue!');
-                    } else {
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Records were added to synchronization queue!')
-                            );
-                        }
+                    $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+                    unset($itemIds);
+                    foreach($_chunks as $_chunk) {
+                        Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Product', 'product');
+                    }
+
+                    if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
+                        Mage::getSingleton('adminhtml/session')->addSuccess(
+                            $this->__('Records are pending addition into the queue!')
+                        );
                     }
                 } else {
                     $manualSync = Mage::helper('tnw_salesforce/bulk_product');

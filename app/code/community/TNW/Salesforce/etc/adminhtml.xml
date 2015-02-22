@@ -14,17 +14,17 @@
                                 <order_sync>
                                     <title>Orders</title>
                                     <action>adminhtml/salesforcesync_ordersync</action>
-                                    <sort_order>10</sort_order>
+                                    <sort_order>30</sort_order>
                                 </order_sync>
                                 <product_sync>
                                     <title>Products</title>
                                     <action>adminhtml/salesforcesync_productsync</action>
-                                    <sort_order>30</sort_order>
+                                    <sort_order>10</sort_order>
                                 </product_sync>
                                 <customer_sync>
                                     <title>Customers</title>
                                     <action>adminhtml/salesforcesync_customersync</action>
-                                    <sort_order>40</sort_order>
+                                    <sort_order>20</sort_order>
                                 </customer_sync>
                             </children>
                         </manual_sync>

@@ -549,6 +549,24 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return (int)str_replace(".", "", Mage::getVersion());
     }
 
+    public function getTime($_time = NULL) {
+        if (!$_time) {
+            $_time = time();
+        }
+        return $_time;
+    }
+
+    public function getMagentoTime($_time = NULL) {
+        if (!$_time) {
+            $_time = time();
+        }
+        return Mage::getModel('core/date')->timestamp($_time);
+    }
+
+    public function getDate($_time = NULL, $_isTrue = true) {
+        return (!$_isTrue) ? gmdate(DATE_ATOM, $this->getMagentoTime($_time)) : gmdate(DATE_ATOM, $this->getTime($_time));
+    }
+
     // PHP Version
     public function checkPhpVersion()
     {

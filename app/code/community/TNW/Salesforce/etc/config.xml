@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.07.0003</version>
+            <version>0.01.49.08.0001</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -45,6 +45,9 @@
                     <queue_storage>
                         <table>tnw_salesforce_queue_storage</table>
                     </queue_storage>
+                    <queue>
+                        <table>tnw_salesforce_queue</table>
+                    </queue>
                     <mapping>
                         <table>tnw_salesforce_mapping</table>
                     </mapping>
@@ -520,10 +523,14 @@
     </admin>
     <crontab>
         <jobs>
-            <tnw_salesforce>
+            <tnw_salesforce_queue>
+                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
+                <run><model>tnw_salesforce/cron::processQueue</model></run>
+            </tnw_salesforce_queue>
+            <tnw_salesforce_m2sf>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::backgroundProcess</model></run>
-            </tnw_salesforce>
+            </tnw_salesforce_m2sf>
         </jobs>
     </crontab>
     <default>

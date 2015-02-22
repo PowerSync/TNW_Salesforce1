@@ -42,18 +42,17 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      *
      * @return bool
      */
-    private function _isTimeToRun()
+    public function _isTimeToRun()
     {
         Mage::helper('tnw_salesforce')->log('========================= cron method _isTimeToRun() started =========================');
-        Mage::helper('tnw_salesforce')->log('cron time (it differs from php timezone) ' . date("Y-m-d H:i:s"));
+        Mage::helper('tnw_salesforce')->log('cron time (it differs from php timezone) ' . Mage::helper('tnw_salesforce')->getDate(NULL, false));
 
         $syncType = Mage::helper('tnw_salesforce')->getObjectSyncType();
         $lastRunTime = ($this->_useCache && unserialize($this->_mageCache->load('tnw_salesforce_cron_timestamp'))) ? unserialize($this->_mageCache->load('tnw_salesforce_cron_timestamp')) : 0;
         switch ($syncType) {
             case 'sync_type_queue_interval':
                 $configIntervalSeconds = (int)Mage::helper('tnw_salesforce')->getObjectSyncIntervalValue();
-                if ((Mage::getModel('core/date')->timestamp(time()) - $lastRunTime) >= ($configIntervalSeconds - 60)) {
-
+                if ((Mage::helper('tnw_salesforce')->getTime() - $lastRunTime) >= ($configIntervalSeconds - 60)) {
                     return true;
                 }
 
@@ -72,11 +71,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 $configTimeMinute = (int)Mage::helper('tnw_salesforce')->getObjectSpectimeMinute();
 
                 // log some help info in case we have claim from customer regarding cron job
-                Mage::helper('tnw_salesforce')->log((Mage::getModel('core/date')->timestamp(time()) - $lastRunTime) >= $configFrequencySeconds);
+                Mage::helper('tnw_salesforce')->log((Mage::helper('tnw_salesforce')->getTime() - $lastRunTime) >= $configFrequencySeconds);
                 Mage::helper('tnw_salesforce')->log(intval(date("H")) == intval($configTimeHour));
                 Mage::helper('tnw_salesforce')->log(abs(intval(date("i")) - intval($configTimeMinute)) < $this->_cronRunIntervalMinute);
 
-                if ((Mage::getModel('core/date')->timestamp(time()) - $lastRunTime) >= $configFrequencySeconds
+                if ((Mage::helper('tnw_salesforce')->getTime() - $lastRunTime) >= $configFrequencySeconds
                     && intval(date("H")) == intval($configTimeHour)
                     && abs(intval(date("i")) - intval($configTimeMinute)) <= $this->_cronRunIntervalMinute
                 ) {
@@ -118,11 +117,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         return false;
     }
 
-    /**
-     * this method is called instantly from cron script
-     *
-     * @return bool
-     */
     public function backgroundProcess()
     {
         set_time_limit(0);
@@ -131,10 +125,28 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         $this->_reset();
 
         Mage::getModel('tnw_salesforce/feed')->checkUpdate();
-        Mage::getModel('tnw_salesforce/imports_bulk')->process();
 
+        Mage::helper('tnw_salesforce')->log("Check Salesforce to Magento queue ...", 1, 'sf-cron');
+        Mage::getModel('tnw_salesforce/imports_bulk')->process();
+        Mage::helper('tnw_salesforce')->log("Check Salesforce to Magento queue ... done", 1, 'sf-cron');
+    }
+
+    /**
+     * this method is called instantly from cron script
+     *
+     * @return bool
+     */
+    public function processQueue()
+    {
+        set_time_limit(0);
+
+        $this->_initCache();
+        $this->_reset();
 
         Mage::helper('tnw_salesforce')->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . ") ...", 1, 'sf-cron');
+
+        $this->_updateQueue();
+        Mage::helper('tnw_salesforce')->log("Queue updated ...", 1, 'sf-cron');
 
         // check if it's time to run cron
         $isTime = $this->_isTimeToRun();
@@ -148,7 +160,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         // cron is running now, thus save last cron run timestamp
         if ($this->_useCache) {
             Mage::helper('tnw_salesforce')->log('cron is using cache for last run timestamp');
-            $this->_mageCache->save(serialize(Mage::getModel('core/date')->timestamp(time())), "tnw_salesforce_cron_timestamp", array("TNW_SALESFORCE"));
+            $this->_mageCache->save(serialize(Mage::helper('tnw_salesforce')->getTime()), "tnw_salesforce_cron_timestamp", array("TNW_SALESFORCE"));
         }
 
         // Force SF connection if session is expired or not found
@@ -263,11 +275,34 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      * Delete synced records from the queue
      */
     protected function _deleteSuccessfulRecords() {
-        if (!is_object($this->_write)) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
         $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
-        $this->_write->query($sql . 'commit;');
+        Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
+    }
+
+    /**
+     * Delete successful records, add new, reset stuck items
+     */
+    protected function _updateQueue() {
+        // Add pending items into the queue
+        $_collection = Mage::getModel('tnw_salesforce/queue')->getCollection();
+        foreach($_collection as $_pendingItem) {
+            if ($_pendingItem->getData('mage_object_type') == 'product') {
+                $_method = 'addObjectProduct';
+            } else {
+                $_method = 'addObject';
+            }
+            $_result = Mage::getModel('tnw_salesforce/localstorage')->{$_method}(unserialize($_pendingItem->getData('record_ids')), $_pendingItem->getData('sf_object_type'), $_pendingItem->getData('mage_object_type'));
+
+            if ($_result) {
+                $_pendingItem->delete();
+            }
+        }
+        /* TODO: Read from config when was last synced, add buffer and reset status
+        $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < ;";
+        Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql . 'commit;');
+        */
+
+        $this->_deleteSuccessfulRecords();
     }
 
     public function syncEntity($type)
@@ -281,6 +316,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
         }
 
+        //$this->_resetStuckRecords();
         $this->_deleteSuccessfulRecords();
 
         // get entity id list from local storage

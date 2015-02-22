@@ -19,12 +19,9 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     }
 
     public function getAllDependencies() {
-        if (!$this->_write) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
         $_dependencies = array();
         $_sql = "SELECT object_id, sf_object_type FROM " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " WHERE mage_object_type IN ('" . $this->_mageModels['customer'] . "', '" . $this->_mageModels['product'] . "')";
-        $_results = $this->_write->query($_sql)->fetchAll();
+        $_results = $this->getDbConnection('read')->query($_sql)->fetchAll();
         foreach ($_results as $_result) {
             $_dependencies[$_result['sf_object_type']][] = $_result['object_id'];
         }
@@ -74,9 +71,6 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             }
         }
 
-        if (!$this->_write) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
         $_sql = '';
 
         if (!empty($_successSet)) {
@@ -93,7 +87,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
         if (!empty($_sql)) {
             Mage::helper('tnw_salesforce')->log("SQL: " . $_sql);
-            $this->_write->query($_sql);
+            $this->getDbConnection()->query($_sql);
         }
     }
 
@@ -124,9 +118,9 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         $table = Mage::getSingleton('core/resource')->getTableName('tnw_salesforce_queue_storage');
         $typeSet = $this->addComma($sfObjectType);
         $typeList = empty($typeSet) ? '' : implode(", ", $typeSet);
-        $sql = "select count(*) as total from $table where sf_object_type in ($typeList)";
+        $sql = "SELECT count(*) as total from $table where sf_object_type in ($typeList)";
         try {
-            $res = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchAll($sql);
+            $res = $this->getDbConnection('read')->query($sql)->fetchAll();
             $res = array_pop($res);
             $res = intval($res['total']);
         } catch (Exception $e) {
@@ -147,10 +141,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     {
         $idLine = empty($idSet) ? "" : "'" . join("', '", $idSet) ."'";
         $sql = "UPDATE " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " SET status = '" . $status . "' where id in (" . $idLine . ")";
-        if (!$this->_write) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
-        $res = $this->_write->query($sql);
+        $res = $this->getDbConnection()->query($sql);
 
         return $res;
     }
@@ -170,16 +161,12 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 return true;
             }
 
-            if (!$this->_write) {
-                $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-            }
-
             $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE id IN ('" . join("', '", $objectId) . "')";
             if (!$_isForced) {
                 $sql .= " AND status = 'success'";
             }
             Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
-            $this->_write->query($sql);
+            $this->getDbConnection('delete')->query($sql);
 
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("ERROR quote from queue: " . $e->getMessage(), 1, 'sf-cron');
@@ -212,7 +199,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 'object_id' => $obId,
                 'mage_object_type' => $this->_mageModels[$mageObType],
                 'sf_object_type' => $sfObType,
-                'date_created' => date("Y-m-d H:i:s"),
+                'date_created' => Mage::helper('tnw_salesforce')->getDate(),
             );
             // check if record with id exists, then we update record
             $row = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()

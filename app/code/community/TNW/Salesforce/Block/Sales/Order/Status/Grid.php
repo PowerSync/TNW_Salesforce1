@@ -17,8 +17,7 @@ class TNW_Salesforce_Block_Sales_Order_Status_Grid extends Mage_Adminhtml_Block_
             ->joinStates();
 
         $sql = "SELECT DISTINCT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_order_status') . "' AND COLUMN_NAME NOT IN ('status') ORDER BY ORDINAL_POSITION";
-        $_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        $_results = $_write->query($sql)->fetchAll();
+        $_results = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetchAll();
         $_fieldsToSelect = array();
         foreach($_results as $_result) {
             $_fieldsToSelect[] = 'tnw.' . $_result['COLUMN_NAME'];

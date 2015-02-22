@@ -2,6 +2,8 @@
 
 class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 {
+    const UPDATE_LIMIT = 5000;
+
     protected $_prefix = NULL;
     protected $_itemIds = array();
 
@@ -175,6 +177,41 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");
             return false;
+        }
+    }
+
+    //
+    public function prepareRecordsToBeAddedToQueue($itemIds = array(), $_sfObject = NULL, $_mageModel = NULL) {
+        if (empty($itemIds) || !$_sfObject || !$_mageModel) {
+            Mage::getSingleton('adminhtml/session')->addError('Could not add records to the queue!');
+        }
+
+        $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+        unset($itemIds);
+        foreach($_chunks as $_chunk) {
+            $_queue = Mage::getModel('tnw_salesforce/queue');
+            $_queue->setData('record_ids', serialize($_chunk));
+            $_queue->setData('mage_object_type', $_mageModel);
+            $_queue->setData('sf_object_type', $_sfObject);
+
+            Mage::dispatchEvent(
+                "tnw_salesforce_add_to_queue_before",
+                array(
+                    "record_ids" => $_queue->getData('record_ids'),
+                    "mage_object_type" => $_queue->getData('mage_object_type'),
+                    "sf_object_type" => $_queue->getData('sf_object_type'),
+                )
+            );
+            $_queue->save();
+            Mage::dispatchEvent(
+                "tnw_salesforce_add_to_queue_after",
+                array(
+                    "record_ids" => $_queue->getData('record_ids'),
+                    "mage_object_type" => $_queue->getData('mage_object_type'),
+                    "sf_object_type" => $_queue->getData('sf_object_type'),
+                    "id" => $_queue->getData('entity_id')
+                )
+            );
         }
     }
 }

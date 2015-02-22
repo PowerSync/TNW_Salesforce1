@@ -35,6 +35,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
             ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_queuesync'));
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
 
+
+        if (Mage::getModel('tnw_salesforce/queue')->getCollection()->count() > 0) {
+            Mage::getSingleton('adminhtml/session')->addNotice("One or more records are still pending to be added to the synchronization queue. Check back later if you don't see records you are looking for...");
+        }
+
         $this->renderLayout();
     }
 

@@ -18,7 +18,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     /**
      * @var null
      */
-    protected $_write = NULL;
+    protected $_read = NULL;
 
     /**
      * @var array
@@ -40,11 +40,6 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
     public function __construct()
     {
-        // Nothing to do
-        if (!$this->_write) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
-
         $this->_populateAcl();
     }
 
@@ -148,8 +143,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateOrderAttributes($type)
     {
         try {
-            $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales_flat_order');
-            $collection = $this->_write->query($_sql);
+            $collection = $this->getTableColumnList('sales_flat_order');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
@@ -202,8 +196,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populatePaymentAttributes($type)
     {
         try {
-            $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_payment');
-            $collection = $this->_write->query($_sql);
+            $collection = $this->getTableColumnList('sales_flat_order_payment');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Could not load Magento payment schema...");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
@@ -387,8 +380,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateCartAttributes($type)
     {
         try {
-            $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item');
-            $collection = $this->_write->query($_sql);
+            $collection = $this->getTableColumnList('sales_flat_order_item');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Could not load Magento cart items schema...");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
@@ -475,10 +467,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
      */
     protected function getTableColumnList($tableName = 'cataloginventory_stock_item')
     {
-        $tableName = Mage::helper('tnw_salesforce')->getTable($tableName);
-        $sql = "describe $tableName; ";
-        $read = Mage::getSingleton('core/resource')->getConnection('core_read');
-        $res = $read->fetchAll($sql);
+        $sql = "DESCRIBE " . Mage::helper('tnw_salesforce')->getTable($tableName) . ";";
+        $res = $this->getDbConnection('read')->query($sql)->fetchAll();
 
         return !empty($res) ? $res : array();
     }
