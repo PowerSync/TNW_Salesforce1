@@ -114,6 +114,14 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         }
     }
 
+    public function clearMemory() {
+        if (!gc_enabled()) {
+            gc_enable();
+        }
+        gc_collect_cycles();
+        gc_disable();
+    }
+
     /**
      * delete object in sf
      *

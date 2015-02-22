@@ -143,10 +143,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         $this->_initCache();
         $this->_reset();
 
-        Mage::helper('tnw_salesforce')->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . ") ...", 1, 'sf-cron');
+        Mage::helper('tnw_salesforce')->log("PowerSync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . ") ...", 1, 'sf-cron');
 
+        Mage::helper('tnw_salesforce')->log("Queue updating ...", 1, 'sf-cron');
         $this->_updateQueue();
-        Mage::helper('tnw_salesforce')->log("Queue updated ...", 1, 'sf-cron');
+        Mage::helper('tnw_salesforce')->log("Queue updated!", 1, 'sf-cron');
 
         // check if it's time to run cron
         $isTime = $this->_isTimeToRun();

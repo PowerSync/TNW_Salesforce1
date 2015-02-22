@@ -103,33 +103,38 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
 
             $returnArray = array();
             foreach ($_results as $result) {
-                foreach ($result->records as $_item) {
-                    // Conditional preserves products only with Magento Id defined, otherwise last found product will be used
-                    if (!array_key_exists($_item->ProductCode, $returnArray) || (property_exists($_item, $_magentoId) && $_item->$_magentoId)) {
-                        $tmp = new stdClass();
-                        $tmp->Id = $_item->Id;
-                        $tmp->Name = $_item->Name;
-                        $tmp->ProductCode = $_item->ProductCode;
-                        $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->$_magentoId : NULL;
-                        $tmp->PriceBooks = array();
-                        foreach ($_resultsPBE as $resultPBE) {
-                            if (is_array($resultPBE->records)) {
-                                foreach ($resultPBE->records as $_itm) {
-                                    if ($_itm->Product2Id != $_item->Id) {
-                                        continue;
+                if (
+                    property_exists($result, 'records')
+                    && is_array($result->records)
+                ) {
+                    foreach ($result->records as $_item) {
+                        // Conditional preserves products only with Magento Id defined, otherwise last found product will be used
+                        if (!array_key_exists($_item->ProductCode, $returnArray) || (property_exists($_item, $_magentoId) && $_item->$_magentoId)) {
+                            $tmp = new stdClass();
+                            $tmp->Id = $_item->Id;
+                            $tmp->Name = $_item->Name;
+                            $tmp->ProductCode = $_item->ProductCode;
+                            $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->$_magentoId : NULL;
+                            $tmp->PriceBooks = array();
+                            foreach ($_resultsPBE as $resultPBE) {
+                                if (is_array($resultPBE->records)) {
+                                    foreach ($resultPBE->records as $_itm) {
+                                        if ($_itm->Product2Id != $_item->Id) {
+                                            continue;
+                                        }
+                                        $tmpPBE = new stdClass();
+                                        $tmpPBE->Id = $_itm->Id;
+                                        $tmpPBE->UnitPrice = $_itm->UnitPrice;
+                                        $tmpPBE->Pricebook2Id = $_itm->Pricebook2Id;
+                                        $tmpPBE->CurrencyIsoCode = (property_exists($_itm, 'CurrencyIsoCode')) ? $_itm->CurrencyIsoCode : NULL;
+                                        $tmp->PriceBooks[] = $tmpPBE;
                                     }
-                                    $tmpPBE = new stdClass();
-                                    $tmpPBE->Id = $_itm->Id;
-                                    $tmpPBE->UnitPrice = $_itm->UnitPrice;
-                                    $tmpPBE->Pricebook2Id = $_itm->Pricebook2Id;
-                                    $tmpPBE->CurrencyIsoCode = (property_exists($_itm, 'CurrencyIsoCode')) ? $_itm->CurrencyIsoCode : NULL;
-                                    $tmp->PriceBooks[] = $tmpPBE;
                                 }
                             }
+                            $returnArray[$_item->ProductCode] = $tmp;
                         }
-                        $returnArray[$_item->ProductCode] = $tmp;
+                        Mage::getSingleton('tnw_salesforce/connection')->clearMemory();
                     }
-                    Mage::getSingleton('tnw_salesforce/connection')->clearMemory();
                 }
             }
             return $returnArray;

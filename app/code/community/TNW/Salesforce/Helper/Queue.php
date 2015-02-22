@@ -212,6 +212,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     "id" => $_queue->getData('entity_id')
                 )
             );
+            Mage::helper('tnw_salesforce')->clearMemory();
         }
     }
 }

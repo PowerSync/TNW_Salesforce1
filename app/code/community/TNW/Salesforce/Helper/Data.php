@@ -564,7 +564,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     }
 
     public function getDate($_time = NULL, $_isTrue = true) {
-        return (!$_isTrue) ? gmdate(DATE_ATOM, $this->getMagentoTime($_time)) : gmdate(DATE_ATOM, $this->getTime($_time));
+        $_timeStamp = (!$_isTrue) ? $this->getMagentoTime($_time) : $this->getTime($_time);
+        return gmdate(DATE_ATOM, $_timeStamp);
     }
 
     // PHP Version

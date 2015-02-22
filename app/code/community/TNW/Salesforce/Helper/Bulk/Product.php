@@ -33,7 +33,8 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $_product->SfInSync = (property_exists($_product, 'syncComplete')) ? $_product->syncComplete : 0;
 
             if (
-                array_key_exists('Standard', $_product->pricebookEntityIds)
+                is_array($_product->pricebookEntityIds)
+                && array_key_exists('Standard', $_product->pricebookEntityIds)
                 && array_key_exists(0, $_product->pricebookEntityIds)
                 && $_product->pricebookEntityIds['Standard'] == $_product->pricebookEntityIds[0]
             ) {
