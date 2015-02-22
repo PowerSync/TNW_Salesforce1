@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Opportunity
  */
-class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Abstract
+class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
 {
 
     /**
@@ -11,59 +11,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     protected $_read = null;
 
-    /**
-     * @var array
-     */
-    protected $_opportunityMapping = array();
-
-    /**
-     * @var array
-     */
-    protected $_opportunityLineItemMapping = array();
-
-    /**
-     * @var array
-     */
-    protected $_stockItems = array();
-
-    /**
-     * @var null
-     */
-    protected $_customerEntityTypeCode = NULL;
-
-    /**
-     * @var null
-     */
-    protected $_standardPricebookId = NULL;
-
-    /**
-     * @var null
-     */
-    protected $_defaultPriceBook = NULL;
-
-    /**
-     * @var bool
-     */
-    protected $_isCron = false;
-
-    /**
-     * @var array
-     */
-    protected $_allResults = array(
-        'opportunities_skipped' => 0,
-    );
-
-    /**
-     * @var array
-     */
-    protected $_alternativeKeys = array();
-
-    /**
-     * @return array
-     */
-    public function getAlternativeKeys() {
-        return $this->_alternativeKeys;
-    }
 
     /**
      * @param $id
@@ -142,94 +89,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
             Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
         }
-    }
-
-    protected function _onComplete()
-    {
-        parent::_onComplete();
-
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
-            $logger->add('Salesforce', 'leadsToConvert', $this->_cache['leadsToConvert'], $this->_cache['responses']['leadsToConvert']);
-            $logger->add('Salesforce', 'Opportunity', $this->_cache['opportunitiesToUpsert'], $this->_cache['responses']['opportunities']);
-            $logger->add('Salesforce', 'OpportunityLineItem', $this->_cache['opportunityLineItemsToUpsert'], $this->_cache['responses']['opportunityLineItems']);
-            $logger->add('Salesforce', 'OpportunityContactRole', $this->_cache['contactRolesToUpsert'], $this->_cache['responses']['opportunityCustomerRoles']);
-
-            $logger->send();
-        }
-
-        // Logout
-        $this->reset();
-        $this->clearMemory();
-    }
-
-    protected function syncProducts()
-    {
-        Mage::helper('tnw_salesforce')->log("================ INVENTORY SYNC: START ================");
-
-        $manualSync = Mage::helper('tnw_salesforce/bulk_product');
-
-        $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-        $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
-
-        Mage::helper('tnw_salesforce')->log("SF Domain: " . $this->getSalesforceServerDomain());
-        Mage::helper('tnw_salesforce')->log("SF Session: " . $this->getSalesforceSessionId());
-
-        foreach ($this->_stockItems as $_storeId => $_products) {
-            Mage::helper('tnw_salesforce')->log("Store Id: " . $_storeId);
-            $manualSync->setOrderStoreId($_storeId);
-            if ($manualSync->reset()) {
-                $manualSync->massAdd($this->_stockItems[$_storeId]);
-                $manualSync->process();
-                if (!$this->isFromCLI()) {
-                    Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product inventory was synchronized with Salesforce'));
-                }
-            } else {
-                if (!$this->isFromCLI() && !$this->isCron()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Salesforce Connection could not be established!');
-                }
-            }
-        }
-
-        Mage::helper('tnw_salesforce')->log("================ INVENTORY SYNC: END ================");
-    }
-
-    protected function _updateMagento()
-    {
-        Mage::helper('tnw_salesforce')->log("---------- Start: Magento Update ----------");
-        $_websites = $_emailsArray = array();
-        foreach ($this->_cache['toSaveInMagento'] as $_websiteId => $_contacts) {
-            foreach ($_contacts as $_id => $_contact) {
-                $_emailsArray[$_id] = $_contact->Email;
-                $_websites[$_id] = $_contact->WebsiteId;
-            }
-        }
-
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailsArray, $_websites);
-        if (!$this->_cache['contactsLookup']) {
-            $this->_dumpObjectToLog($_emailsArray, "Magento Emails", true);
-            Mage::helper('tnw_salesforce')->log("ERROR: Failed to look up a contact after Lead was converted.", 1, "sf-errors");
-            return false;
-        }
-
-        foreach ($this->_cache['contactsLookup'] as $accounts) {
-            foreach ($accounts as $_customer) {
-                $_customer->IsPersonAccount = isset($_customer->IsPersonAccount) ? $_customer->IsPersonAccount : NULL;
-
-                if ($_customer->IsPersonAccount !== NULL) {
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customer->MagentoId, $_customer->IsPersonAccount, 'salesforce_is_person');
-                }
-                Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customer->MagentoId, 1, 'sf_insync', 'customer_entity_int');
-                // Reset Lead Value
-                Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customer->MagentoId, NULL, 'salesforce_lead_id');
-            }
-
-        }
-
-        Mage::helper('tnw_salesforce')->log("Updated: " . count($this->_cache['toSaveInMagento']) . " customers!");
-        Mage::helper('tnw_salesforce')->log("---------- End: Magento Update ----------");
     }
 
     protected function _convertLeads()
@@ -693,19 +552,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
-    }
-
-    public function getProductIdFromCart($_item) {
-        $_options = unserialize($_item->getData('product_options'));
-        if(
-            $_item->getData('product_type') == 'bundle'
-            || array_key_exists('options', $_options)
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
-        }
-        return $id;
     }
 
     protected function addTaxProduct($_quote, $_quoteNumber)
@@ -1744,15 +1590,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
-     * @param $quoteNumber
-     * @param $accountName
-     */
-    protected function _setOpportunityName($quoteNumber, $accountName)
-    {
-        $this->_obj->Name = "Request #" . $quoteNumber;
-    }
-
-    /**
      * Sync customer w/ SF before creating the quote
      *
      * @param $quote Mage_Sales_Model_Quote
@@ -1838,34 +1675,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $_customer->setShippingAddress($_shippingAddress);
         }
         return $_customer;
-    }
-
-    protected function _updateAccountLookupData($_customersToSync)
-    {
-        if (is_array($this->_cache['leadLookup'])) {
-            foreach ($this->_cache['leadLookup'] as $website => $websiteLeads){
-                foreach ($websiteLeads as $_quoteNum => $_lead) {
-                    $_email = $_lead->Email;
-                    if (
-                        $_lead->IsConverted
-                        && is_array($this->_cache['accountsLookup'])
-                        && !array_key_exists($_email, $this->_cache['accountsLookup'][$website])
-                    ) {
-                        $this->_cache['accountsLookup'][$website][$_email] = new stdClass();
-                        $this->_cache['accountsLookup'][$website][$_email]->Id = $_lead->ConvertedContactId;
-                        $this->_cache['accountsLookup'][$website][$_email]->Email = $_email;
-                        $this->_cache['accountsLookup'][$website][$_email]->OwnerId = $_lead->OwnerId;
-                        $this->_cache['accountsLookup'][$website][$_email]->AccountId = $_lead->ConvertedAccountId;
-                        $this->_cache['accountsLookup'][$website][$_email]->AccountName = NULL;
-                        $this->_cache['accountsLookup'][$website][$_email]->AccountOwnerId = $_lead->OwnerId;
-                        $this->_cache['accountsLookup'][$website][$_email]->MagentoId = $_lead->MagentoId;
-                        unset($websiteLeads[$_email]);
-                        unset($_customersToSync[$_quoteNum]);
-                    }
-                }
-            }
-        }
-        return $_customersToSync;
     }
 
     public function reset()
