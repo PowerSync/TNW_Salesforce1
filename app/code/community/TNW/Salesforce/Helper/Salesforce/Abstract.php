@@ -627,7 +627,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     {
         $this->_initCache();
 
-        $this->_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        if (!$this->_magentoId) {
+            $this->_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        }
 
         $this->_customerGroupModel = Mage::getModel('customer/group');
 

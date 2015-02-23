@@ -36,9 +36,10 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             foreach ($ids as $_count => $_id) {
                 $_order = Mage::getModel('sales/order')->load($_id);
                 // Add to cache
-                if (!Mage::registry('order_cached_' . $_order->getRealOrderId())) {
-                    Mage::register('order_cached_' . $_order->getRealOrderId(), $_order);
+                if (Mage::registry('order_cached_' . $_order->getRealOrderId())) {
+                    Mage::unregister('order_cached_' . $_order->getRealOrderId());
                 }
+                Mage::register('order_cached_' . $_order->getRealOrderId(), $_order);
 
                 if (
                     !Mage::helper('tnw_salesforce')->syncAllOrders()

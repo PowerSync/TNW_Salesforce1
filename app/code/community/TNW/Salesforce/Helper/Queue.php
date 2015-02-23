@@ -18,19 +18,21 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
         set_time_limit(0);
 
-        $this->_itemIds = $itemIds;
-
         try {
-            $this->_processProducts();
+            if (empty($itemIds)) {
+                $this->_processProducts();
 
-            $this->_processCustomers();
+                $this->_processCustomers();
 
-            $this->_processWebsites();
+                $this->_processWebsites();
 
-            $this->_processOrders();
+                $this->_processOrders();
 
-            $this->_processCustomObjects();
-
+                $this->_processCustomObjects();
+            } else {
+                $this->_itemIds = $itemIds;
+                $this->_synchronizePreSet();
+            }
         } catch (Exception $e) {
             Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
             return false;
@@ -102,18 +104,94 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
      * @return mixed
      * Load queued enteties
      */
-    protected function _loadQueue($_type) {
+    protected function _loadQueue($_type = NULL) {
         $_collection = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
-            ->addSftypeToFilter($_type)
             ->addStatusNoToFilter('sync_running')
             ->addStatusNoToFilter('success')
             ->setOrder('status', 'ASC')
         ;
+        if ($_type) {
+            $_collection->addSftypeToFilter($_type);
+        }
+
         if (count($this->_itemIds) > 0){
             $_collection->getSelect()->where('id IN (?)', $this->_itemIds);
         }
 
         return $_collection;
+    }
+
+    protected function _synchronizePreSet() {
+        $_collection = $this->_loadQueue();
+
+        $_idSet = array();
+        $_objectIdSet = array();
+        $_objectType = array();
+
+        foreach ($_collection as $item) {
+            $_idSet[] = $item->getData('id');
+            $_objectIdSet[] = $item->getData('object_id');
+            if (!in_array($item->getData('sf_object_type'), $_objectType)) {
+                $_objectType[] = $item->getData('sf_object_type');
+            }
+        }
+
+        if (count($_objectType) > 1) {
+            Mage::helper('tnw_salesforce')->log("ERROR: Synchronization of multiple record types is not supported yet, try synchronizing one record type.");
+            return false;
+        }
+
+        $_type = $_objectType[0];
+
+        if (!empty($_objectIdSet)) {
+            // set status to 'sync_running'
+            Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_idSet);
+
+            if ($_type == 'Order') {
+                $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+
+                Mage::dispatchEvent(
+                    'tnw_sales_process_' . $_syncType,
+                    array(
+                        'orderIds'      => $_objectIdSet,
+                        'message'       => NULL,
+                        'type'          => 'bulk',
+                        'isQueue'       => true,
+                        'queueIds'      => $_idSet
+                    )
+                );
+            } else {
+                $_module = 'tnw_salesforce/bulk_' . strtolower($_type);
+                $_getAlternativeKey = NULL;
+
+                $manualSync = Mage::helper($_module);
+                if ($manualSync->reset()) {
+                    $manualSync->setIsCron(true);
+                    $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
+                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+
+                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' started ##################################');
+                    $manualSync->massAdd($_objectIdSet);
+
+                    $manualSync->process();
+                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' finished ##################################');
+
+                    // Update Queue
+                    $_results = $manualSync->getSyncResults();
+                    $_alternativeKeys = ($_getAlternativeKey) ? $manualSync->getAlternativeKeys() : array();
+                    Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_objectIdSet, $_idSet, $_results, $_alternativeKeys);
+                }
+            }
+
+            if (!empty($_idSet)) {
+                Mage::helper('tnw_salesforce')->log("INFO: " . $_type . " total synced: " . count($_idSet));
+                Mage::helper('tnw_salesforce')->log("INFO: removing synced rows from mysql table...");
+                //Mage::getModel('tnw_salesforce/localstorage')->deleteObject($_idSet);
+            }
+        } else {
+            Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");
+            return false;
+        }
     }
 
     /**
