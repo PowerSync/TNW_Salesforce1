@@ -89,6 +89,11 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             Mage::helper('tnw_salesforce')->log("SQL: " . $_sql);
             $this->getDbConnection()->query($_sql);
         }
+
+        // Delete Successful
+        $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
+        Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
+        Mage::helper('tnw_salesforce')->log("Synchronized records removed from the queue ...", 1, 'sf-cron');
     }
 
     /**
