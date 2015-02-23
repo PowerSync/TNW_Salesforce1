@@ -48,7 +48,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
         $query .= join(' OR ', $_lookup);
 
-
         Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
         try {
             $_result = $this->getClient()->query(($query));
@@ -106,6 +105,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 Mage::helper('tnw_salesforce')->log("Contact lookup returned: " . $_results[0]->size . " results...");
                 return false;
             }
+
             $returnArray = array();
             foreach ($_results as $result) {
                 foreach ($result->records as $_item) {
