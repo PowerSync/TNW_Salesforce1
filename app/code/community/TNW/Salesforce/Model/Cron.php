@@ -203,6 +203,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             $this->syncOrder();
 
             $this->_syncCustomObjects();
+
+            $this->_deleteSuccessfulRecords();
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Server Name is undefined!", 1, 'sf-cron');
         }
@@ -278,6 +280,28 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     protected function _deleteSuccessfulRecords() {
         $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
         Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
+        Mage::helper('tnw_salesforce')->log("Synchronized records removed from the queue ...", 1, 'sf-cron');
+    }
+
+    protected function _resetStuckRecords() {
+        $syncType = Mage::helper('tnw_salesforce')->getObjectSyncType();
+        $_whenToReset = 0;
+        switch ($syncType) {
+            case 'sync_type_queue_interval':
+                $configIntervalSeconds = (int) Mage::helper('tnw_salesforce')->getObjectSyncIntervalValue();
+                $_whenToReset = Mage::helper('tnw_salesforce')->getTime() - ($configIntervalSeconds + TNW_Salesforce_Model_Config_Frequency::INTERVAL_BUFFER);
+                break;
+            case 'sync_type_spectime':
+                // TODO: calculate when to reset the flag
+                $_whenToReset = 0;
+                break;
+            default:
+                break;
+        }
+
+        $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < '" . Mage::helper('tnw_salesforce')->getDate($_whenToReset) . "';";
+        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+        Mage::helper('tnw_salesforce')->log("Synchronized records removed from the queue ...", 1, 'sf-cron');
     }
 
     /**
@@ -298,10 +322,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 $_pendingItem->delete();
             }
         }
-        /* TODO: Read from config when was last synced, add buffer and reset status
-        $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < ;";
-        Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql . 'commit;');
-        */
+
+        $this->_resetStuckRecords();
 
         $this->_deleteSuccessfulRecords();
     }
@@ -317,7 +339,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
         }
 
-        //$this->_resetStuckRecords();
+        $this->_resetStuckRecords();
         $this->_deleteSuccessfulRecords();
 
         // get entity id list from local storage
