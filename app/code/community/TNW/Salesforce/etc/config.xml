@@ -386,6 +386,16 @@
                     </tnw_salesforce_order_status_save>
                 </observers>
             </tnw_salesforce_order_salesforce_status_save>
+
+            <sales_quote_save_before>
+                <observers>
+                    <persistent>
+                        <class>tnw_salesforce/observer</class>
+                        <method>addResetSynchronization</method>
+                    </persistent>
+                </observers>
+            </sales_quote_save_before>
+
         </events>
     </global>
     <adminhtml>
@@ -544,6 +554,11 @@
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::backgroundProcess</model></run>
             </tnw_salesforce_m2sf>
+
+            <tnw_salesforce_abandoned>
+                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
+                <run><model>tnw_salesforce/cron::addAbandonedToQueue</model></run>
+            </tnw_salesforce_abandoned>
         </jobs>
     </crontab>
     <default>

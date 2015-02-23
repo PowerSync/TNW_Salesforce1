@@ -59,6 +59,10 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
         );
     }
 
+    public function isEnabled()
+    {
+        return (Mage::helper('tnw_salesforce')->getType() == "PRO") && Mage::getStoreConfig('salesforce_order/customer_opportunity/abandoned_cart_enabled');
+    }
 
     public function getLimits()
     {

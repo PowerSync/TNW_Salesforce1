@@ -323,7 +323,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     // set opp owner
                     // $this->_updateOppOwner($_result->id); // frozen until we get other working solution
 
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 1, salesforce_id = '" . $_result->id . "' WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
+                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 1, salesforce_id = '" . $_result->id . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
 
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                     $this->_write->query($sql . ' commit;');
@@ -794,7 +794,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             if (!$_result->success) {
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                 $this->_write->query($sql . ' commit;');
 
@@ -852,7 +852,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (!$_result->success) {
                     // Reset sync status
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId . "';";
+                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId . "';";
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                     $this->_write->query($sql . ' commit;');
 
@@ -1644,7 +1644,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             } else {
                 //UPDATE quote to record Customer Id
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $quote->getId() . ";";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET customer_id = " . $_customer->getId() . ", created_at = created_at WHERE entity_id = " . $quote->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote_address') . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $quote->getId() . ";";
                 $this->_write->query($sql);
                 Mage::helper("tnw_salesforce")->log('Guest user found in Magento, updating abandoned cart #' . $quote->getId() . ' attaching cusomter ID: ' . $_customer->getId());
@@ -1745,7 +1745,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         $quoteTable = Mage::getResourceSingleton('sales/quote')->getMainTable();
 
-        $sql = "UPDATE `" . $quoteTable . "` SET sf_insync = 0 WHERE entity_id = " . $_id . ";";
+        $sql = "UPDATE `" . $quoteTable . "` SET sf_insync = 0, created_at = created_at WHERE entity_id = " . $_id . ";";
         $this->_write->query($sql);
     }
 

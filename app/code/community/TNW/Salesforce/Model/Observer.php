@@ -360,4 +360,20 @@ class TNW_Salesforce_Model_Observer
         }
         $orderStatusMapping->save();
     }
+
+    public function addResetSynchronization($observer)
+    {
+        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+            return false;
+        }
+
+        /** @var $quote Mage_Sales_Model_Quote */
+        $quote = $observer->getEvent()->getQuote();
+        if (!$quote) {
+            return false;
+        }
+
+        $quote->setSfSyncForce(1);
+
+    }
 }

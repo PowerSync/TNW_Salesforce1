@@ -20,6 +20,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     protected $_data = array();
 
     /**
+     * @var array
+     */
+    protected $_productIds = array();
+
+    /**
      * @var null
      */
     protected $_serverName = NULL;
@@ -129,6 +134,117 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         Mage::helper('tnw_salesforce')->log("Check Salesforce to Magento queue ...", 1, 'sf-cron');
         Mage::getModel('tnw_salesforce/imports_bulk')->process();
         Mage::helper('tnw_salesforce')->log("Check Salesforce to Magento queue ... done", 1, 'sf-cron');
+    }
+
+    /**
+     * @param $_args
+     */
+    public function cartItemsCallback($_args) {
+        $_product = Mage::getModel('catalog/product');
+        $_product->setData($_args['row']);
+        $_id = (int) $this->_getProductIdFromCart($_product);
+        if (!in_array($_id, $this->_productIds)) {
+            $this->_productIds[] = $_id;
+        }
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getProductIds()
+    {
+        return $this->_productIds;
+    }
+
+    /**
+     * @param $_item Mage_Sales_Model_Quote_Item
+     * @return int
+     */
+    protected function _getProductIdFromCart($_item) {
+        $_options = unserialize($_item->getData('product_options'));
+        if(
+            $_item->getData('product_type') == 'bundle'
+            || (is_array($_options) && array_key_exists('options', $_options))
+        ) {
+            $id = $_item->getData('product_id');
+        } else {
+            $id = (int) Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+        return $id;
+    }
+
+    /**
+     * @comment add Abandoned carts to quote for synchronization
+     */
+    public function addAbandonedToQueue()
+    {
+        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+            return false;
+        }
+
+        /** @var $collection Mage_Reports_Model_Resource_Quote_Collection */
+        $collection = Mage::getResourceModel('reports/quote_collection');
+
+        $collection->addFieldToFilter('sf_sync_force', 1);
+
+
+        $collection->addFieldToSelect('sf_insync');
+        $collection->addFieldToFilter(
+            'main_table.created_at',
+            array(
+                'lt' => Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT)
+            )
+        );
+
+        $itemIds = $collection->getAllIds();
+
+        if (empty($itemIds)) {
+            return false;
+        }
+
+        $_collection = Mage::getResourceModel('sales/quote_item_collection');
+        $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
+            ->columns(array('sku', 'quote_id', 'product_id', 'product_type'))
+            ->where(new Zend_Db_Expr('quote_id IN (' . join(',', $itemIds) . ')'));
+
+        /**
+         * @var $controller TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController
+         */
+
+        Mage::getSingleton('core/resource_iterator')->walk(
+            $_collection->getSelect(),
+            array(array($this, 'cartItemsCallback'))
+        );
+
+        $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($this->getProductIds(), 'Product', 'product');
+        if (!$res) {
+            Mage::helper('tnw_salesforce')->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . "): cannot add product from abandoned", 1, 'sf-cron');
+        }
+
+        // pass data to local storage
+        $res = Mage::getModel('tnw_salesforce/localstorage')->addObject($itemIds, 'Abandoned', 'abandoned');
+        if (!$res) {
+            Mage::helper('tnw_salesforce')->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . "): Could not add abandoneds to the queue", 1, 'sf-cron');
+
+        } else {
+            $bind = array(
+                'sf_sync_force' => 0
+            );
+
+            $where = array(
+                'entity_id IN (?)' => $itemIds
+            );
+
+            Mage::getSingleton('core/resource')
+                ->getConnection('core_write')
+                ->update(Mage::getResourceModel('sales/quote')->getMainTable(), $bind, $where)
+            ;
+
+            Mage::helper('tnw_salesforce')
+                ->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . "): abandoned added to the queue", 1, 'sf-cron');
+        }
+
+        return true;
     }
 
     /**
@@ -508,9 +624,14 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      */
     public function syncAbandoned()
     {
+
+        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+            return false;
+        }
+
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
         if (!$_syncType) {
-            Mage::helper('tnw_salesforce')->log('SKIPPING: Integration Type is not set for the order object.');
+            Mage::helper('tnw_salesforce')->log('SKIPPING: Integration Type is not set for the abandoned object.');
             return false;
         }
 

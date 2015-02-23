@@ -31,7 +31,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             foreach ($ids as $_id) {
                 // Clear Opportunity ID
-                $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET sf_insync = 0, salesforce_id = '' WHERE entity_id = " . $_id . ";";
+                $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET sf_sync_force = 0, sf_insync = 0, salesforce_id = '', created_at = created_at WHERE entity_id = " . $_id . ";";
             }
             if (!empty($sql)) {
                 $this->_write->query($sql);
@@ -652,7 +652,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $sql = '';
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
             if (!in_array($_quoteNumber, $this->_cache['failedOpportunities'])) {
-                $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET sf_insync = 1 WHERE entity_id = " . $_key . ";";
+                $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET sf_insync = 1, created_at = created_at WHERE entity_id = " . $_key . ";";
             }
         }
         if ($sql != '') {
@@ -684,7 +684,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
                     if ($_item->success == "true") {
                         $this->_cache['upsertedOpportunities'][$_oid] = (string)$_item->id;
-                        $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET salesforce_id = '" . $this->_cache['upsertedOpportunities'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+                        $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET salesforce_id = '" . $this->_cache['upsertedOpportunities'][$_oid] . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_oid] . ";";
                         Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache['upsertedOpportunities'][$_oid]);
 
                         //unset($this->_cache['opportunitiesToUpsert'][$_oid]);
