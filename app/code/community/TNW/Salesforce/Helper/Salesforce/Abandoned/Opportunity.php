@@ -1475,7 +1475,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
 
-        if ($stage = Mage::getStoreConfig('', $quote->getStore())) {
+        if ($stage = Mage::getStoreConfig('salesforce_order/customer_opportunity/abandoned_cart_state', $quote->getStore())) {
             $this->_obj->StageName = $stage;
         }
 
