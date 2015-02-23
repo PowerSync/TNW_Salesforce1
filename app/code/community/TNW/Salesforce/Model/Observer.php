@@ -40,12 +40,18 @@ class TNW_Salesforce_Model_Observer
             $_itemsToRetain = constant($_constantName);
 
             if ($_menu) {
+                $_manualSyncNode = $_menu->descend('manual_sync')->descend('children');
+
                 $_orderNode = $_menu->descend('order_mapping')->descend('children');
                 $_customerNode = $_menu->descend('customer_mapping')->descend('children');
             }
             if ($_acl) {
                 $_orderAclNode = $_acl->descend('order_mapping')->descend('children');
                 $_customerAclNode = $_acl->descend('customer_mapping')->descend('children');
+            }
+
+            if ($_manualSyncNode && !Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+                unset($_manualSyncNode->abandoned_sync);
             }
 
             if ($_orderAclNode) {
