@@ -419,7 +419,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _setOrderInfo($order)
     {
-        $_websiteId = $order->getStoreId();
+        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
         $_orderNumber = $order->getRealOrderId();
         $_email = $this->_cache['orderToEmail'][$_orderNumber];
 

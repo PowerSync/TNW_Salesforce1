@@ -1746,8 +1746,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _setOpportunityInfo($order)
     {
-//        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
-        $_websiteId = $order->getStoreId();
+        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
 
         // Set StageName
         $this->_updateOrderStageName($order);

@@ -282,6 +282,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 }
             }
 
+            // Set Store ID for new customer records, use Default store
+            if ($_entity->getData('website_id') && $_entity->getData('store_id') === NULL) {
+                $_entity->setData('store_id', Mage::app()->getWebsite($_entity->getWebsiteId())->getDefaultStore()->getId());
+            }
+
             // Increase the timeout
             set_time_limit(120);
 
@@ -545,6 +550,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 } else {
                     //Brand new user
                     $this->_isNew = true;
+                    Mage::helper('tnw_salesforce')->log("New Customer. Creating!");
                 }
             }
         }
