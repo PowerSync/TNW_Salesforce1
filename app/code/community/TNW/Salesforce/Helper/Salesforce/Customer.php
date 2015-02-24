@@ -1040,8 +1040,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 && array_key_exists($_email, $this->_cache['contactsLookup'][$_sfWebsite])
                 && property_exists($this->_cache['contactsLookup'][$_sfWebsite][$_email], 'OwnerId')
             ) ? $this->_cache['contactsLookup'][$_sfWebsite][$_email]->OwnerId : NULL;
-
-            if (!$_ownerID) {
+            if ($_ownerID) {
+                Mage::helper('tnw_salesforce')->log($type . " record already assigned to " . $_ownerID);
+            } else {
                 $_ownerID = (
                     is_array($this->_cache['contactsLookup'])
                     && array_key_exists($_sfWebsite, $this->_cache['contactsLookup'])
@@ -1049,6 +1050,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     && property_exists($this->_cache['contactsLookup'][$_sfWebsite][$_email], 'Account')
                     && property_exists($this->_cache['contactsLookup'][$_sfWebsite][$_email]->Account, 'OwnerId')
                 ) ? $this->_cache['contactsLookup'][$_sfWebsite][$_email]->Account->OwnerId : NULL;
+                if ($_ownerID) {
+                    Mage::helper('tnw_salesforce')->log($type . " record already assigned to " . $_ownerID . ' - taken from the account');
+                }
             }
         } else if ($type == "Lead") {
             $_ownerID = (
@@ -1058,10 +1062,16 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 && is_object($this->_cache['leadLookup'][$_sfWebsite][$_email])
                 && property_exists($this->_cache['leadLookup'][$_sfWebsite][$_email], 'OwnerId')
             ) ? $this->_cache['leadLookup'][$_sfWebsite][$_email]->OwnerId : NULL;
+            if ($_ownerID) {
+                Mage::helper('tnw_salesforce')->log($type . " record already assigned to " . $_ownerID);
+            }
         }
         if ($_ownerID) {
             if (!$this->_isUserActive($_ownerID)) {
                 $_ownerID = Mage::helper('tnw_salesforce')->getDefaultOwner();
+                Mage::helper('tnw_salesforce')->log("Owner record is inactive - reverting back to default.");
+            } else {
+                Mage::helper('tnw_salesforce')->log("Owner record is active - good to go ...");
             }
 
             $this->_obj->OwnerId = $_ownerID;
