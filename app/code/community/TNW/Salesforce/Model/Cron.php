@@ -6,6 +6,7 @@
 class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 {
     const ORDER_BATCH_SIZE = 500;
+    const ABANDONED_BATCH_SIZE = 500;
     const PRODUCT_BATCH_SIZE = 500;
     const CUSTOMER_BATCH_SIZE = 1000;
     const WEBSITE_BATCH_SIZE = 500;
@@ -364,6 +365,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 break;
             case 'order':
                 $batchSize = self::ORDER_BATCH_SIZE;
+                break;
+            case 'abandoned':
+                $batchSize = self::ABANDONED_BATCH_SIZE;
                 break;
             default:
                 throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
