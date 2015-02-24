@@ -70,6 +70,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      */
     protected $_magentoId = null;
 
+    /**
+     * @var null
+     */
+    protected $_websiteId = NULL;
+
     public function __construct()
     {
         parent::__construct();
@@ -273,13 +278,8 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             // Update Website association
-            if (property_exists($this->_salesforceObject, $this->_prefix . 'Website__c')) {
-                $_websiteSfId = $this->_salesforceObject->{$this->_prefix . 'Website__c'};
-                $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-                if ($_websiteId) {
-                    Mage::helper('tnw_salesforce')->log('Customer: website_id = ' . $_websiteId);
-                    $_entity->setData('website_id', $_websiteId);
-                }
+            if ($this->_websiteId) {
+                $_entity->setData('website_id', $this->_websiteId);
             }
 
             // Set Store ID for new customer records, use Default store
@@ -506,6 +506,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
     }
 
     protected function _findMagentoCustomer() {
+        if (property_exists($this->_salesforceObject, $this->_prefix . 'Website__c')) {
+            $_websiteSfId = $this->_salesforceObject->{$this->_prefix . 'Website__c'};
+            $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
+            if ($_websiteId) {
+                $this->_websiteId = $_websiteId;
+            }
+        }
+
         // Magneto ID provided
         if ($this->_magentoId) {
             //Test if user exists
@@ -540,7 +548,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             } else {
                 Mage::helper('tnw_salesforce')->log('Find by email');
                 //Last reserve, try to find by email
-                $sql = "SELECT entity_id,group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $this->_email . "'";
+                $sql = "SELECT entity_id, group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $this->_email . "'";
+                if ($this->_websiteId && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                    $sql .= " AND website_id = '" . $this->_websiteId . "'";
+                }
+
                 $row = $this->_write->query($sql)->fetch();
                 $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
                 Mage::helper("tnw_salesforce")->log('MID by email: ' . $this->_magentoId);
