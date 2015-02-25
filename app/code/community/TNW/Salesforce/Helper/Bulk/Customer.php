@@ -199,6 +199,14 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                             continue;
                         }
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = (string)$_item->id;
+                        if (
+                            !$this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId
+                            && is_array($this->_cache['accountsToContactLink'])
+                            && array_key_exists($_cid, $this->_cache['accountsToContactLink'])
+                            && $this->_cache['accountsToContactLink'][$_cid]
+                        ) {
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_cache['accountsToContactLink'][$_cid];
+                        }
                         if (array_key_exists($_cid, $this->_cache['guestsFromOrder'])) {
                             $this->_cache['guestsFromOrder'][$_cid]->setSalesforceId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId);
                             $this->_cache['guestsFromOrder'][$_cid]->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
