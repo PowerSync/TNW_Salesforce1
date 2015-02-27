@@ -913,9 +913,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         if ($_info->IsConverted) {
                             // TODO: Delete Lead?!
                         }
-
-                        $this->_addToQueue($_info->MagentoId, "Contact");
+                        // Changed order so that we can capture account owner: Account then Contact
                         $this->_addToQueue($_info->MagentoId, "Account");
+                        $this->_addToQueue($_info->MagentoId, "Contact");
                     }
                 }
             }
@@ -933,8 +933,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 ) {
                     $this->_addToQueue($_id, "Lead");
                 } else {
-                    $this->_addToQueue($_id, "Contact");
+                    // Changed order so that we can capture account owner: Account then Contact
                     $this->_addToQueue($_id, "Account");
+                    $this->_addToQueue($_id, "Contact");
                 }
             }
         }
@@ -963,8 +964,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         $_info->MagentoId = $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId;
                     }
 
-                    $this->_addToQueue($_info->MagentoId, "Contact");
+                    // Changed order so that we can capture account owner: Account then Contact
                     $this->_addToQueue($_info->MagentoId, "Account");
+                    $this->_addToQueue($_info->MagentoId, "Contact");
                 }
             }
         }
