@@ -367,7 +367,7 @@ class TNW_Salesforce_Model_Observer
         $orderStatusMapping->save();
     }
 
-    public function addResetSynchronization($observer)
+    public function prepareQuotesForSync($observer)
     {
         if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
             return false;

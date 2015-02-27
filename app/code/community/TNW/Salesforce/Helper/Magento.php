@@ -48,10 +48,19 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT
         );
+
+        $this->_acl['abandoned'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::ABANDONED_OBJECT,
+        );
+        $this->_acl['abandonedItem'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT,
+        );
+
         $this->_acl['customer'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::LEAD_OBJECT,
             TNW_Salesforce_Model_Config_Objects::CONTACT_OBJECT,
             TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ABANDONED_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ACCOUNT_OBJECT
         );
@@ -62,6 +71,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         $this->_acl['product'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT
         );
     }
@@ -93,6 +103,14 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         if (in_array($type, $this->_acl['order'])) {
             $this->_populateOrderAttributes($type);
             $this->_populatePaymentAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['abandoned'])) {
+            $this->_populateAbandonedAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['abandonedItem'])) {
+            $this->_populateAbandonedItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['customer'])) {
@@ -188,6 +206,53 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 $this->_cache[$type]['order']['value'][] = array(
                     'value' => 'Order : ' . $key,
                     'label' => 'Order : ' . ucwords(str_replace("_", " ", $key)),
+                );
+            }
+        }
+    }
+
+
+    protected function _populateAbandonedAttributes($type)
+    {
+        try {
+            $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales/quote');
+            $collection = $this->_write->query($_sql);
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
+            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['abandoned'] = array(
+                'label' => 'Abandoned',
+                'value' => array()
+            );
+
+            $this->_cache[$type]['abandoned']['value'] = array(
+                array(
+                    'value' => 'Cart : number',
+                    'label' => 'Cart : Number',
+                ),
+                array(
+                    'value' => 'Cart : cart_all',
+                    'label' => 'Cart : All Cart Items',
+                ),
+            );
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['Field'];
+                if (
+                    $key == 'increment_id'
+                    || $key == 'sf_insync'
+                    || $key == 'salesforce_id'
+                    || $key == 'status'
+                ) {
+                    continue;
+                }
+
+                $this->_cache[$type]['abandoned']['value'][] = array(
+                    'value' => 'Cart : ' . $key,
+                    'label' => 'Cart : ' . ucwords(str_replace("_", " ", $key)),
                 );
             }
         }
@@ -404,6 +469,40 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 $this->_cache[$type]['shopping']['value'][] = array(
                     'value' => 'Cart : ' . $key,
                     'label' => 'Cart : ' . ucwords(str_replace("_", " ", $key)),
+                );
+            }
+        }
+    }
+
+
+    public function _populateAbandonedItemAttributes($type)
+    {
+        try {
+            $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales/quote_item');
+            $collection = $this->_write->query($_sql);
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("Could not load Magento quote items schema...");
+            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+        }
+        if ($collection) {
+            $this->_cache[$type]['shopping'] = array(
+                'label' => 'Abandoned Cart items attributes',
+                'value' => array()
+            );
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['Field'];
+                if (
+                    $key == 'item_id'
+                    || $key == 'quote_id'
+                    || $key == 'parent_item_id'
+                    || $key == 'quote_item_id'
+                ) {
+                    continue;
+                }
+
+                $this->_cache[$type]['shopping']['value'][] = array(
+                    'value' => 'Item : ' . $key,
+                    'label' => 'Item : ' . ucwords(str_replace("_", " ", $key)),
                 );
             }
         }

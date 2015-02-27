@@ -91,7 +91,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
 
 
         $collection->addFieldToSelect('sf_insync');
-        $collection->addFieldToFilter('main_table.created_at', array('lt' => Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT)));
+        $collection->addFieldToFilter('main_table.updated_at', array('lt' => Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT)));
 
 
         if (is_array($this->_storeIds) && !empty($this->_storeIds)) {

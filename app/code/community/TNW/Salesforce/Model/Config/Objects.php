@@ -5,6 +5,8 @@ class TNW_Salesforce_Model_Config_Objects
     const LEAD_OBJECT               =   'Lead';
     const CONTACT_OBJECT            =   'Contact';
     const ACCOUNT_OBJECT            =   'Account';
+    const ABANDONED_OBJECT          =   'Abandoned';
+    const ABANDONED_ITEM_OBJECT     =   'AbandonedItem';
     const OPPORTUNITY_OBJECT        =   'Opportunity';
     const OPPORTUNITY_ITEM_OBJECT   =   'OpportunityItem';
     const ORDER_OBJECT              =   'Order';

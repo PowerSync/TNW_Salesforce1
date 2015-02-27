@@ -1339,7 +1339,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                         }
                     }
                     break;
-                case "Quote":
+                case "Cart":
                     if ($conf[1] == "cart_all") {
                         $value = $this->_getDescriptionCart($quote);
                     } elseif ($conf[1] == "number") {
@@ -1523,9 +1523,16 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $this->_assignPricebookToQuote($quote);
 
         // Close Date
-        if ($quote->getCreatedAt()) {
+        if ($quote->getUpdatedAt()) {
+
+            $closeDate = new Zend_Date();
+            $closeDate->setDate($quote->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
+
+            $closeDate->addDay(Mage::helper('tnw_salesforce/abandoned')->getAbandonedCloseTimeAfter($quote));
+
             // Always use quote date as closing date if quote already exists
-            $this->_obj->CloseDate = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($quote->getCreatedAt())));
+            $this->_obj->CloseDate = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($closeDate));
+
         } else {
             // this should never happen
             $this->_obj->CloseDate = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
@@ -1731,8 +1738,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $this->_attributes['salesforce_is_person'] = $resource->getIdByCode('customer', 'salesforce_is_person');
         }
 
-        $this->_opportunityMapping = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('Opportunity');
-        $this->_opportunityLineItemMapping = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('OpportunityLineItem');
+        $this->_opportunityMapping = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter(TNW_Salesforce_Model_Config_Objects::ABANDONED_OBJECT);
+        $this->_opportunityLineItemMapping = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter(TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT);
 
         return $this->check();
     }

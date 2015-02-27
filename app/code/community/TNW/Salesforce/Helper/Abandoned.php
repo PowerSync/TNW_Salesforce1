@@ -8,6 +8,8 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     protected $_limits = array();
     protected $_limitsHash = array();
 
+    const ABANDONED_CLOSE_TIME_AFTER = 'salesforce_order/customer_opportunity/abandoned_close_time_after';
+
     const THREE_HOURS = 1;
     const SIX_HOURS = 2;
     const TWENTY_HOURS = 3;
@@ -133,5 +135,14 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
         }
 
         return $currentDate;
+    }
+
+    /**
+     * @param $quote Mage_Sales_Model_Quote
+     * @return mixed
+     */
+    public function getAbandonedCloseTimeAfter($quote)
+    {
+        return Mage::getStoreConfig(self::ABANDONED_CLOSE_TIME_AFTER, $quote->getStoreId());
     }
 }

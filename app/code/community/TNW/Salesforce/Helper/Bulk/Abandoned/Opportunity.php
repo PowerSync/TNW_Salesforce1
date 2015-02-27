@@ -432,9 +432,16 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $this->_assignPricebookToQuote($quote);
 
         // Close Date
-        if ($quote->getCreatedAt()) {
+        if ($quote->getUpdatedAt()) {
+
+            $closeDate = new Zend_Date();
+            $closeDate->setDate($quote->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
+
+            $closeDate->addDay(Mage::helper('tnw_salesforce/abandoned')->getAbandonedCloseTimeAfter($quote));
+
             // Always use quote date as closing date if quote already exists
-            $this->_obj->CloseDate = gmdate(DATE_ATOM, strtotime($quote->getCreatedAt()));
+            $this->_obj->CloseDate = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($closeDate));
+
         } else {
             // this should never happen
             $this->_obj->CloseDate = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));

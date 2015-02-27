@@ -814,6 +814,19 @@
                             </depends>
                         </abandoned_cart_limit>
 
+                        <abandoned_close_time_after translate="label">
+                            <label>Set end time for opportunity after(days)</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>140</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <abandoned_cart_enabled>1</abandoned_cart_enabled>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </abandoned_close_time_after>
+
                         <abandoned_cart_state translate="label">
                             <label>Opportunity state of abandoned cart</label>
                             <frontend_type>select</frontend_type>

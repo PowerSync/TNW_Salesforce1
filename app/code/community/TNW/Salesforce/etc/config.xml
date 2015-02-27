@@ -391,7 +391,7 @@
                 <observers>
                     <persistent>
                         <class>tnw_salesforce/observer</class>
-                        <method>addResetSynchronization</method>
+                        <method>prepareQuotesForSync</method>
                     </persistent>
                 </observers>
             </sales_quote_save_before>
@@ -610,6 +610,7 @@
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
                 <abandoned_cart_enabled>0</abandoned_cart_enabled>
+                <abandoned_close_time_after>14</abandoned_close_time_after>
                 <abandoned_cart_state>Committed</abandoned_cart_state>
             </customer_opportunity>
             <opportunity_cart>
