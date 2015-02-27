@@ -413,7 +413,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
                 $results = $this->_mySforceConnection->upsert($_pushOn, $_toSyncValues, 'Opportunity');
 
-                Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
+                Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
                     "data" => $this->_cache['opportunitiesToUpsert'],
                     "result" => $results
                 ));

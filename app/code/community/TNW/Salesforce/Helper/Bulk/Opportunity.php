@@ -616,6 +616,9 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] = $this->_createJob('Opportunity', 'upsert', $this->_magentoId);
                 Mage::helper('tnw_salesforce')->log('Syncronizing Opportunities, created job: ' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_send_before",array("data" => $this->_cache['opportunitiesToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['opportunity'][$this->_magentoId], 'opportunities', $this->_cache['opportunitiesToUpsert'], $this->_magentoId);
 
             Mage::helper('tnw_salesforce')->log('Checking if Opportunities were successfully synced...');
@@ -753,6 +756,12 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $response = $e->getMessage();
             }
         }
+
+        Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
+            "data" => $this->_cache['opportunitiesToUpsert'],
+            "result" => $this->_cache['responses']['opportunities']
+        ));
+
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
             $this->_write->query($sql);
