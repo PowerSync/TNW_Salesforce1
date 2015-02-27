@@ -1067,6 +1067,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['opportunityLineItemsToUpsert']);
             if ($_ttl > 199) {
@@ -1080,11 +1083,19 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $this->_pushOpportunityLineItems($this->_cache['opportunityLineItemsToUpsert']);
             }
 
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+                "data" => $this->_cache['opportunityLineItemsToUpsert'],
+                "result" => $this->_cache['responses']['opportunityProducts']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: End----------');
         }
 
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Contact Roles: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
+
             // Push Contact Roles
             try {
                 $results = $this->_mySforceConnection->upsert("Id", $this->_cache['contactRolesToUpsert'], 'OpportunityContactRole');
@@ -1119,12 +1130,21 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     Mage::helper('tnw_salesforce')->log('Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (order: ' . $_orderNum . ') upserted.');
                 }
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_after",array(
+                "data" => $this->_cache['contactRolesToUpsert'],
+                "result" => $this->_cache['responses']['customerRoles']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Contact Roles: End----------');
         }
 
         // Push Notes
         if (!empty($this->_cache['notesToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Notes: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['notesToUpsert']);
             if ($_ttl > 199) {
@@ -1137,6 +1157,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             } else {
                 $this->_pushNotes($this->_cache['notesToUpsert']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                "data" => $this->_cache['notesToUpsert'],
+                "result" => $this->_cache['responses']['notes']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Notes: End----------');
         }
     }

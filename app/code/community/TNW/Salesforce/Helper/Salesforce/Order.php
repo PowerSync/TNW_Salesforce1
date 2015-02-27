@@ -1701,6 +1701,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         // Push Order Products
         if (!empty($this->_cache['orderItemsToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['orderItemsToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['orderItemsToUpsert']);
             if ($_ttl > 199) {
@@ -1713,12 +1716,21 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             } else {
                 $this->_pushOrderItems($this->_cache['orderItemsToUpsert']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+                "data" => $this->_cache['orderItemsToUpsert'],
+                "result" => $this->_cache['responses']['orderProducts']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: End----------');
         }
 
         // Push Notes
         if (!empty($this->_cache['notesToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Notes: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['notesToUpsert']);
             if ($_ttl > 199) {
@@ -1731,6 +1743,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             } else {
                 $this->_pushNotes($this->_cache['notesToUpsert']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                "data" => $this->_cache['notesToUpsert'],
+                "result" => $this->_cache['responses']['notes']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Notes: End----------');
         }
 

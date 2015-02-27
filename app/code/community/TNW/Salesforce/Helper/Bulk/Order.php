@@ -423,6 +423,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 $this->_cache['bulkJobs']['orderProducts']['Id'] = $this->_createJob('OrderItem', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Order Products, created job: ' . $this->_cache['bulkJobs']['orderProducts']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['orderItemsToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['orderProducts']['Id'], 'orderProducts', $this->_cache['orderItemsToUpsert']);
 
             Mage::helper('tnw_salesforce')->log('Checking if Order Products were successfully synced...');
@@ -441,6 +444,11 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             if (strval($_result) != 'exception') {
                 $this->_checkOrderProductData();
+
+                Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+                    "data" => $this->_cache['orderItemsToUpsert'],
+                    "result" => $this->_cache['responses']['orderProducts']
+                ));
             }
         }
 
@@ -451,6 +459,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 $this->_cache['bulkJobs']['notes']['Id'] = $this->_createJob('Note', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Notes, created job: ' . $this->_cache['bulkJobs']['notes']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['notes']['Id'], 'notes', $this->_cache['notesToUpsert']);
 
             Mage::helper('tnw_salesforce')->log('Checking if Notes were successfully synced...');
@@ -469,6 +480,11 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             if (strval($_result) != 'exception') {
                 $this->_checkNotesData();
+
+                Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                    "data" => $this->_cache['notesToUpsert'],
+                    "result" => $this->_cache['responses']['notes']
+                ));
             }
         }
 

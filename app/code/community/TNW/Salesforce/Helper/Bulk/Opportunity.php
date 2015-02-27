@@ -488,6 +488,9 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $this->_cache['bulkJobs']['opportunityProducts']['Id'] = $this->_createJob('OpportunityLineItem', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Opportunity Products, created job: ' . $this->_cache['bulkJobs']['opportunityProducts']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['opportunityProducts']['Id'], 'opportunityProducts', $this->_cache['opportunityLineItemsToUpsert']);
 
             Mage::helper('tnw_salesforce')->log('Checking if Opportunity Products were successfully synced...');
@@ -502,6 +505,14 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['opportunityProducts']['Id']);
             }
+
+            if (strval($_result) != 'exception') {
+                Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+                    "data" => $this->_cache['opportunityLineItemsToUpsert'],
+                    "result" => $this->_cache['responses']['opportunityProducts']
+                ));
+            }
+
             Mage::helper('tnw_salesforce')->log('Opportunities Products sync is complete! Moving on...');
         }
 
@@ -511,6 +522,9 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $this->_cache['bulkJobs']['customerRoles']['Id'] = $this->_createJob('OpportunityContactRole', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Opportunity Contact Roles, created job: ' . $this->_cache['bulkJobs']['customerRoles']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['customerRoles']['Id'], 'opportunityContactRoles', $this->_cache['contactRolesToUpsert']);
 
             Mage::helper('tnw_salesforce')->log('Checking if Opportunity Contact Roles were successfully synced...');
@@ -525,6 +539,12 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['customerRoles']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_after",array(
+                "data" => $this->_cache['contactRolesToUpsert'],
+                "result" => $this->_cache['responses']['customerRoles']
+            ));
+
             Mage::helper('tnw_salesforce')->log('Opportunities Contact Roles sync is complete! Moving on...');
         }
 
@@ -538,6 +558,9 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $this->_cache['bulkJobs']['notes']['Id'] = $this->_createJob('Note', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Notes, created job: ' . $this->_cache['bulkJobs']['notes']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['notes']['Id'], 'notes', $this->_cache['notesToUpsert']);
 
             Mage::helper('tnw_salesforce')->log('Checking if Notes were successfully synced...');
@@ -556,6 +579,11 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
             if (strval($_result) != 'exception') {
                 $this->_checkNotesData();
+
+                Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                    "data" => $this->_cache['notesToUpsert'],
+                    "result" => $this->_cache['responses']['notes']
+                ));
             }
         }
     }
