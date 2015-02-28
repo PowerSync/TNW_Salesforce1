@@ -52,6 +52,8 @@ class TNW_Salesforce_Model_Observer
 
             if ($_manualSyncNode && !Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
                 unset($_manualSyncNode->abandoned_sync);
+                unset($_menu->abandoned_mapping);
+
             }
 
             if ($_orderAclNode) {

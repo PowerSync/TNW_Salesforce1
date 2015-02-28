@@ -16,11 +16,6 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected $_cache = array();
 
     /**
-     * @var null
-     */
-    protected $_read = NULL;
-
-    /**
      * @var array
      */
     public $productInventoryFieldList = array(
@@ -216,7 +211,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales/quote');
-            $collection = $this->_write->query($_sql);
+            $collection = $this->getDbConnection('read')->query($_sql);
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
@@ -479,7 +474,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales/quote_item');
-            $collection = $this->_write->query($_sql);
+            $collection = $this->getDbConnection('read')->query($_sql);
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Could not load Magento quote items schema...");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());

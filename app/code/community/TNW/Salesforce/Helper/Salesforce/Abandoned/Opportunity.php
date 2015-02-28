@@ -850,7 +850,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 //Report Transaction
                 $this->_cache['responses']['opportunityCustomerRoles'][] = $_result;
 
-                if (!$_result->success) {
+                if (!(int)$_result->success) {
                     // Reset sync status
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId . "';";
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
@@ -1533,7 +1533,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $closeDate->addDay(Mage::helper('tnw_salesforce/abandoned')->getAbandonedCloseTimeAfter($quote));
 
             // Always use quote date as closing date if quote already exists
-            $this->_obj->CloseDate = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($closeDate));
+            $this->_obj->CloseDate = gmdate(DATE_ATOM, $closeDate->getTimestamp());
 
         } else {
             // this should never happen

@@ -440,7 +440,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $closeDate->addDay(Mage::helper('tnw_salesforce/abandoned')->getAbandonedCloseTimeAfter($quote));
 
             // Always use quote date as closing date if quote already exists
-            $this->_obj->CloseDate = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($closeDate));
+            $this->_obj->CloseDate = gmdate(DATE_ATOM, $closeDate->getTimestamp());
 
         } else {
             // this should never happen

@@ -140,10 +140,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     /**
      * @param $_args
      */
-    public function cartItemsCallback($_args) {
+    public function cartItemsCallback($_args)
+    {
         $_product = Mage::getModel('catalog/product');
         $_product->setData($_args['row']);
-        $_id = (int) $this->_getProductIdFromCart($_product);
+        $_id = (int)$this->_getProductIdFromCart($_product);
         if (!in_array($_id, $this->_productIds)) {
             $this->_productIds[] = $_id;
         }
@@ -161,15 +162,16 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      * @param $_item Mage_Sales_Model_Quote_Item
      * @return int
      */
-    protected function _getProductIdFromCart($_item) {
+    protected function _getProductIdFromCart($_item)
+    {
         $_options = unserialize($_item->getData('product_options'));
-        if(
+        if (
             $_item->getData('product_type') == 'bundle'
             || (is_array($_options) && array_key_exists('options', $_options))
         ) {
             $id = $_item->getData('product_id');
         } else {
-            $id = (int) Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
         }
         return $id;
     }
@@ -217,33 +219,31 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             array(array($this, 'cartItemsCallback'))
         );
 
-        $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($this->getProductIds(), 'Product', 'product');
-        if (!$res) {
-            Mage::helper('tnw_salesforce')->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . "): cannot add product from abandoned", 1, 'sf-cron');
+        $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+
+        foreach ($_productChunks as $_chunk) {
+            Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Product', 'product');
         }
 
-        // pass data to local storage
-        $res = Mage::getModel('tnw_salesforce/localstorage')->addObject($itemIds, 'Abandoned', 'abandoned');
-        if (!$res) {
-            Mage::helper('tnw_salesforce')->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . "): Could not add abandoneds to the queue", 1, 'sf-cron');
-
-        } else {
+        $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+        unset($itemIds, $_chunk);
+        foreach ($_chunks as $_chunk) {
+            Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Abandoned', 'abandoned');
             $bind = array(
                 'sf_sync_force' => 0
             );
 
             $where = array(
-                'entity_id IN (?)' => $itemIds
+                'entity_id IN (?)' => $_chunk
             );
 
-            Mage::getSingleton('core/resource')
-                ->getConnection('core_write')
-                ->update(Mage::getResourceModel('sales/quote')->getMainTable(), $bind, $where)
-            ;
+            $this->getDbConnection('write')
+                ->update(Mage::getResourceModel('sales/quote')->getMainTable(), $bind, $where);
 
-            Mage::helper('tnw_salesforce')
-                ->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . "): abandoned added to the queue", 1, 'sf-cron');
         }
+
+        Mage::helper('tnw_salesforce')
+            ->log("Powersync background process for store (" . Mage::helper('tnw_salesforce')->getStoreId() . ") and website id (" . Mage::helper('tnw_salesforce')->getWebsiteId() . "): abandoned added to the queue", 1, 'sf-cron');
 
         return true;
     }
@@ -400,18 +400,20 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     /**
      * Delete synced records from the queue
      */
-    protected function _deleteSuccessfulRecords() {
+    protected function _deleteSuccessfulRecords()
+    {
         $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
         Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
         Mage::helper('tnw_salesforce')->log("Synchronized records removed from the queue ...", 1, 'sf-cron');
     }
 
-    protected function _resetStuckRecords() {
+    protected function _resetStuckRecords()
+    {
         $syncType = Mage::helper('tnw_salesforce')->getObjectSyncType();
         $_whenToReset = 0;
         switch ($syncType) {
             case 'sync_type_queue_interval':
-                $configIntervalSeconds = (int) Mage::helper('tnw_salesforce')->getObjectSyncIntervalValue();
+                $configIntervalSeconds = (int)Mage::helper('tnw_salesforce')->getObjectSyncIntervalValue();
                 $_whenToReset = Mage::helper('tnw_salesforce')->getTime() - ($configIntervalSeconds + TNW_Salesforce_Model_Config_Frequency::INTERVAL_BUFFER);
                 break;
             case 'sync_type_spectime':
@@ -430,10 +432,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     /**
      * Delete successful records, add new, reset stuck items
      */
-    protected function _updateQueue() {
+    protected function _updateQueue()
+    {
         // Add pending items into the queue
         $_collection = Mage::getModel('tnw_salesforce/queue')->getCollection();
-        foreach($_collection as $_pendingItem) {
+        foreach ($_collection as $_pendingItem) {
             if ($_pendingItem->getData('mage_object_type') == 'product') {
                 $_method = 'addObjectProduct';
             } else {
@@ -457,6 +460,13 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
         if ($type == 'order') {
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+
+            // Get all products and customers from the queue
+            $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
+        }
+
+        if ($type == 'abandoned') {
+            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
 
             // Get all products and customers from the queue
             $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
@@ -501,7 +511,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                     /**
                      * @var $manualSync TNW_Salesforce_Helper_Bulk_Order|TNW_Salesforce_Helper_Bulk_Product|TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Bulk_Website
                      */
-                    $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
+                    if ($type == 'abandoned') {
+                        $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type . '_opportunity');
+                    } else {
+                        $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
+                    }
                     if ($manualSync->reset()) {
                         $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
                         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
@@ -510,14 +524,19 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                         $objectIdSet = array();
                         foreach ($list->getData() as $item) {
                             $_skip = false;
-                            if ($type == 'order') {
-                                $_order = Mage::getModel('sales/order')->load($item['object_id']);
+                            if ($type == 'order' || $type == 'abandoned') {
 
-                                if ($_order->getCustomerId() && array_key_exists('Customer', $_dependencies) && in_array($_order->getCustomerId(), $_dependencies['Customer'])) {
+                                if ($type == 'order') {
+                                    $_entity = Mage::getModel('sales/order')->load($item['object_id']);
+                                } else {
+                                    $_entity = Mage::getModel('sales/quote')->load($item['object_id']);
+                                }
+
+                                if ($_entity->getCustomerId() && array_key_exists('Customer', $_dependencies) && in_array($_entity->getCustomerId(), $_dependencies['Customer'])) {
                                     $_skip = true;
                                 }
                                 if (!$_skip && array_key_exists('Product', $_dependencies)) {
-                                    foreach ($_order->getAllVisibleItems() as $_item) {
+                                    foreach ($_entity->getAllVisibleItems() as $_item) {
                                         $id = $this->getProductIdFromCart($_item);
                                         if (in_array($id, $_dependencies['Product'])) {
                                             $_skip = true;
