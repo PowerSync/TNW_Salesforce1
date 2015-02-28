@@ -1142,7 +1142,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $sf_field = $_map->sf_field;
 
         switch ($conf[0]) {
-            case "Cart":
+            case "Item":
                 if ($cartItem) {
                     if ($conf[1] == "total_product_price") {
                         $subtotal = number_format((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQty()), 2, ".", "");
@@ -1390,23 +1390,23 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
                     $value = $quote->getPayment()->$attr();
                     break;
-                case "Aitoc":
-                    $modules = Mage::getConfig()->getNode('modules')->children();
-                    $value = NULL;
-                    if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-                        $aCustomAtrrList = Mage::getModel('aitcheckoutfields/transport')->loadByQuoteId($quote->getId());
-                        foreach ($aCustomAtrrList->getData() as $_key => $_data) {
-                            if ($_data['code'] == $conf[1]) {
-                                $value = $_data['value'];
-                                if ($_data['type'] == "date") {
-                                    $value = date("Y-m-d", strtotime($value));
-                                }
-                                break;
-                            }
-                        }
-                        unset($aCustomAtrrList);
-                    }
-                    break;
+//                case "Aitoc":
+//                    $modules = Mage::getConfig()->getNode('modules')->children();
+//                    $value = NULL;
+//                    if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
+//                        $aCustomAtrrList = Mage::getModel('aitcheckoutfields/transport')->loadByQuoteId($quote->getId());
+//                        foreach ($aCustomAtrrList->getData() as $_key => $_data) {
+//                            if ($_data['code'] == $conf[1]) {
+//                                $value = $_data['value'];
+//                                if ($_data['type'] == "date") {
+//                                    $value = date("Y-m-d", strtotime($value));
+//                                }
+//                                break;
+//                            }
+//                        }
+//                        unset($aCustomAtrrList);
+//                    }
+//                    break;
                 default:
                     break;
             }
@@ -1419,6 +1419,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         unset($collection, $_map, $quote);
     }
 
+    /**
+     * @param $quote Mage_Sales_Model_Quote
+     * @return string
+     */
     protected function _getDescriptionCart($quote)
     {
         $_currencyCode = '';
@@ -1458,8 +1462,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $descriptionCart .= "=======================================\n";
         $descriptionCart .= "Sub Total: " . $_currencyCode . number_format(($quote->getSubtotal()), 2, ".", "") . "\n";
         $descriptionCart .= "Tax: " . $_currencyCode . number_format(($quote->getTaxAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Shipping (" . $quote->getShippingDescription() . "): " . $_currencyCode . number_format(($quote->getShippingAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Discount Amount : " . $_currencyCode . number_format($quote->getGrandTotal() - ($quote->getShippingAmount() + $quote->getTaxAmount() + $quote->getSubtotal()), 2, ".", "") . "\n";
         $descriptionCart .= "Total: " . $_currencyCode . number_format(($quote->getGrandTotal()), 2, ".", "");
         $descriptionCart .= "\n";
         unset($quote);
