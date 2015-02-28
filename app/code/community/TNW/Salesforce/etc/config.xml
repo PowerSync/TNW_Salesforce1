@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.09.0000</version>
+            <version>0.01.49.09.0001</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -130,6 +130,16 @@
                     </tnw_salesforce_newsletter_observer>
                 </observers>
             </newsletter_subscriber_delete_after>
+
+            <!-- -->
+            <sales_order_invoice_save_after>
+                <observers>
+                    <tnw_salesforce_order_invoice_save_after>
+                        <class>tnw_salesforce/order_invoice_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_order_invoice_save_after>
+                </observers>
+            </sales_order_invoice_save_after>
 
             <!-- Shipment Events
             <sales_order_shipment_save_before>
