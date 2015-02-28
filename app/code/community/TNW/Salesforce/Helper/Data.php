@@ -114,10 +114,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = NULL;
-    protected $_taxProduct = NULL;
-    protected $_taxProductsLookup = NULL;
-    protected $_shippingProduct = array();
-    protected $_shippingProductsLookup = NULL;
 
     //const MODULE_TYPE = 'BASIC';
     const MODULE_TYPE = 'PRO';
@@ -667,34 +663,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->_leadStatus;
     }
 
-    // Get Salesforce Tax Product
-    public function shippingProductDropdown()
-    {
-        if ($this->isWorking()) {
-            if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->productLookupAdvanced(NULL, 'Shipping')) {
-                foreach ($collection as $_item) {
-                    $this->_shippingProductsLookup[$_item->PricebookEntityId] = $_item->Name;
-                }
-                unset($collection, $_item);
-            }
-        }
-        if (!$this->_shippingProduct && !empty($this->_shippingProductsLookup)) {
-            $this->_shippingProduct = array();
-            foreach ($this->_shippingProductsLookup as $key => $_obj) {
-                $this->_shippingProduct[] = array(
-                    'label' => $_obj,
-                    'value' => $key
-                );
-            }
-        } else if (empty($this->_shippingProductsLookup)) {
-            $this->_taxProduct[] = array(
-                'label' => 'No products found',
-                'value' => 0
-            );
-        }
-        return $this->_shippingProduct;
-    }
-
     /**
      * return list of quote statuses in salesforce
      *
@@ -843,34 +811,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         }
 
         return $res;
-    }
-
-    // Get Salesforce Tax Product
-    public function taxProductDropdown()
-    {
-        if ($this->isWorking()) {
-            if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->productLookupAdvanced(NULL, 'Tax')) {
-                foreach ($collection as $_item) {
-                    $this->_taxProductsLookup[$_item->PricebookEntityId] = $_item->Name;
-                }
-                unset($collection, $_item);
-            }
-        }
-        if (!$this->_taxProduct && !empty($this->_taxProductsLookup)) {
-            $this->_taxProduct = array();
-            foreach ($this->_taxProductsLookup as $key => $_obj) {
-                $this->_taxProduct[] = array(
-                    'label' => $_obj,
-                    'value' => $key
-                );
-            }
-        } else if (empty($this->_taxProductsLookup)) {
-            $this->_taxProduct[] = array(
-                'label' => 'No products found',
-                'value' => 0
-            );
-        }
-        return $this->_taxProduct;
     }
 
     // Get Salesforce Person Account Record Id
