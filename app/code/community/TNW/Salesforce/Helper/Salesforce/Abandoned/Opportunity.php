@@ -72,7 +72,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $this->_prepareOpportunityLineItems();
                 }
 
-                if (Mage::helper('tnw_salesforce')->isEnabledCustomerRole()) {
+                if (Mage::helper('tnw_salesforce/abandoned')->isEnabledCustomerRole()) {
                     $this->_prepareContactRoles();
                 }
                 $this->_pushRemainingOpportunityData();
@@ -570,7 +570,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             if ($this->_cache['opportunityLookup'] && array_key_exists($magentoQuoteNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles) {
                 foreach ($this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles->records as $_role) {
                     if ($_role->ContactId == $this->_obj->ContactId) {
-                        if ($_role->Role == Mage::helper('tnw_salesforce')->getDefaultCustomerRole()) {
+                        if ($_role->Role == Mage::helper('tnw_salesforce/abandoned')->getDefaultCustomerRole()) {
                             // No update required
                             Mage::helper('tnw_salesforce')->log('Contact Role information is the same, no update required!');
                             $_skip = true;
@@ -587,7 +587,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $this->_obj->IsPrimary = true;
                 $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
 
-                $this->_obj->Role = Mage::helper('tnw_salesforce')->getDefaultCustomerRole();
+                $this->_obj->Role = Mage::helper('tnw_salesforce/abandoned')->getDefaultCustomerRole();
 
                 foreach ($this->_obj as $key => $_item) {
                     Mage::helper('tnw_salesforce')->log("OpportunityContactRole Object: " . $key . " = '" . $_item . "'");
@@ -1297,7 +1297,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
 
-        if ($stage = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::DEFAULT_STATE_ABANDONED, $quote->getStore())) {
+        if ($stage = Mage::helper('tnw_salesforce/abandoned')->getDefaultAbandonedCartStageName()) {
             $this->_obj->StageName = $stage;
         }
 

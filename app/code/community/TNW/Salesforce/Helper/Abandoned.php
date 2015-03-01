@@ -8,7 +8,14 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     protected $_limits = array();
     protected $_limitsHash = array();
 
+    /* Abandoned Cart */
+
     const ABANDONED_CLOSE_TIME_AFTER = 'salesforce_order/customer_opportunity/abandoned_close_time_after';
+    const ABANDONED_CART_ENABLED = 'salesforce_order/customer_opportunity/abandoned_cart_enabled';
+    const DEFAULT_STATE_ABANDONED = 'salesforce_order/customer_opportunity/abandoned_cart_state';
+    const ABANDONED_CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/abandoned_customer_opportunity_role_enable';
+    const ABANDONED_SYNC = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
+    const ABANDONED_CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
 
     const THREE_HOURS = 1;
     const SIX_HOURS = 2;
@@ -20,8 +27,6 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     const ONE_MONTH = 7;
 
     const ABANDONED_CART_ID_PREFIX = 'ac_';
-
-    const ABANDONED_SYNC = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
 
     function __construct()
     {
@@ -65,8 +70,27 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     {
         return
             Mage::helper('tnw_salesforce')->getType() == "PRO"
-        && Mage::getStoreConfig('salesforce_order/customer_opportunity/order_or_opportunity') == TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT
-        && Mage::getStoreConfig('salesforce_order/customer_opportunity/abandoned_cart_enabled');
+        && Mage::getStoreConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT) == TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT
+        && Mage::getStoreConfig(TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED);
+    }
+
+    // is Customer Opportunity Role Enabled
+    public function isEnabledCustomerRole()
+    {
+        return $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE_ENABLED);
+    }
+
+
+    // Default Customer Opportunity Role
+    public function getDefaultCustomerRole()
+    {
+        return $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE);
+    }
+
+
+    // Default Stage name for abandoned cart
+    public function getDefaultAbandonedCartStageName() {
+        return $this->getStroreConfig(self::DEFAULT_STATE_ABANDONED);
     }
 
     public function getLimits()
