@@ -402,29 +402,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $_quote = Mage::registry('abandoned_cached_' . $_quoteNumber);
             $_currencyCode = Mage::app()->getStore($_quote->getStoreId())->getCurrentCurrencyCode();
 
-
-            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
-                if (Mage::helper('tnw_salesforce')->getTaxProduct()) {
-                    $this->addTaxProduct($_quote, $_quoteNumber);
-                } else {
-                    Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Opportunity Tax product is not set!", 1, "sf-errors");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Tax Fee product to the Opportunity!');
-                    }
-                }
-            }
-
-            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
-                if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
-                    $this->addDiscountProduct($_quote, $_quoteNumber);
-                } else {
-                    Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Discount product is not configured!", 1, "sf-errors");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Discount Fee product to the Quote!');
-                    }
-                }
-            }
-
             foreach ($_quote->getAllVisibleItems() as $_item) {
                 if ((int) $_item->getQty() == 0) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
@@ -459,11 +436,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
                 unset($collection, $_map);
                 // Check if already exists
-
-                $_cartItemFound = $this->doesCartItemExistInOpportunity($_quoteNumber, $_item, $_sku);
-                if ($_cartItemFound) {
-                    $this->_obj->Id = $_cartItemFound;
-                }
 
                 $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
                 //$subtotal = number_format((($item->getPrice() * $item->getQty()) + $item->getTaxAmount()), 2, ".", "");
@@ -554,145 +526,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
     }
 
-    protected function addTaxProduct($_quote, $_quoteNumber)
-    {
-        $_storeId = $_quote->getStoreId();
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-            }
-        }
-        $this->_obj = new stdClass();
-        $_helper = Mage::helper('tnw_salesforce');
-        $_taxProductPricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::QUOTE_TAX_PRODUCT);
-
-        $_cartItemFound = false;
-        if (
-            is_array($this->_cache['opportunityLookup']) &&
-            array_key_exists($_quoteNumber, $this->_cache['opportunityLookup']) &&
-            property_exists($this->_cache['opportunityLookup'][$_quoteNumber], 'OpportunityLineItems')
-            && is_object($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems)
-            && property_exists($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems, 'records')
-        ) {
-            foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems->records as $_cartItem) {
-                if ($_cartItem->PricebookEntryId == $_taxProductPricebookEntryId) {
-                    $_cartItemFound = $_cartItem->Id;
-                    break;
-                }
-            }
-        }
-
-        if ($_cartItemFound) {
-            $this->_obj->Id = $_cartItemFound;
-        }
-
-        $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
-        $this->_obj->UnitPrice = number_format(($_quote->getTaxAmount()), 2, ".", "");
-        if (!property_exists($this->_obj, "Id")) {
-            if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-            } else {
-                $_storeId = $_quote->getStoreId();
-            }
-
-            $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::QUOTE_TAX_PRODUCT);
-        }
-        $defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-        if ($defaultServiceDate) {
-            $this->_obj->ServiceDate = $defaultServiceDate;
-        }
-        $this->_obj->Description = 'Total Tax';
-        $this->_obj->Quantity = 1;
-
-        /* Dump OpportunityLineItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
-        }
-
-        $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
-        Mage::helper('tnw_salesforce')->log('-----------------');
-    }
-
-    /**
-     * @param $_quote
-     * @param $_quoteNumber
-     * Prepare Shipping fee to Saleforce quote
-     */
-    protected function addDiscountProduct($_quote, $_quoteNumber)
-    {
-        $_storeId = $_quote->getStoreId();
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-            }
-        }
-        // Add Shipping Fee to the quote
-        $this->_obj = new stdClass();
-
-        $_helper = Mage::helper('tnw_salesforce');
-        $_discountProductPricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::QUOTE_DISCOUNT_PRODUCT);
-
-        $_cartItemFound = false;
-        if (
-            is_array($this->_cache['opportunityLookup']) &&
-            array_key_exists($_quoteNumber, $this->_cache['opportunityLookup']) &&
-            property_exists($this->_cache['opportunityLookup'][$_quoteNumber], 'OpportunityLineItems')
-            && is_object($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems)
-            && property_exists($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems, 'records')
-        ) {
-            foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems->records as $_cartItem) {
-                if ($_cartItem->PricebookEntryId == $_discountProductPricebookEntryId) {
-                    $_cartItemFound = $_cartItem->Id;
-                    break;
-                }
-            }
-        }
-        if ($_cartItemFound) {
-            $this->_obj->Id = $_cartItemFound;
-        }
-
-        $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
-        $this->_obj->UnitPrice = number_format(($_quote->getData('discount_amount')), 2, ".", "");
-        if (!property_exists($this->_obj, "Id")) {
-            if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-            } else {
-                $_storeId = $_quote->getStoreId();
-            }
-
-            $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::QUOTE_DISCOUNT_PRODUCT);
-        }
-        $this->_obj->Description = 'Discount';
-        $this->_obj->Quantity = 1;
-
-        /* Dump QuoteItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
-        }
-        $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
-        Mage::helper('tnw_salesforce')->log('-----------------');
-    }
-
-    protected function doesCartItemExistInOpportunity($_quoteNumber, $_item, $_sku)
-    {
-        $_cartItemFound = false;
-        if ($this->_cache['opportunityLookup'] && array_key_exists($_quoteNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems) {
-            foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems->records as $_cartItem) {
-                if (
-                    property_exists($_cartItem, 'PricebookEntry')
-                    && property_exists($_cartItem->PricebookEntry, 'ProductCode')
-                    && $_cartItem->PricebookEntry->ProductCode == $_sku
-                    && $_cartItem->Quantity == (float)$_item->getQty()
-                ) {
-                    $_cartItemFound = $_cartItem->Id;
-                    break;
-                }
-            }
-        }
-        return $_cartItemFound;
-    }
-
-
     protected function _prepareContactRoles()
     {
         Mage::helper('tnw_salesforce')->log('----------Prepare Opportunity Contact Role: Start----------');
@@ -730,9 +563,12 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
 
             // Check if already exists
-            $_roleFound = $_skip = false;
-            if ($this->_cache['opportunityLookup'] && array_key_exists($_quoteNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityContactRoles) {
-                foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityContactRoles->records as $_role) {
+            $_skip = false;
+
+            $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
+
+            if ($this->_cache['opportunityLookup'] && array_key_exists($magentoQuoteNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles) {
+                foreach ($this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles->records as $_role) {
                     if ($_role->ContactId == $this->_obj->ContactId) {
                         if ($_role->Role == Mage::helper('tnw_salesforce')->getDefaultCustomerRole()) {
                             // No update required
@@ -971,10 +807,11 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             // Associate quote ID with quote Number
             $this->_cache['entitiesUpdating'] = array($_id => $_quoteNumber);
+            $_quotes = array($_id => TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber);
             // Salesforce lookup, find all contacts/accounts by email address
             $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array($_customerId => $_quoteEmail), array($_customerId => $this->_websiteSfIds[$_websiteId]));
             // Salesforce lookup, find all opportunities by Magento quote number
-            $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($this->_cache['entitiesUpdating']);
+            $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_quotes);
 
             // Check if we need to look for a Lead, since customer Contact/Account could not be found
             $_leadsToLookup = NULL;
@@ -1390,23 +1227,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
                     $value = $quote->getPayment()->$attr();
                     break;
-//                case "Aitoc":
-//                    $modules = Mage::getConfig()->getNode('modules')->children();
-//                    $value = NULL;
-//                    if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-//                        $aCustomAtrrList = Mage::getModel('aitcheckoutfields/transport')->loadByQuoteId($quote->getId());
-//                        foreach ($aCustomAtrrList->getData() as $_key => $_data) {
-//                            if ($_data['code'] == $conf[1]) {
-//                                $value = $_data['value'];
-//                                if ($_data['type'] == "date") {
-//                                    $value = date("Y-m-d", strtotime($value));
-//                                }
-//                                break;
-//                            }
-//                        }
-//                        unset($aCustomAtrrList);
-//                    }
-//                    break;
                 default:
                     break;
             }
@@ -1477,7 +1297,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
 
-        if ($stage = Mage::getStoreConfig('salesforce_order/customer_opportunity/abandoned_cart_state', $quote->getStore())) {
+        if ($stage = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::DEFAULT_STATE_ABANDONED, $quote->getStore())) {
             $this->_obj->StageName = $stage;
         }
 
@@ -1517,9 +1337,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
         // Magento Quote ID
         $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
-
-        // Use existing Opportunity if creating from Quote
-        $modules = Mage::getConfig()->getNode('modules')->children();
 
         // Force configured pricebook
         $this->_assignPricebookToQuote($quote);
@@ -1567,6 +1384,17 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $_accountName = $_customer->getFirstname() . " " . $_customer->getLastname();
                 }
             }
+        }
+
+        /* If existing Opportunity, delete products */
+        if ($quote->getData('salesforce_id')) {
+            // Delete Products
+            $oppItemSetId = array();
+            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($quote->getData('salesforce_id'));
+            foreach ($oppItemSet as $item) {
+                $oppItemSetId[] = $item->Id;
+            }
+            $this->_mySforceConnection->delete($oppItemSetId);
         }
 
         $this->_setOpportunityName($_quoteNumber, $_accountName);

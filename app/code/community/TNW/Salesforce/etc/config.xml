@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.10.0000</version>
+            <version>0.01.49.10.0001</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -463,6 +463,17 @@
                                                 </status_mapping>
                                             </children>
                                         </order_mapping>
+                                        <abandoned_mapping>
+                                            <title>Abandoned Cart Mappings</title>
+                                            <children>
+                                                <order_mapping>
+                                                    <title>Opportunity</title>
+                                                </order_mapping>
+                                                <order_cart_mapping>
+                                                    <title>Opportunity Products</title>
+                                                </order_cart_mapping>
+                                            </children>
+                                        </abandoned_mapping>
                                         <manual_sync>
                                             <title>Manual Sync</title>
                                             <children>
@@ -479,7 +490,7 @@
                                                     <title>Customers</title>
                                                 </customer_sync>
                                                 <abandoned_sync>
-                                                    <title>Abandoned cart</title>
+                                                    <title>Abandoned Cart</title>
                                                 </abandoned_sync>
                                             </children>
                                         </manual_sync>

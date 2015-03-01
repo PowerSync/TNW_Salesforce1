@@ -206,7 +206,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Abandoned_OpportunityController extend
      */
     protected function _isAllowed()
     {
-        return (Mage::helper('tnw_salesforce/abandoned')->isEnabled()) && Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/abandoned');
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/abandoned');
     }
 
     protected function _validate($data)

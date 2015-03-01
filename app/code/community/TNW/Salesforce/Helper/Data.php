@@ -45,6 +45,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
     const CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/customer_integration_opp';
 
+    /* Abandoned Cart */
+    const ABANDONED_CART_ENABLED = 'salesforce_order/customer_opportunity/abandoned_cart_enabled';
+    const WHEN_IS_ABANDONED = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
+    const WHEN_TO_CLOSE_ABANDONED = 'salesforce_order/customer_opportunity/abandoned_close_time_after';
+    const DEFAULT_STATE_ABANDONED = 'salesforce_order/customer_opportunity/abandoned_cart_state';
+    const ABANDONED_CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/abandoned_customer_opportunity_role_enable';
+    const ABANDONED_CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
+
     /* queue object sync settings */
     const OBJECT_SYNC_TYPE = 'salesforce/syncronization/sync_type_realtime';
     const OBJECT_SYNC_INTERVAL_VALUE = 'salesforce/syncronization/sync_type_queueinterval_value';
@@ -292,6 +300,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getDefaultCustomerRole()
     {
         return $this->getStroreConfig(self::CUSTOMER_ROLE);
+    }
+
+    // Default Stage name for abandoned cart
+    public function getDefaultAbandonedCartStageName() {
+        return $this->getStroreConfig(self::DEFAULT_STATE_ABANDONED);
     }
 
     // queue object sync type

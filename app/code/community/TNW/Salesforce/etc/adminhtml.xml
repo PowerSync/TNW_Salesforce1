@@ -27,7 +27,7 @@
                                     <sort_order>20</sort_order>
                                 </customer_sync>
                                 <abandoned_sync>
-                                    <title>Abandoned cart</title>
+                                    <title>Abandoned Cart</title>
                                     <action>adminhtml/salesforcesync_abandonedsync</action>
                                     <sort_order>50</sort_order>
                                 </abandoned_sync>
@@ -91,7 +91,7 @@
                             </children>
                         </order_mapping>
                         <abandoned_mapping>
-                            <title>Abandoned cart Mappings</title>
+                            <title>Abandoned Cart Mappings</title>
                             <sort_order>300</sort_order>
                             <children>
                                 <order_mapping>
