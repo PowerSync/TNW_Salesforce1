@@ -1402,6 +1402,15 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
+     * @param $orderNumber
+     * @param $accountName
+     */
+    protected function _setOpportunityName($orderNumber, $accountName)
+    {
+        $this->_obj->Name = "Abandoned Cart #" . $orderNumber;
+    }
+
+    /**
      * @param $_quote Mage_Sales_Model_Quote
      */
     protected function _assignPricebookToQuote($_quote)
