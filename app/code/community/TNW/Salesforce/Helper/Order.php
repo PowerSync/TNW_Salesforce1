@@ -5,6 +5,7 @@
  */
 class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
 {
+    const ZERO_ORDER_SYNC = 'salesforce_order/general/zero_order_sync_enable';
     /**
      * @var null
      */
@@ -716,5 +717,9 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             break;
         }
         unset($collection, $_item);
+    }
+
+    public function isEnabledZeroOrderSync(){
+        return $this->getStroreConfig(self::ZERO_ORDER_SYNC);
     }
 }

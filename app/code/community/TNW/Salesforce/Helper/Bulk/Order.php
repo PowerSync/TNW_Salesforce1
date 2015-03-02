@@ -41,6 +41,14 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 }
                 Mage::register('order_cached_' . $_order->getRealOrderId(), $_order);
 
+                /**
+                 * @comment check zero orders sync
+                 */
+                if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+                    Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getId() . ',  sync for order where "Grand Total" zero is disabled!');
+                    continue;
+                }
+
                 if (
                     !Mage::helper('tnw_salesforce')->syncAllOrders()
                     && !in_array($_order->getStatus(), $this->_allowedOrderStatuses)
