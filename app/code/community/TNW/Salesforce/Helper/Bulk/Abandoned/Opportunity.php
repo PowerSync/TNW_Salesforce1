@@ -481,17 +481,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             }
         }
 
-        /* If existing Opportunity, delete products */
-        if ($quote->getData('salesforce_id')) {
-            // Delete Products
-            $oppItemSetId = array();
-            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($quote->getData('salesforce_id'));
-            foreach ($oppItemSet as $item) {
-                $oppItemSetId[] = $item->Id;
-            }
-            $this->_mySforceConnection->delete($oppItemSetId);
-        }
-
         $this->_setOpportunityName($_quoteNumber, $_accountName);
         unset($quote);
     }

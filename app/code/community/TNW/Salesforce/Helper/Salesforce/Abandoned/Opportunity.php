@@ -173,6 +173,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function _prepareOpportunities()
     {
         Mage::helper('tnw_salesforce')->log('----------Opportunity Preparation: Start----------');
+        $opportunitiesUpdate = array();
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
             if (!Mage::registry('abandoned_cached_' . $_quoteNumber)) {
                 $_quote = $this->_loadQuote($_key);
@@ -199,7 +200,24 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             } else {
                 $this->_cache['opportunitiesToUpsert'][$_quoteNumber] = $this->_obj;
             }
+
+            if ($_quote->getData('salesforce_id')) {
+                $opportunitiesUpdate[] = $_quote->getData('salesforce_id');
+            }
         }
+
+        /* If existing Opportunity, delete products */
+        if (!empty($opportunitiesUpdate)) {
+
+            // Delete Products
+            $oppItemSetId = array();
+            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunitiesUpdate);
+            foreach ($oppItemSet as $item) {
+                $oppItemSetId[] = $item->Id;
+            }
+            $this->_mySforceConnection->delete($oppItemSetId);
+        }
+
         Mage::helper('tnw_salesforce')->log('----------Opportunity Preparation: End----------');
     }
 
@@ -1386,16 +1404,16 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
 
-        /* If existing Opportunity, delete products */
-        if ($quote->getData('salesforce_id')) {
-            // Delete Products
-            $oppItemSetId = array();
-            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($quote->getData('salesforce_id'));
-            foreach ($oppItemSet as $item) {
-                $oppItemSetId[] = $item->Id;
-            }
-            $this->_mySforceConnection->delete($oppItemSetId);
-        }
+//        /* If existing Opportunity, delete products */
+//        if ($quote->getData('salesforce_id')) {
+//            // Delete Products
+//            $oppItemSetId = array();
+//            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($quote->getData('salesforce_id'));
+//            foreach ($oppItemSet as $item) {
+//                $oppItemSetId[] = $item->Id;
+//            }
+//            $this->_mySforceConnection->delete($oppItemSetId);
+//        }
 
         $this->_setOpportunityName($_quoteNumber, $_accountName);
         unset($quote);
