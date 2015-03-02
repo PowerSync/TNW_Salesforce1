@@ -972,9 +972,16 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() && !empty($leadsToConvert)) {
-                $results = $this->_mySforceConnection->convertLead($leadsToConvert);
-            }
+                $_results = $this->_mySforceConnection->convertLead($leadsToConvert);
 
+                foreach ($_results as $_key => $_resultsArray) {
+                    foreach ($_resultsArray as $_result) {
+                        if (!property_exists($_result, 'success') || !(int)$_result->success ) {
+                            $this->_processErrors($_result, 'lead');
+                        }
+                    }
+                }
+            }
         }
     }
 
