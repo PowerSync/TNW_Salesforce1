@@ -13,6 +13,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_WSDL = 'salesforce/api_config/api_wsdl';
     const API_TYPE = 'salesforce/api_config/api_type';
 
+    /**
+     * @comment Base batch limit for simple sync
+     */
+    const BASE_UPDATE_LIMIT = 200;
+
     /* License Configuration */
     const API_LICENSE_EMAIL = 'salesforce/api_license/api_email';
     const API_LICENSE_INVOICE = 'salesforce/api_license/api_invoice';
