@@ -892,7 +892,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 if (
                     property_exists($_cartItem, 'PricebookEntry')
                     && property_exists($_cartItem->PricebookEntry, 'ProductCode')
-                    && $_cartItem->PricebookEntry->ProductCode == $_sku
+                    && $_cartItem->PricebookEntry->ProductCode == trim($_sku)
                     && $_cartItem->Quantity == (float)$_item->getQtyOrdered()
                 ) {
                     $_cartItemFound = $_cartItem->Id;

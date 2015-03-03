@@ -206,18 +206,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
 
-        /* If existing Opportunity, delete products */
-        if (!empty($opportunitiesUpdate)) {
-
-            // Delete Products
-            $oppItemSetId = array();
-            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunitiesUpdate);
-            foreach ($oppItemSet as $item) {
-                $oppItemSetId[] = $item->Id;
-            }
-            $this->_mySforceConnection->delete($oppItemSetId);
-        }
-
         Mage::helper('tnw_salesforce')->log('----------Opportunity Preparation: End----------');
     }
 
@@ -454,6 +442,11 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
                 unset($collection, $_map);
                 // Check if already exists
+
+                $_cartItemFound = $this->doesCartItemExistInOpportunity($_quoteNumber, $_item, $_sku);
+                if ($_cartItemFound) {
+                    $this->_obj->Id = $_cartItemFound;
+                }
 
                 $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
                 //$subtotal = number_format((($item->getPrice() * $item->getQty()) + $item->getTaxAmount()), 2, ".", "");
@@ -1404,17 +1397,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
 
-//        /* If existing Opportunity, delete products */
-//        if ($quote->getData('salesforce_id')) {
-//            // Delete Products
-//            $oppItemSetId = array();
-//            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($quote->getData('salesforce_id'));
-//            foreach ($oppItemSet as $item) {
-//                $oppItemSetId[] = $item->Id;
-//            }
-//            $this->_mySforceConnection->delete($oppItemSetId);
-//        }
-
         $this->_setOpportunityName($_quoteNumber, $_accountName);
         unset($quote);
     }
@@ -1611,6 +1593,35 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         $sql = "UPDATE `" . $quoteTable . "` SET sf_insync = 0, created_at = created_at WHERE entity_id = " . $_id . ";";
         $this->_write->query($sql);
+    }
+
+
+    /**
+     * @param $_quoteNumber
+     * @param $_item Mage_Sales_Model_Quote_Item
+     * @param $_sku
+     * @return bool
+     */
+    protected function doesCartItemExistInOpportunity($_quoteNumber, $_item, $_sku)
+    {
+        $_cartItemFound = false;
+
+        $_quoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
+
+        if ($this->_cache['opportunityLookup'] && array_key_exists($_quoteNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems) {
+            foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityLineItems->records as $_cartItem) {
+                if (
+                    property_exists($_cartItem, 'PricebookEntry')
+                    && property_exists($_cartItem->PricebookEntry, 'ProductCode')
+                    && $_cartItem->PricebookEntry->ProductCode == trim($_sku)
+                    && $_cartItem->Quantity == (float)$_item->getQty()
+                ) {
+                    $_cartItemFound = $_cartItem->Id;
+                    break;
+                }
+            }
+        }
+        return $_cartItemFound;
     }
 
 }
