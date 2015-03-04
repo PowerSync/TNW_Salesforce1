@@ -47,8 +47,11 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 /**
                  * @comment check zero orders sync
                  */
-                if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
-                    Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getId() . ',  sync for order where "Grand Total" zero is disabled!');
+                if (!age::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                        Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                    }
+                    Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
                     continue;
                 }
 
