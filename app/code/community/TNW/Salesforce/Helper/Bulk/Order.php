@@ -25,6 +25,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             $_orderNumbers = array();
             $_websites = $_emails = array();
+            $_quotes = array();
             // Clear Order ID
             $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = NULL WHERE entity_id IN (" . join(',', $ids) . ");";
             $sql .= ";UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
@@ -103,6 +104,24 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
                 $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
                 $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
+                if ($_order->getQuoteId()) {
+                    $_quotes[] = $_order->getQuoteId();
+                }
+
+            }
+
+            // See if created from Abandoned Cart
+            if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && !empty($_quotes)) {
+                $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id IN ('" . join("','", $_quotes) . "')";
+                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetchAll();
+                if ($row) {
+                    foreach($row as $_item) {
+                        if (array_key_exists('salesforce_id', $_item) && $_item['salesforce_id']) {
+                            $this->_cache['abandonedCart'][$_item['entity_id']] = $_item['salesforce_id'];
+                        }
+                    }
+                }
+
             }
 
             if (empty($_orderNumbers)) {

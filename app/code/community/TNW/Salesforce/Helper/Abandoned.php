@@ -70,8 +70,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     {
         return
             Mage::helper('tnw_salesforce')->getType() == "PRO"
-        && Mage::getStoreConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT) == TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT
-        && Mage::getStoreConfig(TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED);
+        && $this->getStroreConfig(TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED);
     }
 
     // is Customer Opportunity Role Enabled

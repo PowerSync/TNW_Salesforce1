@@ -130,7 +130,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             /**
              * @comment check zero orders sync
              */
-            if (!age::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+            if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
                 }
@@ -155,6 +155,15 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 }
                 Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for order #" . $_id . ", order could not be loaded!", 1, "sf-errors");
                 return;
+            }
+
+            // See if created from Abandoned Cart
+            if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && $_order->getQuoteId()) {
+                $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id = '" . $_order->getQuoteId() . "'";
+                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetch();
+                if ($row && array_key_exists('salesforce_id', $row) && $row['salesforce_id']) {
+                    $this->_cache['abandonedCart'][$_order->getQuoteId()] = $row['salesforce_id'];
+                }
             }
 
             // Get Magento customer object
@@ -460,6 +469,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         $this->_obj->Description = $this->_getDescriptionCart($order);
 
+        if (
+            !empty($this->_cache['abandonedCart'])
+            && array_key_exists($order->getQuoteId(), $this->_cache['abandonedCart'])
+        ) {
+            $this->_obj->OpportunityId = $this->_cache['abandonedCart'][$order->getQuoteId()];
+        }
+
         // Set proper Status
         $this->_updateOrderStatus($order);
 
@@ -630,6 +646,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             'upsertedOrderStatuses' => array(),
             'accountsLookup' => array(),
             'entitiesUpdating' => array(),
+            'abandonedCart' => array(),
             'orderLookup' => array(),
             'ordersToUpsert' => array(),
             'orderItemsToUpsert' => array(),
