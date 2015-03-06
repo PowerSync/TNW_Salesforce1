@@ -1426,11 +1426,13 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 && property_exists($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email], 'OwnerId')
                 && $this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId
                 && (
-                    !is_array($_queueList)
+                    is_array($_queueList)
                     && !in_array($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId, $_queueList)
                 )
             ) {
                 $leadConvert->ownerId = $this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId;
+            } elseif (!array_key_exists($_salesforceWebsiteId, $this->_cache['leadLookup'])) {
+
             } elseif (Mage::helper('tnw_salesforce')->getLeadDefaultOwner()) {
                 $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
             }
