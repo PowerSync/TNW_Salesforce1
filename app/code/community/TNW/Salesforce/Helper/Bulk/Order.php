@@ -45,7 +45,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 /**
                  * @comment check zero orders sync
                  */
-                if (!age::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+                if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
                     }
@@ -250,7 +250,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         foreach ($_oIds as $_orderId) {
                             $_oIdsToRemove = array_keys($this->_cache['entitiesUpdating'], $_orderId);
                             foreach ($_oIdsToRemove as $_idToRemove) {
-                                //Zend_Debug::dump($_idToRemove, 'Skipping order: ' . $this->_cache['entitiesUpdating'][$_idToRemove]);
                                 Mage::helper('tnw_salesforce')->log("SKIPPED Order: " . $_idToRemove . " - customer (" . $_email . ") could not be synchronized");
                                 unset($this->_cache['entitiesUpdating'][$_idToRemove]);
                             }
@@ -568,6 +567,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
 
         if (array_key_exists('orderProducts', $this->_cache['batchCache'])) {
+            $_sql = "";
             foreach ($this->_cache['batchCache']['orderProducts']['Id'] as $_key => $_batchId) {
                 $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['orderProducts']['Id'] . '/batch/' . $_batchId . '/result');
                 try {
@@ -575,15 +575,21 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $response = simplexml_load_string($response);
                     $_i = 0;
                     $_batch = $this->_cache['batch']['orderProducts']['Id'][$_key];
+                    $_batchKeys = array_keys($_batch);
                     foreach ($response as $_item) {
                         //Report Transaction
                         $this->_cache['responses']['orderItems'][] = json_decode(json_encode($_item), TRUE);
-                        $_orderId = (string)$_batch[$_i]->OrderId;
+                        $_orderId = (string)$_batch[$_batchKeys[$_i]]->OrderId;
                         if ($_item->success == "false") {
                             $_oid = array_search($_orderId, $this->_cache['upsertedOrders']);
-                            $this->_processErrors($_item, 'orderProduct', $_batch[$_i]);
+                            $this->_processErrors($_item, 'orderProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache['failedOrders'][] = $_oid;
+                            }
+                        } else {
+                            $_cartItemId = $_batchKeys[$_i];
+                            if ($_cartItemId) {
+                                $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_item->id . "' WHERE item_id = '" . str_replace('cart_','',$_cartItemId) . "';";
                             }
                         }
                         $_i++;
@@ -592,6 +598,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     // TODO:  Log error, quit
                     $response = $e->getMessage();
                 }
+            }
+            if (!empty($_sql)) {
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
             }
         }
     }

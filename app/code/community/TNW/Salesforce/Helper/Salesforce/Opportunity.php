@@ -680,8 +680,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
                 $this->_obj->Quantity = $_item->getQtyOrdered();
 
-                $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
-                $this->_cache['opportunityItemsToIds'][] = $_item->getId();
+                $this->_cache['opportunityLineItemsToUpsert']['cart_' . $_item->getId()] = $this->_obj;
 
                 /* Dump OpportunityLineItem object into the log */
                 foreach ($this->_obj as $key => $_item) {
@@ -1032,8 +1031,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     protected function _pushOpportunityLineItems($chunk = array())
     {
         $_orderNumbers = array_flip($this->_cache['upsertedOpportunities']);
+        $_chunkKeys = array_keys($chunk);
         try {
-            $results = $this->_mySforceConnection->upsert("Id", $chunk, 'OpportunityLineItem');
+            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OpportunityLineItem');
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach($chunk as $_object) {
@@ -1045,26 +1045,26 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
         $_sql = "";
         foreach ($results as $_key => $_result) {
-            $_orderNum = $_orderNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId];
+            $_orderNum = $_orderNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId];
 
             //Report Transaction
             $this->_cache['responses']['opportunityLineItems'][] = $_result;
 
             if (!$_result->success) {
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                 $this->_write->query($sql . ' commit;');
 
                 Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.', 1, "sf-errors");
-                $this->_processErrors($_result, 'orderCart', $chunk[$_key]);
+                $this->_processErrors($_result, 'orderCart', $chunk[$_chunkKeys[$_key]]);
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('Failed to upsert one of the Cart Item for Order #' . $_orderNum);
                 }
             } else {
-                $_cartItemId = $this->_cache['orderItemsToIds'][$_key];
-                if ($_cartItemId) {
-                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . $_cartItemId . "';";
+                $_cartItemId = $_chunkKeys[$_key];
+                if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
+                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . str_replace('cart_','',$_cartItemId) . "';";
                 }
                 Mage::helper('tnw_salesforce')->log('Cart Item (id: ' . $_result->id . ') for (order: ' . $_orderNum . ') upserted.');
             }
@@ -2132,7 +2132,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             'opportunityLookup' => array(),
             'opportunitiesToUpsert' => array(),
             'opportunityLineItemsToUpsert' => array(),
-            'opportunityItemsToIds' => array(),
             'opportunityLineItemsToDelete' => array(),
             'notesToUpsert' => array(),
             'contactRolesToUpsert' => array(),

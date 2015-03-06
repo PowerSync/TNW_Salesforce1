@@ -650,7 +650,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             'orderLookup' => array(),
             'ordersToUpsert' => array(),
             'orderItemsToUpsert' => array(),
-            'orderItemsToIds' => array(),
             'leadsToConvert' => array(),
             'leadLookup' => array(),
             'orderCustomers' => array(),
@@ -1476,8 +1475,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
                 $this->_obj->Quantity = $_item->getQtyOrdered();
 
-                $this->_cache['orderItemsToUpsert'][] = $this->_obj;
-                $this->_cache['orderItemsToIds'][] = $_item->getId();
+                $this->_cache['orderItemsToUpsert']['cart_' . $_item->getId()] = $this->_obj;
 
                 /* Dump OrderItem object into the log */
                 foreach ($this->_obj as $key => $_item) {
@@ -1868,8 +1866,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected function _pushOrderItems($chunk = array())
     {
         $_orderNumbers = array_flip($this->_cache['upsertedOrders']);
+        $_chunkKeys = array_keys($chunk);
         try {
-            $results = $this->_mySforceConnection->upsert("Id", $chunk, 'OrderItem');
+            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OrderItem');
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach($chunk as $_object) {
@@ -1881,26 +1880,26 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         $_sql = "";
         foreach ($results as $_key => $_result) {
-            $_orderNum = $_orderNumbers[$this->_cache['orderItemsToUpsert'][$_key]->OrderId];
+            $_orderNum = $_orderNumbers[$this->_cache['orderItemsToUpsert'][$_chunkKeys[$_key]]->OrderId];
 
             //Report Transaction
             $this->_cache['responses']['orderItems'][] = $_result;
 
             if (!$_result->success) {
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['orderItemsToUpsert'][$_key]->OrderId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['orderItemsToUpsert'][$_chunkKeys[$_key]]->OrderId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.', 1, "sf-errors");
-                $this->_processErrors($_result, 'orderCart', $chunk[$_key]);
+                $this->_processErrors($_result, 'orderCart', $chunk[$_chunkKeys[$_key]]);
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('Failed to upsert one of the Cart Item for Order #' . $_orderNum);
                 }
             } else {
-                $_cartItemId = $this->_cache['orderItemsToIds'][$_key];
-                if ($_cartItemId) {
-                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . $_cartItemId . "';";
+                $_cartItemId = $_chunkKeys[$_key];
+                if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
+                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . str_replace('cart_','',$_cartItemId) . "';";
                 }
                 Mage::helper('tnw_salesforce')->log('Cart Item (id: ' . $_result->id . ') for (order: ' . $_orderNum . ') upserted.');
             }
