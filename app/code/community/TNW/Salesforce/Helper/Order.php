@@ -6,6 +6,31 @@
 class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
 {
     const ZERO_ORDER_SYNC = 'salesforce_order/general/zero_order_sync_enable';
+
+    public function isEnabledZeroOrderSync(){
+        return $this->getStroreConfig(self::ZERO_ORDER_SYNC);
+    }
+
+    /**
+     * @param $_item
+     * @return int
+     * Get product Id from the cart
+     */
+    public function getProductIdFromCart($_item) {
+        $_options = unserialize($_item->getData('product_options'));
+        if(
+            $_item->getData('product_type') == 'bundle'
+            || array_key_exists('options', $_options)
+        ) {
+            $id = $_item->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+        return $id;
+    }
+
+/* OLD CRAP, too much magic in here and not used. Need to clean up */
+
     /**
      * @var null
      */
@@ -717,9 +742,5 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             break;
         }
         unset($collection, $_item);
-    }
-
-    public function isEnabledZeroOrderSync(){
-        return $this->getStroreConfig(self::ZERO_ORDER_SYNC);
     }
 }

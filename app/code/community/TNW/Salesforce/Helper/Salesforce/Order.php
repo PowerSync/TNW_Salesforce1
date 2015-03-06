@@ -650,6 +650,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             'orderLookup' => array(),
             'ordersToUpsert' => array(),
             'orderItemsToUpsert' => array(),
+            'orderItemsToIds' => array(),
             'leadsToConvert' => array(),
             'leadLookup' => array(),
             'orderCustomers' => array(),
@@ -1475,12 +1476,14 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
                 $this->_obj->Quantity = $_item->getQtyOrdered();
 
+                $this->_cache['orderItemsToUpsert'][] = $this->_obj;
+                $this->_cache['orderItemsToIds'][] = $_item->getId();
+
                 /* Dump OrderItem object into the log */
                 foreach ($this->_obj as $key => $_item) {
                     Mage::helper('tnw_salesforce')->log("OrderItem Object: " . $key . " = '" . $_item . "'");
                 }
 
-                $this->_cache['orderItemsToUpsert'][] = $this->_obj;
                 Mage::helper('tnw_salesforce')->log('-----------------');
             }
 
@@ -1876,6 +1879,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             Mage::helper('tnw_salesforce')->log('CRITICAL: Push of Order Items to SalesForce failed' . $e->getMessage());
         }
 
+        $_sql = "";
         foreach ($results as $_key => $_result) {
             $_orderNum = $_orderNumbers[$this->_cache['orderItemsToUpsert'][$_key]->OrderId];
 
@@ -1886,7 +1890,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 // Reset sync status
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['orderItemsToUpsert'][$_key]->OrderId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                $this->_write->query($sql . ' commit;');
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.', 1, "sf-errors");
                 $this->_processErrors($_result, 'orderCart', $chunk[$_key]);
@@ -1894,8 +1898,15 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     Mage::getSingleton('adminhtml/session')->addError('Failed to upsert one of the Cart Item for Order #' . $_orderNum);
                 }
             } else {
+                $_cartItemId = $this->_cache['orderItemsToIds'][$_key];
+                if ($_cartItemId) {
+                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . $_cartItemId . "';";
+                }
                 Mage::helper('tnw_salesforce')->log('Cart Item (id: ' . $_result->id . ') for (order: ' . $_orderNum . ') upserted.');
             }
+        }
+        if (!empty($_sql)) {
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
         }
     }
 

@@ -680,12 +680,15 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
                 $this->_obj->Quantity = $_item->getQtyOrdered();
 
+                $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
+                $this->_cache['opportunityItemsToIds'][] = $_item->getId();
+
                 /* Dump OpportunityLineItem object into the log */
                 foreach ($this->_obj as $key => $_item) {
                     Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
                 }
 
-                $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
+
                 Mage::helper('tnw_salesforce')->log('-----------------');
             }
         }
@@ -1040,6 +1043,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             Mage::helper('tnw_salesforce')->log('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
         }
 
+        $_sql = "";
         foreach ($results as $_key => $_result) {
             $_orderNum = $_orderNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId];
 
@@ -1058,8 +1062,15 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     Mage::getSingleton('adminhtml/session')->addError('Failed to upsert one of the Cart Item for Order #' . $_orderNum);
                 }
             } else {
+                $_cartItemId = $this->_cache['orderItemsToIds'][$_key];
+                if ($_cartItemId) {
+                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . $_cartItemId . "';";
+                }
                 Mage::helper('tnw_salesforce')->log('Cart Item (id: ' . $_result->id . ') for (order: ' . $_orderNum . ') upserted.');
             }
+        }
+        if (!empty($_sql)) {
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
         }
     }
 
@@ -2121,6 +2132,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             'opportunityLookup' => array(),
             'opportunitiesToUpsert' => array(),
             'opportunityLineItemsToUpsert' => array(),
+            'opportunityItemsToIds' => array(),
             'opportunityLineItemsToDelete' => array(),
             'notesToUpsert' => array(),
             'contactRolesToUpsert' => array(),
