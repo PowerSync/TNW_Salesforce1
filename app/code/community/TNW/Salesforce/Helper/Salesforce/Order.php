@@ -1486,7 +1486,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
 
             // Push Tax Fee Product
-            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct() && $_order->getTaxAmount() > 0) {
                 if (Mage::helper('tnw_salesforce')->getTaxProduct()) {
                     $this->addTaxProduct($_order, $_orderNumber);
                 } else {
@@ -1497,7 +1497,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 }
             }
             // Push Shipping Fee Product
-            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct() && $_order->getShippingAmount() > 0) {
                 if (Mage::helper('tnw_salesforce')->getShippingProduct()) {
                     $this->addShippingProduct($_order, $_orderNumber);
                 } else {
@@ -1509,7 +1509,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
 
             // Push Discount Fee Product
-            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $_order->getData('discount_amount') > 0) {
                 if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
                     $this->addDiscountProduct($_order, $_orderNumber);
                 } else {

@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.11.0002</version>
+            <version>0.01.49.11.0003</version>
         </TNW_Salesforce>
     </modules>
     <global>
