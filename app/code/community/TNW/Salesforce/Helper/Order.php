@@ -19,8 +19,11 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
     public function getProductIdFromCart($_item) {
         $_options = unserialize($_item->getData('product_options'));
         if(
-            $_item->getData('product_type') == 'bundle'
-            || array_key_exists('options', $_options)
+            is_array($_options)
+            && (
+                $_item->getData('product_type') == 'bundle'
+                || array_key_exists('options', $_options)
+            )
         ) {
             $id = $_item->getData('product_id');
         } else {
