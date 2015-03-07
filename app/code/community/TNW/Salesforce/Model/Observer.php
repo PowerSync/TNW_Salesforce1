@@ -8,9 +8,12 @@ class TNW_Salesforce_Model_Observer
     const ORDER_PREFIX = 'order';
     const OPPORTUNITY_PREFIX = 'opportunity';
 
+    protected $_menu = NULL;
+    protected $_acl = NULL;
+
     public function adjustMenu() {
         // Update Magento admin menu
-        $_menu = Mage::getSingleton('admin/config')
+        $this->_menu = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
             ->getNode('menu')
             ->descend('system')
@@ -20,7 +23,7 @@ class TNW_Salesforce_Model_Observer
         ;
 
         // Update Magento ACL
-        $_acl = Mage::getSingleton('admin/config')
+        $this->_acl = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
             ->getNode('acl')
             ->descend('resources')
@@ -39,20 +42,20 @@ class TNW_Salesforce_Model_Observer
         if (defined($_constantName)) {
             $_itemsToRetain = constant($_constantName);
 
-            if ($_menu) {
-                $_manualSyncNode = $_menu->descend('manual_sync')->descend('children');
+            if ($this->_menu) {
+                $_manualSyncNode = $this->_menu->descend('manual_sync')->descend('children');
 
-                $_orderNode = $_menu->descend('order_mapping')->descend('children');
-                $_customerNode = $_menu->descend('customer_mapping')->descend('children');
+                $_orderNode = $this->_menu->descend('order_mapping')->descend('children');
+                $_customerNode = $this->_menu->descend('customer_mapping')->descend('children');
             }
-            if ($_acl) {
-                $_orderAclNode = $_acl->descend('order_mapping')->descend('children');
-                $_customerAclNode = $_acl->descend('customer_mapping')->descend('children');
+            if ($this->_acl) {
+                $_orderAclNode = $this->_acl->descend('order_mapping')->descend('children');
+                $_customerAclNode = $this->_acl->descend('customer_mapping')->descend('children');
             }
 
             if ($_manualSyncNode && !Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
                 unset($_manualSyncNode->abandoned_sync);
-                unset($_menu->abandoned_mapping);
+                unset($this->_menu->abandoned_mapping);
 
             }
 
@@ -99,8 +102,8 @@ class TNW_Salesforce_Model_Observer
 
         // Remove Sync Queue menu item
         if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            unset($_menu->queue_sync);
-            unset($_acl->queue_sync);
+            unset($this->_menu->queue_sync);
+            unset($this->_acl->queue_sync);
         }
 
         if (!$_leverageLeads) {
