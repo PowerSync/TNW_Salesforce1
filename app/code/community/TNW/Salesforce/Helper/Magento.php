@@ -41,7 +41,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateAcl() {
         $this->_acl['order'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT
+            TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT
         );
 
         $this->_acl['abandoned'] = array(
@@ -56,6 +57,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::CONTACT_OBJECT,
             TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ABANDONED_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ACCOUNT_OBJECT
         );
@@ -67,7 +69,15 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT
+            TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT
+        );
+
+        $this->_acl['invoice'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT
+        );
+        $this->_acl['invoiceItem'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
         );
     }
 
@@ -95,6 +105,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         /* Customization */
         $this->_customizationAttributesTop($type);
 
+        if (in_array($type, $this->_acl['invoice'])) {
+            $this->_populateInvoiceAttributes($type);
+        }
+
         if (in_array($type, $this->_acl['order'])) {
             $this->_populateOrderAttributes($type);
             $this->_populatePaymentAttributes($type);
@@ -102,10 +116,6 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         if (in_array($type, $this->_acl['abandoned'])) {
             $this->_populateAbandonedAttributes($type);
-        }
-
-        if (in_array($type, $this->_acl['abandonedItem'])) {
-            $this->_populateAbandonedItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['customer'])) {
@@ -124,6 +134,14 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
                 $this->_populateAitocAttributes($type);
             }
+        }
+
+        if (in_array($type, $this->_acl['abandonedItem'])) {
+            $this->_populateAbandonedItemAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['invoiceItem'])) {
+            $this->_populateInvoiceItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['cart'])) {
@@ -206,12 +224,48 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         }
     }
 
+    protected function _populateInvoiceAttributes($type)
+    {
+        try {
+            $collection = $this->getTableColumnList('sales_flat_invoice');
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
+            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['invoice'] = array(
+                'label' => 'Invoice',
+                'value' => array()
+            );
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['Field'];
+                if (
+                    $key == 'entity_id'
+                    || $key == 'sf_insync'
+                    || $key == 'salesforce_id'
+                    || $key == 'can_void_flag'
+                    || $key == 'shipping_address_id'
+                    || $key == 'billing_address_id'
+                    || $key == 'increment_id'
+                    || $key == 'transaction_id'
+                ) {
+                    continue;
+                }
+
+                $this->_cache[$type]['invoice']['value'][] = array(
+                    'value' => 'Invoice : ' . $key,
+                    'label' => 'Invoice : ' . ucwords(str_replace("_", " ", $key)),
+                );
+            }
+        }
+    }
 
     protected function _populateAbandonedAttributes($type)
     {
         try {
-            $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales/quote');
-            $collection = $this->getDbConnection('read')->query($_sql);
+            $collection = $this->getTableColumnList('sales_flat_quote');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
@@ -469,12 +523,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         }
     }
 
-
     public function _populateAbandonedItemAttributes($type)
     {
         try {
-            $_sql = 'DESCRIBE ' . Mage::helper('tnw_salesforce')->getTable('sales/quote_item');
-            $collection = $this->getDbConnection('read')->query($_sql);
+            $collection = $this->getTableColumnList('sales_flat_quote_item');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Could not load Magento quote items schema...");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
@@ -495,9 +547,42 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                     continue;
                 }
 
-                $this->_cache[$type]['shopping']['value'][] = array(
+                $this->_cache[$type]['abandoned_items']['value'][] = array(
                     'value' => 'Item : ' . $key,
                     'label' => 'Item : ' . ucwords(str_replace("_", " ", $key)),
+                );
+            }
+        }
+    }
+
+    public function _populateInvoiceItemAttributes($type)
+    {
+        try {
+            $collection = $this->getTableColumnList('sales_flat_invoice_item');
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("Could not load Magento quote items schema...");
+            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+        }
+        if ($collection) {
+            $this->_cache[$type]['invoice_items'] = array(
+                'label' => 'Invoice item attributes',
+                'value' => array()
+            );
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['Field'];
+                if (
+                    $key == 'entity_id'
+                    || $key == 'parent_id'
+                    || $key == 'product_id'
+                    || $key == 'order_item_id'
+                    || $key == 'salesforce_id'
+                ) {
+                    continue;
+                }
+
+                $this->_cache[$type]['invoice_items']['value'][] = array(
+                    'value' => 'Billing Item : ' . $key,
+                    'label' => 'Billing Item : ' . ucwords(str_replace("_", " ", $key)),
                 );
             }
         }
