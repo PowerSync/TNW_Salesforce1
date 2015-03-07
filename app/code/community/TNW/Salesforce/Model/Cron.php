@@ -7,6 +7,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 {
     const ORDER_BATCH_SIZE = 500;
     const ABANDONED_BATCH_SIZE = 500;
+    const INVOICE_BATCH_SIZE = 500;
     const PRODUCT_BATCH_SIZE = 500;
     const CUSTOMER_BATCH_SIZE = 1000;
     const WEBSITE_BATCH_SIZE = 500;
@@ -322,6 +323,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             // Sync orders
             $this->syncOrder();
 
+            $this->syncInvoices();
+
             $this->_syncCustomObjects();
 
             $this->_deleteSuccessfulRecords();
@@ -368,6 +371,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 break;
             case 'abandoned':
                 $batchSize = self::ABANDONED_BATCH_SIZE;
+                break;
+            case 'invoice':
+                $batchSize = self::INVOICE_BATCH_SIZE;
                 break;
             default:
                 throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
@@ -457,6 +463,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     public function syncEntity($type)
     {
         $_syncType = $type;
+        $_prefix = 'order';
+        $_module = 'tnw_salesforce';
 
         if ($type == 'order') {
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
@@ -470,6 +478,24 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
             // Get all products and customers from the queue
             $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
+        }
+
+        if ($type == 'invoice') {
+            // Allow Powersync to overwite fired event for customizations
+            $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
+            Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+
+            if (TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE == $_object->getObjectType()) {
+                // Skip native, only allow customization at the moment
+                return;
+            }
+
+            $_syncType = $_object->getObjectType();
+            $_prefix = 'invoice';
+
+            if ($_object->getModule()) {
+                $_module = $_object->getModule();
+            }
         }
 
         $this->_resetStuckRecords();
@@ -512,9 +538,11 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                      * @var $manualSync TNW_Salesforce_Helper_Bulk_Order|TNW_Salesforce_Helper_Bulk_Product|TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Bulk_Website
                      */
                     if ($type == 'abandoned') {
-                        $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type . '_opportunity');
+                        $manualSync = Mage::helper($_module . '/bulk_' . $type . '_opportunity');
+                    } elseif ($type == 'invoice') {
+                        $manualSync = Mage::helper($_module . '/bulk_' . $_syncType);
                     } else {
-                        $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
+                        $manualSync = Mage::helper($_module . '/bulk_' . $type);
                     }
                     if ($manualSync->reset()) {
                         $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
@@ -557,12 +585,12 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                             // set status to 'sync_running'
                             Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
 
-                            if ($type == 'order' || $type == 'abandoned') {
+                            if ($type == 'order' || $type == 'abandoned' || $type == 'invoice') {
 
                                 Mage::dispatchEvent(
                                     'tnw_sales_process_' . $_syncType,
                                     array(
-                                        'orderIds' => $objectIdSet,
+                                        $_prefix . 'Ids' => $objectIdSet,
                                         'message' => NULL,
                                         'type' => 'bulk',
                                         'isQueue' => true,
@@ -632,6 +660,23 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
         try {
             $this->syncEntity('order');
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("error: order not synced: " . $e->getMessage(), 1, 'sf-cron');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch invoice ids from local storage and sync with sf
+     *
+     * @return bool
+     */
+    public function syncInvoices()
+    {
+        try {
+            $this->syncEntity('invoice');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("error: order not synced: " . $e->getMessage(), 1, 'sf-cron');
             return false;

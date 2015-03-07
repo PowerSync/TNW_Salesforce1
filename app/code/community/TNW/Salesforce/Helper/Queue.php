@@ -26,9 +26,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
                 $this->_processWebsites();
 
-            $this->_processAbandoned();
+                $this->_processAbandoned();
 
-            $this->_processOrders();
+                $this->_processOrders();
+
+                $this->_processInvoices();
 
                 $this->_processCustomObjects();
             } else {
@@ -68,6 +70,35 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     protected function _processWebsites() {
         $_type = 'Website';
         $_module = 'tnw_salesforce/bulk_website';
+
+        $this->_synchronize($_type, $_module);
+    }
+
+    /**
+     * Process Order
+     */
+    protected function _processInvoices() {
+        $_type = 'Invoice';
+        // Allow Powersync to overwite fired event for customizations
+        $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
+        Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+
+        $_module = 'tnw_salesforce/bulk_' . $_object->getObjectType();
+
+        Zend_Debug::dump($_object);
+        die();
+
+        $total = Mage::getModel('tnw_salesforce/localstorage')->countObjectBySfType(array(
+            'Product',
+            'Customer',
+            'Website',
+            'Order',
+        ));
+
+        if ($total > 0) {
+            Mage::getSingleton('adminhtml/session')->addNotice(Mage::helper("tnw_salesforce")->__("SKIPPING INVOICES: Not all dependencies are synchronized"));
+            return false;
+        }
 
         $this->_synchronize($_type, $_module);
     }
@@ -171,7 +202,30 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             // set status to 'sync_running'
             Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_idSet);
 
-            if ($_type == 'Order') {
+            if ($_type == 'Order' || $_type == 'Invoice') {
+                if ($_type == 'Invoice') {
+                    // Allow Powersync to overwite fired event for customizations
+                    $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
+                    Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+
+                    $_syncType = $_object->getObjectType();
+                    $_idPrefix = 'invoice';
+                } else {
+                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+                    $_idPrefix = 'order';
+                }
+
+                Mage::dispatchEvent(
+                    'tnw_sales_process_' . $_syncType,
+                    array(
+                        $_idPrefix . 'Ids'      => $_objectIdSet,
+                        'message'       => NULL,
+                        'type'          => 'bulk',
+                        'isQueue'       => true,
+                        'queueIds'      => $_idSet
+                    )
+                );
+            } elseif ($_type == 'Invoice') {
                 $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
                 Mage::dispatchEvent(

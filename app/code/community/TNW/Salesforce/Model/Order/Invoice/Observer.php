@@ -28,8 +28,11 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
 
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            //TODO: add logic
-
+            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($_invoice->getId())), 'Invoice', 'invoice');
+            if (!$res) {
+                Mage::helper("tnw_salesforce")->log('ERROR: Invoice not saved to local storage');
+                return false;
+            }
             return true;
         }
 
