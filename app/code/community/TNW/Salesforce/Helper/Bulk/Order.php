@@ -25,6 +25,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             $_orderNumbers = array();
             $_websites = $_emails = array();
+            $_quotes = array();
             // Clear Order ID
             $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = NULL WHERE entity_id IN (" . join(',', $ids) . ");";
             $sql .= ";UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
@@ -36,8 +37,20 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             foreach ($ids as $_count => $_id) {
                 $_order = Mage::getModel('sales/order')->load($_id);
                 // Add to cache
-                if (!Mage::registry('order_cached_' . $_order->getRealOrderId())) {
-                    Mage::register('order_cached_' . $_order->getRealOrderId(), $_order);
+                if (Mage::registry('order_cached_' . $_order->getRealOrderId())) {
+                    Mage::unregister('order_cached_' . $_order->getRealOrderId());
+                }
+                Mage::register('order_cached_' . $_order->getRealOrderId(), $_order);
+
+                /**
+                 * @comment check zero orders sync
+                 */
+                if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                        Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                    }
+                    Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                    continue;
                 }
 
                 if (
@@ -91,6 +104,24 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
                 $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
                 $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
+                if ($_order->getQuoteId()) {
+                    $_quotes[] = $_order->getQuoteId();
+                }
+
+            }
+
+            // See if created from Abandoned Cart
+            if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && !empty($_quotes)) {
+                $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id IN ('" . join("','", $_quotes) . "')";
+                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetchAll();
+                if ($row) {
+                    foreach($row as $_item) {
+                        if (array_key_exists('salesforce_id', $_item) && $_item['salesforce_id']) {
+                            $this->_cache['abandonedCart'][$_item['entity_id']] = $_item['salesforce_id'];
+                        }
+                    }
+                }
+
             }
 
             if (empty($_orderNumbers)) {
@@ -219,7 +250,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         foreach ($_oIds as $_orderId) {
                             $_oIdsToRemove = array_keys($this->_cache['entitiesUpdating'], $_orderId);
                             foreach ($_oIdsToRemove as $_idToRemove) {
-                                //Zend_Debug::dump($_idToRemove, 'Skipping order: ' . $this->_cache['entitiesUpdating'][$_idToRemove]);
                                 Mage::helper('tnw_salesforce')->log("SKIPPED Order: " . $_idToRemove . " - customer (" . $_email . ") could not be synchronized");
                                 unset($this->_cache['entitiesUpdating'][$_idToRemove]);
                             }
@@ -422,6 +452,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 $this->_cache['bulkJobs']['orderProducts']['Id'] = $this->_createJob('OrderItem', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Order Products, created job: ' . $this->_cache['bulkJobs']['orderProducts']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['orderItemsToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['orderProducts']['Id'], 'orderProducts', $this->_cache['orderItemsToUpsert']);
 
             Mage::helper('tnw_salesforce')->log('Checking if Order Products were successfully synced...');
@@ -440,6 +473,11 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             if (strval($_result) != 'exception') {
                 $this->_checkOrderProductData();
+
+                Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+                    "data" => $this->_cache['orderItemsToUpsert'],
+                    "result" => $this->_cache['responses']['orderProducts']
+                ));
             }
         }
 
@@ -450,6 +488,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 $this->_cache['bulkJobs']['notes']['Id'] = $this->_createJob('Note', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Notes, created job: ' . $this->_cache['bulkJobs']['notes']['Id']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
             $this->_pushChunked($this->_cache['bulkJobs']['notes']['Id'], 'notes', $this->_cache['notesToUpsert']);
 
             Mage::helper('tnw_salesforce')->log('Checking if Notes were successfully synced...');
@@ -468,6 +509,11 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             if (strval($_result) != 'exception') {
                 $this->_checkNotesData();
+
+                Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                    "data" => $this->_cache['notesToUpsert'],
+                    "result" => $this->_cache['responses']['notes']
+                ));
             }
         }
 
@@ -521,6 +567,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
 
         if (array_key_exists('orderProducts', $this->_cache['batchCache'])) {
+            $_sql = "";
             foreach ($this->_cache['batchCache']['orderProducts']['Id'] as $_key => $_batchId) {
                 $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['orderProducts']['Id'] . '/batch/' . $_batchId . '/result');
                 try {
@@ -528,15 +575,21 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $response = simplexml_load_string($response);
                     $_i = 0;
                     $_batch = $this->_cache['batch']['orderProducts']['Id'][$_key];
+                    $_batchKeys = array_keys($_batch);
                     foreach ($response as $_item) {
                         //Report Transaction
                         $this->_cache['responses']['orderItems'][] = json_decode(json_encode($_item), TRUE);
-                        $_orderId = (string)$_batch[$_i]->OrderId;
+                        $_orderId = (string)$_batch[$_batchKeys[$_i]]->OrderId;
                         if ($_item->success == "false") {
                             $_oid = array_search($_orderId, $this->_cache['upsertedOrders']);
-                            $this->_processErrors($_item, 'orderProduct', $_batch[$_i]);
+                            $this->_processErrors($_item, 'orderProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache['failedOrders'][] = $_oid;
+                            }
+                        } else {
+                            $_cartItemId = $_batchKeys[$_i];
+                            if ($_cartItemId) {
+                                $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_item->id . "' WHERE item_id = '" . str_replace('cart_','',$_cartItemId) . "';";
                             }
                         }
                         $_i++;
@@ -545,6 +598,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     // TODO:  Log error, quit
                     $response = $e->getMessage();
                 }
+            }
+            if (!empty($_sql)) {
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
             }
         }
     }

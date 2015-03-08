@@ -2,23 +2,37 @@
 
 class TNW_Salesforce_Model_Config_Products_Tax
 {
+    protected $_productsLookup = array();
+    protected $_taxProduct = array();
+
     public function toOptionArray()
     {
-        /*
-        $_useCache = Mage::app()->useCache('tnw_salesforce');
-        $cache = Mage::app()->getCache();
-
-        if ($_useCache && $cache->load("tnw_salesforce_opportunity_tax_rate")) {
-            $_data = unserialize($cache->load("tnw_salesforce_opportunity_tax_rate"));
-        } else {
-            $_data = Mage::helper('tnw_salesforce')->taxProductDropdown();
-            if ($_useCache) {
-                $cache->save(serialize($_data), 'tnw_salesforce_opportunity_tax_rate', array("TNW_SALESFORCE"));
-            }
+        if (Mage::helper('tnw_salesforce')->isWorking()) {
+            $this->_getProducts();
         }
-        */
-        $_data = Mage::helper('tnw_salesforce')->taxProductDropdown();
-        return $_data;
+        if (!$this->_taxProduct && !empty($this->_productsLookup)) {
+            $this->_taxProduct = array();
+            foreach ($this->_productsLookup as $key => $_obj) {
+                $this->_taxProduct[] = array(
+                    'label' => $_obj,
+                    'value' => $key
+                );
+            }
+        } else if (empty($this->_productsLookup)) {
+            $this->_taxProduct[] = array(
+                'label' => 'No products found',
+                'value' => 0
+            );
+        }
+        return $this->_taxProduct;
     }
 
+    protected function _getProducts() {
+        if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->productLookupAdvanced(NULL, 'Tax')) {
+            foreach ($collection as $_item) {
+                $this->_productsLookup[$_item->PricebookEntityId] = $_item->Name;
+            }
+            unset($collection, $_item);
+        }
+    }
 }

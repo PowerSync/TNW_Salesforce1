@@ -41,6 +41,7 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
                 'new' => 'New',
                 'sync_running' => 'Sync running',
                 'sync_error' => 'Error',
+                'success' => 'Synchronized',
             ),
             'index' => 'status',
             'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Objectstatus'
@@ -150,7 +151,8 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
             'confirm' => Mage::helper('tnw_salesforce')->__('This will reset all selected items in the queue. Are you sure?')
         ));
 
-        $url = '*/*/massProcess';
+        //$url = '*/*/massProcess';
+        /*  Not stable
         if (Mage::helper('tnw_salesforce')->getStoreId() != 0) {
             $url .= '/store/' . Mage::helper('tnw_salesforce')->getStoreId();
         }
@@ -160,7 +162,7 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
             'url' => $this->getUrl($url),
             'confirm' => Mage::helper('tnw_salesforce')->__('This will process all selected items in the queue. Are you sure?')
         ));
-
+        */
         return $this;
     }
 

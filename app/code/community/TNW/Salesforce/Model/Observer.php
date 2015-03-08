@@ -8,9 +8,12 @@ class TNW_Salesforce_Model_Observer
     const ORDER_PREFIX = 'order';
     const OPPORTUNITY_PREFIX = 'opportunity';
 
+    protected $_menu = NULL;
+    protected $_acl = NULL;
+
     public function adjustMenu() {
         // Update Magento admin menu
-        $_menu = Mage::getSingleton('admin/config')
+        $this->_menu = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
             ->getNode('menu')
             ->descend('system')
@@ -20,7 +23,7 @@ class TNW_Salesforce_Model_Observer
         ;
 
         // Update Magento ACL
-        $_acl = Mage::getSingleton('admin/config')
+        $this->_acl = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
             ->getNode('acl')
             ->descend('resources')
@@ -39,13 +42,21 @@ class TNW_Salesforce_Model_Observer
         if (defined($_constantName)) {
             $_itemsToRetain = constant($_constantName);
 
-            if ($_menu) {
-                $_orderNode = $_menu->descend('order_mapping')->descend('children');
-                $_customerNode = $_menu->descend('customer_mapping')->descend('children');
+            if ($this->_menu) {
+                $_manualSyncNode = $this->_menu->descend('manual_sync')->descend('children');
+
+                $_orderNode = $this->_menu->descend('order_mapping')->descend('children');
+                $_customerNode = $this->_menu->descend('customer_mapping')->descend('children');
             }
-            if ($_acl) {
-                $_orderAclNode = $_acl->descend('order_mapping')->descend('children');
-                $_customerAclNode = $_acl->descend('customer_mapping')->descend('children');
+            if ($this->_acl) {
+                $_orderAclNode = $this->_acl->descend('order_mapping')->descend('children');
+                $_customerAclNode = $this->_acl->descend('customer_mapping')->descend('children');
+            }
+
+            if ($_manualSyncNode && !Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+                unset($_manualSyncNode->abandoned_sync);
+                unset($this->_menu->abandoned_mapping);
+
             }
 
             if ($_orderAclNode) {
@@ -89,6 +100,11 @@ class TNW_Salesforce_Model_Observer
             }
         }
 
+        // Remove Sync Queue menu item
+        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
+            unset($this->_menu->queue_sync);
+            unset($this->_acl->queue_sync);
+        }
 
         if (!$_leverageLeads) {
             if ($_customerNode) {
@@ -174,6 +190,9 @@ class TNW_Salesforce_Model_Observer
         $_message = $observer->getEvent()->getMessage();
         $_type = $observer->getEvent()->getType();
         $_isQueue = $observer->getEvent()->getData('isQueue');
+
+        $_objectType = $observer->getEvent()->getData('object_type');
+
         $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
 
         if (count($_orderIds) == 1 && $_type == 'bulk') {
@@ -185,10 +204,19 @@ class TNW_Salesforce_Model_Observer
     }
 
     public function pushOpportunity(Varien_Event_Observer $observer) {
+
+        $_objectType = strtolower($observer->getEvent()->getData('object_type'));
+
         $_orderIds = $observer->getEvent()->getData('orderIds');
+
+        if ($_objectType == 'abandoned' && empty($_orderIds)) {
+            $_orderIds = $observer->getEvent()->getData('ids');
+        }
+
         $_message = $observer->getEvent()->getMessage();
         $_type = $observer->getEvent()->getType();
         $_isQueue = $observer->getEvent()->getData('isQueue');
+
         $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
 
         if (count($_orderIds) == 1 && $_type == 'bulk') {
@@ -196,20 +224,29 @@ class TNW_Salesforce_Model_Observer
         }
 
         Mage::helper('tnw_salesforce')->log('Pushing Opportunities ... ');
-        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_opportunity', $_queueIds);
+
+        if ($_objectType == 'abandoned') {
+            $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_abandoned_opportunity', $_queueIds);
+        } else {
+            $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_opportunity', $_queueIds);
+        }
     }
 
     protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds) {
+        /**
+         * @var $manualSync TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity|TNW_Salesforce_Helper_Salesforce_Opportunity|TNW_Salesforce_Helper_Salesforce_Order
+         */
         $manualSync = Mage::helper($_model);
         $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-        if ($_message === NULL) {
-            $manualSync->setIsCron(true);
-        }
+
         $_ids = (count($_orderIds) == 1) ? $_orderIds[0] : $_orderIds;
 
         if ($manualSync->reset()) {
             if ($manualSync->massAdd($_ids)) {
+                if ($_message === NULL) {
+                    $manualSync->setIsCron(true);
+                }
                 $res = $manualSync->process('full');
                 if ($res) {
                     // Update queue
@@ -333,5 +370,21 @@ class TNW_Salesforce_Model_Observer
             }
         }
         $orderStatusMapping->save();
+    }
+
+    public function prepareQuotesForSync($observer)
+    {
+        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+            return false;
+        }
+
+        /** @var $quote Mage_Sales_Model_Quote */
+        $quote = $observer->getEvent()->getQuote();
+        if (!$quote) {
+            return false;
+        }
+
+        $quote->setSfSyncForce(1);
+
     }
 }

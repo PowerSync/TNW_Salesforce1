@@ -7,6 +7,8 @@
  */
 class TNW_Salesforce_Model_Config_Frequency
 {
+    // Buffer 1 hour to identify stuck records
+    const INTERVAL_BUFFER = 3600;
     /**
      * drop down list method
      *

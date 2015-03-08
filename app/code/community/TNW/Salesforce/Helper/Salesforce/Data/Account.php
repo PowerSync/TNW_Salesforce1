@@ -21,7 +21,15 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function setCompany($company = NULL)
     {
-        $this->_companyName = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $company));
+        // All punctuation
+        $_regex = '/\p{P}+/i';
+        $this->_companyName = preg_replace($_regex, '_', $company);
+
+        // All whitespaces
+        $_regex = '/\p{Z}+/i';
+        $this->_companyName = preg_replace($_regex, '_', $company);
+
+        $this->_companyName = strtolower($this->_companyName);
     }
 
     /**
@@ -36,7 +44,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 return false;
             }
 
-            $query = "SELECT Id, OwnerId FROM Account WHERE Name LIKE '%" . $this->_companyName . "%'";
+            $query = "SELECT Id, OwnerId FROM Account WHERE Name LIKE '%" . utf8_encode($this->_companyName) . "%'";
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $query .= " AND IsPersonAccount != true";
             }

@@ -14,18 +14,23 @@
                                 <order_sync>
                                     <title>Orders</title>
                                     <action>adminhtml/salesforcesync_ordersync</action>
-                                    <sort_order>10</sort_order>
+                                    <sort_order>30</sort_order>
                                 </order_sync>
                                 <product_sync>
                                     <title>Products</title>
                                     <action>adminhtml/salesforcesync_productsync</action>
-                                    <sort_order>30</sort_order>
+                                    <sort_order>10</sort_order>
                                 </product_sync>
                                 <customer_sync>
                                     <title>Customers</title>
                                     <action>adminhtml/salesforcesync_customersync</action>
-                                    <sort_order>40</sort_order>
+                                    <sort_order>20</sort_order>
                                 </customer_sync>
+                                <abandoned_sync>
+                                    <title>Abandoned Cart</title>
+                                    <action>adminhtml/salesforcesync_abandonedsync</action>
+                                    <sort_order>50</sort_order>
+                                </abandoned_sync>
                             </children>
                         </manual_sync>
                         <product_mapping translate="title" module="tnw_salesforce">
@@ -85,6 +90,22 @@
                                 </status_mapping>
                             </children>
                         </order_mapping>
+                        <abandoned_mapping>
+                            <title>Abandoned Cart Mappings</title>
+                            <sort_order>300</sort_order>
+                            <children>
+                                <order_mapping>
+                                    <title>Opportunity</title>
+                                    <action>adminhtml/salesforce_abandoned_opportunity</action>
+                                    <sort_order>70</sort_order>
+                                </order_mapping>
+                                <order_cart_mapping>
+                                    <title>Opportunity Products</title>
+                                    <action>adminhtml/salesforce_abandoned_opportunitylineitem</action>
+                                    <sort_order>80</sort_order>
+                                </order_cart_mapping>
+                            </children>
+                        </abandoned_mapping>
                         <queue_sync>
                             <title>Sync Queue</title>
                             <action>adminhtml/salesforcesync_queuesync</action>

@@ -16,6 +16,9 @@ class TNW_Salesforce_Block_Sales_Order_Status_Edit_Form extends TNW_Salesforce_B
         $form = $this->getForm();
         $form->getElement('base_fieldset')->removeField('is_new');
         $form->getElement('base_fieldset')->removeField('status');
+        $form->setAction(
+            $this->getUrl('*/sales_order_status/save', array('status'=>$this->getRequest()->getParam('status')))
+        );
         return $this;
     }
 }

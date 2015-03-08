@@ -413,7 +413,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
                 $results = $this->_mySforceConnection->upsert($_pushOn, $_toSyncValues, 'Opportunity');
 
-                Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
+                Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
                     "data" => $this->_cache['opportunitiesToUpsert'],
                     "result" => $results
                 ));
@@ -532,7 +532,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_currencyCode = Mage::app()->getStore($_order->getStoreId())->getCurrentCurrencyCode();
 
 
-            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct() && $_order->getTaxAmount() > 0) {
                 if (Mage::helper('tnw_salesforce')->getTaxProduct()) {
                     $this->addTaxProduct($_order, $_orderNumber);
                 } else {
@@ -542,7 +542,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     }
                 }
             }
-            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct() && $_order->getShippingAmount() > 0) {
                 if (Mage::helper('tnw_salesforce')->getShippingProduct()) {
                     $this->addShippingProduct($_order, $_orderNumber);
                 } else {
@@ -552,7 +552,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     }
                 }
             }
-            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $_order->getData('discount_amount') > 0) {
                 if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
                     $this->addDiscountProduct($_order, $_orderNumber);
                 } else {
@@ -680,12 +680,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
                 $this->_obj->Quantity = $_item->getQtyOrdered();
 
+                $this->_cache['opportunityLineItemsToUpsert']['cart_' . $_item->getId()] = $this->_obj;
+
                 /* Dump OpportunityLineItem object into the log */
                 foreach ($this->_obj as $key => $_item) {
                     Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
                 }
 
-                $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
+
                 Mage::helper('tnw_salesforce')->log('-----------------');
             }
         }
@@ -892,7 +894,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 if (
                     property_exists($_cartItem, 'PricebookEntry')
                     && property_exists($_cartItem->PricebookEntry, 'ProductCode')
-                    && $_cartItem->PricebookEntry->ProductCode == $_sku
+                    && $_cartItem->PricebookEntry->ProductCode == trim($_sku)
                     && $_cartItem->Quantity == (float)$_item->getQtyOrdered()
                 ) {
                     $_cartItemFound = $_cartItem->Id;
@@ -974,7 +976,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     && property_exists($this->_cache['accountsLookup'][$_websiteId][$_email], 'IsPersonAccount')
                 )
             ) {
-                $this->_obj->ContactId = $this->_cache['accountsLookup'][$_websiteId][$_email]->Id;
+                $this->_obj->ContactId = (
+                    is_array($this->_cache['accountsLookup'])
+                    && array_key_exists($_websiteId, $this->_cache['accountsLookup'])
+                    && is_array($this->_cache['accountsLookup'][$_websiteId])
+                    && array_key_exists($_email, $this->_cache['accountsLookup'][$_websiteId])
+                    && is_object($this->_cache['accountsLookup'][$_websiteId][$_email])
+                    && property_exists($this->_cache['accountsLookup'][$_websiteId][$_email], 'Id')
+                ) ? $this->_cache['accountsLookup'][$_websiteId][$_email]->Id : $_customer->getSalesforceId();
             } else {
                 $this->_obj->ContactId = $_customer->getSalesforceId();
             }
@@ -1022,8 +1031,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     protected function _pushOpportunityLineItems($chunk = array())
     {
         $_orderNumbers = array_flip($this->_cache['upsertedOpportunities']);
+        $_chunkKeys = array_keys($chunk);
         try {
-            $results = $this->_mySforceConnection->upsert("Id", $chunk, 'OpportunityLineItem');
+            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OpportunityLineItem');
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach($chunk as $_object) {
@@ -1033,26 +1043,34 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             Mage::helper('tnw_salesforce')->log('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
         }
 
+        $_sql = "";
         foreach ($results as $_key => $_result) {
-            $_orderNum = $_orderNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId];
+            $_orderNum = $_orderNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId];
 
             //Report Transaction
             $this->_cache['responses']['opportunityLineItems'][] = $_result;
 
             if (!$_result->success) {
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                 $this->_write->query($sql . ' commit;');
 
                 Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.', 1, "sf-errors");
-                $this->_processErrors($_result, 'orderCart', $chunk[$_key]);
+                $this->_processErrors($_result, 'orderCart', $chunk[$_chunkKeys[$_key]]);
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('Failed to upsert one of the Cart Item for Order #' . $_orderNum);
                 }
             } else {
+                $_cartItemId = $_chunkKeys[$_key];
+                if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
+                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . str_replace('cart_','',$_cartItemId) . "';";
+                }
                 Mage::helper('tnw_salesforce')->log('Cart Item (id: ' . $_result->id . ') for (order: ' . $_orderNum . ') upserted.');
             }
+        }
+        if (!empty($_sql)) {
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
         }
     }
 
@@ -1060,6 +1078,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['opportunityLineItemsToUpsert']);
             if ($_ttl > 199) {
@@ -1073,11 +1094,19 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $this->_pushOpportunityLineItems($this->_cache['opportunityLineItemsToUpsert']);
             }
 
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+                "data" => $this->_cache['opportunityLineItemsToUpsert'],
+                "result" => $this->_cache['responses']['opportunityProducts']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: End----------');
         }
 
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Contact Roles: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
+
             // Push Contact Roles
             try {
                 $results = $this->_mySforceConnection->upsert("Id", $this->_cache['contactRolesToUpsert'], 'OpportunityContactRole');
@@ -1112,12 +1141,21 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     Mage::helper('tnw_salesforce')->log('Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (order: ' . $_orderNum . ') upserted.');
                 }
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_after",array(
+                "data" => $this->_cache['contactRolesToUpsert'],
+                "result" => $this->_cache['responses']['customerRoles']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Contact Roles: End----------');
         }
 
         // Push Notes
         if (!empty($this->_cache['notesToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Notes: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['notesToUpsert']);
             if ($_ttl > 199) {
@@ -1130,6 +1168,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             } else {
                 $this->_pushNotes($this->_cache['notesToUpsert']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                "data" => $this->_cache['notesToUpsert'],
+                "result" => $this->_cache['responses']['notes']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Notes: End----------');
         }
     }
@@ -1169,6 +1213,17 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             } else {
                 Mage::unregister('order_cached_' . $_order->getRealOrderId());
                 Mage::register('order_cached_' . $_order->getRealOrderId(), $_order);
+            }
+
+            /**
+             * @comment check zero orders sync
+             */
+            if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                }
+                Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                return;
             }
 
             if (
@@ -1371,11 +1426,13 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 && property_exists($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email], 'OwnerId')
                 && $this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId
                 && (
-                    !is_array($_queueList)
+                    is_array($_queueList)
                     && !in_array($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId, $_queueList)
                 )
             ) {
                 $leadConvert->ownerId = $this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId;
+            } elseif (!array_key_exists($_salesforceWebsiteId, $this->_cache['leadLookup'])) {
+
             } elseif (Mage::helper('tnw_salesforce')->getLeadDefaultOwner()) {
                 $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
             }
@@ -1739,8 +1796,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _setOpportunityInfo($order)
     {
-//        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
-        $_websiteId = $order->getStoreId();
+        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
 
         // Set StageName
         $this->_updateOrderStageName($order);

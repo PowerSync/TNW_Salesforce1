@@ -127,6 +127,17 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 Mage::register('order_cached_' . $_order->getRealOrderId(), $_order);
             }
 
+            /**
+             * @comment check zero orders sync
+             */
+            if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                }
+                Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                return;
+            }
+
             if (
                 !Mage::helper('tnw_salesforce')->syncAllOrders()
                 && !in_array($_order->getStatus(), $this->_allowedOrderStatuses)
@@ -144,6 +155,15 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 }
                 Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for order #" . $_id . ", order could not be loaded!", 1, "sf-errors");
                 return;
+            }
+
+            // See if created from Abandoned Cart
+            if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && $_order->getQuoteId()) {
+                $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id = '" . $_order->getQuoteId() . "'";
+                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetch();
+                if ($row && array_key_exists('salesforce_id', $row) && $row['salesforce_id']) {
+                    $this->_cache['abandonedCart'][$_order->getQuoteId()] = $row['salesforce_id'];
+                }
             }
 
             // Get Magento customer object
@@ -419,7 +439,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _setOrderInfo($order)
     {
-        $_websiteId = $order->getStoreId();
+        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
         $_orderNumber = $order->getRealOrderId();
         $_email = $this->_cache['orderToEmail'][$_orderNumber];
 
@@ -448,6 +468,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         }
 
         $this->_obj->Description = $this->_getDescriptionCart($order);
+
+        if (
+            !empty($this->_cache['abandonedCart'])
+            && array_key_exists($order->getQuoteId(), $this->_cache['abandonedCart'])
+        ) {
+            $this->_obj->OpportunityId = $this->_cache['abandonedCart'][$order->getQuoteId()];
+        }
 
         // Set proper Status
         $this->_updateOrderStatus($order);
@@ -619,6 +646,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             'upsertedOrderStatuses' => array(),
             'accountsLookup' => array(),
             'entitiesUpdating' => array(),
+            'abandonedCart' => array(),
             'orderLookup' => array(),
             'ordersToUpsert' => array(),
             'orderItemsToUpsert' => array(),
@@ -1447,17 +1475,18 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
                 $this->_obj->Quantity = $_item->getQtyOrdered();
 
+                $this->_cache['orderItemsToUpsert']['cart_' . $_item->getId()] = $this->_obj;
+
                 /* Dump OrderItem object into the log */
                 foreach ($this->_obj as $key => $_item) {
                     Mage::helper('tnw_salesforce')->log("OrderItem Object: " . $key . " = '" . $_item . "'");
                 }
 
-                $this->_cache['orderItemsToUpsert'][] = $this->_obj;
                 Mage::helper('tnw_salesforce')->log('-----------------');
             }
 
             // Push Tax Fee Product
-            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct() && $_order->getTaxAmount() > 0) {
                 if (Mage::helper('tnw_salesforce')->getTaxProduct()) {
                     $this->addTaxProduct($_order, $_orderNumber);
                 } else {
@@ -1468,7 +1497,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 }
             }
             // Push Shipping Fee Product
-            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct() && $_order->getShippingAmount() > 0) {
                 if (Mage::helper('tnw_salesforce')->getShippingProduct()) {
                     $this->addShippingProduct($_order, $_orderNumber);
                 } else {
@@ -1480,7 +1509,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
 
             // Push Discount Fee Product
-            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $_order->getData('discount_amount') > 0) {
                 if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
                     $this->addDiscountProduct($_order, $_orderNumber);
                 } else {
@@ -1701,6 +1730,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         // Push Order Products
         if (!empty($this->_cache['orderItemsToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['orderItemsToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['orderItemsToUpsert']);
             if ($_ttl > 199) {
@@ -1713,12 +1745,21 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             } else {
                 $this->_pushOrderItems($this->_cache['orderItemsToUpsert']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+                "data" => $this->_cache['orderItemsToUpsert'],
+                "result" => $this->_cache['responses']['orderProducts']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: End----------');
         }
 
         // Push Notes
         if (!empty($this->_cache['notesToUpsert'])) {
             Mage::helper('tnw_salesforce')->log('----------Push Notes: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
             // Push Cart
             $_ttl = count($this->_cache['notesToUpsert']);
             if ($_ttl > 199) {
@@ -1731,6 +1772,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             } else {
                 $this->_pushNotes($this->_cache['notesToUpsert']);
             }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                "data" => $this->_cache['notesToUpsert'],
+                "result" => $this->_cache['responses']['notes']
+            ));
+
             Mage::helper('tnw_salesforce')->log('----------Push Notes: End----------');
         }
 
@@ -1819,8 +1866,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected function _pushOrderItems($chunk = array())
     {
         $_orderNumbers = array_flip($this->_cache['upsertedOrders']);
+        $_chunkKeys = array_keys($chunk);
         try {
-            $results = $this->_mySforceConnection->upsert("Id", $chunk, 'OrderItem');
+            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OrderItem');
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach($chunk as $_object) {
@@ -1830,26 +1878,34 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             Mage::helper('tnw_salesforce')->log('CRITICAL: Push of Order Items to SalesForce failed' . $e->getMessage());
         }
 
+        $_sql = "";
         foreach ($results as $_key => $_result) {
-            $_orderNum = $_orderNumbers[$this->_cache['orderItemsToUpsert'][$_key]->OrderId];
+            $_orderNum = $_orderNumbers[$this->_cache['orderItemsToUpsert'][$_chunkKeys[$_key]]->OrderId];
 
             //Report Transaction
             $this->_cache['responses']['orderItems'][] = $_result;
 
             if (!$_result->success) {
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['orderItemsToUpsert'][$_key]->OrderId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['orderItemsToUpsert'][$_chunkKeys[$_key]]->OrderId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                $this->_write->query($sql . ' commit;');
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.', 1, "sf-errors");
-                $this->_processErrors($_result, 'orderCart', $chunk[$_key]);
+                $this->_processErrors($_result, 'orderCart', $chunk[$_chunkKeys[$_key]]);
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('Failed to upsert one of the Cart Item for Order #' . $_orderNum);
                 }
             } else {
+                $_cartItemId = $_chunkKeys[$_key];
+                if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
+                    $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . str_replace('cart_','',$_cartItemId) . "';";
+                }
                 Mage::helper('tnw_salesforce')->log('Cart Item (id: ' . $_result->id . ') for (order: ' . $_orderNum . ') upserted.');
             }
+        }
+        if (!empty($_sql)) {
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
         }
     }
 

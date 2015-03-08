@@ -211,7 +211,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         if (!empty($this->_sqlToRun)) {
             try {
-                $this->_write->query($this->_sqlToRun);
+                if (!$this->_write) {
+                    $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
+                }
+                $this->_write->query($this->_sqlToRun . 'commit;');
             } catch (Exception $e) {
                 Mage::helper('tnw_salesforce')->log("Exception: " . $e->getMessage());
             }
@@ -585,13 +588,14 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     continue;
                 }
                 $_prod = $_sfProduct;
+                break;
             }
         }
 
         if ($_prod) {
             if (!Mage::helper('tnw_salesforce')->isMultiCurrency()) {
                 // Check if Pricebooks Entry exist already
-                foreach ($_sfProduct->PriceBooks as $_key => $_pbeObject) {
+                foreach ($_prod->PriceBooks as $_key => $_pbeObject) {
                     if ($_pbeObject->Pricebook2Id == $this->_standardPricebookId) {
                         $_standardPbeId = $_pbeObject->Id;
                     }
@@ -601,13 +605,13 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 }
             } else {
                 $_currencyCode = Mage::app()->getStore($this->_currentScope)->getDefaultCurrencyCode();
-                $_standardKey = $this->_doesPricebookEntryExist($_sfProduct, $this->_standardPricebookId, $_currencyCode);
-                $_defaultKey = $this->_doesPricebookEntryExist($_sfProduct, $this->_defaultPriceBook, $_currencyCode);
+                $_standardKey = $this->_doesPricebookEntryExist($_prod, $this->_standardPricebookId, $_currencyCode);
+                $_defaultKey = $this->_doesPricebookEntryExist($_prod, $this->_defaultPriceBook, $_currencyCode);
                 if (!is_bool($_standardKey)) {
-                    $_standardPbeId = $_sfProduct->PriceBooks[$_standardKey]->Id;
+                    $_standardPbeId = $_prod->PriceBooks[$_standardKey]->Id;
                 }
                 if (!is_bool($_defaultKey)) {
-                    $_defaultPbeId = $_sfProduct->PriceBooks[$_defaultKey]->Id;
+                    $_defaultPbeId = $_prod->PriceBooks[$_defaultKey]->Id;
                 }
             }
         }

@@ -13,6 +13,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_WSDL = 'salesforce/api_config/api_wsdl';
     const API_TYPE = 'salesforce/api_config/api_type';
 
+    /**
+     * @comment Base batch limit for simple sync
+     */
+    const BASE_UPDATE_LIMIT = 200;
+
     /* License Configuration */
     const API_LICENSE_EMAIL = 'salesforce/api_license/api_email';
     const API_LICENSE_INVOICE = 'salesforce/api_license/api_invoice';
@@ -114,13 +119,9 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = NULL;
-    protected $_taxProduct = NULL;
-    protected $_taxProductsLookup = NULL;
-    protected $_shippingProduct = array();
-    protected $_shippingProductsLookup = NULL;
 
-    //protected $_extensionType = "BASIC";
-    protected $_extensionType = "PRO";
+    //const MODULE_TYPE = 'BASIC';
+    const MODULE_TYPE = 'PRO';
 
     /**
      * sync frequency
@@ -174,10 +175,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStroreConfig(self::CATALOG_PRICE_SCOPE);
     }
 
-    //Extension Type: 1 way or 2 way
-    public function getType()
+    //Extension Type: Enterprise or Professional
+    final public function getType()
     {
-        return $this->_extensionType;
+        return self::MODULE_TYPE;
     }
 
     // License Email
@@ -228,7 +229,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStroreConfig(self::API_WSDL);
     }
 
-    // Salesforce Type: Partner or Enterprise
+    /**
+     * @deprecated
+     * Salesforce Type: Partner or Enterprise
+     * @return string
+     */
     public function getApiType()
     {
         return 'Enterprise';
@@ -239,6 +244,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getOrderObject()
     {
         return $this->getStroreConfig(self::ORDER_OBJECT);
+    }
+    // Salesforce object where Magento orders will go to
+    public function getAbandonedObject()
+    {
+        return TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
     }
 
     // Is debug log enabled
@@ -545,6 +555,25 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return (int)str_replace(".", "", Mage::getVersion());
     }
 
+    public function getTime($_time = NULL) {
+        if (!$_time) {
+            $_time = time();
+        }
+        return $_time;
+    }
+
+    public function getMagentoTime($_time = NULL) {
+        if (!$_time) {
+            $_time = time();
+        }
+        return Mage::getModel('core/date')->timestamp($_time);
+    }
+
+    public function getDate($_time = NULL, $_isTrue = true) {
+        $_timeStamp = (!$_isTrue) ? $this->getMagentoTime($_time) : $this->getTime($_time);
+        return gmdate(DATE_ATOM, $_timeStamp);
+    }
+
     // PHP Version
     public function checkPhpVersion()
     {
@@ -642,34 +671,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         }
 
         return $this->_leadStatus;
-    }
-
-    // Get Salesforce Tax Product
-    public function shippingProductDropdown()
-    {
-        if ($this->isWorking()) {
-            if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->productLookupAdvanced(NULL, 'Shipping')) {
-                foreach ($collection as $_item) {
-                    $this->_shippingProductsLookup[$_item->PricebookEntityId] = $_item->Name;
-                }
-                unset($collection, $_item);
-            }
-        }
-        if (!$this->_shippingProduct && !empty($this->_shippingProductsLookup)) {
-            $this->_shippingProduct = array();
-            foreach ($this->_shippingProductsLookup as $key => $_obj) {
-                $this->_shippingProduct[] = array(
-                    'label' => $_obj,
-                    'value' => $key
-                );
-            }
-        } else if (empty($this->_shippingProductsLookup)) {
-            $this->_taxProduct[] = array(
-                'label' => 'No products found',
-                'value' => 0
-            );
-        }
-        return $this->_shippingProduct;
     }
 
     /**
@@ -820,34 +821,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         }
 
         return $res;
-    }
-
-    // Get Salesforce Tax Product
-    public function taxProductDropdown()
-    {
-        if ($this->isWorking()) {
-            if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->productLookupAdvanced(NULL, 'Tax')) {
-                foreach ($collection as $_item) {
-                    $this->_taxProductsLookup[$_item->PricebookEntityId] = $_item->Name;
-                }
-                unset($collection, $_item);
-            }
-        }
-        if (!$this->_taxProduct && !empty($this->_taxProductsLookup)) {
-            $this->_taxProduct = array();
-            foreach ($this->_taxProductsLookup as $key => $_obj) {
-                $this->_taxProduct[] = array(
-                    'label' => $_obj,
-                    'value' => $key
-                );
-            }
-        } else if (empty($this->_taxProductsLookup)) {
-            $this->_taxProduct[] = array(
-                'label' => 'No products found',
-                'value' => 0
-            );
-        }
-        return $this->_taxProduct;
     }
 
     // Get Salesforce Person Account Record Id

@@ -162,21 +162,21 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                         array(array($this, 'cartItemsCallback'))
                     );
 
-                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($this->_productIds, 'Product', 'product');
-                    if (!$res) {
-                        Mage::helper("tnw_salesforce")->log('error: products from the order were not saved in local storage');
+                    $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+                    foreach($_productChunks as $_chunk) {
+                        Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Product', 'product');
                     }
 
-                    // pass data to local storage
-                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObject($itemIds, 'Order', 'order');
-                    if (!$res) {
-                        Mage::getSingleton('adminhtml/session')->addError('Could not add orders to the queue!');
-                    } else {
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Records were added to synchronization queue!')
-                            );
-                        }
+                    $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+                    unset($itemIds, $_chunk);
+                    foreach($_chunks as $_chunk) {
+                        Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Order', 'order');
+                    }
+
+                    if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
+                        Mage::getSingleton('adminhtml/session')->addSuccess(
+                            $this->__('Records are pending addition into the queue!')
+                        );
                     }
                 } else {
                     Mage::dispatchEvent(

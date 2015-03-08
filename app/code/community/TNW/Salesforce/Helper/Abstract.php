@@ -16,9 +16,22 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     protected $_useCache = false;
 
     /**
+     * Get DB writer
      * @var null
      */
     protected $_write = NULL;
+
+    /**
+     * Get DB reader
+     * @var null
+     */
+    protected $_read = NULL;
+
+    /**
+     * Get DB record remover
+     * @var null
+     */
+    protected $_delete = NULL;
 
     /**
      * @var array
@@ -99,6 +112,14 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         } else {
             Mage::helper('tnw_salesforce')->log('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
         }
+    }
+
+    public function clearMemory() {
+        if (!gc_enabled()) {
+            gc_enable();
+        }
+        gc_collect_cycles();
+        gc_disable();
     }
 
     /**
@@ -326,12 +347,8 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 
         $this->_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
 
-        if (!$this->_write) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
-
         $sql = "SELECT * FROM `" . $this->getTable('eav_entity_type') . "` WHERE entity_type_code = 'customer'";
-        $row = $this->_write->query($sql)->fetch();
+        $row = $this->getDbConnection('read')->query($sql)->fetch();
         $this->_customerEntityTypeCode = ($row) ? (int)$row['entity_type_id'] : NULL;
 
         if (empty($this->_attributes)) {
@@ -366,7 +383,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         if ($_value || $_value === 0) {
             // Update Account Id
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE attribute_id = " . $this->_attributes[$_type][$_attributeName] . " AND entity_id = " . $_id;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            $row = $this->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
                 $sql .= "UPDATE `" . $_table . "` SET value = '" . $_value . "' WHERE value_id = " . $row['value_id'] . ";";
@@ -377,7 +394,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         } else {
             // Reset value
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE attribute_id = " . $this->_attributes[$_type][$_attributeName] . " AND entity_id = " . $_id;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            $row = $this->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
                 $sql .= "DELETE FROM `" . $_table . "` WHERE value_id = " . $row['value_id'] . ";";
@@ -385,7 +402,33 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         }
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
-            $this->_write->query($sql . ' commit;');
+            $this->getDbConnection()->query($sql . ' commit;');
         }
+    }
+
+    public function getDbConnection($_type = 'write') {
+        $_function = '_getDb' . ucwords($_type);
+        return $this->{$_function}();
+    }
+
+    protected function _getDbWrite() {
+        if (!$this->_write) {
+            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
+        }
+        return $this->_write;
+    }
+
+    protected function _getDbRead() {
+        if (!$this->_read) {
+            $this->_read = Mage::getSingleton('core/resource')->getConnection('core_read');
+        }
+        return $this->_read;
+    }
+
+    protected function _getDbDelete() {
+        if (!$this->_delete) {
+            $this->_delete = Mage::getSingleton('core/resource')->getConnection('core_delete');
+        }
+        return $this->_delete;
     }
 }

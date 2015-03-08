@@ -5,6 +5,7 @@ class TNW_Salesforce_Model_Config_Account_Business
 
     public function toOptionArray()
     {
+        /*
         $_useCache = Mage::app()->useCache('tnw_salesforce');
         $cache = Mage::app()->getCache();
 
@@ -16,8 +17,8 @@ class TNW_Salesforce_Model_Config_Account_Business
                 $cache->save(serialize($_data), 'tnw_salesforce_b2b_record_types', array("TNW_SALESFORCE"));
             }
         }
-
-        return $_data;
+        */
+        return Mage::helper('tnw_salesforce')->getBusinessAccountRecordIds();
     }
 
 }

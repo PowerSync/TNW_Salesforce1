@@ -30,6 +30,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
             Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
             Mage::app()->getResponse()->sendResponse();
         }
+        if (Mage::getModel('tnw_salesforce/queue')->getCollection()->count() > 0) {
+            Mage::getSingleton('adminhtml/session')->addNotice("One or more records are still pending to be added to the synchronization queue. Check back later if you don't see records you are looking for...");
+        }
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('Manual Sync'))->_title($this->__('Queue Objects Synchronization'));
         $this->_initLayout()
             ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_queuesync'));
@@ -48,7 +51,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
     {
         if ($this->getRequest()->getParam('queue_id') > 0) {
             try {
-                Mage::getModel('tnw_salesforce/localstorage')->deleteObject(array($this->getRequest()->getParam('queue_id')));
+                Mage::getModel('tnw_salesforce/localstorage')->deleteObject(array($this->getRequest()->getParam('queue_id')), true);
                 if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
                     Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('tnw_salesforce')->__('Queued item was successfully removed!'));
                 }
@@ -66,7 +69,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select item(s) in the queue'));
         } else {
             try {
-                Mage::getModel('tnw_salesforce/localstorage')->deleteObject($itemIds);
+                Mage::getModel('tnw_salesforce/localstorage')->deleteObject($itemIds, true);
                 if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
                     Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('tnw_salesforce')->__('Successfully removed selected queued item(s)!'));
                 }

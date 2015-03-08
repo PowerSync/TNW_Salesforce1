@@ -70,6 +70,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      */
     protected $_magentoId = null;
 
+    /**
+     * @var null
+     */
+    protected $_websiteId = NULL;
+
     public function __construct()
     {
         parent::__construct();
@@ -273,13 +278,13 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             // Update Website association
-            if (property_exists($this->_salesforceObject, $this->_prefix . 'Website__c')) {
-                $_websiteSfId = $this->_salesforceObject->{$this->_prefix . 'Website__c'};
-                $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-                if ($_websiteId) {
-                    Mage::helper('tnw_salesforce')->log('Customer: website_id = ' . $_websiteId);
-                    $_entity->setData('website_id', $_websiteId);
-                }
+            if ($this->_websiteId) {
+                $_entity->setData('website_id', $this->_websiteId);
+            }
+
+            // Set Store ID for new customer records, use Default store
+            if ($_entity->getData('website_id') && $_entity->getData('store_id') === NULL) {
+                $_entity->setData('store_id', Mage::app()->getWebsite($_entity->getWebsiteId())->getDefaultStore()->getId());
             }
 
             // Increase the timeout
@@ -324,6 +329,40 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             if (!$this->_magentoId) {
                 $this->_magentoId = $_entity->getId();
+            }
+
+            // Update Subscription
+            if (
+                Mage::helper('tnw_salesforce')->getCustomerNewsletterSync()
+                && (
+                    property_exists($this->_salesforceObject, 'HasOptedOutOfEmail')
+                    || property_exists($this->_salesforceObject, 'PersonHasOptedOutOfEmail')
+                )
+            ) {
+                $_field = (property_exists($this->_salesforceObject, 'HasOptedOutOfEmail')) ? 'HasOptedOutOfEmail' : 'PersonHasOptedOutOfEmail';
+                $subscriber = Mage::getModel('newsletter/subscriber')->loadByCustomer($_entity);
+                if (!$this->_salesforceObject->{$_field} && !$subscriber->isSubscribed()) {
+                    if ($_entity->getData('email')) {
+                        Mage::helper('tnw_salesforce')->log('Subscribing: ' . $_entity->getData('email'));
+                        $subscriber->setStatus(Mage_Newsletter_Model_Subscriber::STATUS_SUBSCRIBED);
+                        $storeId = $_entity->getStoreId();
+                        if ($_entity->getStoreId() == 0) {
+                            $storeId = Mage::app()->getWebsite($_entity->getWebsiteId())->getDefaultStore()->getId();
+                        }
+                        $subscriber
+                            ->setStoreId($storeId)
+                            ->setEmail($_entity->getEmail())
+                            ->setCustomerId($_entity->getId())
+                        ;
+                        $subscriber->save();
+                        Mage::helper('tnw_salesforce')->log('Subscribed!');
+                    } else {
+                        Mage::helper('tnw_salesforce')->log('SKIPPING Customer Subscription: Customer (' . $_entity->getData('firstname') . ' ' . $_entity->getData('lastname') . ') does not have an email in Salesforce!');
+                    }
+                } elseif ($this->_salesforceObject->{$_field} && $subscriber->isSubscribed()) {
+                    $subscriber->unsubscribe();
+                    Mage::helper('tnw_salesforce')->log($_entity->getData('email') . ' un-subscribed!');
+                }
             }
 
             // Do Additional Stuff
@@ -467,6 +506,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
     }
 
     protected function _findMagentoCustomer() {
+        if (property_exists($this->_salesforceObject, $this->_prefix . 'Website__c')) {
+            $_websiteSfId = $this->_salesforceObject->{$this->_prefix . 'Website__c'};
+            $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
+            if ($_websiteId) {
+                $this->_websiteId = $_websiteId;
+            }
+        }
+
         // Magneto ID provided
         if ($this->_magentoId) {
             //Test if user exists
@@ -501,7 +548,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             } else {
                 Mage::helper('tnw_salesforce')->log('Find by email');
                 //Last reserve, try to find by email
-                $sql = "SELECT entity_id,group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $this->_email . "'";
+                $sql = "SELECT entity_id, group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $this->_email . "'";
+                if ($this->_websiteId && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                    $sql .= " AND website_id = '" . $this->_websiteId . "'";
+                }
+
                 $row = $this->_write->query($sql)->fetch();
                 $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
                 Mage::helper("tnw_salesforce")->log('MID by email: ' . $this->_magentoId);
@@ -511,6 +562,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 } else {
                     //Brand new user
                     $this->_isNew = true;
+                    Mage::helper('tnw_salesforce')->log("New Customer. Creating!");
                 }
             }
         }

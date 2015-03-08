@@ -830,7 +830,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
                 return false;
             }
-            $query = "SELECT ID, PricebookEntryId, Quantity, ServiceDate, UnitPrice, Description FROM OpportunityLineItem WHERE OpportunityId = '$oid'";
+            $query = "SELECT ID, PricebookEntryId, Quantity, ServiceDate, UnitPrice, Description FROM OpportunityLineItem WHERE OpportunityId ";
+            if (is_array($oid)) {
+                $query .= " IN ('".implode("', '", $oid)."')";
+            } else {
+                $query .= " = '$oid'";
+            }
+
             Mage::helper('tnw_salesforce')->log("OpportunityLineItem Lookup Query: " . $query);
             $result = $this->getClient()->query(($query));
             unset($query);

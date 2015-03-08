@@ -5,6 +5,7 @@ class TNW_Salesforce_Model_Config_Account_Person
 
     public function toOptionArray()
     {
+        /*
         $_useCache = Mage::app()->useCache('tnw_salesforce');
         $cache = Mage::app()->getCache();
 
@@ -16,8 +17,8 @@ class TNW_Salesforce_Model_Config_Account_Person
                 $cache->save(serialize($_data), 'tnw_salesforce_b2c_record_types', array("TNW_SALESFORCE"));
             }
         }
-
-        return $_data;
+        */
+        return Mage::helper('tnw_salesforce')->getPersonAccountRecordIds();
     }
 
 }

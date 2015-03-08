@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.06.0008</version>
+            <version>0.01.49.13.0005</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -45,6 +45,9 @@
                     <queue_storage>
                         <table>tnw_salesforce_queue_storage</table>
                     </queue_storage>
+                    <queue>
+                        <table>tnw_salesforce_queue</table>
+                    </queue>
                     <mapping>
                         <table>tnw_salesforce_mapping</table>
                     </mapping>
@@ -127,6 +130,16 @@
                     </tnw_salesforce_newsletter_observer>
                 </observers>
             </newsletter_subscriber_delete_after>
+
+            <!-- -->
+            <sales_order_invoice_save_after>
+                <observers>
+                    <tnw_salesforce_order_invoice_save_after>
+                        <class>tnw_salesforce/order_invoice_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_order_invoice_save_after>
+                </observers>
+            </sales_order_invoice_save_after>
 
             <!-- Shipment Events
             <sales_order_shipment_save_before>
@@ -373,6 +386,16 @@
                     </tnw_salesforce_order_status_save>
                 </observers>
             </tnw_salesforce_order_salesforce_status_save>
+
+            <sales_quote_save_before>
+                <observers>
+                    <persistent>
+                        <class>tnw_salesforce/observer</class>
+                        <method>prepareQuotesForSync</method>
+                    </persistent>
+                </observers>
+            </sales_quote_save_before>
+
         </events>
     </global>
     <adminhtml>
@@ -440,6 +463,17 @@
                                                 </status_mapping>
                                             </children>
                                         </order_mapping>
+                                        <abandoned_mapping>
+                                            <title>Abandoned Cart Mappings</title>
+                                            <children>
+                                                <order_mapping>
+                                                    <title>Opportunity</title>
+                                                </order_mapping>
+                                                <order_cart_mapping>
+                                                    <title>Opportunity Products</title>
+                                                </order_cart_mapping>
+                                            </children>
+                                        </abandoned_mapping>
                                         <manual_sync>
                                             <title>Manual Sync</title>
                                             <children>
@@ -455,6 +489,9 @@
                                                 <customer_sync>
                                                     <title>Customers</title>
                                                 </customer_sync>
+                                                <abandoned_sync>
+                                                    <title>Abandoned Cart</title>
+                                                </abandoned_sync>
                                             </children>
                                         </manual_sync>
                                         <queue_sync>
@@ -520,10 +557,19 @@
     </admin>
     <crontab>
         <jobs>
-            <tnw_salesforce>
+            <tnw_salesforce_queue>
+                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
+                <run><model>tnw_salesforce/cron::processQueue</model></run>
+            </tnw_salesforce_queue>
+            <tnw_salesforce_m2sf>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::backgroundProcess</model></run>
-            </tnw_salesforce>
+            </tnw_salesforce_m2sf>
+
+            <tnw_salesforce_abandoned>
+                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
+                <run><model>tnw_salesforce/cron::addAbandonedToQueue</model></run>
+            </tnw_salesforce_abandoned>
         </jobs>
     </crontab>
     <default>
@@ -567,6 +613,7 @@
         <salesforce_order>
             <general>
                 <order_sync_enable>0</order_sync_enable>
+                <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
                 <order_multi_currency>0</order_multi_currency>
                 <order_status_all>1</order_status_all>
@@ -574,6 +621,9 @@
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
+                <abandoned_cart_enabled>0</abandoned_cart_enabled>
+                <abandoned_close_time_after>14</abandoned_close_time_after>
+                <abandoned_cart_state>Committed</abandoned_cart_state>
             </customer_opportunity>
             <opportunity_cart>
                 <use_tax_product>0</use_tax_product>

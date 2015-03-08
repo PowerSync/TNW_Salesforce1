@@ -611,11 +611,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function clearMemory()
     {
         set_time_limit(1000);
-        if (!gc_enabled()) {
-            gc_enable();
-        }
-        gc_collect_cycles();
-        gc_disable();
+        Mage::helper('tnw_salesforce')->clearMemory();
     }
 
     protected function _getSalesforceDomainFromSession()
@@ -631,7 +627,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     {
         $this->_initCache();
 
-        $this->_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        if (!$this->_magentoId) {
+            $this->_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        }
 
         $this->_customerGroupModel = Mage::getModel('customer/group');
 
