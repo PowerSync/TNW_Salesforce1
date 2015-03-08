@@ -1474,6 +1474,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                             foreach ($this->_cache['entitiesUpdating'] as $customerId => $customerEmail) {
                                 if ($customerEmail == $email) {
                                     $this->_cache['leadLookup'][$_websiteId][$email]->MagentoId = $customerId;
+                                    $foundCustomers[$customerId] = (array)$this->_cache['leadLookup'][$_websiteId][$email];
+                                    $foundCustomers[$customerId]['email'] = $email;
                                 }
                             }
                         }
@@ -1529,6 +1531,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $leadData = $this->_prepareLeadConversionObject($leadData);
 
                     $this->_cache['leadsToConvert'][$leadData->Id] = $leadData;
+
+                    unset($_emailsArray[$_key]);
                 }
             }
 
