@@ -1429,8 +1429,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
             $_companies = $_salesforceDataAccount->lookupByCompanies($_companies, 'CustomIndex');
 
-//            $this->_customerAccounts = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
-
             $foundCustomers = array();
 
             if (!empty($_emailsArray)) {
@@ -1518,6 +1516,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         if (!$this->_isUserActive($leadData->OwnerId)) {
                             $this->_obj->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
                         }
+                    } elseif (!empty($this->_customerAccounts[$data['email']])) {
+                        $leadData->accountId = $this->_customerAccounts[$data['email']];
                     }
 
                     if ($data['contactId'] && (!empty($leadData->accountId))) {
