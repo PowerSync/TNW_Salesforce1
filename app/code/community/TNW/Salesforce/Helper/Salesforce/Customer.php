@@ -35,6 +35,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected $_isPushingGuestData = false;
 
+    /*
+     * Is Person Account
+     */
+    protected $_isPerson = NULL;
+
     /**
      * @param null $_subscription
      * @param null $_status
@@ -648,6 +653,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         array_key_exists($_contactIds[$_key], $this->_cache['accountsToUpsert']['Id'])
                         && property_exists($this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]], 'PersonEmail')
                     ) {
+                        if (!is_object($this->_cache['toSaveInMagento'][$_websiteId][$_email])) {
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_email] = new stdClass();
+                        }
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $_result->id;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount = 1;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
@@ -890,6 +898,51 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::helper('tnw_salesforce')->log("Leads: " . implode(',', $_entitites) . " upserted!");
             Mage::helper('tnw_salesforce')->log("---------- End: Lead Sync ----------");
         }
+
+        $this->_convertLeads();
+    }
+
+    protected function _convertLeads() {
+        if (!empty($this->_cache['leadsToConvert'])) {
+            $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+
+            foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
+
+                foreach ($leadsToConvertChunk as $_object) {
+                    foreach($_object as $key => $value) {
+                        Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
+                    }
+                }
+
+                $_customerKeys = array_keys($leadsToConvertChunk);
+
+                $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
+                foreach ($_results as $_resultsArray) {
+                    foreach ($_resultsArray as $_key => $_result) {
+                        if (!property_exists($_result, 'success') || !(int)$_result->success ) {
+                            $this->_processErrors($_result, 'lead');
+                        } else {
+                            $_customerId = $_customerKeys[$_key];
+                            $_customerEmail = $this->_cache['entitiesUpdating'][$_customerId];
+
+                            $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
+
+                            unset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]);
+
+                            // Update Salesforce Id
+                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
+                            // Update Account Id
+                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
+                            // Update Lead
+                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
+                            // Update Sync Status
+                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
+
+                        }
+                    }
+                }
+            }
+        }
     }
 
     protected function _prepareLeads()
@@ -899,6 +952,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($this->_cache['leadLookup'] as $_salesforceWebsiteId => $websiteLeads) {
                 $_websiteId = array_search($_salesforceWebsiteId, $this->_websiteSfIds);
                 foreach ($websiteLeads as $_email => $_info) {
+                    $this->_isPerson = NULL;
                     // Just in case Salesforce did not save Magento ID for some reason
                     if (
                         !$_info->MagentoId &&
@@ -908,15 +962,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     ) {
                         $_info->MagentoId = $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId;
                     }
-                    if (Mage::helper('tnw_salesforce')->isCustomerAsLead() && !$_info->IsConverted) {
+                    if (!$_info->IsConverted) {
                         $this->_addToQueue($_info->MagentoId, "Lead");
                     } else {
-                        if ($_info->IsConverted) {
-                            // TODO: Delete Lead?!
-                        }
-                        // Changed order so that we can capture account owner: Account then Contact
-                        $this->_addToQueue($_info->MagentoId, "Account");
-                        $this->_addToQueue($_info->MagentoId, "Contact");
+                        // TODO: Delete Lead?!
                     }
                 }
             }
@@ -926,10 +975,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     /**
      *
      */
-    protected function _prepareLeadConversionObject($leadData)
+    protected function _prepareLeadConversionObject($leadData, $_leadId = NULL)
     {
         $leadData->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
-        $leadData->leadId= $leadData->Id;
+        $leadData->leadId = $_leadId;
         $leadData->doNotCreateOpportunity = 'true';
         $leadData->overwriteLeadSource = 'false';
         $leadData->sendNotificationEmail = 'false';
@@ -939,55 +988,25 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
     protected function _prepareNew()
     {
-
-        $leadsToConvert = $this->_cache['leadsToConvert'];
-
-        $leadsToConvertChunks = array_chunk($leadsToConvert, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-
-        foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
-
-            $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
-            foreach ($_results as $_key => $_resultsArray) {
-                foreach ($_resultsArray as $_result) {
-                    if (!property_exists($_result, 'success') || !(int)$_result->success ) {
-                        $this->_processErrors($_result, 'lead');
-                    } else {
-                        $_customerId = $leadsToConvertChunk[$_result->leadId]->MagentoId;
-                        $_customerEmail = $leadsToConvertChunk[$_result->leadId]->Email;
-
-                        $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
-
-                        unset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]);
-
-                        // Update Salesforce Id
-                        Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                        // Update Account Id
-                        Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                        // Update Lead
-                        Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->leadId, 'salesforce_lead_id');
-                        // Update Sync Status
-                        Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
-
-
-                    }
-                }
-            }
-        }
-
-
         if (!empty($this->_cache['notFoundCustomers'])) {
             foreach ($this->_cache['notFoundCustomers'] as $_id => $_email) {
+                $this->_isPerson = NULL;
                 // Check if new customers need to be added as a Lead or Contact
                 if (
-                    Mage::helper('tnw_salesforce')->isCustomerAsLead()
-                    && (!array_keys($this->_customerAccounts, $_email) || !$this->_customerAccounts[$_email])
+                    (
+                        Mage::helper('tnw_salesforce')->isCustomerAsLead()
+                        && (!array_keys($this->_customerAccounts, $_email) || !$this->_customerAccounts[$_email])
+                    ) || (
+                        is_array($this->_cache['leadLookup'])
+                        && array_key_exists($this->_cache['customerToWebsite'][$_id], $this->_cache['leadLookup'])
+                        && array_key_exists($_email, $this->_cache['leadLookup'][$this->_cache['customerToWebsite'][$_id]])
+                    )
                 ) {
                     $this->_addToQueue($_id, "Lead");
                 } else {
-
-                        // Changed order so that we can capture account owner: Account then Contact
-                        $this->_addToQueue($_id, "Account");
-                        $this->_addToQueue($_id, "Contact");
+                    // Changed order so that we can capture account owner: Account then Contact
+                    $this->_addToQueue($_id, "Account");
+                    $this->_addToQueue($_id, "Contact");
                 }
             }
         }
@@ -999,6 +1018,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($this->_cache['contactsLookup'] as $_salesforceWebsiteId => $_accounts) {
                 $_websiteId = array_search($_salesforceWebsiteId, $this->_websiteSfIds);
                 foreach ($_accounts as $_email => $_info) {
+                    $this->_isPerson = NULL;
                     if (
                         !$_info->MagentoId &&
                         is_array($this->_cache['toSaveInMagento']) &&
@@ -1157,7 +1177,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             // Set Contact AccountId as suggested by Advanced Lookup
             if (
                 array_key_exists($_email, $this->_customerAccounts)
-                && !$_customer->getSalesforceIsPerson()
+                && !$this->_isPerson
             ) {
                 $this->_obj->AccountId = $this->_customerAccounts[$_email];
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_obj->AccountId;
@@ -1179,6 +1199,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 && $this->_obj->RecordTypeId == Mage::helper('tnw_salesforce')->getPersonAccountRecordType()
             ) {
                 // This is Person Account
+                if (!$this->_isPerson) {
+                    $this->_isPerson = true;
+                }
 
                 // Move the prepared Contact data to Person Account
                 if (
@@ -1309,6 +1332,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : Mage::app()->getWebsite()->getId();
 
+            $this->_cache['customerToWebsite'] = array($_customerId => $this->_websiteSfIds[$_websiteId]);
+
             // Lookup existing Contacts & Accounts
             $tmp->Email = $_email;
             $tmp->SfInSync = 0;
@@ -1432,6 +1457,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $foundCustomers = array();
 
             if (!empty($_emailsArray)) {
+                $this->_cache['customerToWebsite'] = $_websites;
                 $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache['entitiesUpdating'], $_websites);
             }
 
@@ -1465,7 +1491,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
             // Lookup existing Leads
-            if (!empty($_emailsArray) || !empty(!empty($foundCustomers))) {
+            if (!empty($_emailsArray) || !empty($foundCustomers)) {
                 $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites);
                 foreach ($this->_cache['leadLookup'] as $_websiteId => $leads) {
                     foreach ($leads as $email => $lead) {
@@ -1484,6 +1510,16 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
 
+            foreach ($_emailsArray as $_key => $_email) {
+                if (
+                    !Mage::helper('tnw_salesforce')->isCustomerAsLead()
+                    && array_key_exists($_websites[$_key], $this->_cache['leadLookup'])
+                    && array_key_exists($_email, $this->_cache['leadLookup'][$_websites[$_key]])
+                ) {
+                    $foundCustomers[$_key]['email'] = $_email;
+                }
+            }
+
             if (Mage::helper('tnw_salesforce')->isCustomerAsLead()) {
                 foreach ($_emailsArray as $_key => $_email) {
                     if (
@@ -1498,19 +1534,25 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     }
                 }
             } else {
-
                 foreach ($foundCustomers as $_key => $data) {
-                    $leadData = $this->_cache['leadLookup'][$_websites[$_key]][$data['email']];
+                    $_data = $this->_cache['leadLookup'][$_websites[$_key]][$data['email']];
 
-                    if ($leadData->IsConverted) {
+                    if ($_data->IsConverted) {
+                        // TODO: if no contacts found, confirm that new contact and account should be created.
+                        continue;
+                    }
+                    if (!$_data->Id) {
+                        // Skip if there is no Lead ID
                         continue;
                     }
 
-                    if (!empty($data['AccountId'])) {
+                    $leadData = new stdClass();
+
+                    if (array_key_exists('AccountId', $data) && !empty($data['AccountId'])) {
                         $leadData->accountId = $data['AccountId'];
                     }
 
-                    if (!empty($_companies[$data['email']]) && empty($leadData->accountId)) {
+                    if (array_key_exists($data['email'], $_companies) && !empty($_companies[$data['email']]) && empty($leadData->accountId)) {
                         $leadData->accountId = $_companies[$data['email']]->Id;
 
                         $leadData->OwnerId = $_companies[$data['email']]->OwnerId;
@@ -1522,20 +1564,19 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         $leadData->accountId = $this->_customerAccounts[$data['email']];
                     }
 
-                    if ($data['contactId'] && (!empty($leadData->accountId))) {
+                    if (array_key_exists('contactId', $data) && $data['contactId'] && (!empty($leadData->accountId))) {
                         if ($data['contactId']) {
                             $leadData->contactId = $data['contactId'];
                         }
                     }
 
-                    $leadData = $this->_prepareLeadConversionObject($leadData);
+                    $leadData = $this->_prepareLeadConversionObject($leadData, $_data->Id);
 
-                    $this->_cache['leadsToConvert'][$leadData->Id] = $leadData;
+                    $this->_cache['leadsToConvert'][$_key] = $leadData;
 
                     unset($_emailsArray[$_key]);
                 }
             }
-
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
         } catch (Eception $e) {

@@ -524,6 +524,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 }
             }
         }
+
+        $this->_convertLeads();
     }
 
     protected function _onComplete()
@@ -593,6 +595,26 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $_emailsArray[$_customer->getId()] = $_email;
                 $_websites[$_customer->getId()] = $this->_websiteSfIds[$_websiteId];
             }
+
+            /**
+             * @comment try to find customer company name
+             */
+            $_companyName = $_customer->getCompany();
+
+            if (!$_companyName) {
+                $_companyName = (
+                    $_customer->getDefaultBillingAddress() &&
+                    $_customer->getDefaultBillingAddress()->getCompany() &&
+                    strlen($_customer->getDefaultBillingAddress()->getCompany())
+                ) ? $_customer->getDefaultBillingAddress()->getCompany() : NULL;
+            }
+            /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
+            if (!Mage::helper("tnw_salesforce")->createPersonAccount() && !$_companyName) {
+                $_companyName = $_customer->getFirstname() . " " . $_customer->getLastname();
+            }
+            $_companies[$_email] = $_companyName;
+
+            $this->_cache['customerToWebsite'] = $_websites;
             $this->_allOrderCustomers[$_orderNum] = $_customer;
 
             $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : Mage::app()->getWebsite()->getId();
@@ -605,9 +627,15 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_i++;
         }
 
+        $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
+        $_companies = $_salesforceDataAccount->lookupByCompanies($_companies, 'CustomIndex');
+
+        $this->_cache['customerToWebsite'] = $_websiteArray;
         $this->_cache['entitiesUpdating'] = $_emailsArray;
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailsArray, $_websites);
         $this->_customerAccountId = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
+
+        $foundCustomers = array();
 
         foreach ($_emailsArray as $_key => $_email) {
             if (
@@ -616,22 +644,104 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 array_key_exists($_email, $this->_cache['contactsLookup'][$_websites[$_key]]) &&
                 ($this->_cache['contactsLookup'][$_websites[$_key]][$_email]->MagentoId == $_key || !$this->_cache['contactsLookup'][$_websites[$_key]][$_email]->MagentoId)
             ) {
+                $foundCustomers[$_key] = array(
+                    'contactId' => $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->Id
+                );
+
+                $foundCustomers[$_key]['email'] = $_email;
+
+                if ($this->_cache['contactsLookup'][$_websites[$_key]][$_email]->AccountId) {
+                    $foundCustomers[$_key]['AccountId'] = $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->AccountId;
+                }
+
+                if (array_key_exists($_key, $this->_cache['contactsLookup'][$_websites[$_key]])) {
+                    $this->_cache['contactsLookup'][$_websites[$_key]][$_email] = $this->_cache['contactsLookup'][$_websites[$_key]][$_key];
+                    unset($this->_cache['contactsLookup'][$_websites[$_key]][$_key]);
+                }
+
+                unset($_websites[$_key]);
                 unset($_emailsArray[$_key]);
             }
         }
         // Lookup existing Leads
-        if (!empty($_emailsArray)) {
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emailsArray, $_websites);
+        if (!empty($_emailsArray) || !empty($foundCustomers)) {
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites);
+            foreach ($this->_cache['leadLookup'] as $_websiteId => $leads) {
+                foreach ($leads as $email => $lead) {
+                    if (!$this->_cache['leadLookup'][$_websiteId][$email]->MagentoId) {
+
+                        foreach ($this->_cache['entitiesUpdating'] as $customerId => $customerEmail) {
+                            if ($customerEmail == $email) {
+                                $this->_cache['leadLookup'][$_websiteId][$email]->MagentoId = $customerId;
+                                $foundCustomers[$customerId] = (array)$this->_cache['leadLookup'][$_websiteId][$email];
+                                $foundCustomers[$customerId]['email'] = $email;
+                            }
+                        }
+                    }
+                }
+
+            }
         }
 
         foreach ($_emailsArray as $_key => $_email) {
             if (
-                $this->_cache['leadLookup'] &&
-                array_key_exists($_websites[$_key], $this->_cache['leadLookup']) &&
-                array_key_exists(strtolower($_email), $this->_cache['leadLookup'][$_websites[$_key]]) &&
-                ($this->_cache['leadLookup'][$_websites[$_key]][$_email]->MagentoId == $_key || !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->MagentoId) &&
-                !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
+                !Mage::helper('tnw_salesforce')->isCustomerAsLead()
+                && array_key_exists($_websites[$_key], $this->_cache['leadLookup'])
+                && array_key_exists($_email, $this->_cache['leadLookup'][$_websites[$_key]])
             ) {
+                $foundCustomers[$_key]['email'] = $_email;
+            }
+        }
+
+        if (Mage::helper('tnw_salesforce')->isCustomerAsLead()) {
+            foreach ($_emailsArray as $_key => $_email) {
+                if (
+                    $this->_cache['leadLookup'] &&
+                    array_key_exists($_websites[$_key], $this->_cache['leadLookup']) &&
+                    array_key_exists(strtolower($_email), $this->_cache['leadLookup'][$_websites[$_key]]) &&
+                    ($this->_cache['leadLookup'][$_websites[$_key]][$_email]->MagentoId == $_key || !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->MagentoId) &&
+                    !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
+                ) {
+                    unset($_emailsArray[$_key]);
+                }
+            }
+        } else {
+            foreach ($foundCustomers as $_key => $data) {
+                $_data = $this->_cache['leadLookup'][$_websites[$_key]][$data['email']];
+
+                if ($_data->IsConverted) {
+                    // TODO: if no contacts found, confirm that new contact and account should be created.
+                    continue;
+                }
+
+                $leadData = new stdClass();
+
+                if (array_key_exists('AccountId', $data) && !empty($data['AccountId'])) {
+                    $leadData->accountId = $data['AccountId'];
+                }
+
+                if (array_key_exists($data['email'], $_companies) && !empty($_companies[$data['email']]) && empty($leadData->accountId)) {
+                    $leadData->accountId = $_companies[$data['email']]->Id;
+
+                    $leadData->OwnerId = $_companies[$data['email']]->OwnerId;
+                    // Check if user is inactive, then overwrite from configuration
+                    if (!$this->_isUserActive($leadData->OwnerId)) {
+                        $this->_obj->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
+                    }
+                } elseif (!empty($this->_customerAccounts[$data['email']])) {
+                    $leadData->accountId = $this->_customerAccounts[$data['email']];
+                }
+
+                if (array_key_exists('contactId', $data) && $data['contactId'] && (!empty($leadData->accountId))) {
+                    if ($data['contactId']) {
+                        $leadData->contactId = $data['contactId'];
+                    }
+                }
+
+                $leadData = $this->_prepareLeadConversionObject($leadData, $_data->Id);
+
+                $this->_cache['leadsToConvert'][$_data->Id] = $leadData;
+
                 unset($_emailsArray[$_key]);
             }
         }
