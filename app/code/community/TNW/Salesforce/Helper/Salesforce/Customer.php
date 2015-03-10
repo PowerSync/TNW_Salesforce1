@@ -143,6 +143,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_obj->LastName = $_lastName;
             $_customerId = $_email;
         }
+
+        if (empty($this->_obj->LastName)) {
+            // No last name, Salesforce will error out
+            Mage::helper('tnw_salesforce')->log("SKIPPING: No LastName defined for a subscriber: " . strip_tags($_email) . ".");
+            return;
+        }
+
         $this->_obj->HasOptedOutOfEmail = ($_status == 3 || $_type == 'delete') ? 1 : 0;
         $this->_obj->Email = strip_tags($_email);
 
