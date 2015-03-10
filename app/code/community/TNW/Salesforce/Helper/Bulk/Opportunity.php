@@ -791,7 +791,11 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
                     if ($_item->success == "true") {
                         $this->_cache['upsertedOpportunities'][$_oid] = (string)$_item->id;
-                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = '" . $this->_cache['upsertedOpportunities'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+
+                        $_contactId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_id') . "'" : 'NULL';
+                        $_accountId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id') . "'" : 'NULL';
+                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache['upsertedOrders'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+
                         Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache['upsertedOpportunities'][$_oid]);
 
                         //unset($this->_cache['opportunitiesToUpsert'][$_oid]);

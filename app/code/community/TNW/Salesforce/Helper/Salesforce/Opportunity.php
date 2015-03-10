@@ -452,8 +452,10 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     // set opp owner
                     // $this->_updateOppOwner($_result->id); // frozen until we get other working solution
 
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = " . $_entityArray[$_orderNum] . ";";
-                    $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 1 WHERE entity_id = " . $_entityArray[$_orderNum] . ";";
+                    $_contactId = ($this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id') . "'" : 'NULL';
+                    $_accountId = ($this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id') . "'" : 'NULL';
+                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $_result->id . "' WHERE entity_id = " . $_entityArray[$_orderNum] . ";";
+
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                     $this->_write->query($sql . ' commit;');
                     $this->_cache['upsertedOpportunities'][$_orderNum] = $_result->id;

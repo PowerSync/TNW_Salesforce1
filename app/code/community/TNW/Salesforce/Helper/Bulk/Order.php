@@ -694,7 +694,11 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         $this->_cache['upsertedOrderStatuses'][$_oid] = $_orderStatus;
 
                         $this->_cache['upsertedOrders'][$_oid] = (string)$_item->id;
-                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = '" . $this->_cache['upsertedOrders'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+
+                        $_contactId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_id') . "'" : 'NULL';
+                        $_accountId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id') . "'" : 'NULL';
+                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache['upsertedOrders'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+
                         Mage::helper('tnw_salesforce')->log('Order Upserted: ' . $this->_cache['upsertedOrders'][$_oid]);
 
                         if (Mage::registry('order_cached_' . $_oid)) {
