@@ -730,7 +730,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            $this->_write->query($sql);
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
 
