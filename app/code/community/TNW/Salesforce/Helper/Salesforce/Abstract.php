@@ -835,6 +835,15 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     }
 
     /**
+     * @comment realize public access for _isUserActive
+     * @param null $_sfUserId
+     * @return bool
+     */
+    public function isUserActive($_sfUserId = NULL) {
+        return $this->_isUserActive($_sfUserId);
+    }
+
+    /**
      * Read from cache or pull from Salesforce Active users
      * Accept $_sfUserId parameter and check if its in the array of active users
      * @param null $_sfUserId
@@ -925,4 +934,100 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $this->_syncedResults = $this->_cache['responses'];
         }
     }
+
+    /**
+     * @return null|string
+     */
+    public function getMagentoId()
+    {
+        return $this->_magentoId;
+    }
+
+    /**
+     * @param $magentoId
+     * @return $this
+     */
+    public function setMagentoId($magentoId)
+    {
+        $this->_magentoId = $magentoId;
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getCache()
+    {
+        return $this->_cache;
+    }
+
+    /**
+     * @param null $cache
+     * @return $this
+     */
+    public function setCache($cache)
+    {
+        $this->_cache = $cache;
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getWebsiteSfIds($key)
+    {
+        if ($key) {
+            return $this->_websiteSfIds[$key];
+        }
+        return $this->_websiteSfIds;
+    }
+
+    /**
+     * @param array $websiteSfIds
+     * @return $this
+     */
+    public function setWebsiteSfIds($websiteSfIds)
+    {
+        $this->_websiteSfIds = $websiteSfIds;
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getObj()
+    {
+        if (!$this->_obj) {
+            $this->_obj = new stdClass();
+        }
+        return $this->_obj;
+    }
+
+    /**
+     * @param null $obj
+     * @return $this
+     */
+    public function setObj($obj)
+    {
+        $this->_obj = $obj;
+
+        return $this;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order|Mage_Sales_Model_Quote $_entity
+     * @return null|Mage_Customer_Model_Customer
+     */
+    public function getCustomer($_entity)
+    {
+        if (method_exists($this, '_getCustomer')) {
+            return $this->_getCustomer($_entity);
+        }
+
+        return null;
+    }
+
 }

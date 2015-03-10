@@ -461,7 +461,10 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             ) ? $this->_cache['convertedLeads'][$_quoteNumber]->accountId : NULL;
         }
 
-        $this->_processMapping($quote, "Opportunity");
+        //Process mapping
+        Mage::getSingleton('tnw_salesforce/sync_mapping_abandoned_opportunity')
+            ->setSync($this)
+            ->processMapping($quote);
 
         //Get Account Name from Salesforce
         $_accountName = (

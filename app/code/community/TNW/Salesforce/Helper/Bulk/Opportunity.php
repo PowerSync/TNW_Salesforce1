@@ -466,7 +466,10 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             ) ? $this->_cache['convertedLeads'][$_orderNumber]->accountId : NULL;
         }
 
-        $this->_processMapping($order, "Opportunity");
+        //Process mapping
+        Mage::getSingleton('tnw_salesforce/sync_mapping_order_opportunity')
+            ->setSync($this)
+            ->processMapping($order);
 
         //Get Account Name from Salesforce
         $_accountName = (

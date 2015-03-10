@@ -120,6 +120,12 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = NULL;
 
+    /**
+     * @comment this variable contains parameter name used in SalesForce
+     * @var null
+     */
+    protected $_magentoId = NULL;
+
     //const MODULE_TYPE = 'BASIC';
     const MODULE_TYPE = 'PRO';
 
