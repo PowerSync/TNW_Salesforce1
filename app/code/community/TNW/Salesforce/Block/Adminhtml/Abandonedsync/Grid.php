@@ -146,7 +146,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
         $this->addColumn('salesforce_id', array(
             'header' => Mage::helper('sales')->__('Opportunity ID'),
             'index' => 'salesforce_id',
-            'filter_index' => 'main_table.salesforce_id',
+//            'filter_index' => 'main_table.salesforce_id',
             'type' => 'text',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
@@ -164,14 +164,14 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
         $this->addColumn('customer_name', array(
             'header' => Mage::helper('reports')->__('Customer Name'),
             'index' => 'customer_name',
-            'filter_index' => 'main_table.customer_name',
+//            'filter_index' => 'main_table.customer_name',
             
         ));
 
         $this->addColumn('email', array(
             'header' => Mage::helper('reports')->__('Email'),
             'index' => 'email',
-            'filter_index' => 'main_table.email',
+//            'filter_index' => 'main_table.email',
             'sortable' => false
         ));
 
@@ -180,7 +180,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'width' => '80px',
             'align' => 'right',
             'index' => 'items_count',
-            'filter_index' => 'main_table.items_count',
+//            'filter_index' => 'main_table.items_count',
             
             'type' => 'number'
         ));
@@ -218,12 +218,6 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'rate' => $this->getRate($currencyCode),
         ));
 
-//        $this->addColumn('coupon_code', array(
-//            'header' => Mage::helper('reports')->__('Applied Coupon'),
-//            'width' => '80px',
-//            'index' => 'coupon_code',
-//            'sortable' => false
-//        ));
 
         $this->addColumn('created_at', array(
             'header' => Mage::helper('reports')->__('Created At'),
@@ -242,14 +236,6 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'filter_index' => 'main_table.updated_at',
             'sortable' => false
         ));
-//
-//        $this->addColumn('remote_ip', array(
-//            'header' => Mage::helper('reports')->__('IP Address'),
-//            'width' => '80px',
-//            'index' => 'remote_ip',
-//            'sortable' => false
-//        ));
-
 
         $this->addColumn('singleAction',
             array(
@@ -265,7 +251,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
                     )
                 ),
                 'filter' => false,
-                
+                'sortable' => false,
                 'index' => 'stores',
                 'is_system' => true,
             )
