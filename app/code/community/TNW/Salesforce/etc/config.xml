@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.14.0000</version>
+            <version>0.01.49.14.0001</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -589,6 +589,7 @@
         <salesforce_customer>
             <sync>
                 <customer_sync_enable>0</customer_sync_enable>
+                <new_customer>1</new_customer>
                 <customer_groups_all>1</customer_groups_all>
                 <account_rename>1</account_rename>
             </sync>
