@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Data
+class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
 {
     const NEW_CUSTOMER = 'salesforce_customer/sync/new_customer';
 

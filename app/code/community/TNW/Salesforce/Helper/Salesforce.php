@@ -12,7 +12,7 @@ class TNW_Salesforce_Helper_Salesforce extends TNW_Salesforce_Helper_Abstract
      */
     public function getSfPrefix()
     {
-        return CONNECTOR_ENTERPRISE_PERFIX;
+        return self::CONNECTOR_ENTERPRISE_PERFIX;
     }
 
     public function isConnected() {

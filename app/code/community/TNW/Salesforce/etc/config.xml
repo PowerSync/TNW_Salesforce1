@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.14.0004</version>
+            <version>0.01.49.14.0005</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -422,7 +422,7 @@
                                                     <title>Product Configuration</title>
                                                 </order_product>
                                                 <order_config>
-                                                    <title>Order Configuration</title>
+                                                    <title>Sales Configuration</title>
                                                 </order_config>
                                             </children>
                                         </setup>
@@ -631,9 +631,9 @@
                 <use_shipping_product>0</use_shipping_product>
                 <use_discount_product>0</use_discount_product>
             </opportunity_cart>
-            <cart_2_quote>
-                <enable_settings>0</enable_settings>
-            </cart_2_quote>
+            <invoice_configuration>
+                <invoice_sync_enable>0</invoice_sync_enable>
+            </invoice_configuration>
         </salesforce_order>
     </default>
 </config>
