@@ -68,11 +68,34 @@ class TNW_Salesforce_Model_Imports_Bulk
                             /* Safer to set the session at this level */
                             Mage::getSingleton('core/session')->setFromSalesForce(true);
                             // Call proper Magento upsert method
-                            if ($object->attributes->type == "Contact") {
-                                //$customers[] = Mage::helper('tnw_salesforce/customer')->contactProcess($object);
-                                Mage::helper('tnw_salesforce/magento_customers')->process($object);
+                            if (
+                                $object->attributes->type == "Contact"
+                                || ($object->IsPersonAccount == 1 && $object->attributes->type == "Account")
+                            ) {
+                                if ($object->Email || (property_exists($object, 'IsPersonAccount') && $object->IsPersonAccount == 1 && $object->PersonEmail)) {
+                                    Mage::helper('tnw_salesforce')->log("Synchronizing: " . $object->attributes->type);
+                                    //$entity[] = Mage::helper('tnw_salesforce/customer')->contactProcess($object);
+                                    Mage::helper('tnw_salesforce/magento_customers')->process($object);
+                                } else {
+                                    Mage::helper('tnw_salesforce')->log("SKIPPING: Email is missing in Salesforce!");
+                                }
+                            } elseif ($object->attributes->type == TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . "Website__c") {
+                                if (
+                                    property_exists($object, TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Website_ID__c')
+                                    && !empty($object->{TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Website_ID__c'})
+                                    && property_exists($object, TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Code__c')
+                                    && !empty($object->{TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Code__c'})
+                                ) {
+                                    Mage::helper('tnw_salesforce/magento_websites')->process($object);
+                                } else {
+                                    Mage::helper('tnw_salesforce')->log("SKIPPING: Website ID and/or Code is missing in Salesforce!");
+                                }
                             } elseif ($object->attributes->type == "Product2") {
-                                Mage::helper('tnw_salesforce/magento_products')->process($object);
+                                if ($object->ProductCode) {
+                                    Mage::helper('tnw_salesforce/magento_products')->process($object);
+                                } else {
+                                    Mage::helper('tnw_salesforce')->log("SKIPPING: ProductCode is missing in Salesforce!");
+                                }
                             }
                             /* Reset session for further insertion */
                             Mage::getSingleton('core/session')->setFromSalesForce(false);

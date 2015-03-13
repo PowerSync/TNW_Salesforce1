@@ -5,21 +5,14 @@
  */
 class TNW_Salesforce_Helper_Salesforce extends TNW_Salesforce_Helper_Abstract
 {
-    protected $_sfPackagePrefix = NULL;
+    const CONNECTOR_ENTERPRISE_PERFIX = 'tnw_powersync__';
+
     /**
      * @return null|string
      */
     public function getSfPrefix()
     {
-        if (!$this->_sfPackagePrefix) {
-            //if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->_sfPackagePrefix = "tnw_powersync__";
-            //} else {
-            //    $this->_sfPackagePrefix = "";
-            //}
-        }
-
-        return $this->_sfPackagePrefix;
+        return CONNECTOR_ENTERPRISE_PERFIX;
     }
 
     public function isConnected() {

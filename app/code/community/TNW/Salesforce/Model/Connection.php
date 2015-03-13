@@ -52,15 +52,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function getSfPrefix()
     {
-        if (!$this->_sfPackagePrefix) {
-            //if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->_sfPackagePrefix = "tnw_powersync__";
-            //} else {
-            //    $this->_sfPackagePrefix = "";
-            //}
-        }
-
-        return $this->_sfPackagePrefix;
+        return TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX;
     }
 
     public function clearMemory()

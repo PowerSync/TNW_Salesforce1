@@ -70,6 +70,8 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      */
     protected $_magentoId = null;
 
+    protected $_skip = false;
+
     /**
      * @var null
      */
@@ -107,29 +109,31 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
         $_entity = $this->syncFromSalesforce();
 
-        // Update history orders and assigne to customer we just created
-        $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
+        if (!$this->_skip) {
+            // Update history orders and assigne to customer we just created
+            $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
 
-        Mage::helper('tnw_salesforce')->log("** finished upserting " . $_type . " #" . $this->_salesforceObject->Id . " **");
+            Mage::helper('tnw_salesforce')->log("** finished upserting " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
-        // Handle success and fail
-        if (is_object($_entity)) {
-            $this->_response->success = true;
-            Mage::helper('tnw_salesforce')->log("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
-            Mage::helper('tnw_salesforce')->log("Magento Id: " . $_entity->getId());
-        } else {
-            $this->_response->success = false;
-            Mage::helper('tnw_salesforce')->log("Could not upsert " . $_type . " into Magento, see Magento log for details");
-            $_entity = false;
-        }
+            // Handle success and fail
+            if (is_object($_entity)) {
+                $this->_response->success = true;
+                Mage::helper('tnw_salesforce')->log("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
+                Mage::helper('tnw_salesforce')->log("Magento Id: " . $_entity->getId());
+            } else {
+                $this->_response->success = false;
+                Mage::helper('tnw_salesforce')->log("Could not upsert " . $_type . " into Magento, see Magento log for details");
+                $_entity = false;
+            }
 
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
+            if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
+                $logger = Mage::helper('tnw_salesforce/report');
+                $logger->reset();
 
-            $logger->add('Magento', 'Customer', array($this->_salesforceObject->Id => $this->_salesforceObject), array($this->_salesforceObject->Id => $this->_response));
+                $logger->add('Magento', 'Customer', array($this->_salesforceObject->Id => $this->_salesforceObject), array($this->_salesforceObject->Id => $this->_response));
 
-            $logger->send();
+                $logger->send();
+            }
         }
 
         return $_entity;
@@ -189,6 +193,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 $_entity = Mage::getModel('customer/customer')->load($this->_magentoId);
 
                 $this->_response->created = false;
+            }
+
+            if ($this->_skip) {
+                Mage::helper('tnw_salesforce')->log("SKIPPING: Brand new customer or guest, see connector configuration ...");
+                return $_entity;
             }
 
             $_additional = array(
@@ -481,6 +490,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         try {
 
             Mage::helper('tnw_salesforce')->log('Trying to find customer in Magento');
+            $this->_skip = false;   // Reset the flag
             $this->_findMagentoCustomer();
 
         } catch (Exception $e) {
@@ -570,6 +580,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         if ($this->_isNew) {
             // Try to find Group from mappings
             $this->_groupId = $this->_getCustomerGroupFromSalesforce();
+        }
+
+        if (!Mage::helper('tnw_salesforce/config_customer')->allowSalesforceToCreate()) {
+            $this->_skip = true;
         }
     }
 
