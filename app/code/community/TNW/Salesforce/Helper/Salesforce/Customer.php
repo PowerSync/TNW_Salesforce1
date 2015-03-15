@@ -72,14 +72,16 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $_email = strtolower($_subscription->getData('subscriber_email'));
         $_websiteId = Mage::getModel('core/store')->load($_subscription->getData('store_id'))->getWebsiteId();
-        $_customerId = ($_subscription->getData('customer_id')) ? $_subscription->getData('customer_id') : '0';
-        if ($_customerId != '0') {
+        $_customerId = ($_subscription->getData('customer_id')) ? $_subscription->getData('customer_id') : 'guest_0';
+        if ($_customerId != 'guest_0') {
             $_customer = Mage::getModel('customer/customer')->load($_customerId);
             $_websiteId = $_customer->getData('website_id');
         }
         // Check for Contact and Account
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array($_customerId => $_email), array($_email => $this->_websiteSfIds[$_websiteId]));
-        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup(array($_customerId => $_email), array($_email => $this->_websiteSfIds[$_websiteId]));
+        if (!$this->_cache['contactsLookup']) {
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup(array($_customerId => $_email), array($_email => $this->_websiteSfIds[$_websiteId]));
+        }
 
         $this->_obj = new stdClass();
         $_id = NULL;
@@ -135,13 +137,17 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_customerName = explode(' ', $_name);
             $this->_obj->FirstName = (count($_customerName) > 1) ? $_customerName[0] : '';
 
-            $_lastName = $_customerName[1];
             if (count($_customerName) > 1) {
-                unset($_customerName[0]);
-                $_lastName = join(' ', $_customerName);
+                $_lastName = $_customerName[1];
+            } else {
+                $_lastName = $_customerName;
             }
+
             $this->_obj->LastName = $_lastName;
-            $_customerId = $_email;
+
+            //TODO: why are we storing email into customer ID?
+            //$_customerId = $_email;
+            $_customerId = 'guest_0';
         }
 
         if (empty($this->_obj->LastName)) {
@@ -207,6 +213,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if ($_isPerson) {
                 $this->_obj->PersonHasOptedOutOfEmail = $this->_obj->HasOptedOutOfEmail;
                 unset($this->_obj->HasOptedOutOfEmail);
+
             }
             foreach ($this->_obj as $key => $value) {
                 Mage::helper('tnw_salesforce')->log("Contact Object: " . $key . " = '" . $value . "'");
