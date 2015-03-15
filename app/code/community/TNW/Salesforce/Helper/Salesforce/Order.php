@@ -503,11 +503,11 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{$this->_prefix . 'Website__c'} = $this->_websiteSfIds[$_websiteId];
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
-        $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
-        $this->_obj->$syncParam = true;
+        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        //$this->_obj->$syncParam = true;
 
         // Magento Order ID
         $this->_obj->{$this->_magentoId} = $_orderNumber;
@@ -1465,7 +1465,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     }
                 }
                 if (count($opt) > 0) {
-                    $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Product_Options__c";
+                    $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
                     // TODO: add Product_Options field to Salesforce Order Items
                     //$this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
                     $this->_obj->Description = join(", ", $_summary);
@@ -2165,7 +2165,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         $this->_obj = new stdClass();
         // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $this->_obj->$orderIdParam = $order->getRealOrderId();
 
         // Process custom mappings

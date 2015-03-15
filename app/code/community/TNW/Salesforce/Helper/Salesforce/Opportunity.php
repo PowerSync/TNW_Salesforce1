@@ -672,7 +672,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     }
                 }
                 if (count($opt) > 0) {
-                    $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Product_Options__c";
+                    $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
                     $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
                     $this->_obj->Description = join(", ", $_summary);
                     if (strlen($this->_obj->Description) > 200) {
@@ -1816,11 +1816,11 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{$this->_prefix . 'Website__c'} = $this->_websiteSfIds[$_websiteId];
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
-        $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
-        $this->_obj->$syncParam = true;
+        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        //$this->_obj->$syncParam = true;
 
         // Magento Order ID
         $this->_obj->{$this->_magentoId} = $_orderNumber;
@@ -2200,7 +2200,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
         $this->_obj = new stdClass();
         // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $this->_obj->$orderIdParam = $order->getRealOrderId();
 
         // Update mapped fields

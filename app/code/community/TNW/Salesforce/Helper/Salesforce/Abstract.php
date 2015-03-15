@@ -586,7 +586,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                     break;
             }
             $errors[$errorMessage][] = array(
-                'object_id' => $_object->tnw_powersync__Magento_ID__c,
+                'object_id' => $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'},
                 'sf_object_type' => $type
             );
 
@@ -628,12 +628,10 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $this->_initCache();
 
         if (!$this->_magentoId) {
-            $this->_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+            $this->_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         }
 
         $this->_customerGroupModel = Mage::getModel('customer/group');
-
-        $this->_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
 
         if (!$this->_write) {
             $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');

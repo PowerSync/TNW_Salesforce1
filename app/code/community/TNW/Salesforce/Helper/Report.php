@@ -89,7 +89,7 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
     }
 
     public function reset() {
-        $this->_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $this->_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
     }
 
     /**

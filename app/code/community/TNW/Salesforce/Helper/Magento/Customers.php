@@ -516,8 +516,8 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
     }
 
     protected function _findMagentoCustomer() {
-        if (property_exists($this->_salesforceObject, $this->_prefix . 'Website__c')) {
-            $_websiteSfId = $this->_salesforceObject->{$this->_prefix . 'Website__c'};
+        if (property_exists($this->_salesforceObject, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+            $_websiteSfId = $this->_salesforceObject->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
             $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
             if ($_websiteId) {
                 $this->_websiteId = $_websiteId;

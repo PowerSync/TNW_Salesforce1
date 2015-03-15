@@ -165,10 +165,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{$this->_prefix . 'Website__c'} = $this->_websiteSfIds[$_websiteId];
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
-        $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
+        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
         $this->_obj->$syncParam = true;
 
         if ($_isLead) {
@@ -347,7 +347,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 && array_key_exists($_websiteId, $this->_websiteSfIds)
                 && $this->_websiteSfIds[$_websiteId]
             ) {
-                $this->_obj->{$this->_prefix . 'Website__c'} = $this->_websiteSfIds[$_websiteId];
+                $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
             }
 
             $this->_cache['leadsToUpsert']['contactUs'] = $this->_obj;
@@ -728,8 +728,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         !property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId') ||
                         !$this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId
                     ) {
-                        if (!property_exists($_result, $this->_prefix . 'Website__c')) {
-                            $websiteKey = $_result->{$this->_prefix . 'Website__c'};
+                        if (!property_exists($_result, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+                            $websiteKey = $_result->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
                         } else {
                             $websiteKey = 0;
                         }
@@ -1173,7 +1173,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{$this->_prefix . 'Website__c'} = $this->_websiteSfIds[$_websiteId];
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
         // Add to queue
@@ -1195,6 +1195,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             ) {
                 $this->_obj->AccountId = $this->_customerAccounts[$_email];
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_obj->AccountId;
+            } else {
+                if ($this->_isPerson && property_exists($this->_obj, 'AccountId')) {
+                    unset($this->_obj->AccountId);
+                }
             }
             if (
                 $this->_cache['contactsLookup']
@@ -1244,8 +1248,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             } else {
                 // This is a B2B Account
-                unset($this->_obj->{$this->_prefix . 'Website__c'});
-                unset($this->_obj->{$this->_prefix . 'Magento_ID__c'});
+                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
+                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
 
                 // Remove subscription flag from B2B Account
                 if (property_exists($this->_obj, 'HasOptedOutOfEmail')) {
@@ -1475,6 +1479,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache['entitiesUpdating'], $_websites);
             }
 
+            $_converted = array();
             foreach ($_emailsArray as $_key => $_email) {
                 if (
                     $this->_cache['contactsLookup']
@@ -1492,7 +1497,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $foundCustomers[$_key]['email'] = $_email;
 
                     if ($this->_cache['contactsLookup'][$_websites[$_key]][$_email]->AccountId) {
-                        $foundCustomers[$_key]['AccountId'] = $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->AccountId;
+                        $foundCustomers[$_key]['accountId'] = $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->AccountId;
                     }
 
                     if (array_key_exists($_key, $this->_cache['contactsLookup'][$_websites[$_key]])) {
@@ -1500,17 +1505,21 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         unset($this->_cache['contactsLookup'][$_websites[$_key]][$_key]);
                     }
 
+                    if (!array_key_exists('contactId', $foundCustomers[$_key])) {
+                        $_converted[$_key] = $foundCustomers[$_key];
+                    }
+
                     unset($_emailsArray[$_key]);
                     unset($_websites[$_key]);
                 }
             }
+
             // Lookup existing Leads
-            if (!empty($_emailsArray) || !empty($foundCustomers)) {
+            if (!empty($_emailsArray) || !empty($_converted)) {
                 $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites);
                 foreach ($this->_cache['leadLookup'] as $_websiteId => $leads) {
                     foreach ($leads as $email => $lead) {
                         if (!$this->_cache['leadLookup'][$_websiteId][$email]->MagentoId) {
-
                             foreach ($this->_cache['entitiesUpdating'] as $customerId => $customerEmail) {
                                 if ($customerEmail == $email) {
                                     $this->_cache['leadLookup'][$_websiteId][$email]->MagentoId = $customerId;
@@ -1520,7 +1529,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                             }
                         }
                     }
-
                 }
             }
 
@@ -1548,7 +1556,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     }
                 }
             } else {
-                foreach ($foundCustomers as $_key => $data) {
+                foreach ($_converted as $_key => $data) {
                     $_data = $this->_cache['leadLookup'][$_websites[$_key]][$data['email']];
 
                     if ($_data->IsConverted) {
@@ -1562,8 +1570,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
                     $leadData = new stdClass();
 
-                    if (array_key_exists('AccountId', $data) && !empty($data['AccountId'])) {
-                        $leadData->accountId = $data['AccountId'];
+                    if (array_key_exists('accountId', $data) && !empty($data['accountId'])) {
+                        $leadData->accountId = $data['accountId'];
                     }
 
                     if (array_key_exists($data['email'], $_companies) && !empty($_companies[$data['email']]) && empty($leadData->accountId)) {
@@ -1753,7 +1761,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
         unset($collection, $_map, $group);
 
-        $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
+        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
         $this->_obj->$syncParam = true;
 
         if ($_customer->getId()) {
@@ -2091,35 +2099,35 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected function _fixPersonAccountFields()
     {
         // Rename Magento ID field name
-        if (property_exists($this->_obj, $this->_prefix . 'Magento_ID__c')) {
-            $_pcMagentoIdFieldName = str_replace('__c', '__pc', $this->_prefix . 'Magento_ID__c');
-            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{$this->_prefix . 'Magento_ID__c'};
-            if (property_exists($this->_obj, $this->_prefix . 'Magento_ID__c')) {
-                unset($this->_obj->{$this->_prefix . 'Magento_ID__c'});
+        if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c')) {
+            $_pcMagentoIdFieldName = str_replace('__c', '__pc', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c');
+            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'};
+            if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c')) {
+                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
             }
         } else {
-            unset($this->_obj->{$this->_prefix . 'Magento_ID__c'});
+            unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
         }
         // Rename Website API field name
-        if (property_exists($this->_obj, $this->_prefix . 'Website__c')) {
-            $_pcMagentoIdFieldName = str_replace('__c', '__pc', $this->_prefix . 'Website__c');
-            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{$this->_prefix . 'Website__c'};
-            if (property_exists($this->_obj, $this->_prefix . 'Website__c')) {
-                unset($this->_obj->{$this->_prefix . 'Website__c'});
+        if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+            $_pcMagentoIdFieldName = str_replace('__c', '__pc', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject());
+            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
+            if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
             }
         } else {
-            unset($this->_obj->{$this->_prefix . 'Website__c'});
+            unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
         }
 
         // Rename Disable Magento Sync API field name
-        if (property_exists($this->_obj, $this->_prefix . 'disableMagentoSync__c')) {
-            $_pcMagentoIdFieldName = str_replace('__c', '__pc', $this->_prefix . 'disableMagentoSync__c');
-            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{$this->_prefix . 'disableMagentoSync__c'};
-            if (property_exists($this->_obj, $this->_prefix . 'disableMagentoSync__c')) {
-                unset($this->_obj->{$this->_prefix . 'disableMagentoSync__c'});
+        if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c')) {
+            $_pcMagentoIdFieldName = str_replace('__c', '__pc', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c');
+            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'};
+            if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c')) {
+                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'});
             }
         } else {
-            unset($this->_obj->{$this->_prefix . 'disableMagentoSync__c'});
+            unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'});
         }
 
         $_standardFields = array(

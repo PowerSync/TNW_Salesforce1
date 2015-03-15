@@ -57,7 +57,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();
 
-            $logger->add('Salesforce', $this->_prefix . 'Website__c', $this->_cache['websitesToUpsert'][$this->_prefix . 'Website_ID__c'], $this->_cache['responses']['websites']);
+            $logger->add('Salesforce', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject(), $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'], $this->_cache['responses']['websites']);
 
             $logger->send();
         }
@@ -89,19 +89,19 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
     {
         // Website Sync
         Mage::helper('tnw_salesforce')->log("---------- Start: Website Sync ----------");
-        $this->_dumpObjectToLog($this->_cache['websitesToUpsert'][$this->_prefix . 'Website_ID__c'], 'Website');
+        $this->_dumpObjectToLog($this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'], 'Website');
 
         $_websiteIds = array_keys($this->_cache['entitiesUpdating']);
 
         try {
-            Mage::dispatchEvent("tnw_salesforce_website_send_before", array("data" => $this->_cache['websitesToUpsert'][$this->_prefix . 'Website_ID__c']));
+            Mage::dispatchEvent("tnw_salesforce_website_send_before", array("data" => $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c']));
             $_results = $this->_mySforceConnection->upsert(
-                $this->_prefix . 'Website_ID__c',
-                array_values($this->_cache['websitesToUpsert'][$this->_prefix . 'Website_ID__c']),
-                $this->_prefix. 'Website__c'
+                Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c',
+                array_values($this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c']),
+                Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
             );
             Mage::dispatchEvent("tnw_salesforce_website_send_after",array(
-                "data" => $this->_cache['websitesToUpsert'][$this->_prefix . 'Website_ID__c'],
+                "data" => $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'],
                 "result" => $_results
             ));
         } catch (Exception $e) {
@@ -134,14 +134,14 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
         foreach($this->_cache['toSaveInMagento'] as $_id => $_website) {
             $_object = new stdClass();
             $_object->Name = $_website->name;
-            $_object->{$this->_prefix . 'Website_ID__c'} = (int) $_website->website_id;
-            $_object->{$this->_prefix . 'Code__c'} = $_website->code;
-            $_object->{$this->_prefix . 'Sort_Order__c'} = (int) $_website->sort_order;
+            $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'} = (int) $_website->website_id;
+            $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c'} = $_website->code;
+            $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Sort_Order__c'} = (int) $_website->sort_order;
 
-            if (!array_key_exists($this->_prefix . 'Website_ID__c', $this->_cache['websitesToUpsert'])) {
-                $this->_cache['websitesToUpsert'][$this->_prefix . 'Website_ID__c'] = array();
+            if (!array_key_exists(Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c', $this->_cache['websitesToUpsert'])) {
+                $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'] = array();
             }
-            $this->_cache['websitesToUpsert'][$this->_prefix . 'Website_ID__c'][$_id] = $_object;
+            $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'][$_id] = $_object;
         }
     }
 

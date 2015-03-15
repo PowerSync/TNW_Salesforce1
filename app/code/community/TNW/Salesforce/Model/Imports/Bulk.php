@@ -79,12 +79,12 @@ class TNW_Salesforce_Model_Imports_Bulk
                                 } else {
                                     Mage::helper('tnw_salesforce')->log("SKIPPING: Email is missing in Salesforce!");
                                 }
-                            } elseif ($object->attributes->type == TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . "Website__c") {
+                            } elseif ($object->attributes->type == Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()) {
                                 if (
-                                    property_exists($object, TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Website_ID__c')
-                                    && !empty($object->{TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Website_ID__c'})
-                                    && property_exists($object, TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Code__c')
-                                    && !empty($object->{TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX . 'Code__c'})
+                                    property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c')
+                                    && !empty($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'})
+                                    && property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c')
+                                    && !empty($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c'})
                                 ) {
                                     Mage::helper('tnw_salesforce/magento_websites')->process($object);
                                 } else {

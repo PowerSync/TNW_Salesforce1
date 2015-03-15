@@ -406,15 +406,14 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
      */
     protected function _setOpportunityInfo($quote)
     {
-        $_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
         $_websiteId = Mage::getModel('core/store')->load($quote->getStoreId())->getWebsiteId();
 
         $this->_updateQuoteStageName($quote);
         $_quoteNumber = $quote->getId();
         $_email = $this->_cache['abandonedToEmail'][$_quoteNumber];
 
-        $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
-        $this->_obj->$syncParam = true;
+        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        //$this->_obj->$syncParam = true;
 
         // Link to a Website
         if (
@@ -422,7 +421,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{$_prefix . 'Website__c'} = $this->_websiteSfIds[$_websiteId];
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {

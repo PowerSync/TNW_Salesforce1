@@ -43,7 +43,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $result = array();
 
         foreach ($_companies as $_companiesChunk) {
-            $result = array_merge($result, $this->lookupByCompany($_companiesChunk, $_hashField));
+            $_lookupResults = $this->lookupByCompany($_companiesChunk, $_hashField);
+            if (is_array($_lookupResults)) {
+                $result = array_merge($result, $this->lookupByCompany($_companiesChunk, $_hashField));
+                break;
+            }
         }
 
         return $result;
@@ -71,14 +75,24 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
             $where = array();
             foreach ($_companies as $_company) {
-                $where[] = "(Name LIKE '%" . utf8_encode($_company) . "%')";
+                if (!empty($_company)) {
+                    $where[] = "(Name LIKE '%" . utf8_encode($_company) . "%')";
+                }
             }
 
+            if (!empty($where)) {
+                $query .= '(';
+            }
             $query .= implode(' OR ', $where) ;
+
+            if (!empty($where)) {
+                $query .= ')';
+            }
 
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $query .= " AND IsPersonAccount != true";
             }
+
             $_results = $this->getClient()->query(($query));
 
             if (empty($_results) || !property_exists($_results, 'size') || $_results->size < 1) {

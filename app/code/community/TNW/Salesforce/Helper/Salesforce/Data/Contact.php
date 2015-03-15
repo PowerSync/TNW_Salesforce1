@@ -40,7 +40,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
                 && array_key_exists($_id, $_websites)
             ) {
-                $tmp .= " AND (" . $this->getSfPrefix() . "Website__c = '" . $_websites[$_id] . "' OR " . $this->getSfPrefix() . "Website__c = '')";
+                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_websites[$_id] . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
             }
             $tmp .= ")";
             $_lookup[] = $tmp;
@@ -71,10 +71,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             if (!is_object($this->getClient())) {
                 return false;
             }
-            $_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+            $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
             $_extra = NULL;
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                $_personMagentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__pc";
+                $_personMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
                 $_extra = ", Account.OwnerId, Account.Name, Account.RecordTypeId, Account.IsPersonAccount, Account.PersonEmail, Account." . $_personMagentoId . ", Account.Id";
             } else {
                 $_extra = ", Account.OwnerId, Account.Name";
@@ -82,7 +82,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             if (
                 Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
             ) {
-                $_extra .= ", " . $this->getSfPrefix() . "Website__c";
+                $_extra .= ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
             }
             $_results = array();
 
@@ -156,8 +156,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                     } elseif (property_exists($_item, 'MagentoId') && $_item->MagentoId) {
                         $_key = $_item->MagentoId;
                     }
-                    if (property_exists($_item, $this->getSfPrefix() . 'Website__c')) {
-                        $_websiteKey = $_item->{$this->getSfPrefix().'Website__c'};
+                    if (property_exists($_item, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+                        $_websiteKey = $_item->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
                     } else {
                         $_websiteKey = 0;
                         if ($tmp->MagentoId && array_key_exists($tmp->MagentoId, $_websites)) {

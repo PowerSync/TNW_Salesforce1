@@ -5,19 +5,17 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helper_Salesforce_Data
 {
-    protected $_prefix = NULL;
     protected $_fields = array();
 
     public function __construct()
     {
         parent::__construct();
 
-        $this->_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
         $this->_fields = array(
             'name'          =>  'Name',
-            'website_id'    =>  $this->_prefix . 'Website_ID__c',
-            'sort_order'    =>  $this->_prefix . 'Sort_Order__c',
-            'code'          =>  $this->_prefix . 'Code__c',
+            'website_id'    =>  Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c',
+            'sort_order'    =>  Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Sort_Order__c',
+            'code'          =>  Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c',
         );
     }
 
@@ -28,7 +26,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helpe
      */
     protected function _queryWebsites($_ids, $_codes)
     {
-        $query = "SELECT Id," . join(',', $this->_fields) . " FROM " . $this->_prefix . "Website__c WHERE ";
+        $query = "SELECT Id," . join(',', $this->_fields) . " FROM " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " WHERE ";
         if (is_array($_ids)) {
             $query .= $this->_fields['website_id'] . " IN (" . implode(",", $_ids) . ")";
         } else {
@@ -40,6 +38,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helpe
         }
 
         Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
+
         try {
             $_result = $this->getClient()->query(($query));
         } catch (Exception $e) {

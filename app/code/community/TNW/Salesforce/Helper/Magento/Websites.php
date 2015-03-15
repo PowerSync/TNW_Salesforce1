@@ -32,7 +32,7 @@ class TNW_Salesforce_Helper_Magento_Websites extends TNW_Salesforce_Helper_Magen
         $this->_prepare();
 
         //Lookup and preparation
-        $_id = (int) $object->{$this->_prefix. 'Website_ID__c'};
+        $_id = (int) $object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'};
         try {
             set_time_limit(30);
             $_website = Mage::getModel('core/website')->load($_id);
@@ -49,11 +49,11 @@ class TNW_Salesforce_Helper_Magento_Websites extends TNW_Salesforce_Helper_Magen
             if ($object->Name != $_website->getData('name')) {
                 $_website->setData('name', $object->Name);
             }
-            if ($object->{$this->_prefix. 'Code__c'} != $_website->getData('code')) {
-                $_website->setData('code', $object->{$this->_prefix. 'Code__c'});
+            if ($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c'} != $_website->getData('code')) {
+                $_website->setData('code', $object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c'});
             }
-            if ($object->{$this->_prefix. 'Sort_Order__c'} != $_website->getData('sort_order')) {
-                $_website->setData('sort_order', $object->{$this->_prefix. 'Sort_Order__c'});
+            if ($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Sort_Order__c'} != $_website->getData('sort_order')) {
+                $_website->setData('sort_order', $object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Sort_Order__c'});
             }
 
             $_website->setData('salesforce_id', $object->Id);

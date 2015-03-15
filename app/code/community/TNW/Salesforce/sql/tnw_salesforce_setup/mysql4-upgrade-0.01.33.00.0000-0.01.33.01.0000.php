@@ -4,7 +4,7 @@ $installer = $this;
 
 $installer->startSetup();
 
-$_magentoIdAttribute = 'Opportunity:' . Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . 'Magento_ID__c';
+$_magentoIdAttribute = 'Opportunity:' . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
 
 $_defaultMappingStatus = array(
     'Contact:Email' => false,
@@ -99,7 +99,7 @@ foreach ($_defaultMappingStatus as $_key => $_value) {
                 case 'CloseDate':
                     $_attributeCode = 'created_at';
                     break;
-                case Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . 'Magento_ID__c':
+                case Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c':
                     $_attributeCode = 'number';
                     break;
             }

@@ -345,8 +345,6 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
             $this->checkConnection();
         }
 
-        $this->_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
-
         $sql = "SELECT * FROM `" . $this->getTable('eav_entity_type') . "` WHERE entity_type_code = 'customer'";
         $row = $this->getDbConnection('read')->query($sql)->fetch();
         $this->_customerEntityTypeCode = ($row) ? (int)$row['entity_type_id'] : NULL;

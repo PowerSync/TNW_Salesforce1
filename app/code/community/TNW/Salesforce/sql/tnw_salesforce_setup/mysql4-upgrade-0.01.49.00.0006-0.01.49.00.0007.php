@@ -4,7 +4,7 @@ $installer = $this;
 
 $installer->startSetup();
 
-$_magentoIdAttribute = 'Order:' . Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . 'Magento_ID__c';
+$_magentoIdAttribute = 'Order:' . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
 
 $_defaultMappingStatus = array(
     'Order:BillingStreet'       => false,

@@ -47,14 +47,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     protected $_serverUrl = NULL;
 
-    /**
-     * @return null|string
-     */
-    public function getSfPrefix()
-    {
-        return TNW_Salesforce_Helper_Salesforce::CONNECTOR_ENTERPRISE_PERFIX;
-    }
-
     public function clearMemory()
     {
         set_time_limit(1000);

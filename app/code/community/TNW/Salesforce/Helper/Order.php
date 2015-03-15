@@ -210,7 +210,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
      */
     protected function opportunityPush($order)
     {
-        $upsertOn = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . 'Magento_ID__c';
+        $upsertOn = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
         Mage::helper('tnw_salesforce')->log("Upserting on: " . $upsertOn);
 
         if (
@@ -355,7 +355,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
 
         $this->_lead = new stdClass();
         // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $this->_lead->$orderIdParam = $order->getRealOrderId();
 
         // possible place to add some mapping logic call, postponed for now
@@ -422,11 +422,11 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $this->_updateOrderStageName($order);
 
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
             $this->_lead->$syncParam = true;
         }
         // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $this->_lead->$orderIdParam = $this->_orderRealId;
 
         // Close Date
