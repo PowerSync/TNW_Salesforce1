@@ -167,6 +167,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
                     break;
                 case "Order":
                 case "Cart":
+                case "Quote":
                     if ($attributeCode == "cart_all") {
                         $value = $this->_getDescriptionCart($entity);
                     } elseif ($attributeCode == "number") {

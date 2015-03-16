@@ -14,7 +14,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base_Item extends TNW_Salesfor
      * @var array
      */
     protected $_allowedMappingTypes = array(
-        'Cart',
+		'Cart',
+		'Item',
         'Product Inventory',
         'Product',
         'Custom'

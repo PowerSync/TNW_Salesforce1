@@ -43,6 +43,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
 
             switch ($mappingType) {
                 case "Cart":
+                case "Item":
+                case "Cart Item":
                     if ($cartItem) {
                         if ($attributeCode == "total_product_price") {
                             $subtotal = number_format((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQtyOrdered()), 2, ".", "");
