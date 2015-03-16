@@ -1629,6 +1629,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             Mage::helper('tnw_salesforce')->log('CRITICAL: Push of Order Items to SalesForce failed' . $e->getMessage());
         }
 
+        $this->_cache['responses']['orderProducts'] = $results;
+
         $_sql = "";
         foreach ($results as $_key => $_result) {
             $_orderNum = $_orderNumbers[$this->_cache['orderItemsToUpsert'][$_chunkKeys[$_key]]->OrderId];

@@ -241,7 +241,9 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     {
         $this->_sync = $sync;
 
-        $this->_cache = &$sync->getCache();
+        $_cache = $sync->getCache();
+
+        $this->_cache = &$_cache;
 
         return $this;
     }

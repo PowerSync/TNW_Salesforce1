@@ -49,10 +49,12 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
         /**
          * @comment find website
          */
-        if ($_customer->getWebsiteId()) {
-            $sfWebsite = $this->getWebsiteSfIds($_customer->getWebsiteId());
-        } else if ($store && !empty($this->getWebsiteSfIds($_customer->getStoreId()))) {
-            $sfWebsite = $this->getWebsiteSfIds($_customer->getStoreId());
+        $_website = ($_customer->getWebsiteId()) ? $_customer->getWebsiteId() : NULL;
+        if (!$_website && $_customer->getStoreId()) {
+            $_website = Mage::getModel('core/store')->load($_customer->getStoreId())->getWebsiteId();
+        }
+        if ($_website) {
+            $sfWebsite = $this->getWebsiteSfIds($_website);
         } else {
             $sfWebsite = 0;
         }
@@ -124,7 +126,9 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
         }
 
         // Assign OwnerId based on Company name match
-        if (empty($this->_getCustomerAccountId())) {
+        $_customerAccountId = $this->_getCustomerAccountId();
+        $_accountId = $this->_getCustomerAccountId($this->_email);
+        if (empty($_customerAccountId)) {
             if (!property_exists($this->getObj(), 'Id')) {
                 if (property_exists($this->getObj(), 'Name') && $this->getObj()->Name) {
                     $_salesforceData = Mage::helper('tnw_salesforce/salesforce_data_account');
@@ -148,7 +152,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                         }
                     }
                 }
-                if (!empty($this->_getCustomerAccountId($this->_email))) {
+
+                if (!empty($_accountId)) {
                     $this->getObj()->Id = $this->_getCustomerAccountId($this->_email);
                     if (!Mage::helper('tnw_salesforce')->canRenameAccount()) {
                         unset($this->getObj()->Name);
@@ -157,15 +162,14 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                 }
             }
         } else {
-            if (!empty($this->_getCustomerAccountId($this->_email))) {
+            if (!empty($_accountId)) {
 
-                $this->getObj()->Id = !empty($this->_getCustomerAccountId($this->_email));
+                $this->getObj()->Id = !empty($_accountId);
                 if (!Mage::helper('tnw_salesforce')->canRenameAccount()) {
                     unset($this->getObj()->Name);
                 }
                 unset($this->getObj()->RecordTypeId);
             }
         }
-
     }
 }

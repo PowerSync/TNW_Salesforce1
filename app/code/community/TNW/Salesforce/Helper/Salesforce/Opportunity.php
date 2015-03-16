@@ -692,7 +692,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         $_options = unserialize($_item->getData('product_options'));
         if(
             $_item->getData('product_type') == 'bundle'
-            || array_key_exists('options', $_options)
+            || (is_array($_options) && array_key_exists('options', $_options))
         ) {
             $id = $_item->getData('product_id');
         } else {
@@ -1037,6 +1037,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             Mage::helper('tnw_salesforce')->log('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
         }
 
+        $this->_cache['responses']['opportunityLineItems'] = $results;
+
         $_sql = "";
         foreach ($results as $_key => $_result) {
             $_orderNum = $_orderNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId];
@@ -1090,7 +1092,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
                 "data" => $this->_cache['opportunityLineItemsToUpsert'],
-                "result" => $this->_cache['responses']['opportunityProducts']
+                "result" => $this->_cache['responses']['opportunityLineItems']
             ));
 
             Mage::helper('tnw_salesforce')->log('----------Push Cart Items: End----------');
@@ -1107,11 +1109,13 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             } catch (Exception $e) {
                 $_response = $this->_buildErrorResponse($e->getMessage());
                 foreach($this->_cache['contactRolesToUpsert'] as $_object) {
-                    $this->_cache['responses']['opportunityLineItems'][] = $_response;
+                    $this->_cache['responses']['customerRoles'][] = $_response;
                 }
                 $results = array();
                 Mage::helper('tnw_salesforce')->log('CRITICAL: Push of contact roles to SalesForce failed' . $e->getMessage());
             }
+
+            $this->_cache['responses']['customerRoles'] = $results;
 
             $_orderNumbers = array_flip($this->_cache['upsertedOpportunities']);
             foreach ($results as $_key => $_result) {

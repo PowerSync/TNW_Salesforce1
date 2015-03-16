@@ -61,7 +61,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
 
         if ($_customer->getGroupId()) {
 
-            if (!$this->_customerGroups[$_customer->getGroupId()]) {
+            if (is_array($this->_customerGroups) && array_key_exists($_customer->getGroupId(), $this->_customerGroups) && !$this->_customerGroups[$_customer->getGroupId()]) {
                 $this->_customerGroups[$_customer->getGroupId()] = $this->_customerGroupModel->load($_customer->getGroupId());
             }
         }
@@ -122,7 +122,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                     $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
                     $var = 'getDefault' . $mappingType . 'Address';
                     /* only push default address if set */
-                    $address = ($$var) ? $$var : $_customer->$var();
+                    $address = $_customer->$var();
                     if ($address) {
                         $value = $address->$attr();
                         if (is_array($value)) {

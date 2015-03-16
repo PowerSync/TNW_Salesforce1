@@ -69,19 +69,23 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $_companies = array($this->_companyName);
             }
 
-            $query = "SELECT Id, OwnerId, Name ";
+            if (empty($_companies)) {
+                return array();
+            }
 
-            $query .= "FROM Account WHERE ";
+            $query = "SELECT Id, OwnerId, Name FROM Account WHERE ";
 
             $where = array();
             foreach ($_companies as $_company) {
-                if (!empty($_company)) {
+                if ($_company && !empty($_company)) {
                     $where[] = "(Name LIKE '%" . utf8_encode($_company) . "%')";
                 }
             }
 
             if (!empty($where)) {
                 $query .= '(';
+            } else {
+                return array();
             }
             $query .= implode(' OR ', $where) ;
 

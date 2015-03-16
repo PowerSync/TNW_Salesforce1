@@ -46,8 +46,9 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
         }
         //Account
         $this->getObj()->AccountId = $_customer->getSalesforceAccountId();
+        $_accountId = $this->_getCustomerAccountId($this->_email);
 
-        if (!$this->getObj()->AccountId && !empty($this->_getCustomerAccountId($this->_email)) ) {
+        if (!$this->getObj()->AccountId && !empty($_accountId) ) {
             $this->getObj()->AccountId = $this->_getCustomerAccountId($this->_email);
         } elseif (!$this->getObj()->AccountId && !is_array($this->_getCustomerAccountId()) && $this->_getCustomerAccountId()) {
             $this->getObj()->AccountId = $this->_getCustomerAccountId();
