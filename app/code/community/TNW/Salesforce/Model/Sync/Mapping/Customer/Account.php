@@ -43,6 +43,10 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
         if ($_customer->getSalesforceAccountId()) {
             $this->getObj()->Id = $_customer->getSalesforceAccountId();
         }
+
+        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        $this->getObj()->$syncParam = true;
+
         $_accountName = $_customer->getFirstname() . ' ' . $_customer->getLastname();
         $store = ($_customer->getStoreId() !== NULL) ? Mage::getModel('core/store')->load($_customer->getStoreId()) : NULL;
 

@@ -19,6 +19,9 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
     {
         parent::_processMapping($_customer);
 
+        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        $this->getObj()->$syncParam = true;
+
         //Use data in Salesforce if Magento data is blank for the First and Last name
         if (!property_exists($this->getObj(), 'FirstName') || !$this->getObj()->FirstName) {
             // Check if lookup has the data
@@ -86,6 +89,5 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
         }
         $this->_setCustomerAccountId(NULL);
         $this->_setCustomerOwnerId(NULL);
-
     }
 }
