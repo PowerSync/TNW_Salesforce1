@@ -168,9 +168,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
-        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        $this->_obj->$syncParam = true;
-
         if ($_isLead) {
             if (!Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $this->_obj->Company = 'N/A';
@@ -218,6 +215,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($this->_obj as $key => $value) {
                 Mage::helper('tnw_salesforce')->log("Contact Object: " . $key . " = '" . $value . "'");
             }
+
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+            $this->_obj->$syncParam = true;
 
             $this->_cache['contactsToUpsert'][$_customerId] = $this->_obj;
             $_contactIds = array_keys($this->_cache['contactsToUpsert']);
