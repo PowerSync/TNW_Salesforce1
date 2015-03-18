@@ -60,6 +60,11 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     protected $_customerGroups = array();
 
     /**
+     * @comment use this flag to stop mapping after custom mapping realization
+     * @var bool
+     */
+    protected $_break = false;
+    /**
      *
      */
     function __construct()
@@ -291,4 +296,48 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     {
         return $this->getSync()->isUserActive($_sfUserId);
     }
+
+    /**
+     * @comment use this method to define additional action before mapping
+     * @return $this
+     */
+    protected function _fieldMappingBefore($entity, $mappingType, $attributeCode, $value)
+    {
+        return $value;
+    }
+
+    /**
+     * @comment use this method to define additional action after mapping
+     * @return $this
+     */
+    protected function _fieldMappingAfter($entity, $mappingType, $attributeCode, $value)
+    {
+        return $value;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isBreak()
+    {
+        return $this->_break;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getBreak()
+    {
+        return $this->isBreak();
+    }
+
+    /**
+     * @param boolean $break
+     */
+    public function setBreak($break)
+    {
+        $this->_break = $break;
+    }
+
+
 }

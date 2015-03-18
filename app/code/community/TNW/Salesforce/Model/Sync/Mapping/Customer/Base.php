@@ -51,18 +51,18 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
 
     /**
      * @comment Apply base mapping for the customer entity
-     * @param Mage_Customer_Model_Customer $_customer
+     * @param Mage_Customer_Model_Customer $entity
      */
-    protected function _processMapping($_customer = NULL)
+    protected function _processMapping($entity = NULL)
     {
 
-        $this->_email = strtolower($_customer->getEmail());
-        $this->_websiteId = $_customer->getData('website_id');
+        $this->_email = strtolower($entity->getEmail());
+        $this->_websiteId = $entity->getData('website_id');
 
-        if ($_customer->getGroupId()) {
+        if ($entity->getGroupId()) {
 
-            if (is_array($this->_customerGroups) && array_key_exists($_customer->getGroupId(), $this->_customerGroups) && !$this->_customerGroups[$_customer->getGroupId()]) {
-                $this->_customerGroups[$_customer->getGroupId()] = $this->_customerGroupModel->load($_customer->getGroupId());
+            if (is_array($this->_customerGroups) && array_key_exists($entity->getGroupId(), $this->_customerGroups) && !$this->_customerGroups[$entity->getGroupId()]) {
+                $this->_customerGroups[$entity->getGroupId()] = $this->_customerGroupModel->load($entity->getGroupId());
             }
         }
 
@@ -77,128 +77,137 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
 
             $sf_field = $_map->sf_field;
 
-            switch ($mappingType) {
-                case "Customer":
-                    $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-                    $_attr = $_customer->getAttribute($attributeCode);
-                    if (
-                        is_object($_attr) && $_attr->getFrontendInput() == "select"
-                    ) {
-                        $newAttribute = $_customer->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($_customer->$attr());
-                    } elseif (is_object($_attr) && $_attr->getFrontendInput() == "multiselect") {
-                        $values = explode(",", $_customer->$attr());
-                        $newValues = array();
-                        foreach ($values as $_val) {
-                            $newValues[] = $_customer->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($_val);
-                        }
-                        $newAttribute = join(";", $newValues);
-                    } else {
-                        $newAttribute = $_customer->$attr();
-                    }
-                    // Reformat date fields
-                    if ($_map->getBackendType() == "datetime" || $attributeCode == 'created_at' || $_map->getBackendType() == "date") {
-                        if ($_customer->$attr()) {
-                            $timestamp = Mage::getModel('core/date')->timestamp(strtotime($_customer->$attr()));
-                            if ($attributeCode == 'created_at') {
-                                $newAttribute = gmdate(DATE_ATOM, $timestamp);
-                            } else {
-                                $newAttribute = date("Y-m-d", $timestamp);
+            $value = $this->_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
+
+            if (!$this->isBreak()) {
+
+                switch ($mappingType) {
+                    case "Customer":
+                        $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+                        $_attr = $entity->getAttribute($attributeCode);
+                        if (
+                            is_object($_attr) && $_attr->getFrontendInput() == "select"
+                        ) {
+                            $newAttribute = $entity->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($entity->$attr());
+                        } elseif (is_object($_attr) && $_attr->getFrontendInput() == "multiselect") {
+                            $values = explode(",", $entity->$attr());
+                            $newValues = array();
+                            foreach ($values as $_val) {
+                                $newValues[] = $entity->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($_val);
                             }
+                            $newAttribute = join(";", $newValues);
                         } else {
-                            $_doSkip = true; //Skip this filed if empty
+                            $newAttribute = $entity->$attr();
                         }
-                    }
-                    if (!$_doSkip) {
-                        $value = $newAttribute;
-                    }
-                    break;
-                case "Customer Group":
-                    //Common attributes
-                    $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-                    $value = $this->_customerGroups[$_customer->getGroupId()]->$attr();
-                    break;
-                case "Billing":
-                case "Shipping":
-                    $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-                    $var = 'getDefault' . $mappingType . 'Address';
-                    /* only push default address if set */
-                    $address = $_customer->$var();
-                    if ($address) {
-                        $value = $address->$attr();
-                        if (is_array($value)) {
-                            $value = implode(", ", $value);
-                        } else {
-                            $value = ($value && !empty($value)) ? $value : NULL;
-                        }
-                    }
-                    $value = $this->_customizeAddressValue($attributeCode, $value);
-                    break;
-                case "Aitoc":
-                    $modules = Mage::getConfig()->getNode('modules')->children();
-                    $value = NULL;
-                    if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-                        $aCustomAtrrList = Mage::getModel('aitcheckoutfields/transport')->loadByCustomerId($_customer->getId());
-                        foreach ($aCustomAtrrList->getData() as $_key => $_data) {
-                            if ($_data['code'] == $attributeCode) {
-                                $value = $_data['value'];
-                                if ($_data['type'] == "date") {
-                                    $value = date("Y-m-d", strtotime($value));
+                        // Reformat date fields
+                        if ($_map->getBackendType() == "datetime" || $attributeCode == 'created_at' || $_map->getBackendType() == "date") {
+                            if ($entity->$attr()) {
+                                $timestamp = Mage::getModel('core/date')->timestamp(strtotime($entity->$attr()));
+                                if ($attributeCode == 'created_at') {
+                                    $newAttribute = gmdate(DATE_ATOM, $timestamp);
+                                } else {
+                                    $newAttribute = date("Y-m-d", $timestamp);
                                 }
-                                break;
+                            } else {
+                                $_doSkip = true; //Skip this filed if empty
                             }
                         }
-                        unset($aCustomAtrrList);
-                    }
-                    break;
-                case "Custom":
-                    $store = ($_customer->getStoreId()) ? Mage::getModel('core/store')->load($_customer->getStoreId()) : NULL;
-                    if ($attributeCode == "current_url") {
-                        $value = Mage::helper('core/url')->getCurrentUrl();
-                    } elseif ($attributeCode == "todays_date") {
-                        $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($attributeCode == "todays_timestamp") {
-                        $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($attributeCode == "end_of_month") {
-                        $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                        $value = date("Y-m-d", Mage::getModel('core/date')->timestamp($lastday));
-                    } elseif ($attributeCode == "store_view_name") {
-                        $value = (is_object($store)) ? $store->getName() : NULL;
-                    } elseif ($attributeCode == "store_group_name") {
-                        $value = (
-                            is_object($store)
-                            && is_object($store->getGroup())
-                        ) ? $store->getGroup()->getName() : NULL;
-                    } elseif ($attributeCode == "website_name") {
-                        $value = (
-                            is_object($store)
-                            && is_object($store->getWebsite())
-                        ) ? $store->getWebsite()->getName() : NULL;
-                    } else {
-                        $value = $_map->default_value;
-                        if ($value == "{{url}}") {
-                            $value = Mage::helper('core/url')->getCurrentUrl();
-                        } elseif ($value == "{{today}}") {
-                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                        } elseif ($value == "{{end of month}}") {
-                            $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                            $value = date("Y-m-d", $lastday);
-                        } elseif ($value == "{{contact id}}") {
-                            /**
-                             * @deprecated
-                             */
-                            $value = null;//$this->_contactId;
-                        } elseif ($value == "{{store view name}}") {
-                            $value = Mage::app()->getStore()->getName();
-                        } elseif ($value == "{{store group name}}") {
-                            $value = Mage::app()->getStore()->getGroup()->getName();
-                        } elseif ($value == "{{website name}}") {
-                            $value = Mage::app()->getWebsite()->getName();
+                        if (!$_doSkip) {
+                            $value = $newAttribute;
                         }
-                    }
-                    break;
-                default:
-                    break;
+                        break;
+                    case "Customer Group":
+                        //Common attributes
+                        $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+                        $value = $this->_customerGroups[$entity->getGroupId()]->$attr();
+                        break;
+                    case "Billing":
+                    case "Shipping":
+                        $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+                        $var = 'getDefault' . $mappingType . 'Address';
+                        /* only push default address if set */
+                        $address = $entity->$var();
+                        if ($address) {
+                            $value = $address->$attr();
+                            if (is_array($value)) {
+                                $value = implode(", ", $value);
+                            } else {
+                                $value = ($value && !empty($value)) ? $value : NULL;
+                            }
+                        }
+                        $value = $this->_customizeAddressValue($attributeCode, $value);
+                        break;
+                    case "Aitoc":
+                        $modules = Mage::getConfig()->getNode('modules')->children();
+                        $value = NULL;
+                        if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
+                            $aCustomAtrrList = Mage::getModel('aitcheckoutfields/transport')->loadByCustomerId($entity->getId());
+                            foreach ($aCustomAtrrList->getData() as $_key => $_data) {
+                                if ($_data['code'] == $attributeCode) {
+                                    $value = $_data['value'];
+                                    if ($_data['type'] == "date") {
+                                        $value = date("Y-m-d", strtotime($value));
+                                    }
+                                    break;
+                                }
+                            }
+                            unset($aCustomAtrrList);
+                        }
+                        break;
+                    case "Custom":
+                        $store = ($entity->getStoreId()) ? Mage::getModel('core/store')->load($entity->getStoreId()) : NULL;
+                        if ($attributeCode == "current_url") {
+                            $value = Mage::helper('core/url')->getCurrentUrl();
+                        } elseif ($attributeCode == "todays_date") {
+                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
+                        } elseif ($attributeCode == "todays_timestamp") {
+                            $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
+                        } elseif ($attributeCode == "end_of_month") {
+                            $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
+                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp($lastday));
+                        } elseif ($attributeCode == "store_view_name") {
+                            $value = (is_object($store)) ? $store->getName() : NULL;
+                        } elseif ($attributeCode == "store_group_name") {
+                            $value = (
+                                is_object($store)
+                                && is_object($store->getGroup())
+                            ) ? $store->getGroup()->getName() : NULL;
+                        } elseif ($attributeCode == "website_name") {
+                            $value = (
+                                is_object($store)
+                                && is_object($store->getWebsite())
+                            ) ? $store->getWebsite()->getName() : NULL;
+                        } else {
+                            $value = $_map->default_value;
+                            if ($value == "{{url}}") {
+                                $value = Mage::helper('core/url')->getCurrentUrl();
+                            } elseif ($value == "{{today}}") {
+                                $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
+                            } elseif ($value == "{{end of month}}") {
+                                $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
+                                $value = date("Y-m-d", $lastday);
+                            } elseif ($value == "{{contact id}}") {
+                                /**
+                                 * @deprecated
+                                 */
+                                $value = null;//$this->_contactId;
+                            } elseif ($value == "{{store view name}}") {
+                                $value = Mage::app()->getStore()->getName();
+                            } elseif ($value == "{{store group name}}") {
+                                $value = Mage::app()->getStore()->getGroup()->getName();
+                            } elseif ($value == "{{website name}}") {
+                                $value = Mage::app()->getWebsite()->getName();
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                $this->setBreak(false);
             }
+
+            $value = $this->_fieldMappingAfter($entity, $mappingType, $attributeCode, $value);
             if ($value) {
                 $this->getObj()->$sf_field = trim($value);
             } else {
@@ -207,8 +216,11 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
         }
         unset($collection, $_map, $group);
 
-        if ($_customer->getId()) {
-            $this->getObj()->{$this->getMagentoId()} = $_customer->getId();
+        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        $this->getObj()->$syncParam = true;
+
+        if ($entity->getId()) {
+            $this->getObj()->{$this->getMagentoId()} = $entity->getId();
         }
 
         if (Mage::helper('tnw_salesforce')->getCustomerNewsletterSync()) {
