@@ -216,8 +216,9 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
         }
         unset($collection, $_map, $group);
 
-        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        $this->getObj()->$syncParam = true;
+        // This field does not exist for Lead
+        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        //$this->getObj()->$syncParam = true;
 
         if ($entity->getId()) {
             $this->getObj()->{$this->getMagentoId()} = $entity->getId();
