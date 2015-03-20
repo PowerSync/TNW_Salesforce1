@@ -345,7 +345,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
             }
 
-            if ($leadConvert->leadId) {
+            if ($leadConvert->leadId && !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
                 $this->_cache['leadsToConvert'][$_orderId] = $leadConvert;
             } else {
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {

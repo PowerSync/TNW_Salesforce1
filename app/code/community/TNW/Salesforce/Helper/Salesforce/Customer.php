@@ -41,6 +41,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected $_isPerson = NULL;
 
     /**
+     * Lead Id's to delete
+     * @var array
+     */
+    protected $_toDelete = array();
+
+    /**
      * @param null $_subscription
      * @param null $_status
      * @param string $_type
@@ -976,10 +982,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     ) {
                         $_info->MagentoId = $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId;
                     }
+
                     if (!$_info->IsConverted) {
                         $this->_addToQueue($_info->MagentoId, "Lead");
                     } else {
-                        // TODO: Delete Lead?!
+                        $this->_toDelete[] = $_info->Id;
+                        unset($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]);
+
+                        $_id = ($_info->MagentoId) ? $_info->MagentoId : array_search($_email, $this->_cache['entitiesUpdating']);
+                        $this->_cache['notFoundCustomers'][$_id] = $_email;
                     }
                 }
             }
@@ -1002,6 +1013,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
     protected function _prepareNew()
     {
+        if (!empty($this->_toDelete)) {
+            $this->_deleteLeads();
+        }
+
         if (!empty($this->_cache['notFoundCustomers'])) {
             foreach ($this->_cache['notFoundCustomers'] as $_id => $_email) {
                 $this->_isPerson = NULL;
@@ -1865,4 +1880,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         return $this;
     }
 
+    protected function _deleteLeads() {
+        $_ids = array_chunk($this->_toDelete, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+        foreach ($_ids as $_recordIds) {
+            $this->_mySforceConnection->delete($_recordIds);
+        }
+    }
 }
