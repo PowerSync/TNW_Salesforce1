@@ -622,6 +622,12 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'label' => 'Product : Product Type',
         );
 
+        // add product type
+        $this->_cache[$type]['product']['value'][] = array(
+            'value' => 'Product : attribute_set_id', // do not use type_Id cause error happens
+            'label' => 'Product : Attribute Set',
+        );
+
         // add inventory field list
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
             $this->_cache[$type]['inventory'] = array(
