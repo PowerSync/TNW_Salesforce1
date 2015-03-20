@@ -78,7 +78,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
             $where = array();
             foreach ($_companies as $_company) {
                 if ($_company && !empty($_company)) {
-                    $where[] = "(Name LIKE '%" . utf8_encode($_company) . "%')";
+                    $where[] = "(Name LIKE '%" . addslashes(utf8_encode($_company)) . "%')";
                 }
             }
 
