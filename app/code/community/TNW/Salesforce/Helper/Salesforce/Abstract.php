@@ -625,6 +625,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     protected function reset()
     {
+        ini_set('mysql.connect_timeout', TNW_Salesforce_Helper_Config::MYSQL_TIMEOUT);
+
         $this->_initCache();
 
         if (!$this->_magentoId) {
