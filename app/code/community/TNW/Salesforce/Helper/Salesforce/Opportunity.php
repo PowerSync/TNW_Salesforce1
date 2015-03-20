@@ -624,10 +624,10 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 }
 
                 //$this->_obj->ProductCode = $_item->getSku();
-                $defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-                if ($defaultServiceDate) {
-                    $this->_obj->ServiceDate = $defaultServiceDate;
-                }
+                //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
+                //if ($defaultServiceDate) {
+                //    $this->_obj->ServiceDate = $defaultServiceDate;
+                //}
                 $opt = array();
                 $options = $_item->getProductOptions();
                 $_summary = array();
@@ -744,10 +744,10 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_TAX_PRODUCT);
         }
-        $defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-        if ($defaultServiceDate) {
-            $this->_obj->ServiceDate = $defaultServiceDate;
-        }
+        //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
+        //if ($defaultServiceDate) {
+        //    $this->_obj->ServiceDate = $defaultServiceDate;
+        //}
         $this->_obj->Description = 'Total Tax';
         $this->_obj->Quantity = 1;
 
@@ -865,10 +865,10 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_SHIPPING_PRODUCT);
         }
-        $defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-        if ($defaultServiceDate) {
-            $this->_obj->ServiceDate = $defaultServiceDate;
-        }
+        //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
+        //if ($defaultServiceDate) {
+        //    $this->_obj->ServiceDate = $defaultServiceDate;
+        //}
         $this->_obj->Description = 'Shipping & Handling';
         $this->_obj->Quantity = 1;
 

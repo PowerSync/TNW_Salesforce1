@@ -497,10 +497,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
 
                 //$this->_obj->ProductCode = $_item->getSku();
-                $defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-                if ($defaultServiceDate) {
-                    $this->_obj->ServiceDate = $defaultServiceDate;
-                }
+                //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
+                //if ($defaultServiceDate) {
+                //    $this->_obj->ServiceDate = $defaultServiceDate;
+                //}
                 $opt = array();
                 $options = $_item->getProductOptions();
                 $_summary = array();

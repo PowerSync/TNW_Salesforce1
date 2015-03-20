@@ -96,10 +96,10 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
                 $this->_oli->UnitPrice = $netTotal / $item->getQtyOrdered();
                 $this->_oli->PricebookEntryId = $pricebookEntryId;
-                $defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-                if ($defaultServiceDate) {
-                    $this->_oli->ServiceDate = $defaultServiceDate;
-                }
+                //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
+                //if ($defaultServiceDate) {
+                //    $this->_oli->ServiceDate = $defaultServiceDate;
+                //}
                 $opt = array();
                 $options = $item->getProductOptions();
                 if (is_array($options) && array_key_exists('options', $options)) {
