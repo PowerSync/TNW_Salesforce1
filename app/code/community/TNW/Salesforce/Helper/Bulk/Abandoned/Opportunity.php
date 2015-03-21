@@ -969,16 +969,22 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
         $valid = $this->check();
 
-        if ($valid) {
-            $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
-        }
-
         return $valid;
     }
 
     public function process($type = 'soft')
     {
+
+        /**
+         * @comment apply bulk server settings
+         */
+        $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+
         $result = parent::process($type);
+
+        /**
+         * @comment restore server settings
+         */
         $this->getServerHelper()->apply();
 
         return $result;

@@ -40,75 +40,19 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
      */
     public function process($_return = false)
     {
-        if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::helper('tnw_salesforce')->log("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
-            }
 
-            return false;
-        }
-        Mage::helper('tnw_salesforce')->log("================ MASS SYNC: START ================");
-        if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-            Mage::helper('tnw_salesforce')->log("WARNING: Sync customers, cache is empty!");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: SKIPPING synchronization, could not locate customer data to synchronize.');
-            }
+        /**
+         * @comment apply bulk server settings
+         */
+        $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
 
-            return false;
-        }
+        $result = parent::process($_return);
+        /**
+         * @comment restore server settings
+         */
+        $this->getServerHelper()->apply();
 
-        try {
-            // Prepare Data
-            $this->_prepareLeads();
-            $this->_prepareContacts();
-            $this->_prepareNew();
-
-            // Clean up the data we are going to be pushing in (for guest orders if multiple orders placed by the same person and they happen to end up in the same batch)
-            $this->_deDupeCustomers();
-            $this->clearMemory();
-
-            // Push Data
-            $this->_pushToSalesforce($_return);
-            $this->clearMemory();
-
-            // Update Magento
-            if ($this->_customerEntityTypeCode) {
-                $this->_updateMagento();
-            } else {
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to update Magento with Salesforce Ids');
-                }
-                Mage::helper('tnw_salesforce')->log("WARNING: Failed to update Magento with Salesforce Ids. Try manual synchronization.", 2);
-            }
-
-            if ($_return && $_return == 'bulk') {
-                // Update guest data from de duped records before passing it back to Order object
-                $this->_updateGuestCachedData();
-
-                $_i = 0;
-                foreach ($this->_toSyncOrderCustomers as $_orderNum => $_customer) {
-                    if ($_customer->getId()) {
-                        $this->_orderCustomers[$_orderNum] = Mage::registry('customer_cached_' . $_customer->getId());
-                    } else {
-                        $this->_orderCustomers[$_orderNum] = $this->_cache['guestsFromOrder']['guest_' . $_orderNum];
-                    }
-                    $_i++;
-                }
-            }
-            $this->_onComplete();
-
-            Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
-            if ($_return && $_return == 'bulk') {
-
-                return $this->_orderCustomers;
-            }
-        } catch (Eception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
-        }
+        return $result;
     }
 
     /**
@@ -159,7 +103,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
 
-        Mage::dispatchEvent("tnw_salesforce_lead_send_after",array(
+        Mage::dispatchEvent("tnw_salesforce_lead_send_after", array(
             "data" => $this->_cache['leadsToUpsert'][$_on],
             "result" => $this->_cache['responses']['leads']
         ));
@@ -223,7 +167,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 }
             }
 
-            Mage::dispatchEvent("tnw_salesforce_contact_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
                 "data" => $this->_cache['contactsToUpsert'][$_on],
                 "result" => $this->_cache['responses']['contacts']
             ));
@@ -328,7 +272,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
 
-        Mage::dispatchEvent("tnw_salesforce_account_send_after",array(
+        Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
             "data" => $this->_cache['accountsToUpsert']['Id'],
             "result" => $this->_cache['responses']['accounts']
         ));
@@ -359,7 +303,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $this->_cache['bulkJobs']['account']['Id'] = $this->_createJob('Account', 'upsert', 'Id');
                 Mage::helper('tnw_salesforce')->log('Syncronizing Accounts, created job: ' . $this->_cache['bulkJobs']['account']['Id']);
             }
-            Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => $this->_cache['accountsToUpsert']['Id']));
+            Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']['Id']));
             // send to sf
             $this->_pushChunked($this->_cache['bulkJobs']['account']['Id'], 'accounts', $this->_cache['accountsToUpsert']['Id'], 'Id');
 
@@ -368,7 +312,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['account']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['account']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking [1] (job: ' . $this->_cache['bulkJobs']['account']['Id'] . ')...');
@@ -392,7 +335,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
                 Mage::helper('tnw_salesforce')->log('Syncronizing Leads, created job: ' . $this->_cache['bulkJobs']['lead']['Id']);
             }
-            Mage::dispatchEvent("tnw_salesforce_lead_send_before",array("data" => $this->_cache['leadsToUpsert']['Id']));
+            Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']['Id']));
             // send to sf
             $this->_pushChunked($this->_cache['bulkJobs']['lead']['Id'], 'leads', $this->_cache['leadsToUpsert']['Id'], 'Id');
 
@@ -400,7 +343,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead']['Id']);
                 $_attempt++;
@@ -424,7 +366,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
                 Mage::helper('tnw_salesforce')->log('Syncronizing Leads, created job: ' . $this->_cache['bulkJobs']['lead'][$this->_magentoId]);
             }
-            Mage::dispatchEvent("tnw_salesforce_lead_send_before",array("data" => $this->_cache['leadsToUpsert'][$this->_magentoId]));
+            Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert'][$this->_magentoId]));
             // send to sf
             $this->_pushChunked($this->_cache['bulkJobs']['lead'][$this->_magentoId], 'leads', $this->_cache['leadsToUpsert'][$this->_magentoId], $this->_magentoId);
 
@@ -432,7 +374,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead'][$this->_magentoId]);
                 $_attempt++;
@@ -446,68 +387,66 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
         // Push Contact on Id
         if (array_key_exists('Id', $this->_cache['contactsToUpsert']) && !empty($this->_cache['contactsToUpsert']['Id'])) {
-                if (!$this->_cache['bulkJobs']['contact']['Id']) {
-                    // Create Job
-                    $this->_cache['bulkJobs']['contact']['Id'] = $this->_createJob('Contact', 'upsert', 'Id');
-                    Mage::helper('tnw_salesforce')->log('Syncronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact']['Id']);
-                }
+            if (!$this->_cache['bulkJobs']['contact']['Id']) {
+                // Create Job
+                $this->_cache['bulkJobs']['contact']['Id'] = $this->_createJob('Contact', 'upsert', 'Id');
+                Mage::helper('tnw_salesforce')->log('Syncronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact']['Id']);
+            }
 
-                Mage::dispatchEvent("tnw_salesforce_contact_send_before",array("data" => $this->_cache['contactsToUpsert']['Id']));
-                // send to sf
-                $this->_pushChunked($this->_cache['bulkJobs']['contact']['Id'], 'contacts', $this->_cache['contactsToUpsert']['Id'], 'Id');
+            Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']['Id']));
+            // send to sf
+            $this->_pushChunked($this->_cache['bulkJobs']['contact']['Id'], 'contacts', $this->_cache['contactsToUpsert']['Id'], 'Id');
 
-                Mage::helper('tnw_salesforce')->log('Checking if Contacts were successfully synced...');
+            Mage::helper('tnw_salesforce')->log('Checking if Contacts were successfully synced...');
+            $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact']['Id']);
+            $_attempt = 1;
+            while (strval($_result) != 'exception' && !$_result) {
+                sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact']['Id']);
-                $_attempt = 1;
-                while (strval($_result) != 'exception' && !$_result) {
-                    set_time_limit(1800);
-                    sleep(5);
-                    $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact']['Id']);
-                    Mage::helper('tnw_salesforce')->log('Still checking [2] (job: ' . $this->_cache['bulkJobs']['contact']['Id'] . ')...');
-                    $_attempt++;
+                Mage::helper('tnw_salesforce')->log('Still checking [2] (job: ' . $this->_cache['bulkJobs']['contact']['Id'] . ')...');
+                $_attempt++;
 
-                    $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['contact']['Id']);
-                }
-                if (strval($_result) != 'exception') {
-                    Mage::helper('tnw_salesforce')->log('Contacts sync is complete! Moving on...');
-                    $this->_assignContactIds('Id');
-                }
+                $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['contact']['Id']);
+            }
+            if (strval($_result) != 'exception') {
+                Mage::helper('tnw_salesforce')->log('Contacts sync is complete! Moving on...');
+                $this->_assignContactIds('Id');
+            }
         }
 
         // Push Contact on Magento Id
         if (array_key_exists($this->_magentoId, $this->_cache['contactsToUpsert']) && !empty($this->_cache['contactsToUpsert'][$this->_magentoId])) {
-                if (!$this->_cache['bulkJobs']['contact'][$this->_magentoId]) {
-                    // Create Job
-                    $this->_cache['bulkJobs']['contact'][$this->_magentoId] = $this->_createJob('Contact', 'upsert', $this->_magentoId);
-                    foreach ($this->_cache['contactsToUpsert'][$this->_magentoId] as $_key => $_object) {
-                        if (property_exists($_object, 'Id')) {
-                            unset($this->_cache['contactsToUpsert'][$this->_magentoId][$_key]->Id);
-                        }
+            if (!$this->_cache['bulkJobs']['contact'][$this->_magentoId]) {
+                // Create Job
+                $this->_cache['bulkJobs']['contact'][$this->_magentoId] = $this->_createJob('Contact', 'upsert', $this->_magentoId);
+                foreach ($this->_cache['contactsToUpsert'][$this->_magentoId] as $_key => $_object) {
+                    if (property_exists($_object, 'Id')) {
+                        unset($this->_cache['contactsToUpsert'][$this->_magentoId][$_key]->Id);
                     }
-
-                    Mage::helper('tnw_salesforce')->log('Synchronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
                 }
 
-                Mage::dispatchEvent("tnw_salesforce_contact_send_before",array("data" => $this->_cache['contactsToUpsert'][$this->_magentoId]));
+                Mage::helper('tnw_salesforce')->log('Synchronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
+            }
 
-                $this->_pushChunked($this->_cache['bulkJobs']['contact'][$this->_magentoId], 'contacts', $this->_cache['contactsToUpsert'][$this->_magentoId], $this->_magentoId);
+            Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert'][$this->_magentoId]));
 
-                Mage::helper('tnw_salesforce')->log('Checking if Contacts were successfully synced...');
+            $this->_pushChunked($this->_cache['bulkJobs']['contact'][$this->_magentoId], 'contacts', $this->_cache['contactsToUpsert'][$this->_magentoId], $this->_magentoId);
+
+            Mage::helper('tnw_salesforce')->log('Checking if Contacts were successfully synced...');
+            $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
+            $_attempt = 1;
+            while (strval($_result) != 'exception' && !$_result) {
+                sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
-                $_attempt = 1;
-                while (strval($_result) != 'exception' && !$_result) {
-                    set_time_limit(1800);
-                    sleep(5);
-                    $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
-                    Mage::helper('tnw_salesforce')->log('Still checking [4] (job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId] . ')...');
-                    $_attempt++;
+                Mage::helper('tnw_salesforce')->log('Still checking [4] (job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId] . ')...');
+                $_attempt++;
 
-                    $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
-                }
-                if (strval($_result) != 'exception') {
-                    Mage::helper('tnw_salesforce')->log('Contacts sync is complete! Moving on...');
-                    $this->_assignContactIds($this->_magentoId);
-                }
+                $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
+            }
+            if (strval($_result) != 'exception') {
+                Mage::helper('tnw_salesforce')->log('Contacts sync is complete! Moving on...');
+                $this->_assignContactIds($this->_magentoId);
+            }
         }
 
         // collect error message
@@ -526,7 +465,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         // show which customer failed
         if (!empty($errorCustomerList)) {
             if (!$this->isFromCLI() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                foreach($errorCustomerList as $_websiteId => $_emails) {
+                foreach ($errorCustomerList as $_websiteId => $_emails) {
+                    if (empty($_websiteId)) {
+                        $_websiteId = null;
+                    }
                     $_website = Mage::app()->getWebsite($_websiteId);
                     $errorCustomerListF = implode(", ", $_emails);
                     Mage::getSingleton('adminhtml/session')->addError('WARNING: Following customers from "' . $_website->getName() . '" failed to be synchronized: ' . $errorCustomerListF);
@@ -830,7 +772,9 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             )
         );
 
-        return $this->check();
+        $valid = $this->check();
+
+        return $valid;
     }
 
     /**
@@ -849,13 +793,14 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_isComplete = $this->_checkBatchCompletion($_jobId);
             $_attempt = 1;
             while (strval($_isComplete) != 'exception' && !$_isComplete && $_attempt < 51) {
-                set_time_limit(600);
                 sleep(5);
                 $_isComplete = $this->_checkBatchCompletion($_jobId);
                 Mage::helper('tnw_salesforce')->log('Still checking [5] (job: ' . $_jobId . ')...');
                 $_attempt++;
                 // Break infinite loop after 50 attempts.
-                if(!$_isComplete && $_attempt == 50) {$_isComplete = 'exception';}
+                if (!$_isComplete && $_attempt == 50) {
+                    $_isComplete = 'exception';
+                }
             }
             $this->_closeJob($_jobId);
             Mage::helper('tnw_salesforce')->log("Closing job: " . $_jobId);
@@ -887,10 +832,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     /**
      * For Guest orders, if same person found in SF, don't push it multiple times
      */
-    protected function _deDupeCustomers() {
+    protected function _deDupeCustomers()
+    {
         $_collections = array('leadsToUpsert', 'contactsToUpsert', 'accountsToUpsert');
-        foreach($_collections as $_collection) {
-            if (array_key_exists('Id',$this->_cache[$_collection]) && is_array($this->_cache[$_collection]['Id']) && !empty($this->_cache[$_collection]['Id'])) {
+        foreach ($_collections as $_collection) {
+            if (array_key_exists('Id', $this->_cache[$_collection]) && is_array($this->_cache[$_collection]['Id']) && !empty($this->_cache[$_collection]['Id'])) {
                 $_salesforceIds = array();
                 foreach ($this->_cache[$_collection]['Id'] as $_magentoId => $_object) {
                     if ($_collection == 'accountsToUpsert') {
@@ -954,9 +900,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         }
     }
 
-    protected function _updateGuestCachedData() {
+    protected function _updateGuestCachedData()
+    {
         if (!empty($this->_cache['guestDuplicates'])) {
-            foreach($this->_cache['guestDuplicates'] as $_who => $_source) {
+            foreach ($this->_cache['guestDuplicates'] as $_who => $_source) {
                 $this->_cache['guestsFromOrder'][$_who] = $this->_cache['guestsFromOrder'][$_source];
             }
         }

@@ -924,10 +924,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
         $valid = $this->check();
 
-        if ($valid) {
-            $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
-        }
-
         return $valid;
     }
 
@@ -937,6 +933,12 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
      */
     public function process($type = 'soft')
     {
+
+        /**
+         * @comment apply bulk server settings
+         */
+        $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+
         $result = parent::process($type);
 
         /**

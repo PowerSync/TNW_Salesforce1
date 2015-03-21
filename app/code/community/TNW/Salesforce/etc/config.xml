@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.16.0001</version>
+            <version>0.01.49.16.0003</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -586,7 +586,9 @@
                 <api_enable>0</api_enable>
             </api_config>
             <developer>
+                <log_enable>1</log_enable>
                 <email_prefix>LIVE</email_prefix>
+                <remote_log>1</remote_log>
             </developer>
             <syncronization>
                 <sync_type_realtime>sync_type_realtime</sync_type_realtime>
@@ -601,6 +603,7 @@
                     <zend.enable_gc>1</zend.enable_gc>
                 </bulk>
             </development_and_debugging>
+
         </salesforce>
         <salesforce_customer>
             <sync>

@@ -447,15 +447,17 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
         $valid = $this->check();
 
-        if ($valid) {
-            $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
-        }
-
         return $valid;
     }
 
     public function process()
     {
+
+        /**
+         * @comment apply bulk server settings
+         */
+        $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+
         $result = parent::process();
 
         /**
