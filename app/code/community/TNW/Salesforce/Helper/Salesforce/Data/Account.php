@@ -33,21 +33,70 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     }
 
     /**
+     * @comment find and return accounts by company names
+     * @param $companies
+     */
+    public function lookupByCompanies($_companies, $_hashField = 'Id')
+    {
+        $_companies = array_chunk($_companies, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT, true);
+
+        $result = array();
+
+        foreach ($_companies as $_companiesChunk) {
+            $_lookupResults = $this->lookupByCompany($_companiesChunk, $_hashField);
+            if (is_array($_lookupResults)) {
+                $result = array_merge($result, $this->lookupByCompany($_companiesChunk, $_hashField));
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * @return bool|null
      */
-    public function lookupByCompany()
+    public function lookupByCompany($_companies = array(), $_hashField = 'Id')
     {
         try {
-            if (!$this->_companyName) {
+            if (!$this->_companyName && empty($_companies)) {
                 Mage::helper('tnw_salesforce')->log("Company field is not provided, SKIPPING lookup!");
 
                 return false;
             }
 
-            $query = "SELECT Id, OwnerId FROM Account WHERE Name LIKE '%" . utf8_encode($this->_companyName) . "%'";
+            if (!$_companies) {
+                $_companies = array($this->_companyName);
+            }
+
+            if (empty($_companies)) {
+                return array();
+            }
+
+            $query = "SELECT Id, OwnerId, Name FROM Account WHERE ";
+
+            $where = array();
+            foreach ($_companies as $_company) {
+                if ($_company && !empty($_company)) {
+                    $where[] = "(Name LIKE '%" . addslashes(utf8_encode($_company)) . "%')";
+                }
+            }
+
+            if (!empty($where)) {
+                $query .= '(';
+            } else {
+                return array();
+            }
+            $query .= implode(' OR ', $where) ;
+
+            if (!empty($where)) {
+                $query .= ')';
+            }
+
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $query .= " AND IsPersonAccount != true";
             }
+
             $_results = $this->getClient()->query(($query));
 
             if (empty($_results) || !property_exists($_results, 'size') || $_results->size < 1) {
@@ -59,8 +108,28 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $_obj = new stdClass();
                 $_obj->Id = (property_exists($_item, 'Id')) ? $_item->Id : NULL;
                 $_obj->OwnerId = (property_exists($_item, 'OwnerId')) ? $_item->OwnerId : NULL;
-                $_obj->Name = $this->_companyName;
-                $returnArray[$_obj->Id] = $_obj;
+//                $_obj->Name = $this->_companyName;
+
+                foreach($_companies as $_customIndex => $_company) {
+                    if (strpos($_item->Name, $_company) !== false) {
+                        $_obj->Name = $_company;
+                        $_obj->CustomIndex = $_customIndex;
+                        break;
+                    }
+                }
+
+                if (!empty($_hashField)) {
+
+                    if (property_exists($_obj, $_hashField)) {
+                        $returnArray[$_obj->$_hashField] = $_obj;
+                    } elseif (property_exists($_item, $_hashField)) {
+                        $returnArray[$_item->$_hashField] = $_obj;
+                    }
+
+                } else {
+                    $returnArray[$_obj->Id] = $_obj;
+                }
+
                 unset($_obj);
             }
 

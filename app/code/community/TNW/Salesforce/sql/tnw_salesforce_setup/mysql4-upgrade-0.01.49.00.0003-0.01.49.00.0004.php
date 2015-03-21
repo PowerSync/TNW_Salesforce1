@@ -4,7 +4,7 @@ $installer = $this;
 
 $installer->startSetup();
 
-$_magentoIdAttribute = 'Opportunity:' . Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . 'Magento_ID__c';
+$_magentoIdAttribute = 'Opportunity:' . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
 
 $_defaultMappingStatus = array(
     'Lead:Company'      => false,

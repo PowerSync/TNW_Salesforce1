@@ -182,7 +182,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                         array(
                             'ids' => $itemIds,
                             'message' => Mage::helper('adminhtml')->__('Total of %d abandoned(s) were synchronized', count($itemIds)),
-                            'type' => 'bulk'
+                            'type' => 'bulk',
+                            'object_type' => 'abandoned'
                         )
                     );
                 }

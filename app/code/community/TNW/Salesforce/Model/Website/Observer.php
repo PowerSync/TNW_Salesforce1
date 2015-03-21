@@ -24,7 +24,6 @@ class TNW_Salesforce_Model_Website_Observer
         }
         $website = $observer->getEvent()->getWebsite();
         $_webstieId = intval($website->getData('website_id'));
-        $_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
 
         Mage::helper("tnw_salesforce")->log('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
 

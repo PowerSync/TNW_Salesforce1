@@ -768,6 +768,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 $_customer = Mage::getModel('customer/customer')->load($_id);
             }
 
+            $_websiteId = $_customer->getData('website_id');
+
             $leadConvert = new stdClass;
             $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
             $leadConvert->doNotCreateOpportunity = 'true';
@@ -787,7 +789,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'", 1, 'sf-cron');
             }
 
-            if ($leadConvert->leadId) {
+            if ($leadConvert->leadId && !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
                 if (!array_key_exists('leadsToConvert', $this->_data)) {
                     $this->_data['leadsToConvert'] = array();
                 }

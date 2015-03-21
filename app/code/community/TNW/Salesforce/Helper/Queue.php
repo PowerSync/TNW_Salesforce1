@@ -9,8 +9,6 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
     public function processItems($itemIds = array())
     {
-        $this->_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
-
         if (count($itemIds) > 50 && Mage::helper('tnw_salesforce')->isAdmin()) {
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper("tnw_salesforce")->__("Please synchronize no more then 50 item at one time"));
             return false;

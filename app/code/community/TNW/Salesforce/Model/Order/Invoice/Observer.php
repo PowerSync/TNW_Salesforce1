@@ -13,11 +13,15 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
 
         Mage::helper("tnw_salesforce")->log('TNW EVENT: Invoice #' . $_invoice->getIncrementId() . ' Sync');
 
+        if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
+            Mage::helper("tnw_salesforce")->log('SKIPING: Invoice synchronization disabled');
+            return; // Disabled
+        }
+
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
-            //|| !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
         ) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Invoice synchronization disabled');
+            Mage::helper("tnw_salesforce")->log('SKIPING: Connector is disabled');
             return; // Disabled
         }
 

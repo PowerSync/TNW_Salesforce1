@@ -26,7 +26,7 @@ class TNW_Salesforce_Block_Adminhtml_Orderproduct_Edit_Form extends Mage_Adminht
 
         $sfFields = array();
         $helper = Mage::helper('tnw_salesforce/salesforce_data');
-        $hideFields = array('tnw_powersync__DisableMagentoSync__c', 'UnitPrice', 'TotalPrice', 'Quantity', 'Description');
+        $hideFields = array(Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c', 'UnitPrice', 'TotalPrice', 'Quantity', 'Description');
         foreach ($helper->getAllFields('OrderItem') as $key => $field) {
             if (in_array($key, $hideFields)) {
                 continue;

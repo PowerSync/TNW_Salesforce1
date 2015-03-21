@@ -99,8 +99,6 @@ class TNW_Salesforce_Helper_Magento_Abstract {
     }
 
     protected function _prepare() {
-        $this->_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
-
         if (!$this->_write) {
             $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
         }
@@ -113,7 +111,7 @@ class TNW_Salesforce_Helper_Magento_Abstract {
         }
 
         if (!$this->_magentoIdField) {
-            $this->_magentoIdField = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+            $this->_magentoIdField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         }
     }
 

@@ -318,7 +318,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
             }
 
-            if ($leadConvert->leadId) {
+            if ($leadConvert->leadId && !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
                 $this->_cache['leadsToConvert'][$_orderId] = $leadConvert;
             } else {
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
@@ -420,15 +420,14 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
      */
     protected function _setOpportunityInfo($order)
     {
-        $_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
         $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
 
         $this->_updateOrderStageName($order);
         $_orderNumber = $order->getRealOrderId();
         $_email = $this->_cache['orderToEmail'][$_orderNumber];
 
-        $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
-        $this->_obj->$syncParam = true;
+        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+        //$this->_obj->$syncParam = true;
 
         // Link to a Website
         if (
@@ -436,7 +435,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{$_prefix . 'Website__c'} = $this->_websiteSfIds[$_websiteId];
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
@@ -467,7 +466,10 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             ) ? $this->_cache['convertedLeads'][$_orderNumber]->accountId : NULL;
         }
 
-        $this->_processMapping($order, "Opportunity");
+        //Process mapping
+        Mage::getSingleton('tnw_salesforce/sync_mapping_order_opportunity')
+            ->setSync($this)
+            ->processMapping($order);
 
         //Get Account Name from Salesforce
         $_accountName = (
@@ -791,7 +793,11 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
                     if ($_item->success == "true") {
                         $this->_cache['upsertedOpportunities'][$_oid] = (string)$_item->id;
-                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = '" . $this->_cache['upsertedOpportunities'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+
+                        $_contactId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_id') . "'" : 'NULL';
+                        $_accountId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id') . "'" : 'NULL';
+                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache['upsertedOrders'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+
                         Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache['upsertedOpportunities'][$_oid]);
 
                         //unset($this->_cache['opportunitiesToUpsert'][$_oid]);
@@ -814,7 +820,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            $this->_write->query($sql);
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
 

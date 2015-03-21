@@ -341,10 +341,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $this->_obj->ProductCode = $prod->getSku();
 
         //Process mapping
-        $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('Product2');
-        foreach ($collection as $_map) {
-            $this->_processMapping($prod, $_map);
-        }
+        Mage::getSingleton('tnw_salesforce/sync_mapping_product_product')
+            ->setSync($this)
+            ->processMapping($prod);
 
         // if "Synchronize product attributes" is set to "yes" we replace sf description with product attributes
         if (intval(Mage::helper('tnw_salesforce')->getProductAttributesSync()) == 1) {
@@ -355,7 +354,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
         }
 
-        $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
+        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
         $this->_obj->$syncParam = TRUE;
 
         if ($prod->getId()) {
@@ -444,87 +443,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
 
         return $sfDescription;
-    }
-
-    /**
-     * Gets field mapping from Magento and creates OpportunityLineItem object
-     *
-     * @param null $prod
-     * @param null $_map
-     */
-    protected function _processMapping($prod = NULL, $_map = NULL)
-    {
-        $value = false;
-        $conf = explode(" : ", $_map->local_field);
-        $sf_field = $_map->sf_field;
-
-        switch ($conf[0]) {
-            case "Product Inventory":
-                $stock = Mage::getModel('cataloginventory/stock_item')->setStoreId(Mage::helper('tnw_salesforce')->getStoreId())->loadByProduct($prod);
-                $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-                $value = $stock ? $stock->$attr() : null;
-                // deprecated
-                /*
-                $value = ($stock) ? (int)$stock->getQty() : NULL;
-                */
-                break;
-            case "Product":
-                $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-                if ($conf[1] == 'website_ids') {
-                    $value = join(',', $prod->$attr());
-                } else {
-                    $value = ($prod->getAttributeText($conf[1])) ? $prod->getAttributeText($conf[1]) : $prod->$attr();
-                }
-                break;
-            case "Custom":
-                if ($conf[1] == "current_url") {
-                    $value = Mage::helper('core/url')->getCurrentUrl();
-                } elseif ($conf[1] == "todays_date") {
-                    $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                } elseif ($conf[1] == "todays_timestamp") {
-                    $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
-                } elseif ($conf[1] == "end_of_month") {
-                    $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                    $value = date("Y-m-d", Mage::getModel('core/date')->timestamp($lastday));
-                } elseif ($conf[1] == "store_view_name") {
-                    $value = Mage::app()->getStore()->getName();
-                } elseif ($conf[1] == "store_group_name") {
-                    $value = Mage::app()->getStore()->getGroup()->getName();
-                } elseif ($conf[1] == "website_name") {
-                    $value = Mage::app()->getWebsite()->getName();
-                } else {
-                    $value = $_map->default_value;
-                    /**
-                     * deprecated conditionals
-                     */
-                    if ($value == "{{url}}") {
-                        $value = Mage::helper('core/url')->getCurrentUrl();
-                    } elseif ($value == "{{today}}") {
-                        $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($value == "{{end of month}}") {
-                        $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                        $value = date("Y-m-d", $lastday);
-                    } elseif ($value == "{{contact id}}") {
-                        $value = $this->_contactId;
-                    } elseif ($value == "{{store view name}}") {
-                        $value = Mage::app()->getStore()->getName();
-                    } elseif ($value == "{{store group name}}") {
-                        $value = Mage::app()->getStore()->getGroup()->getName();
-                    } elseif ($value == "{{website name}}") {
-                        $value = Mage::app()->getWebsite()->getName();
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-        if ($value) {
-            $this->_obj->$sf_field = trim($value);
-        } else {
-            if (!$this->isFromCLI()) {
-                Mage::helper('tnw_salesforce')->log('PRODUCT MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
-            }
-        }
     }
 
     protected function _pushProductsSegment($chunk = array(), $_upsertOn = 'Id')

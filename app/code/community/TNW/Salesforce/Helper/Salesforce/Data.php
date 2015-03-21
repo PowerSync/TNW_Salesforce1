@@ -229,7 +229,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
                 return false;
             }
-            $_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+            $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
             $_selectFields = array(
                 "ID",
                 "AccountId",
@@ -387,7 +387,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             if (!is_object($this->getClient())) {
                 return false;
             }
-            $_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+            $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
             if (is_array($sku)) {
                 $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode IN ('" . implode("','", $sku) . "')";
             } else {

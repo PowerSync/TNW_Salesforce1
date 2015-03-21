@@ -18,7 +18,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _queryLeads($_magentoId, $emails, $_websites)
     {
-        $query = "SELECT ID, OwnerId, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . $this->getSfPrefix() . "Website__c" . " FROM Lead WHERE";
+        $query = "SELECT ID, OwnerId, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " FROM Lead WHERE";
         $_lookup = array();
         foreach($emails as $_id => $_email) {
             $tmp = "((Email='" . addslashes($_email) . "'";
@@ -34,7 +34,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
                 && array_key_exists($_id, $_websites)
             ) {
-                $tmp .= " AND (" . $this->getSfPrefix() . "Website__c = '" . $_websites[$_id] . "' OR " . $this->getSfPrefix() . "Website__c = '')";
+                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_websites[$_id] . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
             }
             $tmp .= ")";
             $_lookup[] = $tmp;
@@ -64,7 +64,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             if (!is_object($this->getClient())) {
                 return false;
             }
-            $_magentoId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+            $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $_results = array();
 
@@ -100,8 +100,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $tmp->ConvertedContactId = (property_exists($_item, 'ConvertedContactId')) ? $_item->ConvertedContactId : NULL;
                     $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->{$_magentoId} : NULL;
                     $tmp->OwnerId = (property_exists($_item, 'OwnerId')) ? $_item->OwnerId : NULL;
-                    if (property_exists($_item, $this->getSfPrefix() . 'Website__c')) {
-                        $_websiteKey = $_item->{$this->getSfPrefix().'Website__c'};
+                    if (property_exists($_item, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+                        $_websiteKey = $_item->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
                     } else {
                         $_websiteKey = 0;
                         if ($tmp->MagentoId && array_key_exists($tmp->MagentoId, $ids)) {

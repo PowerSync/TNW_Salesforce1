@@ -471,7 +471,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
         $sfId = (property_exists($object, "Id") && $object->Id) ? $object->Id : NULL;
         $groupId = NULL;
 
-        $mageId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $mageId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $cid = (property_exists($object, $mageId) && $object->$mageId) ? $object->$mageId : NULL;
 
         Mage::helper('tnw_salesforce')->log('Config Complete');
@@ -752,10 +752,10 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                     continue;
                 }
                 $contact = new stdClass();
-                $mageId = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+                $mageId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
                 $contact->$mageId = $_customer->id;
                 $contact->Id = $_customer->sfId;
-                $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
+                $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
                 $contact->$syncParam = true;
                 $queuedCustomers[$_customer->id] = $contact;
                 unset($contact, $_customer);
@@ -1007,10 +1007,10 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
         unset($collection, $_map, $group);
 
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $syncParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "disableMagentoSync__c";
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
             $this->$type->$syncParam = true;
         }
-        $mIdParam = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix() . "Magento_ID__c";
+        $mIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $this->$type->$mIdParam = $this->_contactId;
 
         /* Dump contact object into the log */
