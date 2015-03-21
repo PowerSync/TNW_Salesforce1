@@ -302,6 +302,72 @@
                         </cron_last_run_timestamp>
                     </fields>
                 </syncronization>
+
+                <server_configuration_bulk translate="label" module="tnw_salesforce">
+                    <label>Server configuration for the bulk process.</label>
+                    <comment>Parameters defined below will be applied for the bulk synchronization process</comment>
+                    <sort_order>400</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+
+                        <max_execution_time translate="label">
+                            <label>max_execution_time</label>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_server_configuration</frontend_model>
+                            <hint>max_execution_time</hint>
+                            <comment><![CDATA[
+                                    Define the 'max_execution_time' parameter value. Current value:
+                            ]]></comment>
+                        </max_execution_time>
+
+                        <set_time_limit translate="label">
+                            <label>set_time_limit</label>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_server_configuration</frontend_model>
+                            <hint>set_time_limit</hint>
+                            <comment><![CDATA[
+                                    Define the 'set_time_limit' function parameter. Current value:
+                            ]]></comment>
+                        </set_time_limit>
+
+                        <mysql.connect_timeout translate="label">
+                            <label>mysql.connect_timeout</label>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_server_configuration</frontend_model>
+                            <hint>mysql.connect_timeout</hint>
+                            <comment><![CDATA[
+                                    Define the 'mysql.connect_timeout' parameter value. Current value:
+                            ]]></comment>
+                        </mysql.connect_timeout>
+
+                        <zend.enable_gc translate="label">
+                            <label>zend.enable_gc</label>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_server_configuration</frontend_model>
+                            <hint>zend.enable_gc</hint>
+                            <comment><![CDATA[
+                                    Define the 'zend.enable_gc' parameter value. Current value:
+                            ]]></comment>
+                        </zend.enable_gc>
+
+                    </fields>
+                </server_configuration_bulk>
             </groups>
         </salesforce>
         <salesforce_customer translate="label" module="tnw_salesforce">
