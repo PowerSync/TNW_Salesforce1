@@ -8,6 +8,12 @@
  */
 class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
 {
+
+    /**
+     * @comment PHP configuration settings path
+     */
+    const BULK_SERVER_CONFIGURATION = 'salesforce/development_and_debugging/bulk';
+
     /**
      * @comment Contains old server settings
      * @var array
@@ -173,7 +179,7 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
      */
     public function applyBulkSettings()
     {
-        $bulkSettings = Mage::getStoreConfig('salesforce/server_configuration_bulk');
+        $bulkSettings = Mage::getStoreConfig(self::BULK_SERVER_CONFIGURATION);
 
         $this->applySettings($bulkSettings);
 

@@ -578,19 +578,21 @@
                 <api_enable>0</api_enable>
             </api_config>
             <developer>
-                <log_enable>1</log_enable>
                 <email_prefix>LIVE</email_prefix>
-                <remote_log>1</remote_log>
             </developer>
             <syncronization>
                 <sync_type_realtime>sync_type_realtime</sync_type_realtime>
             </syncronization>
-            <server_configuration_bulk>
-                <max_execution_time>0</max_execution_time>
-                <set_time_limit>0</set_time_limit>
-                <mysql.connect_timeout>180</mysql.connect_timeout>
-                <zend.enable_gc>1</zend.enable_gc>
-            </server_configuration_bulk>
+            <development_and_debugging>
+                <log_enable>1</log_enable>
+                <remote_log>1</remote_log>
+                <bulk>
+                    <max_execution_time>0</max_execution_time>
+                    <set_time_limit>0</set_time_limit>
+                    <mysql.connect_timeout>180</mysql.connect_timeout>
+                    <zend.enable_gc>1</zend.enable_gc>
+                </bulk>
+            </development_and_debugging>
         </salesforce>
         <salesforce_customer>
             <sync>

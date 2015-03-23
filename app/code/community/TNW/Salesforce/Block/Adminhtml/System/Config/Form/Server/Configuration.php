@@ -17,7 +17,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Form_Server_Configuration ext
     public function render(Varien_Data_Form_Element_Abstract $element)
     {
 
-        $settingName = $element->getHint();
+        $settingName = $element->getFieldConfig()->getName();
 
         $settingValue = Mage::helper('tnw_salesforce/config_server')->getOriginSetting($settingName);
 
