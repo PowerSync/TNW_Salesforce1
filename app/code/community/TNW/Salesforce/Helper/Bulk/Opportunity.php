@@ -794,6 +794,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         $sql = '';
 
         foreach ($this->_cache['batchCache']['opportunities'][$this->_magentoId] as $_key => $_batchId) {
+            Mage::helper('tnw_salesforce')->log('Opportunity Batch: ' . $_batchId);
             $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] . '/batch/' . $_batchId . '/result');
             try {
                 $response = $this->_client->request()->getBody();
@@ -825,6 +826,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             } catch (Exception $e) {
                 // TODO:  Log error, quit
                 $response = $e->getMessage();
+                Mage::helper('tnw_salesforce')->log('ERROR: (batch: ' . $_batchId . ') - ' . $e->getMessage());
             }
         }
 
@@ -882,7 +884,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->_websiteSfIds[$this->_cache['orderCustomers'][$_orderNum]->getData('website_id')];
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->_websiteSfIds[$_websiteId];
 
                     // Update Salesforce Id
                     Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
@@ -898,7 +900,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     Mage::helper('tnw_salesforce')->log('Converted customer: (guest)');
 
                     // For the guest
-                    if (!is_object($this->_cache['orderCustomers'][$_orderNum])) {
+                    if (array_key_exists($_orderNum, $this->_cache['orderCustomers']) && !is_object($this->_cache['orderCustomers'][$_orderNum])) {
                         $this->_cache['orderCustomers'][$_orderNum] = (is_object($_order)) ? $this->_getCustomer($_order) : Mage::getModel("customer/customer");
                     }
                     $this->_cache['orderCustomers'][$_orderNum]->setSalesforceLeadId(NULL);

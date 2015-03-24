@@ -63,7 +63,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     public function lookup($email = NULL, $ids = array())
     {
-        $_howMany = 100;
+        $_howMany = 35;
         try {
             if (!is_object($this->getClient())) {
                 return false;
@@ -88,8 +88,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             }
 
             unset($query);
-            if (empty($_results) || (count($_results) == 1 && current($_results)[0]->size < 1)) {
-                Mage::helper('tnw_salesforce')->log("Lookup returned: " . current($_results)[0]->size . " results...");
+            if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
+                Mage::helper('tnw_salesforce')->log("Lookup returned: no results...");
                 return false;
             }
 

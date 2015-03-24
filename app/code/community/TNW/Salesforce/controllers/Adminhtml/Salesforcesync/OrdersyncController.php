@@ -208,7 +208,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         $_options = unserialize($_item->getData('product_options'));
         if(
             $_item->getData('product_type') == 'bundle'
-            || array_key_exists('options', $_options)
+            || (is_array($_options) && array_key_exists('options', $_options))
         ) {
             $id = $_item->getData('product_id');
         } else {
