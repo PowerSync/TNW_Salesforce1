@@ -18,7 +18,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _queryLeads($_magentoId, $emails, $_websites)
     {
-        $query = "SELECT ID, OwnerId, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " FROM Lead WHERE";
+        if (empty($emails)) {
+            return array();
+        }
+
+        $query = "SELECT ID, OwnerId, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " FROM Lead WHERE ";
         $_lookup = array();
         foreach($emails as $_id => $_email) {
             $tmp = "((Email='" . addslashes($_email) . "'";
@@ -84,8 +88,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             }
 
             unset($query);
-            if (!$_results[0] || $_results[0]->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Lookup returned: " . $_results[0]->size . " results...");
+            if (empty($_results) || (count($_results) == 1 && current($_results)[0]->size < 1)) {
+                Mage::helper('tnw_salesforce')->log("Lookup returned: " . current($_results)[0]->size . " results...");
                 return false;
             }
 

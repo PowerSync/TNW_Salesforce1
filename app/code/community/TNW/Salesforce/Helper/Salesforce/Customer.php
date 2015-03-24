@@ -540,6 +540,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 if (!is_object($_customer) || !property_exists($_customer, 'MagentoId') || !$_customer->MagentoId || strpos($_customer->MagentoId, 'guest_') === 0) {
                     continue;
                 }
+
                 $_customer->SalesforceId = (property_exists($_customer, 'SalesforceId')) ? $_customer->SalesforceId : NULL;
                 $_customer->AccountId = (property_exists($_customer, 'AccountId')) ? $_customer->AccountId : NULL;
                 $_customer->LeadId = (property_exists($_customer, 'LeadId')) ? $_customer->LeadId : NULL;
@@ -582,19 +583,21 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
         $_table = Mage::helper('tnw_salesforce')->getTable($_tableName);
-        // in case if called from somewhere else
-        if (!$this->_write) {
-            $this->reset();
-        }
+
         if (!$_attributeName) {
             Mage::helper('tnw_salesforce')->log('Could not update Magento customer values: attribute name is not specified', 1, "sf-errors");
             return false;
         }
+
+        $this->_preloadAttributes();
+
         $sql = '';
+        $sqlDelete = '';
         if ($_value || $_value === 0) {
             // Update Account Id
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE attribute_id = " . $this->_attributes[$_attributeName] . " AND entity_id = " . $_customerId;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            Mage::helper('tnw_salesforce')->log("UPDATE SQL CHECK (attr '" . $_attributeName . "'): " . $sqlCheck);
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
                 $sql .= "UPDATE `" . $_table . "` SET value = '" . $_value . "' WHERE value_id = " . $row['value_id'] . ";";
@@ -605,15 +608,20 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         } else {
             // Reset value
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE attribute_id = " . $this->_attributes[$_attributeName] . " AND entity_id = " . $_customerId;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            Mage::helper('tnw_salesforce')->log("RESET SQL CHECK (attr '" . $_attributeName . "'): " . $sqlCheck);
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
-                $sql .= "DELETE FROM `" . $_table . "` WHERE value_id = " . $row['value_id'] . ";";
+                $sqlDelete .= "DELETE FROM `" . $_table . "` WHERE value_id = " . $row['value_id'] . ";";
             }
         }
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log("SQL: " . $sql);
-            $this->_write->query($sql);
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+        }
+        if (!empty($sqlDelete)) {
+            Mage::helper('tnw_salesforce')->log("SQL: " . $sqlDelete);
+            Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sqlDelete);
         }
     }
 
@@ -928,9 +936,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
 
-                foreach ($leadsToConvertChunk as $_object) {
+                foreach ($leadsToConvertChunk as $_key => $_object) {
                     foreach($_object as $key => $value) {
-                        Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
+                        Mage::helper('tnw_salesforce')->log("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
                     }
                 }
 
@@ -1362,7 +1370,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_customerId = 'guest_0';
                 $this->_cache['guestsFromOrder']['guest_0'] = $_customer;
                 $_emailsArray['guest_0'] = $_email;
-                $tmp->MagentoId = 0;
+                $tmp->MagentoId = 'guest_0';
             } else {
                 $_customerId = $_customer->getId();
                 $this->_forcedCustomerId = $_customer->getId();
@@ -1671,6 +1679,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             ),
         );
 
+        $this->_preloadAttributes();
+
+        return $this->check();
+    }
+
+    protected function _preloadAttributes() {
         if (empty($this->_attributes)) {
             $resource = Mage::getResourceModel('eav/entity_attribute');
             $this->_attributes['salesforce_id'] = $resource->getIdByCode('customer', 'salesforce_id');
@@ -1681,8 +1695,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_attributes['firstname'] = $resource->getIdByCode('customer', 'firstname');
             $this->_attributes['lastname'] = $resource->getIdByCode('customer', 'lastname');
         }
-
-        return $this->check();
     }
 
     public function getCustomerAccounts()
