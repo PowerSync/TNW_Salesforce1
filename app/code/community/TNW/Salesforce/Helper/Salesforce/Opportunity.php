@@ -232,7 +232,10 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             //Report Transaction
             $this->_cache['responses']['leadsToConvert'][$_orderNum] = $_result;
 
-            $_customerId = $this->_cache['orderCustomers'][$_orderNum]->getId();
+            $_email = strtolower($this->_cache['orderToEmail'][$_orderNum]);
+            $_order = (Mage::registry('order_cached_' . $_orderNum)) ? Mage::registry('order_cached_' . $_orderNum) : Mage::getModel('sales/order')->loadByIncrementId($_orderNum);
+            $_customerId = (is_object($_order) && $_order->getCustomerId()) ? $_order->getCustomerId() : NULL;
+
             if (!$_result->success) {
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $this->_cache['orderCustomers'][$_orderNum]->getEmail() . ')');
@@ -244,9 +247,13 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 }
                 $this->_processErrors($_result, 'convertLead', $this->_cache['leadsToConvert'][$_orderNum]);
             } else {
+                Mage::helper('tnw_salesforce')->log('Lead Converted for: (email: ' . $_email . ')');
+
                 $_email = strtolower($this->_cache['orderCustomers'][$_orderNum]->getEmail());
                 $_websiteId = $this->_cache['orderCustomers'][$_orderNum]->getData('website_id');
                 if ($_customerId) {
+                    Mage::helper('tnw_salesforce')->log('Converted customer: (magento id: ' . $_customerId . ')');
+
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
@@ -264,6 +271,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
                     $this->_cache['orderCustomers'][$_orderNum] = Mage::getModel("customer/customer")->load($_customerId);
                 } else {
+                    Mage::helper('tnw_salesforce')->log('Converted customer: (guest)');
                     // For the guest
                     $this->_cache['orderCustomers'][$_orderNum]->setSalesforceLeadId(NULL);
                     $this->_cache['orderCustomers'][$_orderNum]->setSalesforceId($_result->contactId);
@@ -295,6 +303,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     {
         Mage::helper('tnw_salesforce')->log('----------Opportunity Preparation: Start----------');
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+            if (array_key_exists('leadsFailedToConvert', $this->_cache) && is_array($this->_cache['leadsFailedToConvert']) && array_key_exists($_orderNumber, $this->_cache['leadsFailedToConvert'])) {
+                Mage::helper('tnw_salesforce')->log('SKIPPED: Order (' . $_orderNumber . '), lead failed to convert');
+                unset($this->_cache['entitiesUpdating'][$_key]);
+                unset($this->_cache['orderToEmail'][$_orderNumber]);
+                $this->_allResults['opportunities_skipped']++;
+                continue;
+            }
+
             if (!Mage::registry('order_cached_' . $_orderNumber)) {
                 $_order = Mage::getModel('sales/order')->load($_key);
                 Mage::register('order_cached_' . $_orderNumber, $_order);
@@ -336,7 +352,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_customerId = $this->_cache['orderToCustomerId'][$_oid];
             $_emailArray[$_customerId] = $_email;
             $_order = Mage::registry('order_cached_' . $_oid);
-            $_websiteId = (array_key_exists($_oid, $this->_cache['orderCustomers']) && $this->_cache['orderCustomers'][$_oid]->getData('website_id')) ? $this->_cache['orderCustomers'][$_oid]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
+            //$_websiteId = (array_key_exists($_oid, $this->_cache['orderCustomers']) && $this->_cache['orderCustomers'][$_oid]->getData('website_id')) ? $this->_cache['orderCustomers'][$_oid]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
+            $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
             $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
         }
         // update contact lookup data
@@ -345,7 +362,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         foreach ($this->_cache['opportunitiesToUpsert'] as $_orderNumber => $_opportunityData) {
             $_email = $this->_cache['orderToEmail'][$_orderNumber];
             $_order = Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-            $_websiteId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id')) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
+            //$_websiteId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id')) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
+            $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
             $websiteSfId = $this->_websiteSfIds[$_websiteId];
 
             // Default Owner ID as configured in Magento

@@ -83,9 +83,6 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
         $_module = 'tnw_salesforce/bulk_' . $_object->getObjectType();
 
-        Zend_Debug::dump($_object);
-        die();
-
         $total = Mage::getModel('tnw_salesforce/localstorage')->countObjectBySfType(array(
             'Product',
             'Customer',

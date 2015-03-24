@@ -564,6 +564,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected function _prepareOrders() {
         Mage::helper('tnw_salesforce')->log('----------Order Preparation: Start----------');
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+            if (array_key_exists('leadsFailedToConvert', $this->_cache) && is_array($this->_cache['leadsFailedToConvert']) && array_key_exists($_orderNumber, $this->_cache['leadsFailedToConvert'])) {
+                Mage::helper('tnw_salesforce')->log('SKIPPED: Order (' . $_orderNumber . '), lead failed to convert');
+                unset($this->_cache['entitiesUpdating'][$_key]);
+                unset($this->_cache['orderToEmail'][$_orderNumber]);
+                $this->_allResults['orders_skipped']++;
+                continue;
+            }
             if (!Mage::registry('order_cached_' . $_orderNumber)) {
                 $_order = Mage::getModel('sales/order')->load($_key);
                 Mage::register('order_cached_' . $_orderNumber, $_order);

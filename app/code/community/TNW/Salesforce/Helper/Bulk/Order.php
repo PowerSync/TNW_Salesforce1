@@ -81,7 +81,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
                 if (empty($this->_cache['orderToEmail'][$_order->getRealOrderId()]) ) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::helper("tnw_salesforce")->log("SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!");
+                        Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!');
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!');
                     }
                     continue;
@@ -229,7 +229,8 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
                         && array_key_exists($_email, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
                     ) || (
-                        array_key_exists($_orderNum, $this->_cache['orderCustomers'])
+                        is_array($this->_cache['orderCustomers'])
+                        && array_key_exists($_orderNum, $this->_cache['orderCustomers'])
                         && is_object($this->_cache['orderCustomers'][$_orderNum])
                         && $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id')
                         && $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id')
@@ -416,10 +417,19 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
         $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
 
-        if (is_array($this->_cache['accountsLookup']) && array_key_exists($_orderEmail, $this->_cache['accountsLookup'])) {
-            $_accountId = $this->_cache['accountsLookup'][$_orderEmail]->AccountId;
-        } elseif ($_customerEmail && $_orderEmail != $_customerEmail && is_array($this->_cache['accountsLookup']) && array_key_exists($_customerEmail, $this->_cache['accountsLookup'])) {
-            $_accountId = $this->_cache['accountsLookup'][$_customerEmail]->AccountId;
+        if (
+            is_array($this->_cache['accountsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
+        ) {
+            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->AccountId;
+        } elseif (
+            $_customerEmail && $_orderEmail != $_customerEmail
+            && is_array($this->_cache['accountsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
+        ) {
+            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customerEmail]->AccountId;
         } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
             $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
         }
@@ -433,7 +443,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
             && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
         ) {
-            $_accountId = $this->_cache['accountsLookup'][$_customerEmail]->AccountId;
+            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customerEmail]->AccountId;
         } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
             $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
         }
