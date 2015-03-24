@@ -641,6 +641,27 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
         $foundCustomers = array();
 
+        if (!empty($this->_allOrderCustomers)) {
+            $_i = 0;
+            foreach ($this->_allOrderCustomers as $_orderNumber => $_customer) {
+                $this->_cache['entitiesUpdating'] = $_emailsArray;
+
+                if (!$_customer->getId()) {
+                    $key = 'guest_' . $_i;
+                    $_i++;
+                } else {
+                    $key = $_customer->getId();
+                    if (!Mage::registry('customer_cached_' . $_customer->getId())) {
+                        Mage::register('customer_cached_' . $_customer->getId(), $_customer);
+                    }
+                }
+                $this->_cache['entitiesUpdating'][$key] = strtolower($_customer->getEmail());
+                $this->_toSyncOrderCustomers[$_orderNumber] = $_customer;
+
+            }
+        }
+
+
         if (!empty($_emailsArray)) {
             $this->_cache['customerToWebsite'] = $_websites;
             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache['entitiesUpdating'], $_websites);
