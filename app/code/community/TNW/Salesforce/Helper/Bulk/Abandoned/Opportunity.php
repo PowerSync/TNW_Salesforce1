@@ -116,9 +116,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $manualSync->forceAdd($_customerToSync, $this->_cache['abandonedCustomers']);
 
                     // here we use $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                     $this->_cache['abandonedCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncQuoteCustomers which is not equal to $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                 }
             }
 
@@ -161,9 +159,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $manualSync->forceAdd($_customersToSync, $this->_cache['abandonedCustomers']);
 
                     // here we use $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                     $this->_cache['abandonedCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncQuoteCustomers which is not equal to $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                 }
                 Mage::helper("tnw_salesforce")->log('Updating lookup cache...');
                 // update Lookup values
@@ -489,7 +485,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
     protected function _pushRemainingOpportunityData()
     {
-        set_time_limit(1000);
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['opportunityProducts']['Id']) {
                 // Create Job
@@ -502,7 +497,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunityProducts']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunityProducts']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking opportunityLineItemsToUpsert (job: ' . $this->_cache['bulkJobs']['opportunityProducts']['Id'] . ')...');
@@ -525,7 +519,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['customerRoles']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['customerRoles']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking contactRolesToUpsert (job: ' . $this->_cache['bulkJobs']['customerRoles']['Id'] . ')...');
@@ -552,7 +545,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking notesToUpsert (job: ' . $this->_cache['bulkJobs']['notes']['Id'] . ')...');
@@ -582,7 +574,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
                 Mage::helper('tnw_salesforce')->log('Still checking opportunitiesToUpsert (job: ' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] . ')...');
@@ -976,6 +967,20 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $this->_cache['batchCache'] = array();
         $this->_cache['duplicateLeadConversions'] = array();
 
-        return $this->check();
+        $valid = $this->check();
+
+        if ($valid) {
+            $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+        }
+
+        return $valid;
+    }
+
+    public function process($type = 'soft')
+    {
+        $result = parent::process($type);
+        $this->getServerHelper()->apply();
+
+        return $result;
     }
 }

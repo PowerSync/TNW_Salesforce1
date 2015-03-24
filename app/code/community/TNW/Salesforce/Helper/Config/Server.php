@@ -9,6 +9,8 @@
 class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
 {
 
+    const BULK = 'bulk';
+
     /**
      * @comment PHP configuration settings path
      */
@@ -77,6 +79,18 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
      * @param $value
      * @return $this
      */
+    public function setOriginSetting($name, $value)
+    {
+        $this->_originSettings[$name] = $value;
+
+        return $this;
+    }
+
+    /**
+     * @param $name
+     * @param $value
+     * @return $this
+     */
     public function addOriginSetting($name, $value)
     {
         $this->_originSettings[$name] = $value;
@@ -108,6 +122,27 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
         $this->_trackedSettings = $trackedSettings;
 
         return $this;
+    }
+
+    public function getSettingValue($name)
+    {
+        $value = null;
+        $_settingData = $this->getTrackedSetting($name);
+
+        if (is_array($_settingData) && isset($_settingData['get'])) {
+
+            $_getMethod = $_settingData['get'];
+
+            if (function_exists($_getMethod)) {
+                $value = $_getMethod();
+            } else {
+                $value = ini_get($_getMethod);
+            }
+        } else {
+            $value = ini_get($name);
+        }
+
+        return $value;
     }
 
     /**
@@ -151,6 +186,13 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
         foreach ($settings as $name => $value) {
             $_settingData = $this->getTrackedSetting($name);
 
+            /**
+             * @comment save origin value
+             */
+            if ($this->getOriginSetting($name) == null) {
+                $this->setOriginSettings($this->getSettingValue($name));
+            }
+
             if (is_array($_settingData)) {
                 if (!isset($_settingData['set'])) {
                     continue;
@@ -177,11 +219,22 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
      * @comment set server settings for the bulk synchronization
      * @return $this
      */
-    public function applyBulkSettings()
+    public function apply($code = '')
     {
-        $bulkSettings = Mage::getStoreConfig(self::BULK_SERVER_CONFIGURATION);
+        $settings = array();
 
-        $this->applySettings($bulkSettings);
+        switch ($code) {
+            case self::BULK:
+                $settings = Mage::getStoreConfig(self::BULK_SERVER_CONFIGURATION);
+                break;
+            default:
+                $settings = $this->getOriginSettings();
+                break;
+        }
+
+        if ($settings) {
+            $this->applySettings($settings);
+        }
 
         return $this;
     }

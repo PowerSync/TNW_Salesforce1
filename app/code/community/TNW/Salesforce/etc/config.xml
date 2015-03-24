@@ -111,6 +111,14 @@
             </tnw_salesforce>
         </helpers>
         <events>
+            <catalog_model_product_duplicate>
+                <observers>
+                    <tnw_salesforce_catalog_model_product_duplicate>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>duplicateBefore</method>
+                    </tnw_salesforce_catalog_model_product_duplicate>
+                </observers>
+            </catalog_model_product_duplicate>
             <!-- Newsletter Subscription: Create -->
             <newsletter_subscriber_save_after>
                 <observers>

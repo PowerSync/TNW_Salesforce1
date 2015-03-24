@@ -46,6 +46,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
             }
 
+            /**
+             * @comment restore server settings
+             */
+            $this->getServerHelper()->apply();
+
             return false;
         }
         Mage::helper('tnw_salesforce')->log("================ MASS SYNC: START ================");
@@ -54,6 +59,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: SKIPPING synchronization, could not locate customer data to synchronize.');
             }
+
+            /**
+             * @comment restore server settings
+             */
+            $this->getServerHelper()->apply();
 
             return false;
         }
@@ -100,6 +110,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
             Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
             if ($_return && $_return == 'bulk') {
+                /**
+                 * @comment restore server settings
+                 */
+                $this->getServerHelper()->apply();
 
                 return $this->_orderCustomers;
             }
@@ -109,6 +123,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
             Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
         }
+
+        /**
+         * @comment restore server settings
+         */
+        $this->getServerHelper()->apply();
     }
 
     /**
@@ -368,7 +387,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['account']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['account']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking [1] (job: ' . $this->_cache['bulkJobs']['account']['Id'] . ')...');
@@ -400,7 +418,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead']['Id']);
                 $_attempt++;
@@ -432,7 +449,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['lead'][$this->_magentoId]);
                 $_attempt++;
@@ -460,8 +476,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact']['Id']);
                 $_attempt = 1;
                 while (strval($_result) != 'exception' && !$_result) {
-                    set_time_limit(1800);
-                    sleep(5);
+                        sleep(5);
                     $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact']['Id']);
                     Mage::helper('tnw_salesforce')->log('Still checking [2] (job: ' . $this->_cache['bulkJobs']['contact']['Id'] . ')...');
                     $_attempt++;
@@ -496,8 +511,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
                 $_attempt = 1;
                 while (strval($_result) != 'exception' && !$_result) {
-                    set_time_limit(1800);
-                    sleep(5);
+                        sleep(5);
                     $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
                     Mage::helper('tnw_salesforce')->log('Still checking [4] (job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId] . ')...');
                     $_attempt++;
@@ -782,7 +796,13 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             )
         );
 
-        return $this->check();
+        $valid = $this->check();
+
+        if ($valid) {
+            $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+        }
+
+        return $valid;
     }
 
     /**
@@ -801,7 +821,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_isComplete = $this->_checkBatchCompletion($_jobId);
             $_attempt = 1;
             while (strval($_isComplete) != 'exception' && !$_isComplete && $_attempt < 51) {
-                set_time_limit(600);
                 sleep(5);
                 $_isComplete = $this->_checkBatchCompletion($_jobId);
                 Mage::helper('tnw_salesforce')->log('Still checking [5] (job: ' . $_jobId . ')...');
@@ -913,4 +932,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
     }
+
+
 }

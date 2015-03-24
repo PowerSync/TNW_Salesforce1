@@ -147,9 +147,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $manualSync->forceAdd($_customerToSync, $this->_cache['orderCustomers']);
 
                     // here we use $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                     $this->_cache['orderCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncOrderCustomers which is not equal to $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                 }
             }
 
@@ -202,9 +200,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $manualSync->forceAdd($_customersToSync, $this->_cache['orderCustomers']);
 
                     // here we use $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                     $this->_cache['orderCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncOrderCustomers which is not equal to $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                 }
                 Mage::helper("tnw_salesforce")->log('Updating lookup cache...');
                 // update Lookup values
@@ -445,7 +441,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
      */
     protected function _pushRemainingOrderData()
     {
-        set_time_limit(1000);
         if (!empty($this->_cache['orderItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['orderProducts']['Id']) {
                 // Create Job
@@ -461,7 +456,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderProducts']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderProducts']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking orderItemsToUpsert (job: ' . $this->_cache['bulkJobs']['orderProducts']['Id'] . ')...');
@@ -481,7 +475,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             }
         }
 
-        set_time_limit(1000);
         if (!empty($this->_cache['notesToUpsert'])) {
             if (!$this->_cache['bulkJobs']['notes']['Id']) {
                 // Create Job
@@ -497,7 +490,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking notesToUpsert (job: ' . $this->_cache['bulkJobs']['notes']['Id'] . ')...');
@@ -542,7 +534,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
                 Mage::helper('tnw_salesforce')->log('Still checking ordersToUpsert (job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId] . ')...');
@@ -904,6 +895,28 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         $this->_cache['batchCache'] = array();
         $this->_cache['duplicateLeadConversions'] = array();
 
-        return $this->check();
+        $valid = $this->check();
+
+        if ($valid) {
+            $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+        }
+
+        return $valid;
+    }
+
+    /**
+     * @param string $type
+     * @return bool
+     */
+    public function process($type = 'soft')
+    {
+        $result = parent::process($type);
+
+        /**
+         * @comment restore server settings
+         */
+        $this->getServerHelper()->apply();
+
+        return $result;
     }
 }

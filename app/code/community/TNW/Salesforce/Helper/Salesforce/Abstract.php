@@ -132,6 +132,12 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected $_syncedResults = array();
 
     /**
+     * @comment Contains Server configuration helper
+     * @var TNW_Salesforce_Helper_Config_Server
+     */
+    protected $_serverHelper;
+
+    /**
      * Initialize cache
      */
     public function _initCache()
@@ -1030,6 +1036,17 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         }
 
         return null;
+    }
+
+    /**
+     * @return TNW_Salesforce_Helper_Config_Server
+     */
+    public function getServerHelper()
+    {
+        if (!$this->_serverHelper) {
+            $this->_serverHelper = Mage::helper('tnw_salesforce/config_server');
+        }
+        return $this->_serverHelper;
     }
 
 }
