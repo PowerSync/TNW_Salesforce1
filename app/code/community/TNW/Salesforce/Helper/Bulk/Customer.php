@@ -91,7 +91,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     if ($_customer->getId()) {
                         $this->_orderCustomers[$_orderNum] = Mage::registry('customer_cached_' . $_customer->getId());
                     } else {
-                        $this->_orderCustomers[$_orderNum] = $this->_cache['guestsFromOrder']['guest_' . $_i];
+                        $this->_orderCustomers[$_orderNum] = $this->_cache['guestsFromOrder']['guest_' . $_orderNum];
                     }
                     $_i++;
                 }
@@ -591,11 +591,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $tmp = new stdClass();
             if (!$_customer->getId()) {
                 //$this->_isPushingGuestData = true;
-                $tmp->MagentoId = 'guest_' . $_i;
-                $this->_cache['guestsFromOrder']['guest_' . $_i] = $_customer;
+                $tmp->MagentoId = 'guest_' . $_orderNum;
+                $this->_cache['guestsFromOrder']['guest_' . $_orderNum] = $_customer;
 
-                $_emailsArray['guest_' . $_i] = $_email;
-                $_websites['guest_' . $_i] = $this->_websiteSfIds[$_websiteId];
+                $_emailsArray['guest_' . $_orderNum] = $_email;
+                $_websites['guest_' . $_orderNum] = $this->_websiteSfIds[$_websiteId];
             } else {
                 $tmp->MagentoId = $_customer->getId();
                 if (!Mage::registry('customer_cached_' . $_customer->getId())) {
@@ -641,23 +641,34 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
         $foundCustomers = array();
 
+        $this->_cache['entitiesUpdating'] = $_emailsArray;
         if (!empty($this->_allOrderCustomers)) {
-            $_i = 0;
             foreach ($this->_allOrderCustomers as $_orderNumber => $_customer) {
-                $this->_cache['entitiesUpdating'] = $_emailsArray;
+
+                $_email = strtolower($_customer->getEmail());
+                if (isset($this->_cache['entitiesUpdating'][$_email])) {
+                    continue;
+                }
+
+                $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : Mage::app()->getWebsite()->getId();
 
                 if (!$_customer->getId()) {
-                    $key = 'guest_' . $_i;
-                    $_i++;
+                    $key = 'guest_' . $_orderNumber;
+
+                    $this->_cache['guestsFromOrder'][$key] = $_customer;
+
+                    $_websites[$key] = $this->_websiteSfIds[$_websiteId];
+
                 } else {
                     $key = $_customer->getId();
                     if (!Mage::registry('customer_cached_' . $_customer->getId())) {
                         Mage::register('customer_cached_' . $_customer->getId(), $_customer);
                     }
                 }
-                $this->_cache['entitiesUpdating'][$key] = strtolower($_customer->getEmail());
+                $this->_cache['entitiesUpdating'][$key] = $_email;
                 $this->_toSyncOrderCustomers[$_orderNumber] = $_customer;
 
+                $_i++;
             }
         }
 
