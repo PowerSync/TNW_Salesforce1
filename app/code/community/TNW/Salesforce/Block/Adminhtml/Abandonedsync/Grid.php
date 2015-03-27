@@ -83,15 +83,17 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
         $collection->addFieldToSelect('remote_ip');
         $collection->addFieldToSelect('salesforce_id');
 
+
         $collection->addFieldToFilter('items_count', array('neq' => '0'))
             ->addFieldToFilter('main_table.is_active', '1')
             ->addSubtotal($this->_storeIds, $filter)
             ->addCustomerData($filter)
-            ->setOrder('main_table.updated_at');
+            //->setOrder('main_table.created_at')
+        ;
 
 
         $collection->addFieldToSelect('sf_insync');
-        $collection->addFieldToFilter('main_table.updated_at', array('lt' => Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT)));
+        $collection->addFieldToFilter('main_table.created_at', array('lt' => Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT)));
 
 
         if (is_array($this->_storeIds) && !empty($this->_storeIds)) {
