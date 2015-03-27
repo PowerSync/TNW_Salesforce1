@@ -117,9 +117,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                         }
                         if (!$_websiteKey) {
                             // Guest, grab the first record (create other records if Magento customer scope is not global)
-                            $_customerId = array_search($tmp->Email, $email);
-                            if ($_customerId !== FALSE) {
-                                $_websiteKey = $ids[$_customerId];
+                            if ($tmp->MagentoId && array_key_exists($tmp->MagentoId, $ids)) {
+                                $_websiteKey = $ids[$tmp->MagentoId];
+                            }
+                            if (!$_websiteKey) {
+                                // Guest, grab the first record (create other records if Magento customer scope is not global)
+                                $_personEmail = (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) ? $tmp->Email : $tmp->Email;
+                                $_customerId = array_search($_personEmail, $email);
+                                if ($_customerId !== FALSE) {
+                                    $_websiteKey = $ids[$_customerId];
+                                }
                             }
                         }
                     }
