@@ -37,6 +37,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 Mage::helper('tnw_salesforce')->log("Opportunity ID and Sync Status for order #'s (" . join(',', $ids) . ") were reset.");
             }
             $_guestCount = 0;
+            $_skippedOrders = array();
             foreach ($ids as $_count => $_id) {
                 $_order = Mage::getModel('sales/order')->load($_id);
                 // Add to cache
@@ -55,6 +56,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
                     }
                     Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
 
@@ -66,6 +68,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getId() . ', sync for order status "' . $_order->getStatus() . '" is disabled!');
                     }
                     Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getId() . ', sync for order status "' . $_order->getStatus() . '" is disabled!');
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
 
@@ -74,23 +77,27 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         Mage::getSingleton('adminhtml/session')->addError('WARNING: Sync for order #' . $_id . ', order could not be loaded!');
                     }
                     Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for order #" . $_id . ", order could not be loaded!", 1, "sf-errors");
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
 
-                $this->_cache['orderToEmail'][$_order->getRealOrderId()] = strtolower($_order->getCustomerEmail());
+                $this->_cache['orderCustomers'][$_order->getRealOrderId()] = $this->_getCustomer($_order);
+                $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_guestCount;
+                if (!$this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) {
+                    $_guestCount++;
+                }
+                $_emails[$_customerId] = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail()) ? strtolower($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail()) : strtolower($_order->getCustomerEmail());
+
+                $this->_cache['orderToEmail'][$_order->getRealOrderId()] = $_emails[$_customerId];
+                $this->_cache['orderToCustomerId'][$_order->getRealOrderId()] = $_customerId;
 
                 if (empty($this->_cache['orderToEmail'][$_order->getRealOrderId()]) ) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!');
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!');
                     }
+                    $_skippedOrders[] = $_order->getId();
                     continue;
-                }
-
-                $this->_cache['orderCustomers'][$_order->getRealOrderId()] = $this->_getCustomer($_order);
-                $this->_cache['orderToCustomerId'][$_order->getRealOrderId()] = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_guestCount;
-                if (!$this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) {
-                    $_guestCount++;
                 }
 
                 $_customerGroup = $_order->getCustomerGroupId();
@@ -102,17 +109,21 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getId() . ', sync for customer group #' . $_customerGroup . ' is disabled!');
                     }
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
-                $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_count;
-                $_emails[$_customerId] = strtolower($_order->getCustomerEmail());
+
                 $_orderNumbers[$_id] = $_order->getRealOrderId();
 
                 $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
                 $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
             }
+            if (!empty($_skippedOrders)) {
+                $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedOrders) . "') and mage_object_type = 'sales/order';";
+                Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
+            }
             if (empty($_orderNumbers)) {
-                Mage::helper("tnw_salesforce")->log("SKIPPING: Skipping syncronization, orders array is empty!", 1, "sf-errors");
+                Mage::helper("tnw_salesforce")->log("SKIPPING: Skipping synchronization, orders array is empty!", 1, "sf-errors");
 
                 return true;
             }

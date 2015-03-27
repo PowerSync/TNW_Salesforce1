@@ -26,6 +26,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
         $_lookup = array();
         foreach($_emails as $_id => $_email) {
+            if (empty($_email)) {continue;}
             $tmp = "((Email='" . addslashes($_email) . "'";
 
             if (
@@ -49,6 +50,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             $_lookup[] = $tmp;
         }
 
+        if (empty($_lookup)) {
+            return array();
+        }
         $query .= join(' OR ', $_lookup);
 
         Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
