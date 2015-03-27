@@ -1267,7 +1267,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
 
             // Push Discount Fee Product
-            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $_order->getData('discount_amount') > 0) {
+            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $_order->getData('discount_amount') != 0) {
                 if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
                     $this->addDiscountProduct($_order, $_orderNumber);
                 } else {
