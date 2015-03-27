@@ -509,6 +509,8 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
     protected function _pushRemainingOpportunityData()
     {
         set_time_limit(1000);
+
+        $_resultRoles = $_resultProducts = null;
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['opportunityProducts']['Id']) {
                 // Create Job
@@ -576,7 +578,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         if (strval($_resultRoles) != 'exception') {
             Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_after",array(
                 "data" => $this->_cache['contactRolesToUpsert'],
-                "result" => $this->_cache['responses']['customerRoles']
+                "result" => isset($this->_cache['responses']['customerRoles'])? $this->_cache['responses']['customerRoles']: array()
             ));
         }
 
