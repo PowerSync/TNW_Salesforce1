@@ -25,6 +25,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $query = "SELECT ID, OwnerId, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " FROM Lead WHERE ";
         $_lookup = array();
         foreach($emails as $_id => $_email) {
+            if (empty($_email)) {continue;}
             $tmp = "((Email='" . addslashes($_email) . "'";
 
             if (
@@ -42,6 +43,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             }
             $tmp .= ")";
             $_lookup[] = $tmp;
+        }
+        if (empty($_lookup)) {
+            return array();
         }
         $query .= join(' OR ', $_lookup);
 

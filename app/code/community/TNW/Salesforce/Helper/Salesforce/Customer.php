@@ -1695,6 +1695,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_attributes['firstname'] = $resource->getIdByCode('customer', 'firstname');
             $this->_attributes['lastname'] = $resource->getIdByCode('customer', 'lastname');
         }
+
+        if (!$this->_customerEntityTypeCode) {
+            $sql = "SELECT * FROM `" . Mage::helper('tnw_salesforce')->getTable('eav_entity_type') . "` WHERE entity_type_code = 'customer'";
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetch();
+            $this->_customerEntityTypeCode = ($row) ? (int)$row['entity_type_id'] : NULL;
+        }
     }
 
     public function getCustomerAccounts()
