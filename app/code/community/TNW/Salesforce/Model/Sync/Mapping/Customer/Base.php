@@ -59,9 +59,8 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
         $this->_email = strtolower($entity->getEmail());
         $this->_websiteId = $entity->getData('website_id');
 
-        if ($entity->getGroupId()) {
-
-            if (is_array($this->_customerGroups) && array_key_exists($entity->getGroupId(), $this->_customerGroups) && !$this->_customerGroups[$entity->getGroupId()]) {
+        if ($entity->getGroupId() !== NULL ) {
+            if (is_array($this->_customerGroups) && (!array_key_exists($entity->getGroupId(), $this->_customerGroups) || !$this->_customerGroups[$entity->getGroupId()])) {
                 $this->_customerGroups[$entity->getGroupId()] = $this->_customerGroupModel->load($entity->getGroupId());
             }
         }
