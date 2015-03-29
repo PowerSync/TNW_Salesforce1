@@ -538,6 +538,12 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             }
         }
 
+        // Kick off the event to allow additional data to be pushed into salesforce
+        Mage::dispatchEvent("tnw_salesforce_order_sync_after_final",array(
+            "all" => $this->_cache['entitiesUpdating'],
+            "failed" => $this->_cache['failedOrders']
+        ));
+
         // Mark orders as failed or successful
         $this->_updateOrders();
     }
