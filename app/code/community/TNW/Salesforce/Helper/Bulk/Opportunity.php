@@ -627,6 +627,12 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 ));
             }
         }
+
+        // Kick off the event to allow additional data to be pushed into salesforce
+        Mage::dispatchEvent("tnw_salesforce_order_sync_after_final",array(
+            "all" => $this->_cache['entitiesUpdating'],
+            "failed" => $this->_cache['failedOpportunities']
+        ));
     }
 
     protected function _checkNotesData()
