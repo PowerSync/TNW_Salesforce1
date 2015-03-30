@@ -22,11 +22,11 @@ EEEE - bumped every time when code is committed. Reset back to zero if DB change
 
 How to Install
 -----------
-To install module please copy files to your Magento root folder OR
+There are there common ways to install module: modman, composer or just copy files.
 
 ### Install using modman
 Modman allows you to store extension in separate folder and add it to Magento using symlinks.  
-For correct installation System -> Configuration -> Developer -> Template Settings -> Allow Symlinks should be enabled.  
+For correct installation `System -> Configuration -> Developer -> Template Settings -> Allow Symlinks` should be enabled.  
 Please follow these steps if you haven't used modman before:
 
 * Download modman from [here][modman_link]:
@@ -43,8 +43,43 @@ Please follow these steps if you haven't used modman before:
 * To install, copy module files to `.modman/powersync` and execute `modman powersync deploy` in magento root
 * To update, upload new version of module to `.modman/powersync` and execute `modman powersync deploy` in magento root
 
+### Install using composer (best for deployment)
+It's the best way for deployment with access to repository.
+
+Download composer [here][composer_link].  
+Create `composer.json` in project root with these content:  
+
+    {
+        "require": {
+            "magento-hackathon/magento-composer-installer": "*",
+            "technweb/salesforce":"dev-master"
+        },
+        "repositories":[
+            {
+                "type":"composer",
+                "url":"http://packages.firegento.com"
+            },
+            {
+                "type":"vcs",
+                "url":"git@github.com:technweb/TNW_Salesforce.git"
+            }
+        ],
+        "extra":
+        {
+            "magento-root-dir":"."
+        }
+    }
+
+If you want to copy files instead of make symlinks add `"magento-deploystrategy":"copy"` to "extra" part.  
+If you are not using copy strategy, please enable `System -> Configuration -> Developer -> Template Settings -> Allow Symlinks` config.  
+To use any of development branch use `dev-<branch_name>` instead of `dev-master` or just tag name.  
+  
+Execute `php /path/to/composer.phar install` to deploy extension.  
+Use `php /path/to/composer.phar update` to update extension from repository.
+
 PowerSync
 -----------
 **PowerSync** http://powersync.biz<br />
 
 [modman_link]: https://raw.githubusercontent.com/hws47a/modman-relative-links/master/modman
+[composer_link]: https://getcomposer.org/download/
