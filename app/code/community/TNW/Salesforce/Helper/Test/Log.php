@@ -28,7 +28,7 @@ class TNW_Salesforce_Helper_Test_Log extends TNW_Salesforce_Helper_Test_Abstract
         $this->_redirect = Mage::helper("adminhtml")->getUrl("adminhtml/system_config/edit/", array("section" => "dev"));
 
         $isLogEnabled = Mage::getStoreConfig('dev/log/active');
-        $isSfLogEnabled = Mage::getStoreConfig('salesforce/developer/log_enable');
+        $isSfLogEnabled = Mage::getStoreConfig('salesforce/development_and_debugging/log_enable');
         if (!$isLogEnabled && $isSfLogEnabled) {
             return false;
         }

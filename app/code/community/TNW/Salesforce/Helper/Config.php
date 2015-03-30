@@ -9,7 +9,7 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     const SALESFORCE_PREFIX_PROFESSIONAL = 'tnw_mage_basic__';
     const SALESFORCE_PREFIX_ENTERPRISE = 'tnw_mage_enterp__';
 
-    const MYSQL_TIMEOUT = 300;
+//    const MYSQL_TIMEOUT = 300;
 
     /**
      * Get Salesforce managed package prefix

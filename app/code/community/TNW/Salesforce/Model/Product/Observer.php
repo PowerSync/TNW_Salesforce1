@@ -12,6 +12,22 @@ class TNW_Salesforce_Model_Product_Observer
     /**
      * @param $observer
      */
+    public function duplicateBefore($observer)
+    {
+        /**
+         * @var Mage_Catalog_Model_Product $_newProduct
+         */
+        $_newProduct = $observer->getEvent()->getNewProduct();
+
+        $_newProduct->unsSalesforceId();
+        $_newProduct->unsSalesforcePricebookId();
+
+        return;
+    }
+
+    /**
+     * @param $observer
+     */
     public function salesforceTriggerEvent($observer)
     {
        $_product = $observer->getEvent()->getProduct();
@@ -42,6 +58,9 @@ class TNW_Salesforce_Model_Product_Observer
         ) {
             Mage::helper("tnw_salesforce")->log('SKIPING: Product synchronization disabled');
             return; // Disabled sync
+        } else if ($_product->getIsDuplicate()) {
+            Mage::helper("tnw_salesforce")->log('SKIPING: Product duplicate process');
+            return; //
         } else if (!Mage::helper('tnw_salesforce')->canPush()) {
             Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING product sync');
             return; // Disabled

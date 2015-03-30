@@ -7,7 +7,7 @@ class TNW_Salesforce_Model_Email_Template extends Mage_Core_Model_Email_Template
     {
         try {
             if (
-                $templateId == 'contacts_email_email_template'
+                $templateId == Mage::helper('tnw_salesforce/config_contactus')->getDefaultEmailTemplate()
                 && is_array($vars)
                 && array_key_exists('data', $vars)
             ) {

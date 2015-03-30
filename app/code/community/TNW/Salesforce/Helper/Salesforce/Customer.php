@@ -432,27 +432,27 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     public function process($_return = false)
     {
-        if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::helper('tnw_salesforce')->log("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
-            }
-            return false;
-        }
-        Mage::helper('tnw_salesforce')->log("================ MASS SYNC: START ================");
-        if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-            Mage::helper('tnw_salesforce')->log("WARNING: Sync customers, cache is empty!");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: SKIPPING synchronization, could not locate customer data to synchronize.');
-            }
-            return false;
-        }
-
         try {
+
+            if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
+                throw new Exception('could not establish Salesforce connection.');
+            }
+
+            Mage::helper('tnw_salesforce')->log("================ MASS SYNC: START ================");
+            if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
+                throw new Exception('Sync customers, cache is empty!');
+            }
+
             // Prepare Data
             $this->_prepareLeads();
             $this->_prepareContacts();
             $this->_prepareNew();
+
+            if ($this instanceof TNW_Salesforce_Helper_Bulk_Customer) {
+                // Clean up the data we are going to be pushing in (for guest orders if multiple orders placed by the same person and they happen to end up in the same batch)
+                $this->_deDupeCustomers();
+            }
+
             $this->clearMemory();
 
             // Push Data
@@ -469,18 +469,34 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 Mage::helper('tnw_salesforce')->log("WARNING: Failed to update Magento with Salesforce Ids. Try manual synchronization.", 2);
             }
 
+
             if ($_return) {
-                if (!empty($this->_cache['guestsFromOrder'])) {
-                    $currentCustomer = $this->_cache['guestsFromOrder']['guest_0'];
-                } else {
-                    if ($this->_forcedCustomerId && Mage::registry('customer_cached_' . $this->_forcedCustomerId)) {
-                        $currentCustomer = Mage::registry('customer_cached_' . $this->_forcedCustomerId);
-                    } else {
-                        if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                            Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not locate synced customer from the order, Oportunity Account may end up blank!');
+                // Update guest data from de duped records before passing it back to Order object
+                $this->_updateGuestCachedData();
+
+                if ($this instanceof TNW_Salesforce_Helper_Bulk_Customer && $_return == 'bulk') {
+                    $_i = 0;
+                    foreach ($this->_toSyncOrderCustomers as $_orderNum => $_customer) {
+                        if ($_customer->getId()) {
+                            $this->_orderCustomers[$_orderNum] = Mage::registry('customer_cached_' . $_customer->getId());
+                        } else {
+                            $this->_orderCustomers[$_orderNum] = $this->_cache['guestsFromOrder']['guest_' . $_orderNum];
                         }
-                        Mage::helper('tnw_salesforce')->log("ERROR: Could not locate synced customer from the order, Oportunity Account may end up blank!");
-                        $currentCustomer = false;
+                        $_i++;
+                    }
+                } else {
+                    if (!empty($this->_cache['guestsFromOrder'])) {
+                        $currentCustomer = $this->_cache['guestsFromOrder']['guest_0'];
+                    } else {
+                        if ($this->_forcedCustomerId && Mage::registry('customer_cached_' . $this->_forcedCustomerId)) {
+                            $currentCustomer = Mage::registry('customer_cached_' . $this->_forcedCustomerId);
+                        } else {
+                            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                                Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not locate synced customer from the order, Oportunity Account may end up blank!');
+                            }
+                            Mage::helper('tnw_salesforce')->log("ERROR: Could not locate synced customer from the order, Oportunity Account may end up blank!");
+                            $currentCustomer = false;
+                        }
                     }
                 }
             }
@@ -488,13 +504,19 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
             if ($_return) {
-                return $currentCustomer;
+                if ($this instanceof TNW_Salesforce_Helper_Bulk_Customer && $_return == 'bulk') {
+                    return $this->_orderCustomers;
+                } else {
+                    return $currentCustomer;
+                }
             }
-        } catch (Eception $e) {
+        } catch (Exception $e) {
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
             }
             Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+
+            return false;
         }
     }
 
@@ -930,14 +952,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $this->_convertLeads();
     }
 
-    protected function _convertLeads() {
+    protected function _convertLeads()
+    {
         if (!empty($this->_cache['leadsToConvert'])) {
             $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
 
             foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
 
                 foreach ($leadsToConvertChunk as $_key => $_object) {
-                    foreach($_object as $key => $value) {
+                    foreach ($_object as $key => $value) {
                         Mage::helper('tnw_salesforce')->log("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
                     }
                 }
@@ -947,7 +970,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
                 foreach ($_results as $_resultsArray) {
                     foreach ($_resultsArray as $_key => $_result) {
-                        if (!property_exists($_result, 'success') || !(int)$_result->success ) {
+                        if (!property_exists($_result, 'success') || !(int)$_result->success) {
                             $this->_processErrors($_result, 'lead');
                         } else {
                             $_customerId = $_customerKeys[$_key];
@@ -1054,6 +1077,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (!empty($this->_cache['contactsLookup'])) {
             foreach ($this->_cache['contactsLookup'] as $_salesforceWebsiteId => $_accounts) {
                 $_websiteId = array_search($_salesforceWebsiteId, $this->_websiteSfIds);
+                if ($_websiteId === false) {
+                    $_websiteId = '';
+                }
                 foreach ($_accounts as $_email => $_info) {
                     $this->_isPerson = NULL;
                     if (
@@ -1684,7 +1710,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         return $this->check();
     }
 
-    protected function _preloadAttributes() {
+    protected function _preloadAttributes()
+    {
         if (empty($this->_attributes)) {
             $resource = Mage::getResourceModel('eav/entity_attribute');
             $this->_attributes['salesforce_id'] = $resource->getIdByCode('customer', 'salesforce_id');
@@ -1898,7 +1925,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         return $this;
     }
 
-    protected function _deleteLeads() {
+    protected function _deleteLeads()
+    {
         $_ids = array_chunk($this->_toDelete, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
         foreach ($_ids as $_recordIds) {
             $this->_mySforceConnection->delete($_recordIds);
