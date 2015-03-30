@@ -20,6 +20,31 @@ DD - Increased during a release if databased changes are required. (Updates to m
 
 EEEE - bumped every time when code is committed. Reset back to zero if DB change is required.
 
+How to Install
+-----------
+To install module please copy files to your Magento root folder OR
+
+### Install using modman
+Modman allows you to store extension in separate folder and add it to Magento using symlinks.  
+For correct installation System -> Configuration -> Developer -> Template Settings -> Allow Symlinks should be enabled.  
+Please follow these steps if you haven't used modman before:
+
+* Download modman from [here][modman_link]:
+* Move downloaded file to bin folder and make it executable from everywhere: `mv /path/to/modman /usr/local/bin/modman && chmod +x /usr/local/bin/modman`
+* In Magento root folter execute `modman init` to initialize modman folder
+
+#### Install using modman from GIT
+
+* To install module use `modman powersync clone <path-to-repo>` command from magento root
+* To update module use `modman powersync update`
+
+#### Install using modman without GIT
+
+* To install, copy module files to `.modman/powersync` and execute `modman powersync deploy` in magento root
+* To update, upload new version of module to `.modman/powersync` and execute `modman powersync deploy` in magento root
+
 PowerSync
 -----------
 **PowerSync** http://powersync.biz<br />
+
+[modman_link]: https://raw.githubusercontent.com/hws47a/modman-relative-links/master/modman
