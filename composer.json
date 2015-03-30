@@ -1,0 +1,14 @@
+{
+    "name": "technweb/salesforce",
+    "description": "Integration between Magneto <> Salesforce.",
+    "license": "OSL-3.0",
+    "type":"magento-module",
+    "homepage":"http://powersync.biz",
+    "authors": [
+        {
+            "name": "Powersync",
+            "email": "hellp@powersync.biz"
+        }
+    ],
+    "require": {}
+}

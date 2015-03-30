@@ -1,0 +1,8 @@
+app/code/community/TNW/Salesforce app/code/community/TNW/Salesforce
+app/design/adminhtml/default/default/layout/salesforce.xml app/design/adminhtml/default/default/layout/salesforce.xml
+app/design/adminhtml/default/default/template/salesforce app/design/adminhtml/default/default/template/salesforce
+app/etc/modules/TNW_Salesforce.xml app/etc/modules/TNW_Salesforce.xml
+lib/Salesforce lib/Salesforce
+powersync powersync
+skin/adminhtml/default/default/images/preloader-sm.gif skin/adminhtml/default/default/images/preloader-sm.gif
+
