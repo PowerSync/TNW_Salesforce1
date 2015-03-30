@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.16.0002</version>
+            <version>0.01.49.16.0003</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -111,6 +111,14 @@
             </tnw_salesforce>
         </helpers>
         <events>
+            <catalog_model_product_duplicate>
+                <observers>
+                    <tnw_salesforce_catalog_model_product_duplicate>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>duplicateBefore</method>
+                    </tnw_salesforce_catalog_model_product_duplicate>
+                </observers>
+            </catalog_model_product_duplicate>
             <!-- Newsletter Subscription: Create -->
             <newsletter_subscriber_save_after>
                 <observers>
@@ -585,6 +593,17 @@
             <syncronization>
                 <sync_type_realtime>sync_type_realtime</sync_type_realtime>
             </syncronization>
+            <development_and_debugging>
+                <log_enable>1</log_enable>
+                <remote_log>1</remote_log>
+                <bulk>
+                    <max_execution_time>0</max_execution_time>
+                    <set_time_limit>0</set_time_limit>
+                    <mysql.connect_timeout>180</mysql.connect_timeout>
+                    <zend.enable_gc>1</zend.enable_gc>
+                </bulk>
+            </development_and_debugging>
+
         </salesforce>
         <salesforce_customer>
             <sync>

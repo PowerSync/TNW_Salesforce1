@@ -24,10 +24,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_LICENSE_TRANSACTION = 'salesforce/api_license/api_transaction';
 
     /* API Developer */
-    const API_LOG = 'salesforce/developer/log_enable';
+    const API_LOG = 'salesforce/development_and_debugging/log_enable';
     const FAIL_EMAIL = 'salesforce/developer/fail_order';
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
-    const REMOTE_LOG = 'salesforce/developer/remote_log';
+    const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
 
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
