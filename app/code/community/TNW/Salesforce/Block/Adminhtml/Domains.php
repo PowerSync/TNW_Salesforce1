@@ -80,15 +80,19 @@ class TNW_Salesforce_Block_Adminhtml_Domains
                     $_client->tryToConnect();
                     $_client->tryToLogin();
 
-                    $instance_url = explode('/', $_client->getServerUrl());
-                    Mage::getSingleton('core/session')->setSalesforceServerDomain('https://' . $instance_url[2]);
+                    $instanceUrl = explode('/', $_client->getServerUrl());
+                    if (isset($instanceUrl[2])) {
+                        Mage::getSingleton('core/session')->setSalesforceServerDomain('https://' . $instanceUrl[2]);
+                    }
                     Mage::getSingleton('core/session')->setSalesforceSessionId($_client->getSessionId());
                 }
-                $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
-                $manualSync->reset();
-                $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-                $_allAccounts = $manualSync->getAllAccounts();
+                if (Mage::getSingleton('core/session')->getSalesforceServerDomain()) {
+                    $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
+                    $manualSync->reset();
+                    $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
+                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+                    $_allAccounts = $manualSync->getAllAccounts();
+                }
             }
 
             if (!$this->hasData('salesforce_accounts')) {

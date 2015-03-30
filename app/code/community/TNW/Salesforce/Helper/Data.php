@@ -118,7 +118,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_leadStatus = array();
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
-    protected $_leadStates = NULL;
+    protected $_leadStates = array();
 
     /**
      * @comment this variable contains parameter name used in SalesForce
