@@ -471,10 +471,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
 
             if ($_return) {
-                // Update guest data from de duped records before passing it back to Order object
-                $this->_updateGuestCachedData();
-
                 if ($this instanceof TNW_Salesforce_Helper_Bulk_Customer && $_return == 'bulk') {
+                    // Update guest data from de duped records before passing it back to Order object
+                    $this->_updateGuestCachedData();
+
                     $_i = 0;
                     foreach ($this->_toSyncOrderCustomers as $_orderNum => $_customer) {
                         if ($_customer->getId()) {
