@@ -84,9 +84,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_websiteId = $_customer->getData('website_id');
         }
         // Check for Contact and Account
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array($_customerId => $_email), array($_email => $this->_websiteSfIds[$_websiteId]));
+        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array($_customerId => $_email), array($_customerId => $this->_websiteSfIds[$_websiteId]));
         if (!$this->_cache['contactsLookup']) {
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup(array($_customerId => $_email), array($_email => $this->_websiteSfIds[$_websiteId]));
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup(array($_customerId => $_email), array($_customerId => $this->_websiteSfIds[$_websiteId]));
         }
 
         $this->_obj = new stdClass();
