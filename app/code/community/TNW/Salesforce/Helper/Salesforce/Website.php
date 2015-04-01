@@ -41,7 +41,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $this->_onComplete();
 
             Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
-        } catch (Eception $e) {
+        } catch (Exception $e) {
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
             }
@@ -168,7 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $this->_cache['entitiesUpdating'] = $_websitesArray;
             $this->_cache['websitesLookup'] = Mage::helper('tnw_salesforce/salesforce_data_website')->websiteLookup($_websitesArray, array_keys($_websitesArray));
 
-        } catch (Eception $e) {
+        } catch (Exception $e) {
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
             }

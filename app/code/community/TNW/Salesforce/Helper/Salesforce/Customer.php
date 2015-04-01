@@ -1448,7 +1448,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
-        } catch (Eception $e) {
+        } catch (Exception $e) {
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
             }
@@ -1663,7 +1663,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
-        } catch (Eception $e) {
+        } catch (Exception $e) {
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
             }
