@@ -12,6 +12,7 @@ class TNW_Salesforce_Model_Observer
     protected $_acl = NULL;
 
     public function adjustMenu() {
+
         // Update Magento admin menu
         $this->_menu = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
@@ -53,12 +54,16 @@ class TNW_Salesforce_Model_Observer
                 $_customerAclNode = $this->_acl->descend('customer_mapping')->descend('children');
             }
 
-            if ($_manualSyncNode && !Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+            if (
+                $_manualSyncNode
+                && !(
+                    Mage::helper('tnw_salesforce')->getType() == "PRO"
+                    &&Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED)
+                )
+            ) {
                 unset($_manualSyncNode->abandoned_sync);
                 unset($this->_menu->abandoned_mapping);
-
             }
-
             if ($_orderAclNode) {
                 $_keysToUnset = array();
                 foreach($_orderAclNode as $_items) {
