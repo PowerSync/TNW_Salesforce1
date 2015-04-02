@@ -24,7 +24,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     const THREE_DAYS = 5;
     const ONE_WEEK = 6;
     const TWO_WEEKS = 7;
-    const ONE_MONTH = 7;
+    const ONE_MONTH = 8;
 
     const ABANDONED_CART_ID_PREFIX = 'ac_';
 
