@@ -19,7 +19,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
 
     const THREE_HOURS = 1;
     const SIX_HOURS = 2;
-    const TWENTY_HOURS = 3;
+    const TWELVE_HOURS = 3;
     const ONE_DAY = 4;
     const THREE_DAYS = 5;
     const ONE_WEEK = 6;
@@ -40,7 +40,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
                 'label' => Mage::helper('adminhtml')->__('6 hours')
             ),
             array(
-                'value' => self::TWENTY_HOURS,
+                'value' => self::TWELVE_HOURS,
                 'label' => Mage::helper('adminhtml')->__('12 hours')
             ),
             array(
@@ -137,7 +137,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
             case self::SIX_HOURS:
                 $currentDate->subHour(6);
                 break;
-            case self::TWENTY_HOURS:
+            case self::TWELVE_HOURS:
                 $currentDate->subHour(12);
                 break;
             case self::ONE_DAY:
@@ -147,10 +147,10 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
                 $currentDate->subDay(3);
                 break;
             case self::ONE_WEEK:
-                $currentDate->subHour(1);
+                $currentDate->subWeek(1);
                 break;
             case self::TWO_WEEKS:
-                $currentDate->subHour(2);
+                $currentDate->subWeek(2);
                 break;
             case self::ONE_MONTH:
                 $currentDate->subMonth(1);
