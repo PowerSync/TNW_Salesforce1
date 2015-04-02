@@ -10,5 +10,8 @@
             "email": "hellp@powersync.biz"
         }
     ],
-    "require": {}
+    "require": {},
+    "require-dev": {
+        "ecomdev/ecomdev_phpunit":"*"
+    }
 }

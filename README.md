@@ -77,9 +77,14 @@ To use any of development branch use `dev-<branch_name>` instead of `dev-master`
 Execute `php /path/to/composer.phar install` to deploy extension.  
 Use `php /path/to/composer.phar update` to update extension from repository.
 
+Tests
+-----------
+To use unit tests [EcomDev_PHPUnit](ecomdev_phpunit_link) must be installed.
+
 PowerSync
 -----------
 **PowerSync** http://powersync.biz<br />
 
 [modman_link]: https://raw.githubusercontent.com/hws47a/modman-relative-links/master/modman
 [composer_link]: https://getcomposer.org/download/
+[ecomdev_phpunit]: https://github.com/EcomDev/EcomDev_PHPUnit
