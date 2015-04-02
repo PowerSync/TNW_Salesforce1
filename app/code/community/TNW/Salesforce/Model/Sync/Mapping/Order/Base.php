@@ -88,7 +88,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
                             $attr = "get" . $attrName;
 
                             // Make sure getAttribute is called on the object
-                            if ($_customer->getAttribute($attributeCode)->getFrontendInput() == "select" && is_object($_customer->getResource())) {
+                            if (is_object($_customer->getResource() && is_object($_customer->getAttribute($attributeCode)) && $_customer->getAttribute($attributeCode)->getFrontendInput() == "select")) {
                                 $newAttribute = $_customer->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($_customer->$attr());
                             } else {
                                 $newAttribute = $_customer->$attr();
