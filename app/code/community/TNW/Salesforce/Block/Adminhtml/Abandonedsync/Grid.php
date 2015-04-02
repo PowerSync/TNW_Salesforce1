@@ -2,7 +2,6 @@
 
 class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_Block_Report_Shopcart_Abandoned_Grid
 {
-
     /**
      * Internal constructor
      */
@@ -61,67 +60,36 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
 
     protected function _prepareCollection()
     {
+        $abandonedModel = Mage::getModel('tnw_salesforce/abandoned');
         /** @var $collection Mage_Reports_Model_Resource_Quote_Collection */
-        $collection = Mage::getResourceModel('reports/quote_collection');
+        $collection = $abandonedModel->getAbandonedCollection();
 
         $filter = $this->getParam($this->getVarNameFilter(), array());
-        if ($filter) {
-            $filter = base64_decode($filter);
-            parse_str(urldecode($filter), $data);
-        } else {
-            $filter = null;
-        }
+        $data = $this->helper('adminhtml')->prepareFilterString($filter);
 
-        $collection->addFieldToSelect('entity_id');
-        $collection->addFieldToSelect('store_id');
-        $collection->addFieldToSelect('items_count');
-        $collection->addFieldToSelect('items_qty');
-        $collection->addFieldToSelect('subtotal');
-        $collection->addFieldToSelect('coupon_code');
-        $collection->addFieldToSelect('created_at');
-        $collection->addFieldToSelect('updated_at');
-        $collection->addFieldToSelect('remote_ip');
-        $collection->addFieldToSelect('salesforce_id');
+        $collection->addFieldToSelect(array(
+            'entity_id',
+            'store_id',
+            'items_count',
+            'items_qty',
+            'subtotal',
+            'coupon_code',
+            'created_at',
+            'updated_at',
+            'remote_ip',
+            'salesforce_id',
+            'sf_insync',
+        ));
 
-
-        $collection->addFieldToFilter('items_count', array('neq' => '0'))
-            ->addFieldToFilter('main_table.is_active', '1')
-            ->addSubtotal($this->_storeIds, $filter)
-            ->addCustomerData($filter)
-            //->setOrder('main_table.created_at')
-        ;
-
-
-        $collection->addFieldToSelect('sf_insync');
-        $collection->addFieldToFilter('main_table.created_at', array('lt' => Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT)));
-
+        $collection->addSubtotal($this->_storeIds, $data)
+            ->addCustomerData($data);
 
         if (is_array($this->_storeIds) && !empty($this->_storeIds)) {
             $this->addFieldToFilter('store_id', array('in' => $this->_storeIds));
         }
 
-//        echo $collection->getSelect()->__toString();die;
         $this->setCollection($collection);
         return $this->__prepareCollection();
-    }
-
-
-    /**
-     * Add new export type to grid
-     *
-     * @param   string $url
-     * @param   string $label
-     * @return  Mage_Adminhtml_Block_Widget_Grid
-     */
-    public function addExportType($url, $label)
-    {
-//        $this->_exportTypes[] = new Varien_Object(
-//            array(
-//                'url'   => $this->getUrl($url, array('_current'=>true)),
-//                'label' => $label
-//            )
-//        );
-        return $this;
     }
 
     protected function _prepareColumns()

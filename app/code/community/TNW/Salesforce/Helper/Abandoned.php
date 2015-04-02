@@ -128,7 +128,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
         /**
          * @var $currentDate Zend_Date
          */
-        $currentDate = Zend_Date::now();
+        $currentDate = Mage::app()->getLocale()->utcDate(null, Zend_Date::now());
 
         switch($this->getAbandonedConfigLimit()) {
             case self::THREE_HOURS:

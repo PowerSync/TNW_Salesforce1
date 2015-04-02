@@ -187,19 +187,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         }
 
         /** @var $collection Mage_Reports_Model_Resource_Quote_Collection */
-        $collection = Mage::getResourceModel('reports/quote_collection');
-
+        $collection = Mage::getModel('tnw_salesforce/abandoned')->getAbandonedCollection();
         $collection->addFieldToFilter('sf_sync_force', 1);
-
-
         $collection->addFieldToSelect('sf_insync');
-        $collection->addFieldToFilter(
-            'main_table.created_at',
-            array(
-                'lt' => Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT)
-            )
-        );
-
         $itemIds = $collection->getAllIds();
 
         if (empty($itemIds)) {
