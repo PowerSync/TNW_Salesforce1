@@ -69,24 +69,15 @@ class TNW_Salesforce_Block_Adminhtml_Domains
         if ($this->hasData('salesforce_accounts')) {
             // Do nothing, just return
         }
+
         if ($cache->load("tnw_salesforce_accounts")) {
             $this->setData('salesforce_accounts', unserialize($cache->load("tnw_salesforce_accounts")));
         } else {
             $_allAccounts = array();
             if (Mage::helper('tnw_salesforce')->isWorking()) {
-                $_client = Mage::getSingleton('tnw_salesforce/connection');
-                if (!$_client->getServerUrl()) {
-                    $_client->tryWsdl();
-                    $_client->tryToConnect();
-                    $_client->tryToLogin();
-
-                    $instanceUrl = explode('/', $_client->getServerUrl());
-                    if (isset($instanceUrl[2])) {
-                        Mage::getSingleton('core/session')->setSalesforceServerDomain('https://' . $instanceUrl[2]);
-                    }
-                    Mage::getSingleton('core/session')->setSalesforceSessionId($_client->getSessionId());
-                }
-                if (Mage::getSingleton('core/session')->getSalesforceServerDomain()) {
+                $_client = Mage::getSingleton('tnw_salesforce/connection')->getClient();
+                if ($_client) {
+                    Zend_Debug::dump('go');
                     $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
                     $manualSync->reset();
                     $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
@@ -103,7 +94,6 @@ class TNW_Salesforce_Block_Adminhtml_Domains
                 $cache->save(serialize($this->getData('salesforce_accounts')), 'tnw_salesforce_accounts', array("TNW_SALESFORCE"));
             }
         }
-
         return $this->getData('salesforce_accounts');
     }
 
