@@ -77,7 +77,6 @@ class TNW_Salesforce_Block_Adminhtml_Domains
             if (Mage::helper('tnw_salesforce')->isWorking()) {
                 $_client = Mage::getSingleton('tnw_salesforce/connection')->getClient();
                 if ($_client) {
-                    Zend_Debug::dump('go');
                     $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
                     $manualSync->reset();
                     $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
