@@ -87,4 +87,4 @@ PowerSync
 
 [modman_link]: https://raw.githubusercontent.com/hws47a/modman-relative-links/master/modman
 [composer_link]: https://getcomposer.org/download/
-[ecomdev_phpunit]: https://github.com/EcomDev/EcomDev_PHPUnit
+[ecomdev_phpunit_link]: https://github.com/EcomDev/EcomDev_PHPUnit
