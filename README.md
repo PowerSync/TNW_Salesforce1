@@ -79,7 +79,7 @@ Use `php /path/to/composer.phar update` to update extension from repository.
 
 Tests
 -----------
-To use unit tests [EcomDev_PHPUnit](ecomdev_phpunit_link) must be installed.
+To use unit tests [EcomDev_PHPUnit][ecomdev_phpunit_link] must be installed.
 
 PowerSync
 -----------
