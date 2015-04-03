@@ -64,7 +64,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
         /** @var $collection Mage_Reports_Model_Resource_Quote_Collection */
         $collection = $abandonedModel->getAbandonedCollection();
 
-        $filter = $this->getParam($this->getVarNameFilter(), array());
+        $filter = $this->getParam($this->getVarNameFilter(), '');
         $data = $this->helper('adminhtml')->prepareFilterString($filter);
 
         $collection->addFieldToSelect(array(
