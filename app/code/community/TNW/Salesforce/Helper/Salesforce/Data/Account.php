@@ -68,7 +68,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $companies = array($this->_companyName);
             }
 
-            if (empty($_companies)) {
+            if (empty($companies)) {
                 return false;
             }
 
@@ -103,7 +103,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $_obj->Id = (property_exists($_item, 'Id')) ? $_item->Id : NULL;
                 $_obj->OwnerId = (property_exists($_item, 'OwnerId')) ? $_item->OwnerId : NULL;
 
-                foreach($_companies as $_customIndex => $_company) {
+                foreach($companies as $_customIndex => $_company) {
                     if (strpos($_item->Name, $_company) !== false) {
                         $_obj->Name = $_company;
                         $_obj->CustomIndex = $_customIndex;
