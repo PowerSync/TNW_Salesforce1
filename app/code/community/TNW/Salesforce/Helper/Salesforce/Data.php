@@ -57,12 +57,17 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      * @param array $emails
      * @return array
      */
-    public function accountLookupByEmailDomain($emails = array())
+    public function accountLookupByEmailDomain($emails = array(), $_hashKey = 'email')
     {
         try {
             $_domainsArray = array();
-            foreach ($emails as $_email) {
-                $_domainsArray[$_email] = strtolower(substr(stristr($_email, '@'), 1));
+            foreach ($emails as $key => $_email) {
+                if ($_hashKey == 'email') {
+                    $_hashKey = $key;
+                } else {
+                    $_hashKey = $key;
+                }
+                $_domainsArray[$_hashKey] = strtolower(substr(stristr($_email, '@'), 1));
             }
 
             $_return = array();
@@ -71,10 +76,10 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             $_accountId = NULL;
             if (array_key_exists('domain', $_catchAllDomains) && !empty($_catchAllDomains['domain'])) {
-                foreach ($_domainsArray as $_email => $_domain) {
+                foreach ($_domainsArray as $_hashKey => $_domain) {
                     if (in_array($_domain, $_catchAllDomains['domain'])) {
                         $_key = array_search($_domain, $_catchAllDomains['domain']);
-                        $_return[$_email] = $_catchAllDomains['account'][$_key];
+                        $_return[$_hashKey] = $_catchAllDomains['account'][$_key];
                     }
                 }
             }

@@ -68,44 +68,64 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
     /**
      * @param null $email
+     * @param array $_websites
+     * @return array
+     */
+    public function getContactsByEmails($email = NULL, $_websites = array())
+    {
+        $_howMany = 35;
+
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+        $_extra = NULL;
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $_personMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
+            $_extra = ", Account.OwnerId, Account.Name, Account.RecordTypeId, Account.IsPersonAccount, Account.PersonEmail, Account." . $_personMagentoId . ", Account.Id";
+        } else {
+            $_extra = ", Account.OwnerId, Account.Name";
+        }
+        if (
+            Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
+        ) {
+            $_extra .= ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+        }
+        $_results = array();
+
+        $_ttl = count($email);
+        if ($_ttl > $_howMany) {
+            $_steps = ceil($_ttl / $_howMany);
+            for ($_i = 0; $_i < $_steps; $_i++) {
+                $_start = $_i * $_howMany;
+                $_emails = array_slice($email, $_start, $_howMany, true);
+//                    $_chunkedWebsites = array_slice($_websites, $_start, $_howMany, true);
+//                    $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_chunkedWebsites);
+                $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
+            }
+        } else {
+            $_results[] = $this->_queryContacts($_magentoId, $_extra, $email, $_websites);;
+        }
+
+        unset($query);
+
+        return $_results;
+    }
+    /**
+     * @param null $email
      * @param array $ids
      * @return array|bool
      */
     public function lookup($email = NULL, $_websites = array())
     {
-        $_howMany = 35;
         try {
             if (!is_object($this->getClient())) {
                 return false;
             }
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-            $_extra = NULL;
+
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $_personMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
-                $_extra = ", Account.OwnerId, Account.Name, Account.RecordTypeId, Account.IsPersonAccount, Account.PersonEmail, Account." . $_personMagentoId . ", Account.Id";
-            } else {
-                $_extra = ", Account.OwnerId, Account.Name";
             }
-            if (
-                Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
-            ) {
-                $_extra .= ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
-            }
-            $_results = array();
 
-            $_ttl = count($email);
-            if ($_ttl > $_howMany) {
-                $_steps = ceil($_ttl / $_howMany);
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $_howMany;
-                    $_emails = array_slice($email, $_start, $_howMany, true);
-//                    $_chunkedWebsites = array_slice($_websites, $_start, $_howMany, true);
-//                    $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_chunkedWebsites);
-                    $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
-                }
-            } else {
-                $_results[] = $this->_queryContacts($_magentoId, $_extra, $email, $_websites);;
-            }
+            $_results = $this->getContactsByEmails($email, $_websites);
 
             unset($query);
             if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
