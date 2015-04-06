@@ -312,6 +312,9 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
     }
 
+    /**
+     * Rewrite parent method
+     */
     protected function _convertLeads()
     {
         $_howMany = 80;

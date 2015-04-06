@@ -123,68 +123,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
     }
 
     /**
-     * @param null $order_id
-     * @param bool $isManual
-     * @param bool $syncShipments
-     */
-    public function doSalesForce($order_id = NULL, $isManual = false, $syncShipments = false)
-    {
-        if (!$order_id) {
-            Mage::helper('tnw_salesforce')->log("Could not process order, order id is missing");
-            return;
-        }
-        $this->checkConnection();
-        $this->prepare();
-        $order = Mage::getModel('sales/order')->load($order_id);
-        if (!$order) {
-            Mage::helper('tnw_salesforce')->log("Could not access order via order id: " . $order_id);
-            return;
-        }
-        $this->_isNew = ($order->getSalesforceId()) ? FALSE : TRUE;
-        $this->_isManual = $isManual;
-        $this->_syncShipments = $syncShipments;
-
-        if (!$this->_lead) {
-            $this->_lead = new stdClass();
-        }
-
-        try {
-            Mage::helper('tnw_salesforce')->log("Trying to create order #" . $order_id);
-            ## Get current quote
-            ## Load Placed Order to get the custom fields and email
-            unset($_client);
-
-            // Customer Update
-            $this->updateCustomer($order);
-
-            Mage::helper('tnw_salesforce')->log("Customer Order Email: " . $order->getCustomerEmail());
-
-            //Convert Lead
-            $doProceed = $this->convertLead();
-            if (!$doProceed) {
-                return;
-            }
-
-            $this->_orderRealId = $order->getRealOrderId();
-            $this->_orderId = $order->getId();
-
-            $this->processOrder($order);
-
-            Mage::helper('tnw_salesforce')->log("----- SalesForce Order Insertion Complete! -----");
-            Mage::helper('tnw_salesforce')->log("###################################### End: ######################################");
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log($e->getMessage());
-            if ($e->getMessage()) {
-                Mage::helper('tnw_salesforce/email')->sendError($e->getMessage());
-                unset($e);
-            } else {
-                Mage::helper('tnw_salesforce')->log("Exception caught, but not error is returend!");
-            }
-        }
-        return;
-    }
-
-    /**
      * process order and push to salesforce
      *
      * @param $order
@@ -279,68 +217,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         }
         unset($upsertOpportunityResponse, $result, $upsertOn);
 
-    }
-
-    /**
-     * @return bool
-     * If lead needs converting - do it
-     */
-    protected function convertLead()
-    {
-        if ($this->_customer->getSalesforceId() && $this->_customer->getSalesforceAccountId()) {
-            // Contact and Account already exist
-            Mage::helper('tnw_salesforce')->log("Account ID: " . $this->_customer->getSalesforceAccountId());
-            Mage::helper('tnw_salesforce')->log("Contact ID: " . $this->_customer->getSalesforceId());
-        } else {
-            // Lead conversion
-            if ($this->_customer->getSalesforceLeadId() && Mage::helper("tnw_salesforce")->getLeadConvertedStatus()) {
-                //Convert lead to Account and Contact
-                $leadConvert = new stdClass;
-                $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
-                $leadConvert->doNotCreateOpportunity = 'true';
-                $leadConvert->leadId = $this->_customer->getSalesforceLeadId();
-                $leadConvert->overwriteLeadSource = 'false';
-                $leadConvert->sendNotificationEmail = 'false';
-
-                $resultContact = $this->_mySforceConnection->convertLead(array($leadConvert));
-                $result = (is_array($resultContact->result)) ? $resultContact->result[0] : $resultContact->result;
-                if (!$result->success) {
-                    Mage::helper('tnw_salesforce')->log("Could not convert Lead ID: " . $this->_customer->getSalesforceLeadId());
-                    $errors = (is_array($result->errors)) ? $result->errors : array($result->errors);
-                    foreach ($errors as $_error) {
-                        Mage::helper('tnw_salesforce')->log("Error: " . $_error->message);
-                    }
-                    Mage::helper('tnw_salesforce/email')->sendError($errors[0]->message, $leadConvert);
-                    return false;
-                } else {
-                    Mage::getSingleton('core/session')->setFromSalesForce(true);
-                    $this->_customer
-                        ->setSalesforceAccountId($result->accountId)
-                        ->setSalesforceId($result->contactId);
-
-                    if (
-                        Mage::helper('tnw_salesforce')->createPersonAccount()
-                        && Mage::helper('tnw_salesforce/salesforce_data')->isPersonAccount($result->accountId)
-                    ) {
-                        $this->_customer->setSalesforceIsPerson('1');
-                    }
-
-                    // Save
-                    $this->_customer->save();
-                    Mage::getSingleton('core/session')->setFromSalesForce(false);
-                    Mage::helper('tnw_salesforce')->log("Lead ID: " . $this->_customer->getSalesforceLeadId() . " converted!");
-                    Mage::helper('tnw_salesforce')->log("Account ID: " . $result->accountId);
-                    Mage::helper('tnw_salesforce')->log("Contact ID: " . $result->contactId);
-                    Mage::helper('tnw_salesforce')->log("Opportunity ID: " . $result->opportunityId);
-                }
-            } else {
-                // Lead reference in Customer object is missing, should never happen
-                Mage::helper('tnw_salesforce')->log("Failed to create a Lead, cannot convert to contact and account!");
-                Mage::helper('tnw_salesforce')->log("SKIPPING Opportunity creation, please fix the problem and create the Opportunity manually.");
-                return false;
-            }
-        }
-        return true;
     }
 
     /**

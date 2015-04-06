@@ -365,6 +365,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         }
     }
 
+    /**
+     * Rewrite parent method
+     */
     protected function _convertLeads()
     {
         $_howMany = 80;

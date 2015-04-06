@@ -793,6 +793,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     }
 
     /**
+     * Used in TNW_Quote module
+     *
      * @param $_toConvertCustomerIds
      */
     protected function _convertLeads($_toConvertCustomerIds)
