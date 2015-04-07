@@ -177,30 +177,12 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             return;
         }
 
-        if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-            $prodObject = array();
-            foreach ($products as $_prod) {
-                $sObject = new SObject();
-                $sObject->fields = (array)$_prod;
-                $sObject->type = 'OpportunityLineItem';
-                $prodObject[] = $sObject;
-            }
-            unset($sObject, $_prod);
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $prodObject));
-            $response = $this->_mySforceConnection->upsert('Id', $prodObject);
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
-                "data" => $prodObject,
-                "result" => $response
-            ));
-            unset($prodObject);
-        } else {
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
-            $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
-                "data" => $products,
-                "result" => $response
-            ));
-        }
+        Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
+        $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
+        Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
+            "data" => $products,
+            "result" => $response
+        ));
 
         $reAddedProducts = array();
         $cartUpdateFlag = true;
@@ -423,25 +405,13 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 Mage::helper('tnw_salesforce')->log("PricebookEntry Object: " . $key . " = '" . $value . "'");
             }
 
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$pb;
-                $sObject->type = 'PricebookEntry';
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($sObject)));
-                $upsertResponse = $this->_mySforceConnection->upsert('Id', array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_after",array(
-                    "data" => array($sObject),
-                    "result" => $upsertResponse
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($pb)));
-                $upsertResponse = $this->_mySforceConnection->upsert('Id', array($pb), 'PricebookEntry');
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_after",array(
-                    "data" => array($pb),
-                    "result" => $upsertResponse
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($pb)));
+            $upsertResponse = $this->_mySforceConnection->upsert('Id', array($pb), 'PricebookEntry');
+            Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_after",array(
+                "data" => array($pb),
+                "result" => $upsertResponse
+            ));
+
             unset($pb, $key, $value);
             if ($upsertResponse[0]->success) {
                 Mage::helper('tnw_salesforce')->log("PricebookEntry upsert successful: " . $upsertResponse[0]->id);
@@ -518,25 +488,12 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
             unset($collection, $_map);
 
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$this->_p;
-                $sObject->type = 'Product2';
-                Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($sObject)));
-                $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
-                    "data" => array($sObject),
-                    "result" => $upsertResponse
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($this->_p)));
-                $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($this->_p), 'Product2');
-                Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
-                    "data" => array($this->_p),
-                    "result" => $upsertResponse
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($this->_p)));
+            $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($this->_p), 'Product2');
+            Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
+                "data" => array($this->_p),
+                "result" => $upsertResponse
+            ));
 
             if (!$upsertResponse[0]->success) {
                 if (is_array($upsertResponse[0]->errors)) {

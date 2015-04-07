@@ -11,7 +11,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_PASSWORD = 'salesforce/api_config/api_password';
     const API_TOKEN = 'salesforce/api_config/api_token';
     const API_WSDL = 'salesforce/api_config/api_wsdl';
-    const API_TYPE = 'salesforce/api_config/api_type';
 
     /**
      * @comment Base batch limit for simple sync
@@ -233,17 +232,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getApiWSDL()
     {
         return $this->getStroreConfig(self::API_WSDL);
-    }
-
-    /**
-     * @deprecated
-     * Salesforce Type: Partner or Enterprise
-     * @return string
-     */
-    public function getApiType()
-    {
-        return 'Enterprise';
-        //return $this->getStroreConfig(self::API_TYPE);
     }
 
     // Salesforce object where Magento orders will go to

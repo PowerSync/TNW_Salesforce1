@@ -147,10 +147,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
-
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     $_collection = Mage::getResourceModel('sales/order_item_collection');
                     $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
@@ -232,9 +228,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select orders(s)'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
                 /*
                 $manualSync = Mage::helper('tnw_salesforce/salesforce_opportunity');
                 if ($manualSync->reset()) {
@@ -265,9 +258,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select orders(s)'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
                 /*
                 $manualSync = Mage::helper('tnw_salesforce/salesforce_opportunity');
                 if ($manualSync->reset()) {

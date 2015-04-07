@@ -164,25 +164,12 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             return true;
         }
 
-        if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-            $sObject = new SObject();
-            $sObject->fields = (array)$this->_lead;
-            $sObject->type = 'Opportunity';
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_before",array("data" => array($sObject)));
-            $upsertOpportunityResponse = $this->_mySforceConnection->upsert($upsertOn, array($sObject));
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
-                "data" => array($sObject),
-                "result" => $upsertOpportunityResponse
-            ));
-            unset($sObject);
-        } else {
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_before",array("data" => array($this->_lead)));
-            $upsertOpportunityResponse = $this->_mySforceConnection->upsert($upsertOn, array($this->_lead), 'Opportunity');
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
-                "data" => array($this->_lead),
-                "result" => $upsertOpportunityResponse
-            ));
-        }
+        Mage::dispatchEvent("tnw_salesforce_opportunity_send_before",array("data" => array($this->_lead)));
+        $upsertOpportunityResponse = $this->_mySforceConnection->upsert($upsertOn, array($this->_lead), 'Opportunity');
+        Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
+            "data" => array($this->_lead),
+            "result" => $upsertOpportunityResponse
+        ));
 
         $result = (is_array($upsertOpportunityResponse)) ? $upsertOpportunityResponse[0] : $upsertOpportunityResponse;
         if (!$result->success) {

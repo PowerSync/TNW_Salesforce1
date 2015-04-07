@@ -56,10 +56,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
         }
         if ($this->getRequest()->getParam('customer_id') > 0) {
             try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
-
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     // pass data to local storage
                     // TODO add level up abstract class with Order as static values, now we have word 'Customer' as parameter
