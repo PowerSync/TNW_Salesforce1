@@ -738,7 +738,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     }
                 }
 
-                $leadData = $this->_prepareLeadConversionObject($leadData, $_data->Id);
+                $leadData = $this->_prepareLeadConversionObject($_data, $leadData);
 
                 $this->_cache['leadsToConvert'][$_key] = $leadData;
 

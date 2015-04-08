@@ -954,48 +954,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $this->_convertLeads();
     }
 
+    /**
+     *
+     */
     protected function _convertLeads()
     {
-        if (!empty($this->_cache['leadsToConvert'])) {
-            $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-
-            foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
-
-                foreach ($leadsToConvertChunk as $_key => $_object) {
-                    foreach ($_object as $key => $value) {
-                        Mage::helper('tnw_salesforce')->log("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
-                    }
-                }
-
-                $_customerKeys = array_keys($leadsToConvertChunk);
-
-                $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
-                foreach ($_results as $_resultsArray) {
-                    foreach ($_resultsArray as $_key => $_result) {
-                        if (!property_exists($_result, 'success') || !(int)$_result->success) {
-                            $this->_processErrors($_result, 'lead');
-                        } else {
-                            $_customerId = $_customerKeys[$_key];
-                            $_customerEmail = $this->_cache['entitiesUpdating'][$_customerId];
-
-                            $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
-
-                            unset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]);
-
-                            // Update Salesforce Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                            // Update Account Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                            // Update Lead
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
-                            // Update Sync Status
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
-
-                        }
-                    }
-                }
-            }
-        }
+        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsSimple();
     }
 
     protected function _prepareLeads()
@@ -1031,17 +995,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
-     *
+     * @param null $lead
+     * @param null $leadConvert
+     * @return mixed
      */
-    protected function _prepareLeadConversionObject($leadData, $_leadId = NULL)
+    protected function _prepareLeadConversionObject($lead = NULL, $leadConvert = NULL)
     {
-        $leadData->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
-        $leadData->leadId = $_leadId;
-        $leadData->doNotCreateOpportunity = 'true';
-        $leadData->overwriteLeadSource = 'false';
-        $leadData->sendNotificationEmail = 'false';
-
-        return $leadData;
+        return Mage::helper('tnw_salesforce/salesforce_data_lead')->prepareLeadConversionObjectSimple($lead, $leadConvert);
     }
 
     protected function _prepareNew()
@@ -1283,10 +1243,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         } else if ($type == "Contact") {
             // Set Contact AccountId as suggested by Advanced Lookup
             if (
-                array_key_exists($_email, $this->_customerAccounts)
-                && !$this->_isPerson
+                 !$this->_isPerson
             ) {
-                $this->_obj->AccountId = $this->_customerAccounts[$_email];
+                if (array_key_exists($_email, $this->_customerAccounts)) {
+                    $this->_obj->AccountId = $this->_customerAccounts[$_email];
+                } else {
+                    $this->_obj->AccountId = $this->_cache['accountLookup'][0][$_email]->Id;
+                }
+
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_obj->AccountId;
             } else {
                 if ($this->_isPerson && property_exists($this->_obj, 'AccountId')) {
@@ -1305,6 +1269,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['contactsToUpsert'][$_upsertOn][$_id] = $this->_obj;
         } else if ($type == "Account") {
+
+            if (isset($this->_cache['accountLookup'][0][$_email])) {
+                $this->_obj->Id = $this->_cache['accountLookup'][0][$_email]->Id;
+            }
+
             if (
                 property_exists($this->_obj, 'RecordTypeId')
                 && $this->_obj->RecordTypeId == Mage::helper('tnw_salesforce')->getPersonAccountRecordType()
@@ -1570,6 +1539,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             if (!empty($_emailsArray)) {
                 $this->_cache['customerToWebsite'] = $_websites;
+                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites);
                 $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache['entitiesUpdating'], $_websites);
                 $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_cache['entitiesUpdating'], $_websites);
             }
@@ -1611,7 +1581,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             // Lookup existing Leads
             if (!empty($_emailsArray) || !empty($_converted)) {
-                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites);
+//                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites);
                 if (!empty($this->_cache['leadLookup'])) {
                     foreach ($this->_cache['leadLookup'] as $_websiteId => $leads) {
                         foreach ($leads as $email => $lead) {
@@ -1649,52 +1619,45 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         //&& $this->_cache['leadLookup'][$_email]->MagentoId == $_key
                         && !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
                     ) {
-                        unset($_emailsArray[$_key]);
+                            unset($_emailsArray[$_key]);
 
                     }
                 }
             } else {
-                foreach ($_converted as $_key => $data) {
-                    $_data = $this->_cache['leadLookup'][$_websites[$_key]][$data['email']];
 
-                    if ($_data->IsConverted) {
-                        // TODO: if no contacts found, confirm that new contact and account should be created.
-                        continue;
-                    }
-                    if (!$_data->Id) {
-                        // Skip if there is no Lead ID
-                        continue;
-                    }
-
-                    $leadData = new stdClass();
-
-                    if (array_key_exists('accountId', $data) && !empty($data['accountId'])) {
-                        $leadData->accountId = $data['accountId'];
-                    }
-
-                    if (array_key_exists($data['email'], $_companies) && !empty($_companies[$data['email']]) && empty($leadData->accountId)) {
-                        $leadData->accountId = $_companies[$data['email']]->Id;
-
-                        $leadData->OwnerId = $_companies[$data['email']]->OwnerId;
-                        // Check if user is inactive, then overwrite from configuration
-                        if (!$this->_isUserActive($leadData->OwnerId)) {
-                            $this->_obj->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
+                /**
+                 * @comment try to find lead
+                 */
+                foreach ($this->_cache['leadLookup'] as $_websiteId => $_leads) {
+                    foreach ($_leads as $_email => $_lead) {
+                        if ($_lead->IsConverted) {
+                            // TODO: if no contacts found, confirm that new contact and account should be created.
+                            continue;
                         }
-                    } elseif (!empty($this->_customerAccounts[$data['email']])) {
-                        $leadData->accountId = $this->_customerAccounts[$data['email']];
-                    }
 
-                    if (array_key_exists('contactId', $data) && $data['contactId'] && (!empty($leadData->accountId))) {
-                        if ($data['contactId']) {
-                            $leadData->contactId = $data['contactId'];
+                        if (!$_lead->Id) {
+                            // Skip if there is no Lead ID
+                            continue;
                         }
+
+                        $leadConvert = new stdClass();
+
+                        if (isset($this->_cache['accountLookup'][0][$_email])) {
+                            $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
+                        }
+
+                        if (isset($this->_cache['contactsLookup'][$_websiteId][$_email])) {
+                            $leadConvert->contactId = $this->_cache['contactsLookup'][$_websiteId][$_email]->Id;
+                        }
+
+                        $leadConvert = $this->_prepareLeadConversionObject($_lead, $leadConvert);
+
+                        $_productId = array_search($_email, $_emailsArray);
+                        $this->_cache['leadsToConvert'][$_productId] = $leadConvert;
+
+                        unset($_emailsArray[$_productId]);
+
                     }
-
-                    $leadData = $this->_prepareLeadConversionObject($leadData, $_data->Id);
-
-                    $this->_cache['leadsToConvert'][$_key] = $leadData;
-
-                    unset($_emailsArray[$_key]);
                 }
             }
 
