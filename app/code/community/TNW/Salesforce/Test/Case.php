@@ -90,4 +90,25 @@ abstract class TNW_Salesforce_Test_Case extends EcomDev_PHPUnit_Test_Case
         $reflection->setValue($this->getConnectionMock(), $this->getClientMock());
         $reflection->setAccessible(false);
     }
+
+    public function getSalesforceFixture($key, $filter, $all = false)
+    {
+        $resultAll = array();
+        $data = Mage::registry('_fixture_data');
+        if (isset($data[$key])) {
+            foreach ($data[$key] as $_row) {
+                foreach ($filter as $_key => $_value) {
+                    if (isset($_row[$_key]) && $_row[$_key] == $_value) {
+                        if (!$all) {
+                            return $_row;
+                        }
+
+                        $resultAll[] = $_row;
+                    }
+                }
+            }
+        }
+
+        return $resultAll;
+    }
 }

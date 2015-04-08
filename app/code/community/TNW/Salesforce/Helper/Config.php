@@ -28,4 +28,20 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
 
         return NULL;
     }
+
+    /**
+     * @return string
+     */
+    public function getMagentoIdField()
+    {
+        return $this->getSalesforcePrefix() . 'Magento_ID__c';
+    }
+
+    /**
+     * @return string
+     */
+    public function getMagentoWebsiteField()
+    {
+        return $this->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+    }
 }
