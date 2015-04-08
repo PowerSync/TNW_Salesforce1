@@ -1,0 +1,8 @@
+salesforce:
+  lead:
+    - ID: LEAD1
+      OwnerId: 00524000000KeE7AAK
+      Email: lead1@email.com
+    - ID: LEAD2
+      OwnerId: 00524000000KeE7AAK
+      Email: lead2@email.com

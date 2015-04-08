@@ -3,6 +3,9 @@
 class TNW_Salesforce_Test_Model_Cached extends TNW_Salesforce_Test_Case
 {
     /**
+     * Reset cached singleton
+     * @singleton tnw_salesforce/cached
+     *
      * @loadFixture
      * @test
      */
