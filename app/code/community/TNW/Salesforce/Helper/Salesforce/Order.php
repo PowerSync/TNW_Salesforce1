@@ -276,8 +276,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
                     && array_key_exists($_orderEmail, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])) {
                     // Need to convert a Lead
-                    $_queueList = Mage::helper('tnw_salesforce/salesforce_data_queue')->getAllQueues();
-                    $this->_prepareLeadConversionObject($_orderNumber, $_foundAccounts, $_queueList);
+                    Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->prepareLeadConversionObject($_orderNumber, $_foundAccounts, 'order');
+
                     Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer Lead prepared to be converted.');
                 } elseif (is_array($this->_cache['accountsLookup'])
                     && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
@@ -352,85 +352,11 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
-     * Convert Leads
+     * @comment call leads convertation method
      */
     protected function _convertLeads()
     {
-        // Make sure that leadsToConvert cache has unique leads (by email)
-        $_emailsForConvertedLeads = array();
-        foreach ($this->_cache['leadsToConvert'] as $_orderNum => $_objToConvert) {
-            if (!in_array($this->_cache['orderCustomers'][$_orderNum]->getEmail(), $_emailsForConvertedLeads)) {
-                $_emailsForConvertedLeads[] = $this->_cache['orderCustomers'][$_orderNum]->getEmail();
-            } else {
-                unset($this->_cache['leadsToConvert'][$_orderNum]);
-            }
-        }
-
-        $results = $this->_mySforceConnection->convertLead(array_values($this->_cache['leadsToConvert']));
-        $_keys = array_keys($this->_cache['leadsToConvert']);
-        foreach ($results->result as $_key => $_result) {
-            $_orderNum = $_keys[$_key];
-
-            //Report Transaction
-            $this->_cache['responses']['leadsToConvert'][$_orderNum] = $_result;
-
-            $_customerId = $this->_cache['orderCustomers'][$_orderNum]->getId();
-            if (!$_result->success) {
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $this->_cache['orderCustomers'][$_orderNum]->getEmail() . ')');
-                }
-                Mage::helper('tnw_salesforce')->log('Convert Failed: (email: ' . $this->_cache['orderCustomers'][$_orderNum]->getEmail() . ')', 1, "sf-errors");
-                if ($_customerId) {
-                    // Update Sync Status
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 0, 'sf_insync', 'customer_entity_int');
-                }
-                $this->_processErrors($_result, 'convertLead', $this->_cache['leadsToConvert'][$_orderNum]);
-            } else {
-                $_email = strtolower($this->_cache['orderCustomers'][$_orderNum]->getEmail());
-                $_websiteId = $this->_cache['orderCustomers'][$_orderNum]->getData('website_id');
-                if ($_customerId) {
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->_websiteSfIds[$_websiteId];
-
-                    // Update Salesforce Id
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                    // Update Account Id
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                    // Reset Lead Value
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
-                    // Update Sync Status
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
-
-                    $this->_cache['orderCustomers'][$_orderNum] = Mage::getModel("customer/customer")->load($_customerId);
-                } else {
-                    // For the guest
-                    $this->_cache['orderCustomers'][$_orderNum]->setSalesforceLeadId(NULL);
-                    $this->_cache['orderCustomers'][$_orderNum]->setSalesforceId($_result->contactId);
-                    $this->_cache['orderCustomers'][$_orderNum]->setSalesforceAccountId($_result->accountId);
-                    // Update Sync Status
-                    $this->_cache['orderCustomers'][$_orderNum]->setSfInsync(0);
-                }
-
-                $this->_cache['convertedLeads'][$_orderNum] = new stdClass();
-                $this->_cache['convertedLeads'][$_orderNum]->contactId = $_result->contactId;
-                $this->_cache['convertedLeads'][$_orderNum]->accountId = $_result->accountId;
-                $this->_cache['convertedLeads'][$_orderNum]->email = $_email;
-
-                Mage::helper('tnw_salesforce')->log('Converted: (account: ' . $this->_cache['convertedLeads'][$_orderNum]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$_orderNum]->contactId . ')');
-
-                // Apply updates to after conversion to the cached queue (Not needed if only doing 1 order, which means 1 customer)
-                /*
-                foreach ($this->_cache['leadsToConvert'] as $_oid => $_obj) {
-                    if ($_email == strtolower($this->_cache['orderCustomers'][$_oid]->getEmail())) {
-                        $this->_cache['orderCustomers'][$_oid] = $this->_cache['orderCustomers'][$_orderNum];
-                    }
-                }
-                */
-            }
-        }
+        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeads('order');
     }
 
     /**
@@ -811,78 +737,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $_customer->setShippingAddress($_shippingAddress);
         }
         return $_customer;
-    }
-
-    /**
-     * @param $_orderNumber
-     * @param array $_accounts
-     * @return bool
-     */
-    protected function _prepareLeadConversionObject($_orderNumber, $_accounts = array(), $_queueList = NULL)
-    {
-        if (!Mage::helper("tnw_salesforce")->getLeadConvertedStatus()) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: Converted Lead status is not set in the configuration, cannot proceed!');
-            }
-            Mage::helper("tnw_salesforce")->log('Converted Lead status is not set in the configuration, cannot proceed!', 1, "sf-errors");
-            return false;
-        }
-
-        $_email = strtolower($this->_cache['orderToEmail'][$_orderNumber]);
-        $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-        $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-        $_salesforceWebsiteId = $this->_websiteSfIds[$_websiteId];
-
-        if (is_array($this->_cache['leadLookup'])
-            && array_key_exists($_salesforceWebsiteId, $this->_cache['leadLookup'])
-            && array_key_exists($_email, $this->_cache['leadLookup'][$_salesforceWebsiteId])) {
-            $leadConvert = new stdClass;
-            $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
-            $leadConvert->doNotCreateOpportunity = 'true';
-            $leadConvert->leadId = $this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->Id;
-            $leadConvert->overwriteLeadSource = 'false';
-            $leadConvert->sendNotificationEmail = 'false';
-
-            // Retain OwnerID if Lead is already assigned
-            // If not, pull default Owner from Magento configuration
-            if (
-                is_object($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email])
-                && property_exists($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email], 'OwnerId')
-                && $this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId
-                && (
-                    !is_array($_queueList)
-                    && !in_array($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId, $_queueList)
-                )
-            ) {
-                $leadConvert->ownerId = $this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]->OwnerId;
-            } elseif (Mage::helper('tnw_salesforce')->getLeadDefaultOwner()) {
-                $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-            }
-
-            // If inactive, reassign
-            if (!$this->_isUserActive($leadConvert->ownerId)) {
-                $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-            }
-
-            // Attach to existing account
-            if (array_key_exists($_email, $_accounts) && $_accounts[$_email]) {
-                $leadConvert->accountId = $_accounts[$_email];
-            }
-            // logs
-            foreach ($leadConvert as $key => $value) {
-                Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
-            }
-
-            if ($leadConvert->leadId && !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
-                $this->_cache['leadsToConvert'][$_orderNumber] = $leadConvert;
-            } else {
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Order #' . $_orderNumber . ' - customer (email: ' . $this->_cache['orderCustomers'][$_orderNumber]->getEmail() . ') needs to be synchronized first, aborting!');
-                }
-                Mage::helper("tnw_salesforce")->log('Order #' . $_orderNumber . ' - customer (email: ' . $this->_cache['orderCustomers'][$_orderNumber]->getEmail() . ') needs to be synchronized first, aborting!', 1, "sf-errors");
-                return false;
-            }
-        }
     }
 
     /**

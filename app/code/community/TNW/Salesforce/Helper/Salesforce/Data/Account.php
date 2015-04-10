@@ -18,6 +18,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      * @param $_customerEmails
      * @param array $_websites
      * @return array
+     *
+     * @comment returns following structure: 0 => "$emails" => account data
      */
     public function lookup($_customerEmails, $_websites = array())
     {

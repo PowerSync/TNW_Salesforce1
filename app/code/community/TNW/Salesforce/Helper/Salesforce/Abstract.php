@@ -50,10 +50,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     /**
      * cached data
+     * @comment public access for Passing by Reference
      *
      * @var null
      */
-    protected $_cache = NULL;
+    public $_cache = NULL;
 
     /**
      * @var array
@@ -109,11 +110,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @var null
      */
     protected $_salesforceServerDomain = NULL;
-
-    /**
-     * @var null
-     */
-    protected $_sfUsers = NULL;
 
     /**
      * @var null
@@ -858,26 +854,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @return bool
      */
     protected function _isUserActive($_sfUserId = NULL) {
-        if ($this->_mageCache === NULL) {
-            $this->_initCache();
-        }
-        $_activeUsers = array();
-        if (!$this->_sfUsers) {
-            if ($this->_useCache) {
-                $this->_sfUsers = unserialize($this->_mageCache->load("tnw_salesforce_users"));
-            }
-            if (!$this->_sfUsers) {
-                $this->_sfUsers = Mage::helper('tnw_salesforce/salesforce_data')->getUsers();
-            }
-        }
 
-        if (is_array($this->_sfUsers)) {
-            foreach($this->_sfUsers as $_user) {
-                $_activeUsers[] = $_user['value'];
-            }
-        }
-
-        return (!empty($_activeUsers)) ? in_array($_sfUserId, $_activeUsers) : false;
+        return Mage::helper('tnw_salesforce/salesforce_data_user')->isUserActive($_sfUserId);
     }
 
     protected function _getStoreIdByCurrency($_currenctCurrencyCode) {
@@ -984,7 +962,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * @return array
      */
-    public function getWebsiteSfIds($key)
+    public function getWebsiteSfIds($key = null)
     {
         if ($key) {
             return $this->_websiteSfIds[$key];

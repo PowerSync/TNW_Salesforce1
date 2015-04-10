@@ -245,10 +245,10 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     public function setSync($sync)
     {
         $this->_sync = $sync;
-
-        $_cache = $sync->getCache();
-
-        $this->_cache = &$_cache;
+        /**
+         * @comment Passing by Reference
+         */
+        $this->_cache = &$sync->_cache;
 
         return $this;
     }
