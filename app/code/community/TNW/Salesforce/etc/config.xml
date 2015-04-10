@@ -75,6 +75,9 @@
                     <lead>
                         <table>Lead</table>
                     </lead>
+                    <account>
+                        <table>Account</table>
+                    </account>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>

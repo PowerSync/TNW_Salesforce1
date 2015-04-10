@@ -48,6 +48,20 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     }
 
     /**
+     * Fetches all SQL result rows as a sequential array.
+     * Uses the current fetchMode for the adapter.
+     *
+     * @param string|Zend_Db_Select $sql  An SQL SELECT statement.
+     * @param mixed                 $bind Data to bind into SELECT placeholders.
+     * @param mixed                 $fetchMode Override current fetch mode.
+     * @return array
+     */
+    public function fetchAll($sql, $bind = array(), $fetchMode = null)
+    {
+        return $this->_getClient()->query($sql);
+    }
+
+    /**
      * Check for config options that are mandatory.
      * Throw exceptions if any are missing.
      *
@@ -204,5 +218,20 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     public function getServerVersion()
     {
         return '1';
+    }
+
+    /**
+     * Creates and returns a new Zend_Db_Select object for this adapter.
+     *
+     * @return Zend_Db_Select
+     */
+    public function select()
+    {
+        return new Varien_Db_Select($this);
+    }
+
+    public function supportStraightJoin()
+    {
+        return false;
     }
 }
