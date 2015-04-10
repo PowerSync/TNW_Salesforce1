@@ -39,7 +39,12 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      */
     public function fetchRow($sql, $bind = array(), $fetchMode = null)
     {
-        return $this->_getClient()->query($sql)->getData();
+        $response = $this->_getClient()->query($sql);
+        if (isset($response[0])) {
+            return $response[0];
+        } else {
+            return array();
+        }
     }
 
     /**

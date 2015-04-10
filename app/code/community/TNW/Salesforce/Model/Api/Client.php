@@ -13,27 +13,42 @@ class TNW_Salesforce_Model_Api_Client
         return $this->_client;
     }
 
+
+
     /**
      * @param array $data
      *
-     * @return Varien_Object
+     * @return array
      */
     public function convertLead($data)
     {
-        $response = $this->_getClient()->convertLead(array_values($data));
+        $response = $this->_getClient()->convertLead($data);
 
-        return new Varien_Object((array)$response);
+        $result = array();
+        if (isset($response->result) && !empty($response->result)) {
+            foreach ($response->result as $_row) {
+                $result[] = (array)$_row;
+            }
+        }
+        return $result;
     }
 
     /**
      * @param string $sql
      *
-     * @return Varien_Object
+     * @return array
      */
     public function query($sql)
     {
         $response = $this->_getClient()->query((string)$sql);
 
-        return new Varien_Object((array)$response);
+        $result = array();
+        if (isset($response->records) && !empty($response->records)) {
+            foreach ($response->records as $_row) {
+                $result[] = (array)$_row;
+            }
+        }
+
+        return $result;
     }
 }

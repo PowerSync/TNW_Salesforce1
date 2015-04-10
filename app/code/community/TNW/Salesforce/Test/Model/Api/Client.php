@@ -5,50 +5,70 @@ class TNW_Salesforce_Test_Model_Api_Client extends TNW_Salesforce_Test_Case
     public function providerConvertLead()
     {
         return array(
-            array(array(
-                'leadId' => '1',
-                )),
-            array(array(
-                'leadId' => '2',
+            array(array( //first data set
+                array('leadId' => '1',),
+            )),
+            array(array( //another data set
+                array('leadId' => '2',),
+            )),
+            array(array( //more then one data set
+                array('leadId' => '3',),
+                array('leadId' => '4',),
             )),
         );
     }
 
     /**
+     * @singleton tnw_salesforce/connection
+     *
      * @param array $lead
      *
      * @test
      * @dataProvider providerConvertLead
      */
-    public function convertLead($lead)
+    public function convertLead($leadArray)
     {
-        $this->mockClient(array('convertLead'));
+        //prepare params
+        $params = array_map(function ($value) { return $this->arrayToObject($value); }, $leadArray);
+
         $response = new stdClass();
-        $response->leadId = $lead['leadId'];
+        foreach ($leadArray as $_lead) {
+            $item = new stdClass();
+            $item->leadId = $_lead['leadId'];
+            $response->result[] = $item;
+        }
+
+        $this->mockClient(array('convertLead'));
         $this->getClientMock()->expects($this->once())
             ->method('convertLead')
+            ->with($params)
             ->will($this->returnValue($response));
 
         $this->mockApplyClientToConnection();
 
 
         $client = Mage::getModel('tnw_salesforce/api_client');
-        $result = $client->convertLead($lead);
+        $result = $client->convertLead($params);
 
-        $this->assertEquals($lead['leadId'], $result->getData('leadId'));
+        $this->assertEquals($leadArray, $result);
     }
 
     /**
+     * @singleton tnw_salesforce/connection
+     *
      * @param array $lead
      *
      * @test
      * @dataProvider providerConvertLead
      */
-    public function query($lead)
+    public function query($leadArray)
     {
+        $lead = $leadArray[0];
         $this->mockClient(array('query'));
+        $item = new stdClass();
+        $item->ID = $lead['leadId'];
         $response = new stdClass();
-        $response->ID = $lead['leadId'];
+        $response->records[] = $item;
         $this->getClientMock()->expects($this->once())
             ->method('query')
             ->will($this->returnValue($response));
@@ -57,6 +77,6 @@ class TNW_Salesforce_Test_Model_Api_Client extends TNW_Salesforce_Test_Case
 
         $client = Mage::getModel('tnw_salesforce/api_client');
         $result = $client->query('SELECT ID From Lead WHERE ID = ' . $lead['leadId']);
-        $this->assertEquals($lead['leadId'], $result->getData('ID'));
+        $this->assertEquals($lead['leadId'], $result[0]['ID']);
     }
 }

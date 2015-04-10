@@ -91,24 +91,58 @@ abstract class TNW_Salesforce_Test_Case extends EcomDev_PHPUnit_Test_Case
         $reflection->setAccessible(false);
     }
 
-    public function getSalesforceFixture($key, $filter, $all = false)
+    /**
+     * @param $key
+     * @param array $filter
+     * @param bool $all
+     * @return array|mixed
+     */
+    public function getSalesforceFixture($key, $filter = array(), $all = false, $object = false)
     {
         $resultAll = array();
         $data = Mage::registry('_fixture_data');
         if (isset($data[$key])) {
             foreach ($data[$key] as $_row) {
-                foreach ($filter as $_key => $_value) {
-                    if (isset($_row[$_key]) && $_row[$_key] == $_value) {
-                        if (!$all) {
-                            return $_row;
+                if (!empty($filter)) {
+                    foreach ($filter as $_key => $_value) {
+                        if (isset($_row[$_key]) && $_row[$_key] == $_value) {
+                            $resultAll[] = $object ? $this->arrayToObject($_row) : $_row;
                         }
-
-                        $resultAll[] = $_row;
                     }
+                } else {
+                    $resultAll[] = $object ? $this->arrayToObject($_row) : $_row;
                 }
             }
         }
 
-        return $resultAll;
+        if ($all) {
+            return $resultAll;
+        } else {
+            return current($resultAll);
+        }
+    }
+
+    /**
+     * @param $array
+     *
+     * @return stdClass
+     */
+    public function arrayToObject($array)
+    {
+        $result = new stdClass();
+        foreach ($array as $key => $value) {
+            $result->$key = $value;
+        }
+
+        return $result;
+    }
+
+    public function mockQueryResponse($response)
+    {
+        $mock = $this->getModelMock('tnw_salesforce/api_client', array('query'));
+        $mock->expects($this->any())
+            ->method('query')
+            ->will($this->returnValue($response));
+        $this->replaceByMock('singleton', 'tnw_salesforce/api_client', $mock);
     }
 }
