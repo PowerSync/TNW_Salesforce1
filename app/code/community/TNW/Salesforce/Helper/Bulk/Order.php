@@ -435,6 +435,35 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
         // Mark orders as failed or successful
         $this->_updateOrders();
+
+
+        // Activate orders
+        if (!empty($this->_cache['orderToActivate'])) {
+            foreach($this->_cache['orderToActivate'] as $_orderNum => $_object) {
+                if (array_key_exists($_orderNum, $this->_cache['upsertedOrders'])) {
+                    $_object->Id = $this->_cache['upsertedOrders'][$_orderNum];
+                } else {
+                    unset($this->_cache['orderToActivate'][$_orderNum]);
+                    Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+                }
+            }
+            if (!empty($this->_cache['orderToActivate'])) {
+                Mage::helper('tnw_salesforce')->log('----------Activating Orders: Start----------');
+                // Push Cart
+                $_ttl = count($this->_cache['orderToActivate']);
+                if ($_ttl > 199) {
+                    $_steps = ceil($_ttl / 199);
+                    for ($_i = 0; $_i < $_steps; $_i++) {
+                        $_start = $_i * 200;
+                        $_itemsToPush = array_slice($this->_cache['orderToActivate'], $_start, $_start + 199);
+                        $this->_activateOrders($_itemsToPush);
+                    }
+                } else {
+                    $this->_activateOrders($this->_cache['orderToActivate']);
+                }
+                Mage::helper('tnw_salesforce')->log('----------Activating Orders: End----------');
+            }
+        }
     }
 
     protected function _pushOrdersToSalesforce()
