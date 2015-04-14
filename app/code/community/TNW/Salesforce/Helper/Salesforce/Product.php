@@ -132,7 +132,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 }
                 if ($product->getSku()) {
                     $this->_cache['productIdToSku'][$product->getId()] = trim($product->getSku());
-                    $skuArray[] = trim($product->getSku());
+                    $skuArray[$product->getId()] = trim($product->getSku());
                 }
             }
             // Look up products in Salesforce
@@ -693,6 +693,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $_obj->Id = $_sfProduct->PriceBooks[$_key]->Id;
             //$this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryId = $_obj->Id;
         } else {
+
+            //$_obj->Id = $_priceBookId;
+
             $_obj->Pricebook2Id = $_priceBookId;
             $_obj->Product2Id = $_sfProductId;
 

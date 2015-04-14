@@ -138,6 +138,7 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
             'index' => 'salesforce_pricebook_id',
             'type' => 'varchar',
             'width' => '250px',
+            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
         $store = $this->_getStore();
         if ($store->getId()) {
