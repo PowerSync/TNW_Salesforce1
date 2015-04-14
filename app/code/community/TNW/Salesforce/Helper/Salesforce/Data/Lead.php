@@ -238,25 +238,28 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
             $leadConvert->leadId = $lead->Id;
 
+            //IMPORTANT: "OwnerId" is a property of source $lead object, "ownerId" - of result $leadConvert object
+
             // Retain OwnerID if Lead is already assigned, owner should be active and is not queue
             // If not, pull default Owner from Magento configuration
             if (
                 property_exists($lead, 'OwnerId')
-                && $userHelper->isUserActive($leadConvert->ownerId)
-                && !$userHelper->isQueue($leadConvert->OwnerId)
+                && $userHelper->isUserActive($lead->OwnerId)
+                && !$userHelper->isQueue($lead->OwnerId)
             ) {
                 $leadConvert->ownerId = $lead->OwnerId;
 
             }
         }
-        // Retain OwnerID if Lead is already assigned, owner should be active and is not queue
+        // Retain ownerId if Lead is already assigned, owner should be active and is not queue
         // If not, pull default Owner from Magento configuration
         if (
-            !property_exists($leadConvert, 'OwnerId')
-            || !$leadConvert->OwnerId
+            !property_exists($leadConvert, 'ownerId')
+            || !$leadConvert->ownerId
             || !$userHelper->isUserActive($leadConvert->ownerId)
-            || $userHelper->isQueue($leadConvert->OwnerId)
+            || $userHelper->isQueue($leadConvert->ownerId)
         ) {
+
             $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
         }
 
