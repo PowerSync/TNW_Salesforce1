@@ -117,9 +117,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 // we check product type and skip synchronization if needed
                 if (intval($product->getData('salesforce_disable_sync')) == 1) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') configured not to be synchronized with Salesforce.');
+                        Mage::getSingleton('adminhtml/session')->addNotice('SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') is excluded from synchronization');
                     }
-                    Mage::helper("tnw_salesforce")->log("SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') configured not to be synchronized with Salesforce.");
+                    Mage::helper("tnw_salesforce")->log("SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') is excluded from synchronization");
                     continue;
                 }
 
