@@ -1017,7 +1017,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 if (
                     (
                         Mage::helper('tnw_salesforce')->isCustomerAsLead()
-                        && (!array_keys($this->_customerAccounts, $_email) || !$this->_customerAccounts[$_email])
+                        && !$this->getCustomerAccount($_email)
                     ) || (
                         is_array($this->_cache['leadLookup'])
                         && array_key_exists($this->_cache['customerToWebsite'][$_id], $this->_cache['leadLookup'])
@@ -1245,9 +1245,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if (
                  !$this->_isPerson
             ) {
-                if (array_key_exists($_email, $this->_customerAccounts)) {
-                    $this->_obj->AccountId = $this->_customerAccounts[$_email];
-                } else {
+                $this->_obj->AccountId = $this->getCustomerAccount($_email);
+                if (!$this->_obj->AccountId) {
                     $this->_obj->AccountId = $this->_cache['accountLookup'][0][$_email]->Id;
                 }
 
@@ -1333,7 +1332,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             // Skip Account upsert if Advanced lookup is suggesting to use existing account
-            if (array_key_exists($_email, $this->_customerAccounts)) {
+            if ($this->getCustomerAccount($_email)) {
                 $_found = true;
             }
 
@@ -1420,7 +1419,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_cache['toSaveInMagento'][$_websiteId][$_email] = $tmp;
 
             $this->_cache['entitiesUpdating'] = $_emailsArray;
-            $this->_customerAccounts = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
+            $this->findCustomerAccounts($_emailsArray);
             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
             $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
 
@@ -1530,7 +1529,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_cache['toSaveInMagento'][$_customer->getData('website_id')][$_email] = $tmp;
             }
             $this->_cache['entitiesUpdating'] = $_emailsArray;
-            $this->_customerAccounts = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
+            $this->findCustomerAccounts($_emailsArray);
 
             $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
             $_companies = $_salesforceDataAccount->lookupByCompanies($_companies, 'CustomIndex');
@@ -1729,6 +1728,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
     }
 
+    public function getCustomerAccount($email)
+    {
+        if (isset($this->_customerAccounts[$email]) && $this->_customerAccounts[$email]) {
+            return $this->_customerAccounts[$email];
+        } else {
+            return false;
+        }
+    }
+    
     public function getCustomerAccounts()
     {
         return $this->_customerAccounts;
@@ -1738,7 +1746,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      * @param array $emails
      * @return array
      */
-    public function findCustomerAccountsForGuests($emails = array())
+    public function findCustomerAccounts($emails = array())
     {
         $this->_customerAccounts = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails);
         return $this->getCustomerAccounts();
