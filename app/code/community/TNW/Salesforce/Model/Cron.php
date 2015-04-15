@@ -730,7 +730,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             $manualSync->setIsFromCLI(true);
             $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
             $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-            $_foundAccounts = $manualSync->findCustomerAccountsForGuests($_customerArray);
+            $_foundAccounts = $manualSync->findCustomerAccounts($_customerArray);
 
             $this->_prepareLeadConversionObject($_customerArray, $_foundAccounts);
         }

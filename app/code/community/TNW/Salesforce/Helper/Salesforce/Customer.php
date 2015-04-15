@@ -1743,6 +1743,16 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
+     * @deprecated Use "findCustomerAccounts" instead
+     * @param array $emails
+     * @return array
+     */
+    public function findCustomerAccountsForGuests($emails = array())
+    {
+        return $this->findCustomerAccounts($emails);
+    }
+
+    /**
      * @param array $emails
      * @return array
      */
