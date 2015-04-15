@@ -252,7 +252,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
                 $_foundAccounts = array();
                 foreach ($this->_cache['leadLookup'] as $websiteleads){
-                    $_foundAccounts = array_merge($_foundAccounts, $manualSync->findCustomerAccountsForGuests(array_keys($websiteleads)));
+                    $_foundAccounts = array_merge($_foundAccounts, $manualSync->findCustomerAccounts(array_keys($websiteleads)));
                 }
             } else {
                 $_foundAccounts = array();

@@ -65,6 +65,21 @@
                     </check>
                 </entities>
             </tnw_salesforce_mysql4>
+            <tnw_salesforce_api_entity>
+                <class>TNW_Salesforce_Model_Api_Entity</class>
+                <resourceModel>tnw_salesforce_api_entity_resource</resourceModel>
+            </tnw_salesforce_api_entity>
+            <tnw_salesforce_api_entity_resource>
+                <class>TNW_Salesforce_Model_Api_Entity_Resource</class>
+                <entities>
+                    <lead>
+                        <table>Lead</table>
+                    </lead>
+                    <account>
+                        <table>Account</table>
+                    </account>
+                </entities>
+            </tnw_salesforce_api_entity_resource>
         </models>
         <resources>
             <tnw_salesforce_setup>
@@ -660,6 +675,11 @@
             <modules>
                 <TNW_Salesforce />
             </modules>
+            <fixture>
+                <processors>
+                    <salesforce>tnw_salesforce/fixture_processor_salesforce</salesforce>
+                </processors>
+            </fixture>
         </suite>
     </phpunit>
 </config>

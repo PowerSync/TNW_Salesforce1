@@ -240,9 +240,12 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     }
 
     /**
-     * @param null $_obj
+     * @param string $_obj
      * @param string $_operation
-     * @param null $_externalId
+     * @param string $_externalId
+     *
+     * @throws Exception
+     *
      * @return null|string
      */
     public function _createJob($_obj = NULL, $_operation = 'upsert', $_externalId = NULL)
@@ -281,14 +284,16 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         $this->_client->setRawData($_data);
 
-        try {
-            $response = $this->_client->request()->getBody();
-            $_jobInfo = simplexml_load_string($response);
-            return substr($_jobInfo->id, 0, -3);
-        } catch (Exception $e) {
-            // TODO:  Log error, quit
-            $response = $e->getMessage();
+        $response = $this->_client->request()->getBody();
+        $_jobInfo = simplexml_load_string($response);
+
+        if (isset($_jobInfo->exceptionMessage)) {
+            throw new Exception('Cannot find job id:' . $_jobInfo->exceptionMessage);
+        } elseif (!isset($_jobInfo->id)) {
+            throw new Exception('Cannot find job id');
         }
+
+        return substr($_jobInfo->id, 0, -3);
     }
 
     /**

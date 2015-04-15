@@ -1,0 +1,6 @@
+salesforce:
+  lead:
+    - ID: LEAD1
+      OwnerId: 00524000000KeE7AAK
+    - ID: LEAD2
+      OwnerId: 00524000000KeE7AAK

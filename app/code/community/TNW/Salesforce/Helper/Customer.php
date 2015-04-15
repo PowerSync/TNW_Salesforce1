@@ -329,26 +329,15 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             if ($doInsert) {
                 Mage::helper('tnw_salesforce')->log("Force Insert!");
             }
+
             /* Push to Salesforce */
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$this->$sfObjectType;
-                $sObject->type = $type;
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array($sObject)));
-                $resultContact = $this->_mySforceConnection->upsert($upsertOn, array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
-                    "data" => $sObject,
-                    "result" => $resultContact
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array($this->$sfObjectType)));
-                $resultContact = $this->_mySforceConnection->upsert($upsertOn, array($this->$sfObjectType), $type);
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
-                    "data" => array($this->$sfObjectType),
-                    "result" => $resultContact
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array($this->$sfObjectType)));
+            $resultContact = $this->_mySforceConnection->upsert($upsertOn, array($this->$sfObjectType), $type);
+            Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
+                "data" => array($this->$sfObjectType),
+                "result" => $resultContact
+            ));
+
             /* Process Errors, Success */
             $result = (is_array($resultContact)) ? $resultContact[0] : $resultContact;
             Mage::helper('tnw_salesforce')->log("------------------- " . $type . " Sync End -------------------");
@@ -405,26 +394,13 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
     {
         $this->_account;
         try {
-            /* Push to Salesforce */
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$this->_account;
-                $sObject->type = 'Account';
-                Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => array($sObject)));
-                $resultContact = $this->_mySforceConnection->upsert('Id', array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_account_send_after",array(
-                    "data" => array($sObject),
-                    "result" => $resultContact
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => array($this->_account)));
-                $resultContact = $this->_mySforceConnection->upsert('Id', array($this->_account), 'Account');
-                Mage::dispatchEvent("tnw_salesforce_account_send_after",array(
-                    "data" => array($this->_account),
-                    "result" => $resultContact
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => array($this->_account)));
+            $resultContact = $this->_mySforceConnection->upsert('Id', array($this->_account), 'Account');
+            Mage::dispatchEvent("tnw_salesforce_account_send_after",array(
+                "data" => array($this->_account),
+                "result" => $resultContact
+            ));
+
             /* Process Errors, Success */
             $result = (is_array($resultContact)) ? $resultContact[0] : $resultContact;
             if (!$result->success) {

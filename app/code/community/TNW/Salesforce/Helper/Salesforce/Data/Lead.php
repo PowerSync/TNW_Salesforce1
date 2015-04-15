@@ -238,25 +238,28 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
             $leadConvert->leadId = $lead->Id;
 
+            //IMPORTANT: "OwnerId" is a property of source $lead object, "ownerId" - of result $leadConvert object
+
             // Retain OwnerID if Lead is already assigned, owner should be active and is not queue
             // If not, pull default Owner from Magento configuration
             if (
                 property_exists($lead, 'OwnerId')
-                && $userHelper->isUserActive($leadConvert->ownerId)
-                && !$userHelper->isQueue($leadConvert->OwnerId)
+                && $userHelper->isUserActive($lead->OwnerId)
+                && !$userHelper->isQueue($lead->OwnerId)
             ) {
                 $leadConvert->ownerId = $lead->OwnerId;
 
             }
         }
-        // Retain OwnerID if Lead is already assigned, owner should be active and is not queue
+        // Retain ownerId if Lead is already assigned, owner should be active and is not queue
         // If not, pull default Owner from Magento configuration
         if (
-            !property_exists($leadConvert, 'OwnerId')
-            || !$leadConvert->OwnerId
+            !property_exists($leadConvert, 'ownerId')
+            || !$leadConvert->ownerId
             || !$userHelper->isUserActive($leadConvert->ownerId)
-            || $userHelper->isQueue($leadConvert->OwnerId)
+            || $userHelper->isQueue($leadConvert->ownerId)
         ) {
+
             $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
         }
 
@@ -391,11 +394,31 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 && array_key_exists($email, $this->_cache['leadLookup'][$salesforceWebsiteId])
                 && is_object($this->_cache['leadLookup'][$salesforceWebsiteId][$email])
             ) {
-                $leadConvert = $this->_prepareLeadConversionObjectSimple($this->_cache['leadLookup'][$salesforceWebsiteId][$email]);
+                $leadData = $this->_cache['leadLookup'][$salesforceWebsiteId][$email];
+                $leadConvert = $this->_prepareLeadConversionObjectSimple($leadData);
 
                 // Attach to existing account
                 if (array_key_exists($email, $accounts) && $accounts[$email]) {
                     $leadConvert->accountId = $accounts[$email];
+                } else {
+                    //force lookup for accounts here if no accounts found.
+                    //search by email domain was made before, search by company name here
+                    $customerId = isset($this->_cache[$parentEntityType . 'ToCustomerId'][$parentEntityId])
+                        ? $this->_cache[$parentEntityType . 'ToCustomerId'][$parentEntityId] : 'customerId';
+
+                    //use customer entity instead of email to avoid additional load of entity
+                    // and fix account (company name) for guest
+                    $_email = isset($this->_cache[$parentEntityType . 'Customers'][$parentEntityId])
+                        ? $this->_cache[$parentEntityType . 'Customers'][$parentEntityId] : $email;
+
+                    $accountLookup = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup(
+                        array($customerId => $_email),
+                        array($customerId => $salesforceWebsiteId)
+                    );
+
+                    if (isset($accountLookup[0][$email]) && isset($accountLookup[0][$email]->Id)) {
+                        $leadConvert->accountId = $accountLookup[0][$email]->Id;
+                    }
                 }
 
                 // logs

@@ -3,7 +3,7 @@
 class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
 {
     /**
-     * @var null
+     * @var Salesforce_SforceEnterpriseClient
      */
     protected $_client = NULL;
 
@@ -71,19 +71,12 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         ini_set('soap.wsdl_cache_enabled', 0);
         if (
             !$this->_client &&
-            Mage::helper('tnw_salesforce')->isWorking() &&
-            $clientType = Mage::helper('tnw_salesforce')->getApiType()
+            Mage::helper('tnw_salesforce')->isWorking()
         ) {
-            $cstClass = 'Salesforce_Sforce' . $clientType . 'Client';
             # instantiate a new Salesforce object
-            $this->_client = new $cstClass();
-            unset($cstClass);
+            $this->_client = new Salesforce_SforceEnterpriseClient();
         } else {
             Mage::getSingleton('adminhtml/session')->addNotice("Salesforce API connectivity issue, sync is disabled. Check API configuration and try manual synchronization.");
-            // Redirect removed
-            #Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section'=>'salesforce')));
-            #Mage::app()->getResponse()->sendResponse();
-            return;
         }
     }
 
@@ -232,9 +225,11 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         return false;
     }
 
+    /**
+     * @return Salesforce_SforceEnterpriseClient
+     */
     public function getClient()
     {
-        //return (Zend_Registry::isRegistered('salesforceClient')) ? Zend_Registry::get('salesforceClient') : $this->initConnection();
         return ($this->isConnected()) ? $this->_client : $this->initConnection();
     }
 
