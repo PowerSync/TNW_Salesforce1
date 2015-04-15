@@ -1,7 +1,7 @@
 <?php
 
 class TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection
-    extends Mage_Core_Model_Resource_Db_Collection_Abstract
+    extends TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
 {
     protected function _construct()
     {

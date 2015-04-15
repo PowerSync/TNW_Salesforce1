@@ -21,7 +21,7 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     }
 
     /**
-     * @var TNW_Salesforce_Model_Api_Client
+     * @return TNW_Salesforce_Model_Api_Client
      */
     protected function _getClient()
     {
@@ -39,6 +39,10 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      */
     public function fetchRow($sql, $bind = array(), $fetchMode = null)
     {
+        if ($sql instanceof Zend_Db_Select) {
+            $sql = $sql->assemble();
+        }
+
         $response = $this->_getClient()->query($sql);
         if (isset($response[0])) {
             return $response[0];
@@ -59,6 +63,20 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     public function fetchAll($sql, $bind = array(), $fetchMode = null)
     {
         return $this->_getClient()->query($sql);
+    }
+
+    /**
+     * Fetches the first column of the first row of the SQL result.
+     *
+     * @param string|Zend_Db_Select $sql An SQL SELECT statement.
+     * @param mixed $bind Data to bind into SELECT placeholders.
+     * @return string
+     */
+    public function fetchOne($sql, $bind = array())
+    {
+        $row = $this->fetchRow($sql, $bind);
+
+        return is_array($row) ? current($row) : null;
     }
 
     /**
@@ -233,5 +251,92 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     public function supportStraightJoin()
     {
         return false;
+    }
+
+    /**
+     * Build SQL statement for condition
+     *
+     * If $condition integer or string - exact value will be filtered ('eq' condition)
+     *
+     * If $condition is array is - one of the following structures is expected:
+     * - array("eq" => $equalValue)
+     * - array("neq" => $notEqualValue)
+     * - array("like" => $likeValue)
+     * - array("in" => array($inValues))
+     * - array("nin" => array($notInValues))
+     * - array("notnull" => $valueIsNotNull)
+     * - array("null" => $valueIsNull)
+     * - array("gt" => $greaterValue)
+     * - array("lt" => $lessValue)
+     * - array("gteq" => $greaterOrEqualValue)
+     * - array("lteq" => $lessOrEqualValue)
+     * - array("finset" => $valueInSet)
+     * - array("regexp" => $regularExpression)
+     *
+     * If non matched - sequential array is expected and OR conditions
+     * will be built using above mentioned structure
+     *
+     * @param string|array $fieldName
+     * @param integer|string|array $condition
+     * @return string
+     */
+    public function prepareSqlCondition($fieldName, $condition)
+    {
+        $conditionKeyMap = array(
+            'eq'            => "{{fieldName}} = ?",
+            'neq'           => "{{fieldName}} != ?",
+            'like'          => "{{fieldName}} LIKE ?",
+            'nlike'         => "{{fieldName}} NOT LIKE ?",
+            'in'            => "{{fieldName}} IN(?)",
+            'nin'           => "{{fieldName}} NOT IN(?)",
+            'is'            => "{{fieldName}} IS ?",
+            'notnull'       => "{{fieldName}} IS NOT NULL",
+            'null'          => "{{fieldName}} IS NULL",
+            'gt'            => "{{fieldName}} > ?",
+            'lt'            => "{{fieldName}} < ?",
+            'gteq'          => "{{fieldName}} >= ?",
+            'lteq'          => "{{fieldName}} <= ?",
+            'finset'        => "FIND_IN_SET(?, {{fieldName}})",
+            'regexp'        => "{{fieldName}} REGEXP ?",
+        );
+
+        if (is_array($condition)) {
+            if (isset($condition['field_expr'])) {
+                $fieldName = str_replace('#?', $this->quoteIdentifier($fieldName), $condition['field_expr']);
+                unset($condition['field_expr']);
+            }
+            $key = key(array_intersect_key($condition, $conditionKeyMap));
+
+            if (array_key_exists($key, $conditionKeyMap)) {
+                $value = $condition[$key];
+                $query = $this->_prepareQuotedSqlCondition($conditionKeyMap[$key], $value, $fieldName);
+            } else {
+                $queries = array();
+                foreach ($condition as $orCondition) {
+                    $queries[] = sprintf('(%s)', $this->prepareSqlCondition($fieldName, $orCondition));
+                }
+
+                $query = sprintf('(%s)', implode(' OR ', $queries));
+            }
+        } else {
+            $query = $this->_prepareQuotedSqlCondition($conditionKeyMap['eq'], (string)$condition, $fieldName);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Prepare Sql condition
+     *
+     * @param  $text Condition value
+     * @param  mixed $value
+     * @param  string $fieldName
+     * @return string
+     */
+    protected function _prepareQuotedSqlCondition($text, $value, $fieldName)
+    {
+        $sql = $this->quoteInto($text, $value);
+        $sql = str_replace('{{fieldName}}', $fieldName, $sql);
+        return $sql;
     }
 }

@@ -11,11 +11,11 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
         return Mage::getSingleton('tnw_salesforce/api_entity_adapter');
     }
 
-    protected function _getDefaultColumns()
+    public function getDefaultColumns()
     {
         $columns = $this->_columns;
         if (!isset($this->_columns[$this->getIdFieldName()])) {
-            $columns[] = $this->getIdFieldName();
+            array_unshift($columns, $this->getIdFieldName());
         }
 
         return (array)$columns;
@@ -35,7 +35,7 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
         $select = $this->_getReadAdapter()->select()
             ->from($this->getMainTable(), array_map(function ($value) {
                 return new Zend_Db_Expr($value);
-            }, $this->_getDefaultColumns()))
+            }, $this->getDefaultColumns()))
             ->where($field . '=?', $value);
         return $select;
     }
