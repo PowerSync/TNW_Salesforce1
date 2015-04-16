@@ -507,36 +507,46 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * if not all batches completed - we return false
      * if exception occurs - we return 'exception'
      *
-     * @param null $jobId
+     * @param string $jobId
+     *
      * @return bool|string
      */
-    protected function _checkBatchCompletion($jobId = NULL)
+    protected function _checkBatchCompletion($jobId)
     {
+        $completed = true;
+        $logHelper = Mage::helper('tnw_salesforce');
+        $client = $this->_client;
+
         // check for update on all batches
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch');
-        $this->_client->setMethod('GET');
-        $this->_client->setHeaders('Content-Type: text/csv');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
         try {
-            $this->_response = simplexml_load_string($this->_client->request()->getBody());
-            $_isAllcomplete = true;
-            foreach ($this->_response as $_isAllcomplete) {
-                Mage::helper('tnw_salesforce')->log("INFO: State: " . $_isAllcomplete->state);
-                Mage::helper('tnw_salesforce')->log("INFO: Batch ID: " . $_isAllcomplete->id);
-                Mage::helper('tnw_salesforce')->log("INFO: RecordsProcessed: " . $_isAllcomplete->numberRecordsProcessed);
-                if ("Completed" != $_isAllcomplete->state) {
-                    $_isAllcomplete = false;
+            $client->setUri(sprintf('%s/services/async/%s/job/%s/batch',
+                $this->getSalesforceServerDomain(), $this->_salesforceApiVersion, $jobId));
+            $client->setMethod('GET');
+            $client->setHeaders('Content-Type: text/csv');
+            $client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
+
+            $response = simplexml_load_string($client->request()->getBody());
+            foreach ($response as $_responseRow) {
+                if (property_exists($_responseRow, 'state')) {
+                    $logHelper->log('INFO: State: ' . $_responseRow->state);
+                    $logHelper->log('INFO: Batch ID: ' . $_responseRow->id);
+                    $logHelper->log('INFO: RecordsProcessed: ' . $_responseRow->numberRecordsProcessed);
+                    if ('Completed' != $_responseRow->state) {
+                        $completed = false;
+                        break;
+                        // try later
+                    }
+                } else {
+                    $completed = false;
                     break;
-                    // try later
                 }
             }
         } catch (Exception $e) {
-            $response = $e->getMessage();
-            Mage::helper('tnw_salesforce')->log('_checkBatchCompletion function has an error: '.$response);
-            $_isAllcomplete = 'exception';
+            $logHelper->log('_checkBatchCompletion function has an error: '.$e->getMessage());
+            $completed = 'exception';
         }
 
-        return $_isAllcomplete;
+        return $completed;
     }
 
     /**
