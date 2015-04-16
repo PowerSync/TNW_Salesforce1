@@ -1,11 +1,5 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: evgeniy
- * Date: 05.02.15
- * Time: 0:42
- */
 class TNW_Salesforce_Model_Config_Abandoned_Cart_Limit
 {
     /**

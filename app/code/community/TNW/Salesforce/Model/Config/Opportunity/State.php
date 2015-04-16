@@ -1,11 +1,5 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: evgeniy
- * Date: 20.02.15
- * Time: 15:36
- */
 class TNW_Salesforce_Model_Config_Opportunity_State
 {
     protected $_statuses = array();
