@@ -14,8 +14,6 @@ class TNW_Salesforce_Model_Config_Opportunity_State
     public function __construct()
     {
         $this->_statuses = Mage::helper('tnw_salesforce/salesforce_data')->getStatus('Opportunity');
-
-        //parent::__construct();
     }
 
     /**

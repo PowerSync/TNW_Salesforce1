@@ -48,7 +48,6 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
         $this->getObj()->$syncParam = true;
 
         $_accountName = $_customer->getFirstname() . ' ' . $_customer->getLastname();
-        $store = ($_customer->getStoreId() !== NULL) ? Mage::getModel('core/store')->load($_customer->getStoreId()) : NULL;
 
         /**
          * @comment find website

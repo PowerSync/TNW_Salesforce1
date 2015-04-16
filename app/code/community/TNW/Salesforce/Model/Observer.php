@@ -133,7 +133,6 @@ class TNW_Salesforce_Model_Observer
             && Mage::helper('tnw_salesforce')->getObjectSyncType() == 'sync_type_realtime'
         ) {
             try {
-                //Mage::getModel('tnw_salesforce/feed')->checkUpdate();
                 Mage::getModel('tnw_salesforce/imports_bulk')->process();
             } catch (Exception $e) {
                 // silently ignore
@@ -157,17 +156,15 @@ class TNW_Salesforce_Model_Observer
      *
      * @return bool
      */
-    public function showSfStatus(Varien_Event_Observer $observer)
+    public function showSfStatus()
     {
         // Set common header on all pages for tracking purposes
         Mage::app()->getFrontController()->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
 
         // skip if sf synchronization is disabled or we are on api config page
 
-        $urlParamSet = Mage::app()->getRequest()->getParams();
         if (!Mage::helper('tnw_salesforce')->isWorking()
             || Mage::app()->getRequest()->getControllerName() == 'index'
-            // || (Mage::app()->getRequest()->getControllerName() == 'system_config' && $urlParamSet['section'] == 'salesforce')
         ) {
             return false;
         }

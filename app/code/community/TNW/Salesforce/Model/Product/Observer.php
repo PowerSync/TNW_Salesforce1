@@ -75,7 +75,6 @@ class TNW_Salesforce_Model_Product_Observer
             if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                 // pass data to local storage
                 // TODO add level up abstract class with Order as static values, now we have word 'Product' as parameter
-                //$res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($_product->getData('entity_id'))), 'Product', 'product');
                 $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array(intval($_product->getData('entity_id'))), 'Product', 'product');
                 if (!$res) {
                     Mage::helper("tnw_salesforce")->log('error: product not saved to local storage');
@@ -101,9 +100,6 @@ class TNW_Salesforce_Model_Product_Observer
             $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
             $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-            // test related to ticket https://trello.com/c/RG74DHYY/46-salesforce-destination-url-bug
-            //Mage::helper('tnw_salesforce/salesforce_data')->getClient()->invalidateSessions();
-
             if ($manualSync->reset()) {
                 $manualSync->massAdd(array($_product->getId()));
                 $manualSync->process();
@@ -112,16 +108,14 @@ class TNW_Salesforce_Model_Product_Observer
                 Mage::getSingleton('adminhtml/session')->addError('Salesforce Connection failed!');
             }
         }
-        unset($_product);
-        return;
     }
 
-    public function beforeImport($observer)
+    public function beforeImport()
     {
         Mage::getSingleton('core/session')->setFromSalesForce(true);
     }
 
-    public function afterImport($observer)
+    public function afterImport()
     {
         Mage::getSingleton('core/session')->setFromSalesForce(false);
     }

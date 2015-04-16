@@ -23,10 +23,8 @@ class TNW_Salesforce_Model_Imports_Bulk
         $collection = $this->_queue->getCollection()->getOnlyPending();
 
         $queueCount = count($collection);
-        #if ($queueCount < 0) {
         if ($queueCount > 0) {
             Mage::helper('tnw_salesforce')->log("---- Start Magento Upsert ----");
-            //set_time_limit(60); //Reset Script execution time limit
             $count = 0;
             foreach ($collection as $_map) {
                 $count++;
@@ -59,7 +57,6 @@ class TNW_Salesforce_Model_Imports_Bulk
                     continue;
                 }
                 $queueStatus = true;
-                //$customers = array();
 
                 foreach ($objects as $object) {
                     // Each object should have 'attributes' property and 'type' inside 'attributes'
@@ -74,7 +71,6 @@ class TNW_Salesforce_Model_Imports_Bulk
                             ) {
                                 if ($object->Email || (property_exists($object, 'IsPersonAccount') && $object->IsPersonAccount == 1 && $object->PersonEmail)) {
                                     Mage::helper('tnw_salesforce')->log("Synchronizing: " . $object->attributes->type);
-                                    //$entity[] = Mage::helper('tnw_salesforce/customer')->contactProcess($object);
                                     Mage::helper('tnw_salesforce/magento_customers')->process($object);
                                 } else {
                                     Mage::helper('tnw_salesforce')->log("SKIPPING: Email is missing in Salesforce!");
@@ -112,20 +108,11 @@ class TNW_Salesforce_Model_Imports_Bulk
                     unset($object);
                 }
                 if ($queueStatus) {
-                    //if (!empty($customers)) {
-                    //    $queueStatus = Mage::helper('tnw_salesforce/customer')->updateContacts($customers);
-                    //}
-                    //if ($queueStatus) {
-                        /* Only delete the queue if all records from the queue were accepted */
-                        /* If PHP execution time is reached only fully processed queues will be removed */
-                        $queue->delete();
-                    //}
-
-                    unset($customers, $queue);
+                    $queue->delete();
                 }
+                unset($queue);
                 set_time_limit(30); //Reset Script execution time limit
             }
-            unset($collection);
 
             Mage::helper('tnw_salesforce')->log("---- End Magento Upsert ----");
         } elseif ($queueCount > 1) {

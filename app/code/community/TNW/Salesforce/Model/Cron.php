@@ -64,7 +64,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 }
 
                 return false;
-                break;
             case 'sync_type_spectime':
                 /**
                  * here we check if Frequency period passed,
@@ -114,14 +113,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 }
 
                 return false;
-                break;
             default:
-
                 return true;
-                break;
         }
-
-        return false;
     }
 
     public function backgroundProcess()
@@ -321,8 +315,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Server Name is undefined!", 1, 'sf-cron');
         }
-
-        return;
     }
 
     public function _syncCustomObjects()
@@ -345,7 +337,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
     public function getBatchSize($type)
     {
-        $batchSize = 0;
         switch ($type) {
             case 'customer':
                 $batchSize = self::CUSTOMER_BATCH_SIZE;
@@ -367,7 +358,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 break;
             default:
                 throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
-                break;
         }
 
         return $batchSize;

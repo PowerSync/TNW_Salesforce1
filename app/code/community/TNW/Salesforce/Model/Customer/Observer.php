@@ -129,21 +129,14 @@ class TNW_Salesforce_Model_Customer_Observer
                 Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
             }
         }
-        unset($customer);
     }
 
-    /**
-     * @param $observer
-     */
-    public function beforeImport($observer)
+    public function beforeImport()
     {
         Mage::getSingleton('core/session')->setFromSalesForce(true);
     }
 
-    /**
-     * @param $observer
-     */
-    public function afterImport($observer)
+    public function afterImport()
     {
         Mage::getSingleton('core/session')->setFromSalesForce(false);
     }

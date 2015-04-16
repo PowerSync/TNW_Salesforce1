@@ -67,24 +67,13 @@ class TNW_Salesforce_Model_Website_Observer
 
     public function updateForm($observer) {
         $_block = $observer->getEvent()->getBlock();
-
-        if (Mage::registry('store_type') == 'website') {
-            $websiteModel = Mage::registry('store_data');
-            $showWebsiteFieldset = true;
-            $showGroupFieldset = $showStoreFieldset = false;
-        } elseif (Mage::registry('store_type') == 'group') {
-            $groupModel = Mage::registry('store_data');
-            $showGroupFieldset = true;
-            $showWebsiteFieldset = $showStoreFieldset = false;
-        } elseif (Mage::registry('store_type') == 'store') {
-            $storeModel = Mage::registry('store_data');
-            $showWebsiteFieldset = $showGroupFieldset = false;
-            $showStoreFieldset = true;
+        if (!$_block) {
+            return;
         }
 
-        $_form = $_block->getForm();
+        if (Mage::registry('store_type') == 'website') {
+            $_form = $_block->getForm();
 
-        if ($showWebsiteFieldset) {
             $fieldset = $_form->addFieldset('website_fieldset_salesforce', array(
                 'legend' => Mage::helper('core')->__('Salesforce Data')
             ));
@@ -93,6 +82,8 @@ class TNW_Salesforce_Model_Website_Observer
             foreach (Mage::getModel('tnw_salesforce/config_pricebooks')->toOptionArray() as $_pricebook) {
                 $_options[$_pricebook['value']] = $_pricebook['label'];
             }
+
+            $websiteModel = Mage::registry('store_data') ? : new Varien_Object();
 
             if ($postData = Mage::registry('store_post_data')) {
                 $websiteModel->setData($postData['website']);
@@ -106,8 +97,5 @@ class TNW_Salesforce_Model_Website_Observer
                 'required'  => false
             ));
         }
-
-        $_block->setForm($_form);
-
     }
 }

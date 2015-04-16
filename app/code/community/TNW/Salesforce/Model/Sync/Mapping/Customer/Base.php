@@ -189,7 +189,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                                 /**
                                  * @deprecated
                                  */
-                                $value = null;//$this->_contactId;
+                                $value = null;
                             } elseif ($value == "{{store view name}}") {
                                 $value = Mage::app()->getStore()->getName();
                             } elseif ($value == "{{store group name}}") {
@@ -198,9 +198,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                                 $value = Mage::app()->getWebsite()->getName();
                             }
                         }
-                        break;
-                    default:
-                        break;
                 }
             } else {
                 $this->setBreak(false);
@@ -214,10 +211,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
             }
         }
         unset($collection, $_map, $group);
-
-        // This field does not exist for Lead
-        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        //$this->getObj()->$syncParam = true;
 
         if ($entity->getId()) {
             $this->getObj()->{$this->getMagentoId()} = $entity->getId();
