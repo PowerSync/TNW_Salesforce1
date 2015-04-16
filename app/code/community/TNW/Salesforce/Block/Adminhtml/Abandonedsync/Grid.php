@@ -116,7 +116,6 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
         $this->addColumn('salesforce_id', array(
             'header' => Mage::helper('sales')->__('Opportunity ID'),
             'index' => 'salesforce_id',
-//            'filter_index' => 'main_table.salesforce_id',
             'type' => 'text',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
@@ -134,14 +133,11 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
         $this->addColumn('customer_name', array(
             'header' => Mage::helper('reports')->__('Customer Name'),
             'index' => 'customer_name',
-//            'filter_index' => 'main_table.customer_name',
-            
         ));
 
         $this->addColumn('email', array(
             'header' => Mage::helper('reports')->__('Email'),
             'index' => 'email',
-//            'filter_index' => 'main_table.email',
             'sortable' => false
         ));
 
@@ -150,8 +146,6 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'width' => '80px',
             'align' => 'right',
             'index' => 'items_count',
-//            'filter_index' => 'main_table.items_count',
-            
             'type' => 'number'
         ));
 
@@ -161,7 +155,6 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'align' => 'right',
             'index' => 'items_qty',
             'filter_index' => 'main_table.items_count',
-            
             'type' => 'number'
         ));
 
@@ -183,7 +176,6 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'type' => 'currency',
             'currency_code' => $currencyCode,
             'index' => 'subtotal',
-            
             'renderer' => 'adminhtml/report_grid_column_renderer_currency',
             'rate' => $this->getRate($currencyCode),
         ));

@@ -1,11 +1,6 @@
 <?php
 class TNW_Salesforce_Block_Adminhtml_System_Store extends Mage_Adminhtml_Block_System_Store_Store
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     protected function _prepareLayout()
     {
         $this->_addButton('sync_websites', array(
@@ -16,5 +11,4 @@ class TNW_Salesforce_Block_Adminhtml_System_Store extends Mage_Adminhtml_Block_S
 
         return parent::_prepareLayout();
     }
-
 }

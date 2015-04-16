@@ -133,9 +133,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'filter_index' => '`main_table`.`status`',
         ));
 
-        //if (Mage::helper('tnw_salesforce')->getMagentoVersion() < 1500) {
-        $this->addColumn('singleAction',
-            array(
+        $this->addColumn('singleAction', array(
                 'header' => Mage::helper('sales')->__('Action'),
                 'width' => '50px',
                 'type' => 'action',
@@ -151,8 +149,8 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
                 'sortable' => false,
                 'index' => 'stores',
                 'is_system' => true,
-            ));
-        //}
+        ));
+
         return parent::_prepareColumns();
     }
 

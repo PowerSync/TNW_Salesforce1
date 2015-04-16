@@ -5,7 +5,6 @@
  */
 class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
-    // internal constructor
     protected function _construct()
     {
         parent::_construct();
@@ -151,18 +150,6 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
             'confirm' => Mage::helper('tnw_salesforce')->__('This will reset all selected items in the queue. Are you sure?')
         ));
 
-        //$url = '*/*/massProcess';
-        /*  Not stable
-        if (Mage::helper('tnw_salesforce')->getStoreId() != 0) {
-            $url .= '/store/' . Mage::helper('tnw_salesforce')->getStoreId();
-        }
-
-        $this->getMassactionBlock()->addItem('process', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Process'),
-            'url' => $this->getUrl($url),
-            'confirm' => Mage::helper('tnw_salesforce')->__('This will process all selected items in the queue. Are you sure?')
-        ));
-        */
         return $this;
     }
 
