@@ -51,7 +51,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $this->_convertLeads();
                 Mage::helper('tnw_salesforce')->log('----------Converting Leads: End----------');
                 if (!empty($this->_cache['toSaveInMagento'])) {
-                    //if (!empty($this->_cache['toSaveInMagento']) && Mage::helper('tnw_salesforce')->usePersonAccount()) {
                     $this->_updateMagento();
                 }
                 $this->clearMemory();
@@ -431,9 +430,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
-        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        //$this->_obj->$syncParam = true;
-
         // Magento Order ID
         $this->_obj->{$this->_magentoId} = $_orderNumber;
 
@@ -767,11 +763,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 Mage::helper('tnw_salesforce')->log("--------------------------");
             }
 
-            // assign owner id to opportunity
-            // removing owner from the equasion
-            //$this->_assignOwnerIdToOrder();
-
-
             try {
                 Mage::dispatchEvent("tnw_salesforce_order_send_before",array("data" => $this->_cache['ordersToUpsert']));
 
@@ -1049,7 +1040,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     is_array($options)
                     && array_key_exists('options', $options)
                 ) {
-                    $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
                     foreach ($options['options'] as $_option) {
                         $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $_option['print_value'] . '</td></tr>';
                         $_summary[] = $_option['print_value'];
@@ -1060,7 +1050,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     && $_item->getData('product_type') == 'bundle'
                     && array_key_exists('bundle_options', $options)
                 ) {
-                    $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
                     foreach ($options['bundle_options'] as $_option) {
                         $_string = '<td align="left">' . $_option['label'] . '</td>';
                         if (is_array($_option['value'])) {
@@ -1078,9 +1067,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     }
                 }
                 if (count($opt) > 0) {
-                    $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
                     // TODO: add Product_Options field to Salesforce Order Items
-                    //$this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
                     $this->_obj->Description = join(", ", $_summary);
                     if (strlen($this->_obj->Description) > 200) {
                         $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
@@ -1092,8 +1079,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $this->_cache['orderItemsToUpsert']['cart_' . $_item->getId()] = $this->_obj;
 
                 /* Dump OrderItem object into the log */
-                foreach ($this->_obj as $key => $_item) {
-                    Mage::helper('tnw_salesforce')->log("OrderItem Object: " . $key . " = '" . $_item . "'");
+                foreach ($this->_obj as $key => $_objItem) {
+                    Mage::helper('tnw_salesforce')->log("OrderItem Object: " . $key . " = '" . $_objItem . "'");
                 }
 
                 Mage::helper('tnw_salesforce')->log('-----------------');
@@ -1185,94 +1172,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         }
         return $id;
     }
-//
-//    /**
-//     * Gets field mapping from Magento and creates OpportunityLineItem object
-//     */
-//    protected function _processCartMapping($prod = NULL, $_map = NULL, $cartItem = NULL)
-//    {
-//        $value = false;
-//        $conf = explode(" : ", $_map->local_field);
-//        $sf_field = $_map->sf_field;
-//
-//        switch ($conf[0]) {
-//            case "Cart":
-//                if ($cartItem) {
-//                    if ($conf[1] == "total_product_price") {
-//                        $subtotal = number_format((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQtyOrdered()), 2, ".", "");
-//                        $value = number_format(($subtotal - $cartItem->getDiscountAmount()), 2, ".", "");
-//                    } else {
-//                        $value = $cartItem->getData($conf[1]);
-//
-//                        // Reformat date fields
-//                        if ($conf[1] == 'created_at' || $conf[1] == 'updated_at') {
-//                            $_doSkip = false;
-//                            if ($cartItem->getData($conf[1])) {
-//                                $timestamp = strtotime($cartItem->getData($conf[1]));
-//                                $newAttribute = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($timestamp));
-//                            } else {
-//                                $_doSkip = true; //Skip this filed if empty
-//                            }
-//                        }
-//                        if (!$_doSkip) {
-//                            $value = $newAttribute;
-//                        }
-//                    }
-//                }
-//                break;
-//            case "Product Inventory":
-//                $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($prod);
-//                $value = ($stock) ? (int)$stock->getQty() : NULL;
-//                break;
-//            case "Product":
-//                $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
-//                $value = ($prod->getAttributeText($conf[1])) ? $prod->getAttributeText($conf[1]) : $prod->$attr();
-//                break;
-//            case "Custom":
-//                if ($conf[1] == "current_url") {
-//                    $value = Mage::helper('core/url')->getCurrentUrl();
-//                } elseif ($conf[1] == "todays_date") {
-//                    $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-//                } elseif ($conf[1] == "todays_timestamp") {
-//                    $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
-//                } elseif ($conf[1] == "end_of_month") {
-//                    $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-//                    $value = date("Y-m-d", $lastday);
-//                } elseif ($conf[1] == "store_view_name") {
-//                    $value = Mage::app()->getStore()->getName();
-//                } elseif ($conf[1] == "store_group_name") {
-//                    $value = Mage::app()->getStore()->getGroup()->getName();
-//                } elseif ($conf[1] == "website_name") {
-//                    $value = Mage::app()->getWebsite()->getName();
-//                } else {
-//                    $value = $_map->default_value;
-//                    if ($value == "{{url}}") {
-//                        $value = Mage::helper('core/url')->getCurrentUrl();
-//                    } elseif ($value == "{{today}}") {
-//                        $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-//                    } elseif ($value == "{{end of month}}") {
-//                        $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-//                        $value = date("Y-m-d", $lastday);
-//                    } elseif ($value == "{{contact id}}") {
-//                        $value = $this->_contactId;
-//                    } elseif ($value == "{{store view name}}") {
-//                        $value = Mage::app()->getStore()->getName();
-//                    } elseif ($value == "{{store group name}}") {
-//                        $value = Mage::app()->getStore()->getGroup()->getName();
-//                    } elseif ($value == "{{website name}}") {
-//                        $value = Mage::app()->getWebsite()->getName();
-//                    }
-//                }
-//                break;
-//            default:
-//                break;
-//        }
-//        if ($value) {
-//            $this->_obj->$sf_field = trim($value);
-//        } else {
-//            Mage::helper('tnw_salesforce')->log('ORDER ITEM MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
-//        }
-//    }
 
     protected function _doesCartItemExistInOrder($_orderNumber, $_item, $_sku)
     {
@@ -1314,7 +1213,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 if ($_note->getData('entity_name') == 'order' &&  !$_note->getData('salesforce_id') && $_note->getData('comment')) {
                     $this->_obj = new stdClass();
                     $this->_obj->ParentId = $this->_cache['upsertedOrders'][$_orderNumber];
-                    //$note->OwnerId = $customerId; //Needs to be Salesforce User
                     $this->_obj->IsPrivate = 0;
                     $this->_obj->Body = $_note->getData('comment');
                     $this->_obj->Title = $_note->getData('comment');

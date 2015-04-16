@@ -305,9 +305,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $_quoteNumber = $quote->getId();
         $_email = $this->_cache['abandonedToEmail'][$_quoteNumber];
 
-        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        //$this->_obj->$syncParam = true;
-
         // Link to a Website
         if (
             $_websiteId != NULL
@@ -517,7 +514,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -546,7 +542,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -598,7 +593,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
         if (!empty($sql)) {

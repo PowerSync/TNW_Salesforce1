@@ -376,7 +376,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             }
         } catch (Exception $e) {
             // TODO:  Log error, quit
-            $response = $e->getMessage();
         }
         return $_state;
     }
@@ -416,7 +415,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         foreach ($chunk as $_item) {
             Mage::helper('tnw_salesforce')->log("+++++ Start " . ucwords($_batchType) . " Object +++++");
             $_data .= '<sObject>';
-            //$this->_cache['batch']['product'][$_batchNum][] = $_product->{$this->_magentoId};
             foreach ($_item as $_tag => $_value) {
                 $_data .= '<' . $_tag . '><![CDATA[' . $_value . ']]></' . $_tag . '>';
                 Mage::helper('tnw_salesforce')->log(ucwords($_batchType) . " - " . $_tag . " : " . $_value);
@@ -442,14 +440,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 $this->_cache['batchCache'][$_batchType][$_on] = array();
             }
             $this->_cache['batchCache'][$_batchType][$_on][$_batchNum] = $_batchId;
-            //Mage::getSingleton('core/session')->setSalesforceBatchCache(serialize($this->_cache['batchCache']));
 
             $this->_cache['batch'][$_batchType][$_on][$_batchNum] = $chunk;
-            //Mage::getSingleton('core/session')->setSalesforceBatch(serialize($this->_cache['batch']));
             return true;
         } catch (Exception $e) {
             // TODO:  Log error, quit
-            $response = $e->getMessage();
             return false;
         }
     }
@@ -555,14 +550,12 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
-        //$errorMessage = '';
         if (is_array($_response->errors)) {
             Mage::helper('tnw_salesforce')->log('Failed to upsert ' . $type . '!');
             foreach ($_response->errors as $_error) {
                 if (Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_error->message);
                 }
-                //$errorMessage .= $_error->message . "</br>\n";
                 Mage::helper('tnw_salesforce/email')->sendError($_error->message, $_object, $type);
                 Mage::helper('tnw_salesforce')->log("ERROR: " . $_error->message);
             }
@@ -571,46 +564,10 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_response->errors->message);
             }
 
-            //$errorMessage .= $_response->errors->message . "</br>\n";
             Mage::helper('tnw_salesforce')->log('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
             // Send Email
             Mage::helper('tnw_salesforce/email')->sendError($_response->errors->message, $_object, $type);
         }
-/*
-        if ($_object) {
-            $session = Mage::getSingleton('core/session');
-
-            $errors = $session->getTnwSalesforceErrors();
-
-            if (!$errors) {
-                $errors = array();
-            }
-
-            switch ($type) {
-                case 'lead':
-                case 'contact':
-                case 'account':
-                    $type = 'customer';
-                    break;
-
-                case 'opportunityProduct':
-                case 'opportunity':
-                    $type = 'order';
-                    break;
-
-                case 'productPricebook':
-                    $type = 'product';
-                    break;
-            }
-            $errors[$errorMessage][] = array(
-                'object_id' => $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'},
-                'sf_object_type' => $type
-            );
-
-            $session->setTnwSalesforceErrors($errors);
-
-        }
-*/
     }
 
     public function getCurrencies()
@@ -642,8 +599,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     protected function reset()
     {
-//        ini_set('mysql.connect_timeout', TNW_Salesforce_Helper_Config::MYSQL_TIMEOUT);
-
         $this->_initCache();
 
         if (!$this->_magentoId) {
@@ -782,7 +737,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             return $_batchId;
         } catch (Exception $e) {
             // TODO:  Log error, quit
-            $response = $e->getMessage();
         }
     }
 
@@ -818,7 +772,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             return substr($_jobInfo->id, 0, -3);
         } catch (Exception $e) {
             // TODO:  Log error, quit
-            $response = $e->getMessage();
         }
     }
 

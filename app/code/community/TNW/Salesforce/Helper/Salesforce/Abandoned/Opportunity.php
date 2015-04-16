@@ -5,12 +5,10 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
 {
-
     /**
      * @var null
      */
     protected $_read = null;
-
 
     /**
      * @param $id
@@ -120,8 +118,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 && property_exists($this->_cache['opportunityLookup'][$_quoteNumber], 'Pricebook2Id')
                 && $this->_obj->Pricebook2Id != $this->_cache['opportunityLookup'][$_quoteNumber]->Pricebook2Id
             ) {
-                // Delete all OpportunityProducts
-                //$this->_cache['opportunityLineItemsToDelete'][] = $_quoteNumber;
                 Mage::helper('tnw_salesforce')->log("SKIPPED Quote: " . $_quoteNumber . " - Opportunity uses a different pricebook(" . $this->_cache['opportunityLookup'][$_quoteNumber]->Pricebook2Id . "), please change it in Salesforce.");
                 unset($this->_cache['entitiesUpdating'][$_key]);
                 unset($this->_cache['abandonedToEmail'][$_quoteNumber]);
@@ -272,10 +268,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     }
                     $this->_cache['failedOpportunities'][] = $_quoteNum;
                 } else {
-
-                    // set opp owner
-                    // $this->_updateOppOwner($_result->id); // frozen until we get other working solution
-
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 1, salesforce_id = '" . $_result->id . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
 
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
@@ -351,7 +343,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 continue;
             }
             Mage::helper('tnw_salesforce')->log('******** QUOTE (' . $_quoteNumber . ') ********');
-            //$_quote = $this->_loadQuote($_key);
             $_quote = Mage::registry('abandoned_cached_' . $_quoteNumber);
             $_currencyCode = Mage::app()->getStore($_quote->getStoreId())->getCurrentCurrencyCode();
 
@@ -376,8 +367,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $_productModel = Mage::getModel('catalog/product')->setStoreId($_storeId);
                 $_product = $_productModel->load($id);
 
-                $_sku = ($_item->getSku() != $_product->getSku()) ? $_product->getSku() : $_item->getSku();
-
                 $this->_obj = new stdClass();
                 if (!$_product->getSalesforcePricebookId()) {
                     Mage::helper('tnw_salesforce')->log("ERROR: Product w/ SKU (" . $_item->getSku() . ") is not synchronized, could not add to Opportunity!");
@@ -389,21 +378,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     ->setSync($this)
                     ->processMapping($_item, $_product);
 
-                // Check if already exists
-
                 /**
-                 * Next lines commented because abandoned cart items should be removed and added again
+                 * Abandoned cart items should be removed and added again
                  */
-//                $_cartItemFound = $this->doesCartItemExistInOpportunity($_quoteNumber, $_item, $_sku);
-//                if ($_cartItemFound) {
-//
-//                    $this->_obj->Id = $_cartItemFound;
-//                }
-
                 $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
-                //$subtotal = number_format((($item->getPrice() * $item->getQty()) + $item->getTaxAmount()), 2, ".", "");
-                //$subtotal = number_format(($_item->getPrice() * $_item->getQty()), 2, ".", "");
-                //$netTotal = number_format(($subtotal - $_item->getDiscountAmount()), 2, ".", "");
 
                 if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
                     $netTotal = number_format($_item->getData('row_total_incl_tax'), 2, ".", "");
@@ -426,11 +404,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $this->_obj->PricebookEntryId = $_product->getSalesforcePricebookId();
                 }
 
-                //$this->_obj->ProductCode = $_item->getSku();
-                //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-                //if ($defaultServiceDate) {
-                //    $this->_obj->ServiceDate = $defaultServiceDate;
-                //}
                 $opt = array();
                 $options = $_item->getProductOptions();
                 $_summary = array();
@@ -864,13 +837,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
     }
 
-    /**
-     * @param $order
-     */
-    protected function _updateQuoteStageName($quote)
+    protected function _updateQuoteStageName()
     {
-        ## Status integration
-
         $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
 
         if ($stage = Mage::helper('tnw_salesforce/abandoned')->getDefaultAbandonedCartStageName()) {
@@ -887,7 +855,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     protected function _setOpportunityInfo($quote)
     {
-//        $_websiteId = Mage::getModel('core/store')->load($quote->getStoreId())->getWebsiteId();
         $_websiteId = $quote->getStoreId();
 
         $this->_updateQuoteStageName($quote);
@@ -906,9 +873,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         ) {
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
-
-        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        //$this->_obj->$syncParam = true;
 
         $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
         // Magento Quote ID
@@ -966,7 +930,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         $this->_setOpportunityName($_quoteNumber, $_accountName);
-        unset($quote);
     }
 
     /**

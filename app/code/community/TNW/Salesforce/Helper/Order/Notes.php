@@ -64,14 +64,6 @@ class TNW_Salesforce_Helper_Order_Notes extends TNW_Salesforce_Helper_Order
                 case 'Order':
                     $_tableUpdate = 'sales_flat_order_status_history';
                     break;
-                /*
-                case 'Invoice':
-                    $_tableUpdate = 'sales_flat_invoice_comment';
-                    break;
-                case 'Credit Memo':
-                    $_tableUpdate = 'sales_flat_creditmemo_comment';
-                    break;
-                */
                 default:
                     $_updateComment = false;
             }

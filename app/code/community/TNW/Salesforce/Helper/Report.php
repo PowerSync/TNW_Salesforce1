@@ -80,7 +80,7 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
             unset($validator);
 
             $client->setMethod(Zend_Http_Client::POST);
-            $response = @$client->request()->getBody();
+            @$client->request()->getBody();
         } catch(Exception $e) {
             //TODO: log
             return false;

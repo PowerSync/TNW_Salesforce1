@@ -469,9 +469,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     protected function _pushOrdersToSalesforce()
     {
         if (!empty($this->_cache['ordersToUpsert'])) {
-            // assign owner id to order
-            // removing, cannot seem to modify owner or set owner
-            //$this->_assignOwnerIdToOrder();
 
             if (!$this->_cache['bulkJobs']['order'][$this->_magentoId]) {
                 // Create Job
@@ -540,7 +537,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
             if (!empty($_sql)) {
@@ -588,7 +584,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -653,8 +648,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                             Mage::register('order_cached_' . $_oid, $_order);
                             unset($_order);
                         }
-
-                        //unset($this->_cache['ordersToUpsert'][$_oid]);
                     } else {
                         $this->_cache['failedOrders'][] = $_oid;
                         $this->_processErrors($_item, 'order', $this->_cache['batch']['orders'][$this->_magentoId][$_key][$_oid]);
@@ -663,7 +656,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
 

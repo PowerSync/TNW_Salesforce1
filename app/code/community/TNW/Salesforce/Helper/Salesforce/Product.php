@@ -260,36 +260,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
 
         $this->processSql();
-        /*
-        if (!empty($this->_sqlToRun)) {
-            //$this->processSql();
-
-            try {
-                $productsCollection = Mage::getModel('catalog/product')->getCollection();
-                $productsCollection->addAttributeToFilter('entity_id', array('in' => $ids));
-                $productsCollection->addAttributeToSelect('*');
-
-                foreach ($productsCollection as $_prod) {
-                    $_product = Mage::getModel('catalog/product');
-                    if ($this->getOrderStoreId() !== NULL) {
-                        $_product->setStoreId($_storeId);
-                    }
-                    $_product->load($_prod->getId());
-
-                    //if ($this->_useCache) {
-                    //    $this->_mageCache->save(serialize($_product), 'product_cache_' . $_product->getId() . '_' . $_storeId, array("TNW_SALESFORCE"));
-                    //} else {
-                    //    if (Mage::registry('product_cache_' . $_product->getId() . '_' . $this->getOrderStoreId())) {
-                    //        Mage::unregister('product_cache_' . $_product->getId() . '_' . $this->getOrderStoreId());
-                    //    }
-                    //    Mage::register('product_cache_' . $_product->getId() . '_' . $this->getOrderStoreId(), $_product);
-                    //}
-                }
-            } catch (Exception $e) {
-                Mage::helper('tnw_salesforce')->log("Exception: " . $e->getMessage());
-            }
-        }
-    */
 
         Mage::helper('tnw_salesforce')->log("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
         Mage::helper('tnw_salesforce')->log("---------- End: Magento Update ----------");
@@ -691,11 +661,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $_key = $this->_doesPricebookEntryExist($_sfProduct, $_priceBookId, $_currencyCode);
         if (!is_bool($_key)) {
             $_obj->Id = $_sfProduct->PriceBooks[$_key]->Id;
-            //$this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryId = $_obj->Id;
         } else {
-
-            //$_obj->Id = $_priceBookId;
-
             $_obj->Pricebook2Id = $_priceBookId;
             $_obj->Product2Id = $_sfProductId;
 

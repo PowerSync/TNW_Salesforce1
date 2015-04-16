@@ -222,7 +222,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $this->_lead->$orderIdParam = $order->getRealOrderId();
 
         // possible place to add some mapping logic call, postponed for now
-        //Mage::helper('tnw_salesforce/salesforce_opportunity')->_setOpportunityInfo($order);
         $this->_updateOrderStageName($order);
 
         // Only update for existing opportunities
@@ -235,8 +234,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         // realtime sf sync
         if ($order->getSalesforceId()) {
             $this->opportunityPush($order);
-        } else {
-            //Mage::helper('tnw_salesforce')->log("Skipping Status update, most likely still in quote stage!");
         }
         // end of comments
 
@@ -306,9 +303,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         // Description
         $this->_lead->Description = $this->_getDescriptionCart($order);
 
-        ## Debug
-        #$this->_lead->break = "Testing API failure";
-
         $this->_processMapping($order, "Opportunity");
 
 
@@ -340,7 +334,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $descriptionCart .= "\n";
         $descriptionCart .= "=======================================\n";
 
-        //foreach ($order->getAllItems() as $itemId=>$item) {
         foreach ($order->getAllVisibleItems() as $itemId => $item) {
             $descriptionCart .= $item->getSku() . ", " . number_format($item->getQtyOrdered()) . ", " . $item->getName();
             //Price
@@ -380,8 +373,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             $_doSkip = $value = false;
             $conf = explode(" : ", $_map->local_field);
             $sf_field = $_map->sf_field;
-            $attributeName = str_replace(" ", "", str_replace("_", " ", $conf[1])); //Full attribute name from Magento
-            #Mage::helper('tnw_salesforce')->log("Processing: ".$_map->local_field);
             switch ($conf[0]) {
                 case "Customer":
                     $attrName = str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
@@ -393,7 +384,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
                         }
                         $value = $email;
                     } else {
-                        #Mage::helper('tnw_salesforce')->log("Magento Attribute: ".$attributeName);
                         $attr = "get" . $attrName;
 
                         if ($this->_customer->getAttribute($conf[1])->getFrontendInput() == "select") {

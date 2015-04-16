@@ -34,10 +34,6 @@ class TNW_Salesforce_Helper_Order_Roles extends TNW_Salesforce_Helper_Order
         $ocr->OpportunityId = $opportunityId;
         $ocr->ContactId = $contactId;
         $ocr->Role = Mage::helper('tnw_salesforce')->getDefaultCustomerRole();
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-            //$ocr->$syncParam = true;
-        }
 
         unset($opportunityId, $contactId);
         /* Dump to Logs */

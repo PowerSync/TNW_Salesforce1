@@ -221,8 +221,6 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
      */
     public function apply($code = '')
     {
-        $settings = array();
-
         switch ($code) {
             case self::BULK:
                 $settings = Mage::getStoreConfig(self::BULK_SERVER_CONFIGURATION);

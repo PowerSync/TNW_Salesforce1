@@ -48,7 +48,6 @@ abstract class TNW_Salesforce_Helper_Test_Abstract extends TNW_Salesforce_Helper
                 return $this->_createResultObject($this->_title, 'Success!', $this->_successClass, NULL);
             }
             return $this->_createResultObject($this->_title, $this->_message, $this->_errorClass, $this->_redirect);
-            //throw new Exception($test['message']);
         } catch (Exception $e) {
             $this->log($e->getMessage());
 

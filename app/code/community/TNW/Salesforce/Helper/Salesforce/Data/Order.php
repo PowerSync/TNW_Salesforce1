@@ -27,7 +27,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
                 "ID",
                 "AccountId",
                 "Pricebook2Id",
-                //"OwnerId",
                 "StatusCode",
                 "Status",
                 $_magentoId,
@@ -58,7 +57,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
                 $tmp->MagentoId = $_item->$_magentoId;
                 $tmp->OrderItems = (property_exists($_item, "OrderItems")) ? $_item->OrderItems : NULL;
                 $tmp->Notes = (property_exists($_item, "Notes")) ? $_item->Notes : NULL;
-                //$tmp->OwnerId = (property_exists($_item, "OwnerId")) ? $_item->OwnerId : NULL;
                 $returnArray[$tmp->MagentoId] = $tmp;
             }
 
