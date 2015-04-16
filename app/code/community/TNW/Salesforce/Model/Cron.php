@@ -450,44 +450,15 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         $this->_deleteSuccessfulRecords();
     }
 
+    /**
+     * Sync queue items by entity type = order|abandoned|invoice|customer|product|website
+     *
+     * @param string $type
+     * @return void
+     * @throws Exception
+     */
     public function syncEntity($type)
     {
-        $_syncType = $type;
-        $_prefix = 'order';
-        $_module = 'tnw_salesforce';
-
-        if ($type == 'order') {
-            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-
-            // Get all products and customers from the queue
-            $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
-        }
-
-        if ($type == 'abandoned') {
-            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
-
-            // Get all products and customers from the queue
-            $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
-        }
-
-        if ($type == 'invoice') {
-            // Allow Powersync to overwite fired event for customizations
-            $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
-            Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
-
-            if (TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE == $_object->getObjectType()) {
-                // Skip native, only allow customization at the moment
-                return;
-            }
-
-            $_syncType = $_object->getObjectType();
-            $_prefix = 'invoice';
-
-            if ($_object->getModule()) {
-                $_module = $_object->getModule();
-            }
-        }
-
         $this->_resetStuckRecords();
         $this->_deleteSuccessfulRecords();
 
@@ -524,87 +495,110 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
                 if (count($list) > 0) {
 
-                    /**
-                     * @var $manualSync TNW_Salesforce_Helper_Bulk_Order|TNW_Salesforce_Helper_Bulk_Product|TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Bulk_Website
-                     */
-                    if ($type == 'abandoned') {
-                        $manualSync = Mage::helper($_module . '/bulk_' . $type . '_opportunity');
-                    } elseif ($type == 'invoice') {
-                        $manualSync = Mage::helper($_module . '/bulk_' . $_syncType);
-                    } else {
-                        $manualSync = Mage::helper($_module . '/bulk_' . $type);
-                    }
-                    if ($manualSync->reset()) {
-                        $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-                        $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+                    $idSet = array();
+                    $objectIdSet = array();
+                    foreach ($list->getData() as $item) {
+                        $_skip = false;
+                        if ($type == 'order' || $type == 'abandoned') {
 
-                        $idSet = array();
-                        $objectIdSet = array();
-                        foreach ($list->getData() as $item) {
-                            $_skip = false;
-                            if ($type == 'order' || $type == 'abandoned') {
+                            $_entityModel = $type == 'order' ? 'sales/order' : 'sales/quote';
+                            $_entity = Mage::getModel($_entityModel)->load($item['object_id']);
 
-                                if ($type == 'order') {
-                                    $_entity = Mage::getModel('sales/order')->load($item['object_id']);
-                                } else {
-                                    $_entity = Mage::getModel('sales/quote')->load($item['object_id']);
-                                }
+                            //check dependencies
+                            $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
+                            if ($_entity->getCustomerId() && isset($_dependencies['Customer'])
+                                && in_array($_entity->getCustomerId(), $_dependencies['Customer'])
+                            ) {
+                                $_skip = true;
+                            }
 
-                                if ($_entity->getCustomerId() && array_key_exists('Customer', $_dependencies) && in_array($_entity->getCustomerId(), $_dependencies['Customer'])) {
-                                    $_skip = true;
-                                }
-                                if (!$_skip && array_key_exists('Product', $_dependencies)) {
-                                    foreach ($_entity->getAllVisibleItems() as $_item) {
-                                        $id = $this->getProductIdFromCart($_item);
-                                        if (in_array($id, $_dependencies['Product'])) {
-                                            $_skip = true;
-                                            break;
-                                        }
+                            if (!$_skip && isset($_dependencies['Product'])) {
+                                foreach ($_entity->getAllVisibleItems() as $_item) {
+                                    $id = $this->getProductIdFromCart($_item);
+                                    if (in_array($id, $_dependencies['Product'])) {
+                                        $_skip = true;
+                                        break;
                                     }
                                 }
                             }
-                            if (!$_skip) {
-                                $idSet[] = $item['id'];
-                                $objectIdSet[] = $item['object_id'];
-                            }
                         }
+                        if (!$_skip) {
+                            $idSet[] = $item['id'];
+                            $objectIdSet[] = $item['object_id'];
+                        }
+                    }
 
-                        $idsSet = array_merge($idSet, $idsSet);
+                    $idsSet = array_merge($idSet, $idsSet);
 
-                        if (!empty($objectIdSet)) {
-                            // set status to 'sync_running'
-                            Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
+                    if (!empty($objectIdSet)) {
+                        // set status to 'sync_running'
+                        Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
 
-                            if ($type == 'order' || $type == 'abandoned' || $type == 'invoice') {
+                        $eventTypes = array(
+                            'order',
+                            'abandoned',
+                            'invoice',
+                        );
 
-                                Mage::dispatchEvent(
-                                    'tnw_sales_process_' . $_syncType,
-                                    array(
-                                        $_prefix . 'Ids' => $objectIdSet,
-                                        'message' => NULL,
-                                        'type' => 'bulk',
-                                        'isQueue' => true,
-                                        'queueIds' => $idSet,
-                                        'object_type' => $type
-                                    )
-                                );
-                            } else {
+                        if (in_array($type, $eventTypes)) {
+                            $_prefix = 'order';
 
-                                Mage::helper('tnw_salesforce')->log("################################## synchronization $type started ##################################", 1, 'sf-cron');
+                            switch ($type) {
+                                case 'order':
+                                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+                                    break;
+                                case 'abandoned':
+                                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+                                    break;
+                                case 'invoice':
+                                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
+                                    if (TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE == $_syncType) {
+                                        // Skip native, only allow customization at the moment
+                                        return;
+                                    }
+
+                                    $_prefix = 'invoice';
+                                    break;
+                                default:
+                                    $_syncType = $type;
+                            }
+
+                            Mage::dispatchEvent(
+                                'tnw_sales_process_' . $_syncType,
+                                array(
+                                    $_prefix . 'Ids' => $objectIdSet,
+                                    'message' => NULL,
+                                    'type' => 'bulk',
+                                    'isQueue' => true,
+                                    'queueIds' => $idSet,
+                                    'object_type' => $type
+                                )
+                            );
+                        } else {
+                            /**
+                             * @var $manualSync TNW_Salesforce_Helper_Bulk_Product|TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Bulk_Website
+                             */
+                            $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
+                            if ($manualSync->reset()) {
+                                $testAuth = Mage::helper('tnw_salesforce/test_authentication');
+                                $manualSync->setSalesforceServerDomain($testAuth->getStorage('salesforce_url'));
+                                $manualSync->setSalesforceSessionId($testAuth->getStorage('salesforce_session_id'));
+
+                                $this->log("################################## synchronization $type started ##################################", 1, 'sf-cron');
                                 // sync products with sf
                                 $manualSync->massAdd($objectIdSet);
                                 $manualSync->setIsCron(true);
                                 $manualSync->process();
-                                Mage::helper('tnw_salesforce')->log("################################## synchronization $type finished ##################################", 1, 'sf-cron');
+                                $this->log("################################## synchronization $type finished ##################################", 1, 'sf-cron');
 
                                 // Update Queue
                                 $_results = $manualSync->getSyncResults();
                                 Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
+                            } else {
+                                $this->log("error: salesforce connection failed", 1, 'sf-cron');
+                                return;
                             }
                         }
-                    } else {
-                        Mage::helper('tnw_salesforce')->log("error: salesforce connection failed", 1, 'sf-cron');
-                        return false;
                     }
                 } else {
                     $break = true;
@@ -614,8 +608,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 Mage::helper('tnw_salesforce')->log("error: $type not synced: " . $e->getMessage(), 1, 'sf-cron');
             }
         }
-
-        return $this;
     }
 
     /**

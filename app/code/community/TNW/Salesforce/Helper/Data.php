@@ -245,6 +245,22 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
     }
 
+    /**
+     * Get Invoice Object
+     *
+     * @return string
+     */
+    public function getInvoiceObject()
+    {
+        // Allow Powersync to overwite fired event for customizations
+        $object = new Varien_Object(array(
+            'object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE
+        ));
+        Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $object));
+
+        return $object->getObjectType();
+    }
+
     // Is debug log enabled
     public function isLogEnabled()
     {
