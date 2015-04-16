@@ -76,7 +76,6 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             $this->_oli = new stdClass();
             // Loading By SKU, because cart items are using configurable product IDs
             $product = Mage::helper('catalog/product')->getProduct($item->getSku(), Mage::app()->getStore()->getId(), 'sku');
-            //$product = Mage::getModel('catalog/product')->load($item->getProductId());
 
             /* Sync product with Salesforce */
             $pricebookEntryId = $this->syncProduct($product, true); // True - Skip product sync during order
@@ -91,15 +90,10 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 }
                 unset($collection, $_map);
                 $this->_oli->OpportunityId = $opportunityId;
-                //$subtotal = number_format((($item->getPrice() * $item->getQtyOrdered()) + $item->getTaxAmount()), 2, ".", "");
                 $subtotal = number_format(($item->getPrice() * $item->getQtyOrdered()), 2, ".", "");
                 $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
                 $this->_oli->UnitPrice = $netTotal / $item->getQtyOrdered();
                 $this->_oli->PricebookEntryId = $pricebookEntryId;
-                //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-                //if ($defaultServiceDate) {
-                //    $this->_oli->ServiceDate = $defaultServiceDate;
-                //}
                 $opt = array();
                 $options = $item->getProductOptions();
                 if (is_array($options) && array_key_exists('options', $options)) {
@@ -394,11 +388,6 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             $pb->UnitPrice = $price;
             $pb->isActive = TRUE;
 
-            if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-                //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-                //$pb->$syncParam = true;
-            }
-
             unset($prodId, $price, $defaultPB, $pbeId);
 
             foreach ($pb as $key => $value) {
@@ -458,12 +447,9 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             return false;
         }
         try {
-            //$this->_defaultPriceBook = ($this->_defaultPriceBook) ? $this->_defaultPriceBook : Mage::helper('tnw_salesforce')->getDefaultPricebook();
-            //$this->_standardPricebookId = ($this->_standardPricebookId) ? $this->_standardPricebookId : Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
             $syncParamId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $this->_p = new stdClass();
-            //$this->_p->Id = ($pId) ? $pId : NULL;     //Upserting only on Magento ID
 
             // Defaults
             $this->setDefaultProductValues($prod);

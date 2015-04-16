@@ -251,7 +251,6 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             ->addAttributeToSelect('salesforce_disable_sync');
 
         foreach ($productsCollection as $_product) {
-            //if ($_product->isSuper() || intval($_product->getData('salesforce_disable_sync')) == 1) {
             if (intval($_product->getData('salesforce_disable_sync')) == 1) {
                 continue;
             }

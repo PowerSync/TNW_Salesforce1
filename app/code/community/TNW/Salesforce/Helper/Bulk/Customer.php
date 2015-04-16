@@ -99,7 +99,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
 
@@ -163,7 +162,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
 
@@ -268,7 +266,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
 
@@ -631,7 +628,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     array_key_exists($_email, $this->_cache['contactsLookup'][$_websites[$_key]])
                     || array_key_exists($_key, $this->_cache['contactsLookup'][$_websites[$_key]])
                 )
-                // && $this->_cache['contactsLookup'][[$_websites[$_key]]][$_email]->MagentoId == $_key
             ) {
                 $foundCustomers[$_key] = array(
                     'contactId' => $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->Id

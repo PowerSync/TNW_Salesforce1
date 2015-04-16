@@ -157,7 +157,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
     }
@@ -251,7 +250,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
 

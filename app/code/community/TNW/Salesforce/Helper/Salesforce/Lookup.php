@@ -44,7 +44,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
         } else {
             $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode='" . $sku . "'";
         }
-        //Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
+
         return $this->getClient()->query(($query));
     }
 
@@ -65,7 +65,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
         } else {
             $query .= " = '" . $sku . "')";
         }
-        //Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
+
         return $this->getClient()->query(($query));
     }
 

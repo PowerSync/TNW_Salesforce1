@@ -444,7 +444,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     try {
                         $_address->save();
                     } catch (Exception $e) {
-                        // TODO:
                         Mage::helper('tnw_salesforce')->log("Error upserting customer address into Magento: " . $e->getMessage());
                     }
                 }

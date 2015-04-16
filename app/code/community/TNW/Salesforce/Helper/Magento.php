@@ -403,10 +403,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
      */
     protected function _populateCustomerGroupAttributes($type)
     {
-        $collection = Mage::getResourceModel('customer/group_collection')
-            //->addSystemHiddenFilter()
-            //->addIncludeHiddenFrontendFilter()
-        ;
+        $collection = Mage::getResourceModel('customer/group_collection');
         $this->_cache[$type]['customer_group'] = array(
             'label' => 'Customer Group',
             'value' => array(),
@@ -433,10 +430,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
      */
     protected function _populateAddressAttributes($addressType = 'custom', $type)
     {
-        $collection = Mage::getResourceModel('customer/address_attribute_collection')
-            //->addSystemHiddenFilter()
-            //->addExcludeHiddenFrontendFilter()
-        ;
+        $collection = Mage::getResourceModel('customer/address_attribute_collection');
 
         $this->_cache[$type][$addressType] = array(
             'label' => ucwords($addressType) . " Address",
@@ -595,8 +589,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateProductAttributes($type)
     {
         $collection = Mage::getResourceModel('catalog/product_attribute_collection')
-            ->addVisibleFilter()//->addAttributeToSort('additional_table.frontend_label', 'ASC')
-        ;
+            ->addVisibleFilter();
 
         $this->_cache[$type]['product'] = array(
             'label' => 'Product',

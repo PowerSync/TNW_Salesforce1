@@ -236,11 +236,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             }
         }
 
-        // Dont need in before Event
-        //Mage::getSingleton('core/session')->setFromSalesForce(true);
-        //$_customer->save();
-        //Mage::getSingleton('core/session')->setFromSalesForce(false);
-
         if (
             $this->_order
             && $type == "Contact"
@@ -558,12 +553,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             Mage::helper('tnw_salesforce')->log('Processing Magento Customer EAV Attributes');
             // creating customer attributes
             foreach ($this->_mapContactCollection as $_map) {
-                // entity id, default is customer
-                $eid = $cid;
-
-                // new attribute - default based on if customer is new
-                $isNew = $isCustomerNew;
-
                 $_attribute = Mage::getModel('eav/entity_attribute')->load($_map->attribute_id);
                 // we ignore static and not select multiselect attributes, email is ignore in security reason just customer to be able login in magento
                 //if ($_map->backend_type == "static" || is_null($_map->attribute_id)) {
@@ -648,7 +637,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                         . "," . $_map->attribute_id . "," . $cid . ",'" . $value . "');";
                 } else {
                     //Existing
-                    //$tmp = $_map->sf_field;
                     $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable($dbname) . "` SET value = '" . $value . "' WHERE entity_id = '"
                         . $eid . "' AND entity_type_id = " . $entityTypeId . " AND attribute_id = " . $_map->attribute_id . ";";
                 }
@@ -856,24 +844,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
     {
         if (!$_customer) {
             return false;
-        }
-        $getDefaultBillingAddress = $getDefaultShippingAddress = NULL;
-        if (!$_customer->getId()) {
-            if ($isGuest) {
-                // Guest Customer
-                $getDefaultBillingAddress = $_order->getBillingAddress();
-                $getDefaultShippingAddress = $_order->getShippingAddress();
-            } else {
-                // New Customer, not saved yet
-                foreach ($_customer->getAddresses() as $_address) {
-                    if ($_address->getIsDefaultBilling()) {
-                        $getDefaultBillingAddress = $_address;
-                    }
-                    if ($_address->getIsDefaultShipping()) {
-                        $getDefaultShippingAddress = $_address;
-                    }
-                }
-            }
         }
 
         // Process the mapping

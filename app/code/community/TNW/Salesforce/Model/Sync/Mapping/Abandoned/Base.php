@@ -20,10 +20,8 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base extends TNW_Sale
         'Shipping',
         'Custom',
         'Cart',
-//        'Order',
         'Customer Group',
         'Payment',
-//        'Aitoc'
     );
 
 
@@ -61,7 +59,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base extends TNW_Sale
         $descriptionCart .= "\n";
         $descriptionCart .= "=======================================\n";
 
-        //foreach ($quote->getAllItems() as $itemId=>$item) {
         foreach ($quote->getAllVisibleItems() as $itemId => $item) {
             $descriptionCart .= $item->getSku() . ", " . number_format($item->getQty()) . ", " . $item->getName();
             //Price

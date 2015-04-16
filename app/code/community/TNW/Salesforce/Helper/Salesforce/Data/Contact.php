@@ -96,8 +96,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             for ($_i = 0; $_i < $_steps; $_i++) {
                 $_start = $_i * $_howMany;
                 $_emails = array_slice($email, $_start, $_howMany, true);
-//                    $_chunkedWebsites = array_slice($_websites, $_start, $_howMany, true);
-//                    $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_chunkedWebsites);
                 $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
             }
         } else {

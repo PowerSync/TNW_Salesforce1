@@ -1,11 +1,5 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: evgeniy
- * Date: 20.02.15
- * Time: 15:36
- */
 class TNW_Salesforce_Model_Config_Opportunity_State
 {
     protected $_statuses = array();
@@ -14,8 +8,6 @@ class TNW_Salesforce_Model_Config_Opportunity_State
     public function __construct()
     {
         $this->_statuses = Mage::helper('tnw_salesforce/salesforce_data')->getStatus('Opportunity');
-
-        //parent::__construct();
     }
 
     /**

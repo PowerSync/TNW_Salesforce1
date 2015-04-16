@@ -640,18 +640,13 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function canPush()
     {
-        if (
-            $this->isWorking()
+        if ($this->isWorking()
             && Mage::getSingleton('tnw_salesforce/connection')->getClient()
-            //&& Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()
         ) {
-            // reset sf error message
-            //Mage::getSingleton('core/session')->setSfErrorMessage('');
             Mage::getSingleton('core/session')->setSfNotWorking(false);
             return true;
         }
 
-        //Mage::getSingleton('core/session')->setSfNotWorking(true);
         return false;
     }
 

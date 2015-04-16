@@ -38,7 +38,6 @@ class TNW_Salesforce_Block_Adminhtml_Lead_Edit_Form extends Mage_Adminhtml_Block
             'name' => 'sf_field',
             'after_element_html' => '<p class="note">Salesforce API field name.</p>',
             'style' => 'width:400px',
-            //	'required'  => true,
             'values' => $sfFields,
         ));
 
@@ -46,7 +45,6 @@ class TNW_Salesforce_Block_Adminhtml_Lead_Edit_Form extends Mage_Adminhtml_Block
             'label' => Mage::helper('tnw_salesforce')->__('Local Name'),
             'class' => 'required-entry',
             'after_element_html' => '<p class="note">Choose Magento field you wish to map to Salesforce API.</p>',
-            //'required'  => true,
             'style' => 'width:400px',
             'name' => 'local_field',
             'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes('Lead'),
@@ -57,18 +55,14 @@ class TNW_Salesforce_Block_Adminhtml_Lead_Edit_Form extends Mage_Adminhtml_Block
 
         $fieldset->addField('default_code', 'text', array(
             'label' => Mage::helper('tnw_salesforce')->__('Attribute Code'),
-            //'class'     => 'required-entry',
             'after_element_html' => '<p class="note">Unique attribute code.</p>',
-            //'required'  => true,
             'style' => 'width:400px',
             'name' => 'default_code',
         ));
 
         $fieldset->addField('default_value', 'text', array(
             'label' => Mage::helper('tnw_salesforce')->__('Attribute Value'),
-            //'class'     => 'required-entry',
             'after_element_html' => '<p class="note">Value to be used when Object is created</p>',
-            //'required'  => true,
             'style' => 'width:400px',
             'name' => 'default_value',
         ));

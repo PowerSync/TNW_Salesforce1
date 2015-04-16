@@ -84,7 +84,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $this->_convertLeads();
                 Mage::helper('tnw_salesforce')->log('----------Converting Leads: End----------');
                 if (!empty($this->_cache['toSaveInMagento'])) {
-                //if (!empty($this->_cache['toSaveInMagento']) && Mage::helper('tnw_salesforce')->usePersonAccount()) {
                     $this->_updateMagento();
                 }
                 $this->clearMemory();
@@ -250,7 +249,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 && $this->_obj->Pricebook2Id != $this->_cache['opportunityLookup'][$_orderNumber]->Pricebook2Id
             ) {
                 // Delete all OpportunityProducts
-                //$this->_cache['opportunityLineItemsToDelete'][] = $_orderNumber;
                 Mage::helper('tnw_salesforce')->log("SKIPPED Order: " . $_orderNumber . " - Opportunity uses a different pricebook(" . $this->_cache['opportunityLookup'][$_orderNumber]->Pricebook2Id . "), please change it in Salesforce.");
                 unset($this->_cache['entitiesUpdating'][$_key]);
                 unset($this->_cache['orderToEmail'][$_orderNumber]);
@@ -274,7 +272,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_customerId = $this->_cache['orderToCustomerId'][$_oid];
             $_emailArray[$_customerId] = $_email;
             $_order = Mage::registry('order_cached_' . $_oid);
-            //$_websiteId = (array_key_exists($_oid, $this->_cache['orderCustomers']) && $this->_cache['orderCustomers'][$_oid]->getData('website_id')) ? $this->_cache['orderCustomers'][$_oid]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
             $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
             $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
         }
@@ -285,7 +282,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         foreach ($this->_cache['opportunitiesToUpsert'] as $_orderNumber => $_opportunityData) {
             $_email = $this->_cache['orderToEmail'][$_orderNumber];
             $_order = Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-            //$_websiteId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id')) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
             $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
             $websiteSfId = $this->_websiteSfIds[$_websiteId];
 
@@ -380,10 +376,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     }
                     $this->_cache['failedOpportunities'][] = $_orderNum;
                 } else {
-
-                    // set opp owner
-                    // $this->_updateOppOwner($_result->id); // frozen until we get other working solution
-
                     $_contactId = ($this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id') . "'" : 'NULL';
                     $_accountId = ($this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id') . "'" : 'NULL';
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $_result->id . "' WHERE entity_id = " . $_entityArray[$_orderNum] . ";";
@@ -461,7 +453,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 continue;
             }
             Mage::helper('tnw_salesforce')->log('******** ORDER (' . $_orderNumber . ') ********');
-            //$_order = Mage::getModel('sales/order')->load($_key);
             $_order = Mage::registry('order_cached_' . $_orderNumber);
             $_currencyCode = Mage::app()->getStore($_order->getStoreId())->getCurrentCurrencyCode();
 
@@ -539,9 +530,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 }
 
                 $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_orderNumber];
-                //$subtotal = number_format((($item->getPrice() * $item->getQtyOrdered()) + $item->getTaxAmount()), 2, ".", "");
-                //$subtotal = number_format(($_item->getPrice() * $_item->getQtyOrdered()), 2, ".", "");
-                //$netTotal = number_format(($subtotal - $_item->getDiscountAmount()), 2, ".", "");
 
                 if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
                     $netTotal = number_format($_item->getData('row_total_incl_tax'), 2, ".", "");
@@ -564,11 +552,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     $this->_obj->PricebookEntryId = $_product->getSalesforcePricebookId();
                 }
 
-                //$this->_obj->ProductCode = $_item->getSku();
-                //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-                //if ($defaultServiceDate) {
-                //    $this->_obj->ServiceDate = $defaultServiceDate;
-                //}
                 $opt = array();
                 $options = $_item->getProductOptions();
                 $_summary = array();
@@ -685,10 +668,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_TAX_PRODUCT);
         }
-        //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-        //if ($defaultServiceDate) {
-        //    $this->_obj->ServiceDate = $defaultServiceDate;
-        //}
         $this->_obj->Description = 'Total Tax';
         $this->_obj->Quantity = 1;
 
@@ -806,10 +785,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_SHIPPING_PRODUCT);
         }
-        //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-        //if ($defaultServiceDate) {
-        //    $this->_obj->ServiceDate = $defaultServiceDate;
-        //}
         $this->_obj->Description = 'Shipping & Handling';
         $this->_obj->Quantity = 1;
 
@@ -858,7 +833,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 if ($_note->getData('entity_name') == 'order' &&  !$_note->getData('salesforce_id') && $_note->getData('comment')) {
                     $this->_obj = new stdClass();
                     $this->_obj->ParentId = $this->_cache['upsertedOpportunities'][$_orderNumber];
-                    //$note->OwnerId = $customerId; //Needs to be Salesforce User
                     $this->_obj->IsPrivate = 0;
                     $this->_obj->Body = $_note->getData('comment');
                     $this->_obj->Title = $_note->getData('comment');
@@ -924,7 +898,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             }
 
             // Check if already exists
-            $_roleFound = $_skip = false;
+            $_skip = false;
             if ($this->_cache['opportunityLookup'] && array_key_exists($_orderNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles) {
                 foreach ($this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles->records as $_role) {
                     if ($_role->ContactId == $this->_obj->ContactId) {
@@ -1360,9 +1334,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         ) {
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
-
-        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        //$this->_obj->$syncParam = true;
 
         // Magento Order ID
         $this->_obj->{$this->_magentoId} = $_orderNumber;

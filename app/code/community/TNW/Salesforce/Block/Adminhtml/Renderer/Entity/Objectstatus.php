@@ -15,9 +15,6 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Objectstatus extends Mage_A
     {
         $status = $row->getData('status');
         switch ($status) {
-            case "new":
-                $html = '';
-                break;
             case "sync_error":
                 $imageUrl = Mage::getDesign()->getSkinUrl('images/error_msg_icon.gif');
                 $imageTitle = "Object failed synchronization";
@@ -33,6 +30,9 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Objectstatus extends Mage_A
                 $imageTitle = "Object is synchronizing currently";
                 $html = "<img src = '$imageUrl' title='$imageTitle' />";
                 break;
+            case "new":
+            default:
+                $html = '';
         }
 
         return $html;

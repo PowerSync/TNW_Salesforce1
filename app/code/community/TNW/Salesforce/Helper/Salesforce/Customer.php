@@ -152,8 +152,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_obj->LastName = $_lastName;
 
-            //TODO: why are we storing email into customer ID?
-            //$_customerId = $_email;
             $_customerId = 'guest_0';
         }
 
@@ -1350,7 +1348,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
-                //$this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_obj->Id;
             }
 
             // Check if Account Name is empty
@@ -1532,7 +1529,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->findCustomerAccounts($_emailsArray);
 
             $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
-            $_companies = $_salesforceDataAccount->lookupByCompanies($_companies, 'CustomIndex');
 
             $foundCustomers = array();
 
@@ -1552,7 +1548,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         array_key_exists($_email, $this->_cache['contactsLookup'][$_websites[$_key]])
                         || array_key_exists($_key, $this->_cache['contactsLookup'][$_websites[$_key]])
                     )
-                    // && $this->_cache['contactsLookup'][[$_websites[$_key]]][$_email]->MagentoId == $_key
                 ) {
                     $foundCustomers[$_key] = array(
                         'contactId' => $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->Id
@@ -1580,7 +1575,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             // Lookup existing Leads
             if (!empty($_emailsArray) || !empty($_converted)) {
-//                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites);
                 if (!empty($this->_cache['leadLookup'])) {
                     foreach ($this->_cache['leadLookup'] as $_websiteId => $leads) {
                         foreach ($leads as $email => $lead) {
@@ -1615,7 +1609,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         $this->_cache['leadLookup']
                         && array_key_exists($_websites[$_key], $this->_cache['leadLookup'])
                         && array_key_exists(strtolower($_email), $this->_cache['leadLookup'][$_websites[$_key]])
-                        //&& $this->_cache['leadLookup'][$_email]->MagentoId == $_key
                         && !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
                     ) {
                             unset($_emailsArray[$_key]);

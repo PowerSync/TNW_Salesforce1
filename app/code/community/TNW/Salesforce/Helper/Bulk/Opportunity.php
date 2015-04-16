@@ -259,7 +259,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             }
 
             foreach ($this->_cache['orderToEmail'] as $_orderNum => $_email) {
-                $orderWebsite;
                 Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->prepareLeadConversionObject($_orderNum, $_foundAccounts, 'order');
             }
 
@@ -345,9 +344,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         $this->_updateOrderStageName($order);
         $_orderNumber = $order->getRealOrderId();
         $_email = $this->_cache['orderToEmail'][$_orderNumber];
-
-        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        //$this->_obj->$syncParam = true;
 
         // Link to a Website
         if (
@@ -564,7 +560,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -643,7 +638,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
             if (!empty($_sql)) {
@@ -675,7 +669,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -733,7 +726,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
                 Mage::helper('tnw_salesforce')->log('ERROR: (batch: ' . $_batchId . ') - ' . $e->getMessage());
             }
         }
