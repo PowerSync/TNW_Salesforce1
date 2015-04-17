@@ -83,8 +83,14 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     $_email = $this->_cache['entitiesUpdating'][$_cid];
                     $_i++;
 
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = NULL;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = NULL;
+                    if (!property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId')) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = NULL;
+                    }
+
+                    if (!property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'SalesforceId')) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = NULL;
+                    }
+
                     if ((string)$_item->success == "false") {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = NULL;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 0;
@@ -157,7 +163,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                                 $this->_cache['guestsFromOrder'][$_cid]->setSalesforceIsPerson($this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount);
                             }
                         }
-                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = NULL;
+
+                        if (!property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'LeadId')) {
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = NULL;
+                        }
+
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
                     }
                 } catch (Exception $e) {
@@ -219,8 +229,15 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         continue;
                     } else {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = (string)$_item->id;
-                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = NULL;
+
+                        if (!property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'LeadId')) {
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = NULL;
+                        }
+
+                        if (!property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'LeadId')) {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = NULL;
+                        }
+
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 0;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount = 0;
 

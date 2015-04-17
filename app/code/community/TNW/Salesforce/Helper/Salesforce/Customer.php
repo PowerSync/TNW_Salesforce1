@@ -985,6 +985,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         unset($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]);
 
                         $_id = ($_info->MagentoId) ? $_info->MagentoId : array_search($_email, $this->_cache['entitiesUpdating']);
+
+                        // Why did we mark converted leads as new users ????
                         $this->_cache['notFoundCustomers'][$_id] = $_email;
                     }
                 }
@@ -1207,7 +1209,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
         }
-        if ($this->_cache['leadLookup'] && array_key_exists($_sfWebsite, $this->_cache['leadLookup']) && array_key_exists($_email, $this->_cache['leadLookup'])) {
+        if ($this->_cache['leadLookup'] && array_key_exists($_sfWebsite, $this->_cache['leadLookup']) && array_key_exists($_email, $this->_cache['leadLookup'][$_sfWebsite])) {
             $_customer->setSalesforceLeadId($this->_cache['leadLookup'][$_sfWebsite][$_email]->Id);
         }
 
@@ -1419,6 +1421,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->findCustomerAccounts($_emailsArray);
             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
             $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
 
             foreach ($_emailsArray as $_key => $_email) {
                 if (
@@ -1429,10 +1432,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 ) {
                     unset($_emailsArray[$_key]);
                 }
-            }
-            // Lookup existing Leads
-            if (!empty($_emailsArray)) {
-                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
             }
 
             foreach ($_emailsArray as $_key => $_email) {
