@@ -1,0 +1,8 @@
+lead1@email.com:
+  isConverted: 1
+lead2@email.com:
+  isConverted: 0
+lead3@email.com:
+  isConverted: 0
+null:
+  isConverted: null

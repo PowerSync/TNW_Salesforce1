@@ -572,17 +572,10 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function isLeadConverted($email = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return NULL;
-            }
-            $query = "SELECT ID, IsConverted FROM Lead WHERE Email='" . $email . "'";
-            $list = $this->getClient()->query(($query));
-            $isConverted = ($list && property_exists($list, "records") && is_array($list->records) && $list->records[0]->IsConverted) ? $list->records[0]->Id : NULL;
-            return $isConverted;
+            return Mage::getModel('tnw_salesforce_api_entity/lead')->load($email, 'Email')->isConverted();
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not find a Lead by email: " . $email, 1, "sf-errors");
-            unset($e, $email);
             return false;
         }
     }
