@@ -549,18 +549,9 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getAccountName($id = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return NULL;
-            }
-            Mage::helper('tnw_salesforce')->log("Trying to get Account Name for #" . $id);
-            $query = "SELECT Name FROM Account WHERE Id='" . $id . "'";
-            $list = $this->getClient()->query(($query));
-            unset($query, $id);
-            $accountName = ($list->records[0]->Name) ? $list->records[0]->Name : NULL;
-            return $accountName;
+            return Mage::getModel('tnw_salesforce_api_entity/account')->load($id)->getData('Name');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
-            unset($e, $obj, $id);
             return false;
         }
     }
