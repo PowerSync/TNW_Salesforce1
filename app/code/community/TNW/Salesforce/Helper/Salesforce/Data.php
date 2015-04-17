@@ -558,12 +558,16 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
     /**
      * @param null $email
-     * @return bool|null
+     * @return string|false
      */
     public function isLeadConverted($email = NULL)
     {
         try {
-            return Mage::getModel('tnw_salesforce_api_entity/lead')->load($email, 'Email')->isConverted();
+            if (!$email) {
+                return null;
+            }
+            $lead = Mage::getModel('tnw_salesforce_api_entity/lead')->load($email, 'Email');
+            return $lead->isConverted() ? $lead->getId() : false;
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not find a Lead by email: " . $email, 1, "sf-errors");

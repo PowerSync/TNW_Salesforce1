@@ -16,7 +16,8 @@ class TNW_Salesforce_Test_Helper_Salesforce_Data extends TNW_Salesforce_Test_Cas
 
         //prepare expected value
         $expected = $this->expected()->getData($email)['isConverted'];
-        $expected = $expected === 'null' ? null : (bool)$expected;
+        $expected = $expected === 'null' ? null : $expected;
+        $expected = is_int($expected) ? (bool)$expected : $expected;
 
         $this->mockApplyClientToConnection();
 
