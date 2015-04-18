@@ -737,6 +737,14 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 ->addData($order->getShippingAddress()->getData());
             $_customer->setShippingAddress($_shippingAddress);
         }
+
+        // Set Company Name
+        if (!$_customer->getData('company') && $order->getBillingAddress()->getData('company')) {
+            $_customer->setData('company', $order->getBillingAddress()->getData('company'));
+        } elseif (!$_customer->getData('company') && !Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $_customer->setData('company', $_customer->getFirstname() . ' ' . $_customer->getLastname());
+        }
+
         return $_customer;
     }
 
