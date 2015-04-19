@@ -1131,9 +1131,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                      * @comment get account object
                      */
                     $entity = $entity->Account;
-                    $_ownerID = property_exists($entity, 'OwnerId') ? $entity->OwnerId : null;
+                    $_ownerID = (property_exists($entity, 'OwnerId') && !Mage::helper('tnw_salesforce/config_customer')->useDefaultOwner()) ?
+                        $entity->OwnerId :
+                        null;
                 }
-
             }
 
             if ($_ownerID && $this->_isUserActive($_ownerID)) {

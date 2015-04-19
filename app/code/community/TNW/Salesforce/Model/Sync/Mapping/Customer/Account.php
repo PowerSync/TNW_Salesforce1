@@ -78,6 +78,20 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                 ) {
                     $_accountName = $this->_cache['contactsLookup'][$sfWebsite][$_customer->getEmail()]->AccountName;
                 }
+
+                /**
+                 * @comment Use improved lookup feature
+                 */
+                if (
+                    !Mage::helper('tnw_salesforce')->canRenameAccount()
+                    && isset($this->_cache['accountLookup'][0][$_customer->getEmail()])
+                ) {
+                    /**
+                     * @comment Don't change name of existing account
+                     */
+                    $_accountName = '';
+                }
+
                 if (!empty($_accountName)) {
                     $this->getObj()->Name = $_accountName;
                 }
@@ -148,12 +162,28 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                                     if (!$this->_isUserActive($this->getObj()->OwnerId)) {
                                         $this->getObj()->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
                                     }
+                                    /**
+                                     * @comment Save account owner to use it for contact
+                                     */
                                     $this->_setCustomerOwnerId($this->getObj()->OwnerId);
                                 }
                                 break;
                             }
                         }
                     }
+                }
+
+                /**
+                 * @comment Use improved lookup feature
+                 */
+                if (
+                    isset($this->_cache['accountLookup'][0][$this->_email])
+                    && property_exists($this->_cache['accountLookup'][0][$this->_email], 'OwnerId')
+                ) {
+                    /**
+                     * @comment Save account owner to use it for contact
+                     */
+                    $this->_setCustomerOwnerId($this->_cache['accountLookup'][0][$this->_email]->OwnerId);
                 }
 
                 if (!empty($_accountId)) {

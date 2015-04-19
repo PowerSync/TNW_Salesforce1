@@ -257,6 +257,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
      */
     protected function _getCustomerOwnerId()
     {
-        $this->getSync()->getCustomerOwnerId();
+        return $this->getSync()->getCustomerOwnerId();
     }
 }

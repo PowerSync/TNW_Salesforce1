@@ -80,7 +80,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
         }
         // Overwrite Owner ID if assigned value does not match Account Owner Id
         if (
-            property_exists($this->getObj(), 'OwnerId')
+            !Mage::helper('tnw_salesforce/config_customer')->useDefaultOwner()
+            && property_exists($this->getObj(), 'OwnerId')
             && $this->getObj()->OwnerId
             && $this->_getCustomerOwnerId()
             && $this->_getCustomerOwnerId() != $this->getObj()->OwnerId
