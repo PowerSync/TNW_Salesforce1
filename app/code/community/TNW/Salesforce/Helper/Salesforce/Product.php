@@ -324,8 +324,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
         }
 
-        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        $this->_obj->$syncParam = TRUE;
+        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+            $this->_obj->$syncParam = TRUE;
+        }
+
 
         if ($prod->getId()) {
             $this->_obj->{$this->_magentoId} = $prod->getId();

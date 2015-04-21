@@ -719,8 +719,10 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 $mageId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
                 $contact->$mageId = $_customer->id;
                 $contact->Id = $_customer->sfId;
-                $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-                $contact->$syncParam = true;
+                if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+                    $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+                    $contact->$syncParam = true;
+                }
                 $queuedCustomers[$_customer->id] = $contact;
                 unset($contact, $_customer);
             }

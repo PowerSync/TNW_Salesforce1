@@ -221,8 +221,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 Mage::helper('tnw_salesforce')->log("Contact Object: " . $key . " = '" . $value . "'");
             }
 
-            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-            $this->_obj->$syncParam = true;
+            if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+                $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+                $this->_obj->$syncParam = true;
+            }
 
             $this->_cache['contactsToUpsert'][$_customerId] = $this->_obj;
             $_contactIds = array_keys($this->_cache['contactsToUpsert']);
