@@ -51,4 +51,23 @@ class TNW_Salesforce_Model_Api_Client
 
         return $result;
     }
+
+    /**
+     * @param string $sql
+     *
+     * @return array
+     */
+    public function queryAll($sql, $queryOptions = NULL)
+    {
+        $response = $this->_getClient()->queryAll((string)$sql, $queryOptions);
+
+        $result = array();
+        if (isset($response->records) && !empty($response->records)) {
+            foreach ($response->records as $_row) {
+                $result[] = (array)$_row;
+            }
+        }
+
+        return $result;
+    }
 }

@@ -135,4 +135,17 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
 
         return $this;
     }
+
+    public function loadAll(Mage_Core_Model_Abstract $object, $value, $field = null)
+    {
+        $read = $this->_getReadAdapter();
+
+        $read->setQueryAll(true);
+        $result = parent::load($object, $value, $field);
+        $read->setQueryAll(false);
+
+        return $result;
+    }
+
+
 }

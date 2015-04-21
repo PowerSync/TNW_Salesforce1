@@ -17,6 +17,11 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     protected $_tablesDescription = array();
 
     /**
+     * @var bool
+     */
+    protected $_queryAll = false;
+
+    /**
      * Returns the symbol the adapter uses for delimited identifiers.
      *
      * @return string
@@ -49,7 +54,12 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
             $sql = $sql->assemble();
         }
 
-        $response = $this->_getClient()->query($sql);
+        if (!$this->isQueryAll()) {
+            $response = $this->_getClient()->query($sql);
+        } else {
+            $response = $this->_getClient()->queryAll($sql);
+        }
+
         if (isset($response[0])) {
             return $response[0];
         } else {
@@ -68,7 +78,13 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      */
     public function fetchAll($sql, $bind = array(), $fetchMode = null)
     {
-        return $this->_getClient()->query($sql);
+        if (!$this->isQueryAll()) {
+            $response = $this->_getClient()->query($sql);
+        } else {
+            $response = $this->_getClient()->queryAll($sql);
+        }
+
+        return $response;
     }
 
     /**
@@ -355,6 +371,25 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     public function prepareColumnValue($column, $fieldValue)
     {
         return $fieldValue;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isQueryAll()
+    {
+        return $this->_queryAll;
+    }
+
+    /**
+     * @param boolean $queryAll
+     * @return $this
+     */
+    public function setQueryAll($queryAll)
+    {
+        $this->_queryAll = $queryAll;
+
+        return $this;
     }
 
 }
