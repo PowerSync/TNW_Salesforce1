@@ -1,13 +1,19 @@
 {
     "name": "technweb/salesforce",
-    "description": "Integration between Magneto <> Salesforce.",
+    "description": "Integration between Magento <> Salesforce.",
     "license": "OSL-3.0",
     "type":"magento-module",
     "homepage":"http://powersync.biz",
     "authors": [
         {
             "name": "Powersync",
-            "email": "hellp@powersync.biz"
+            "email": "hello@powersync.biz"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "http://packages.firegento.com"
         }
     ],
     "require": {},
