@@ -11,6 +11,12 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     protected $_autoQuoteIdentifiers = false;
 
     /**
+     * @comment list of described tables
+     * @var array
+     */
+    protected $_tablesDescription = array();
+
+    /**
      * Returns the symbol the adapter uses for delimited identifiers.
      *
      * @return string
@@ -107,7 +113,13 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
 
     public function describeTable($tableName, $schemaName = null)
     {
-        return array();
+
+        if (!isset($this->_tablesDescription[$tableName])) {
+            $data = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject($tableName);
+            $this->_tablesDescription[$tableName] = $data->fields;
+        }
+
+        return $this->_tablesDescription[$tableName];
     }
 
     /**
@@ -339,4 +351,10 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
         $sql = str_replace('{{fieldName}}', $fieldName, $sql);
         return $sql;
     }
+
+    public function prepareColumnValue($column, $fieldValue)
+    {
+        return $fieldValue;
+    }
+
 }
