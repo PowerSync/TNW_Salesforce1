@@ -118,7 +118,13 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
         $this->_beforeSave($object);
         $this->_checkUnique($object);
 
-        $result = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->upsert($this->getIdFieldName(), $this->_prepareDataForSave($object), $this->getMainTable());
+        $result = Mage::helper('tnw_salesforce/salesforce_data')
+            ->getClient()
+            ->upsert(
+                $this->getIdFieldName(),
+                $this->_prepareDataForSave($object),
+                $this->getMainTable()
+        );
 
         if (!$object->getId() && isset($result[0]) && property_exists($result[0], 'success')) {
             $object->setId($result[0]->id);
