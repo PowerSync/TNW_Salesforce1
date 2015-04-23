@@ -42,4 +42,12 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     {
         return $this->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
     }
+
+    /**
+     * @return string
+     */
+    public function getDisableSyncField()
+    {
+        return $this->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c';
+    }
 }
