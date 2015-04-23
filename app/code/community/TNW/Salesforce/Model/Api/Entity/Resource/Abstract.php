@@ -130,6 +130,10 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
             $object->setId($result[0]->id);
         }
 
+        if (!$object->getId()) {
+            throw new Exception('Salesforce object was not saved!');
+        }
+
         $this->unserializeFields($object);
         $this->_afterSave($object);
 
