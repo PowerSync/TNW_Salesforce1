@@ -985,11 +985,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     } else {
                         $this->_toDelete[] = $_info->Id;
                         unset($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]);
-
-                        $_id = ($_info->MagentoId) ? $_info->MagentoId : array_search($_email, $this->_cache['entitiesUpdating']);
-
-                        // Why did we mark converted leads as new users ????
-                        $this->_cache['notFoundCustomers'][$_id] = $_email;
                     }
                 }
             }
@@ -1442,10 +1437,19 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['leadLookup'] &&
                     array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup']) &&
                     array_key_exists(strtolower($_email), $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]]) &&
-                    ($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId == $_key || !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId) &&
-                    !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted
+                    ($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId == $_key || !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId)
                 ) {
-                    unset($_emailsArray[$_key]);
+                    /**
+                     * @comment remove from array if customer found as lead or lead is converted but no related account+contact
+                     */
+                    if (
+                        !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
+                        || !isset($this->_cache['accountLookup'][0][$_email])
+                        || !isset($this->_cache['contactsLookup'][$_websites[$_key]][$_email])
+
+                    ) {
+                        unset($_emailsArray[$_key]);
+                    }
                 }
             }
 
@@ -1611,9 +1615,19 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         $this->_cache['leadLookup']
                         && array_key_exists($_websites[$_key], $this->_cache['leadLookup'])
                         && array_key_exists(strtolower($_email), $this->_cache['leadLookup'][$_websites[$_key]])
-                        && !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
+
                     ) {
+                        /**
+                         * @comment remove from array if customer found as lead or lead is converted but no related account+contact
+                         */
+                        if (
+                            !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
+                            || !isset($this->_cache['accountLookup'][0][$_email])
+                            || !isset($this->_cache['contactsLookup'][$_websites[$_key]][$_email])
+
+                        ) {
                             unset($_emailsArray[$_key]);
+                        }
 
                     }
                 }
@@ -1731,7 +1745,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return false;
         }
     }
-    
+
     public function getCustomerAccounts()
     {
         return $this->_customerAccounts;
