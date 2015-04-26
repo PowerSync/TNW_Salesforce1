@@ -27,4 +27,10 @@
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_queuesync_grid" name="queuesync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_queuesync_grid>
+    <reference name="tnw_salesforce.test.results">
+        <action method="setCacheLifetime" />
+    </reference>
+    <reference name="sf_test_results">
+        <action method="setCacheLifetime" />
+    </reference>
 </layout>   
