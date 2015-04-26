@@ -3,17 +3,19 @@
 $mageFilename = '../app/Mage.php';
 require_once $mageFilename;
 unset($mageFilename);
-Mage::app();
-Mage::app()->setCurrentStore(0);
+$app = Mage::app();
+$app->setCurrentStore(0);
+
+$helper = Mage::helper('tnw_salesforce');
 
 // set locale
-$locale = Mage::app()->getLocale()->getLocaleCode();
-Mage::app()->getTranslator()->setLocale($locale)->init('frontend', true);
+$locale = $app->getLocale()->getLocaleCode();
+$app->getTranslator()->setLocale($locale)->init('frontend', true);
 
 /* Look for passed name/value pair */
 $fromSf = ($_REQUEST['sf']) ? strip_tags($_REQUEST['sf'], true) : NULL;
-Mage::helper('tnw_salesforce')->log("========== Sync from Salesforce Start ==========");
-#Mage::helper('tnw_salesforce')->log("JSON: ". urlencode($fromSf));
+$helper->log("========== Sync from Salesforce Start ==========");
+//$helper->log("JSON: ". urlencode($fromSf));
 
 if (!function_exists('apache_request_headers')) {
     function apache_request_headers()
@@ -31,7 +33,7 @@ if (!function_exists('apache_request_headers')) {
                     foreach ($rx_matches as $ak_key => $ak_val) $rx_matches[$ak_key] = ucfirst($ak_val);
                     $arh_key = implode('-', $rx_matches);
                 }
-                $arh[uc_words(strtolower($arh_key))] = $val;
+                $arh[ucwords(strtolower($arh_key))] = $val;
             }
         }
         return ($arh);
@@ -53,14 +55,12 @@ $response = new stdClass();
 /* Set Default */
 $status = false;
 $errorString = NULL;
-if (!Mage::helper('tnw_salesforce')->isWorking()) {
+if (!$helper->isWorking()) {
     $errorString = "Extension is disabled or not working";
 } else {
     /* Validate Request */
     try {
-        if (
-            !array_key_exists('Authorization', $headers)
-        ) {
+        if (!array_key_exists('Authorization', $headers)) {
             throw new Exception("Missing authorization, possible attack!");
         }
 
@@ -68,20 +68,20 @@ if (!Mage::helper('tnw_salesforce')->isWorking()) {
         $myAuth = base64_decode($auth[1], true);
         $credentials = explode(":", $myAuth);
         if (count($auth) != 2 || $auth[0] !== "BASIC" || !$myAuth || !is_array($credentials) || count($credentials) != 2) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Trying to hack, eh?');
+            $helper->log('ERROR: Trying to hack, eh?');
             throw new Exception("Authorization invalid, possible attack!");
         }
         // Final check to see if all is good
-        if (Mage::helper("tnw_salesforce")->getLicenseInvoice() != $credentials[0] || Mage::helper("tnw_salesforce")->getLicenseEmail() != $credentials[1]) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Authentication fialed!');
+        if ($helper->getLicenseInvoice() != $credentials[0] || $helper->getLicenseEmail() != $credentials[1]) {
+            $helper->log('ERROR: Authentication fialed!');
             throw new Exception("Authorization invalid, possible attack!");
         }
     } catch (Exception $e) {
-        Mage::helper("tnw_salesforce")->log('ERROR: ' . $e->getMessage());
-        die();
+        $helper->log('ERROR: ' . $e->getMessage());
+        exit;
     }
 
-    if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
+    if ($helper->getType() != "PRO") {
         /* 2 way sync is disabled */
         $errorString = "Please upgrade PowerSync to support two way synchronization";
     } else if (!$fromSf) {
@@ -93,10 +93,10 @@ if (!Mage::helper('tnw_salesforce')->isWorking()) {
         if (!$objects || !is_array($objects)) {
             /* JSON is invalid, hack? */
             $errorString = "Invalid JSON format!";
-            Mage::helper('tnw_salesforce')->log($errorString);
+            $helper->log($errorString);
         } else {
-            if (!Mage::helper('tnw_salesforce')->isEnabledCustomerSync()) {
-                Mage::helper("tnw_salesforce")->log('SKIPING: Customer synchronization disabled');
+            if (!$helper->isEnabledCustomerSync()) {
+                $helper->log('SKIPING: Customer synchronization disabled');
             } else {
                 if (count($objects) == 1) {
                     // Process Realtime
@@ -115,11 +115,11 @@ if (!Mage::helper('tnw_salesforce')->isWorking()) {
                                 || ($object->IsPersonAccount == 1 && $object->attributes->type == "Account")
                             ) {
                                 if ($object->Email || (property_exists($object, 'IsPersonAccount') && $object->IsPersonAccount == 1 && $object->PersonEmail)) {
-                                    Mage::helper('tnw_salesforce')->log("Synchronizing: " . $object->attributes->type);
+                                    $helper->log("Synchronizing: " . $object->attributes->type);
                                     //$entity[] = Mage::helper('tnw_salesforce/customer')->contactProcess($object);
                                     Mage::helper('tnw_salesforce/magento_customers')->process($object);
                                 } else {
-                                    Mage::helper('tnw_salesforce')->log("SKIPPING: Email is missing in Salesforce!");
+                                    $helper->log("SKIPPING: Email is missing in Salesforce!");
                                 }
                             } elseif ($object->attributes->type == $_prefix . "Website__c") {
                                 if (
@@ -130,36 +130,26 @@ if (!Mage::helper('tnw_salesforce')->isWorking()) {
                                 ) {
                                     Mage::helper('tnw_salesforce/magento_websites')->process($object);
                                 } else {
-                                    Mage::helper('tnw_salesforce')->log("SKIPPING: Website ID and/or Code is missing in Salesforce!");
+                                    $helper->log("SKIPPING: Website ID and/or Code is missing in Salesforce!");
                                 }
                             } elseif ($object->attributes->type == "Product2") {
                                 if ($object->ProductCode) {
                                     Mage::helper('tnw_salesforce/magento_products')->process($object);
                                 } else {
-                                    Mage::helper('tnw_salesforce')->log("SKIPPING: ProductCode is missing in Salesforce!");
+                                    $helper->log("SKIPPING: ProductCode is missing in Salesforce!");
                                 }
                             } else {
-                                Mage::helper('tnw_salesforce')->log("Synchronization SKIPPED for: " . $object->attributes->type);
+                                $helper->log("Synchronization SKIPPED for: " . $object->attributes->type);
                             }
                             /* Reset session for further insertion */
                             Mage::getSingleton('core/session')->setFromSalesForce(false);
                         } catch (Exception $e) {
-                            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-                            Mage::helper('tnw_salesforce')->log("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");
+                            $helper->log("Error: " . $e->getMessage());
+                            $helper->log("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");
                             //$queueStatus = false;
                             unset($e);
                         }
                     }
-                    /*
-                    if ($queueStatus) {
-                        if (
-                            $object->attributes->type == "Contact"
-                            || ($object->IsPersonAccount == 1 && $object->attributes->type == "Account")
-                        ) {
-                            Mage::helper('tnw_salesforce/customer')->updateContacts($entity, $object->attributes->type);
-                        }
-                    }
-                    */
                 } else {
                     // Add to Queue
                     /* Save into a db */
@@ -171,12 +161,12 @@ if (!Mage::helper('tnw_salesforce')->isWorking()) {
                         $model->setIsProcessing(NULL);
                         unset($objects, $formSf);
                         $model->forceInsert();
-                        Mage::helper('tnw_salesforce')->log("Import JSON accepted, pending Import");
+                        $helper->log("Import JSON accepted, pending Import");
                         $status = true;
                         unset($uid, $model);
                     } catch (Exception $e) {
                         $errorString = "Could not process JSON, Error: " . $e->getMessage();
-                        Mage::helper('tnw_salesforce')->log($errorString);
+                        $helper->log($errorString);
                         unset($e);
                     }
                 }
@@ -188,8 +178,8 @@ $response->error = $errorString;
 /* Create JSON to send back to Salesforce */
 $return = json_encode($response);
 
-Mage::helper('tnw_salesforce')->log("Return JSON to Salesforce: " . $return);
-Mage::helper('tnw_salesforce')->log("========== Sync from Salesforce End ==========");
+$helper->log("Return JSON to Salesforce: " . $return);
+$helper->log("========== Sync from Salesforce End ==========");
 
 echo $return; // display JSON for Salesforce
 unset($return);
