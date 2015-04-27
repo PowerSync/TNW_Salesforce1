@@ -104,7 +104,6 @@ if (!$helper->isWorking()) {
                     // Each object should have 'attributes' property and 'type' inside 'attributes'
                     if (property_exists($object, "attributes") && property_exists($object->attributes, "type")) {
                         try {
-                            $_prefix = Mage::helper('tnw_salesforce/salesforce')->getSfPrefix();
                             /* Safer to set the session at this level */
                             Mage::getSingleton('core/session')->setFromSalesForce(true);
                             // Call proper Magento upsert method
@@ -123,7 +122,8 @@ if (!$helper->isWorking()) {
                                         $helper->log("SKIPPING: Email is missing in Salesforce!");
                                     }
                                     break;
-                                case $_prefix . 'Website__c':
+                                case Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField():
+                                    $_prefix = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix();
                                     if (
                                         property_exists($object, $_prefix . 'Website_ID__c')
                                         && !empty($object->{$_prefix . 'Website_ID__c'})
