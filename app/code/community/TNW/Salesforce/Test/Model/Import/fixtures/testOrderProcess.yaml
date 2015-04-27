@@ -1,0 +1,23 @@
+tables:
+  sales/order:
+    - entity_id: 12345
+      increment_id: 100000047
+      billing_address_id: 50
+      shipping_address_id: 60
+  sales/order_address:
+    - entity_id: 50 #shipping
+      parent_id: 12345
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 60 #billing
+      parent_id: 12345
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing

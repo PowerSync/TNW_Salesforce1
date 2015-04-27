@@ -142,6 +142,9 @@ if (!$helper->isWorking()) {
                                         $helper->log("SKIPPING: ProductCode is missing in Salesforce!");
                                     }
                                     break;
+                                case 'Order':
+                                    Mage::getModel('tnw_salesforce/import_order')->setObject($object)->process();
+                                    break;
                                 default:
                                     $helper->log("Synchronization SKIPPED for: " . $object->attributes->type);
                             }
