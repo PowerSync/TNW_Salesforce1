@@ -8,6 +8,16 @@ class TNW_Salesforce_Model_Import_Order
     protected $_object;
 
     /**
+     * @var Mage_Sales_Model_Order
+     */
+    protected $_order;
+
+    /**
+     * @var string
+     */
+    protected $_objectType = 'Order';
+
+    /**
      * @param $string
      */
     protected function log($string)
@@ -35,62 +45,95 @@ class TNW_Salesforce_Model_Import_Order
         return $this->_object;
     }
 
-    public function process()
+    /**
+     * @return bool|Mage_Sales_Model_Order
+     */
+    protected function getOrder()
     {
-        if (isset($this->getObject()->Id) && $this->getObject()->Id) {
-            $this->log('Updating salesforce order ' . $this->getObject()->Id);
-        }
+        if (is_null($this->_order)) {
+            if (isset($this->getObject()->Id) && $this->getObject()->Id) {
+                $this->log('Updating salesforce order ' . $this->getObject()->Id);
+            }
 
-        $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
-        if (!isset($this->getObject()->$magentoId) || !$this->getObject()->$magentoId) {
-            $this->log('There is no magento id');
-            return;
-        }
+            $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
+            if (!isset($this->getObject()->$magentoId) || !$this->getObject()->$magentoId) {
+                $this->log('There is no magento id');
+                $this->_order = false;
+                return false;
+            }
 
-        $order = Mage::getModel('sales/order')->loadByIncrementId($this->getObject()->$magentoId);
-        if (!$order->getId()) {
-            Mage::helper('tnw_salesforce')->log(
-                sprintf('Order with  Id not found, skipping update', $this->getObject()->$magentoId));
-            return;
-        }
-
-        $this->updateStatus($order);
-
-        $this->updateAddress($order, 'billing');
-        $this->updateAddress($order, 'shipping');
-    }
-
-    protected function updateAddress(Mage_Sales_Model_Order $order, $type)
-    {
-        $attribute = ucfirst($type) . 'Address';
-        if (!isset($this->getObject()->$attribute) || !is_object($this->getObject()->$attribute)) {
-            $this->log('Order doesn\'t have ' . $type . ' address');
-            return;
-        }
-
-        $addressObject = new Varien_Object((array)$this->getObject()->$attribute);
-        $method = sprintf('get%sAddress', ucfirst($type));
-
-        $fields = array(
-            // salesforce => magento
-            'city' => 'city',
-            'street' => 'street',
-            'state' => 'region',
-            'postalCode' => 'postcode',
-        );
-
-        /** @var Mage_Sales_Model_Order_Address $address */
-        $address = $order->$method();
-        foreach ($fields as $salesforceField => $magentoField) {
-            if ($addressObject->getData($salesforceField)) {
-                $address->setData($magentoField, $addressObject->getData($salesforceField));
+            $this->_order = Mage::getModel('sales/order')->loadByIncrementId($this->getObject()->$magentoId);
+            if (!$this->_order->getId()) {
+                Mage::helper('tnw_salesforce')->log(
+                    sprintf('Order with  Id not found, skipping update', $this->getObject()->$magentoId));
+                $this->_order = false;
+                return false;
             }
         }
-        $address->save();
+
+        return $this->_order;
     }
 
-    protected function updateStatus(Mage_Sales_Model_Order $order)
+    public function process()
     {
+        if ($this->getOrder()) {
+            $this->updateStatus();
+            $this->updateMappedFields();
+        }
+    }
+
+    protected function updateMappedFields()
+    {
+        $mappings = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_objectType);
+        $entitiesToSave = array();
+        foreach ($mappings as $mapping) {
+            //skip if cannot find field in object
+            if (!isset($this->getObject()->{$mapping->getSfField()})) {
+                continue;
+            }
+            $newValue = $this->getObject()->{$mapping->getSfField()};
+            /** @var $mapping TNW_Salesforce_Model_Mapping */
+            list($entityName, $field) = explode(' : ', $mapping->getLocalField());
+            $entity = $this->getEntity($entityName);
+            if ($entity->getData($field) != $newValue) {
+                $entity->setData($field, $newValue);
+
+                if (!isset($entitiesToSave[$entityName])) {
+                    $entitiesToSave[$entityName] = $entity;
+                }
+            }
+        }
+        if (!empty($entitiesToSave)) {
+            $transaction = Mage::getSingleton('core/resource_transaction');
+            foreach ($entitiesToSave as $entityToSave) {
+                $transaction->addObject($entityToSave);
+            }
+            $transaction->save();
+        }
+    }
+
+    /**
+     * @param string $entityName
+     *
+     * @return bool|Varien_Object
+     */
+    protected function getEntity($entityName)
+    {
+        $entity = false;
+        switch ($entityName) {
+            case 'Shipping':
+            case 'Billing':
+                $method = sprintf('get%sAddress', $entityName);
+                $entity = $this->getOrder()->$method();
+                break;
+        }
+
+        return $entity;
+    }
+
+    protected function updateStatus()
+    {
+        $order = $this->getOrder();
         if (!isset($this->getObject()->Status) || !$this->getObject()->Status) {
             return;
         }

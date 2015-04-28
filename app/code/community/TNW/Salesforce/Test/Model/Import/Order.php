@@ -11,23 +11,22 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
      */
     public function testOrderProcess($incrementId, $salesforceStatus)
     {
-        $object = new stdClass();
-        $object->Id = '80124000000Cc2bAAC';
-        $object->Status = $salesforceStatus;
-        $object->attributes = new stdClass();
-        $object->attributes->type = 'Order';
-        $object->BillingAddress = new stdClass();
-        $object->BillingAddress->city = 'Novorossiysk';
-        $object->BillingAddress->country = 'RU';
-        $object->BillingAddress->postalCode = '353912';
-        $object->BillingAddress->state = 'Krasnodar';
-        $object->BillingAddress->street = 'Lenina 11';
-        $object->ShippingAddress = new stdClass();
-        $object->ShippingAddress->city = 'Taganrog';
-        $object->ShippingAddress->country = 'RU';
-        $object->ShippingAddress->postalCode = '347922';
-        $object->ShippingAddress->state = 'Rostov';
-        $object->ShippingAddress->street = 'Petrovskaya 11';
+        $object = $this->arrayToObject(array(
+            'Status' => $salesforceStatus,
+            'attributes' => $this->arrayToObject(array(
+                'type' => 'Order',
+            )),
+            'BillingStreet' => 'Lenina 11',
+            'BillingCity' => 'Novorossiysk',
+            'BillingState' => 'Krasnodar',
+            'BillingCountry' => 'RU',
+            'BillingPostalCode' => '353912',
+            'ShippingStreet' => 'Petrovskaya 11',
+            'ShippingCity' => 'Taganrog',
+            'ShippingState' => 'Rostov',
+            'ShippingCountry' => 'RU',
+            'ShippingPostalCode' => '347922',
+        ));
 
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
         $object->$magentoId = $incrementId;
@@ -43,25 +42,36 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
 
         //check updated billing address
         $billingAddress = $order->getBillingAddress();
-        $actualBillingAddress = array(
-            'city' => $billingAddress->getCity(),
-            'country' => $billingAddress->getCountryId(),
-            'postalCode' => $billingAddress->getPostcode(),
-            'state' => $billingAddress->getData('region'),
+        $this->assertEquals(array(
+            'street' => $object->BillingStreet,
+            'city' => $object->BillingCity,
+            'state' => $object->BillingState,
+            'country' => $object->BillingCountry,
+            'postcode' => $object->BillingPostalCode,
+        ), array(
             'street' => $billingAddress->getStreet(-1),
-        );
-        $this->assertEquals($object->BillingAddress, $this->arrayToObject($actualBillingAddress));
+            'city' => $billingAddress->getCity(),
+            'state' => $billingAddress->getData('region'),
+            'country' => $billingAddress->getCountryId(),
+            'postcode' => $billingAddress->getPostcode(),
+        ));
 
         //check updated shipping address
         $shippingAddress = $order->getShippingAddress();
-        $actualShippingAddress = array(
-            'city' => $shippingAddress->getCity(),
-            'country' => $shippingAddress->getCountryId(),
-            'postalCode' => $shippingAddress->getPostcode(),
-            'state' => $shippingAddress->getData('region'),
+        $this->assertEquals(array(
+            'street' => $object->ShippingStreet,
+            'city' => $object->ShippingCity,
+            'state' => $object->ShippingState,
+            'country' => $object->ShippingCountry,
+            'postcode' => $object->ShippingPostalCode,
+        ), array(
             'street' => $shippingAddress->getStreet(-1),
-        );
-        $this->assertEquals($object->ShippingAddress, $this->arrayToObject($actualShippingAddress));
+            'city' => $shippingAddress->getCity(),
+            'state' => $shippingAddress->getData('region'),
+            'country' => $shippingAddress->getCountryId(),
+            'postcode' => $shippingAddress->getPostcode(),
+        ));
+
     }
 
     /**

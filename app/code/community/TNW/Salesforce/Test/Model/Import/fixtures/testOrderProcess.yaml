@@ -36,6 +36,79 @@ tables:
     - status_id: 12
       status: processing
       sf_order_status: Draft
+  tnw_salesforce/mapping:
+    - mapping_id: 1
+      local_field: "Billing : street"
+      sf_field: BillingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 2
+      local_field: "Billing : city"
+      sf_field: BillingCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 3
+      local_field: "Billing : country_id"
+      sf_field: BillingCountry
+      attribute_id: 27
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 4
+      local_field: "Billing : region"
+      sf_field: BillingState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 5
+      local_field: "Billing : postcode"
+      sf_field: BillingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 6
+      local_field: "Shipping : street"
+      sf_field: ShippingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 7
+      local_field: "Shipping : city"
+      sf_field: ShippingCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 8
+      local_field: "Shipping : country_id"
+      sf_field: ShippingCountry
+      attribute_id: 27
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 9
+      local_field: "Shipping : region"
+      sf_field: ShippingState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 10
+      local_field: "Shipping : postcode"
+      sf_field: ShippingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 11
+      local_field: "Payment : po_number"
+      sf_field: PoNumber
+      sf_object: Order
+    - mapping_id: 12
+      local_field: "Order : cart_all"
+      sf_field: Description
+      sf_object: Order
+    - mapping_id: 13
+      local_field: "Custom : order_type"
+      sf_field: Type
+      sf_object: Order
   sales/order:
     - entity_id: 12345
       increment_id: 100000047
