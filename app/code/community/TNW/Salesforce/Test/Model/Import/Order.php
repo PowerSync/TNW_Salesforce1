@@ -4,11 +4,16 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
 {
     /**
      * @loadFixture
+     * @dataProvider dataProvider
+     *
+     * @param string $incrementId
+     * @param string $salesforceStatus
      */
-    public function testOrderProcess()
+    public function testOrderProcess($incrementId, $salesforceStatus)
     {
         $object = new stdClass();
         $object->Id = '80124000000Cc2bAAC';
+        $object->Status = $salesforceStatus;
         $object->attributes = new stdClass();
         $object->attributes->type = 'Order';
         $object->BillingAddress = new stdClass();
@@ -25,13 +30,16 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
         $object->ShippingAddress->street = 'Petrovskaya 11';
 
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
-        $object->$magentoId = '100000047';
+        $object->$magentoId = $incrementId;
 
         Mage::getModel('tnw_salesforce/import_order')
             ->setObject($object)
             ->process();
 
         $order = Mage::getModel('sales/order')->loadByIncrementId($object->$magentoId);
+
+        $expectedStatus = $this->expected('%s-%s', $incrementId, $salesforceStatus)->getData('status');
+        $this->assertEquals($expectedStatus, $order->getStatus());
 
         //check updated billing address
         $billingAddress = $order->getBillingAddress();

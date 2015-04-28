@@ -54,6 +54,8 @@ class TNW_Salesforce_Model_Import_Order
             return;
         }
 
+        $this->updateStatus($order);
+
         $this->updateAddress($order, 'billing');
         $this->updateAddress($order, 'shipping');
     }
@@ -85,5 +87,23 @@ class TNW_Salesforce_Model_Import_Order
             }
         }
         $address->save();
+    }
+
+    protected function updateStatus(Mage_Sales_Model_Order $order)
+    {
+        if (!isset($this->getObject()->Status) || !$this->getObject()->Status) {
+            return;
+        }
+
+        $matchedStatuses = Mage::getModel('tnw_salesforce/order_status')
+            ->getCollection()
+            ->addFieldToFilter('sf_order_status', $this->getObject()->Status);
+        if (count($matchedStatuses) === 1) {
+            foreach ($matchedStatuses as $_status) {
+                $order->setStatus($_status->getStatus());
+                break;
+            }
+            $order->save();
+        }
     }
 }
