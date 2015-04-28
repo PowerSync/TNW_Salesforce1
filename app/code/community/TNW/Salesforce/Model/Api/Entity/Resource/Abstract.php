@@ -56,10 +56,11 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
             $fieldName = strtolower($field->name);
 
             $getter = 'get' . $field->name;
+            $value = $object->$getter();
 
-            if ($object->hasData($fieldName) || !empty($object->$getter())) {
+            if ($object->hasData($fieldName) || !empty($value)) {
                 $fieldValue = $object->getData($fieldName);
-                if (!$fieldValue && !empty($object->$getter())) {
+                if (!$fieldValue && !empty($value)) {
                     $fieldValue = $object->$getter();
                 }
 

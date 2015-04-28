@@ -279,6 +279,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 if (is_array($this->_cache['leadLookup'])
                     && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
                     && array_key_exists($_orderEmail, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])) {
+
                     // Need to convert a Lead
                     Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->prepareLeadConversionObject($_orderNumber, $_foundAccounts, 'order');
 

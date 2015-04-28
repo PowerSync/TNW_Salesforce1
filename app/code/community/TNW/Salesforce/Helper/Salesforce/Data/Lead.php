@@ -372,7 +372,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 throw new Exception('Converted Lead status is not set in the configuration, cannot proceed!');
             }
 
-            $email = $this->_cache[$parentEntityType . 'ToEmail'][$parentEntityId];
+            $email = strtolower($this->_cache[$parentEntityType . 'ToEmail'][$parentEntityId]);
 
             if (isset($this->_cache[$parentEntityType . 'ToWebsiteId'][$parentEntityId])) {
                 $websiteId = $this->_cache[$parentEntityType . 'ToWebsiteId'][$parentEntityId];
@@ -421,7 +421,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     //use customer entity instead of email to avoid additional load of entity
                     // and fix account (company name) for guest
                     $_email = isset($this->_cache[$parentEntityType . 'Customers'][$parentEntityId])
-                        ? $this->_cache[$parentEntityType . 'Customers'][$parentEntityId] : $email;
+                        ? strtolower($this->_cache[$parentEntityType . 'Customers'][$parentEntityId]) : $email;
 
                     $accountLookup = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup(
                         array($customerId => $_email),
