@@ -82,22 +82,12 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
      */
     public function testStatusLogs($salesforceStatus)
     {
-        $object = new stdClass();
-        $object->Status = $salesforceStatus;
-        $object->attributes = new stdClass();
-        $object->attributes->type = 'Order';
-        $object->BillingAddress = new stdClass();
-        $object->BillingAddress->city = 'Novorossiysk';
-        $object->BillingAddress->country = 'RU';
-        $object->BillingAddress->postalCode = '353912';
-        $object->BillingAddress->state = 'Krasnodar';
-        $object->BillingAddress->street = 'Lenina 11';
-        $object->ShippingAddress = new stdClass();
-        $object->ShippingAddress->city = 'Taganrog';
-        $object->ShippingAddress->country = 'RU';
-        $object->ShippingAddress->postalCode = '347922';
-        $object->ShippingAddress->state = 'Rostov';
-        $object->ShippingAddress->street = 'Petrovskaya 11';
+        $object = $this->arrayToObject(array(
+            'Status' => $salesforceStatus,
+            'attributes' => $this->arrayToObject(array(
+                'type' => 'Order',
+            )),
+        ));
 
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
         $object->$magentoId = '100000100';
