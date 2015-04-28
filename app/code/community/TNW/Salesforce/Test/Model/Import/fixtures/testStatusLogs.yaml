@@ -1,0 +1,37 @@
+tables:
+  tnw_salesforce/order_status:
+    - status_id: 1
+      status: canceled
+      sf_order_status: Draft
+    - status_id: 2
+      status: closed
+      sf_order_status: Draft
+    - status_id: 3
+      status: complete
+      sf_order_status: Activated
+  sales/order:
+    - entity_id: 1000
+      increment_id: 100000100
+      billing_address_id: 500
+      shipping_address_id: 600
+  sales/order_address:
+    - entity_id: 500 #shipping
+      parent_id: 1000
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 600 #billing
+      parent_id: 1000
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+  sales/order_payment:
+    - entity_id: 1000
+      parent_id: 1000
+      method: checkmo

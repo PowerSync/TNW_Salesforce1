@@ -104,6 +104,14 @@ class TNW_Salesforce_Model_Import_Order
                 break;
             }
             $order->save();
+        } elseif (count($matchedStatuses) > 1) {
+            $log = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId());
+            $log .= ' Mapped Salesforce status matches multiple Magento Order statuses';
+            $log .= ' - not sure which one should be selected';
+            $this->log($log);
+        } else {
+            $this->log(sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
+                . ' Mapped Salesforce status does not match any Magento Order status');
         }
     }
 }
