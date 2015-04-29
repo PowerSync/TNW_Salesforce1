@@ -3,6 +3,8 @@
 class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
 {
     /**
+     * @singleton core/session
+     *
      * @loadFixture
      * @dataProvider dataProvider
      *
@@ -11,6 +13,12 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
      */
     public function testOrderProcess($incrementId, $salesforceStatus)
     {
+        $sessionMock = $this->getModelMock('core/session', array('getFromSalesForce'), false, array(), '', false);
+        $sessionMock->expects($this->any())
+            ->method('getFromSalesForce')
+            ->will($this->returnValue(true));
+        $this->replaceByMock('singleton', 'core/session', $sessionMock);
+
         $object = $this->arrayToObject(array(
             'Status' => $salesforceStatus,
             'attributes' => $this->arrayToObject(array(
@@ -26,6 +34,12 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
             'ShippingState' => 'Rostov',
             'ShippingCountry' => 'RU',
             'ShippingPostalCode' => '347922',
+            'PoNumber' => '12345',
+            'Description' => 'Some description',
+            'Type' => 'Magento',
+            //custom fields to check additional entities
+            'Coupon' => 'TEST-COUPON',
+            'CustomerEmail' => 'test@example.com',
         ));
 
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
@@ -72,6 +86,15 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
             'postcode' => $shippingAddress->getPostcode(),
         ));
 
+        //check payment field
+        $this->assertEquals($object->PoNumber, $order->getPayment()->getPoNumber());
+
+        //check order field
+        $this->assertEquals($object->Coupon, $order->getCouponCode());
+
+        //check customer field
+        $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
+        $this->assertEquals($object->CustomerEmail, $customer->getEmail());
     }
 
     /**

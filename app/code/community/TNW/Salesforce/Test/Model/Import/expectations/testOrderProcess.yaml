@@ -1,20 +1,20 @@
 #pending
 100000047-Activated:
-  status: complete
+  status: closed
 100000047-Draft:
   status: pending
 #closed
 100000048-Activated:
-  status: complete
+  status: closed
 100000048-Draft:
   status: closed
 #complete
 100000049-Activated:
-  status: complete
+  status: closed
 100000049-Draft:
   status: complete
 #processing
 100000050-Activated:
-  status: complete
+  status: closed
 100000050-Draft:
   status: processing
