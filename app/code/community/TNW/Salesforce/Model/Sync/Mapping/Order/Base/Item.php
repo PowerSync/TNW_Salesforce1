@@ -51,8 +51,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
                     case "Cart Item":
                         if ($entity) {
                             if ($attributeCode == "total_product_price") {
-                                $subtotal = number_format((($entity->getPrice() + $entity->getTaxAmount()) * $entity->getQtyOrdered()), 2, ".", "");
-                                $value = number_format(($subtotal - $entity->getDiscountAmount()), 2, ".", "");
+                                $subtotal = $this->_getNumberFormat(($entity->getPrice() + $entity->getTaxAmount()) * $entity->getQtyOrdered());
+                                $value = $this->_getNumberFormat($subtotal - $entity->getDiscountAmount());
                             } else {
                                 $value = $entity->getData($attributeCode);
 

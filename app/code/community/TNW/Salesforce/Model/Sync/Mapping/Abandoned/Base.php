@@ -42,10 +42,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base extends TNW_Sale
      */
     protected function _getDescriptionCart($quote)
     {
-        $_currencyCode = '';
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $_currencyCode = $quote->getData('quote_currency_code') . " ";
-        }
+        $_currencyCode = $this->_getCurrencyCode($quote, 'quote_currency_code');
 
         ## Put Products into Single field
         $descriptionCart = "";
@@ -60,25 +57,25 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base extends TNW_Sale
         $descriptionCart .= "=======================================\n";
 
         foreach ($quote->getAllVisibleItems() as $itemId => $item) {
-            $descriptionCart .= $item->getSku() . ", " . number_format($item->getQty()) . ", " . $item->getName();
+            $descriptionCart .= $item->getSku() . ", " . $this->_getNumberFormat($item->getQty()) . ", " . $item->getName();
             //Price
-            $unitPrice = number_format(($item->getPrice()), 2, ".", "");
+            $unitPrice = $this->_getNumberFormat($this->_getEntityPrice($item, 'Price'));
             $descriptionCart .= ", " . $_currencyCode . $unitPrice;
             //Tax
-            $tax = number_format(($item->getTaxAmount()), 2, ".", "");
+            $tax = $this->_getNumberFormat($this->_getEntityPrice($item, 'TaxAmount'));
             $descriptionCart .= ", " . $_currencyCode . $tax;
             //Subtotal
-            $subtotal = number_format((($item->getPrice() + $item->getTaxAmount()) * $item->getQty()), 2, ".", "");
+            $subtotal = $this->_getNumberFormat(($this->_getEntityPrice($item, 'Price') +$this->_getEntityPrice($item, 'TaxAmount')) * $item->getQty());
             $descriptionCart .= ", " . $_currencyCode . $subtotal;
             //Net Total
-            $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
+            $netTotal = $this->_getNumberFormat($subtotal - $this->_getEntityPrice($item, 'DiscountAmount'));
             $descriptionCart .= ", " . $_currencyCode . $netTotal;
             $descriptionCart .= "\n";
         }
         $descriptionCart .= "=======================================\n";
-        $descriptionCart .= "Sub Total: " . $_currencyCode . number_format(($quote->getSubtotal()), 2, ".", "") . "\n";
-        $descriptionCart .= "Tax: " . $_currencyCode . number_format(($quote->getTaxAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Total: " . $_currencyCode . number_format(($quote->getGrandTotal()), 2, ".", "");
+        $descriptionCart .= "Sub Total: " . $_currencyCode . $this->_getNumberFormat($this->_getEntityPrice($quote, 'Subtotal')) . "\n";
+        $descriptionCart .= "Tax: " . $_currencyCode . $this->_getNumberFormat($this->_getEntityPrice($quote, 'TaxAmount')) . "\n";
+        $descriptionCart .= "Total: " . $_currencyCode . $this->_getNumberFormat($this->_getEntityPrice($quote, 'GrandTotal'));
         $descriptionCart .= "\n";
 
         return $descriptionCart;

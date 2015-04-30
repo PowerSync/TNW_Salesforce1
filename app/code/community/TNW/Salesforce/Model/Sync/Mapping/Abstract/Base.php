@@ -339,5 +339,31 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
         $this->_break = $break;
     }
 
+    /**
+     * @comment based on config returns price in base currency or in currency selected by the customer
+     * @param $entity
+     * @param $priceField should be in camelcase
+     */
+    protected function _getEntityPrice($entity, $priceField)
+    {
+        return $this->getSync()->getEntityPrice($entity, $priceField);
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    protected function _numberFormat($value)
+    {
+        return $this->getSync()->numberFormat($value);
+    }
+
+    /**
+     * @return string
+     */
+    protected function _getCurrencyCode($_entity, $currencyCodeField = 'order_currency_code')
+    {
+        return $this->getSync()->getCurrencyCode($_entity, $currencyCodeField);
+    }
 
 }

@@ -342,122 +342,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 Mage::helper('tnw_salesforce')->log('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
                 continue;
             }
-            Mage::helper('tnw_salesforce')->log('******** QUOTE (' . $_quoteNumber . ') ********');
-            $_quote = Mage::registry('abandoned_cached_' . $_quoteNumber);
-            $_currencyCode = Mage::app()->getStore($_quote->getStoreId())->getCurrentCurrencyCode();
 
-            foreach ($_quote->getAllVisibleItems() as $_item) {
-                if ((int)$_item->getQty() == 0) {
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addNotice("Product w/ SKU (" . $_item->getSku() . ") for quote #" . $_quoteNumber . " is not synchronized, quoteed quantity is zero!");
-                    }
-                    Mage::helper('tnw_salesforce')->log("NOTE: Product w/ SKU (" . $_item->getSku() . ") is not synchronized, quoteed quantity is zero!");
-                    continue;
-                }
-                // Load by product Id only if bundled OR simple with options
-                $id = $this->getProductIdFromCart($_item);
+            $this->_prepareOrderItem($_quoteNumber, 'abandoned');
 
-                $_storeId = $_quote->getStoreId();
-                if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-                    if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                        $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-                    }
-                }
-
-                $_productModel = Mage::getModel('catalog/product')->setStoreId($_storeId);
-                $_product = $_productModel->load($id);
-
-                $this->_obj = new stdClass();
-                if (!$_product->getSalesforcePricebookId()) {
-                    Mage::helper('tnw_salesforce')->log("ERROR: Product w/ SKU (" . $_item->getSku() . ") is not synchronized, could not add to Opportunity!");
-                    continue;
-                }
-
-                //Process mapping
-                Mage::getSingleton('tnw_salesforce/sync_mapping_abandoned_opportunity_item')
-                    ->setSync($this)
-                    ->processMapping($_item, $_product);
-
-                /**
-                 * Abandoned cart items should be removed and added again
-                 */
-                $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
-
-                if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
-                    $netTotal = number_format($_item->getData('row_total_incl_tax'), 2, ".", "");
-                } else {
-                    $netTotal = number_format($_item->getData('row_total'), 2, ".", "");
-                }
-
-                if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
-                    $netTotal = number_format(($netTotal - $_item->getData('discount_amount')), 2, ".", "");
-                    $this->_obj->UnitPrice = number_format($netTotal / $_item->getQty(), 2, ".", "");;
-                } else {
-                    if ((int)$_item->getQty() == 0) {
-                        $this->_obj->UnitPrice = $netTotal;
-                    } else {
-                        $this->_obj->UnitPrice = $netTotal / $_item->getQty();
-                    }
-                }
-
-                if (!property_exists($this->_obj, "Id")) {
-                    $this->_obj->PricebookEntryId = $_product->getSalesforcePricebookId();
-                }
-
-                $opt = array();
-                $options = $_item->getProductOptions();
-                $_summary = array();
-                if (
-                    is_array($options)
-                    && array_key_exists('options', $options)
-                ) {
-                    $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
-                    foreach ($options['options'] as $_option) {
-                        $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $_option['print_value'] . '</td></tr>';
-                        $_summary[] = $_option['print_value'];
-                    }
-                }
-                if (
-                    is_array($options)
-                    && $_item->getData('product_type') == 'bundle'
-                    && array_key_exists('bundle_options', $options)
-                ) {
-                    $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
-                    foreach ($options['bundle_options'] as $_option) {
-                        $_string = '<td align="left">' . $_option['label'] . '</td>';
-                        if (is_array($_option['value'])) {
-                            $_tmp = array();
-                            foreach ($_option['value'] as $_value) {
-                                $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . number_format($_value['price'], 2) . '</td>';
-                                $_summary[] = $_value['title'];
-                            }
-                            if (count($_tmp) > 0) {
-                                $_string .= join(", ", $_tmp);
-                            }
-                        }
-
-                        $opt[] = '<tr>' . $_string . '</tr>';
-                    }
-                }
-                if (count($opt) > 0) {
-                    $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
-                    $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
-                    $this->_obj->Description = join(", ", $_summary);
-                    if (strlen($this->_obj->Description) > 200) {
-                        $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
-                    }
-                }
-
-                $this->_obj->Quantity = $_item->getQty();
-
-                /* Dump OpportunityLineItem object into the log */
-                foreach ($this->_obj as $key => $_item) {
-                    Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
-                }
-
-                $this->_cache['opportunityLineItemsToUpsert'][] = $this->_obj;
-                Mage::helper('tnw_salesforce')->log('-----------------');
-            }
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
     }
@@ -548,7 +435,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
         $_quoteNumbers = array_flip($this->_cache['upsertedOpportunities']);
         try {
-            $results = $this->_mySforceConnection->upsert("Id", $chunk, 'OpportunityLineItem');
+            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OpportunityLineItem');
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach ($chunk as $_object) {

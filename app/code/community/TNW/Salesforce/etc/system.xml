@@ -811,10 +811,26 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable if your Magento has multiple stores with different currencies. NOTE:
+                            <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
                                 Salesforce multi-currency support must be enabled as well.
-                            </comment>
+                                <a href="https://help.salesforce.com/HTViewHelpDoc?id=admin_enable_multicurrency.htm&amp;language=en_US">Salesforce Topic</a>
+                                ]]></comment>
                         </order_multi_currency>
+
+                        <order_currency_sync translate="label">
+                            <label>Which currency should be used</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_sync_currency</source_model>
+                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mapping</comment>
+                            <sort_order>110</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_multi_currency>0</order_multi_currency>
+                            </depends>
+                        </order_currency_sync>
+
                     </fields>
                 </general>
                 <customer_opportunity translate="label" module="tnw_salesforce">

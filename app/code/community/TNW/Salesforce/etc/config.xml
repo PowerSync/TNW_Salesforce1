@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.51.00.0006</version>
+            <version>0.01.51.00.0007</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -635,6 +635,7 @@
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
                 <order_multi_currency>0</order_multi_currency>
+                <order_currency_sync>customer</order_currency_sync>
                 <order_status_all>1</order_status_all>
             </general>
             <customer_opportunity>

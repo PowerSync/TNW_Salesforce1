@@ -995,4 +995,22 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         return $this->_serverHelper;
     }
 
+    public function getEntityPrice($entity, $priceField)
+    {
+        if (Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency()) {
+            $priceField = 'Base' . $priceField;
+        }
+
+        $priceGetter = 'get' .$priceField;
+
+        $result = $entity->$priceGetter();
+
+        return $result;
+    }
+
+    public function numberFormat($value)
+    {
+        return number_format($value, 2, ".", "");
+    }
+
 }
