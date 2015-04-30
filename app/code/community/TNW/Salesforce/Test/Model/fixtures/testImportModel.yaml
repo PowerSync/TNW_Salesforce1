@@ -1,0 +1,5 @@
+tables:
+  tnw_salesforce/import:
+    - import_id: 1
+      json: '{}'
+      is_processing: 0
