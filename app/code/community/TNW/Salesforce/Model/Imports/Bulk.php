@@ -78,10 +78,13 @@ class TNW_Salesforce_Model_Imports_Bulk
 
                 foreach ($objects as $object) {
                     try {
-                        $this->importObject($object);
+                        $this->getModel()->setObject($object)->process();
                     } catch (Exception $e) {
                         $this->log("Error: " . $e->getMessage());
-                        $this->log("Failed to upsert a " . $this->getObjectType($object)
+                        $objectType = property_exists($object, "attributes")
+                            && property_exists($object->attributes, "type")
+                            ? (string)$object->attributes->type : '';
+                        $this->log("Failed to upsert a " . $objectType
                             . " #" . $object->Id . ", please re-save or re-import it manually");
                         $queueStatus = false;
                     }
@@ -98,69 +101,5 @@ class TNW_Salesforce_Model_Imports_Bulk
             $this->log("Too many items in the queue, need manual processing");
         }
         return true;
-    }
-
-    /**
-     * @param stdClass $object
-     *
-     * @return bool Queue status
-     */
-    protected function importObject($object)
-    {
-        if (!$this->getObjectType($object)) {
-            $this->log("Invalid Salesforce object format, or type is not supported");
-            return;
-        }
-
-        /* Safer to set the session at this level */
-        Mage::getSingleton('core/session')->setFromSalesForce(true);
-        // Call proper Magento upsert method
-        switch ($this->getObjectType($object)) {
-            case 'Account': //for account if personal account is enabled
-                if ($object->IsPersonAccount != 1) {
-                    break;
-                }
-            case 'Contact': //or for contact
-                if ($object->Email || (property_exists($object, 'IsPersonAccount')
-                        && $object->IsPersonAccount == 1 && $object->PersonEmail)
-                ) {
-                    $this->log('Synchronizing: ' . $this->getObjectType($object));
-                    Mage::helper('tnw_salesforce/magento_customers')->process($object);
-                } else {
-                    $this->log('SKIPPING: Email is missing in Salesforce!');
-                }
-                break;
-            case Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField():
-                $prefix = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix();
-                if (property_exists($object, $prefix . 'Website_ID__c')
-                    && !empty($object->{$prefix . 'Website_ID__c'})
-                    && property_exists($object, $prefix . 'Code__c')
-                    && !empty($object->{$prefix . 'Code__c'})
-                ) {
-                    Mage::helper('tnw_salesforce/magento_websites')->process($object);
-                } else {
-                    $this->log('SKIPPING: Website ID and/or Code is missing in Salesforce!');
-                }
-                break;
-            case 'Product2':
-                if ($object->ProductCode) {
-                    Mage::helper('tnw_salesforce/magento_products')->process($object);
-                } else {
-                    $this->log('SKIPPING: ProductCode is missing in Salesforce!');
-                }
-                break;
-        }
-        /* Reset session for further insertion */
-        Mage::getSingleton('core/session')->setFromSalesForce(false);
-    }
-
-    /**
-     * @param stdClass $object
-     * @return string
-     */
-    protected function getObjectType($object)
-    {
-        return property_exists($object, "attributes") && property_exists($object->attributes, "type")
-            ? (string)$object->attributes->type : '';
     }
 }

@@ -38,7 +38,7 @@ class TNW_Salesforce_Model_Import_Order
     /**
      * @param stdClass $object
      *
-     * @return $this
+     * @return TNW_Salesforce_Model_Import_Order
      */
     public function setObject($object)
     {

@@ -101,59 +101,13 @@ if (!$helper->isWorking()) {
                 if (count($objects) == 1) {
                     // Process Realtime
                     $object = $objects[0];
-                    // Each object should have 'attributes' property and 'type' inside 'attributes'
-                    if (property_exists($object, "attributes") && property_exists($object->attributes, "type")) {
-                        try {
-                            /* Safer to set the session at this level */
-                            Mage::getSingleton('core/session')->setFromSalesForce(true);
-                            // Call proper Magento upsert method
-                            switch ($object->attributes->type) {
-                                case 'Account': //for account when personal account enabled
-                                    if ($object->IsPersonAccount != 1) {
-                                        break;
-                                    }
-                                    //we don\'t need break here because we use the same code as next
-                                case 'Contact': //or for contact
-                                    if ($object->Email || (property_exists($object, 'IsPersonAccount') && $object->IsPersonAccount == 1 && $object->PersonEmail)) {
-                                        $helper->log("Synchronizing: " . $object->attributes->type);
-                                        //$entity[] = Mage::helper('tnw_salesforce/customer')->contactProcess($object);
-                                        Mage::helper('tnw_salesforce/magento_customers')->process($object);
-                                    } else {
-                                        $helper->log("SKIPPING: Email is missing in Salesforce!");
-                                    }
-                                    break;
-                                case Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField():
-                                    $_prefix = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix();
-                                    if (
-                                        property_exists($object, $_prefix . 'Website_ID__c')
-                                        && !empty($object->{$_prefix . 'Website_ID__c'})
-                                        && property_exists($object, $_prefix . 'Code__c')
-                                        && !empty($object->{$_prefix . 'Code__c'})
-                                    ) {
-                                        Mage::helper('tnw_salesforce/magento_websites')->process($object);
-                                    } else {
-                                        $helper->log("SKIPPING: Website ID and/or Code is missing in Salesforce!");
-                                    }
-                                    break;
-                                case 'Product2':
-                                    if ($object->ProductCode) {
-                                        Mage::helper('tnw_salesforce/magento_products')->process($object);
-                                    } else {
-                                        $helper->log("SKIPPING: ProductCode is missing in Salesforce!");
-                                    }
-                                    break;
-                                case 'Order':
-                                    Mage::getModel('tnw_salesforce/import_order')->setObject($object)->process();
-                                    break;
-                                default:
-                                    $helper->log("Synchronization SKIPPED for: " . $object->attributes->type);
-                            }
-                            /* Reset session for further insertion */
-                            Mage::getSingleton('core/session')->setFromSalesForce(false);
-                        } catch (Exception $e) {
-                            $helper->log("Error: " . $e->getMessage());
-                            $helper->log("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");
-                        }
+                    try {
+                        Mage::getModel('tnw_salesforce/import')
+                            ->setObject($object)
+                            ->process();
+                    } catch (Exception $e) {
+                        $helper->log("Error: " . $e->getMessage());
+                        $helper->log("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");
                     }
                 } else {
                     // Add to Queue
