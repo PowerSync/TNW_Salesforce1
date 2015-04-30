@@ -2,6 +2,8 @@
 
 class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 {
+    const PRICE_ACCURACY = 'salesforce_product/general/price_accuracy';
+
     /* Salesforce ID for default Pricebook set in Magento */
     protected $_defaultPriceBook = NULL;
 
@@ -90,9 +92,9 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 }
                 unset($collection, $_map);
                 $this->_oli->OpportunityId = $opportunityId;
-                $subtotal = number_format(($item->getPrice() * $item->getQtyOrdered()), 2, ".", "");
-                $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
-                $this->_oli->UnitPrice = $netTotal / $item->getQtyOrdered();
+                $subtotal = $this->numberFormat(($item->getPrice() * $item->getQtyOrdered()));
+                $netTotal = $this->numberFormat(($subtotal - $item->getDiscountAmount()));
+                $this->_oli->UnitPrice = $this->numberFormat($netTotal / $item->getQtyOrdered());
                 $this->_oli->PricebookEntryId = $pricebookEntryId;
                 $opt = array();
                 $options = $item->getProductOptions();
@@ -234,7 +236,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
         $_magentoProdId = $product->getId();
         $pricebookEntryId = $product->getSalesforcePricebookId();
         $_sfProductId = $product->getSalesforceId();
-        $productPrice = number_format($product->getPrice(), 2, ".", "");
+        $productPrice = $this->numberFormat($product->getPrice());
         $_doPricebookUpdate = false;
 
         // Figure out what needs to happen next
@@ -385,7 +387,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             }
             $pb->Id = ($pbeId) ? $pbeId : NULL;
             $pb->UseStandardPrice = FALSE;
-            $pb->UnitPrice = $price;
+            $pb->UnitPrice = $this->numberFormat($price);
             $pb->isActive = TRUE;
 
             unset($prodId, $price, $defaultPB, $pbeId);
@@ -548,8 +550,8 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             case "Cart":
                 if ($cartItem) {
                     if ($conf[1] == "total_product_price") {
-                        $subtotal = number_format((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQtyOrdered()), 2, ".", "");
-                        $value = number_format(($subtotal - $cartItem->getDiscountAmount()), 2, ".", "");
+                        $subtotal = $this->numberFormat((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQtyOrdered()));
+                        $value = $this->numberFormat(($subtotal - $cartItem->getDiscountAmount()));
                     }
                 }
                 break;

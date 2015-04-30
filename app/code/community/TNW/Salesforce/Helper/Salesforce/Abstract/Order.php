@@ -21,11 +21,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @param $parentEntityNumber
      * @param Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item $_item
      * @param $_sku
-     * @param string $parentEntityType  opportunity|order
+     * @param string $parentEntityType opportunity|order
      * @param string $itemsField {$itemsField}|{$itemsField}
      * @return bool
      */
-    protected function _doesCartItemExist($parentEntityNumber, $_item, $_sku, $parentEntityType, $itemsField) {
+    protected function _doesCartItemExist($parentEntityNumber, $_item, $_sku, $parentEntityType, $itemsField)
+    {
 
         $_cartItemFound = false;
 
@@ -81,9 +82,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @return int
      * Get product Id from the cart
      */
-    public function getProductIdFromCart($_item) {
+    public function getProductIdFromCart($_item)
+    {
         $_options = unserialize($_item->getData('product_options'));
-        if(
+        if (
             $_item->getData('product_type') == 'bundle'
             || array_key_exists('options', $_options)
         ) {
@@ -158,7 +160,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         foreach ($parentEntity->getAllVisibleItems() as $_item) {
 
             $qty = (int)$_item->getQtyOrdered();
-            if ($magentoEntity =='quote') {
+            if ($magentoEntity == 'quote') {
                 $qty = (int)$_item->getQty();
             }
 
@@ -197,7 +199,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             /**
              * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
              */
-            $mapping = Mage::getSingleton('tnw_salesforce/sync_mapping_'.$magentoEntityPrefix.'_' . $parentEntityType . '_item');
+            $mapping = Mage::getSingleton('tnw_salesforce/sync_mapping_' . $magentoEntityPrefix . '_' . $parentEntityType . '_item');
 
             $mapping->setSync($this)
                 ->processMapping($_item, $_product);
@@ -213,14 +215,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_obj->$parentEntityField = $this->_cache['upserted' . $manyParentEntityType][$parentEntityNumber];
 
             if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
-                $netTotal = $this->numberFormat($this->getEntityPrice($_item, 'RowTotalInclTax'));
+                $netTotal = $this->getEntityPrice($_item, 'RowTotalInclTax');
             } else {
-                $netTotal = $this->numberFormat($this->getEntityPrice($_item, 'RowTotal'));
+                $netTotal = $this->getEntityPrice($_item, 'RowTotal');
             }
 
             if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
-                $netTotal = $this->numberFormat(($netTotal - $this->getEntityPrice($_item, 'DiscountAmount')));
-                $this->_obj->UnitPrice = $this->numberFormat($netTotal / $qty);
+                $netTotal = ($netTotal - $this->getEntityPrice($_item, 'DiscountAmount'));
+                $this->_obj->UnitPrice = $netTotal / $qty;
             } else {
                 if ($qty == 0) {
                     $this->_obj->UnitPrice = $netTotal;
@@ -228,6 +230,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     $this->_obj->UnitPrice = $netTotal / $qty;
                 }
             }
+
+            /**
+             * @comment prepare formatted price
+             */
+            $this->_obj->UnitPrice = $this->numberFormat($this->_obj->UnitPrice);
 
             if (!property_exists($this->_obj, "Id")) {
                 $this->_obj->PricebookEntryId = $_product->getData('salesforce_pricebook_id');
@@ -298,41 +305,41 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             Mage::helper('tnw_salesforce')->log('-----------------');
         }
 
-            // Push Tax Fee Product
-            if (Mage::helper('tnw_salesforce')->useTaxFeeProduct() && $parentEntity->getTaxAmount() > 0) {
-                if (Mage::helper('tnw_salesforce')->getTaxProduct()) {
-                    $this->addTaxProduct($parentEntity, $parentEntityNumber, $parentEntityType);
-                } else {
-                    Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Tax product is not configured!", 1, "sf-errors");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Tax Fee product to the Order!');
-                    }
+        // Push Tax Fee Product
+        if (Mage::helper('tnw_salesforce')->useTaxFeeProduct() && $parentEntity->getTaxAmount() > 0) {
+            if (Mage::helper('tnw_salesforce')->getTaxProduct()) {
+                $this->addTaxProduct($parentEntity, $parentEntityNumber, $parentEntityType);
+            } else {
+                Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Tax product is not configured!", 1, "sf-errors");
+                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Tax Fee product to the Order!');
                 }
             }
+        }
 
-            // Push Shipping Fee Product
-            if (Mage::helper('tnw_salesforce')->useShippingFeeProduct() && $this->getEntityPrice($parentEntity, 'ShippingAmount') > 0) {
-                if (Mage::helper('tnw_salesforce')->getShippingProduct()) {
-                    $this->addShippingProduct($parentEntity, $parentEntityNumber, $parentEntityType);
-                } else {
-                    Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Shipping product is not configured!", 1, "sf-errors");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Shipping Fee product to the Order!');
-                    }
+        // Push Shipping Fee Product
+        if (Mage::helper('tnw_salesforce')->useShippingFeeProduct() && $this->getEntityPrice($parentEntity, 'ShippingAmount') > 0) {
+            if (Mage::helper('tnw_salesforce')->getShippingProduct()) {
+                $this->addShippingProduct($parentEntity, $parentEntityNumber, $parentEntityType);
+            } else {
+                Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Shipping product is not configured!", 1, "sf-errors");
+                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Shipping Fee product to the Order!');
                 }
             }
+        }
 
-            // Push Discount Fee Product
-            if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $this->getEntityPrice($parentEntity, 'DiscountAmount') != 0) {
-                if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
-                    $this->addDiscountProduct($parentEntity, $parentEntityNumber, $parentEntityType);
-                } else {
-                    Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Discount product is not configured!", 1, "sf-errors");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Discount Fee product to the Order!');
-                    }
+        // Push Discount Fee Product
+        if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $this->getEntityPrice($parentEntity, 'DiscountAmount') != 0) {
+            if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
+                $this->addDiscountProduct($parentEntity, $parentEntityNumber, $parentEntityType);
+            } else {
+                Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Discount product is not configured!", 1, "sf-errors");
+                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Discount Fee product to the Order!');
                 }
             }
+        }
     }
 
     /**
@@ -362,7 +369,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
          */
         $parentEntityCacheKey = $parentEntityType . 'Lookup';
-        
+
         $_storeId = $parentEntity->getStoreId();
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
@@ -448,7 +455,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
          */
         $parentEntityCacheKey = $parentEntityType . 'Lookup';
-        
+
         $_storeId = $parentEntity->getStoreId();
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {

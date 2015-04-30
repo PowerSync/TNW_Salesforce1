@@ -335,27 +335,27 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $descriptionCart .= "=======================================\n";
 
         foreach ($order->getAllVisibleItems() as $itemId => $item) {
-            $descriptionCart .= $item->getSku() . ", " . number_format($item->getQtyOrdered()) . ", " . $item->getName();
+            $descriptionCart .= $item->getSku() . ", " . $this->numberFormat($item->getQtyOrdered()) . ", " . $item->getName();
             //Price
-            $unitPrice = number_format(($item->getPrice()), 2, ".", "");
+            $unitPrice = $this->numberFormat(($item->getPrice()));
             $descriptionCart .= ", " . $unitPrice;
             //Tax
-            $tax = number_format(($item->getTaxAmount()), 2, ".", "");
+            $tax = $this->numberFormat(($item->getTaxAmount()));
             $descriptionCart .= ", " . $tax;
             //Subtotal
-            $subtotal = number_format((($item->getPrice() + $item->getTaxAmount()) * $item->getQtyOrdered()), 2, ".", "");
+            $subtotal = $this->numberFormat((($item->getPrice() + $item->getTaxAmount()) * $item->getQtyOrdered()));
             $descriptionCart .= ", " . $subtotal;
             //Net Total
-            $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
+            $netTotal = $this->numberFormat(($subtotal - $item->getDiscountAmount()));
             $descriptionCart .= ", " . $netTotal;
             $descriptionCart .= "\n";
         }
         $descriptionCart .= "=======================================\n";
-        $descriptionCart .= "Sub Total: " . number_format(($order->getSubtotal()), 2, ".", "") . "\n";
-        $descriptionCart .= "Tax: " . number_format(($order->getTaxAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Shipping (" . $order->getShippingDescription() . "): " . number_format(($order->getShippingAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Discount Amount : " . number_format($order->getGrandTotal() - ($order->getShippingAmount() + $order->getTaxAmount() + $order->getSubtotal()), 2, ".", "") . "\n";
-        $descriptionCart .= "Total: " . number_format(($order->getGrandTotal()), 2, ".", "");
+        $descriptionCart .= "Sub Total: " . $this->numberFormat(($order->getSubtotal())) . "\n";
+        $descriptionCart .= "Tax: " . $this->numberFormat(($order->getTaxAmount())) . "\n";
+        $descriptionCart .= "Shipping (" . $order->getShippingDescription() . "): " . $this->numberFormat(($order->getShippingAmount())) . "\n";
+        $descriptionCart .= "Discount Amount : " . $this->numberFormat($order->getGrandTotal() - ($order->getShippingAmount() + $order->getTaxAmount() + $order->getSubtotal())) . "\n";
+        $descriptionCart .= "Total: " . $this->numberFormat(($order->getGrandTotal()));
         $descriptionCart .= "\n";
         unset($order);
         return $descriptionCart;

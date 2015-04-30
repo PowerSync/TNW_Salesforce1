@@ -1010,7 +1010,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     public function numberFormat($value)
     {
-        return number_format($value, 2, ".", "");
+        return Mage::helper('tnw_salesforce/salesforce_data')->numberFormat($value);
     }
 
 }

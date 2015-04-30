@@ -722,6 +722,17 @@
                             <show_in_store>0</show_in_store>
                             <comment>Salesforce Pricebook used for this store</comment>
                         </default_pricebook>
+                        <price_accuracy translate="label">
+                            <label>Price accuracy</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_price_accuracy</source_model>
+                            <comment>Decimals count after point</comment>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Salesforce Pricebook used for this store</comment>
+                        </price_accuracy>
                     </fields>
                 </general>
             </groups>

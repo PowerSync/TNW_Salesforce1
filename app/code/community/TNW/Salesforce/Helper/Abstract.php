@@ -429,4 +429,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         }
         return $this->_delete;
     }
+
+    public function numberFormat($value)
+    {
+        return number_format($value, $this->getStroreConfig(TNW_Salesforce_Helper_Order_Pricebook::PRICE_ACCURACY), ".", "");
+    }
 }

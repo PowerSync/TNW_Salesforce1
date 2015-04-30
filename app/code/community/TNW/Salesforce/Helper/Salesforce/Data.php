@@ -336,7 +336,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     $tmp->Id = $_item->Id;
                     $tmp->Product2Id = $_item->Product2Id;
                     $tmp->Pricebook2Id = $_item->Pricebook2Id;
-                    $tmp->UnitPrice = $_item->UnitPrice;
+                    $tmp->UnitPrice = $this->numberFormat($_item->UnitPrice);
                     $returnArray[$_item->Product2Id] = $tmp;
                 }
                 return $returnArray;

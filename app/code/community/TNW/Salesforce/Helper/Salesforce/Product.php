@@ -189,7 +189,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
             $this->_obj = new stdClass();
 
-            $productPrice = number_format($_product->getPrice(), 2, ".", "");
+            $productPrice = $this->numberFormat($_product->getPrice());
 
             $_sfProductId = (is_array($this->_cache['productsLookup']) && array_key_exists($_product->getSku(), $this->_cache['productsLookup'])) ? $this->_cache['productsLookup'][$_product->getSku()]->Id : NULL;
             if ($_sfProductId) {
@@ -200,7 +200,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             if (!array_key_exists($_product->getId(), $this->_cache['productPrices'])) {
                 $this->_cache['productPrices'][$_product->getId()] = array();
             }
-            $this->_cache['productPrices'][$_product->getId()][$_storeId] = (float)$productPrice;
+            $this->_cache['productPrices'][$_product->getId()][$_storeId] = $this->numberFormat($productPrice);
         }
         $_collection = NULL;
         unset($_collection);
@@ -658,7 +658,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         // Create Default Pricebook Entry
         $_obj = new stdClass();
         $_obj->UseStandardPrice = 0;
-        $_obj->UnitPrice = $_price;
+        $_obj->UnitPrice = $this->numberFormat($_price);
         $_obj->IsActive = TRUE;
 
         $_key = $this->_doesPricebookEntryExist($_sfProduct, $_priceBookId, $_currencyCode);
