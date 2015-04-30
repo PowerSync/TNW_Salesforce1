@@ -52,8 +52,6 @@ if (
 /* Setting default values */
 $response = new stdClass();
 
-/* Set Default */
-$status = false;
 $errorString = NULL;
 if (!$helper->isWorking()) {
     $errorString = "Extension is disabled or not working";
@@ -113,16 +111,10 @@ if (!$helper->isWorking()) {
                     // Add to Queue
                     /* Save into a db */
                     try {
-                        $uid = uniqid("ctmr_", true);
-                        $model = Mage::getModel('tnw_salesforce/import');
-                        $model->setId($uid);
-                        $model->setJson(serialize($fromSf));
-                        $model->setIsProcessing(NULL);
-                        unset($objects, $formSf);
-                        $model->forceInsert();
+                        Mage::getModel('tnw_salesforce/import')
+                            ->addData(array('json' => serialize($fromSf)))
+                            ->save();
                         $helper->log("Import JSON accepted, pending Import");
-                        $status = true;
-                        unset($uid, $model);
                     } catch (Exception $e) {
                         $errorString = "Could not process JSON, Error: " . $e->getMessage();
                         $helper->log($errorString);

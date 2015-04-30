@@ -3,12 +3,20 @@
 class TNW_Salesforce_Test_Model_Import extends TNW_Salesforce_Test_Case
 {
     /**
+     * @return TNW_Salesforce_Model_Import
+     */
+    protected function getModel()
+    {
+        return Mage::getModel('tnw_salesforce/import');
+    }
+
+    /**
      * @loadFixture
      */
     public function testImportModel()
     {
         $entityId = 1;
-        $model = Mage::getModel('tnw_salesforce/import')->load($entityId);
+        $model = $this->getModel()->load($entityId);
         $this->assertEquals($entityId, $model->getId());
         $collection = $model->getCollection()->addFieldToFilter($model->getIdFieldName(), $entityId);
         $this->assertEquals($entityId, $collection->getFirstItem()->getId());
@@ -73,8 +81,26 @@ class TNW_Salesforce_Test_Model_Import extends TNW_Salesforce_Test_Case
             );
         $this->replaceByMock('singleton', 'core/session', $sessionMock);
 
-        $model = Mage::getModel('tnw_salesforce/import');
-        $model->setObject($object)
+        $this->getModel()
+            ->setObject($object)
             ->process();
+    }
+
+    public function testPrimaryKey()
+    {
+        //save one model before to check autogenerate primary keys and do not duplicate them
+        $firstModel = $this->getModel()->addData(array(
+            'json' => '{}',
+        ))->save();
+        //reload model to check id
+        $firstModel = $this->getModel()->load($firstModel->getId());
+
+        $this->assertNotEmpty($firstModel->getId());
+        $this->assertEquals(28, strlen($firstModel->getId()));
+
+        $secondModel = $this->getModel()->save();
+        //reload model to check id
+        $secondModel = $this->getModel()->load($secondModel->getId());
+        $this->assertNotEquals($firstModel->getId(), $secondModel->getId());
     }
 }
