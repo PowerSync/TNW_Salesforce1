@@ -3,14 +3,22 @@
 class TNW_Salesforce_Model_Imports_Bulk
 {
     /**
-     * @var TNW_Salesforce_Model_Imports
+     * @var TNW_Salesforce_Model_Import
      */
     protected $_queue;
+
+    /**
+     * @return TNW_Salesforce_Model_Import
+     */
+    protected function getModel()
+    {
+        return Mage::getModel('tnw_salesforce/import');
+    }
 
     protected function preStart()
     {
         if (!$this->_queue) {
-            $this->_queue = Mage::getModel('tnw_salesforce/imports');
+            $this->_queue = $this->getModel();
         }
     }
 

@@ -160,7 +160,7 @@ if (!$helper->isWorking()) {
                     /* Save into a db */
                     try {
                         $uid = uniqid("ctmr_", true);
-                        $model = Mage::getModel('tnw_salesforce/imports');
+                        $model = Mage::getModel('tnw_salesforce/import');
                         $model->setId($uid);
                         $model->setJson(serialize($fromSf));
                         $model->setIsProcessing(NULL);
