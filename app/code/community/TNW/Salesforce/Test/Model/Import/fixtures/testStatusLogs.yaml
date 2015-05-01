@@ -97,4 +97,8 @@ tables:
       attribute_id: 25
       backend_type: text
       sf_object: Order
+    - mapping_id: 12
+      local_field: "Order : cart_all"
+      sf_field: Description
+      sf_object: Order
 

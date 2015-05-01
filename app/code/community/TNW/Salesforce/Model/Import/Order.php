@@ -117,7 +117,7 @@ class TNW_Salesforce_Model_Import_Order
             if (!$entity) {
                 continue;
             }
-            if ($entity->getData($field) != $newValue) {
+            if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
                 $entity->setData($field, $newValue);
                 $this->addEntityToSave($entityName, $entity);
 

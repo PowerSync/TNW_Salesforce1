@@ -113,6 +113,7 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
             )),
             'BillingPostalCode' => '353912',
             'ShippingStreet' => 'Petrovskaya 11',
+            'Description' => 'Some items and total info. Shouldn\'t be in comment',
         ));
 
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
