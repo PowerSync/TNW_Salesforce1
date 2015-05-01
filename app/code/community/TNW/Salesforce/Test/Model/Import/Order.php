@@ -115,10 +115,9 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
         $object->$magentoId = '100000100';
 
-        $observerMock = $this->mockModel('tnw_salesforce/sale_notes_observer', array('notesPush'));
-        $this->replaceByMock('singleton', 'tnw_salesforce/sale_notes_observer', $observerMock);
-
-        $helperMock = $this->mockHelper('tnw_salesforce', array('log', 'canPush'));
+        //check that addStatusHistoryComment is executed
+        $orderMock = $this->getModelMock('sales/order', array('addStatusHistoryComment', 'save'));
+        $this->replaceByMock('model', 'sales/order', $orderMock);
 
         $expectedLog = $this->expected('%s', $salesforceStatus)->getData('log');
         if (is_array($expectedLog)) {
@@ -126,18 +125,44 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
         }
 
         if ($expectedLog) {
-            $helperMock->expects($this->once())
-                ->method('log')
-                ->with($expectedLog, null, 'sf-trace');
+            $orderMock->expects($this->once())
+                ->method('addStatusHistoryComment')
+                ->with($expectedLog);
         } else {
-            $helperMock->expects($this->never())
-                ->method('log');
+            $orderMock->expects($this->never())
+                ->method('addStatusHistoryComment');
         }
-
-        $this->replaceByMock('helper', 'tnw_salesforce', $helperMock);
 
         Mage::getModel('tnw_salesforce/import_order')
             ->setObject($object)
             ->process();
+    }
+
+    /**
+     * Yes it's a test of magento core method,
+     * but it used in logic and it's better to make sure that it works properly
+     *
+     * @loadFixture
+     */
+    public function testSaveComment()
+    {
+        $orderId = 2000;
+        $commentText = 'Some test comment';
+
+        $order = Mage::getModel('sales/order')->load($orderId);
+        $order->addStatusHistoryComment($commentText);
+        $order->save();
+
+        $reloadedOrder = Mage::getModel('sales/order')->load($orderId);
+
+        //try to find added comment
+        $found = false;
+        foreach ($reloadedOrder->getAllStatusHistory() as $comment) {
+            if ($comment->getComment() == $commentText) {
+                $found = true;
+                break;
+            }
+        }
+        $this->assertTrue($found);
     }
 }
