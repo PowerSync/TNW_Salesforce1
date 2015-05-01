@@ -1,5 +1,5 @@
 tables:
   tnw_salesforce/import:
     - import_id: 1
-      json: '{}'
+      json: 'O:8:"stdClass":0:{}'
       is_processing: 0
