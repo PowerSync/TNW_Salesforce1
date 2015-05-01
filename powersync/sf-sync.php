@@ -112,7 +112,7 @@ if (!$helper->isWorking()) {
                     /* Save into a db */
                     try {
                         Mage::getModel('tnw_salesforce/import')
-                            ->addData(array('json' => serialize($fromSf)))
+                            ->setObject($fromSf)
                             ->save();
                         $helper->log("Import JSON accepted, pending Import");
                     } catch (Exception $e) {

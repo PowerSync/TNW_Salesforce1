@@ -103,4 +103,22 @@ class TNW_Salesforce_Test_Model_Import extends TNW_Salesforce_Test_Case
         $secondModel = $this->getModel()->load($secondModel->getId());
         $this->assertNotEquals($firstModel->getId(), $secondModel->getId());
     }
+
+    public function testSaveObject()
+    {
+        $testObject = $this->arrayToObject(array(
+            'TestValue' => 500,
+        ));
+
+        //save model with object data
+        $model = $this->getModel()
+            ->setObject($testObject)
+            ->save();
+
+        //reload model from db by id
+        $reloadedModel = $this->getModel()->load($model->getId());
+
+        //test that set and loaded objects are equal
+        $this->assertEquals($testObject, $reloadedModel->getObject());
+    }
 }

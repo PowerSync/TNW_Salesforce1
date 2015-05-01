@@ -20,6 +20,17 @@ class TNW_Salesforce_Model_Mysql4_Import extends Mage_Core_Model_Mysql4_Abstract
         if (!$object->getId()) {
             $object->setId(uniqid("ctmr_", true));
         }
+
+        //save object into json field
+        $object->setData('json', serialize($object->getObject()));
+
         return parent::_beforeSave($object);
+    }
+
+    protected function _afterLoad(Mage_Core_Model_Abstract $object)
+    {
+        $object->setObject(unserialize($object->getData('json')));
+
+        return parent::_afterLoad($object);
     }
 }
