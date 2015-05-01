@@ -14,6 +14,17 @@ tables:
       increment_id: 100000100
       billing_address_id: 500
       shipping_address_id: 600
+      status: pending
+    - entity_id: 1001
+      increment_id: 100000101
+      billing_address_id: 501
+      shipping_address_id: 601
+      status: processing
+    - entity_id: 1002
+      increment_id: 100000102
+      billing_address_id: 502
+      shipping_address_id: 602
+      status: complete
   sales/order_address:
     - entity_id: 500 #shipping
       parent_id: 1000
@@ -31,7 +42,45 @@ tables:
       city: Moscow
       country_id: RU
       address_type: billing
+    - entity_id: 501 #shipping
+      parent_id: 1001
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 601 #billing
+      parent_id: 1001
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+    - entity_id: 502 #shipping
+      parent_id: 1002
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 602 #billing
+      parent_id: 1002
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
   sales/order_payment:
     - entity_id: 1000
       parent_id: 1000
+      method: checkmo
+    - entity_id: 1001
+      parent_id: 1001
+      method: checkmo
+    - entity_id: 1002
+      parent_id: 1002
       method: checkmo

@@ -102,8 +102,9 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
      * @dataProvider dataProvider
      *
      * @param string $salesforceStatus
+     * @param string $orderIncrementId
      */
-    public function testStatusLogs($salesforceStatus)
+    public function testStatusLogs($salesforceStatus, $orderIncrementId)
     {
         $object = $this->arrayToObject(array(
             'Status' => $salesforceStatus,
@@ -113,13 +114,13 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
         ));
 
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
-        $object->$magentoId = '100000100';
+        $object->$magentoId = $orderIncrementId;
 
         //check that addStatusHistoryComment is executed
         $orderMock = $this->getModelMock('sales/order', array('addStatusHistoryComment', 'save'));
         $this->replaceByMock('model', 'sales/order', $orderMock);
 
-        $expectedLog = $this->expected('%s', $salesforceStatus)->getData('log');
+        $expectedLog = $this->expected('%s-%s', $salesforceStatus, $orderIncrementId)->getData('log');
         if (is_array($expectedLog)) {
             $expectedLog = current($expectedLog);
         }

@@ -183,20 +183,30 @@ class TNW_Salesforce_Model_Import_Order
             ->addFieldToFilter('sf_order_status', $this->getObject()->Status);
         if (count($matchedStatuses) === 1) {
             foreach ($matchedStatuses as $_status) {
-                $order->setStatus($_status->getStatus());
-                $this->addEntityToSave('Order', $order);
+                if ($order->getStatus() != $_status->getStatus()) {
+                    $oldStatusLabel = $order->getStatusLabel();
+                    $order->setStatus($_status->getStatus());
+                    $order->addStatusHistoryComment(
+                        sprintf("Update from salesforce: status is updated from %s to %s",
+                            $oldStatusLabel, $order->getStatusLabel()),
+                        $order->getStatus()
+                    );
+                    $this->addEntityToSave('Order', $order);
+                }
                 break;
             }
         } elseif (count($matchedStatuses) > 1) {
             $log = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId());
             $log .= ' Mapped Salesforce status matches multiple Magento Order statuses';
             $log .= ' - not sure which one should be selected';
-            $this->getOrder()->addStatusHistoryComment($log);
+            $order->addStatusHistoryComment($log);
+            $this->addEntityToSave('Order', $order);
         } else {
-            $this->getOrder()->addStatusHistoryComment(
+            $order->addStatusHistoryComment(
                 sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
                 . ' Mapped Salesforce status does not match any Magento Order status'
             );
+            $this->addEntityToSave('Order', $order);
         }
 
         return $this;
