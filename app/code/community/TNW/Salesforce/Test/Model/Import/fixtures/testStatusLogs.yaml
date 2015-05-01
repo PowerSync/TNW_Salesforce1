@@ -46,14 +46,14 @@ tables:
       parent_id: 1001
       region: Moscow
       postcode: 123000
-      street: Lubyanka 100
+      street: Petrovskaya 11
       city: Moscow
       country_id: RU
       address_type: shipping
     - entity_id: 601 #billing
       parent_id: 1001
       region: Moscow
-      postcode: 123000
+      postcode: 353912
       street: Lubyanka 100
       city: Moscow
       country_id: RU
@@ -84,3 +84,17 @@ tables:
     - entity_id: 1002
       parent_id: 1002
       method: checkmo
+  tnw_salesforce/mapping:
+    - mapping_id: 5
+      local_field: "Billing : postcode"
+      sf_field: BillingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 6
+      local_field: "Shipping : street"
+      sf_field: ShippingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Order
+

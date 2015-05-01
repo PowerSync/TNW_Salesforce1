@@ -101,6 +101,9 @@ class TNW_Salesforce_Model_Import_Order
      */
     protected function updateMappedFields()
     {
+        //clear log fields before update
+        $updateFieldsLog = array();
+
         $mappings = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_objectType);
         foreach ($mappings as $mapping) {
             //skip if cannot find field in object
@@ -117,7 +120,19 @@ class TNW_Salesforce_Model_Import_Order
             if ($entity->getData($field) != $newValue) {
                 $entity->setData($field, $newValue);
                 $this->addEntityToSave($entityName, $entity);
+
+                //add info about updated field to order comment
+                $updateFieldsLog[] = sprintf('%s - from "%s" to "%s"',
+                    $mapping->getLocalField(), $entity->getOrigData($field), $newValue);
             }
+        }
+
+        //add comment about all updated fields
+        if (!empty($updateFieldsLog)) {
+            $this->getOrder()->addStatusHistoryComment(
+                "Fields are updated by salesforce:\n"
+                . implode("\n", $updateFieldsLog)
+            );
         }
 
         return $this;

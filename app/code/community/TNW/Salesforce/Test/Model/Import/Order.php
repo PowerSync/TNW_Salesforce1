@@ -111,6 +111,8 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
             'attributes' => $this->arrayToObject(array(
                 'type' => 'Order',
             )),
+            'BillingPostalCode' => '353912',
+            'ShippingStreet' => 'Petrovskaya 11',
         ));
 
         $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
@@ -120,15 +122,44 @@ class TNW_Salesforce_Test_Model_Import_Order extends TNW_Salesforce_Test_Case
         $orderMock = $this->getModelMock('sales/order', array('addStatusHistoryComment', 'save'));
         $this->replaceByMock('model', 'sales/order', $orderMock);
 
+        //update fields comment expectation
+        $order = Mage::getModel('sales/order')->loadByIncrementId($object->$magentoId);
+        $oldPostcode = $order->getBillingAddress()->getPostcode();
+        $oldStreet = $order->getShippingAddress()->getStreet(-1);
+        $comment = '';
+        if ($object->BillingPostalCode != $oldPostcode || $oldStreet != $object->ShippingStreet) {
+            $comment = "Fields are updated by salesforce:\n";
+            if ($object->BillingPostalCode != $oldPostcode) {
+                $comment .= sprintf("Billing : postcode - from \"%s\" to \"%s\"\n",
+                    $oldPostcode, $object->BillingPostalCode);
+            }
+            if ($oldStreet != $object->ShippingStreet) {
+                $comment .= sprintf('Shipping : street - from "%s" to "%s"', $oldStreet, $object->ShippingStreet);
+            }
+        }
+
+        //status update comment expectation
         $expectedLog = $this->expected('%s-%s', $salesforceStatus, $orderIncrementId)->getData('log');
         if (is_array($expectedLog)) {
             $expectedLog = current($expectedLog);
         }
 
-        if ($expectedLog) {
+        if ($comment && $expectedLog) {
+            $orderMock->expects($this->exactly(2))
+                ->method('addStatusHistoryComment')
+                ->withConsecutive(
+                    array($expectedLog), //status comment
+                    array($comment) //update fields comment
+                );
+            ;
+        } elseif ($expectedLog) {
             $orderMock->expects($this->once())
                 ->method('addStatusHistoryComment')
                 ->with($expectedLog);
+        } elseif ($comment) {
+            $orderMock->expects($this->once())
+                ->method('addStatusHistoryComment')
+                ->with($comment);
         } else {
             $orderMock->expects($this->never())
                 ->method('addStatusHistoryComment');
