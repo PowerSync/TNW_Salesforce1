@@ -2,18 +2,36 @@
 
 class TNW_Salesforce_Model_Imports_Bulk
 {
+    /**
+     * @var TNW_Salesforce_Model_Import
+     */
     protected $_queue;
+
+    /**
+     * @return TNW_Salesforce_Model_Import
+     */
+    protected function getModel()
+    {
+        return Mage::getModel('tnw_salesforce/import');
+    }
 
     protected function preStart()
     {
         if (!$this->_queue) {
-            $this->_queue = Mage::getModel('tnw_salesforce/imports');
+            $this->_queue = $this->getModel();
         }
     }
 
-    public function __destruct()
+    /**
+     * @param string $message
+     *
+     * @return $this
+     */
+    protected function log($message)
     {
-        foreach ($this as $index => $value) unset($this->$index);
+        Mage::helper('tnw_salesforce')->log($message);
+
+        return $this;
     }
 
     public function process()
@@ -24,7 +42,7 @@ class TNW_Salesforce_Model_Imports_Bulk
 
         $queueCount = count($collection);
         if ($queueCount > 0) {
-            Mage::helper('tnw_salesforce')->log("---- Start Magento Upsert ----");
+            $this->log("---- Start Magento Upsert ----");
             $count = 0;
             foreach ($collection as $_map) {
                 $count++;
@@ -45,67 +63,31 @@ class TNW_Salesforce_Model_Imports_Bulk
                     $json = unserialize($_map->getJson());
                     $objects = json_decode($json);;
                 } catch (Exception $e) {
-                    Mage::helper('tnw_salesforce')->log("Queue unserialize Error: " . $e->getMessage());
+                    $this->log("Queue unserialize Error: " . $e->getMessage());
                     $objects = NULL;
                     unset($e);
                 }
 
                 if (!is_array($objects)) {
-                    Mage::helper('tnw_salesforce')->log("Error: Failed to unserialize data from the queue (data is corrupted)");
-                    Mage::helper('tnw_salesforce')->log("Deleting queue #" . $mId);
+                    $this->log("Error: Failed to unserialize data from the queue (data is corrupted)")
+                        ->log("Deleting queue #" . $mId);
                     $queue->delete();
                     continue;
                 }
                 $queueStatus = true;
 
                 foreach ($objects as $object) {
-                    // Each object should have 'attributes' property and 'type' inside 'attributes'
-                    if (property_exists($object, "attributes") && property_exists($object->attributes, "type")) {
-                        try {
-                            /* Safer to set the session at this level */
-                            Mage::getSingleton('core/session')->setFromSalesForce(true);
-                            // Call proper Magento upsert method
-                            if (
-                                $object->attributes->type == "Contact"
-                                || ($object->IsPersonAccount == 1 && $object->attributes->type == "Account")
-                            ) {
-                                if ($object->Email || (property_exists($object, 'IsPersonAccount') && $object->IsPersonAccount == 1 && $object->PersonEmail)) {
-                                    Mage::helper('tnw_salesforce')->log("Synchronizing: " . $object->attributes->type);
-                                    Mage::helper('tnw_salesforce/magento_customers')->process($object);
-                                } else {
-                                    Mage::helper('tnw_salesforce')->log("SKIPPING: Email is missing in Salesforce!");
-                                }
-                            } elseif ($object->attributes->type == Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()) {
-                                if (
-                                    property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c')
-                                    && !empty($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'})
-                                    && property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c')
-                                    && !empty($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c'})
-                                ) {
-                                    Mage::helper('tnw_salesforce/magento_websites')->process($object);
-                                } else {
-                                    Mage::helper('tnw_salesforce')->log("SKIPPING: Website ID and/or Code is missing in Salesforce!");
-                                }
-                            } elseif ($object->attributes->type == "Product2") {
-                                if ($object->ProductCode) {
-                                    Mage::helper('tnw_salesforce/magento_products')->process($object);
-                                } else {
-                                    Mage::helper('tnw_salesforce')->log("SKIPPING: ProductCode is missing in Salesforce!");
-                                }
-                            }
-                            /* Reset session for further insertion */
-                            Mage::getSingleton('core/session')->setFromSalesForce(false);
-                        } catch (Exception $e) {
-                            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-                            Mage::helper('tnw_salesforce')->log("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");
-                            $queueStatus = false;
-                            unset($e);
-                        }
-                    } else {
-                        // 'attributes' or 'type' was not available in the object, hack?
-                        Mage::helper('tnw_salesforce')->log("Invalid Salesforce object format, or type is not supported");
+                    try {
+                        $this->getModel()->setObject($object)->process();
+                    } catch (Exception $e) {
+                        $this->log("Error: " . $e->getMessage());
+                        $objectType = property_exists($object, "attributes")
+                            && property_exists($object->attributes, "type")
+                            ? (string)$object->attributes->type : '';
+                        $this->log("Failed to upsert a " . $objectType
+                            . " #" . $object->Id . ", please re-save or re-import it manually");
+                        $queueStatus = false;
                     }
-                    unset($object);
                 }
                 if ($queueStatus) {
                     $queue->delete();
@@ -114,11 +96,9 @@ class TNW_Salesforce_Model_Imports_Bulk
                 set_time_limit(30); //Reset Script execution time limit
             }
 
-            Mage::helper('tnw_salesforce')->log("---- End Magento Upsert ----");
+            $this->log("---- End Magento Upsert ----");
         } elseif ($queueCount > 1) {
-            Mage::helper('tnw_salesforce')->log("Too many items in the queue, need manual processing");
-        } else {
-            // Nothing in the queue
+            $this->log("Too many items in the queue, need manual processing");
         }
         return true;
     }

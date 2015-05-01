@@ -1,0 +1,234 @@
+eav:
+  customer:
+    - entity_id: 100
+      email: incorrect@email.com
+tables:
+  tnw_salesforce/order_status:
+    - status_id: 1
+      status: canceled
+      sf_order_status: Draft
+    - status_id: 2
+      status: closed
+      sf_order_status: Activated
+    - status_id: 3
+      status: complete
+      sf_order_status: Draft
+    - status_id: 4
+      status: fraud
+      sf_order_status: Draft
+    - status_id: 5
+      status: holded
+      sf_order_status: Draft
+    - status_id: 6
+      status: payment_review
+      sf_order_status: Draft
+    - status_id: 7
+      status: paypal_canceled_reversal
+      sf_order_status: Draft
+    - status_id: 8
+      status: paypal_reversal
+      sf_order_status: Draft
+    - status_id: 9
+      status: pending
+      sf_order_status: Draft
+    - status_id: 10
+      status: pending_payment
+      sf_order_status: Draft
+    - status_id: 11
+      status: pending_paypal
+      sf_order_status: Draft
+    - status_id: 12
+      status: processing
+      sf_order_status: Draft
+  tnw_salesforce/mapping:
+    - mapping_id: 1
+      local_field: "Billing : street"
+      sf_field: BillingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 2
+      local_field: "Billing : city"
+      sf_field: BillingCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 3
+      local_field: "Billing : country_id"
+      sf_field: BillingCountry
+      attribute_id: 27
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 4
+      local_field: "Billing : region"
+      sf_field: BillingState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 5
+      local_field: "Billing : postcode"
+      sf_field: BillingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 6
+      local_field: "Shipping : street"
+      sf_field: ShippingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 7
+      local_field: "Shipping : city"
+      sf_field: ShippingCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 8
+      local_field: "Shipping : country_id"
+      sf_field: ShippingCountry
+      attribute_id: 27
+      backend_type: text
+      sf_object: Order
+    - mapping_id: 9
+      local_field: "Shipping : region"
+      sf_field: ShippingState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 10
+      local_field: "Shipping : postcode"
+      sf_field: ShippingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Order
+    - mapping_id: 11
+      local_field: "Payment : po_number"
+      sf_field: PoNumber
+      sf_object: Order
+    - mapping_id: 12
+      local_field: "Order : cart_all"
+      sf_field: Description
+      sf_object: Order
+    - mapping_id: 13
+      local_field: "Custom : order_type"
+      sf_field: Type
+      sf_object: Order
+    - mapping_id: 14
+      local_field: "Order : coupon_code"
+      sf_field: Coupon
+      sf_object: Order
+    - mapping_id: 15
+      local_field: "Customer : email"
+      sf_field: CustomerEmail
+      sf_object: Order
+  sales/order:
+    - entity_id: 12345
+      increment_id: 100000047
+      billing_address_id: 50
+      shipping_address_id: 60
+      state: new
+      status: pending
+      base_grand_total: 100
+      customer_id: 100
+    - entity_id: 12346
+      increment_id: 100000048
+      billing_address_id: 51
+      shipping_address_id: 61
+      state: closed
+      status: closed
+      base_grand_total: 100
+      customer_id: 100
+    - entity_id: 12347
+      increment_id: 100000049
+      billing_address_id: 52
+      shipping_address_id: 62
+      state: complete
+      status: complete
+      base_grand_total: 100
+      customer_id: 100
+    - entity_id: 12348
+      increment_id: 100000050
+      billing_address_id: 53
+      shipping_address_id: 63
+      state: processing
+      status: processing
+      base_grand_total: 100
+      customer_id: 100
+  sales/order_address:
+    - entity_id: 50 #shipping
+      parent_id: 12345
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 60 #billing
+      parent_id: 12345
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+    - entity_id: 51 #shipping
+      parent_id: 12346
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 61 #billing
+      parent_id: 12346
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+    - entity_id: 52 #shipping
+      parent_id: 12347
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 62 #billing
+      parent_id: 12347
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+    - entity_id: 53 #shipping
+      parent_id: 12348
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: shipping
+    - entity_id: 63 #billing
+      parent_id: 12348
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+  sales/order_payment:
+    - entity_id: 12345
+      parent_id: 12345
+      method: checkmo
+    - entity_id: 12346
+      parent_id: 12346
+      method: checkmo
+    - entity_id: 12347
+      parent_id: 12347
+      method: checkmo
+    - entity_id: 12348
+      parent_id: 12348
+      method: checkmo

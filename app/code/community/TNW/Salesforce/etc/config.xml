@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.51.00.0008</version>
+            <version>0.01.51.00.0009</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -51,9 +51,9 @@
                     <mapping>
                         <table>tnw_salesforce_mapping</table>
                     </mapping>
-                    <imports>
+                    <import>
                         <table>tnw_salesforce_imports</table>
-                    </imports>
+                    </import>
                     <order_status>
                         <table>tnw_salesforce_order_status</table>
                     </order_status>
