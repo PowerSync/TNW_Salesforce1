@@ -27,6 +27,19 @@
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_queuesync_grid" name="queuesync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_queuesync_grid>
+
+    <!-- Order View Page -->
+    <adminhtml_sales_order_view>
+        <update handle="order_salesforce_info" />
+    </adminhtml_sales_order_view>
+
+    <order_salesforce_info>
+        <reference name="order_info">
+            <block after="order_info" type="tnw_salesforce/sales_order_view_salesforce" name="salesforce_info" template="salesforce/sales/order/view/salesforce.phtml"/>
+        </reference>
+    </order_salesforce_info>
+
+    <!-- Disable Cache -->
     <reference name="tnw_salesforce.test.results">
         <action method="setCacheLifetime" />
     </reference>

@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.51.00.0009</version>
+            <version>0.01.51.00.0010</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -129,6 +129,18 @@
             </tnw_salesforce>
         </helpers>
         <events>
+            <!-- Blocks for admin panel -->
+            <core_block_abstract_to_html_after>
+                <observers>
+                    <tnw_salesforce_block_observer>
+                        <type>model</type>
+                        <class>tnw_salesforce/blocks_observer</class>
+                        <method>updateBlocks</method>
+                    </tnw_salesforce_block_observer>
+                </observers>
+            </core_block_abstract_to_html_after>
+
+            <!-- Product duplication -->
             <catalog_model_product_duplicate>
                 <observers>
                     <tnw_salesforce_catalog_model_product_duplicate>
