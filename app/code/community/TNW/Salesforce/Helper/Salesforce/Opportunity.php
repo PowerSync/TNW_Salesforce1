@@ -501,38 +501,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 continue;
             }
             Mage::helper('tnw_salesforce')->log('******** ORDER (' . $_orderNumber . ') ********');
-            $_customerId = $this->_cache['orderToCustomerId'][$_orderNumber];
-            if (!Mage::registry('customer_cached_' . $_customerId)) {
-                $_customer = $this->_cache['orderCustomers'][$_orderNumber];
-            } else {
-                $_customer = Mage::registry('customer_cached_' . $_customerId);
-            }
 
             $this->_obj = new stdClass();
             $_order = Mage::getModel('sales/order')->load($_key);
-            $_email = strtolower($_customer->getEmail());
-            $_websiteId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id')) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
 
-            if (
-                (bool)$_customer->getSalesforceIsPerson()
-                || (array_key_exists('accountsLookup', $this->_cache)
-                    && is_array($this->_cache['accountsLookup'])
-                    && array_key_exists($_websiteId, $this->_cache['accountsLookup'])
-                    && array_key_exists($_email, $this->_cache['accountsLookup'][$_websiteId])
-                    && is_object($this->_cache['accountsLookup'][$_websiteId][$_email])
-                    && property_exists($this->_cache['accountsLookup'][$_websiteId][$_email], 'IsPersonAccount')
-                )
-            ) {
-                $this->_obj->ContactId = (
-                    is_array($this->_cache['accountsLookup'])
-                    && array_key_exists($_websiteId, $this->_cache['accountsLookup'])
-                    && is_array($this->_cache['accountsLookup'][$_websiteId])
-                    && array_key_exists($_email, $this->_cache['accountsLookup'][$_websiteId])
-                    && is_object($this->_cache['accountsLookup'][$_websiteId][$_email])
-                    && property_exists($this->_cache['accountsLookup'][$_websiteId][$_email], 'Id')
-                ) ? $this->_cache['accountsLookup'][$_websiteId][$_email]->Id : $_customer->getSalesforceId();
-            } else {
-                $this->_obj->ContactId = $_customer->getSalesforceId();
+            if ($_order->getData('contact_salesforce_id')) {
+                $this->_obj->ContactId = $_order->getData('contact_salesforce_id');
             }
 
             // Check if already exists

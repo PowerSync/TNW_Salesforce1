@@ -804,29 +804,9 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             Mage::helper('tnw_salesforce')->log('******** ORDER (' . $_orderNumber . ') ********');
             $this->_obj = new stdClass();
 
-            $_customerId = $this->_cache['orderToCustomerId'][$_orderNumber];
-            if (!Mage::registry('customer_cached_' . $_customerId)) {
-                $_customer = $this->_cache['orderCustomers'][$_orderNumber];
-            } else {
-                $_customer = Mage::registry('customer_cached_' . $_customerId);
-            }
-
             $_order = Mage::getModel('sales/order')->load($_key);
-            $_email = strtolower($this->_cache['orderToEmail'][$_orderNumber]);
-            $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-            if (
-                array_key_exists('accountsLookup', $this->_cache)
-                && is_array($this->_cache['accountsLookup'])
-                && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-                && array_key_exists($_email, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
-                && is_object($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email])
-                && property_exists($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'Id')
-            ) {
-                $this->_obj->ContactId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
-            } elseif (array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
-                $this->_obj->ContactId = $this->_cache['convertedLeads'][$_orderNumber]->contactId;
-            } else {
-                $this->_obj->ContactId = $_customer->getSalesforceId();
+            if ($_order->getData('contact_salesforce_id')) {
+                $this->_obj->ContactId = $_order->getData('contact_salesforce_id');
             }
 
             // Check if already exists
