@@ -6,7 +6,7 @@
  * Date: 10.03.15
  * Time: 22:18
  */
-abstract class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base extends TNW_Salesforce_Model_Sync_Mapping_Order_Base
+abstract class TNW_Salesforce_Model_Sync_Mapping_Quote_Base extends TNW_Salesforce_Model_Sync_Mapping_Order_Base
 {
 
 
@@ -28,7 +28,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base extends TNW_Sale
     /**
      * @var string
      */
-    protected $_cachePrefix = 'abandoned';
+    protected $_cachePrefix = 'quote';
 
     /**
      * @var string
@@ -42,7 +42,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abandoned_Base extends TNW_Sale
      */
     protected function _getDescriptionCart($quote)
     {
-        $_currencyCode = $this->_getCurrencyCode($quote, 'quote_currency_code');
+        $_currencyCode = $this->_getCurrencyCode($quote);
 
         ## Put Products into Single field
         $descriptionCart = "";

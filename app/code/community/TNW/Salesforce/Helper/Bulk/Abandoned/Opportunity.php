@@ -42,8 +42,8 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             foreach ($ids as $_count => $_id) {
                 $_quote = $this->_loadQuote($_id);
                 // Add to cache
-                if (!Mage::registry('abandoned_cached_' . $_quote->getId())) {
-                    Mage::register('abandoned_cached_' . $_quote->getId(), $_quote);
+                if (!Mage::registry('quote_cached_' . $_quote->getId())) {
+                    Mage::register('quote_cached_' . $_quote->getId(), $_quote);
                 }
 
                 if (!$_quote->getId() || !$_quote->getId()) {
@@ -105,7 +105,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 $_customerToSync = array();
                 foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
                     // here may be potential bug where we lost some quotes
-                    $_customerToSync[$_quoteNumber] = $this->_getCustomer(Mage::registry('abandoned_cached_' . $_quoteNumber));
+                    $_customerToSync[$_quoteNumber] = $this->_getCustomer(Mage::registry('quote_cached_' . $_quoteNumber));
                 }
 
                 Mage::helper("tnw_salesforce")->log('Syncronizing Guest accounts...');
@@ -170,7 +170,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             $_tmpArray = $this->_cache['abandonedCustomersToSync'];
             foreach ($_tmpArray as $_key => $_quoteNum) {
-                $_quote = (Mage::registry('abandoned_cached_' . $_quoteNum)) ? Mage::registry('abandoned_cached_' . $_quoteNum) : $this->_loadQuote($_key);
+                $_quote = (Mage::registry('quote_cached_' . $_quoteNum)) ? Mage::registry('quote_cached_' . $_quoteNum) : $this->_loadQuote($_key);
                 $_email = $this->_cache['abandonedToEmail'][$_quoteNum];
                 $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
 
@@ -352,7 +352,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
 
         //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_abandoned_opportunity')
+        Mage::getSingleton('tnw_salesforce/sync_mapping_quote_opportunity')
             ->setSync($this)
             ->processMapping($quote);
 

@@ -6,6 +6,36 @@
 class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
 {
     /**
+     * @comment magento entity alias
+     * @var string
+     */
+    protected $_magentoEntityName = 'quote';
+
+    /**
+     * @comment magento entity model alias
+     * @var string
+     */
+    protected $_magentoEntityModel = 'sales/quote';
+
+    /**
+     * @comment magento entity model alias
+     * @var string
+     */
+    protected $_magentoEntityId = 'id';
+
+    /**
+     * @comment magento entity item qty field name
+     * @var string
+     */
+    protected $_itemQtyField = 'qty';
+
+    /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentIdField = 'opportunityId';
+
+    /**
      * @var null
      */
     protected $_read = null;
@@ -102,11 +132,11 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::helper('tnw_salesforce')->log('----------Opportunity Preparation: Start----------');
         $opportunitiesUpdate = array();
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
-            if (!Mage::registry('abandoned_cached_' . $_quoteNumber)) {
+            if (!Mage::registry('quote_cached_' . $_quoteNumber)) {
                 $_quote = $this->_loadQuote($_key);
-                Mage::register('abandoned_cached_' . $_quoteNumber, $_quote);
+                Mage::register('quote_cached_' . $_quoteNumber, $_quote);
             } else {
-                $_quote = Mage::registry('abandoned_cached_' . $_quoteNumber);
+                $_quote = Mage::registry('quote_cached_' . $_quoteNumber);
             }
 
             $this->_obj = new stdClass();
@@ -162,7 +192,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         foreach ($this->_cache['abandonedToEmail'] as $_oid => $_email) {
             $_customerId = $this->_cache['abandonedToCustomerId'][$_oid];
             $_emailArray[$_customerId] = $_email;
-            $_quote = Mage::registry('abandoned_cached_' . $_oid);
+            $_quote = Mage::registry('quote_cached_' . $_oid);
             $_websiteId = (array_key_exists($_oid, $this->_cache['abandonedCustomers']) && $this->_cache['abandonedCustomers'][$_oid]->getData('website_id')) ? $this->_cache['abandonedCustomers'][$_oid]->getData('website_id') : Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
             $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
         }
@@ -304,11 +334,11 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     Mage::helper('tnw_salesforce')->log('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
                     continue;
                 }
-                if (!Mage::registry('abandoned_cached_' . $_quoteNumber)) {
+                if (!Mage::registry('quote_cached_' . $_quoteNumber)) {
                     $_quote = $this->_loadQuote($_key);
-                    Mage::register('abandoned_cached_' . $_quoteNumber, $_quote);
+                    Mage::register('quote_cached_' . $_quoteNumber, $_quote);
                 } else {
-                    $_quote = Mage::registry('abandoned_cached_' . $_quoteNumber);
+                    $_quote = Mage::registry('quote_cached_' . $_quoteNumber);
                 }
 
                 foreach ($_quote->getAllVisibleItems() as $_item) {
@@ -343,7 +373,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 continue;
             }
 
-            $this->_prepareOrderItem($_quoteNumber, 'abandoned');
+            $this->_prepareOrderItem($_quoteNumber, 'opportunity');
 
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
@@ -560,11 +590,11 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             // Load quote by ID
             $_quote = $this->_loadQuote($_id);
             // Add to cache
-            if (!Mage::registry('abandoned_cached_' . $_quote->getId())) {
-                Mage::register('abandoned_cached_' . $_quote->getId(), $_quote);
+            if (!Mage::registry('quote_cached_' . $_quote->getId())) {
+                Mage::register('quote_cached_' . $_quote->getId(), $_quote);
             } else {
-                Mage::unregister('abandoned_cached_' . $_quote->getId());
-                Mage::register('abandoned_cached_' . $_quote->getId(), $_quote);
+                Mage::unregister('quote_cached_' . $_quote->getId());
+                Mage::register('quote_cached_' . $_quote->getId(), $_quote);
             }
 
             // Quote could not be loaded for some reason
@@ -644,7 +674,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 || !array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
                 || !array_key_exists($_quoteEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
             ) {
-                $_quote = Mage::registry('abandoned_cached_' . $_quoteNumber);
+                $_quote = Mage::registry('quote_cached_' . $_quoteNumber);
                 $_leadsToLookup[$_customerId] = $_quoteEmail;
                 $this->_cache['abandonedCustomersToSync'][] = $_quoteNumber;
             }
@@ -796,7 +826,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_abandoned_opportunity')
+        Mage::getSingleton('tnw_salesforce/sync_mapping_quote_opportunity')
             ->setSync($this)
             ->processMapping($quote);
 
@@ -949,8 +979,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         // Clean abandoned cache
         if (is_array($this->_cache['entitiesUpdating'])) {
             foreach ($this->_cache['entitiesUpdating'] as $_key => $_abandonedNumber) {
-                if (Mage::registry('abandoned_cached_' . $_abandonedNumber)) {
-                    Mage::unregister('abandoned_cached_' . $_abandonedNumber);
+                if (Mage::registry('quote_cached_' . $_abandonedNumber)) {
+                    Mage::unregister('quote_cached_' . $_abandonedNumber);
                 }
             }
         }

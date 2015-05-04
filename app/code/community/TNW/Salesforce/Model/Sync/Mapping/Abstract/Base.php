@@ -361,9 +361,9 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     /**
      * @return string
      */
-    protected function _getCurrencyCode($_entity, $currencyCodeField = 'order_currency_code')
+    protected function _getCurrencyCode($_entity)
     {
-        return $this->getSync()->getCurrencyCode($_entity, $currencyCodeField);
+        return $this->getSync()->getCurrencyCode($_entity);
     }
 
 }

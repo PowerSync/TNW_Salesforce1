@@ -7,6 +7,36 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 {
 
     /**
+     * @comment magento entity alias
+     * @var string
+     */
+    protected $_magentoEntityName = 'order';
+
+    /**
+     * @comment magento entity model alias
+     * @var string
+     */
+    protected $_magentoEntityModel = 'sales/order';
+
+    /**
+     * @comment magento entity model alias
+     * @var string
+     */
+    protected $_magentoEntityId = 'increment_id';
+
+    /**
+     * @comment magento entity item qty field name
+     * @var string
+     */
+    protected $_itemQtyField = 'qty_ordered';
+
+    /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentIdField = 'orderId';
+
+    /**
      * @param string $type
      * @return bool
      */

@@ -5,8 +5,6 @@
  */
 abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract
 {
-
-
     /**
      * @var array
      */
@@ -18,14 +16,196 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected $_alternativeKeys = array();
 
     /**
+     * @comment magento entity alias
+     * @var array
+     */
+    protected $_magentoEntityName = '';
+
+    /**
+     * @comment magento entity model alias
+     * @var array
+     */
+    protected $_magentoEntityModel = '';
+
+    /**
+     * @comment magento entity model alias
+     * @var array
+     */
+    protected $_magentoEntityId = '';
+
+    /**
+     * @comment magento entity item qty field name
+     * @var array
+     */
+    protected $_itemQtyField = 'qty';
+
+    /**
+     * @comment current module name
+     * @var string
+     */
+    protected $_modulePrefix = 'tnw_salesforce';
+
+    protected $_availableFees = array(
+        'tax',
+        'shipping',
+        'discount'
+    );
+    /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentIdField = '';
+
+    /**
+     * @comment order item field aliases
+     * @var array
+     */
+    protected $_itemFieldAlias = array();
+
+    /**
+     * @return array
+     */
+    public function getItemFieldAlias()
+    {
+        return $this->_itemFieldAlias;
+    }
+
+    /**
+     * @param array $itemFieldAlias
+     * @return $this
+     */
+    public function setItemFieldAlias($itemFieldAlias)
+    {
+        $this->_itemFieldAlias = $itemFieldAlias;
+        return $this;
+    }
+
+
+    /**
+     * @return array
+     */
+    public function getAvailableFees()
+    {
+        return $this->_availableFees;
+    }
+
+    /**
+     * @param array $availableFees
+     * @return $this
+     */
+    public function setAvailableFees($availableFees)
+    {
+        $this->_availableFees = $availableFees;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSalesforceParentIdField()
+    {
+        return $this->_salesforceParentIdField;
+    }
+
+    /**
+     * @param string $salesforceParentIdField
+     * @return $this
+     */
+    public function setSalesforceParentIdField($salesforceParentIdField)
+    {
+        $this->_salesforceParentIdField = $salesforceParentIdField;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getModulePrefix()
+    {
+        return $this->_modulePrefix;
+    }
+
+    /**
+     * @return array
+     */
+    public function getItemQtyField()
+    {
+        return $this->_itemQtyField;
+    }
+
+    /**
+     * @param array $itemQtyField
+     * @return $this
+     */
+    public function setItemQtyField($itemQtyField)
+    {
+        $this->_itemQtyField = $itemQtyField;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMagentoEntityId()
+    {
+        return $this->_magentoEntityId;
+    }
+
+    /**
+     * @param array $magentoEntityId
+     * @return $this
+     */
+    public function setMagentoEntityId($magentoEntityId)
+    {
+        $this->_magentoEntityId = $magentoEntityId;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMagentoEntityModel()
+    {
+        return $this->_magentoEntityModel;
+    }
+
+    /**
+     * @param array $magentoEntityModel
+     * @return $this
+     */
+    public function setMagentoEntityModel($magentoEntityModel)
+    {
+        $this->_magentoEntityModel = $magentoEntityModel;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMagentoEntityName()
+    {
+        return $this->_magentoEntityName;
+    }
+
+    /**
+     * @param array $magentoEntityName
+     * @return $this
+     */
+    public function setMagentoEntityName($magentoEntityName)
+    {
+        $this->_magentoEntityName = $magentoEntityName;
+        return $this;
+    }
+
+    /**
      * @param $parentEntityNumber
-     * @param Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item $_item
-     * @param $_sku
-     * @param string $parentEntityType opportunity|order
-     * @param string $itemsField {$itemsField}|{$itemsField}
+     * @param $qty
+     * @param $productIdentifier
+     * @param $parentEntityType
+     * @param $itemsField
      * @return bool
      */
-    protected function _doesCartItemExist($parentEntityNumber, $_item, $_sku, $parentEntityType, $itemsField)
+    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $parentEntityType, $itemsField)
     {
 
         $_cartItemFound = false;
@@ -35,13 +215,22 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          */
         $parentEntityCacheKey = $parentEntityType . 'Lookup';
 
-        if ($this->_cache[$parentEntityCacheKey] && array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey]) && $this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}) {
+        if (
+            $this->_cache[$parentEntityCacheKey]
+            && array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey])
+            && $this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}
+        ) {
             foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}->records as $_cartItem) {
                 if (
-                    property_exists($_cartItem, 'PricebookEntry')
-                    && property_exists($_cartItem->PricebookEntry, 'ProductCode')
-                    && $_cartItem->PricebookEntry->ProductCode == trim($_sku)
-                    && $_cartItem->Quantity == (float)$_item->getQtyOrdered()
+                    (
+                        $_cartItem->PricebookEntryId == $productIdentifier
+
+                        || (property_exists($_cartItem, 'PricebookEntry')
+                            && property_exists($_cartItem->PricebookEntry, 'ProductCode')
+                            && ($_cartItem->PricebookEntry->ProductCode == trim($productIdentifier))
+                        )
+                    )
+                    && $_cartItem->Quantity == (float)$qty
                 ) {
                     $_cartItemFound = $_cartItem->Id;
                     break;
@@ -61,16 +250,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
     /**
      * @param $_entity
-     * @param string $currencyCodeField
      * @return string
      */
-    public function getCurrencyCode($_entity, $currencyCodeField = 'order_currency_code')
+    public function getCurrencyCode($_entity)
     {
-
+        $currencyCodeField = $this->getMagentoEntityName() . '_currency_code';
         $_currencyCode = '';
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $_currencyCode = $_entity->getData($currencyCodeField) . " ";
+            $_currencyCode = $_entity->getData($currencyCodeField);
         }
 
         return $_currencyCode;
@@ -97,427 +285,184 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @param $parentEntityNumber
+     * @return Mage_Core_Model_Abstract|mixed
+     */
+    public function getParentEntity($parentEntityNumber)
+    {
+        $magentoEntityName = $this->getMagentoEntityName();
+
+        /**
+         * @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote|Ophirah_Qquoteadv_Model_Qqadvcustomer
+         */
+        $parentEntity = (Mage::registry($magentoEntityName . '_cached_' . $parentEntityNumber));
+
+        if (!$parentEntity) {
+            $idField = $this->getMagentoEntityId();
+            $parentEntity = Mage::getModel($this->getMagentoEntityModel())->load($parentEntityNumber, $idField);
+        }
+
+        return $parentEntity;
+    }
+
+    /**
+     * @comment returns item qty
+     * @param $item
+     * @return mixed
+     */
+    public function getItemQty($item)
+    {
+        $qty = $item->getData($this->getItemQtyField());
+
+        return $qty;
+    }
+
+    /**
+     * @comment return parent entity items
+     * @param $parentEntity Mage_Sales_Model_Quote|Mage_Sales_Model_Order
+     * @return mixed
+     */
+    public function getItems($parentEntity)
+    {
+        return $parentEntity->getAllVisibleItems();
+    }
+
+    /**
+     * @comment assign Opportynity/Order Id
+     */
+    protected function _getParentEntityId($parentEntityNumber, $ucParentEntityType, $manyParentEntityType)
+    {
+        if (!$this->getSalesforceParentIdField()) {
+            $this->setSalesforceParentIdField($ucParentEntityType . 'Id');
+        }
+        return $this->_cache['upserted' . $manyParentEntityType][$parentEntityNumber];
+    }
+
+    /**
+     * @param $item
+     * @param int $qty
+     * @return float
+     */
+    protected function _prepareItemPrice($item, $qty = 1)
+    {
+        $netTotal = 0;
+
+        if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+            $netTotal = $this->getEntityPrice($item, 'RowTotalInclTax');
+        } else {
+            $netTotal = $this->getEntityPrice($item, 'RowTotal');
+        }
+
+        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+            $netTotal = ($netTotal - $this->getEntityPrice($item, 'DiscountAmount'));
+            $netTotal = $netTotal / $qty;
+        } else {
+            $netTotal = $netTotal / $qty;
+        }
+
+        /**
+         * @comment prepare formatted price
+         */
+        return $this->numberFormat($netTotal);
+
+    }
+
+    /**
      * @comment Prepare order items for Salesforce
      * @throws Exception
      */
     protected function _prepareOrderItem($parentEntityNumber, $parentEntityType)
     {
 
-        $magentoEntity = 'order';
-        $magentoEntityPrefix = 'order';
+        $parentEntity = $this->getParentEntity($parentEntityNumber);
 
-        if ($parentEntityType == 'abandoned') {
-
-            $magentoEntityPrefix = 'abandoned';
-            $parentEntityType = 'opportunity';
-            $magentoEntity = 'quote';
-
-            /**
-             * @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote
-             */
-            $parentEntity = (Mage::registry($magentoEntityPrefix . '_cached_' . $parentEntityNumber))
-                ? Mage::registry($magentoEntityPrefix . '_cached_' . $parentEntityNumber)
-                : Mage::getModel('sales/' . $magentoEntity)->load($parentEntityNumber);
-
-            $parentEntity->setDiscountAmount($parentEntity->getSubtotalWithDiscount() - $parentEntity->getSubtotal());
-            $parentEntity->setBaseDiscountAmount($parentEntity->getBaseSubtotalWithDiscount() - $parentEntity->getBaseSubtotal());
-
-        } else {
-            /**
-             * @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote
-             */
-            $parentEntity = (Mage::registry($magentoEntityPrefix . '_cached_' . $parentEntityNumber))
-                ? Mage::registry($magentoEntityPrefix . '_cached_' . $parentEntityNumber)
-                : Mage::getModel('sales/' . $magentoEntity)->loadByIncrementId($parentEntityNumber);
-        }
-
-        Mage::helper('tnw_salesforce')->log('******** ' . strtoupper($magentoEntity) . ' (' . $parentEntityNumber . ') ********');
-
-        $_currencyCode = $this->getCurrencyCode($parentEntity, $magentoEntity . '_currency_code');
-
-        /**
-         * @comment first letter in upper case
-         */
-        $ucParentEntityType = ucfirst($parentEntityType);
-        $manyParentEntityType = $ucParentEntityType;
-        $itemsField = $ucParentEntityType;
-
-        if ($parentEntityType == 'opportunity') {
-            $manyParentEntityType = 'Opportunities';
-            $itemsField .= 'Line';
-        } else {
-            $manyParentEntityType .= 's';
-        }
-        $itemsField .= 'Items';
-
-        $_prefix = '';
-
+        Mage::helper('tnw_salesforce')->log('******** ' . strtoupper($this->getMagentoEntityName()) . ' (' . $parentEntityNumber . ') ********');
 
         /**
          * @comment prepare products for Salesforce order/opportunity
          * @var $_item Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item
          */
-        foreach ($parentEntity->getAllVisibleItems() as $_item) {
+        foreach ($this->getItems($parentEntity) as $_item) {
 
-            $qty = (int)$_item->getQtyOrdered();
-            if ($magentoEntity == 'quote') {
-                $qty = (int)$_item->getQty();
-            }
+            try {
+                $this->_prepareItemObj($parentEntity, $parentEntityNumber, $parentEntityType, $_item);
+            } catch (Exception $e) {
 
-            if ($qty == 0) {
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addNotice("Product w/ SKU (" . $_item->getSku() . ") for order #" . $parentEntityNumber . " is not synchronized, ordered quantity is zero!");
+                    Mage::getSingleton('adminhtml/session')->addNotice($e->getMessage());
                 }
-                Mage::helper('tnw_salesforce')->log("NOTE: Product w/ SKU (" . $_item->getSku() . ") is not synchronized, ordered quantity is zero!");
-                continue;
-            }
-            // Load by product Id only if bundled OR simple with options
-            $id = $this->getProductIdFromCart($_item);
-
-            $_storeId = $parentEntity->getStoreId();
-            if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-                if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
-                    $_storeId = $this->_getStoreIdByCurrency($parentEntity->getData('order_currency_code'));
-                }
-            }
-
-            /**
-             * @var $_productModel Mage_Catalog_Model_Product
-             */
-            $_productModel = Mage::getModel('catalog/product')->setStoreId($_storeId);
-            $_product = $_productModel->load($id);
-
-            $_sku = ($_item->getSku() != $_product->getSku()) ? $_product->getSku() : $_item->getSku();
-
-            $this->_obj = new stdClass();
-            if (!$_product->getSalesforcePricebookId()) {
-                Mage::helper('tnw_salesforce')->log("ERROR: Product w/ SKU (" . $_item->getSku() . ") is not synchronized, could not add to $parentEntityType!");
+                Mage::helper('tnw_salesforce')->log($e->getMessage());
                 continue;
             }
 
-            //Process mapping
-            /**
-             * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
-             */
-            $mapping = Mage::getSingleton('tnw_salesforce/sync_mapping_' . $magentoEntityPrefix . '_' . $parentEntityType . '_item');
-
-            $mapping->setSync($this)
-                ->processMapping($_item, $_product);
-
-
-            // Check if already exists
-            $_cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $_item, $_sku, $parentEntityType, $itemsField);
-            if ($_cartItemFound) {
-                $this->_obj->Id = $_cartItemFound;
-            }
-
-            $parentEntityField = $ucParentEntityType . 'Id';
-            $this->_obj->$parentEntityField = $this->_cache['upserted' . $manyParentEntityType][$parentEntityNumber];
-
-            if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
-                $netTotal = $this->getEntityPrice($_item, 'RowTotalInclTax');
-            } else {
-                $netTotal = $this->getEntityPrice($_item, 'RowTotal');
-            }
-
-            if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
-                $netTotal = ($netTotal - $this->getEntityPrice($_item, 'DiscountAmount'));
-                $this->_obj->UnitPrice = $netTotal / $qty;
-            } else {
-                if ($qty == 0) {
-                    $this->_obj->UnitPrice = $netTotal;
-                } else {
-                    $this->_obj->UnitPrice = $netTotal / $qty;
-                }
-            }
-
-            /**
-             * @comment prepare formatted price
-             */
-            $this->_obj->UnitPrice = $this->numberFormat($this->_obj->UnitPrice);
-
-            if (!property_exists($this->_obj, "Id")) {
-                $this->_obj->PricebookEntryId = $_product->getData('salesforce_pricebook_id');
-            }
-
-            $opt = array();
-            $options = $_item->getData('product_options');
-            $_summary = array();
-            if (
-                is_array($options)
-                && array_key_exists('options', $options)
-            ) {
-                $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
-                foreach ($options['options'] as $_option) {
-                    $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $_option['print_value'] . '</td></tr>';
-                    $_summary[] = $_option['print_value'];
-                }
-            }
-            if (
-                is_array($options)
-                && $_item->getData('product_type') == 'bundle'
-                && array_key_exists('bundle_options', $options)
-            ) {
-                $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
-                foreach ($options['bundle_options'] as $_option) {
-                    $_string = '<td align="left">' . $_option['label'] . '</td>';
-                    if (is_array($_option['value'])) {
-                        $_tmp = array();
-                        foreach ($_option['value'] as $_value) {
-                            $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
-                            $_summary[] = $_value['title'];
-                        }
-                        if (count($_tmp) > 0) {
-                            $_string .= join(", ", $_tmp);
-                        }
-                    }
-
-                    $opt[] = '<tr>' . $_string . '</tr>';
-                }
-            }
-            if (count($opt) > 0) {
-                /**
-                 * @comment this code works for opportunity only
-                 */
-                if ($parentEntityType == 'opportunity') {
-                    $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
-                    $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
-                }
-
-                $this->_obj->Description = join(", ", $_summary);
-                if (strlen($this->_obj->Description) > 200) {
-                    $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
-                }
-            }
-
-            $this->_obj->Quantity = $qty;
-
-            /**
-             * opportunityLineItemsToUpsert
-             */
-            $this->_cache[lcfirst($itemsField) . 'ToUpsert']['cart_' . $_item->getId()] = $this->_obj;
-
-            /* Dump OrderItem object into the log */
-            foreach ($this->_obj as $key => $_objItem) {
-                Mage::helper('tnw_salesforce')->log("OrderItem Object: " . $key . " = '" . $_objItem . "'");
-            }
-
-            Mage::helper('tnw_salesforce')->log('-----------------');
         }
 
-        // Push Tax Fee Product
-        if (Mage::helper('tnw_salesforce')->useTaxFeeProduct() && $parentEntity->getTaxAmount() > 0) {
-            if (Mage::helper('tnw_salesforce')->getTaxProduct()) {
-                $this->addTaxProduct($parentEntity, $parentEntityNumber, $parentEntityType);
-            } else {
-                Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Tax product is not configured!", 1, "sf-errors");
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Tax Fee product to the Order!');
-                }
-            }
-        }
+        $this->_applyAdditionalFees($parentEntity, $parentEntityNumber, $parentEntityType);
 
-        // Push Shipping Fee Product
-        if (Mage::helper('tnw_salesforce')->useShippingFeeProduct() && $this->getEntityPrice($parentEntity, 'ShippingAmount') > 0) {
-            if (Mage::helper('tnw_salesforce')->getShippingProduct()) {
-                $this->addShippingProduct($parentEntity, $parentEntityNumber, $parentEntityType);
-            } else {
-                Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Shipping product is not configured!", 1, "sf-errors");
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Shipping Fee product to the Order!');
-                }
-            }
-        }
-
-        // Push Discount Fee Product
-        if (Mage::helper('tnw_salesforce')->useDiscountFeeProduct() && $this->getEntityPrice($parentEntity, 'DiscountAmount') != 0) {
-            if (Mage::helper('tnw_salesforce')->getDiscountProduct()) {
-                $this->addDiscountProduct($parentEntity, $parentEntityNumber, $parentEntityType);
-            } else {
-                Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: Discount product is not configured!", 1, "sf-errors");
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Discount Fee product to the Order!');
-                }
-            }
-        }
     }
 
     /**
-     * @comment add vistual product for tax rate
-     * @param Mage_Sales_Model_Order $parentEntity
-     * @param string $parentEntityNumber
-     * @param string $parentEntityType
-     */
-    protected function addTaxProduct($parentEntity, $parentEntityNumber, $parentEntityType)
-    {
-        /**
-         * @comment first letter in upper case
-         */
-        $ucParentEntityType = ucfirst($parentEntityType);
-        $manyParentEntityType = $ucParentEntityType;
-        $itemsField = $ucParentEntityType;
-
-        if ($parentEntityType == 'opportunity') {
-            $manyParentEntityType = 'Opportunities';
-            $itemsField .= 'Line';
-        } else {
-            $manyParentEntityType .= 's';
-        }
-        $itemsField .= 'Items';
-
-        /**
-         * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
-         */
-        $parentEntityCacheKey = $parentEntityType . 'Lookup';
-
-        $_storeId = $parentEntity->getStoreId();
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($parentEntity->getData('order_currency_code'));
-            }
-        }
-        $this->_obj = new stdClass();
-        $_helper = Mage::helper('tnw_salesforce');
-        $_taxProductPricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_TAX_PRODUCT);
-
-        $_cartItemFound = false;
-        if (
-            is_array($this->_cache[$parentEntityCacheKey]) &&
-            array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey]) &&
-            property_exists($this->_cache[$parentEntityCacheKey][$parentEntityNumber], $itemsField)
-            && is_object($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField})
-            && property_exists($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}, 'records')
-        ) {
-            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}->records as $_cartItem) {
-                if ($_cartItem->PricebookEntryId == $_taxProductPricebookEntryId) {
-                    $_cartItemFound = $_cartItem->Id;
-                    break;
-                }
-            }
-        }
-
-        if ($_cartItemFound) {
-            $this->_obj->Id = $_cartItemFound;
-        }
-
-        $parentEntityField = $ucParentEntityType . 'Id';
-
-        $this->_obj->{$parentEntityField} = $this->_cache['upserted' . $manyParentEntityType][$parentEntityNumber];
-        $this->_obj->UnitPrice = $this->numberFormat($this->getEntityPrice($parentEntity, 'TaxAmount'));
-
-        if (!property_exists($this->_obj, "Id")) {
-            if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($parentEntity->getData('order_currency_code'));
-            } else {
-                $_storeId = $parentEntity->getStoreId();
-            }
-
-            $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_TAX_PRODUCT);
-        }
-
-        $this->_obj->Description = 'Total Tax';
-        $this->_obj->Quantity = 1;
-
-        /* Dump OpportunityLineItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
-        }
-
-        $this->_cache[lcfirst($itemsField) . 'ToUpsert'][] = $this->_obj;
-        Mage::helper('tnw_salesforce')->log('-----------------');
-    }
-
-
-    /**
-     * @param $parentEntity
-     * @param $parentEntityNumber
-     * Prepare Shipping fee to Saleforce order
-     */
-    protected function addShippingProduct($parentEntity, $parentEntityNumber, $parentEntityType)
-    {
-
-        /**
-         * @comment first letter in upper case
-         */
-        $ucParentEntityType = ucfirst($parentEntityType);
-        $manyParentEntityType = $ucParentEntityType;
-        $itemsField = $ucParentEntityType;
-
-        if ($parentEntityType == 'opportunity') {
-            $manyParentEntityType = 'Opportunities';
-            $itemsField .= 'Line';
-        } else {
-            $manyParentEntityType .= 's';
-        }
-        $itemsField .= 'Items';
-
-        /**
-         * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
-         */
-        $parentEntityCacheKey = $parentEntityType . 'Lookup';
-
-        $_storeId = $parentEntity->getStoreId();
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($parentEntity->getData('order_currency_code'));
-            }
-        }
-        // Add Shipping Fee to the order
-        $this->_obj = new stdClass();
-
-        $_helper = Mage::helper('tnw_salesforce');
-        $_shippingProductPricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_SHIPPING_PRODUCT);
-
-        $_cartItemFound = false;
-        if (
-            is_array($this->_cache[$parentEntityCacheKey]) &&
-            array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey]) &&
-            property_exists($this->_cache[$parentEntityCacheKey][$parentEntityNumber], $itemsField)
-            && is_object($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField})
-            && property_exists($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}, 'records')
-        ) {
-            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}->records as $_cartItem) {
-                if ($_cartItem->PricebookEntryId == $_shippingProductPricebookEntryId) {
-                    $_cartItemFound = $_cartItem->Id;
-                    break;
-                }
-            }
-        }
-        if ($_cartItemFound) {
-            $this->_obj->Id = $_cartItemFound;
-        }
-
-        $parentEntityField = $ucParentEntityType . 'Id';
-
-        $this->_obj->{$parentEntityField} = $this->_cache['upserted' . $manyParentEntityType][$parentEntityNumber];
-        $this->_obj->UnitPrice = $this->numberFormat(($this->getEntityPrice($parentEntity, 'ShippingAmount')));
-        if (!property_exists($this->_obj, "Id")) {
-            if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($parentEntity->getData('order_currency_code'));
-            } else {
-                $_storeId = $parentEntity->getStoreId();
-            }
-
-            $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_SHIPPING_PRODUCT);
-        }
-        $this->_obj->Description = 'Shipping & Handling';
-        $this->_obj->Quantity = 1;
-
-        /* Dump OrderItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::helper('tnw_salesforce')->log("OrderItem Object: " . $key . " = '" . $_item . "'");
-        }
-        $this->_cache[lcfirst($itemsField) . 'ToUpsert'][] = $this->_obj;
-        Mage::helper('tnw_salesforce')->log('-----------------');
-    }
-
-    /**
+     * @comment add Tax/Shipping/Discount to the order as different product
      * @param $parentEntity
      * @param $parentEntityNumber
      * @param $parentEntityType
      */
-    protected function addDiscountProduct($parentEntity, $parentEntityNumber, $parentEntityType)
+    protected function _applyAdditionalFees($parentEntity, $parentEntityNumber, $parentEntityType)
     {
+        $_helper = Mage::helper('tnw_salesforce');
+
+        foreach ($this->getAvailableFees() as $feeName) {
+            $ucFee = ucfirst($feeName);
+
+            $configMethod = 'use' . $ucFee . 'FeeProduct';
+            // Push Fee As Product
+            if (Mage::helper('tnw_salesforce')->$configMethod() && $parentEntity->getData($feeName . '_amount') != 0) {
+
+                $getProductMethod = 'get' . $ucFee . 'Product';
+
+                if (Mage::helper('tnw_salesforce')->$getProductMethod()) {
+
+                    Mage::helper('tnw_salesforce')->log("Add $feeName");
+
+                    $qty = 1;
+
+                    $item = new Varien_Object();
+                    $item->setData($this->getItemQtyField(), $qty);
+                    $item->setPricebookEntryConfig($_helper->getFeeProduct($feeName));
+                    $item->setDescription($_helper->__($ucFee));
+
+                    $item->setRowTotalInclTax($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
+                    $item->setRowTotal($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
+
+                    $this->_prepareItemObj($parentEntity, $parentEntityNumber, $parentEntityType, $item);
+
+                } else {
+                    Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: $feeName product is not configured!", 1, "sf-errors");
+                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Tax Fee product to the Order!');
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @comment prepare order item object (product, tax, shipping, discount) for Salesforce
+     * @param $parentEntity
+     * @param $parentEntityNumber
+     * @param $parentEntityType
+     * @param $item
+     * @throws Exception
+     */
+    protected function _prepareItemObj($parentEntity, $parentEntityNumber, $parentEntityType, $item)
+    {
+
+        $this->_obj = new stdClass();
+
+        $this->_prepareItemObjStart();
+
+        $_currencyCode = $this->getCurrencyCode($parentEntity);
+
         /**
          * @comment first letter in upper case
          */
@@ -533,65 +478,172 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
         $itemsField .= 'Items';
 
-        /**
-         * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
-         */
-        $parentEntityCacheKey = $parentEntityType . 'Lookup';
 
-        $_storeId = $parentEntity->getStoreId();
+        $qty = $this->getItemQty($item);
+
+        if ($qty == 0) {
+            Mage::helper('tnw_salesforce')->log("NOTE: Product w/ SKU (" . $item->getSku() . ") is not synchronized, ordered quantity is zero!");
+        }
+
+        $storeId = $parentEntity->getStoreId();
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($parentEntity->getData('order_currency_code'));
+            if ($this->getCurrencyCode($parentEntity) != $parentEntity->getData('store_currency_code')) {
+                $storeId = $this->_getStoreIdByCurrency($this->getCurrencyCode($parentEntity));
             }
         }
-        // Add Shipping Fee to the order
-        $this->_obj = new stdClass();
 
-        $_helper = Mage::helper('tnw_salesforce');
-        $_discountProductPricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_DISCOUNT_PRODUCT);
+        // Load by product Id only if bundled OR simple with options
+        $id = $this->getProductIdFromCart($item);
+        $product = null;
 
-        $_cartItemFound = false;
+        /**
+         * @comment do some additional actions if we add real product to the order
+         */
+        if ($id) {
+            /**
+             * @var $productModel Mage_Catalog_Model_Product
+             */
+            $productModel = Mage::getModel('catalog/product')->setStoreId($storeId);
+            $product = $productModel->load($id);
+
+            $sku = $product->getSku();
+
+            if (!$product->getSalesforcePricebookId()) {
+
+                throw new Exception("ERROR: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $parentEntityType!");
+            }
+
+            /**
+             * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
+             */
+            $mapping = Mage::getSingleton($this->getModulePrefix() . '/sync_mapping_' . $this->getMagentoEntityName() . '_' . $parentEntityType . '_item');
+
+            $mapping->setSync($this)
+                ->processMapping($item, $product);
+
+            $identifier = $sku;
+            $this->_obj->PricebookEntryId = $product->getSalesforcePricebookId();
+
+        } else {
+
+            $this->_obj->PricebookEntryId = Mage::app()->getStore($storeId)->getConfig($item->getPricebookEntryConfig());
+            $identifier = $this->_obj->PricebookEntryId;
+            $this->_obj->Description = $item->getDescription();
+        }
+
+        /**
+         * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
+         * @TODO: check, may be it sould be better search product by SalesforcePricebookId too
+         */
+        if ($cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier, $parentEntityType, $itemsField)) {
+            $this->_obj->Id = $cartItemFound;
+        }
+
+        $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($parentEntityNumber, $ucParentEntityType, $manyParentEntityType);
+
+        $this->_obj->UnitPrice = $this->_prepareItemPrice($item, $qty);
+
+        $opt = array();
+        $options = $item->getData('product_options');
+        $_summary = array();
         if (
-            is_array($this->_cache[$parentEntityCacheKey]) &&
-            array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey]) &&
-            property_exists($this->_cache[$parentEntityCacheKey][$parentEntityNumber], $itemsField)
-            && is_object($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField})
-            && property_exists($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}, 'records')
+            is_array($options)
+            && array_key_exists('options', $options)
         ) {
-            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}->records as $_cartItem) {
-                if ($_cartItem->PricebookEntryId == $_discountProductPricebookEntryId) {
-                    $_cartItemFound = $_cartItem->Id;
-                    break;
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
+            foreach ($options['options'] as $_option) {
+                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $_option['print_value'] . '</td></tr>';
+                $_summary[] = $_option['print_value'];
+            }
+        }
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'bundle'
+            && array_key_exists('bundle_options', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
+            foreach ($options['bundle_options'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                if (is_array($_option['value'])) {
+                    $_tmp = array();
+                    foreach ($_option['value'] as $_value) {
+                        $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
+                        $_summary[] = $_value['title'];
+                    }
+                    if (count($_tmp) > 0) {
+                        $_string .= join(", ", $_tmp);
+                    }
                 }
+
+                $opt[] = '<tr>' . $_string . '</tr>';
             }
         }
-        if ($_cartItemFound) {
-            $this->_obj->Id = $_cartItemFound;
-        }
-
-        $parentEntityField = $ucParentEntityType . 'Id';
-
-        $this->_obj->{$parentEntityField} = $this->_cache['upserted' . $manyParentEntityType][$parentEntityNumber];
-        $this->_obj->UnitPrice = $this->numberFormat($this->getEntityPrice($parentEntity, 'DiscountAmount'));
-
-        if (!property_exists($this->_obj, "Id")) {
-            if ($parentEntity->getData('order_currency_code') != $parentEntity->getData('store_currency_code')) {
-                $_storeId = $this->_getStoreIdByCurrency($parentEntity->getData('order_currency_code'));
-            } else {
-                $_storeId = $parentEntity->getStoreId();
+        if (count($opt) > 0) {
+            /**
+             * @comment this code works for opportunity only
+             */
+            if ($parentEntityType == 'opportunity') {
+                $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
+                $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
             }
 
-            $this->_obj->PricebookEntryId = Mage::app()->getStore($_storeId)->getConfig($_helper::ORDER_DISCOUNT_PRODUCT);
+            $this->_obj->Description = join(", ", $_summary);
+            if (strlen($this->_obj->Description) > 200) {
+                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
+            }
         }
 
-        $this->_obj->Description = 'Discount';
-        $this->_obj->Quantity = 1;
+        $this->_obj->Quantity = $qty;
 
-        /* Dump OrderItem object into the log */
+        $this->_prepareItemObjFinish($item, $product);
+        /* Dump OpportunityLineItem object into the log */
         foreach ($this->_obj as $key => $_item) {
-            Mage::helper('tnw_salesforce')->log("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
+            Mage::helper('tnw_salesforce')->log("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
         }
+
         $this->_cache[lcfirst($itemsField) . 'ToUpsert'][] = $this->_obj;
         Mage::helper('tnw_salesforce')->log('-----------------');
+
+    }
+
+    /**
+     * @comment returns prefix for some fields
+     * @return mixed|null
+     */
+    protected function _getSalesforcePrefix()
+    {
+        return Mage::helper('tnw_salesforce/config')->getSalesforcePrefix();
+    }
+
+    /**
+     * @comment run some code before order item preparing
+     * @return $this
+     */
+    protected function _prepareItemObjStart()
+    {
+        return $this;
+    }
+
+    /**
+     * @comment run some code after order item preparing
+     * @return $this
+     */
+    protected function _prepareItemObjFinish($item = null, $product = null)
+    {
+        /**
+         * @comment rename fields if it's necessary
+         */
+        if (!empty($this->getItemFieldAlias())) {
+            foreach ($this->getItemFieldAlias() as $defaultName => $customName) {
+
+                if (!empty($customName)) {
+                    $this->_obj->{$customName} = $this->_obj->{$defaultName};
+                }
+
+                unset($this->_obj->{$defaultName});
+            }
+        }
+
+        return $this;
     }
 }

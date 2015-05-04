@@ -7,6 +7,36 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 {
 
     /**
+     * @comment magento entity alias
+     * @var array
+     */
+    protected $_magentoEntityName = 'order';
+
+    /**
+     * @comment magento entity model alias
+     * @var array
+     */
+    protected $_magentoEntityModel = 'sales/order';
+
+    /**
+     * @comment magento entity model alias
+     * @var array
+     */
+    protected $_magentoEntityId = 'increment_id';
+
+    /**
+     * @comment magento entity item qty field name
+     * @var array
+     */
+    protected $_itemQtyField = 'qty_ordered';
+
+    /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentIdField = 'opportunityId';
+
+    /**
      * @var null
      */
     protected $_customerEntityTypeCode = NULL;
