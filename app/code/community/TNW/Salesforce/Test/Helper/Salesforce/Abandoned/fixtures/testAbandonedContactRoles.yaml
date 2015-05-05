@@ -1,0 +1,15 @@
+config:
+  default/salesforce_order/customer_opportunity/abandoned_close_time_after: 20
+  default/salesforce_order/general/order_product_enable: 0
+  default/salesforce_order/customer_opportunity/abandoned_customer_opportunity_role_enable: 1
+  default/salesforce_order/customer_opportunity/abandoned_customer_integration_opp: 'Test Role'
+eav:
+  customer:
+    - entity_id: 1
+      salesforce_id: CONTACTSALESFORCE1
+      email: test@email.com
+tables:
+  sales/quote:
+    - entity_id: 1
+      customer_id: 1
+      updated_at: '2014-01-01 00:00:00'
