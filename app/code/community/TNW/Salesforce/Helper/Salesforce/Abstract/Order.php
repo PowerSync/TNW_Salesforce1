@@ -16,10 +16,24 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected $_alternativeKeys = array();
 
     /**
-     * @comment magento entity alias
-     * @var array
+     * @comment magento entity alias "convert from"
+     * @var string
      */
     protected $_magentoEntityName = '';
+
+    /**
+     * @comment salesforce entity alias "convert to"
+     * @var string
+     */
+    protected $_salesforceEntityName = '';
+
+    /**
+     * @comment cache keys
+     * @var string
+     */
+    protected $_ucParentEntityType = '';
+    protected $_manyParentEntityType = '';
+    protected $_itemsField = '';
 
     /**
      * @comment magento entity model alias
@@ -61,6 +75,24 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @var array
      */
     protected $_itemFieldAlias = array();
+
+    /**
+     * @return string
+     */
+    public function getSalesforceEntityName()
+    {
+        return $this->_salesforceEntityName;
+    }
+
+    /**
+     * @param string $salesforceEntityName
+     * @return $this
+     */
+    public function setSalesforceEntityName($salesforceEntityName)
+    {
+        $this->_salesforceEntityName = $salesforceEntityName;
+        return $this;
+    }
 
     /**
      * @return array
@@ -201,11 +233,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @param $parentEntityNumber
      * @param $qty
      * @param $productIdentifier
-     * @param $parentEntityType
-     * @param $itemsField
      * @return bool
      */
-    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $parentEntityType, $itemsField)
+    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier)
     {
 
         $_cartItemFound = false;
@@ -213,14 +243,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         /**
          * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
          */
-        $parentEntityCacheKey = $parentEntityType . 'Lookup';
+        $parentEntityCacheKey = $this->_salesforceEntityName . 'Lookup';
 
         if (
             $this->_cache[$parentEntityCacheKey]
             && array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey])
-            && $this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}
+            && $this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->_itemsField}
         ) {
-            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$itemsField}->records as $_cartItem) {
+            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->_itemsField}->records as $_cartItem) {
                 if (
                     (
                         $_cartItem->PricebookEntryId == $productIdentifier
@@ -263,7 +293,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         return $_currencyCode;
     }
-
 
     /**
      * @param $_item
@@ -330,12 +359,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     /**
      * @comment assign Opportynity/Order Id
      */
-    protected function _getParentEntityId($parentEntityNumber, $ucParentEntityType, $manyParentEntityType)
+    protected function _getParentEntityId($parentEntityNumber)
     {
         if (!$this->getSalesforceParentIdField()) {
-            $this->setSalesforceParentIdField($ucParentEntityType . 'Id');
+            $this->setSalesforceParentIdField($this->getUcParentEntityType() . 'Id');
         }
-        return $this->_cache['upserted' . $manyParentEntityType][$parentEntityNumber];
+        return $this->_cache['upserted' . $this->getManyParentEntityType()][$parentEntityNumber];
     }
 
     /**
@@ -371,7 +400,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @comment Prepare order items for Salesforce
      * @throws Exception
      */
-    protected function _prepareOrderItem($parentEntityNumber, $parentEntityType)
+    protected function _prepareOrderItem($parentEntityNumber)
     {
 
         $parentEntity = $this->getParentEntity($parentEntityNumber);
@@ -385,7 +414,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         foreach ($this->getItems($parentEntity) as $_item) {
 
             try {
-                $this->_prepareItemObj($parentEntity, $parentEntityNumber, $parentEntityType, $_item);
+                $this->_prepareItemObj($parentEntity, $parentEntityNumber, $_item);
             } catch (Exception $e) {
 
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
@@ -397,7 +426,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         }
 
-        $this->_applyAdditionalFees($parentEntity, $parentEntityNumber, $parentEntityType);
+        $this->_applyAdditionalFees($parentEntity, $parentEntityNumber);
 
     }
 
@@ -405,9 +434,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @comment add Tax/Shipping/Discount to the order as different product
      * @param $parentEntity
      * @param $parentEntityNumber
-     * @param $parentEntityType
      */
-    protected function _applyAdditionalFees($parentEntity, $parentEntityNumber, $parentEntityType)
+    protected function _applyAdditionalFees($parentEntity, $parentEntityNumber)
     {
         $_helper = Mage::helper('tnw_salesforce');
 
@@ -434,7 +462,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     $item->setRowTotalInclTax($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
                     $item->setRowTotal($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
 
-                    $this->_prepareItemObj($parentEntity, $parentEntityNumber, $parentEntityType, $item);
+                    $this->_prepareItemObj($parentEntity, $parentEntityNumber, $item);
 
                 } else {
                     Mage::helper('tnw_salesforce')->log("CRITICAL ERROR: $feeName product is not configured!", 1, "sf-errors");
@@ -447,37 +475,116 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @return string
+     */
+    public function getUcParentEntityType()
+    {
+        if (!$this->_ucParentEntityType) {
+            /**
+             * @comment first letter in upper case
+             */
+            $this->_ucParentEntityType = ucfirst($this->_salesforceEntityName);
+        }
+
+        return $this->_ucParentEntityType;
+    }
+
+    /**
+     * @param string $ucParentEntityType
+     * @return $this
+     */
+    public function setUcParentEntityType($ucParentEntityType)
+    {
+        $this->_ucParentEntityType = $ucParentEntityType;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getManyParentEntityType()
+    {
+        if (!$this->_manyParentEntityType) {
+
+            $this->_manyParentEntityType = $this->getUcParentEntityType();
+            $this->_manyParentEntityType .= 's';
+
+            if ($this->_salesforceEntityName == 'opportunity') {
+                $this->_manyParentEntityType = 'Opportunities';
+            }
+        }
+
+        return $this->_manyParentEntityType;
+    }
+
+    /**
+     * @param string $manyParentEntityType
+     * @return $this
+     */
+    public function setManyParentEntityType($manyParentEntityType)
+    {
+        $this->_manyParentEntityType = $manyParentEntityType;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getItemsField()
+    {
+        if (!$this->_itemsField) {
+            $this->_itemsField = $this->getUcParentEntityType();
+
+            if ($this->_salesforceEntityName == 'opportunity') {
+                $this->_itemsField .= 'Line';
+            } elseif ($this->_salesforceEntityName == 'salesorder') {
+                $this->_itemsField = 'Order';
+            }
+
+            $this->_itemsField .= 'Items';
+        }
+
+        return $this->_itemsField;
+    }
+
+    /**
+     * @param string $itemsField
+     * @return $this
+     */
+    public function setItemsField($itemsField)
+    {
+        $this->_itemsField = $itemsField;
+        return $this;
+    }
+
+
+    protected function _prepareTechnicalPrefixes()
+    {
+
+        /**
+         * @comment call getters for fields filling
+         */
+        $this->getUcParentEntityType();
+        $this->getManyParentEntityType();
+        $this->getItemsField();
+    }
+
+    /**
      * @comment prepare order item object (product, tax, shipping, discount) for Salesforce
      * @param $parentEntity
      * @param $parentEntityNumber
-     * @param $parentEntityType
      * @param $item
      * @throws Exception
      */
-    protected function _prepareItemObj($parentEntity, $parentEntityNumber, $parentEntityType, $item)
+    protected function _prepareItemObj($parentEntity, $parentEntityNumber, $item)
     {
+        $this->_prepareTechnicalPrefixes();
 
         $this->_obj = new stdClass();
 
         $this->_prepareItemObjStart();
 
         $_currencyCode = $this->getCurrencyCode($parentEntity);
-
-        /**
-         * @comment first letter in upper case
-         */
-        $ucParentEntityType = ucfirst($parentEntityType);
-        $manyParentEntityType = $ucParentEntityType;
-        $itemsField = $ucParentEntityType;
-
-        if ($parentEntityType == 'opportunity') {
-            $manyParentEntityType = 'Opportunities';
-            $itemsField .= 'Line';
-        } else {
-            $manyParentEntityType .= 's';
-        }
-        $itemsField .= 'Items';
-
 
         $qty = $this->getItemQty($item);
 
@@ -510,13 +617,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             if (!$product->getSalesforcePricebookId()) {
 
-                throw new Exception("ERROR: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $parentEntityType!");
+                throw new Exception("ERROR: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
             }
 
             /**
              * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
              */
-            $mapping = Mage::getSingleton($this->getModulePrefix() . '/sync_mapping_' . $this->getMagentoEntityName() . '_' . $parentEntityType . '_item');
+            $mapping = Mage::getSingleton($this->getModulePrefix() . '/sync_mapping_' . $this->getMagentoEntityName() . '_' . $this->_salesforceEntityName . '_item');
 
             $mapping->setSync($this)
                 ->processMapping($item, $product);
@@ -535,11 +642,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
          * @TODO: check, may be it sould be better search product by SalesforcePricebookId too
          */
-        if ($cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier, $parentEntityType, $itemsField)) {
+        if ($cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier)) {
             $this->_obj->Id = $cartItemFound;
         }
 
-        $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($parentEntityNumber, $ucParentEntityType, $manyParentEntityType);
+        $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($parentEntityNumber);
 
         $this->_obj->UnitPrice = $this->_prepareItemPrice($item, $qty);
 
@@ -582,7 +689,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             /**
              * @comment this code works for opportunity only
              */
-            if ($parentEntityType == 'opportunity') {
+            if ($this->_salesforceEntityName == 'opportunity') {
                 $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
                 $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
             }
@@ -601,7 +708,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             Mage::helper('tnw_salesforce')->log("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
         }
 
-        $this->_cache[lcfirst($itemsField) . 'ToUpsert'][] = $this->_obj;
+        $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert'][] = $this->_obj;
         Mage::helper('tnw_salesforce')->log('-----------------');
 
     }
