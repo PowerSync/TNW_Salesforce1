@@ -544,7 +544,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         $this->_cache['responses']['notes'][$_noteId] = json_decode(json_encode($_item), TRUE);
                         $_orderId = (string)$_batch[$_noteId]->ParentId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache['upsertedOpportunities']);
+                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'notes', $_batch[$_noteId]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -624,7 +624,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         $this->_cache['responses']['opportunityLineItems'][] = json_decode(json_encode($_item), TRUE);
                         $_opportunityId = (string)$_batch[$_batchKeys[$_i]]->OpportunityId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache['upsertedOpportunities']);
+                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -661,7 +661,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                         $_i++;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache['upsertedOpportunities']);
+                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -710,13 +710,13 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     $this->_cache['responses']['opportunities'][$_oid] = json_decode(json_encode($_item), TRUE);
 
                     if ($_item->success == "true") {
-                        $this->_cache['upsertedOpportunities'][$_oid] = (string)$_item->id;
+                        $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
 
                         $_contactId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_id') . "'" : 'NULL';
                         $_accountId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id') . "'" : 'NULL';
-                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache['upsertedOpportunities'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
 
-                        Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache['upsertedOpportunities'][$_oid]);
+                        Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
 
                         //unset($this->_cache['opportunitiesToUpsert'][$_oid]);
                     } else {
@@ -829,7 +829,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
             if (!$_skip) {
                 $this->_obj->IsPrimary = true;
-                $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_orderNumber];
+                $this->_obj->OpportunityId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNumber];
 
                 $this->_obj->Role = Mage::helper('tnw_salesforce')->getDefaultCustomerRole();
 

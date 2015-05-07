@@ -997,6 +997,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     public function getEntityPrice($entity, $priceField)
     {
+        $origPriceField = $priceField;
         if (Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency()) {
             $priceField = 'Base' . $priceField;
         }
@@ -1004,6 +1005,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $priceGetter = 'get' .$priceField;
 
         $result = $entity->$priceGetter();
+
+        if (!$result) {
+            $origPriceGetter = 'get' .$origPriceField;
+            $result = $entity->$origPriceGetter();
+        }
 
         return $result;
     }

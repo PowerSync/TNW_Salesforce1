@@ -10,7 +10,7 @@ class TNW_Salesforce_Model_Abandoned
         $collection = Mage::getResourceModel('reports/quote_collection');
 
         $dateLimit = Mage::helper('tnw_salesforce/abandoned')->getDateLimit()->toString(Varien_Date::DATETIME_INTERNAL_FORMAT);
-        $collection->addFieldToFilter('main_table.updated_at', array('lteq' => $dateLimit));
+//        $collection->addFieldToFilter('main_table.updated_at', array('lteq' => $dateLimit));
 
         $collection->addFieldToFilter('main_table.is_active', 1);
         $collection->addFieldToFilter('main_table.items_count', array('neq' => 0));

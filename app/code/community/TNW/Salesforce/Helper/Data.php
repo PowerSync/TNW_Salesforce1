@@ -1028,4 +1028,27 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
         return false;
     }
+
+    /**
+     * @comment returns const
+     * @param $feeType
+     * @return mixed|null
+     * @throws Mage_Core_Exception
+     */
+    public function getFeeProduct($feeType)
+    {
+        /**
+         * @var $_constantName string ORDER_DISCOUNT_PRODUCT|ORDER_SHIPPING_PRODUCT|ORDER_TAX_PRODUCT
+         */
+        $_constantName = 'self::ORDER_'.strtoupper($feeType).'_PRODUCT';
+
+        if (defined($_constantName)) {
+            return constant($_constantName);
+        }
+
+        Mage::throwException('Undefined fee product: for ' . $feeType);
+
+        return NULL;
+    }
+
 }

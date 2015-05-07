@@ -440,8 +440,8 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach($this->_cache['orderToActivate'] as $_orderNum => $_object) {
-                if (array_key_exists($_orderNum, $this->_cache['upsertedOrders'])) {
-                    $_object->Id = $this->_cache['upsertedOrders'][$_orderNum];
+                if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
+                    $_object->Id = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
                 } else {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
                     Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
@@ -522,7 +522,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         $this->_cache['responses']['orderItems'][] = json_decode(json_encode($_item), TRUE);
                         $_orderId = (string)$_batch[$_batchKeys[$_i]]->OrderId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache['upsertedOrders']);
+                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'orderProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache['failedOrders'][] = $_oid;
@@ -567,7 +567,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         $this->_cache['responses']['notes'][$_noteId] = json_decode(json_encode($_item), TRUE);
                         $_orderId = (string)$_batch[$_noteId]->ParentId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache['upsertedOrders']);
+                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'notes', $_batch[$_noteId]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache['failedOrders'][] = $_oid;
@@ -632,18 +632,18 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
                         $this->_cache['upsertedOrderStatuses'][$_oid] = $_orderStatus;
 
-                        $this->_cache['upsertedOrders'][$_oid] = (string)$_item->id;
+                        $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
 
                         $_contactId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_id') . "'" : 'NULL';
                         $_accountId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id') . "'" : 'NULL';
-                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache['upsertedOrders'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
 
-                        Mage::helper('tnw_salesforce')->log('Order Upserted: ' . $this->_cache['upsertedOrders'][$_oid]);
+                        Mage::helper('tnw_salesforce')->log('Order Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
 
                         if (Mage::registry('order_cached_' . $_oid)) {
                             $_order = Mage::registry('order_cached_' . $_oid);
                             Mage::unregister('order_cached_' . $_oid);
-                            $_order->setData('salesforce_id', $this->_cache['upsertedOrders'][$_oid]);
+                            $_order->setData('salesforce_id', $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
                             $_order->setData('sf_insync', 1);
                             Mage::register('order_cached_' . $_oid, $_order);
                             unset($_order);

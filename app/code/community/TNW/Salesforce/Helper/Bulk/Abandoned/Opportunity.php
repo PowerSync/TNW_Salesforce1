@@ -42,8 +42,8 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             foreach ($ids as $_count => $_id) {
                 $_quote = $this->_loadQuote($_id);
                 // Add to cache
-                if (!Mage::registry('abandoned_cached_' . $_quote->getId())) {
-                    Mage::register('abandoned_cached_' . $_quote->getId(), $_quote);
+                if (!Mage::registry('quote_cached_' . $_quote->getId())) {
+                    Mage::register('quote_cached_' . $_quote->getId(), $_quote);
                 }
 
                 if (!$_quote->getId() || !$_quote->getId()) {
@@ -105,7 +105,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 $_customerToSync = array();
                 foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
                     // here may be potential bug where we lost some quotes
-                    $_customerToSync[$_quoteNumber] = $this->_getCustomer(Mage::registry('abandoned_cached_' . $_quoteNumber));
+                    $_customerToSync[$_quoteNumber] = $this->_getCustomer(Mage::registry('quote_cached_' . $_quoteNumber));
                 }
 
                 Mage::helper("tnw_salesforce")->log('Syncronizing Guest accounts...');
@@ -170,7 +170,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             $_tmpArray = $this->_cache['abandonedCustomersToSync'];
             foreach ($_tmpArray as $_key => $_quoteNum) {
-                $_quote = (Mage::registry('abandoned_cached_' . $_quoteNum)) ? Mage::registry('abandoned_cached_' . $_quoteNum) : $this->_loadQuote($_key);
+                $_quote = (Mage::registry('quote_cached_' . $_quoteNum)) ? Mage::registry('quote_cached_' . $_quoteNum) : $this->_loadQuote($_key);
                 $_email = $this->_cache['abandonedToEmail'][$_quoteNum];
                 $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
 
@@ -352,7 +352,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
 
         //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_abandoned_opportunity')
+        Mage::getSingleton('tnw_salesforce/sync_mapping_quote_opportunity')
             ->setSync($this)
             ->processMapping($quote);
 
@@ -504,7 +504,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                         $this->_cache['responses']['opportunityLineItems'][] = json_decode(json_encode($_item), TRUE);
                         $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache['upsertedOpportunities']);
+                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -533,7 +533,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                         $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                         $_i++;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache['upsertedOpportunities']);
+                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -580,9 +580,9 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $this->_cache['responses']['opportunities'][$_oid] = json_decode(json_encode($_item), TRUE);
 
                     if ($_item->success == "true") {
-                        $this->_cache['upsertedOpportunities'][$_oid] = (string)$_item->id;
-                        $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET salesforce_id = '" . $this->_cache['upsertedOpportunities'][$_oid] . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_oid] . ";";
-                        Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache['upsertedOpportunities'][$_oid]);
+                        $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
+                        $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET salesforce_id = '" . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_oid] . ";";
+                        Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
 
                         //unset($this->_cache['opportunitiesToUpsert'][$_oid]);
                     } else {
@@ -711,7 +711,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             if (!$_skip) {
                 $this->_obj->IsPrimary = true;
-                $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
+                $this->_obj->OpportunityId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNumber];
 
                 $this->_obj->Role = Mage::helper('tnw_salesforce/abandoned')->getDefaultCustomerRole();
 

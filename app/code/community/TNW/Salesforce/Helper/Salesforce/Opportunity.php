@@ -7,6 +7,42 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 {
 
     /**
+     * @comment magento entity alias
+     * @var array
+     */
+    protected $_magentoEntityName = 'order';
+
+    /**
+     * @comment salesforce entity alias "convert to"
+     * @var string
+     */
+    protected $_salesforceEntityName = 'opportunity';
+
+    /**
+     * @comment magento entity model alias
+     * @var array
+     */
+    protected $_magentoEntityModel = 'sales/order';
+
+    /**
+     * @comment magento entity model alias
+     * @var array
+     */
+    protected $_magentoEntityId = 'increment_id';
+
+    /**
+     * @comment magento entity item qty field name
+     * @var array
+     */
+    protected $_itemQtyField = 'qty_ordered';
+
+    /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentIdField = 'opportunityId';
+
+    /**
      * @var null
      */
     protected $_customerEntityTypeCode = NULL;
@@ -365,7 +401,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
                     Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-                    $this->_cache['upsertedOpportunities'][$_orderNum] = $_result->id;
+                    $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum] = $_result->id;
                     Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $_result->id);
                 }
             }
@@ -436,21 +472,10 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 continue;
             }
 
-            $this->_prepareOrderItem($_orderNumber, 'opportunity');
+            $this->_prepareOrderItem($_orderNumber);
 
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
-    }
-
-    /**
-     * @param $_orderNumber
-     * @param $_item
-     * @param $_sku
-     * @return bool
-     */
-    protected function doesCartItemExistInOpportunity($_orderNumber, $_item, $_sku)
-    {
-        return $this->_doesCartItemExist($_orderNumber, $_item, $_sku, 'opportunity', 'OpportunityLineItems');
     }
 
     protected function _prepareNotes()
@@ -470,7 +495,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 // Only sync notes for the order
                 if ($_note->getData('entity_name') == 'order' &&  !$_note->getData('salesforce_id') && $_note->getData('comment')) {
                     $this->_obj = new stdClass();
-                    $this->_obj->ParentId = $this->_cache['upsertedOpportunities'][$_orderNumber];
+                    $this->_obj->ParentId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNumber];
                     $this->_obj->IsPrivate = 0;
                     $this->_obj->Body = $_note->getData('comment');
                     $this->_obj->Title = $_note->getData('comment');
@@ -529,7 +554,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             if (!$_skip) {
                 $this->_obj->IsPrimary = true;
-                $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_orderNumber];
+                $this->_obj->OpportunityId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNumber];
 
                 $this->_obj->Role = Mage::helper('tnw_salesforce')->getDefaultCustomerRole();
 
@@ -551,7 +576,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     protected function _pushOpportunityLineItems($chunk = array())
     {
-        $_orderNumbers = array_flip($this->_cache['upsertedOpportunities']);
+        $_orderNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
         $_chunkKeys = array_keys($chunk);
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OpportunityLineItem');
@@ -644,7 +669,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             $this->_cache['responses']['customerRoles'] = $results;
 
-            $_orderNumbers = array_flip($this->_cache['upsertedOpportunities']);
+            $_orderNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
             foreach ($results as $_key => $_result) {
                 $_orderNum = $_orderNumbers[$this->_cache['contactRolesToUpsert'][$_key]->OpportunityId];
 
@@ -1091,7 +1116,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 }
             } else {
                 $_orderSalesforceId = $this->_cache['notesToUpsert'][$_noteId]->ParentId;
-                $_orderId = array_search($_orderSalesforceId, $this->_cache['upsertedOpportunities']);
+                $_orderId = array_search($_orderSalesforceId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
 
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = '" . $_noteId . "';";
                 Mage::helper('tnw_salesforce')->log('Note (id: ' . $_noteId . ') upserted for order #' . $_orderId . ')');
