@@ -1,7 +1,7 @@
 config:
   default/salesforce_order/customer_opportunity/abandoned_close_time_after: 20
   default/salesforce_order/general/order_product_enable: 0
-  default/salesforce_order/customer_opportunity/abandoned_customer_opportunity_role_enable: 1
+  default/salesforce_order/customer_opportunity/customer_opportunity_role_enable: 1
   default/salesforce_order/customer_opportunity/abandoned_customer_integration_opp: 'Test Role'
   default/salesforce_customer/lead_config/customer_lead_status: 'Some Status'
 eav:

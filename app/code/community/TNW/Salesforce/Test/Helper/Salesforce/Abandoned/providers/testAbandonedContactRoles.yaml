@@ -1,4 +1,6 @@
+# -
+#   - #quoteId
 -
-  - 1 #quoteId
+  - 1 # customer salesforce_id exist
 -
-  - 2
+  - 2 # lead exists
