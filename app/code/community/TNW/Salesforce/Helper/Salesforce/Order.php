@@ -994,7 +994,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 continue;
             }
 
-            $this->_prepareOrderItem($_orderNumber, 'order');
+            $this->_prepareOrderItem($_orderNumber);
 
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');

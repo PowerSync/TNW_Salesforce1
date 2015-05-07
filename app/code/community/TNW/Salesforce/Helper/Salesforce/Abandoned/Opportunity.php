@@ -373,7 +373,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 continue;
             }
 
-            $this->_prepareOrderItem($_quoteNumber, 'opportunity');
+            $this->_prepareOrderItem($_quoteNumber);
 
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');

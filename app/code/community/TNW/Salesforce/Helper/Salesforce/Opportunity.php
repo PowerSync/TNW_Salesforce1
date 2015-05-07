@@ -472,7 +472,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 continue;
             }
 
-            $this->_prepareOrderItem($_orderNumber, 'opportunity');
+            $this->_prepareOrderItem($_orderNumber);
 
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
