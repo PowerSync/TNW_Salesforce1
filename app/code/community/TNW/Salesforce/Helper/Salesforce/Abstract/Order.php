@@ -629,12 +629,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 ->processMapping($item, $product);
 
             $identifier = $sku;
-            $this->_obj->PricebookEntryId = $product->getSalesforcePricebookId();
+            $pricebookEntryId = $product->getSalesforcePricebookId();
 
         } else {
 
-            $this->_obj->PricebookEntryId = Mage::app()->getStore($storeId)->getConfig($item->getPricebookEntryConfig());
-            $identifier = $this->_obj->PricebookEntryId;
+            $pricebookEntryId = Mage::app()->getStore($storeId)->getConfig($item->getPricebookEntryConfig());
+            $identifier = $pricebookEntryId;
             $this->_obj->Description = $item->getDescription();
         }
 
@@ -644,6 +644,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          */
         if ($cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier)) {
             $this->_obj->Id = $cartItemFound;
+        } else {
+            $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($parentEntityNumber);
