@@ -44,7 +44,10 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
 
         $cacheId = $entity->getData($this->getCacheIdField());
 
-        if (is_array($this->_cache[$this->getCachePrefix() . 'Customers']) && array_key_exists($cacheId, $this->_cache[$this->getCachePrefix() . 'Customers'])) {
+        if (isset($this->_cache[$this->getCachePrefix() . 'Customers'])
+            && is_array($this->_cache[$this->getCachePrefix() . 'Customers'])
+            && isset($this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId])
+        ) {
             $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
         } else {
             $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId] = $this->_getCustomer($entity);
