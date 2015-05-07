@@ -13,7 +13,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     const ABANDONED_CLOSE_TIME_AFTER = 'salesforce_order/customer_opportunity/abandoned_close_time_after';
     const ABANDONED_CART_ENABLED = 'salesforce_order/customer_opportunity/abandoned_cart_enabled';
     const DEFAULT_STATE_ABANDONED = 'salesforce_order/customer_opportunity/abandoned_cart_state';
-    const ABANDONED_CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/abandoned_customer_opportunity_role_enable';
+    const ABANDONED_CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
     const ABANDONED_SYNC = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
     const ABANDONED_CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
 
