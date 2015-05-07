@@ -21,7 +21,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      * @comment magento entity model alias
      * @var string
      */
-    protected $_magentoEntityId = 'id';
+    protected $_magentoEntityId = 'entity_id';
 
     /**
      * @comment magento entity item qty field name

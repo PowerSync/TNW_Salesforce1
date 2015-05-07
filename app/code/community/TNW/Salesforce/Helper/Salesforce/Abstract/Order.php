@@ -45,7 +45,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @comment magento entity model alias
      * @var array
      */
-    protected $_magentoEntityId = '';
+    protected $_magentoEntityId = 'entity_id';
 
     /**
      * @comment magento entity item qty field name
