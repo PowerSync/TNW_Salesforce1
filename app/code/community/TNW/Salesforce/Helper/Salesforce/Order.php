@@ -12,6 +12,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected $_magentoEntityName = 'order';
 
+
+    /**
+     * @comment salesforce entity alias "convert to"
+     * @var string
+     */
+    protected $_salesforceEntityName = 'order';
+
     /**
      * @comment magento entity model alias
      * @var string
