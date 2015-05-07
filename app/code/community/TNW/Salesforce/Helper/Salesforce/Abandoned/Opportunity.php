@@ -371,14 +371,20 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     protected function getQuoteCustomer($quote)
     {
-        $customerId = $this->_cache['abandonedToCustomerId'][$quote->getId()];
-        if ($customerId == $quote->getCustomerId()) {
-            $customer = $quote->getCustomer();
-        } else {
-            $customer = $this->_cache['abandonedCustomers'][$quote->getId()];
+        if (!isset($this->_cache['abandonedToCustomerId'][$quote->getId()])
+            || !$this->_cache['abandonedToCustomerId'][$quote->getId()]
+        ) {
+            $this->_cache['abandonedToCustomerId'][$quote->getId()] = $quote->getCustomerId();
         }
 
-        return $customer;
+        $customerId = $this->_cache['abandonedToCustomerId'][$quote->getId()];
+
+        //always update cache array if customer ids are the same
+        if ($customerId == $quote->getCustomerId() || !$this->_cache['abandonedCustomers'][$quote->getId()]) {
+            $this->_cache['abandonedCustomers'][$quote->getId()] = $quote->getCustomer();
+        }
+
+        return $this->_cache['abandonedCustomers'][$quote->getId()];
     }
 
     protected function _prepareContactRoles()
@@ -690,7 +696,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 $_foundAccounts = array();
                 // If Lead not found, potentially a guest
-                if (!is_array($this->_cache['leadLookup']) || !array_key_exists($_websiteId, $this->_cache['leadLookup']) || !array_key_exists($_quoteEmail, $this->_cache['leadLookup'][$_websiteId])) {
+                if (!is_array($this->_cache['leadLookup'])
+                    || !array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
+                    || !array_key_exists($_quoteEmail, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])
+                ) {
                     Mage::helper("tnw_salesforce")->log('Syncronizing Guest/New customer...');
                     $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
                     if ($manualSync->reset()) {
