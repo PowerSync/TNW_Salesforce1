@@ -19,7 +19,7 @@ class TNW_Salesforce_Test_Model_Api_Entity_Lead extends TNW_Salesforce_Test_Case
         }
 
         $queryResponse = array();
-        $fixtureData = $this->getSalesforceFixture('lead', array('ID' => $leadId));
+        $fixtureData = $this->getSalesforceFixture('lead', array('Id' => $leadId));
         if ($fixtureData) {
             $queryResponse[] = $fixtureData;
         }
@@ -52,7 +52,7 @@ class TNW_Salesforce_Test_Model_Api_Entity_Lead extends TNW_Salesforce_Test_Case
 
         /** @var TNW_Salesforce_Model_Api_Entity_Lead $lead */
         $lead = Mage::getModel('tnw_salesforce_api_entity/lead')
-            ->setData($this->getSalesforceFixture('lead', array('ID' => $leadId)));
+            ->setData($this->getSalesforceFixture('lead', array('Id' => $leadId)));
 
         $lead->convert();
     }

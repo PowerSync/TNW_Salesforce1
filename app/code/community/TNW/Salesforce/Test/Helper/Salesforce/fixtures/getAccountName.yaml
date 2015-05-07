@@ -1,0 +1,6 @@
+salesforce:
+  account:
+    - Id: ACCOUNT1
+      Name: Name1
+    - Id: ACCOUNT2
+      Name: Name2

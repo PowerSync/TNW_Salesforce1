@@ -27,7 +27,7 @@ class TNW_Salesforce_Test_Model_Cached extends TNW_Salesforce_Test_Case
                 array('LEAD2', null)
             )
             ->will($this->returnCallback(function ($value) {
-                return new Varien_Object($this->getSalesforceFixture('lead', array('ID' => $value)));
+                return new Varien_Object($this->getSalesforceFixture('lead', array('Id' => $value)));
             }));
         $this->replaceByMock('model', 'tnw_salesforce_api_entity/lead', $modelMock);
 

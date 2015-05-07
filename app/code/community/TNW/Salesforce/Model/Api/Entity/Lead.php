@@ -8,6 +8,14 @@ class TNW_Salesforce_Model_Api_Entity_Lead extends TNW_Salesforce_Model_Api_Enti
         $this->_init('tnw_salesforce_api_entity/lead');
     }
 
+    /**
+     * @return bool
+     */
+    public function isConverted()
+    {
+        return (bool)$this->getData('IsConverted');
+    }
+
     public function convert()
     {
         $prepareData = array(
