@@ -66,7 +66,7 @@ class TNW_Salesforce_Test_Model_Api_Client extends TNW_Salesforce_Test_Case
         $lead = $leadArray[0];
         $this->mockClient(array('query'));
         $item = new stdClass();
-        $item->ID = $lead['leadId'];
+        $item->Id = $lead['leadId'];
         $response = new stdClass();
         $response->records[] = $item;
         $this->getClientMock()->expects($this->once())
@@ -76,7 +76,7 @@ class TNW_Salesforce_Test_Model_Api_Client extends TNW_Salesforce_Test_Case
         $this->mockApplyClientToConnection();
 
         $client = Mage::getModel('tnw_salesforce/api_client');
-        $result = $client->query('SELECT ID From Lead WHERE ID = ' . $lead['leadId']);
-        $this->assertEquals($lead['leadId'], $result[0]['ID']);
+        $result = $client->query('SELECT Id From Lead WHERE ID = ' . $lead['leadId']);
+        $this->assertEquals($lead['leadId'], $result[0]['Id']);
     }
 }

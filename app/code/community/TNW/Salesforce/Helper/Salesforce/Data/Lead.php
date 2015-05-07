@@ -421,7 +421,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     //use customer entity instead of email to avoid additional load of entity
                     // and fix account (company name) for guest
                     $_email = isset($this->_cache[$parentEntityType . 'Customers'][$parentEntityId])
-                        ? strtolower($this->_cache[$parentEntityType . 'Customers'][$parentEntityId]) : $email;
+                        ? strtolower($this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail())
+                        : $email;
 
                     $accountLookup = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup(
                         array($customerId => $_email),
@@ -616,7 +617,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->_websiteSfIds[$_websiteId];
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->getWebsiteSfIds($_websiteId);
 
                     // Update Salesforce Id
                     Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
@@ -730,7 +731,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                         $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
-                        $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->_websiteSfIds[$_websiteId];
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->getWebsiteSfIds($_websiteId);
 
                         // Update Salesforce Id
                         Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
@@ -744,13 +745,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                         $this->_cache[$parentEntityType . 'Customers'][$parentEntityId] = Mage::getModel("customer/customer")->load($_customerId);
                     } else {
                         Mage::helper('tnw_salesforce')->log('Converted customer: (guest)');
-                        // For the guest
-                        $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSalesforceLeadId(NULL);
-                        $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSalesforceId($_result->contactId);
-                        $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSalesforceAccountId($_result->accountId);
-                        // Update Sync Status
-                        $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSfInsync(0);
                     }
+
+                    // Update current customer values
+                    $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSalesforceLeadId(NULL);
+                    $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSalesforceId($_result->contactId);
+                    $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSalesforceAccountId($_result->accountId);
+                    // Update Sync Status
+                    $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->setSfInsync(0);
 
                     $this->_cache['convertedLeads'][$parentEntityId] = new stdClass();
                     $this->_cache['convertedLeads'][$parentEntityId]->contactId = $_result->contactId;

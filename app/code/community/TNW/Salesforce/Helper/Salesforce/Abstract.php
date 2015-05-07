@@ -679,7 +679,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             } else {
                 Mage::helper('tnw_salesforce')->log("Entity Key: " . $k);
             }
-            if (empty($_obj)) {
+            if (empty($_obj) || !is_array($_obj)) {
                 Mage::helper('tnw_salesforce')->log($type . " Object is empty!", 1, "sf-errors");
             } else {
                 foreach ($_obj as $_key => $_value) {
@@ -928,12 +928,13 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     }
 
     /**
-     * @return array
+     * @param string $key
+     * @return array|null|string
      */
     public function getWebsiteSfIds($key = null)
     {
-        if ($key) {
-            return $this->_websiteSfIds[$key];
+        if (!is_null($key)) {
+            return isset($this->_websiteSfIds[$key]) ? (string)$this->_websiteSfIds[$key] : null;
         }
         return $this->_websiteSfIds;
     }

@@ -549,40 +549,28 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getAccountName($id = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return NULL;
-            }
-            Mage::helper('tnw_salesforce')->log("Trying to get Account Name for #" . $id);
-            $query = "SELECT Name FROM Account WHERE Id='" . $id . "'";
-            $list = $this->getClient()->query(($query));
-            unset($query, $id);
-            $accountName = ($list->records[0]->Name) ? $list->records[0]->Name : NULL;
-            return $accountName;
+            return Mage::getModel('tnw_salesforce_api_entity/account')->load($id)->getData('Name');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
-            unset($e, $obj, $id);
             return false;
         }
     }
 
     /**
      * @param null $email
-     * @return bool|null
+     * @return string|false
      */
     public function isLeadConverted($email = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return NULL;
+            if (!$email) {
+                return null;
             }
-            $query = "SELECT ID, IsConverted FROM Lead WHERE Email='" . $email . "'";
-            $list = $this->getClient()->query(($query));
-            $isConverted = ($list && property_exists($list, "records") && is_array($list->records) && $list->records[0]->IsConverted) ? $list->records[0]->Id : NULL;
-            return $isConverted;
+            $lead = Mage::getModel('tnw_salesforce_api_entity/lead')->load($email, 'Email');
+            return $lead->isConverted() ? $lead->getId() : false;
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not find a Lead by email: " . $email, 1, "sf-errors");
-            unset($e, $email);
             return false;
         }
     }
