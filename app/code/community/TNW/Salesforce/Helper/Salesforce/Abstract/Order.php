@@ -742,8 +742,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         /**
          * @comment rename fields if it's necessary
          */
-        if (!empty($this->getItemFieldAlias())) {
-            foreach ($this->getItemFieldAlias() as $defaultName => $customName) {
+        $itemFieldAlias = $this->getItemFieldAlias();
+        if (!empty($itemFieldAlias)) {
+            foreach ($itemFieldAlias as $defaultName => $customName) {
 
                 if (!empty($customName)) {
                     $this->_obj->{$customName} = $this->_obj->{$defaultName};
