@@ -389,4 +389,38 @@ class TNW_Salesforce_Model_Observer
         $quote->setSfSyncForce(1);
 
     }
+
+    /**
+     * @comment change related Opportunity status to CloseWon
+     * @param $observer
+     */
+    public function updateAbandonedStatus($observer)
+    {
+        $orders = array_values($observer->getEvent()->getData('data'));
+        $result = $observer->getEvent()->getResult();
+        $opportunityField = $observer->getEvent()->getField();
+        if (!$opportunityField) {
+            $opportunityField = 'OpportunityId';
+        }
+
+        $abandonedOpportunities = array();
+
+        foreach ($orders as $key => $order) {
+            if (property_exists($order, $opportunityField)) {
+                $abandonedOpportunities[] = $order->$opportunityField;
+            }
+        }
+
+        if (!empty($abandonedOpportunities)) {
+            /**
+             * @var $collection TNW_Salesforce_Model_Api_Entity_Resource_Opportunity_Collection
+             */
+            $collection = Mage::getModel('tnw_salesforce/api_entity_opportunity')->getCollection();
+            $collection->addFieldToFilter('Id', array('in' => $abandonedOpportunities));
+
+            $collection->setDataToAll('StageName', 'Closed Won');
+            $collection->save();
+        }
+
+    }
 }

@@ -17,6 +17,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     const ABANDONED_SYNC = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
     const ABANDONED_CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
 
+    const NOW = -1;
     const THREE_HOURS = 1;
     const SIX_HOURS = 2;
     const TWELVE_HOURS = 3;
@@ -31,6 +32,10 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     function __construct()
     {
         $this->_limits = array(
+            array(
+                'value' => self::NOW,
+                'label' => Mage::helper('adminhtml')->__('Now')
+            ),
             array(
                 'value' => self::THREE_HOURS,
                 'label' => Mage::helper('adminhtml')->__('3 hours')
@@ -131,6 +136,8 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
         $currentDate = Mage::app()->getLocale()->utcDate(null, Zend_Date::now());
 
         switch($this->getAbandonedConfigLimit()) {
+            case self::NOW:
+                break;
             case self::THREE_HOURS:
                 $currentDate->subHour(3);
                 break;

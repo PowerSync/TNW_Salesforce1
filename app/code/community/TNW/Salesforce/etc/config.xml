@@ -81,6 +81,9 @@
                     <contact>
                         <table>Contact</table>
                     </contact>
+                    <opportunity>
+                        <table>Opportunity</table>
+                    </opportunity>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>
@@ -413,7 +416,14 @@
                     </persistent>
                 </observers>
             </sales_quote_save_before>
-
+            <tnw_salesforce_order_send_after>
+                <observers>
+                    <tnw_salesforce_update_abandoned_status>
+                        <class>tnw_salesforce/observer</class>
+                        <method>updateAbandonedStatus</method>
+                    </tnw_salesforce_update_abandoned_status>
+                </observers>
+            </tnw_salesforce_order_send_after>
         </events>
     </global>
     <adminhtml>
