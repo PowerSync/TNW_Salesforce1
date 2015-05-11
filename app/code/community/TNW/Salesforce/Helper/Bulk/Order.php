@@ -121,19 +121,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
             }
 
-            // See if created from Abandoned Cart
-            if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && !empty($_quotes)) {
-                $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id IN ('" . join("','", $_quotes) . "')";
-                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetchAll();
-                if ($row) {
-                    foreach($row as $_item) {
-                        if (array_key_exists('salesforce_id', $_item) && $_item['salesforce_id']) {
-                            $this->_cache['abandonedCart'][$_item['entity_id']] = $_item['salesforce_id'];
-                        }
-                    }
-                }
-
-            }
+            $this->_findAbandonedCart($_quotes);
 
             if (empty($_orderNumbers)) {
                 Mage::helper("tnw_salesforce")->log("SKIPPING: Skipping synchronization, orders array is empty!", 1, "sf-errors");

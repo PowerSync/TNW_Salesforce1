@@ -177,14 +177,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 return;
             }
 
-            // See if created from Abandoned Cart
-            if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && $_order->getQuoteId()) {
-                $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id = '" . $_order->getQuoteId() . "'";
-                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetch();
-                if ($row && array_key_exists('salesforce_id', $row) && $row['salesforce_id']) {
-                    $this->_cache['abandonedCart'][$_order->getQuoteId()] = $row['salesforce_id'];
-                }
-            }
+            $this->_findAbandonedCart($_order->getQuoteId());
 
             // Get Magento customer object
             $this->_cache['orderCustomers'][$_order->getRealOrderId()] = $this->_getCustomer($_order);

@@ -79,6 +79,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'remote_ip',
             'salesforce_id',
             'sf_insync',
+            'customer_id',
         ));
 
         $collection->addSubtotal($this->_storeIds, $data)
@@ -110,7 +111,20 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'header' => Mage::helper('sales')->__('Quote ID'),
             'index' => 'entity_id',
             'filter_index' => 'main_table.entity_id',
-            'type' => 'text',
+            'type' => 'action',
+            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+            'actions' => array(
+                array(
+                    'url' => array(
+                        'base' => '*/customer/edit',
+                        'params' => array(
+                            'active_tab' => 'cart'
+                        )
+                    ),
+                    'field' => 'id',
+                    'getter' => 'getCustomerId'
+                )
+            ),
         ));
 
         $this->addColumn('salesforce_id', array(
