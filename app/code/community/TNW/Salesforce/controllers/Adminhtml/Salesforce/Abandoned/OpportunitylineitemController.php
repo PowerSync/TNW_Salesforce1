@@ -96,7 +96,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Abandoned_OpportunitylineitemControlle
                 $data['default_value'] = NULL;
             }
 
-            ##validate
+            // validate
             if (!$this->_validate($data)) {
                 Mage::getSingleton('adminhtml/session')->addError("Attribute Code must be unique");
                 Mage::getSingleton('adminhtml/session')->setFormData($data);
@@ -104,7 +104,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Abandoned_OpportunitylineitemControlle
                 return;
             }
 
-            ## Save
+            // Save
             $model = Mage::getModel('tnw_salesforce/mapping');
             $model->setData($data)
                 ->setId($this->getRequest()->getParam('mapping_id'));

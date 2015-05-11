@@ -79,7 +79,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends Mage_Adminht
     {
         if ($data = $this->getRequest()->getPost()) {
             $data['sf_object'] = "Account";
-            /* Inject custom logic for custom fields */
+            // Inject custom logic for custom fields
             if ($data['local_field'] == "Custom : field") {
                 $locAattr = array(strstr($data['local_field'], ' : ', true));
                 array_push($locAattr, $data['default_code']);
@@ -103,7 +103,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends Mage_Adminht
                 unset($data['default_code']);
                 $data['default_value'] = NULL;
             }
-            ##validate
+            // validate
             if (!$this->_validate($data)) {
                 Mage::getSingleton('adminhtml/session')->addError("Attribute Code must be unique");
                 Mage::getSingleton('adminhtml/session')->setFormData($data);
@@ -111,7 +111,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends Mage_Adminht
                 return;
             }
 
-            ## Save
+            // Save
             $model = Mage::getModel('tnw_salesforce/mapping');
             $model->setData($data)
                 ->setId($this->getRequest()->getParam('mapping_id'));
@@ -199,7 +199,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends Mage_Adminht
     protected function _validate($data)
     {
         if (!$id = $this->getRequest()->getParam('mapping_id')) {
-
             return true;
         }
         $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection();
@@ -211,7 +210,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends Mage_Adminht
         foreach ($collection as $_item) {
             if ($_item->getMappingId() != $id) {
                 // Found a duplicate
-
                 return false;
             }
         }

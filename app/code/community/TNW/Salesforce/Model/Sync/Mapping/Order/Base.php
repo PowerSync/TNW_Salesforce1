@@ -44,7 +44,10 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
 
         $cacheId = $entity->getData($this->getCacheIdField());
 
-        if (is_array($this->_cache[$this->getCachePrefix() . 'Customers']) && array_key_exists($cacheId, $this->_cache[$this->getCachePrefix() . 'Customers'])) {
+        if (isset($this->_cache[$this->getCachePrefix() . 'Customers'])
+            && is_array($this->_cache[$this->getCachePrefix() . 'Customers'])
+            && isset($this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId])
+        ) {
             $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
         } else {
             $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId] = $this->_getCustomer($entity);
@@ -88,7 +91,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
                             $attr = "get" . $attrName;
 
                             // Make sure getAttribute is called on the object
-                            if ($_customer->getAttribute($attributeCode)->getFrontendInput() == "select" && is_object($_customer->getResource())) {
+                            if (is_object($_customer->getResource() && is_object($_customer->getAttribute($attributeCode)) && $_customer->getAttribute($attributeCode)->getFrontendInput() == "select")) {
                                 $newAttribute = $_customer->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($_customer->$attr());
                             } else {
                                 $newAttribute = $_customer->$attr();
@@ -266,10 +269,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
      */
     protected function _getDescriptionCart($_entity)
     {
-        $_currencyCode = '';
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $_currencyCode = $_entity->getData('order_currency_code') . " ";
-        }
+        $_currencyCode = $this->_getCurrencyCode($_entity);
 
         ## Put Products into Single field
         $descriptionCart = "";
@@ -283,29 +283,31 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
         $descriptionCart .= "\n";
         $descriptionCart .= "=======================================\n";
 
-        //foreach ($_entity->getAllItems() as $itemId=>$item) {
+        /**
+         * @var $item Mage_Sales_Model_Order_Item
+         */
         foreach ($_entity->getAllVisibleItems() as $itemId => $item) {
-            $descriptionCart .= $item->getSku() . ", " . number_format($item->getQtyOrdered()) . ", " . $item->getName();
+            $descriptionCart .= $item->getSku() . ", " . $this->_numberFormat($item->getQtyOrdered()) . ", " . $item->getName();
             //Price
-            $unitPrice = number_format(($item->getPrice()), 2, ".", "");
+            $unitPrice = $this->_numberFormat($this->_getEntityPrice($item, 'Price'));
             $descriptionCart .= ", " . $_currencyCode . $unitPrice;
             //Tax
-            $tax = number_format(($item->getTaxAmount()), 2, ".", "");
+            $tax = $this->_numberFormat($this->_getEntityPrice($item, 'TaxAmount'));
             $descriptionCart .= ", " . $_currencyCode . $tax;
             //Subtotal
-            $subtotal = number_format((($item->getPrice() + $item->getTaxAmount()) * $item->getQtyOrdered()), 2, ".", "");
+            $subtotal = $this->_numberFormat(($this->_getEntityPrice($item, 'Price') + $this->_getEntityPrice($item, 'TaxAmount')) * $item->getQtyOrdered());
             $descriptionCart .= ", " . $_currencyCode . $subtotal;
             //Net Total
-            $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
+            $netTotal = $this->_numberFormat($subtotal - $this->_getEntityPrice($item, 'DiscountAmount'));
             $descriptionCart .= ", " . $_currencyCode . $netTotal;
             $descriptionCart .= "\n";
         }
         $descriptionCart .= "=======================================\n";
-        $descriptionCart .= "Sub Total: " . $_currencyCode . number_format(($_entity->getSubtotal()), 2, ".", "") . "\n";
-        $descriptionCart .= "Tax: " . $_currencyCode . number_format(($_entity->getTaxAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Shipping (" . $_entity->getShippingDescription() . "): " . $_currencyCode . number_format(($_entity->getShippingAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Discount Amount : " . $_currencyCode . number_format($_entity->getGrandTotal() - ($_entity->getShippingAmount() + $_entity->getTaxAmount() + $_entity->getSubtotal()), 2, ".", "") . "\n";
-        $descriptionCart .= "Total: " . $_currencyCode . number_format(($_entity->getGrandTotal()), 2, ".", "");
+        $descriptionCart .= "Sub Total: " . $_currencyCode . $this->_numberFormat($this->_getEntityPrice($_entity, 'Subtotal')) . "\n";
+        $descriptionCart .= "Tax: " . $_currencyCode . $this->_numberFormat($this->_getEntityPrice($_entity, 'TaxAmount')) . "\n";
+        $descriptionCart .= "Shipping (" . $_entity->getShippingDescription() . "): " . $_currencyCode . $this->_numberFormat($this->_getEntityPrice($_entity, 'ShippingAmount')) . "\n";
+        $descriptionCart .= "Discount Amount : " . $_currencyCode . $this->_numberFormat($this->_getEntityPrice($_entity, 'GrandTotal') - ($this->_getEntityPrice($_entity, 'ShippingAmount') + $this->_getEntityPrice($_entity, 'TaxAmount') + $this->_getEntityPrice($_entity, 'Subtotal'))) . "\n";
+        $descriptionCart .= "Total: " . $_currencyCode . $this->_numberFormat($this->_getEntityPrice($_entity, 'GrandTotal'));
         $descriptionCart .= "\n";
 
         return $descriptionCart;

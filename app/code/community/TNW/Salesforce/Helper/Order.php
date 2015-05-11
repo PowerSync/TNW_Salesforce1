@@ -123,68 +123,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
     }
 
     /**
-     * @param null $order_id
-     * @param bool $isManual
-     * @param bool $syncShipments
-     */
-    public function doSalesForce($order_id = NULL, $isManual = false, $syncShipments = false)
-    {
-        if (!$order_id) {
-            Mage::helper('tnw_salesforce')->log("Could not process order, order id is missing");
-            return;
-        }
-        $this->checkConnection();
-        $this->prepare();
-        $order = Mage::getModel('sales/order')->load($order_id);
-        if (!$order) {
-            Mage::helper('tnw_salesforce')->log("Could not access order via order id: " . $order_id);
-            return;
-        }
-        $this->_isNew = ($order->getSalesforceId()) ? FALSE : TRUE;
-        $this->_isManual = $isManual;
-        $this->_syncShipments = $syncShipments;
-
-        if (!$this->_lead) {
-            $this->_lead = new stdClass();
-        }
-
-        try {
-            Mage::helper('tnw_salesforce')->log("Trying to create order #" . $order_id);
-            ## Get current quote
-            ## Load Placed Order to get the custom fields and email
-            unset($_client);
-
-            // Customer Update
-            $this->updateCustomer($order);
-
-            Mage::helper('tnw_salesforce')->log("Customer Order Email: " . $order->getCustomerEmail());
-
-            //Convert Lead
-            $doProceed = $this->convertLead();
-            if (!$doProceed) {
-                return;
-            }
-
-            $this->_orderRealId = $order->getRealOrderId();
-            $this->_orderId = $order->getId();
-
-            $this->processOrder($order);
-
-            Mage::helper('tnw_salesforce')->log("----- SalesForce Order Insertion Complete! -----");
-            Mage::helper('tnw_salesforce')->log("###################################### End: ######################################");
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log($e->getMessage());
-            if ($e->getMessage()) {
-                Mage::helper('tnw_salesforce/email')->sendError($e->getMessage());
-                unset($e);
-            } else {
-                Mage::helper('tnw_salesforce')->log("Exception caught, but not error is returend!");
-            }
-        }
-        return;
-    }
-
-    /**
      * process order and push to salesforce
      *
      * @param $order
@@ -226,25 +164,12 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             return true;
         }
 
-        if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-            $sObject = new SObject();
-            $sObject->fields = (array)$this->_lead;
-            $sObject->type = 'Opportunity';
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_before",array("data" => array($sObject)));
-            $upsertOpportunityResponse = $this->_mySforceConnection->upsert($upsertOn, array($sObject));
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
-                "data" => array($sObject),
-                "result" => $upsertOpportunityResponse
-            ));
-            unset($sObject);
-        } else {
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_before",array("data" => array($this->_lead)));
-            $upsertOpportunityResponse = $this->_mySforceConnection->upsert($upsertOn, array($this->_lead), 'Opportunity');
-            Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
-                "data" => array($this->_lead),
-                "result" => $upsertOpportunityResponse
-            ));
-        }
+        Mage::dispatchEvent("tnw_salesforce_opportunity_send_before",array("data" => array($this->_lead)));
+        $upsertOpportunityResponse = $this->_mySforceConnection->upsert($upsertOn, array($this->_lead), 'Opportunity');
+        Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
+            "data" => array($this->_lead),
+            "result" => $upsertOpportunityResponse
+        ));
 
         $result = (is_array($upsertOpportunityResponse)) ? $upsertOpportunityResponse[0] : $upsertOpportunityResponse;
         if (!$result->success) {
@@ -282,68 +207,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
     }
 
     /**
-     * @return bool
-     * If lead needs converting - do it
-     */
-    protected function convertLead()
-    {
-        if ($this->_customer->getSalesforceId() && $this->_customer->getSalesforceAccountId()) {
-            // Contact and Account already exist
-            Mage::helper('tnw_salesforce')->log("Account ID: " . $this->_customer->getSalesforceAccountId());
-            Mage::helper('tnw_salesforce')->log("Contact ID: " . $this->_customer->getSalesforceId());
-        } else {
-            // Lead conversion
-            if ($this->_customer->getSalesforceLeadId() && Mage::helper("tnw_salesforce")->getLeadConvertedStatus()) {
-                //Convert lead to Account and Contact
-                $leadConvert = new stdClass;
-                $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
-                $leadConvert->doNotCreateOpportunity = 'true';
-                $leadConvert->leadId = $this->_customer->getSalesforceLeadId();
-                $leadConvert->overwriteLeadSource = 'false';
-                $leadConvert->sendNotificationEmail = 'false';
-
-                $resultContact = $this->_mySforceConnection->convertLead(array($leadConvert));
-                $result = (is_array($resultContact->result)) ? $resultContact->result[0] : $resultContact->result;
-                if (!$result->success) {
-                    Mage::helper('tnw_salesforce')->log("Could not convert Lead ID: " . $this->_customer->getSalesforceLeadId());
-                    $errors = (is_array($result->errors)) ? $result->errors : array($result->errors);
-                    foreach ($errors as $_error) {
-                        Mage::helper('tnw_salesforce')->log("Error: " . $_error->message);
-                    }
-                    Mage::helper('tnw_salesforce/email')->sendError($errors[0]->message, $leadConvert);
-                    return false;
-                } else {
-                    Mage::getSingleton('core/session')->setFromSalesForce(true);
-                    $this->_customer
-                        ->setSalesforceAccountId($result->accountId)
-                        ->setSalesforceId($result->contactId);
-
-                    if (
-                        Mage::helper('tnw_salesforce')->createPersonAccount()
-                        && Mage::helper('tnw_salesforce/salesforce_data')->isPersonAccount($result->accountId)
-                    ) {
-                        $this->_customer->setSalesforceIsPerson('1');
-                    }
-
-                    // Save
-                    $this->_customer->save();
-                    Mage::getSingleton('core/session')->setFromSalesForce(false);
-                    Mage::helper('tnw_salesforce')->log("Lead ID: " . $this->_customer->getSalesforceLeadId() . " converted!");
-                    Mage::helper('tnw_salesforce')->log("Account ID: " . $result->accountId);
-                    Mage::helper('tnw_salesforce')->log("Contact ID: " . $result->contactId);
-                    Mage::helper('tnw_salesforce')->log("Opportunity ID: " . $result->opportunityId);
-                }
-            } else {
-                // Lead reference in Customer object is missing, should never happen
-                Mage::helper('tnw_salesforce')->log("Failed to create a Lead, cannot convert to contact and account!");
-                Mage::helper('tnw_salesforce')->log("SKIPPING Opportunity creation, please fix the problem and create the Opportunity manually.");
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
      * Get order object and update Opportunity Status in Salesforce
      *
      * @param $order
@@ -359,7 +222,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $this->_lead->$orderIdParam = $order->getRealOrderId();
 
         // possible place to add some mapping logic call, postponed for now
-        //Mage::helper('tnw_salesforce/salesforce_opportunity')->_setOpportunityInfo($order);
         $this->_updateOrderStageName($order);
 
         // Only update for existing opportunities
@@ -372,8 +234,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         // realtime sf sync
         if ($order->getSalesforceId()) {
             $this->opportunityPush($order);
-        } else {
-            //Mage::helper('tnw_salesforce')->log("Skipping Status update, most likely still in quote stage!");
         }
         // end of comments
 
@@ -443,9 +303,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         // Description
         $this->_lead->Description = $this->_getDescriptionCart($order);
 
-        ## Debug
-        #$this->_lead->break = "Testing API failure";
-
         $this->_processMapping($order, "Opportunity");
 
 
@@ -477,29 +334,28 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $descriptionCart .= "\n";
         $descriptionCart .= "=======================================\n";
 
-        //foreach ($order->getAllItems() as $itemId=>$item) {
         foreach ($order->getAllVisibleItems() as $itemId => $item) {
-            $descriptionCart .= $item->getSku() . ", " . number_format($item->getQtyOrdered()) . ", " . $item->getName();
+            $descriptionCart .= $item->getSku() . ", " . $this->numberFormat($item->getQtyOrdered()) . ", " . $item->getName();
             //Price
-            $unitPrice = number_format(($item->getPrice()), 2, ".", "");
+            $unitPrice = $this->numberFormat(($item->getPrice()));
             $descriptionCart .= ", " . $unitPrice;
             //Tax
-            $tax = number_format(($item->getTaxAmount()), 2, ".", "");
+            $tax = $this->numberFormat(($item->getTaxAmount()));
             $descriptionCart .= ", " . $tax;
             //Subtotal
-            $subtotal = number_format((($item->getPrice() + $item->getTaxAmount()) * $item->getQtyOrdered()), 2, ".", "");
+            $subtotal = $this->numberFormat((($item->getPrice() + $item->getTaxAmount()) * $item->getQtyOrdered()));
             $descriptionCart .= ", " . $subtotal;
             //Net Total
-            $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
+            $netTotal = $this->numberFormat(($subtotal - $item->getDiscountAmount()));
             $descriptionCart .= ", " . $netTotal;
             $descriptionCart .= "\n";
         }
         $descriptionCart .= "=======================================\n";
-        $descriptionCart .= "Sub Total: " . number_format(($order->getSubtotal()), 2, ".", "") . "\n";
-        $descriptionCart .= "Tax: " . number_format(($order->getTaxAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Shipping (" . $order->getShippingDescription() . "): " . number_format(($order->getShippingAmount()), 2, ".", "") . "\n";
-        $descriptionCart .= "Discount Amount : " . number_format($order->getGrandTotal() - ($order->getShippingAmount() + $order->getTaxAmount() + $order->getSubtotal()), 2, ".", "") . "\n";
-        $descriptionCart .= "Total: " . number_format(($order->getGrandTotal()), 2, ".", "");
+        $descriptionCart .= "Sub Total: " . $this->numberFormat(($order->getSubtotal())) . "\n";
+        $descriptionCart .= "Tax: " . $this->numberFormat(($order->getTaxAmount())) . "\n";
+        $descriptionCart .= "Shipping (" . $order->getShippingDescription() . "): " . $this->numberFormat(($order->getShippingAmount())) . "\n";
+        $descriptionCart .= "Discount Amount : " . $this->numberFormat($order->getGrandTotal() - ($order->getShippingAmount() + $order->getTaxAmount() + $order->getSubtotal())) . "\n";
+        $descriptionCart .= "Total: " . $this->numberFormat(($order->getGrandTotal()));
         $descriptionCart .= "\n";
         unset($order);
         return $descriptionCart;
@@ -517,8 +373,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             $_doSkip = $value = false;
             $conf = explode(" : ", $_map->local_field);
             $sf_field = $_map->sf_field;
-            $attributeName = str_replace(" ", "", str_replace("_", " ", $conf[1])); //Full attribute name from Magento
-            #Mage::helper('tnw_salesforce')->log("Processing: ".$_map->local_field);
             switch ($conf[0]) {
                 case "Customer":
                     $attrName = str_replace(" ", "", ucwords(str_replace("_", " ", $conf[1])));
@@ -530,7 +384,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
                         }
                         $value = $email;
                     } else {
-                        #Mage::helper('tnw_salesforce')->log("Magento Attribute: ".$attributeName);
                         $attr = "get" . $attrName;
 
                         if ($this->_customer->getAttribute($conf[1])->getFrontendInput() == "select") {

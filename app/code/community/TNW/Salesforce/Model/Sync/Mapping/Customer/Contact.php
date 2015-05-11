@@ -19,8 +19,10 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
     {
         parent::_processMapping($_customer);
 
-        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        $this->getObj()->$syncParam = true;
+        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+            $this->getObj()->$syncParam = true;
+        }
 
         //Use data in Salesforce if Magento data is blank for the First and Last name
         if (!property_exists($this->getObj(), 'FirstName') || !$this->getObj()->FirstName) {
@@ -80,7 +82,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
         }
         // Overwrite Owner ID if assigned value does not match Account Owner Id
         if (
-            property_exists($this->getObj(), 'OwnerId')
+            !Mage::helper('tnw_salesforce/config_customer')->useDefaultOwner()
+            && property_exists($this->getObj(), 'OwnerId')
             && $this->getObj()->OwnerId
             && $this->_getCustomerOwnerId()
             && $this->_getCustomerOwnerId() != $this->getObj()->OwnerId

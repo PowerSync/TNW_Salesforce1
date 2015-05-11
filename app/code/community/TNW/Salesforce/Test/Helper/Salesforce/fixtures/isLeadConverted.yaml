@@ -1,0 +1,8 @@
+salesforce:
+  lead:
+    - Id: LEAD1
+      Email: lead1@email.com
+      IsConverted: 1
+    - Id: LEAD2
+      Email: lead2@email.com
+      IsConverted: 0

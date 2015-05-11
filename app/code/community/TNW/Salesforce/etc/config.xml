@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.49.15.0012</version>
+            <version>0.01.51.00.0014</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -51,9 +51,9 @@
                     <mapping>
                         <table>tnw_salesforce_mapping</table>
                     </mapping>
-                    <imports>
+                    <import>
                         <table>tnw_salesforce_imports</table>
-                    </imports>
+                    </import>
                     <order_status>
                         <table>tnw_salesforce_order_status</table>
                     </order_status>
@@ -65,6 +65,24 @@
                     </check>
                 </entities>
             </tnw_salesforce_mysql4>
+            <tnw_salesforce_api_entity>
+                <class>TNW_Salesforce_Model_Api_Entity</class>
+                <resourceModel>tnw_salesforce_api_entity_resource</resourceModel>
+            </tnw_salesforce_api_entity>
+            <tnw_salesforce_api_entity_resource>
+                <class>TNW_Salesforce_Model_Api_Entity_Resource</class>
+                <entities>
+                    <lead>
+                        <table>Lead</table>
+                    </lead>
+                    <account>
+                        <table>Account</table>
+                    </account>
+                    <contact>
+                        <table>Contact</table>
+                    </contact>
+                </entities>
+            </tnw_salesforce_api_entity_resource>
         </models>
         <resources>
             <tnw_salesforce_setup>
@@ -111,6 +129,26 @@
             </tnw_salesforce>
         </helpers>
         <events>
+            <!-- Blocks for admin panel -->
+            <core_block_abstract_to_html_after>
+                <observers>
+                    <tnw_salesforce_block_observer>
+                        <type>model</type>
+                        <class>tnw_salesforce/blocks_observer</class>
+                        <method>updateBlocks</method>
+                    </tnw_salesforce_block_observer>
+                </observers>
+            </core_block_abstract_to_html_after>
+
+            <!-- Product duplication -->
+            <catalog_model_product_duplicate>
+                <observers>
+                    <tnw_salesforce_catalog_model_product_duplicate>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>duplicateBefore</method>
+                    </tnw_salesforce_catalog_model_product_duplicate>
+                </observers>
+            </catalog_model_product_duplicate>
             <!-- Newsletter Subscription: Create -->
             <newsletter_subscriber_save_after>
                 <observers>
@@ -140,26 +178,6 @@
                     </tnw_salesforce_order_invoice_save_after>
                 </observers>
             </sales_order_invoice_save_after>
-
-            <!-- Shipment Events
-            <sales_order_shipment_save_before>
-                <observers>
-                    <tnw_salesforce_sale_shipment_observer>
-                        <class>tnw_salesforce/sale_observer</class>
-                        <method>triggerSalesforceShippmentEvent</method>
-                    </tnw_salesforce_sale_shipment_observer>
-                </observers>
-            </sales_order_shipment_save_before>
-
-            <tnw_sales_order_shipment_save>
-                <observers>
-                    <tnw_salesforce_sale_observer>
-                        <class>tnw_salesforce/sale_observer</class>
-                        <method>shipmentPush</method>
-                    </tnw_salesforce_sale_observer>
-                </observers>
-            </tnw_sales_order_shipment_save>
-            -->
 
             <!-- Order Save Event: Checkout -->
             <checkout_submit_all_after>
@@ -585,6 +603,17 @@
             <syncronization>
                 <sync_type_realtime>sync_type_realtime</sync_type_realtime>
             </syncronization>
+            <development_and_debugging>
+                <log_enable>1</log_enable>
+                <remote_log>1</remote_log>
+                <bulk>
+                    <max_execution_time>0</max_execution_time>
+                    <set_time_limit>0</set_time_limit>
+                    <mysql.connect_timeout>180</mysql.connect_timeout>
+                    <zend.enable_gc>1</zend.enable_gc>
+                </bulk>
+            </development_and_debugging>
+
         </salesforce>
         <salesforce_customer>
             <sync>
@@ -592,6 +621,7 @@
                 <new_customer>1</new_customer>
                 <customer_groups_all>1</customer_groups_all>
                 <account_rename>1</account_rename>
+                <contact_asignee>0</contact_asignee>
             </sync>
             <lead_config>
                 <customer_integration>0</customer_integration>
@@ -609,6 +639,7 @@
         <salesforce_product>
             <general>
                 <product_enable>0</product_enable>
+                <price_accuracy>2</price_accuracy>
             </general>
         </salesforce_product>
         <salesforce_order>
@@ -617,6 +648,7 @@
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
                 <order_multi_currency>0</order_multi_currency>
+                <order_currency_sync>customer</order_currency_sync>
                 <order_status_all>1</order_status_all>
             </general>
             <customer_opportunity>
@@ -636,4 +668,16 @@
             </invoice_configuration>
         </salesforce_order>
     </default>
+    <phpunit>
+        <suite>
+            <modules>
+                <TNW_Salesforce />
+            </modules>
+            <fixture>
+                <processors>
+                    <salesforce>tnw_salesforce/fixture_processor_salesforce</salesforce>
+                </processors>
+            </fixture>
+        </suite>
+    </phpunit>
 </config>

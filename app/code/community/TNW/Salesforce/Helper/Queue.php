@@ -83,9 +83,6 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
         $_module = 'tnw_salesforce/bulk_' . $_object->getObjectType();
 
-        Zend_Debug::dump($_object);
-        die();
-
         $total = Mage::getModel('tnw_salesforce/localstorage')->countObjectBySfType(array(
             'Product',
             'Customer',
@@ -262,7 +259,6 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             if (!empty($_idSet)) {
                 Mage::helper('tnw_salesforce')->log("INFO: " . $_type . " total synced: " . count($_idSet));
                 Mage::helper('tnw_salesforce')->log("INFO: removing synced rows from mysql table...");
-                //Mage::getModel('tnw_salesforce/localstorage')->deleteObject($_idSet);
             }
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");
@@ -331,7 +327,6 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             if (!empty($_idSet)) {
                 Mage::helper('tnw_salesforce')->log("INFO: " . $_type . " total synced: " . count($_idSet));
                 Mage::helper('tnw_salesforce')->log("INFO: removing synced rows from mysql table...");
-                //Mage::getModel('tnw_salesforce/localstorage')->deleteObject($_idSet);
             }
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");

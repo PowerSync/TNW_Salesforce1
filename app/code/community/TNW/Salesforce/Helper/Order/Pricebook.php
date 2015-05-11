@@ -2,6 +2,8 @@
 
 class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 {
+    const PRICE_ACCURACY = 'salesforce_product/general/price_accuracy';
+
     /* Salesforce ID for default Pricebook set in Magento */
     protected $_defaultPriceBook = NULL;
 
@@ -76,7 +78,6 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             $this->_oli = new stdClass();
             // Loading By SKU, because cart items are using configurable product IDs
             $product = Mage::helper('catalog/product')->getProduct($item->getSku(), Mage::app()->getStore()->getId(), 'sku');
-            //$product = Mage::getModel('catalog/product')->load($item->getProductId());
 
             /* Sync product with Salesforce */
             $pricebookEntryId = $this->syncProduct($product, true); // True - Skip product sync during order
@@ -91,15 +92,10 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 }
                 unset($collection, $_map);
                 $this->_oli->OpportunityId = $opportunityId;
-                //$subtotal = number_format((($item->getPrice() * $item->getQtyOrdered()) + $item->getTaxAmount()), 2, ".", "");
-                $subtotal = number_format(($item->getPrice() * $item->getQtyOrdered()), 2, ".", "");
-                $netTotal = number_format(($subtotal - $item->getDiscountAmount()), 2, ".", "");
-                $this->_oli->UnitPrice = $netTotal / $item->getQtyOrdered();
+                $subtotal = $this->numberFormat(($item->getPrice() * $item->getQtyOrdered()));
+                $netTotal = $this->numberFormat(($subtotal - $item->getDiscountAmount()));
+                $this->_oli->UnitPrice = $this->numberFormat($netTotal / $item->getQtyOrdered());
                 $this->_oli->PricebookEntryId = $pricebookEntryId;
-                //$defaultServiceDate = Mage::helper('tnw_salesforce/shipment')->getDefaultServiceDate();
-                //if ($defaultServiceDate) {
-                //    $this->_oli->ServiceDate = $defaultServiceDate;
-                //}
                 $opt = array();
                 $options = $item->getProductOptions();
                 if (is_array($options) && array_key_exists('options', $options)) {
@@ -177,30 +173,12 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             return;
         }
 
-        if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-            $prodObject = array();
-            foreach ($products as $_prod) {
-                $sObject = new SObject();
-                $sObject->fields = (array)$_prod;
-                $sObject->type = 'OpportunityLineItem';
-                $prodObject[] = $sObject;
-            }
-            unset($sObject, $_prod);
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $prodObject));
-            $response = $this->_mySforceConnection->upsert('Id', $prodObject);
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
-                "data" => $prodObject,
-                "result" => $response
-            ));
-            unset($prodObject);
-        } else {
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
-            $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
-                "data" => $products,
-                "result" => $response
-            ));
-        }
+        Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
+        $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
+        Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
+            "data" => $products,
+            "result" => $response
+        ));
 
         $reAddedProducts = array();
         $cartUpdateFlag = true;
@@ -258,7 +236,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
         $_magentoProdId = $product->getId();
         $pricebookEntryId = $product->getSalesforcePricebookId();
         $_sfProductId = $product->getSalesforceId();
-        $productPrice = number_format($product->getPrice(), 2, ".", "");
+        $productPrice = $this->numberFormat($product->getPrice());
         $_doPricebookUpdate = false;
 
         // Figure out what needs to happen next
@@ -409,13 +387,8 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             }
             $pb->Id = ($pbeId) ? $pbeId : NULL;
             $pb->UseStandardPrice = FALSE;
-            $pb->UnitPrice = $price;
+            $pb->UnitPrice = $this->numberFormat($price);
             $pb->isActive = TRUE;
-
-            if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-                //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-                //$pb->$syncParam = true;
-            }
 
             unset($prodId, $price, $defaultPB, $pbeId);
 
@@ -423,25 +396,13 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 Mage::helper('tnw_salesforce')->log("PricebookEntry Object: " . $key . " = '" . $value . "'");
             }
 
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$pb;
-                $sObject->type = 'PricebookEntry';
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($sObject)));
-                $upsertResponse = $this->_mySforceConnection->upsert('Id', array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_after",array(
-                    "data" => array($sObject),
-                    "result" => $upsertResponse
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($pb)));
-                $upsertResponse = $this->_mySforceConnection->upsert('Id', array($pb), 'PricebookEntry');
-                Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_after",array(
-                    "data" => array($pb),
-                    "result" => $upsertResponse
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($pb)));
+            $upsertResponse = $this->_mySforceConnection->upsert('Id', array($pb), 'PricebookEntry');
+            Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_after",array(
+                "data" => array($pb),
+                "result" => $upsertResponse
+            ));
+
             unset($pb, $key, $value);
             if ($upsertResponse[0]->success) {
                 Mage::helper('tnw_salesforce')->log("PricebookEntry upsert successful: " . $upsertResponse[0]->id);
@@ -488,12 +449,9 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             return false;
         }
         try {
-            //$this->_defaultPriceBook = ($this->_defaultPriceBook) ? $this->_defaultPriceBook : Mage::helper('tnw_salesforce')->getDefaultPricebook();
-            //$this->_standardPricebookId = ($this->_standardPricebookId) ? $this->_standardPricebookId : Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
             $syncParamId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $this->_p = new stdClass();
-            //$this->_p->Id = ($pId) ? $pId : NULL;     //Upserting only on Magento ID
 
             // Defaults
             $this->setDefaultProductValues($prod);
@@ -518,25 +476,12 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
             unset($collection, $_map);
 
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$this->_p;
-                $sObject->type = 'Product2';
-                Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($sObject)));
-                $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
-                    "data" => array($sObject),
-                    "result" => $upsertResponse
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($this->_p)));
-                $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($this->_p), 'Product2');
-                Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
-                    "data" => array($this->_p),
-                    "result" => $upsertResponse
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($this->_p)));
+            $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($this->_p), 'Product2');
+            Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
+                "data" => array($this->_p),
+                "result" => $upsertResponse
+            ));
 
             if (!$upsertResponse[0]->success) {
                 if (is_array($upsertResponse[0]->errors)) {
@@ -605,8 +550,8 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             case "Cart":
                 if ($cartItem) {
                     if ($conf[1] == "total_product_price") {
-                        $subtotal = number_format((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQtyOrdered()), 2, ".", "");
-                        $value = number_format(($subtotal - $cartItem->getDiscountAmount()), 2, ".", "");
+                        $subtotal = $this->numberFormat((($cartItem->getPrice() + $cartItem->getTaxAmount()) * $cartItem->getQtyOrdered()));
+                        $value = $this->numberFormat(($subtotal - $cartItem->getDiscountAmount()));
                     }
                 }
                 break;

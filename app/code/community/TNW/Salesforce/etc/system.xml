@@ -120,24 +120,12 @@
                     </fields>
                 </api_license>
                 <developer translate="label" module="tnw_salesforce">
-                    <label>Developer</label>
+                    <label>Notification</label>
                     <sort_order>300</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>0</show_in_website>
                     <show_in_store>0</show_in_store>
                     <fields>
-                        <log_enable translate="label">
-                            <label>Enable Log</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Magento Log has to be enabled for this to work. Default location is
-                                {{base_dir}}/var/log/salesforce.log
-                            </comment>
-                        </log_enable>
                         <fail_order translate="label">
                             <label>Notification email</label>
                             <frontend_type>text</frontend_type>
@@ -157,16 +145,6 @@
                             <show_in_store>0</show_in_store>
                             <comment>Prefix to be used in email subject</comment>
                         </email_prefix>
-                        <remote_log translate="label">
-                            <label>Enable Remote Log</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>50</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Enable remote error logging</comment>
-                        </remote_log>
                     </fields>
                 </developer>
                 <syncronization translate="label" module="tnw_salesforce">
@@ -289,19 +267,115 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <!--
-                            <depends>
-                                <sync_type_realtime separator="|">
-                                    <value>sync_type_queue_interval|sync_type_spectime</value>
-                                </sync_type_realtime>
-                            </depends>
-                            -->
                             <comment><![CDATA[
                                     Last cron run datetime
                             ]]></comment>
                         </cron_last_run_timestamp>
                     </fields>
                 </syncronization>
+
+                <development_and_debugging translate="label" module="tnw_salesforce">
+                    <label>Development and debugging</label>
+                    <expanded>1</expanded>
+                    <sort_order>400</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>0</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <log_enable translate="label">
+                            <label>Enable Log</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Magento Log has to be enabled for this to work. Default location is
+                                {{base_dir}}/var/log/salesforce.log
+                            </comment>
+                        </log_enable>
+
+                        <remote_log translate="label">
+                            <label>Enable Remote Log</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable remote error logging</comment>
+                        </remote_log>
+
+                        <developer_settings translate="label">
+                            <label>Show advanced developer settings</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </developer_settings>
+
+                        <!-- Bulk settings start -->
+                        <bulk_settings_label translate="label">
+                            <label>Bulk process server configuration</label>
+                            <frontend_model>adminhtml/system_config_form_field_heading</frontend_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </bulk_settings_label>
+
+                        <max_execution_time translate="label">
+                            <label>max_execution_time</label>
+                            <config_path>salesforce/development_and_debugging/bulk/max_execution_time</config_path>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_server_configuration</frontend_model>
+                            <comment><![CDATA[Define the 'max_execution_time' parameter value. Current value:]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </max_execution_time>
+
+                        <mysql.connect_timeout translate="label">
+                            <label>mysql.connect_timeout</label>
+                            <config_path>salesforce/development_and_debugging/bulk/mysql.connect_timeout</config_path>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_server_configuration</frontend_model>
+                            <comment><![CDATA[Define the 'mysql.connect_timeout' parameter value. Current value:]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </mysql.connect_timeout>
+
+                        <zend.enable_gc translate="label">
+                            <label>zend.enable_gc</label>
+                            <config_path>salesforce/development_and_debugging/bulk/zend.enable_gc</config_path>
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_server_configuration</frontend_model>
+                            <comment><![CDATA[Define the 'zend.enable_gc' parameter value. Current value:]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </zend.enable_gc>
+
+                        <!-- Bulk settings end -->
+                    </fields>
+                </development_and_debugging>
             </groups>
         </salesforce>
         <salesforce_customer translate="label" module="tnw_salesforce">
@@ -389,6 +463,18 @@
                                 created
                             </comment>
                         </default_owner>
+
+                        <contact_asignee>
+                            <label>Contact Asignee</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_contact_asignee</source_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>How Magento should handle ownership of a Contact, if a new Contact is created in Salesforce for an existing Account</comment>
+                        </contact_asignee>
+
                     </fields>
                 </sync>
                 <lead_config translate="label" module="tnw_salesforce">
@@ -636,6 +722,17 @@
                             <show_in_store>0</show_in_store>
                             <comment>Salesforce Pricebook used for this store</comment>
                         </default_pricebook>
+                        <price_accuracy translate="label">
+                            <label>Price accuracy</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_price_accuracy</source_model>
+                            <comment>Decimals count after point</comment>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Salesforce Pricebook used for this store</comment>
+                        </price_accuracy>
                     </fields>
                 </general>
             </groups>
@@ -725,10 +822,26 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable if your Magento has multiple stores with different currencies. NOTE:
+                            <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
                                 Salesforce multi-currency support must be enabled as well.
-                            </comment>
+                                <a href="https://help.salesforce.com/HTViewHelpDoc?id=admin_enable_multicurrency.htm&amp;language=en_US">Salesforce Topic</a>
+                                ]]></comment>
                         </order_multi_currency>
+
+                        <order_currency_sync translate="label">
+                            <label>Which currency should be used</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_sync_currency</source_model>
+                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mapping</comment>
+                            <sort_order>110</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_multi_currency>0</order_multi_currency>
+                            </depends>
+                        </order_currency_sync>
+
                     </fields>
                 </general>
                 <customer_opportunity translate="label" module="tnw_salesforce">

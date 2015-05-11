@@ -9,8 +9,6 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     const SALESFORCE_PREFIX_PROFESSIONAL = 'tnw_mage_basic__';
     const SALESFORCE_PREFIX_ENTERPRISE = 'tnw_mage_enterp__';
 
-    const MYSQL_TIMEOUT = 300;
-
     /**
      * Get Salesforce managed package prefix
      * @param string $_type
@@ -27,5 +25,29 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
         Mage::throwException('Salesforce prefix is undefined! Contact PowerSync for resolution.');
 
         return NULL;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMagentoIdField()
+    {
+        return $this->getSalesforcePrefix() . 'Magento_ID__c';
+    }
+
+    /**
+     * @return string
+     */
+    public function getMagentoWebsiteField()
+    {
+        return $this->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+    }
+
+    /**
+     * @return string
+     */
+    public function getDisableSyncField()
+    {
+        return $this->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c';
     }
 }

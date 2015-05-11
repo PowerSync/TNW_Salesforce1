@@ -62,10 +62,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
         }
         if ($this->getRequest()->getParam('product_id') > 0) {
             try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
-
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     // pass data to local storage
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array($this->getRequest()->getParam('product_id')), 'Product', 'product');

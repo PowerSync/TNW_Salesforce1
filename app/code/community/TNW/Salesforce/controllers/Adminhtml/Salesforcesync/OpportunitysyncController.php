@@ -147,10 +147,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
-
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     $_collection = Mage::getResourceModel('sales/order_item_collection');
                     $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
@@ -203,7 +199,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                 $_ids[] = (int) $website->getData('website_id');
             }
 
-
             $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
             $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
             $manualSync->setSalesforceSessionId(Mage::getSingleton('core/session')->getSalesforceSessionId());
@@ -227,67 +222,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
 
     public function massCartSyncAction()
     {
-        $itemIds = $this->getRequest()->getParam('orders');
-        if (!is_array($itemIds)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select orders(s)'));
-        } else {
-            try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
-                /*
-                $manualSync = Mage::helper('tnw_salesforce/salesforce_opportunity');
-                if ($manualSync->reset()) {
-                    $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-                    if ($manualSync->massAdd($itemIds)) {
-                        if ($manualSync->process('full')) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds))
-                            );
-                        }
-                    }
-                } else {
-                    Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
-                }
-                */
-            } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-            }
-        }
         $this->_redirect('*/*/index');
     }
 
     public function massNotesSyncAction()
     {
-        $itemIds = $this->getRequest()->getParam('orders');
-        if (!is_array($itemIds)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select orders(s)'));
-        } else {
-            try {
-                if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                    Mage::throwException('Partner integration does not support Mass Sync');
-                }
-                /*
-                $manualSync = Mage::helper('tnw_salesforce/salesforce_opportunity');
-                if ($manualSync->reset()) {
-                    $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-                    if ($manualSync->massAdd($itemIds)) {
-                        if ($manualSync->process('full')) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds))
-                            );
-                        }
-                    }
-                } else {
-                    Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
-                }
-                */
-            } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-            }
-        }
         $this->_redirect('*/*/index');
     }
 
@@ -295,7 +234,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
         $_options = unserialize($_item->getData('product_options'));
         if(
             $_item->getData('product_type') == 'bundle'
-            || array_key_exists('options', $_options)
+            || (is_array($_options) && array_key_exists('options', $_options))
         ) {
             $id = $_item->getData('product_id');
         } else {

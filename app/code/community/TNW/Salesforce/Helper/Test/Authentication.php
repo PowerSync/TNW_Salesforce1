@@ -1,8 +1,4 @@
 <?php
-
-// commented and left for future magento version, now we cannot add namespace to core class Mage_Core_Helper_Abstract
-//namespace TNW\Salesforce\Helper\Test;
-
 /**
  * facade pattern used
  * on later project stage we need possibility to abstract from multiple sf connection classes located in TNW\Salesforce\Helper\Test namespace
@@ -12,7 +8,6 @@
  * @package TNW\Salesforce\Helper\Test\Authentication
  */
 class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstract
-    //implements TNW_Salesforce_Helper_Test_AuthenticationInterface
 {
     /**
      * error container
@@ -87,7 +82,6 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     public function validateLicense()
     {
         // check local storage
-        //$licenseIsValidBuffer = $this->getStorage('admin_tnw_powersync_status');
         $sfSessionId = $this->getStorage('salesforce_session_id');
         if (!empty($sfSessionId)) {
 

@@ -157,7 +157,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
     }
@@ -176,7 +175,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['pricebookEntry']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1000);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['pricebookEntry']['Id']);
                 $this->clearMemory();
@@ -197,7 +195,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['pricebookEntry']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1000);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['pricebookEntry']['Id']);
                 $this->clearMemory();
@@ -253,7 +250,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
 
@@ -301,7 +297,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['product']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1000);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['product']['Id']);
                 $this->clearMemory();
@@ -328,7 +323,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['product'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1000);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['product'][$this->_magentoId]);
                 $this->clearMemory();
@@ -449,6 +443,26 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             )
         );
 
-        return $this->check();
+        $valid = $this->check();
+
+        return $valid;
+    }
+
+    public function process()
+    {
+
+        /**
+         * @comment apply bulk server settings
+         */
+        $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+
+        $result = parent::process();
+
+        /**
+         * @comment restore server settings
+         */
+        $this->getServerHelper()->apply();
+
+        return $result;
     }
 }

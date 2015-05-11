@@ -42,8 +42,8 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             foreach ($ids as $_count => $_id) {
                 $_quote = $this->_loadQuote($_id);
                 // Add to cache
-                if (!Mage::registry('abandoned_cached_' . $_quote->getId())) {
-                    Mage::register('abandoned_cached_' . $_quote->getId(), $_quote);
+                if (!Mage::registry('quote_cached_' . $_quote->getId())) {
+                    Mage::register('quote_cached_' . $_quote->getId(), $_quote);
                 }
 
                 if (!$_quote->getId() || !$_quote->getId()) {
@@ -105,7 +105,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 $_customerToSync = array();
                 foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
                     // here may be potential bug where we lost some quotes
-                    $_customerToSync[$_quoteNumber] = $this->_getCustomer(Mage::registry('abandoned_cached_' . $_quoteNumber));
+                    $_customerToSync[$_quoteNumber] = $this->_getCustomer(Mage::registry('quote_cached_' . $_quoteNumber));
                 }
 
                 Mage::helper("tnw_salesforce")->log('Syncronizing Guest accounts...');
@@ -116,15 +116,14 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $manualSync->forceAdd($_customerToSync, $this->_cache['abandonedCustomers']);
 
                     // here we use $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                     $this->_cache['abandonedCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncQuoteCustomers which is not equal to $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                 }
             }
 
 
             $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_quotes);
             $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emails, $_websites);
 
             $_customersToSync = array();
             $_leadsToLookup = array();
@@ -148,7 +147,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             // Lookup Leads we may need to convert
             if (!empty($_leadsToLookup)) {
-                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_leadsToLookup, $_leadsToLookupWebsites);
                 $_customersToSync = $this->_updateAccountLookupData($_customersToSync);
             }
 
@@ -161,9 +159,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $manualSync->forceAdd($_customersToSync, $this->_cache['abandonedCustomers']);
 
                     // here we use $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                     $this->_cache['abandonedCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncQuoteCustomers which is not equal to $this->_cache['abandonedCustomers']
-                    set_time_limit(1000);
                 }
                 Mage::helper("tnw_salesforce")->log('Updating lookup cache...');
                 // update Lookup values
@@ -174,7 +170,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             $_tmpArray = $this->_cache['abandonedCustomersToSync'];
             foreach ($_tmpArray as $_key => $_quoteNum) {
-                $_quote = (Mage::registry('abandoned_cached_' . $_quoteNum)) ? Mage::registry('abandoned_cached_' . $_quoteNum) : $this->_loadQuote($_key);
+                $_quote = (Mage::registry('quote_cached_' . $_quoteNum)) ? Mage::registry('quote_cached_' . $_quoteNum) : $this->_loadQuote($_key);
                 $_email = $this->_cache['abandonedToEmail'][$_quoteNum];
                 $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
 
@@ -225,15 +221,14 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
                 $_foundAccounts = array();
                 foreach ($this->_cache['leadLookup'] as $websiteleads) {
-                    $_foundAccounts = array_merge($_foundAccounts, $manualSync->findCustomerAccountsForGuests(array_keys($websiteleads)));
+                    $_foundAccounts = array_merge($_foundAccounts, $manualSync->findCustomerAccounts(array_keys($websiteleads)));
                 }
             } else {
                 $_foundAccounts = array();
             }
 
-            $_queueList = Mage::helper('tnw_salesforce/salesforce_data_queue')->getAllQueues();
             foreach ($this->_cache['abandonedToEmail'] as $_quoteNum => $_email) {
-                $this->_prepareLeadConversionObject($_quoteNum, $_foundAccounts, $_queueList);
+                Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->prepareLeadConversionObject($_quoteNum, $_foundAccounts, 'abandoned');
             }
 
             return true;
@@ -246,113 +241,11 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
     }
 
     /**
-     * @param $_quoteId
-     * @param array $_accounts
-     * @return bool
+     * @comment call leads convertation method
      */
-    protected function _prepareLeadConversionObject($_quoteId, $_accounts = array(), $_queueList = NULL)
-    {
-        if (!Mage::helper("tnw_salesforce")->getLeadConvertedStatus()) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: Converted Lead status is not set in the configuration, cannot proceed!');
-            }
-            Mage::helper("tnw_salesforce")->log('Converted Lead status is not set in the configuration, cannot proceed!', 1, "sf-errors");
-            return false;
-        }
-        $_email = $this->_cache['abandonedToEmail'][$_quoteId];
-        $_quote = (Mage::registry('abandoned_cached_' . $_quoteId)) ? Mage::registry('abandoned_cached_' . $_quoteId) : $this->_loadQuote($_quoteId);
-        $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
-
-        if (is_array($this->_cache['leadLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
-            && array_key_exists($_email, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])
-        ) {
-            $leadConvert = new stdClass;
-            $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
-            $leadConvert->doNotCreateOpportunity = 'true';
-            $leadConvert->leadId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
-            $leadConvert->overwriteLeadSource = 'false';
-            $leadConvert->sendNotificationEmail = 'false';
-
-            // Retain OwnerID if Lead is already assigned
-            // If not, pull default Owner from Magento configuration
-            if (
-                is_object($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email])
-                && property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'OwnerId')
-                && $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId
-                && (
-                    !is_array($_queueList)
-                    && !in_array($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId, $_queueList)
-                )
-            ) {
-                $leadConvert->ownerId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId;
-            } elseif (Mage::helper('tnw_salesforce')->getLeadDefaultOwner()) {
-                $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-            }
-
-            // If inactive, reassign
-            if (!$this->_isUserActive($leadConvert->ownerId)) {
-                $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-            }
-
-            // Attach to existing account
-            if (array_key_exists($_email, $_accounts) && $_accounts[$_email]) {
-                $leadConvert->accountId = $_accounts[$_email];
-            }
-            // logs
-            foreach ($leadConvert as $key => $value) {
-                Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
-            }
-
-            if ($leadConvert->leadId && !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
-                $this->_cache['leadsToConvert'][$_quoteId] = $leadConvert;
-            } else {
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Quote #' . $_quoteId . ' - customer (email: ' . $_email . ') needs to be synchronized first, aborting!');
-                }
-                Mage::helper("tnw_salesforce")->log('Quote #' . $_quoteId . ' - customer (email: ' . $_email . ') needs to be synchronized first, aborting!', 1);
-                return false;
-            }
-        }
-    }
-
     protected function _convertLeads()
     {
-        $_howMany = 80;
-        // Make sure that leadsToConvert cache has unique leads (by email)
-        $_leadsToConvert = array();
-        foreach ($this->_cache['leadsToConvert'] as $_quoteNum => $_objToConvert) {
-
-            if (!in_array($_objToConvert->leadId, $_leadsToConvert)) {
-                $_leadsToConvert[$_quoteNum] = $_objToConvert->leadId;
-            } else {
-                $_source = array_search($_objToConvert->leadId, $_leadsToConvert);
-                $this->_cache['duplicateLeadConversions'][$_quoteNum] = $_source;
-                unset($this->_cache['leadsToConvert'][$_quoteNum]);
-            }
-        }
-
-        $_ttl = count($this->_cache['leadsToConvert']);
-        if ($_ttl > $_howMany) {
-            $_steps = ceil($_ttl / $_howMany);
-            if ($_steps == 0) {
-                $_steps = 1;
-            }
-            for ($_i = 0; $_i < $_steps; $_i++) {
-                $_start = $_i * $_howMany;
-                $_itemsToPush = array_slice($this->_cache['leadsToConvert'], $_start, $_howMany, true);
-                $this->_pushLeadSegment($_itemsToPush);
-            }
-        } else {
-            $this->_pushLeadSegment($this->_cache['leadsToConvert']);
-        }
-
-        // Update de duped lead conversion records
-        if (!empty($this->_cache['duplicateLeadConversions'])) {
-            foreach ($this->_cache['duplicateLeadConversions'] as $_what => $_source) {
-                $this->_cache['convertedLeads'][$_what] = $this->_cache['convertedLeads'][$_source];
-            }
-        }
+        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('abandoned');
     }
 
     /**
@@ -412,9 +305,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $_quoteNumber = $quote->getId();
         $_email = $this->_cache['abandonedToEmail'][$_quoteNumber];
 
-        //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        //$this->_obj->$syncParam = true;
-
         // Link to a Website
         if (
             $_websiteId != NULL
@@ -462,7 +352,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
 
         //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_abandoned_opportunity')
+        Mage::getSingleton('tnw_salesforce/sync_mapping_quote_opportunity')
             ->setSync($this)
             ->processMapping($quote);
 
@@ -489,7 +379,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
     protected function _pushRemainingOpportunityData()
     {
-        set_time_limit(1000);
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['opportunityProducts']['Id']) {
                 // Create Job
@@ -502,7 +391,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunityProducts']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunityProducts']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking opportunityLineItemsToUpsert (job: ' . $this->_cache['bulkJobs']['opportunityProducts']['Id'] . ')...');
@@ -525,7 +413,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['customerRoles']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['customerRoles']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking contactRolesToUpsert (job: ' . $this->_cache['bulkJobs']['customerRoles']['Id'] . ')...');
@@ -552,7 +439,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking notesToUpsert (job: ' . $this->_cache['bulkJobs']['notes']['Id'] . ')...');
@@ -582,7 +468,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
                 Mage::helper('tnw_salesforce')->log('Still checking opportunitiesToUpsert (job: ' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] . ')...');
@@ -619,7 +504,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                         $this->_cache['responses']['opportunityLineItems'][] = json_decode(json_encode($_item), TRUE);
                         $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache['upsertedOpportunities']);
+                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -629,7 +514,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -649,7 +533,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                         $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                         $_i++;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache['upsertedOpportunities']);
+                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -658,7 +542,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -697,9 +580,9 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $this->_cache['responses']['opportunities'][$_oid] = json_decode(json_encode($_item), TRUE);
 
                     if ($_item->success == "true") {
-                        $this->_cache['upsertedOpportunities'][$_oid] = (string)$_item->id;
-                        $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET salesforce_id = '" . $this->_cache['upsertedOpportunities'][$_oid] . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_oid] . ";";
-                        Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache['upsertedOpportunities'][$_oid]);
+                        $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
+                        $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET salesforce_id = '" . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_oid] . ";";
+                        Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
 
                         //unset($this->_cache['opportunitiesToUpsert'][$_oid]);
                     } else {
@@ -710,88 +593,11 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
             $this->_write->query($sql);
-        }
-    }
-
-    /**
-     * @param $_leadsChunkToConvert
-     * @param int $_batch
-     */
-    protected function _pushLeadSegment($_leadsChunkToConvert, $_batch = 0)
-    {
-        $results = $this->_mySforceConnection->convertLead(array_values($_leadsChunkToConvert));
-
-        $_keys = array_keys($_leadsChunkToConvert);
-
-        foreach ($results->result as $_key => $_result) {
-            $_quoteNum = $_keys[$_key];
-
-            // report transaction
-            $this->_cache['responses']['leadsToConvert'][$_quoteNum] = $_result;
-
-            $_email = strtolower($this->_cache['abandonedToEmail'][$_quoteNum]);
-            $_quote = (Mage::registry('abandoned_cached_' . $_quoteNum)) ? Mage::registry('abandoned_cached_' . $_quoteNum) : $this->_loadQuote($_quoteNum);
-            $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
-            $_customerId = (is_object($this->_cache['abandonedCustomers'][$_quoteNum])) ? $this->_cache['abandonedCustomers'][$_quoteNum]->getId() : NULL;
-
-            if (!$_result->success) {
-                $this->_cache['leadsFaildToConvert'][$_quoteNum] = $_email;
-                // Remove entity from the sync queue
-                $keyToRemove = array_search($_quoteNum, $this->_cache['entitiesUpdating']);
-                if ($keyToRemove) {
-                    unset($this->_cache['entitiesUpdating'][$keyToRemove]);
-                }
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $_email . ')');
-                }
-                Mage::helper('tnw_salesforce')->log('Convert Failed: (email: ' . $_email . ')', 1);
-                $this->_processErrors($_result, 'quote', $_leadsChunkToConvert[$_quoteNum]);
-            } else {
-                if ($_customerId) {
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->_websiteSfIds[$this->_cache['abandonedCustomers'][$_quoteNum]->getData('website_id')];
-
-                    // Update Salesforce Id
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                    // Update Account Id
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                    // Reset Lead Value
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
-                    // Update Sync Status
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
-
-                    $this->_cache['abandonedCustomers'][$_quoteNum] = Mage::getModel("customer/customer")->load($_customerId);
-                } else {
-                    // For the guest
-                    if (!is_object($this->_cache['abandonedCustomers'][$_quoteNum])) {
-                        $this->_cache['abandonedCustomers'][$_quoteNum] = (is_object($_quote)) ? $this->_getCustomer($_quote) : Mage::getModel("customer/customer");
-                    }
-                    $this->_cache['abandonedCustomers'][$_quoteNum]->setSalesforceLeadId(NULL);
-                    $this->_cache['abandonedCustomers'][$_quoteNum]->setSalesforceId($_result->contactId);
-                    $this->_cache['abandonedCustomers'][$_quoteNum]->setSalesforceAccountId($_result->accountId);
-                    // Update Sync Status
-                    $this->_cache['abandonedCustomers'][$_quoteNum]->setSfInsync(0);
-                }
-
-                $this->_cache['convertedLeads'][$_quoteNum] = new stdClass();
-                $this->_cache['convertedLeads'][$_quoteNum]->contactId = $_result->contactId;
-                $this->_cache['convertedLeads'][$_quoteNum]->accountId = $_result->accountId;
-                $this->_cache['convertedLeads'][$_quoteNum]->email = $_email;
-
-                unset($this->_cache['leadsToConvert'][$_quoteNum]); // remove from cache
-                unset($this->_cache['leadLookup'][$_websiteId][$_email]); // remove from cache
-
-                Mage::helper('tnw_salesforce')->log('Converted: (account: ' . $this->_cache['convertedLeads'][$_quoteNum]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$_quoteNum]->contactId . ')');
-            }
         }
     }
 
@@ -905,7 +711,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
             if (!$_skip) {
                 $this->_obj->IsPrimary = true;
-                $this->_obj->OpportunityId = $this->_cache['upsertedOpportunities'][$_quoteNumber];
+                $this->_obj->OpportunityId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNumber];
 
                 $this->_obj->Role = Mage::helper('tnw_salesforce/abandoned')->getDefaultCustomerRole();
 
@@ -976,6 +782,26 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $this->_cache['batchCache'] = array();
         $this->_cache['duplicateLeadConversions'] = array();
 
-        return $this->check();
+        $valid = $this->check();
+
+        return $valid;
+    }
+
+    public function process($type = 'soft')
+    {
+
+        /**
+         * @comment apply bulk server settings
+         */
+        $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+
+        $result = parent::process($type);
+
+        /**
+         * @comment restore server settings
+         */
+        $this->getServerHelper()->apply();
+
+        return $result;
     }
 }

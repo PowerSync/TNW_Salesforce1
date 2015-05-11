@@ -40,10 +40,11 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
     {
         if (is_array($sku)) {
             $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode IN ('" . implode("','", $sku) . "')";
+            $query .= " OR " . $_magentoId . " IN ('".implode("', '", array_keys($sku))."')";
         } else {
             $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode='" . $sku . "'";
         }
-        //Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
+
         return $this->getClient()->query(($query));
     }
 
@@ -55,11 +56,16 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
         }
         $query .= " FROM PricebookEntry WHERE Product2Id IN (SELECT Id FROM Product2 WHERE ProductCode ";
         if (is_array($sku)) {
-            $query .= "IN ('" . implode("','", $sku) . "'))";
+
+            $query .= "IN ('" . implode("','", $sku) . "')";
+            $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+            $query .= " OR " . $_magentoId . " IN ('".implode("', '", array_keys($sku))."')";
+            $query .= ")";
+
         } else {
             $query .= " = '" . $sku . "')";
         }
-        //Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
+
         return $this->getClient()->query(($query));
     }
 
@@ -124,7 +130,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                                         }
                                         $tmpPBE = new stdClass();
                                         $tmpPBE->Id = $_itm->Id;
-                                        $tmpPBE->UnitPrice = $_itm->UnitPrice;
+                                        $tmpPBE->UnitPrice = $this->numberFormat($_itm->UnitPrice);
                                         $tmpPBE->Pricebook2Id = $_itm->Pricebook2Id;
                                         $tmpPBE->CurrencyIsoCode = (property_exists($_itm, 'CurrencyIsoCode')) ? $_itm->CurrencyIsoCode : NULL;
                                         $tmp->PriceBooks[] = $tmpPBE;

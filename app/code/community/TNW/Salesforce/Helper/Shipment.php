@@ -89,30 +89,14 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
                     Mage::helper('tnw_salesforce')->log("SKIPPING: failed to locate shippable item in Salesforce for product SKU: " . $_item->getSku());
                 }
             }
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $prodObject = array();
-                foreach ($products as $_prod) {
-                    $sObject = new SObject();
-                    $sObject->fields = (array)$_prod;
-                    $sObject->type = 'OpportunityLineItem';
-                    $prodObject[] = $sObject;
-                }
-                unset($sObject, $_prod);
-                Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $prodObject));
-                $response = $this->_mySforceConnection->upsert('Id', $prodObject);
-                Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
-                    "data" => $prodObject,
-                    "result" => $response
-                ));
-                unset($prodObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
-                $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
-                Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
-                    "data" => $products,
-                    "result" => $response
-                ));
-            }
+
+            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
+            $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
+            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
+                "data" => $products,
+                "result" => $response
+            ));
+
             foreach ($response as $_responseRow) {
                 if (!$_responseRow->success) {
                     if (is_array($_responseRow->errors)) {

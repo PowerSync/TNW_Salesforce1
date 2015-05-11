@@ -16,11 +16,6 @@ class TNW_Salesforce_Helper_Magento_Websites extends TNW_Salesforce_Helper_Magen
         $this->_prepare();
     }
 
-    protected function _prepare()
-    {
-        parent::_prepare();
-    }
-
     /**
      * Accepts a single customer object and upserts a contact into the DB
      *

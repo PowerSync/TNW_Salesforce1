@@ -1,0 +1,25 @@
+<?php if ($this->doesHaveOrder()) : ?>
+<div class="box-right">
+    <!--Salesforce Info-->
+    <div class="entry-edit">
+        <div class="entry-edit-head">
+            <h4 class="icon-head head-billing-address"><?php echo Mage::helper('tnw_salesforce')->__('Salesforce Details') ?></h4>
+        </div>
+        <fieldset>
+            <table cellspacing="0" class="form-list">
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td rowspan="10"><img width="150" src="<?php echo $this->getSkinUrl('images/sf-logo.png'); ?>"></td>
+                </tr>
+                <?php foreach ($this->getSalesforceData() as $data):?>
+                    <tr>
+                        <td class="label"><label><?php echo $data['label'] ?></label></td>
+                        <td class="value"><strong><?php echo $data['value'] ?></strong></td>
+                    </tr>
+                <?php endforeach;?>
+            </table>
+        </fieldset>
+    </div>
+</div>
+<?php endif; ?>

@@ -4,7 +4,7 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id extends Mage_Ad
 {
     public function render(Varien_Object $row)
     {
-        $_field = $row->getData('salesforce_id');
+        $_field = $this->_getValue($row);
         return Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($_field);
     }
 }

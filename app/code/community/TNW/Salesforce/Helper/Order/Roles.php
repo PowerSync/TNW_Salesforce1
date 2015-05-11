@@ -34,10 +34,6 @@ class TNW_Salesforce_Helper_Order_Roles extends TNW_Salesforce_Helper_Order
         $ocr->OpportunityId = $opportunityId;
         $ocr->ContactId = $contactId;
         $ocr->Role = Mage::helper('tnw_salesforce')->getDefaultCustomerRole();
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            //$syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-            //$ocr->$syncParam = true;
-        }
 
         unset($opportunityId, $contactId);
         /* Dump to Logs */
@@ -45,25 +41,13 @@ class TNW_Salesforce_Helper_Order_Roles extends TNW_Salesforce_Helper_Order
             Mage::helper('tnw_salesforce')->log("OpportunityContactRole Object: " . $key . " = '" . $_value . "'");
         }
 
-        if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-            $sObject = new SObject();
-            $sObject->fields = (array)$ocr;
-            $sObject->type = 'OpportunityContactRole';
-            Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_before",array("data" => array($sObject)));
-            $response = $this->_mySforceConnection->upsert('Id', array($sObject));
-            Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_after",array(
-                "data" => array($sObject),
-                "result" => $response
-            ));
-            unset($sObject);
-        } else {
-            Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_before",array("data" => array($ocr)));
-            $response = $this->_mySforceConnection->upsert('Id', array($ocr), 'OpportunityContactRole');
-            Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_after",array(
-                "data" => array($ocr),
-                "result" => $response
-            ));
-        }
+        Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_before",array("data" => array($ocr)));
+        $response = $this->_mySforceConnection->upsert('Id', array($ocr), 'OpportunityContactRole');
+        Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_after",array(
+            "data" => array($ocr),
+            "result" => $response
+        ));
+
         unset($ocr);
         if (!$response[0]->success) {
             Mage::helper('tnw_salesforce')->log("Failed to upsert OpportunityContactRole on Id: " . $ocr_id);

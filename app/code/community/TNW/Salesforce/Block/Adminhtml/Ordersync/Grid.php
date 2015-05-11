@@ -77,9 +77,17 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
         $this->addColumn('real_order_id', array(
             'header' => Mage::helper('sales')->__('Order #'),
             'width' => '80px',
-            'type' => 'text',
+            'type' => 'action',
             'index' => 'increment_id',
             'filter_index' => '`main_table`.`increment_id`',
+            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+            'actions' => array(
+                array(
+                    'url' => array('base' => '*/sales_order/view'),
+                    'field' => 'order_id',
+                    'getter' => 'getId',
+                )
+            ),
         ));
 
         if (!Mage::app()->isSingleStoreMode()) {
@@ -133,9 +141,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'filter_index' => '`main_table`.`status`',
         ));
 
-        //if (Mage::helper('tnw_salesforce')->getMagentoVersion() < 1500) {
-        $this->addColumn('singleAction',
-            array(
+        $this->addColumn('singleAction', array(
                 'header' => Mage::helper('sales')->__('Action'),
                 'width' => '50px',
                 'type' => 'action',
@@ -151,8 +157,8 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
                 'sortable' => false,
                 'index' => 'stores',
                 'is_system' => true,
-            ));
-        //}
+        ));
+
         return parent::_prepareColumns();
     }
 

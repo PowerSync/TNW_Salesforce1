@@ -117,9 +117,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 // we check product type and skip synchronization if needed
                 if (intval($product->getData('salesforce_disable_sync')) == 1) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') configured not to be synchronized with Salesforce.');
+                        Mage::getSingleton('adminhtml/session')->addNotice('SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') is excluded from synchronization');
                     }
-                    Mage::helper("tnw_salesforce")->log("SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') configured not to be synchronized with Salesforce.");
+                    Mage::helper("tnw_salesforce")->log("SKIPPING: Product (ID: ' . $product->getData('entity_id') . ') is excluded from synchronization");
                     continue;
                 }
 
@@ -132,7 +132,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 }
                 if ($product->getSku()) {
                     $this->_cache['productIdToSku'][$product->getId()] = trim($product->getSku());
-                    $skuArray[] = trim($product->getSku());
+                    $skuArray[$product->getId()] = trim($product->getSku());
                 }
             }
             // Look up products in Salesforce
@@ -189,7 +189,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
             $this->_obj = new stdClass();
 
-            $productPrice = number_format($_product->getPrice(), 2, ".", "");
+            $productPrice = $this->numberFormat($_product->getPrice());
 
             $_sfProductId = (is_array($this->_cache['productsLookup']) && array_key_exists($_product->getSku(), $this->_cache['productsLookup'])) ? $this->_cache['productsLookup'][$_product->getSku()]->Id : NULL;
             if ($_sfProductId) {
@@ -200,7 +200,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             if (!array_key_exists($_product->getId(), $this->_cache['productPrices'])) {
                 $this->_cache['productPrices'][$_product->getId()] = array();
             }
-            $this->_cache['productPrices'][$_product->getId()][$_storeId] = (float)$productPrice;
+            $this->_cache['productPrices'][$_product->getId()][$_storeId] = $this->numberFormat($productPrice);
         }
         $_collection = NULL;
         unset($_collection);
@@ -260,36 +260,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
 
         $this->processSql();
-        /*
-        if (!empty($this->_sqlToRun)) {
-            //$this->processSql();
-
-            try {
-                $productsCollection = Mage::getModel('catalog/product')->getCollection();
-                $productsCollection->addAttributeToFilter('entity_id', array('in' => $ids));
-                $productsCollection->addAttributeToSelect('*');
-
-                foreach ($productsCollection as $_prod) {
-                    $_product = Mage::getModel('catalog/product');
-                    if ($this->getOrderStoreId() !== NULL) {
-                        $_product->setStoreId($_storeId);
-                    }
-                    $_product->load($_prod->getId());
-
-                    //if ($this->_useCache) {
-                    //    $this->_mageCache->save(serialize($_product), 'product_cache_' . $_product->getId() . '_' . $_storeId, array("TNW_SALESFORCE"));
-                    //} else {
-                    //    if (Mage::registry('product_cache_' . $_product->getId() . '_' . $this->getOrderStoreId())) {
-                    //        Mage::unregister('product_cache_' . $_product->getId() . '_' . $this->getOrderStoreId());
-                    //    }
-                    //    Mage::register('product_cache_' . $_product->getId() . '_' . $this->getOrderStoreId(), $_product);
-                    //}
-                }
-            } catch (Exception $e) {
-                Mage::helper('tnw_salesforce')->log("Exception: " . $e->getMessage());
-            }
-        }
-    */
 
         Mage::helper('tnw_salesforce')->log("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
         Mage::helper('tnw_salesforce')->log("---------- End: Magento Update ----------");
@@ -354,8 +324,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
         }
 
-        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-        $this->_obj->$syncParam = TRUE;
+        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+            $this->_obj->$syncParam = TRUE;
+        }
+
 
         if ($prod->getId()) {
             $this->_obj->{$this->_magentoId} = $prod->getId();
@@ -685,13 +658,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         // Create Default Pricebook Entry
         $_obj = new stdClass();
         $_obj->UseStandardPrice = 0;
-        $_obj->UnitPrice = $_price;
+        $_obj->UnitPrice = $this->numberFormat($_price);
         $_obj->IsActive = TRUE;
 
         $_key = $this->_doesPricebookEntryExist($_sfProduct, $_priceBookId, $_currencyCode);
         if (!is_bool($_key)) {
             $_obj->Id = $_sfProduct->PriceBooks[$_key]->Id;
-            //$this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryId = $_obj->Id;
         } else {
             $_obj->Pricebook2Id = $_priceBookId;
             $_obj->Product2Id = $_sfProductId;

@@ -5,11 +5,6 @@
  */
 class TNW_Salesforce_Model_Newsletter_Observer
 {
-    public function __construct()
-    {
-
-    }
-
     /**
      * @param $observer
      * @return bool

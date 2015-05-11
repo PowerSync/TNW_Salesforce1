@@ -1,0 +1,10 @@
+Activated-100000100:
+  log: "Update from salesforce: status is updated from Pending to Complete"
+Activated-100000101:
+  log: "Update from salesforce: status is updated from Processing to Complete"
+Activated-100000102:
+  log:
+Draft-100000100:
+  log: "SKIPPING: Order #100000100 status update. Mapped Salesforce status matches multiple Magento Order statuses - not sure which one should be selected"
+NotExist-100000100:
+  log: "SKIPPING: Order #100000100 status update. Mapped Salesforce status does not match any Magento Order status"

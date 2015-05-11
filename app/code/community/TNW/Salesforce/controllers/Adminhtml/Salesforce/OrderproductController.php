@@ -78,7 +78,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderproductController extends Mage_Ad
     {
         if ($data = $this->getRequest()->getPost()) {
             $data['sf_object'] = "OrderItem";
-            /* Inject custom logic for custom fields */
+            // Inject custom logic for custom fields
             if ($data['local_field'] == "Custom : field") {
                 $locAattr = array(strstr($data['local_field'], ' : ', true));
                 array_push($locAattr, $data['default_code']);
@@ -97,7 +97,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderproductController extends Mage_Ad
                 $data['default_value'] = NULL;
             }
 
-            ##validate
+            // validate
             if (!$this->_validate($data)) {
                 Mage::getSingleton('adminhtml/session')->addError("Attribute Code must be unique");
                 Mage::getSingleton('adminhtml/session')->setFormData($data);
@@ -105,7 +105,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderproductController extends Mage_Ad
                 return;
             }
 
-            ## Save
+            // Save
             $model = Mage::getModel('tnw_salesforce/mapping');
             $model->setData($data)
                 ->setId($this->getRequest()->getParam('mapping_id'));

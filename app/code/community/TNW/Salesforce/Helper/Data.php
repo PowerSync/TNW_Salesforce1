@@ -11,7 +11,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_PASSWORD = 'salesforce/api_config/api_password';
     const API_TOKEN = 'salesforce/api_config/api_token';
     const API_WSDL = 'salesforce/api_config/api_wsdl';
-    const API_TYPE = 'salesforce/api_config/api_type';
 
     /**
      * @comment Base batch limit for simple sync
@@ -24,10 +23,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_LICENSE_TRANSACTION = 'salesforce/api_license/api_transaction';
 
     /* API Developer */
-    const API_LOG = 'salesforce/developer/log_enable';
+    const API_LOG = 'salesforce/development_and_debugging/log_enable';
     const FAIL_EMAIL = 'salesforce/developer/fail_order';
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
-    const REMOTE_LOG = 'salesforce/developer/remote_log';
+    const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
 
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
@@ -118,7 +117,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_leadStatus = array();
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
-    protected $_leadStates = NULL;
+    protected $_leadStates = array();
 
     /**
      * @comment this variable contains parameter name used in SalesForce
@@ -235,17 +234,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStroreConfig(self::API_WSDL);
     }
 
-    /**
-     * @deprecated
-     * Salesforce Type: Partner or Enterprise
-     * @return string
-     */
-    public function getApiType()
-    {
-        return 'Enterprise';
-        //return $this->getStroreConfig(self::API_TYPE);
-    }
-
     // Salesforce object where Magento orders will go to
     public function getOrderObject()
     {
@@ -255,6 +243,22 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getAbandonedObject()
     {
         return TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
+    }
+
+    /**
+     * Get Invoice Object
+     *
+     * @return string
+     */
+    public function getInvoiceObject()
+    {
+        // Allow Powersync to overwite fired event for customizations
+        $object = new Varien_Object(array(
+            'object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE
+        ));
+        Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $object));
+
+        return $object->getObjectType();
     }
 
     // Is debug log enabled
@@ -636,18 +640,13 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function canPush()
     {
-        if (
-            $this->isWorking()
+        if ($this->isWorking()
             && Mage::getSingleton('tnw_salesforce/connection')->getClient()
-            //&& Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()
         ) {
-            // reset sf error message
-            //Mage::getSingleton('core/session')->setSfErrorMessage('');
             Mage::getSingleton('core/session')->setSfNotWorking(false);
             return true;
         }
 
-        //Mage::getSingleton('core/session')->setSfNotWorking(true);
         return false;
     }
 
@@ -1029,4 +1028,27 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
         return false;
     }
+
+    /**
+     * @comment returns const
+     * @param $feeType
+     * @return mixed|null
+     * @throws Mage_Core_Exception
+     */
+    public function getFeeProduct($feeType)
+    {
+        /**
+         * @var $_constantName string ORDER_DISCOUNT_PRODUCT|ORDER_SHIPPING_PRODUCT|ORDER_TAX_PRODUCT
+         */
+        $_constantName = 'self::ORDER_'.strtoupper($feeType).'_PRODUCT';
+
+        if (defined($_constantName)) {
+            return constant($_constantName);
+        }
+
+        Mage::throwException('Undefined fee product: for ' . $feeType);
+
+        return NULL;
+    }
+
 }

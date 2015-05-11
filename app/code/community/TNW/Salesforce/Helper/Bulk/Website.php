@@ -5,5 +5,4 @@
  */
 class TNW_Salesforce_Helper_Bulk_Website extends TNW_Salesforce_Helper_Salesforce_Website
 {
-
 }

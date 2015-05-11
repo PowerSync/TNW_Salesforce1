@@ -176,7 +176,6 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                                 // we compare sf value with mage default value or mage locate related value (if not english lang is set)
                                 $sfField = mb_strtolower($object->{$_mapping->getSfField()}, 'UTF-8');
                                 $mageAttValueDefault = mb_strtolower($value['label'], 'UTF-8');
-                                $mageAttValueLocaleRelated = mb_strtolower(Mage::helper('tnw_salesforce')->__($value['label']), 'UTF-8');
 
                                 //if (in_array($sfField, array($mageAttValueDefault, $mageAttValueLocaleRelated))) {
                                 if (in_array($sfField, array($mageAttValueDefault))) {

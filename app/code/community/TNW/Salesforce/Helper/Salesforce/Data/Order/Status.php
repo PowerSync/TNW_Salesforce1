@@ -1,13 +1,7 @@
 <?php
 class TNW_Salesforce_Helper_Salesforce_Data_Order_Status extends TNW_Salesforce_Helper_Salesforce_Data_Order
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
-     * @param array $ids
      * @return array|bool
      */
     public function getAll()
@@ -19,8 +13,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order_Status extends TNW_Salesforce_
             }
             // Not implemented by Salesforce yet
             //TODO: change when they do
-            //$query = "SELECT ID, MasterLabel FROM OrderStatus ORDER BY SortOrder";
-            //$allRules = $this->getClient()->queryAll(($query));
+
             $_dummyInactiveObject = new stdClass();
             $_dummyActiveObject = new stdClass();
             $_dummyActiveObject->MasterLabel = 'Activated';
@@ -31,8 +24,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order_Status extends TNW_Salesforce_
                 $_dummyActiveObject,
                 $_dummyInactiveObject
             );
-
-            //unset($sfObject, $query);
 
             return $allRules->records;
         } catch (Exception $e) {

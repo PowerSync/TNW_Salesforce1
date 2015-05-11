@@ -63,7 +63,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_ContactController extends Mage_Adminht
             $this->getLayout()->getBlock('head')->setCanLoadExtJs(true);
 
             $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_contact_edit'));
-            //$this->_addLeft($this->getLayout()->createBlock('tnw_salesforce/adminhtml_contact_edit_tabs'));
             Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
             $this->renderLayout();
         } else {
@@ -80,7 +79,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_ContactController extends Mage_Adminht
     {
         if ($data = $this->getRequest()->getPost()) {
             $data['sf_object'] = "Contact";
-            /* Inject custom logic for custom fields */
+            // Inject custom logic for custom fields
             if ($data['local_field'] == "Custom : field") {
                 $locAattr = array(strstr($data['local_field'], ' : ', true));
                 array_push($locAattr, $data['default_code']);
@@ -104,7 +103,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_ContactController extends Mage_Adminht
                 unset($data['default_code']);
                 $data['default_value'] = NULL;
             }
-            ##validate
+            // validate
             if (!$this->_validate($data)) {
                 Mage::getSingleton('adminhtml/session')->addError("Attribute Code must be unique");
                 Mage::getSingleton('adminhtml/session')->setFormData($data);
@@ -112,7 +111,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_ContactController extends Mage_Adminht
                 return;
             }
 
-            ## Save
+            // Save
             $model = Mage::getModel('tnw_salesforce/mapping');
             $model->setData($data)
                 ->setId($this->getRequest()->getParam('mapping_id'));

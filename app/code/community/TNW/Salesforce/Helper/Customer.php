@@ -236,11 +236,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             }
         }
 
-        // Dont need in before Event
-        //Mage::getSingleton('core/session')->setFromSalesForce(true);
-        //$_customer->save();
-        //Mage::getSingleton('core/session')->setFromSalesForce(false);
-
         if (
             $this->_order
             && $type == "Contact"
@@ -329,26 +324,15 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             if ($doInsert) {
                 Mage::helper('tnw_salesforce')->log("Force Insert!");
             }
+
             /* Push to Salesforce */
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$this->$sfObjectType;
-                $sObject->type = $type;
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array($sObject)));
-                $resultContact = $this->_mySforceConnection->upsert($upsertOn, array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
-                    "data" => $sObject,
-                    "result" => $resultContact
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array($this->$sfObjectType)));
-                $resultContact = $this->_mySforceConnection->upsert($upsertOn, array($this->$sfObjectType), $type);
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
-                    "data" => array($this->$sfObjectType),
-                    "result" => $resultContact
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array($this->$sfObjectType)));
+            $resultContact = $this->_mySforceConnection->upsert($upsertOn, array($this->$sfObjectType), $type);
+            Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
+                "data" => array($this->$sfObjectType),
+                "result" => $resultContact
+            ));
+
             /* Process Errors, Success */
             $result = (is_array($resultContact)) ? $resultContact[0] : $resultContact;
             Mage::helper('tnw_salesforce')->log("------------------- " . $type . " Sync End -------------------");
@@ -405,26 +389,13 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
     {
         $this->_account;
         try {
-            /* Push to Salesforce */
-            if (Mage::helper('tnw_salesforce')->getApiType() == "Partner") {
-                $sObject = new SObject();
-                $sObject->fields = (array)$this->_account;
-                $sObject->type = 'Account';
-                Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => array($sObject)));
-                $resultContact = $this->_mySforceConnection->upsert('Id', array($sObject));
-                Mage::dispatchEvent("tnw_salesforce_account_send_after",array(
-                    "data" => array($sObject),
-                    "result" => $resultContact
-                ));
-                unset($sObject);
-            } else {
-                Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => array($this->_account)));
-                $resultContact = $this->_mySforceConnection->upsert('Id', array($this->_account), 'Account');
-                Mage::dispatchEvent("tnw_salesforce_account_send_after",array(
-                    "data" => array($this->_account),
-                    "result" => $resultContact
-                ));
-            }
+            Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => array($this->_account)));
+            $resultContact = $this->_mySforceConnection->upsert('Id', array($this->_account), 'Account');
+            Mage::dispatchEvent("tnw_salesforce_account_send_after",array(
+                "data" => array($this->_account),
+                "result" => $resultContact
+            ));
+
             /* Process Errors, Success */
             $result = (is_array($resultContact)) ? $resultContact[0] : $resultContact;
             if (!$result->success) {
@@ -582,12 +553,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             Mage::helper('tnw_salesforce')->log('Processing Magento Customer EAV Attributes');
             // creating customer attributes
             foreach ($this->_mapContactCollection as $_map) {
-                // entity id, default is customer
-                $eid = $cid;
-
-                // new attribute - default based on if customer is new
-                $isNew = $isCustomerNew;
-
                 $_attribute = Mage::getModel('eav/entity_attribute')->load($_map->attribute_id);
                 // we ignore static and not select multiselect attributes, email is ignore in security reason just customer to be able login in magento
                 //if ($_map->backend_type == "static" || is_null($_map->attribute_id)) {
@@ -672,7 +637,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                         . "," . $_map->attribute_id . "," . $cid . ",'" . $value . "');";
                 } else {
                     //Existing
-                    //$tmp = $_map->sf_field;
                     $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable($dbname) . "` SET value = '" . $value . "' WHERE entity_id = '"
                         . $eid . "' AND entity_type_id = " . $entityTypeId . " AND attribute_id = " . $_map->attribute_id . ";";
                 }
@@ -755,8 +719,10 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 $mageId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
                 $contact->$mageId = $_customer->id;
                 $contact->Id = $_customer->sfId;
-                $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-                $contact->$syncParam = true;
+                if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+                    $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+                    $contact->$syncParam = true;
+                }
                 $queuedCustomers[$_customer->id] = $contact;
                 unset($contact, $_customer);
             }
@@ -880,24 +846,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
     {
         if (!$_customer) {
             return false;
-        }
-        $getDefaultBillingAddress = $getDefaultShippingAddress = NULL;
-        if (!$_customer->getId()) {
-            if ($isGuest) {
-                // Guest Customer
-                $getDefaultBillingAddress = $_order->getBillingAddress();
-                $getDefaultShippingAddress = $_order->getShippingAddress();
-            } else {
-                // New Customer, not saved yet
-                foreach ($_customer->getAddresses() as $_address) {
-                    if ($_address->getIsDefaultBilling()) {
-                        $getDefaultBillingAddress = $_address;
-                    }
-                    if ($_address->getIsDefaultShipping()) {
-                        $getDefaultShippingAddress = $_address;
-                    }
-                }
-            }
         }
 
         // Process the mapping

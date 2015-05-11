@@ -35,7 +35,6 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
         $collection = Mage::getModel('catalog/product')->getCollection()
             ->addAttributeToSelect('name')
             ->addAttributeToSelect('salesforce_disable_sync');
-            //->addAttributeToFilter('type_id', array('nin' => array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE)));
 
         // here magento orm apply condition to left join itself but not to whole result, first example below is our case
         // select * from t1 left join t2 on t2.link = t1.link and t2.value = 12
@@ -49,7 +48,6 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
         $collection->getSelect()->where('`at_salesforce_disable_sync`.`value` = 0 OR `at_salesforce_disable_sync`.`value` IS NULL');
 
         if ($store->getId()) {
-            //$collection->setStoreId($store->getId());
             $adminStore = Mage_Core_Model_App::ADMIN_STORE_ID;
             $collection->addStoreFilter($store);
             $collection->joinAttribute('name', 'catalog_product/name', 'entity_id', null, 'inner', $adminStore);
@@ -138,6 +136,7 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
             'index' => 'salesforce_pricebook_id',
             'type' => 'varchar',
             'width' => '250px',
+            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
         $store = $this->_getStore();
         if ($store->getId()) {

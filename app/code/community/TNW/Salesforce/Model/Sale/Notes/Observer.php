@@ -5,8 +5,6 @@
  */
 class TNW_Salesforce_Model_Sale_Notes_Observer
 {
-    public function __construct() { }
-
     /**
      * @param $observer
      */
@@ -36,9 +34,8 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
             if (!$res) {
                 Mage::helper("tnw_salesforce")->log('ERROR: Order could not be added to the queue');
-                return false;
             }
-            return true;
+            return;
         }
 
         if (
@@ -72,6 +69,5 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
         } else {
             Mage::helper('tnw_salesforce')->log("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
         }
-        unset($order);
     }
 }

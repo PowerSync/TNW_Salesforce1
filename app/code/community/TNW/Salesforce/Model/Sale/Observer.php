@@ -2,11 +2,6 @@
 
 class TNW_Salesforce_Model_Sale_Observer
 {
-    public function __construct()
-    {
-
-    }
-
     /* Shipment Sync Event */
     public function triggerSalesforceShippmentEvent($observer)
     {
@@ -55,32 +50,26 @@ class TNW_Salesforce_Model_Sale_Observer
                 $_productIds[] = (int)Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart($_item);
             }
 
-            //$res = Mage::getModel('tnw_salesforce/localstorage')->addObject($_productIds, 'Product', 'product');
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
             if (!$res) {
                 Mage::helper("tnw_salesforce")->log('error: products from the order were not saved in local storage');
-                return false;
+                return;
             }
 
             // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
             if (!$res) {
                 Mage::helper("tnw_salesforce")->log('error: order not saved to local storage');
-                return false;
             }
-            return true;
-        }
-
-        if (
-            $order->getId() &&
-            $order->getSalesforceId()
-        ) {
-            Mage::helper('tnw_salesforce')->log("###################################### Shipping Start ######################################");
-            Mage::helper('tnw_salesforce')->log("----- Shipping itmes from Order #" . $order->getRealOrderId() . " -----");
-            Mage::helper('tnw_salesforce/shipment')->salesforcePush($shipment, $order->getSalesforceId());
-            Mage::helper('tnw_salesforce')->log("###################################### Shipping End ########################################");
         } else {
-            Mage::helper('tnw_salesforce')->log("---- SKIPPING ORDER SHIPMENT. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
+            if ($order->getId() && $order->getSalesforceId()) {
+                Mage::helper('tnw_salesforce')->log("###################################### Shipping Start ######################################");
+                Mage::helper('tnw_salesforce')->log("----- Shipping itmes from Order #" . $order->getRealOrderId() . " -----");
+                Mage::helper('tnw_salesforce/shipment')->salesforcePush($shipment, $order->getSalesforceId());
+                Mage::helper('tnw_salesforce')->log("###################################### Shipping End ########################################");
+            } else {
+                Mage::helper('tnw_salesforce')->log("---- SKIPPING ORDER SHIPMENT. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
+            }
         }
     }
 
@@ -129,24 +118,19 @@ class TNW_Salesforce_Model_Sale_Observer
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
             if (!$res) {
                 Mage::helper("tnw_salesforce")->log('error: order status update not saved to local storage');
-                return false;
             }
-            return true;
-        }
-
-        if (
-            $order->getId() &&
-            $order->getStatus()
-        ) {
-            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-            Mage::helper('tnw_salesforce')->log("###################################### Order Status Update Start ######################################");
-            Mage::dispatchEvent(
-                'tnw_sales_status_update_' . $_syncType,
-                array(
-                    'order'  => $order
-                )
-            );
-            Mage::helper('tnw_salesforce')->log("###################################### Order Status Update End ########################################");
+        } else {
+            if ($order->getId() && $order->getStatus()) {
+                $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+                Mage::helper('tnw_salesforce')->log("###################################### Order Status Update Start ######################################");
+                Mage::dispatchEvent(
+                    'tnw_sales_status_update_' . $_syncType,
+                    array(
+                        'order'  => $order
+                    )
+                );
+                Mage::helper('tnw_salesforce')->log("###################################### Order Status Update End ########################################");
+            }
         }
     }
 
@@ -225,16 +209,15 @@ class TNW_Salesforce_Model_Sale_Observer
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
             if (!$res) {
                 Mage::helper("tnw_salesforce")->log('error: products from the order were not saved in local storage');
-                return false;
+                return;
             }
 
             // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
             if (!$res) {
                 Mage::helper("tnw_salesforce")->log('error: order not saved to local storage');
-                return false;
             }
-            return true;
+            return;
         }
 
         if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
@@ -243,8 +226,7 @@ class TNW_Salesforce_Model_Sale_Observer
 
         $_order = Mage::getModel('sales/order')->load($order->getId());
 
-        if (
-            $order->getId() &&
+        if ($order->getId() &&
             $_order->getStatus() // commented cause order status is <empty> or 'pending' and if <empty> then order was not synced with sf
         ) {
             Mage::helper('tnw_salesforce')->log("############################ New Order Start ############################");
@@ -306,7 +288,6 @@ class TNW_Salesforce_Model_Sale_Observer
                 $_productIds[] = (int)Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart($_item);
             }
 
-            //$res = Mage::getModel('tnw_salesforce/localstorage')->addObject($_productIds, 'Product', 'product');
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
             if (!$res) {
                 Mage::helper("tnw_salesforce")->log('error: products from the order were not saved in local storage');
@@ -322,11 +303,7 @@ class TNW_Salesforce_Model_Sale_Observer
             return true;
         }
 
-        if (
-            $order->getId() &&
-            //$order->getSalesforceId() &&
-            $order->getStatus()
-        ) {
+        if ($order->getId() && $order->getStatus()) {
             Mage::helper('tnw_salesforce')->log("================ INVENTORY SYNC: START ================");
             $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
             $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());

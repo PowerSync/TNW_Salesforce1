@@ -69,26 +69,20 @@ class TNW_Salesforce_Block_Adminhtml_Domains
         if ($this->hasData('salesforce_accounts')) {
             // Do nothing, just return
         }
+
         if ($cache->load("tnw_salesforce_accounts")) {
             $this->setData('salesforce_accounts', unserialize($cache->load("tnw_salesforce_accounts")));
         } else {
             $_allAccounts = array();
             if (Mage::helper('tnw_salesforce')->isWorking()) {
-                $_client = Mage::getSingleton('tnw_salesforce/connection');
-                if (!$_client->getServerUrl()) {
-                    $_client->tryWsdl();
-                    $_client->tryToConnect();
-                    $_client->tryToLogin();
-
-                    $instance_url = explode('/', $_client->getServerUrl());
-                    Mage::getSingleton('core/session')->setSalesforceServerDomain('https://' . $instance_url[2]);
-                    Mage::getSingleton('core/session')->setSalesforceSessionId($_client->getSessionId());
+                $_client = Mage::getSingleton('tnw_salesforce/connection')->getClient();
+                if ($_client) {
+                    $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
+                    $manualSync->reset();
+                    $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
+                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+                    $_allAccounts = $manualSync->getAllAccounts();
                 }
-                $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
-                $manualSync->reset();
-                $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-                $_allAccounts = $manualSync->getAllAccounts();
             }
 
             if (!$this->hasData('salesforce_accounts')) {
@@ -99,7 +93,6 @@ class TNW_Salesforce_Block_Adminhtml_Domains
                 $cache->save(serialize($this->getData('salesforce_accounts')), 'tnw_salesforce_accounts', array("TNW_SALESFORCE"));
             }
         }
-
         return $this->getData('salesforce_accounts');
     }
 

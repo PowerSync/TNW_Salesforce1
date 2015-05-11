@@ -12,6 +12,22 @@ class TNW_Salesforce_Model_Product_Observer
     /**
      * @param $observer
      */
+    public function duplicateBefore($observer)
+    {
+        /**
+         * @var Mage_Catalog_Model_Product $_newProduct
+         */
+        $_newProduct = $observer->getEvent()->getNewProduct();
+
+        $_newProduct->unsSalesforceId();
+        $_newProduct->unsSalesforcePricebookId();
+
+        return;
+    }
+
+    /**
+     * @param $observer
+     */
     public function salesforceTriggerEvent($observer)
     {
        $_product = $observer->getEvent()->getProduct();
@@ -42,6 +58,9 @@ class TNW_Salesforce_Model_Product_Observer
         ) {
             Mage::helper("tnw_salesforce")->log('SKIPING: Product synchronization disabled');
             return; // Disabled sync
+        } else if ($_product->getIsDuplicate()) {
+            Mage::helper("tnw_salesforce")->log('SKIPING: Product duplicate process');
+            return; //
         } else if (!Mage::helper('tnw_salesforce')->canPush()) {
             Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING product sync');
             return; // Disabled
@@ -56,7 +75,6 @@ class TNW_Salesforce_Model_Product_Observer
             if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                 // pass data to local storage
                 // TODO add level up abstract class with Order as static values, now we have word 'Product' as parameter
-                //$res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($_product->getData('entity_id'))), 'Product', 'product');
                 $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array(intval($_product->getData('entity_id'))), 'Product', 'product');
                 if (!$res) {
                     Mage::helper("tnw_salesforce")->log('error: product not saved to local storage');
@@ -82,9 +100,6 @@ class TNW_Salesforce_Model_Product_Observer
             $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
             $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-            // test related to ticket https://trello.com/c/RG74DHYY/46-salesforce-destination-url-bug
-            //Mage::helper('tnw_salesforce/salesforce_data')->getClient()->invalidateSessions();
-
             if ($manualSync->reset()) {
                 $manualSync->massAdd(array($_product->getId()));
                 $manualSync->process();
@@ -93,16 +108,14 @@ class TNW_Salesforce_Model_Product_Observer
                 Mage::getSingleton('adminhtml/session')->addError('Salesforce Connection failed!');
             }
         }
-        unset($_product);
-        return;
     }
 
-    public function beforeImport($observer)
+    public function beforeImport()
     {
         Mage::getSingleton('core/session')->setFromSalesForce(true);
     }
 
-    public function afterImport($observer)
+    public function afterImport()
     {
         Mage::getSingleton('core/session')->setFromSalesForce(false);
     }

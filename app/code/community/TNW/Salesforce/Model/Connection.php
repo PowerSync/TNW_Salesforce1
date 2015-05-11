@@ -3,7 +3,7 @@
 class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
 {
     /**
-     * @var null
+     * @var Salesforce_SforceEnterpriseClient
      */
     protected $_client = NULL;
 
@@ -71,29 +71,20 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         ini_set('soap.wsdl_cache_enabled', 0);
         if (
             !$this->_client &&
-            Mage::helper('tnw_salesforce')->isWorking() &&
-            $clientType = Mage::helper('tnw_salesforce')->getApiType()
+            Mage::helper('tnw_salesforce')->isWorking()
         ) {
-            $cstClass = 'Salesforce_Sforce' . $clientType . 'Client';
             # instantiate a new Salesforce object
-            $this->_client = new $cstClass();
-            unset($cstClass);
+            $this->_client = new Salesforce_SforceEnterpriseClient();
         } else {
             Mage::getSingleton('adminhtml/session')->addNotice("Salesforce API connectivity issue, sync is disabled. Check API configuration and try manual synchronization.");
-            // Redirect removed
-            #Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section'=>'salesforce')));
-            #Mage::app()->getResponse()->sendResponse();
-            return;
         }
     }
 
     /**
-     * @param bool $config
      * @return bool
      */
-    public function tryWsdl($config = FALSE)
+    public function tryWsdl()
     {
-        $basepath = realpath(dirname(__FILE__) . "/../../../../../../");
         if (defined('MAGENTO_ROOT')) {
             $basepath = MAGENTO_ROOT;
         } else if (defined('BP')) {
@@ -102,10 +93,11 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 $extra = "/../";
             }
             $basepath = realpath(BP . $extra);
+        } else {
+            $basepath = realpath(dirname(__FILE__) . "/../../../../../../");
         }
 
         $this->_wsdl = $basepath . "/" . Mage::helper('tnw_salesforce')->getApiWSDL();
-        unset($basepath);
         if (!file_exists($this->_wsdl) || Mage::helper('tnw_salesforce')->getApiWSDL() == "") {
             $this->_wsdl = NULL;
             Mage::helper('tnw_salesforce')->log("WSDL file not found!");
@@ -134,10 +126,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 return false;
             }
             $_SERVER['HTTP_USER_AGENT'] = $this->_userAgent;
-            /*
-        } else {
-            return false;
-            */
         }
 
         return true;
@@ -221,7 +209,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 $this->isConnected()
                 && $this->tryToLogin()
             ) {
-                //Zend_Registry::set('salesforceClient', $this->_client);
                 return $this->_client;
             }
         } catch (Exception $e) {
@@ -232,9 +219,11 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         return false;
     }
 
+    /**
+     * @return Salesforce_SforceEnterpriseClient
+     */
     public function getClient()
     {
-        //return (Zend_Registry::isRegistered('salesforceClient')) ? Zend_Registry::get('salesforceClient') : $this->initConnection();
         return ($this->isConnected()) ? $this->_client : $this->initConnection();
     }
 

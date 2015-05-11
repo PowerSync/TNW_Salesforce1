@@ -12,6 +12,7 @@ class TNW_Salesforce_Model_Observer
     protected $_acl = NULL;
 
     public function adjustMenu() {
+
         // Update Magento admin menu
         $this->_menu = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
@@ -53,12 +54,16 @@ class TNW_Salesforce_Model_Observer
                 $_customerAclNode = $this->_acl->descend('customer_mapping')->descend('children');
             }
 
-            if ($_manualSyncNode && !Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+            if (
+                $_manualSyncNode
+                && !(
+                    Mage::helper('tnw_salesforce')->getType() == "PRO"
+                    &&Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED)
+                )
+            ) {
                 unset($_manualSyncNode->abandoned_sync);
                 unset($this->_menu->abandoned_mapping);
-
             }
-
             if ($_orderAclNode) {
                 $_keysToUnset = array();
                 foreach($_orderAclNode as $_items) {
@@ -128,7 +133,6 @@ class TNW_Salesforce_Model_Observer
             && Mage::helper('tnw_salesforce')->getObjectSyncType() == 'sync_type_realtime'
         ) {
             try {
-                //Mage::getModel('tnw_salesforce/feed')->checkUpdate();
                 Mage::getModel('tnw_salesforce/imports_bulk')->process();
             } catch (Exception $e) {
                 // silently ignore
@@ -152,17 +156,15 @@ class TNW_Salesforce_Model_Observer
      *
      * @return bool
      */
-    public function showSfStatus(Varien_Event_Observer $observer)
+    public function showSfStatus()
     {
         // Set common header on all pages for tracking purposes
         Mage::app()->getFrontController()->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
 
         // skip if sf synchronization is disabled or we are on api config page
 
-        $urlParamSet = Mage::app()->getRequest()->getParams();
         if (!Mage::helper('tnw_salesforce')->isWorking()
             || Mage::app()->getRequest()->getControllerName() == 'index'
-            // || (Mage::app()->getRequest()->getControllerName() == 'system_config' && $urlParamSet['section'] == 'salesforce')
         ) {
             return false;
         }

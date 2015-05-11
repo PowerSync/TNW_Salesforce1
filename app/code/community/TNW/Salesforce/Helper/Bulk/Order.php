@@ -34,6 +34,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             Mage::helper('tnw_salesforce')->log("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
 
             $_guestCount = 0;
+            $_skippedOrders = array();
             foreach ($ids as $_count => $_id) {
                 $_order = Mage::getModel('sales/order')->load($_id);
                 // Add to cache
@@ -50,6 +51,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
                     }
                     Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
 
@@ -61,6 +63,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getId() . ', sync for order status "' . $_order->getStatus() . '" is disabled!');
                     }
                     Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getId() . ', sync for order status "' . $_order->getStatus() . '" is disabled!');
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
 
@@ -69,21 +72,26 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         Mage::getSingleton('adminhtml/session')->addError('WARNING: Sync for order #' . $_id . ', order could not be loaded!');
                     }
                     Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for order #" . $_id . ", order could not be loaded!", 1, "sf-errors");
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
 
                 $this->_cache['orderCustomers'][$_order->getRealOrderId()] = $this->_getCustomer($_order);
-                $this->_cache['orderToCustomerId'][$_order->getRealOrderId()] = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_guestCount;
+                $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_guestCount;
                 if (!$this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) {
                     $_guestCount++;
                 }
-                $this->_cache['orderToEmail'][$_order->getRealOrderId()] = strtolower($_order->getCustomerEmail());
+                $_emails[$_customerId] = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail()) ? strtolower($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail()) : strtolower($_order->getCustomerEmail());
+
+                $this->_cache['orderToEmail'][$_order->getRealOrderId()] = $_emails[$_customerId];
+                $this->_cache['orderToCustomerId'][$_order->getRealOrderId()] = $_customerId;
 
                 if (empty($this->_cache['orderToEmail'][$_order->getRealOrderId()]) ) {
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::helper("tnw_salesforce")->log("SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!");
+                        Mage::helper("tnw_salesforce")->log('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!');
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ' failed, order is missing an email address!');
                     }
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
 
@@ -96,10 +104,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getId() . ', sync for customer group #' . $_customerGroup . ' is disabled!');
                     }
+                    $_skippedOrders[] = $_order->getId();
                     continue;
                 }
-                $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_count;
-                $_emails[$_customerId] = strtolower($_order->getCustomerEmail());
                 $_orderNumbers[$_id] = $_order->getRealOrderId();
 
                 $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
@@ -107,7 +114,11 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 if ($_order->getQuoteId()) {
                     $_quotes[] = $_order->getQuoteId();
                 }
+            }
 
+            if (!empty($_skippedOrders)) {
+                $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedOrders) . "') and mage_object_type = 'sales/order';";
+                Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
             }
 
             // See if created from Abandoned Cart
@@ -147,14 +158,14 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $manualSync->forceAdd($_customerToSync, $this->_cache['orderCustomers']);
 
                     // here we use $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                     $this->_cache['orderCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncOrderCustomers which is not equal to $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                 }
             }
 
             $this->_cache['orderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')->lookup($_orderNumbers);
-            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
+            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
+            $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emails, $_websites);
 
             $_customersToSync = array();
             $_leadsToLookup = array();
@@ -167,14 +178,12 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 // here may be potential bug where we lost some orders
                 if (
                     is_array($this->_cache['accountsLookup'])
-                    && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-                    && array_key_exists($_email, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
+                    && array_key_exists(0, $this->_cache['accountsLookup'])
+                    && array_key_exists($_email, $this->_cache['accountsLookup'][0])
                 ) {
-                    if (property_exists($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'AccountId')) {
-                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->AccountId);
-                    }
+
                     if (property_exists($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'Id')) {
-                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id);
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_email]->Id);
                     }
                 } else {
                     $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_count;
@@ -189,7 +198,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             // Lookup Leads we may need to convert
             if (!empty($_leadsToLookup)) {
-                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_leadsToLookup,$_leadsToLookupWebsites);
                 $_customersToSync = $this->_updateAccountLookupData($_customersToSync);
             }
 
@@ -202,9 +210,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $manualSync->forceAdd($_customersToSync, $this->_cache['orderCustomers']);
 
                     // here we use $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                     $this->_cache['orderCustomers'] = $manualSync->process('bulk'); // and in process() we use $this->_toSyncOrderCustomers which is not equal to $this->_cache['orderCustomers']
-                    set_time_limit(1000);
                 }
                 Mage::helper("tnw_salesforce")->log('Updating lookup cache...');
                 // update Lookup values
@@ -229,7 +235,8 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
                         && array_key_exists($_email, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
                     ) || (
-                        array_key_exists($_orderNum, $this->_cache['orderCustomers'])
+                        is_array($this->_cache['orderCustomers'])
+                        && array_key_exists($_orderNum, $this->_cache['orderCustomers'])
                         && is_object($this->_cache['orderCustomers'][$_orderNum])
                         && $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id')
                         && $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id')
@@ -267,15 +274,14 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
                 $_foundAccounts = array();
                 foreach ($this->_cache['leadLookup'] as $websiteleads){
-                    $_foundAccounts = array_merge($_foundAccounts, $manualSync->findCustomerAccountsForGuests(array_keys($websiteleads)));
+                    $_foundAccounts = array_merge($_foundAccounts, $manualSync->findCustomerAccounts(array_keys($websiteleads)));
                 }
             } else {
                 $_foundAccounts = array();
             }
 
-            $_queueList = Mage::helper('tnw_salesforce/salesforce_data_queue')->getAllQueues();
             foreach ($this->_cache['orderToEmail'] as $_orderNum => $_email) {
-                $this->_prepareLeadConversionObject($_orderNum, $_foundAccounts, $_queueList);
+                Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->prepareLeadConversionObject($_orderNum, $_foundAccounts, 'order');
             }
 
             return true;
@@ -288,112 +294,11 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     }
 
     /**
-     * @param $_orderId
-     * @param array $_accounts
-     * @return bool
+     * @comment call leads convertation method
      */
-    protected function _prepareLeadConversionObject($_orderId, $_accounts = array(), $_queueList = NULL)
-    {
-        if (!Mage::helper("tnw_salesforce")->getLeadConvertedStatus()) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: Converted Lead status is not set in the configuration, cannot proceed!');
-            }
-            Mage::helper("tnw_salesforce")->log('Converted Lead status is not set in the configuration, cannot proceed!', 1, "sf-errors");
-            return false;
-        }
-        $_email = $this->_cache['orderToEmail'][$_orderId];
-        $_order = (Mage::registry('order_cached_' . $_orderId)) ? Mage::registry('order_cached_' . $_orderId) : Mage::getModel('sales/order')->loadByIncrementId($_orderId);
-        $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-
-        if (is_array($this->_cache['leadLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
-            && array_key_exists($_email, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])) {
-            $leadConvert = new stdClass;
-            $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
-            $leadConvert->doNotCreateOpportunity = 'true';
-            $leadConvert->leadId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
-            $leadConvert->overwriteLeadSource = 'false';
-            $leadConvert->sendNotificationEmail = 'false';
-
-            // Retain OwnerID if Lead is already assigned
-            // If not, pull default Owner from Magento configuration
-            if (
-                is_object($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email])
-                && property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'OwnerId')
-                && $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId
-                && (
-                    !is_array($_queueList)
-                    && !in_array($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId, $_queueList)
-                )
-            ) {
-                $leadConvert->ownerId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId;
-            } elseif (Mage::helper('tnw_salesforce')->getLeadDefaultOwner()) {
-                $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-            }
-
-            // If inactive, reassign
-            if (!$this->_isUserActive($leadConvert->ownerId)) {
-                $leadConvert->ownerId = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-            }
-
-            // Attach to existing account
-            if (array_key_exists($_email, $_accounts) && $_accounts[$_email]) {
-                $leadConvert->accountId = $_accounts[$_email];
-            }
-            // logs
-            foreach ($leadConvert as $key => $value) {
-                Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
-            }
-
-            if ($leadConvert->leadId && !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
-                $this->_cache['leadsToConvert'][$_orderId] = $leadConvert;
-            } else {
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Order #' . $_orderId . ' - customer (email: ' . $_email . ') needs to be synchronized first, aborting!');
-                }
-                Mage::helper("tnw_salesforce")->log('Order #' . $_orderId . ' - customer (email: ' . $_email . ') needs to be synchronized first, aborting!', 1);
-                return false;
-            }
-        }
-    }
-
     protected function _convertLeads()
     {
-        $_howMany = 80;
-        // Make sure that leadsToConvert cache has unique leads (by email)
-        $_leadsToConvert = array();
-        foreach ($this->_cache['leadsToConvert'] as $_orderNum => $_objToConvert) {
-
-            if (!in_array($_objToConvert->leadId, $_leadsToConvert)) {
-                $_leadsToConvert[$_orderNum] = $_objToConvert->leadId;
-            } else {
-                $_source = array_search($_objToConvert->leadId, $_leadsToConvert);
-                $this->_cache['duplicateLeadConversions'][$_orderNum] = $_source;
-                unset($this->_cache['leadsToConvert'][$_orderNum]);
-            }
-        }
-
-        $_ttl = count($this->_cache['leadsToConvert']);
-        if ($_ttl > $_howMany) {
-            $_steps = ceil($_ttl / $_howMany);
-            if ($_steps == 0) {
-                $_steps = 1;
-            }
-            for ($_i = 0; $_i < $_steps; $_i++) {
-                $_start = $_i * $_howMany;
-                $_itemsToPush = array_slice($this->_cache['leadsToConvert'], $_start, $_howMany, true);
-                $this->_pushLeadSegment($_itemsToPush);
-            }
-        } else {
-            $this->_pushLeadSegment($this->_cache['leadsToConvert']);
-        }
-
-        // Update de duped lead conversion records
-        if (!empty($this->_cache['duplicateLeadConversions'])) {
-            foreach($this->_cache['duplicateLeadConversions'] as $_what => $_source) {
-                $this->_cache['convertedLeads'][$_what] = $this->_cache['convertedLeads'][$_source];
-            }
-        }
+        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('order');
     }
 
     /**
@@ -416,10 +321,19 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
         $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
 
-        if (is_array($this->_cache['accountsLookup']) && array_key_exists($_orderEmail, $this->_cache['accountsLookup'])) {
-            $_accountId = $this->_cache['accountsLookup'][$_orderEmail]->AccountId;
-        } elseif ($_customerEmail && $_orderEmail != $_customerEmail && is_array($this->_cache['accountsLookup']) && array_key_exists($_customerEmail, $this->_cache['accountsLookup'])) {
-            $_accountId = $this->_cache['accountsLookup'][$_customerEmail]->AccountId;
+        if (
+            is_array($this->_cache['accountsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
+        ) {
+            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->AccountId;
+        } elseif (
+            $_customerEmail && $_orderEmail != $_customerEmail
+            && is_array($this->_cache['accountsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
+        ) {
+            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customerEmail]->AccountId;
         } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
             $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
         }
@@ -433,7 +347,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
             && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
         ) {
-            $_accountId = $this->_cache['accountsLookup'][$_customerEmail]->AccountId;
+            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customerEmail]->AccountId;
         } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
             $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
         }
@@ -445,7 +359,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
      */
     protected function _pushRemainingOrderData()
     {
-        set_time_limit(1000);
         if (!empty($this->_cache['orderItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['orderProducts']['Id']) {
                 // Create Job
@@ -461,7 +374,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderProducts']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderProducts']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking orderItemsToUpsert (job: ' . $this->_cache['bulkJobs']['orderProducts']['Id'] . ')...');
@@ -481,7 +393,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             }
         }
 
-        set_time_limit(1000);
         if (!empty($this->_cache['notesToUpsert'])) {
             if (!$this->_cache['bulkJobs']['notes']['Id']) {
                 // Create Job
@@ -497,7 +408,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
                 Mage::helper('tnw_salesforce')->log('Still checking notesToUpsert (job: ' . $this->_cache['bulkJobs']['notes']['Id'] . ')...');
@@ -517,16 +427,48 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             }
         }
 
+        // Kick off the event to allow additional data to be pushed into salesforce
+        Mage::dispatchEvent("tnw_salesforce_order_sync_after_final",array(
+            "all" => $this->_cache['entitiesUpdating'],
+            "failed" => $this->_cache['failedOrders']
+        ));
+
         // Mark orders as failed or successful
         $this->_updateOrders();
+
+
+        // Activate orders
+        if (!empty($this->_cache['orderToActivate'])) {
+            foreach($this->_cache['orderToActivate'] as $_orderNum => $_object) {
+                if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
+                    $_object->Id = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
+                } else {
+                    unset($this->_cache['orderToActivate'][$_orderNum]);
+                    Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+                }
+            }
+            if (!empty($this->_cache['orderToActivate'])) {
+                Mage::helper('tnw_salesforce')->log('----------Activating Orders: Start----------');
+                // Push Cart
+                $_ttl = count($this->_cache['orderToActivate']);
+                if ($_ttl > 199) {
+                    $_steps = ceil($_ttl / 199);
+                    for ($_i = 0; $_i < $_steps; $_i++) {
+                        $_start = $_i * 200;
+                        $_itemsToPush = array_slice($this->_cache['orderToActivate'], $_start, $_start + 199);
+                        $this->_activateOrders($_itemsToPush);
+                    }
+                } else {
+                    $this->_activateOrders($this->_cache['orderToActivate']);
+                }
+                Mage::helper('tnw_salesforce')->log('----------Activating Orders: End----------');
+            }
+        }
     }
 
     protected function _pushOrdersToSalesforce()
     {
         if (!empty($this->_cache['ordersToUpsert'])) {
-            // assign owner id to order
-            // removing, cannot seem to modify owner or set owner
-            //$this->_assignOwnerIdToOrder();
 
             if (!$this->_cache['bulkJobs']['order'][$this->_magentoId]) {
                 // Create Job
@@ -542,7 +484,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
-                set_time_limit(1800);
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
                 Mage::helper('tnw_salesforce')->log('Still checking ordersToUpsert (job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId] . ')...');
@@ -581,7 +522,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         $this->_cache['responses']['orderItems'][] = json_decode(json_encode($_item), TRUE);
                         $_orderId = (string)$_batch[$_batchKeys[$_i]]->OrderId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache['upsertedOrders']);
+                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'orderProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache['failedOrders'][] = $_oid;
@@ -596,7 +537,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
             if (!empty($_sql)) {
@@ -627,7 +567,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         $this->_cache['responses']['notes'][$_noteId] = json_decode(json_encode($_item), TRUE);
                         $_orderId = (string)$_batch[$_noteId]->ParentId;
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache['upsertedOrders']);
+                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'notes', $_batch[$_noteId]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache['failedOrders'][] = $_oid;
@@ -644,7 +584,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
-                    $response = $e->getMessage();
                 }
             }
         }
@@ -693,24 +632,22 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
                         $this->_cache['upsertedOrderStatuses'][$_oid] = $_orderStatus;
 
-                        $this->_cache['upsertedOrders'][$_oid] = (string)$_item->id;
+                        $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
 
                         $_contactId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_id') . "'" : 'NULL';
                         $_accountId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id') . "'" : 'NULL';
-                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache['upsertedOrders'][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
+                        $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
 
-                        Mage::helper('tnw_salesforce')->log('Order Upserted: ' . $this->_cache['upsertedOrders'][$_oid]);
+                        Mage::helper('tnw_salesforce')->log('Order Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
 
                         if (Mage::registry('order_cached_' . $_oid)) {
                             $_order = Mage::registry('order_cached_' . $_oid);
                             Mage::unregister('order_cached_' . $_oid);
-                            $_order->setData('salesforce_id', $this->_cache['upsertedOrders'][$_oid]);
+                            $_order->setData('salesforce_id', $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
                             $_order->setData('sf_insync', 1);
                             Mage::register('order_cached_' . $_oid, $_order);
                             unset($_order);
                         }
-
-                        //unset($this->_cache['ordersToUpsert'][$_oid]);
                     } else {
                         $this->_cache['failedOrders'][] = $_oid;
                         $this->_processErrors($_item, 'order', $this->_cache['batch']['orders'][$this->_magentoId][$_key][$_oid]);
@@ -719,7 +656,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
-                $response = $e->getMessage();
             }
         }
 
@@ -731,82 +667,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
             Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-        }
-    }
-
-    /**
-     * @param $_leadsChunkToConvert
-     * @param int $_batch
-     */
-    protected function _pushLeadSegment($_leadsChunkToConvert, $_batch = 0)
-    {
-        $results = $this->_mySforceConnection->convertLead(array_values($_leadsChunkToConvert));
-
-        $_keys = array_keys($_leadsChunkToConvert);
-
-        foreach ($results->result as $_key => $_result) {
-            $_orderNum = $_keys[$_key];
-
-            // report transaction
-            $this->_cache['responses']['leadsToConvert'][$_orderNum] = $_result;
-
-            $_email = strtolower($this->_cache['orderToEmail'][$_orderNum]);
-            $_order = (Mage::registry('order_cached_' . $_orderNum)) ? Mage::registry('order_cached_' . $_orderNum) : Mage::getModel('sales/order')->loadByIncrementId($_orderNum);
-            $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-            $_customerId = (is_object($this->_cache['orderCustomers'][$_orderNum])) ? $this->_cache['orderCustomers'][$_orderNum]->getId() : NULL;
-
-            if (!$_result->success) {
-                $this->_cache['leadsFaildToConvert'][$_orderNum] = $_email;
-                // Remove entity from the sync queue
-                $keyToRemove = array_search($_orderNum, $this->_cache['entitiesUpdating']);
-                if ($keyToRemove) {
-                    unset($this->_cache['entitiesUpdating'][$keyToRemove]);
-                }
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $_email . ')');
-                }
-                Mage::helper('tnw_salesforce')->log('Convert Failed: (email: ' . $_email . ')', 1);
-                $this->_processErrors($_result, 'order', $_leadsChunkToConvert[$_orderNum]);
-            } else {
-                if ($_customerId) {
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->_websiteSfIds[$this->_cache['orderCustomers'][$_orderNum]->getData('website_id')];
-
-                    // Update Salesforce Id
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                    // Update Account Id
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                    // Reset Lead Value
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
-                    // Update Sync Status
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
-
-                    $this->_cache['orderCustomers'][$_orderNum] = Mage::getModel("customer/customer")->load($_customerId);
-                } else {
-                    // For the guest
-                    if (!is_object($this->_cache['orderCustomers'][$_orderNum])) {
-                        $this->_cache['orderCustomers'][$_orderNum] = (is_object($_order)) ? $this->_getCustomer($_order) : Mage::getModel("customer/customer");
-                    }
-                    $this->_cache['orderCustomers'][$_orderNum]->setSalesforceLeadId(NULL);
-                    $this->_cache['orderCustomers'][$_orderNum]->setSalesforceId($_result->contactId);
-                    $this->_cache['orderCustomers'][$_orderNum]->setSalesforceAccountId($_result->accountId);
-                    // Update Sync Status
-                    $this->_cache['orderCustomers'][$_orderNum]->setSfInsync(0);
-                }
-
-                $this->_cache['convertedLeads'][$_orderNum] = new stdClass();
-                $this->_cache['convertedLeads'][$_orderNum]->contactId = $_result->contactId;
-                $this->_cache['convertedLeads'][$_orderNum]->accountId = $_result->accountId;
-                $this->_cache['convertedLeads'][$_orderNum]->email = $_email;
-
-                unset($this->_cache['leadsToConvert'][$_orderNum]); // remove from cache
-                unset($this->_cache['leadLookup'][$_websiteId][$_email]); // remove from cache
-
-                Mage::helper('tnw_salesforce')->log('Converted: (account: ' . $this->_cache['convertedLeads'][$_orderNum]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$_orderNum]->contactId . ')');
-            }
         }
     }
 
@@ -904,6 +764,30 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         $this->_cache['batchCache'] = array();
         $this->_cache['duplicateLeadConversions'] = array();
 
-        return $this->check();
+        $valid = $this->check();
+
+        return $valid;
+    }
+
+    /**
+     * @param string $type
+     * @return bool
+     */
+    public function process($type = 'soft')
+    {
+
+        /**
+         * @comment apply bulk server settings
+         */
+        $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
+
+        $result = parent::process($type);
+
+        /**
+         * @comment restore server settings
+         */
+        $this->getServerHelper()->apply();
+
+        return $result;
     }
 }

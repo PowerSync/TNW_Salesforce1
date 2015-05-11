@@ -5,47 +5,163 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helper_Salesforce_Data
 {
-    /** Account Name
-     * @var null
+    /**
+     * Account Name
+     *
+     * @var string
      */
-    protected $_companyName = NULL;
+    protected $_companyName = null;
 
-
-    public function __construct()
+    /**
+     * @param $_customerEmails
+     * @param array $_websites
+     * @return array
+     *
+     * @comment returns following structure: 0 => "$emails" => account data
+     */
+    public function lookup($_customerEmails, $_websites = array())
     {
-        parent::__construct();
+
+        $_companies = array();
+        $_emails = array();
+        foreach ($_customerEmails as $_customerId => &$_email) {
+
+            if ($_email instanceof Mage_Customer_Model_Customer) {
+                $_customer = $_email;
+                $_email = $_customer->getEmail();
+            } else {
+                $_customer = Mage::registry('customer_cached_' . $_customerId);
+                if (!$_customer && $_customerId) {
+                    $_customer = Mage::getModel('customer/customer')->load($_customerId);
+                    Mage::register('customer_cached_' . $_customerId, $_customer);
+                }
+            }
+
+            $key = '_' . $_customerId;
+            $_emails[$key] = strtolower($_email);
+
+            //try to find customer company name
+            if ($_customer) {
+                $_companyName = $_customer->getCompany();
+
+                if (!$_companyName) {
+                    $_companyName = $_customer->getDefaultBillingAddress()
+                        ? trim($_customer->getDefaultBillingAddress()->getCompany()) : null;
+                }
+
+                //for guest get data from another path
+                if (!$_companyName) {
+                    $_companyName = $_customer->getBillingAddress()
+                        ? trim($_customer->getBillingAddress()->getCompany()) : null;
+                }
+
+                /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
+                if (!$_companyName && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+                    $_companyName = trim($_customer->getFirstname() . ' ' . $_customer->getLastname());
+                }
+
+                if ($_companyName) {
+                    $_companies[$key] = $_companyName;
+                }
+            }
+        }
+
+        /**
+         * @comment find accounts by the Company name, domain and existing contacts
+         */
+        $_accountsByCompany = (!empty($_companies)) ? $this->lookupByCompanies($_companies, 'CustomIndex') : array();
+
+        $_accountsByDomain = $this->lookupByEmailDomain($_emails, 'id');
+
+        $_accountsByContacts = $this->lookupByContact($_customerEmails, $_websites);
+
+        $_accounts = array_merge($_accountsByCompany, $_accountsByDomain, $_accountsByContacts);
+
+        $_accountsLookup = array();
+
+        foreach ($_accounts as $_id => $_account) {
+            /**
+             * @comment accounts are not splitted by websites, so, we define 0 for cache array compatibility
+             */
+            $_email = $_emails[$_id];
+            $_accountsLookup[0][$_email] = $_account;
+        }
+
+        return $_accountsLookup;
     }
 
     /**
-     * @param null $company
+     * @comment find accounts by contact
+     * @param null $emails
+     * @param array $websites
+     * @param string $field
+     * @return array, key - customerId
      */
-    public function setCompany($company = NULL)
+    public function lookupByContact($emails = NULL, $websites = array(), $field = 'id')
     {
-        // All punctuation
-        $_regex = '/\p{P}+/i';
-        $this->_companyName = preg_replace($_regex, '_', $company);
+        $_results = Mage::helper('tnw_salesforce/salesforce_data_contact')->getContactsByEmails($emails, $websites);
 
-        // All whitespaces
-        $_regex = '/\p{Z}+/i';
-        $this->_companyName = preg_replace($_regex, '_', $company);
+        $returnArray = array();
 
-        $this->_companyName = strtolower($this->_companyName);
+        $_contactMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+        $_accountMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
+
+        foreach ($_results as $result) {
+
+            if (!property_exists($result, 'records') || empty($result->records)) {
+                continue;
+            }
+
+            foreach ($result->records as $_item) {
+
+                if (!property_exists($_item, 'Account')) {
+                    continue;
+                }
+
+                $key = null;
+
+                $_contactMagentoIdValue = property_exists($_item, $_contactMagentoId)? $_item->$_contactMagentoId: null;
+                $_accountMagentoIdValue = property_exists($_item->Account, $_accountMagentoId)? $_item->Account->$_accountMagentoId: null;
+                $_email = (property_exists($_item, 'Email') && $_item->Email) ? strtolower($_item->Email) : NULL;
+
+                if (isset($emails[$_contactMagentoIdValue])) {
+                    $key = $_contactMagentoIdValue;
+                } elseif (isset($emails[$_accountMagentoIdValue])) {
+                    $key = $_accountMagentoIdValue;
+                } elseif (array_search($_email, $emails) !== false) {
+                    $key = array_search($_email, $emails);
+                }
+
+                if ($field == 'email') {
+                    $key = $emails[$key];
+                } elseif ($field == 'id') {
+                    $key = '_' . $key;
+                }
+
+                $returnArray[$key] = $_item->Account;
+                $returnArray[$key]->Id = $_item->AccountId;
+            }
+        }
+        return $returnArray;
     }
 
     /**
-     * @comment find and return accounts by company names
-     * @param $companies
+     * @comment find and return accounts by some field
+     * @param $criterias
+     * @param string $hashField
+     * @param string $field
+     * @return array
      */
-    public function lookupByCompanies($_companies, $_hashField = 'Id')
+    public function lookupByCriterias($criterias, $hashField = 'Id', $field = 'Name')
     {
-        $_companies = array_chunk($_companies, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT, true);
+        $criterias = array_chunk($criterias, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT, true);
 
         $result = array();
 
-        foreach ($_companies as $_companiesChunk) {
-            $_lookupResults = $this->lookupByCompany($_companiesChunk, $_hashField);
-            if (is_array($_lookupResults)) {
-                $result = array_merge($result, $this->lookupByCompany($_companiesChunk, $_hashField));
+        foreach ($criterias as $criteriasChunk) {
+            $lookupResults = $this->lookupByCriteria($criteriasChunk, $hashField, $field);
+            if (is_array($lookupResults)) {
+                $result = array_merge($result, $lookupResults);
                 break;
             }
         }
@@ -54,92 +170,153 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @return bool|null
+     * @comment find account by domain name
+     * @param array $emails
+     * @return array
      */
-    public function lookupByCompany($_companies = array(), $_hashField = 'Id')
+    public function lookupByEmailDomain($emails = array(), $_hashKey = 'email')
+    {
+        $accountIds = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails, $_hashKey);
+        return $this->lookupByCriterias($accountIds, 'CustomIndex','Id');
+    }
+
+    /**
+     * @param null $company
+     * @return $this
+     */
+    public function setCompany($company = null)
+    {
+        $this->_companyName = trim($company);
+
+        return $this;
+    }
+
+    /**
+     * Find and return accounts by company names
+     *
+     * @param array $companies
+     * @param string $hashField
+     *
+     * @return array
+     */
+    public function lookupByCompanies(array $companies, $hashField = 'Id')
+    {
+        return $this->lookupByCriterias($companies, $hashField);
+    }
+
+    protected function _prepareCriteriaSql($criteria, $field)
+    {
+        $sql = 'SELECT Id, OwnerId, Name FROM Account WHERE ';
+
+        $where = array();
+        foreach ($criteria as $value) {
+            if (!empty($value)) {
+                $where[] = sprintf('%s = \'%s\'', $field, addslashes(utf8_encode($value)));
+            }
+        }
+
+        if (empty($where)) {
+            return false;
+        }
+
+        $sql .= '(' . implode(' OR ', $where) . ')';
+
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $sql .= " AND IsPersonAccount != true";
+        }
+        
+        return $sql;
+    }
+    
+    /**
+     * Use the CustomIndex value in $hashField parameter if returned array should use the keys of the $_companies array
+     * @param array $criteria
+     * @param string $hashField
+     * @param string $field
+     * @return array|bool
+     */
+    public function lookupByCriteria($criteria = array(), $hashField = 'Id', $field = 'Name')
     {
         try {
-            if (!$this->_companyName && empty($_companies)) {
+            if (empty($criteria)) {
+                Mage::helper('tnw_salesforce')->log("Account search criteria is not provided, SKIPPING lookup!");
+
+                return false;
+            }
+
+            $sql = $this->_prepareCriteriaSql($criteria, $field);
+            $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
+
+            if (empty($result)) {
+                $this->log("Account lookup by " . var_export($criteria, true) . " returned: 0 results...");
+                return false;
+            }
+
+            $returnArray = array();
+            foreach ($result as $_item) {
+                $_returnObject = new stdClass();
+                $_returnObject->Id = (isset($_item['Id'])) ? $_item['Id'] : NULL;
+                $_returnObject->OwnerId = (isset($_item['OwnerId'])) ? $_item['OwnerId'] : NULL;
+
+                foreach ($criteria as $_customIndex => $_value) {
+                    if ($_item[$field] == $_value) {
+                        $_returnObject->$field = $_value;
+                        $_returnObject->CustomIndex = $_customIndex;
+                        break;
+                    }
+                }
+
+                if (isset($_returnObject->$hashField) && $_returnObject->$hashField) {
+                    $_hashKey = $_returnObject->$hashField;
+                } elseif (isset($_item->$hashField) && $_item->$hashField) {
+                    $_hashKey = $_item->$hashField;
+                } else {
+                    $_hashKey = $_returnObject->Id;
+                }
+
+                $returnArray[$_hashKey] = $_returnObject;
+
+                unset($_returnObject);
+            }
+
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
+            Mage::helper('tnw_salesforce')->log("Could not find an account by criteria: " . var_export($criteria));
+
+            return false;
+        }
+        return $returnArray;
+    }
+
+    /**
+     * @comment Use the "CustomIndex" value in $_hashField parameter if returned array should use the keys of the $_companies array
+     * @return bool|null
+     */
+    public function lookupByCompany(array $companies = array(), $hashField = 'Id')
+    {
+        try {
+            if (!$this->_companyName && empty($companies)) {
                 Mage::helper('tnw_salesforce')->log("Company field is not provided, SKIPPING lookup!");
 
                 return false;
             }
 
-            if (!$_companies) {
-                $_companies = array($this->_companyName);
+            if (!$companies) {
+                $companies = array($this->_companyName);
             }
 
-            if (empty($_companies)) {
-                return array();
-            }
-
-            $query = "SELECT Id, OwnerId, Name FROM Account WHERE ";
-
-            $where = array();
-            foreach ($_companies as $_company) {
-                if ($_company && !empty($_company)) {
-                    $where[] = "(Name LIKE '%" . addslashes(utf8_encode($_company)) . "%')";
-                }
-            }
-
-            if (!empty($where)) {
-                $query .= '(';
-            } else {
-                return array();
-            }
-            $query .= implode(' OR ', $where) ;
-
-            if (!empty($where)) {
-                $query .= ')';
-            }
-
-            if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                $query .= " AND IsPersonAccount != true";
-            }
-
-            $_results = $this->getClient()->query(($query));
-
-            if (empty($_results) || !property_exists($_results, 'size') || $_results->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Account lookup by company name returned: " . $_results->size . " results...");
+            if (empty($companies)) {
                 return false;
             }
-            $returnArray = array();
-            foreach ($_results->records as $_item) {
-                $_obj = new stdClass();
-                $_obj->Id = (property_exists($_item, 'Id')) ? $_item->Id : NULL;
-                $_obj->OwnerId = (property_exists($_item, 'OwnerId')) ? $_item->OwnerId : NULL;
-//                $_obj->Name = $this->_companyName;
 
-                foreach($_companies as $_customIndex => $_company) {
-                    if (strpos($_item->Name, $_company) !== false) {
-                        $_obj->Name = $_company;
-                        $_obj->CustomIndex = $_customIndex;
-                        break;
-                    }
-                }
-
-                if (!empty($_hashField)) {
-
-                    if (property_exists($_obj, $_hashField)) {
-                        $returnArray[$_obj->$_hashField] = $_obj;
-                    } elseif (property_exists($_item, $_hashField)) {
-                        $returnArray[$_item->$_hashField] = $_obj;
-                    }
-
-                } else {
-                    $returnArray[$_obj->Id] = $_obj;
-                }
-
-                unset($_obj);
-            }
+            $returnArray = $this->lookupByCriteria($companies, $hashField);
 
             return $returnArray;
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
             Mage::helper('tnw_salesforce')->log("Could not find a contact by Company: " . $this->_companyName);
-            unset($company);
-
-            return false;
         }
+
+        return false;
     }
 }

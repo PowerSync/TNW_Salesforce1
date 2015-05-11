@@ -57,12 +57,17 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      * @param array $emails
      * @return array
      */
-    public function accountLookupByEmailDomain($emails = array())
+    public function accountLookupByEmailDomain($emails = array(), $_hashKey = 'email')
     {
         try {
             $_domainsArray = array();
-            foreach ($emails as $_email) {
-                $_domainsArray[$_email] = strtolower(substr(stristr($_email, '@'), 1));
+            foreach ($emails as $key => $_email) {
+                if ($_hashKey == 'email') {
+                    $_hashKey = $key;
+                } else {
+                    $_hashKey = $key;
+                }
+                $_domainsArray[$_hashKey] = strtolower(substr(stristr($_email, '@'), 1));
             }
 
             $_return = array();
@@ -71,40 +76,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             $_accountId = NULL;
             if (array_key_exists('domain', $_catchAllDomains) && !empty($_catchAllDomains['domain'])) {
-                foreach ($_domainsArray as $_email => $_domain) {
+                foreach ($_domainsArray as $_hashKey => $_domain) {
                     if (in_array($_domain, $_catchAllDomains['domain'])) {
                         $_key = array_search($_domain, $_catchAllDomains['domain']);
-                        $_return[$_email] = $_catchAllDomains['account'][$_key];
+                        $_return[$_hashKey] = $_catchAllDomains['account'][$_key];
                     }
                 }
             }
-
-            /*
-            if (!empty($_return)) {
-                return $_return;
-            } else {
-                $query = "SELECT AccountId, Account.Name, Email FROM Contact WHERE ";
-                $i = 0;
-                foreach(array_unique($_domainsArray) as $_domain) {
-                    if ($i > 0) {
-                        $query .= ' OR';
-                    }
-                    $query .= " Email LIKE '%@" . $_domain . "'";
-                    $i++;
-                }
-            }
-            Mage::helper('tnw_salesforce')->log("SOOQL: " . $query);
-            $result = $this->getClient()->query(($query));
-
-            unset($query);
-            if (!$result || $result->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Contact lookup by email domain returned: ".$result->size." results...");
-                return false;
-            }
-            foreach($result->records as $_item) {
-                $_return[$_key] = (property_exists($_item, 'AccountId')) ? $_item->AccountId : NULL;
-            }
-            */
 
             return $_return;
         } catch (Exception $e) {
@@ -358,7 +336,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     $tmp->Id = $_item->Id;
                     $tmp->Product2Id = $_item->Product2Id;
                     $tmp->Pricebook2Id = $_item->Pricebook2Id;
-                    $tmp->UnitPrice = $_item->UnitPrice;
+                    $tmp->UnitPrice = $this->numberFormat($_item->UnitPrice);
                     $returnArray[$_item->Product2Id] = $tmp;
                 }
                 return $returnArray;
@@ -565,70 +543,34 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
-     * @param null $obj
-     * @param null $id
-     * @return array|bool
-     * Deprecated
-
-    public function lookup($obj = NULL, $id = NULL)
-    {
-        try {
-            if (!is_object($this->getClient())) {
-                return $this->_noConnectionArray;
-            }
-            $list = $this->getClient()->retrieve("Id, Name, SobjectType, Active", $obj, array($id));
-            unset($obj, $id);
-            return $list;
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
-            Mage::helper('tnw_salesforce')->log("Could not find an " . $obj . " object #" . $id, 1, "sf-errors");
-            unset($e, $obj, $id);
-            return false;
-        }
-    }
-     */
-
-    /**
      * @param null $id
      * @return bool|null
      */
     public function getAccountName($id = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return NULL;
-            }
-            Mage::helper('tnw_salesforce')->log("Trying to get Account Name for #" . $id);
-            $query = "SELECT Name FROM Account WHERE Id='" . $id . "'";
-            $list = $this->getClient()->query(($query));
-            unset($query, $id);
-            $accountName = ($list->records[0]->Name) ? $list->records[0]->Name : NULL;
-            return $accountName;
+            return Mage::getModel('tnw_salesforce_api_entity/account')->load($id)->getData('Name');
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
-            unset($e, $obj, $id);
             return false;
         }
     }
 
     /**
      * @param null $email
-     * @return bool|null
+     * @return string|false
      */
     public function isLeadConverted($email = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return NULL;
+            if (!$email) {
+                return null;
             }
-            $query = "SELECT ID, IsConverted FROM Lead WHERE Email='" . $email . "'";
-            $list = $this->getClient()->query(($query));
-            $isConverted = ($list && property_exists($list, "records") && is_array($list->records) && $list->records[0]->IsConverted) ? $list->records[0]->Id : NULL;
-            return $isConverted;
+            $lead = Mage::getModel('tnw_salesforce_api_entity/lead')->load($email, 'Email');
+            return $lead->isConverted() ? $lead->getId() : false;
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not find a Lead by email: " . $email, 1, "sf-errors");
-            unset($e, $email);
             return false;
         }
     }
@@ -640,13 +582,9 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 return false;
             }
             $list = $this->getClient()->retrieve("Id, isPersonAccount", 'Account', array($id));
-            unset($obj, $id);
             return ($list && property_exists($list[0], "IsPersonAccount") && $list[0]->IsPersonAccount) ? true : false;
         } catch (Exception $e) {
-            // Fail gracefully
-            //Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            //Mage::helper('tnw_salesforce')->log("Could not find an Account by id: " . $id);
-            unset($e, $email);
+            // TODO: Log exception?
             return false;
         }
     }
@@ -686,12 +624,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
             $query = "SELECT ID, Name FROM AssignmentRule";
             $allRules = $this->getClient()->query(($query));
-            unset($query);
+
             return ($allRules && property_exists($allRules, 'records')) ? $allRules->records : array();
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not get a list of Assignment Rules", 1, "sf-errors");
-            unset($e);
+
             return false;
         }
     }
@@ -713,13 +651,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             foreach ($result->records as $_item) {
                 $sortedList[$_item->Name] = $_item->Id;
             }
-            unset($result, $query, $_item, $obj);
             ksort($sortedList);
+
             return array_flip($sortedList);
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not execute Salesforce query on " . $obj . " Object", 1, "sf-errors");
-            unset($e, $obj);
 
             return false;
         }
@@ -746,7 +683,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
             $query = "SELECT ID FROM OpportunityContactRole WHERE OpportunityId = '" . $oid . "' AND ContactId='" . $cid . "'";
             $result = $this->getClient()->query(($query));
-            unset($query);
+
             Mage::helper('tnw_salesforce')->log("Check if the customer opportunity role already exist in SalesForce...");
             if (!$result || $result->size < 1) {
                 Mage::helper('tnw_salesforce')->log("Lookup returned: " . $result->size . " results...", 1, "sf-errors");
@@ -756,7 +693,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not lookup a role for Customer #" . $cid . " & Opportunity #" . $oid, 1, "sf-errors");
-            unset($oid, $cid, $e);
+
             return false;
         }
     }
@@ -773,16 +710,14 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
             $query = "SELECT ID FROM Pricebook2 WHERE IsStandard = TRUE";
             $result = $this->getClient()->query(($query));
-            unset($query);
             if (!$result || $result->size < 1) {
-
                 return false;
             }
+
             return $result->records[0]->Id;
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not lookup standard Pricebook Id", 1, "sf-errors");
-            unset($e);
 
             return false;
         }
@@ -802,8 +737,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             foreach ($result->records as $_item) {
                 $sortedList[$_item->Name] = $_item->Id;
             }
-            unset($result, $query, $_item, $obj);
             ksort($sortedList);
+
             return array_flip($sortedList);
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
@@ -827,7 +762,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 return false;
             }
             if (!is_object($this->getClient())) {
-
                 return false;
             }
             $query = "SELECT ID, PricebookEntryId, Quantity, ServiceDate, UnitPrice, Description FROM OpportunityLineItem WHERE OpportunityId ";
@@ -839,7 +773,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             Mage::helper('tnw_salesforce')->log("OpportunityLineItem Lookup Query: " . $query);
             $result = $this->getClient()->query(($query));
-            unset($query);
             $items = array();
             if (property_exists($result, 'records')) {
                 foreach ($result->records as $_cartItem) {
@@ -853,7 +786,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage(), 1, "sf-errors");
             Mage::helper('tnw_salesforce')->log("Could not lookup Opportunity Line Items for Opportunity #" . $oid, 1, "sf-errors");
             $errorString = $e->getMessage();
-            unset($oid, $e);
 
             return $errorString;
         }
