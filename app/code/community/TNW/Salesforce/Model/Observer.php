@@ -11,6 +11,8 @@ class TNW_Salesforce_Model_Observer
     protected $_menu = NULL;
     protected $_acl = NULL;
 
+    protected $exportedOrders = array();
+
     public function adjustMenu() {
 
         // Update Magento admin menu
@@ -187,22 +189,40 @@ class TNW_Salesforce_Model_Observer
         return true;
     }
 
-    public function pushOrder(Varien_Event_Observer $observer) {
-        $_orderIds = $observer->getEvent()->getData('orderIds');
-        $_message = $observer->getEvent()->getMessage();
-        $_type = $observer->getEvent()->getType();
-        $_isQueue = $observer->getEvent()->getData('isQueue');
+    /**
+     * Method executed by tnw_sales_process_order event
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function pushOrder(Varien_Event_Observer $observer)
+    {
+        $helper = Mage::helper('tnw_salesforce');
 
-        $_objectType = $observer->getEvent()->getData('object_type');
-
-        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
-
-        if (count($_orderIds) == 1 && $_type == 'bulk') {
-            $_type = 'salesforce';
+        $orderIds = $observer->getEvent()->getData('orderIds');
+        //check that order has been already exported
+        foreach ($orderIds as $key => $orderId) {
+            if (in_array($orderId, $this->exportedOrders)) {
+                $helper->log('Skipping export order ' . $orderId . '. Already exported.');
+                unset($orderIds[$key]);
+            } else {
+                $this->exportedOrders[] = $orderId;
+            }
+        }
+        if (empty($orderIds)) {
+            return;
         }
 
+        $type = $observer->getEvent()->getType();
+        if (count($orderIds) == 1 && $type == 'bulk') {
+            $type = 'salesforce';
+        }
+
+        $message = $observer->getEvent()->getMessage();
+        $queueIds = $observer->getEvent()->getData('isQueue')
+            ? $observer->getEvent()->getData('queueIds') : array();
+
         Mage::helper('tnw_salesforce')->log('Pushing Order(s) ... ');
-        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_order', $_queueIds);
+        $this->_processOrderPush($orderIds, $message, 'tnw_salesforce/' . $type . '_order', $queueIds);
     }
 
     public function pushOpportunity(Varien_Event_Observer $observer) {
