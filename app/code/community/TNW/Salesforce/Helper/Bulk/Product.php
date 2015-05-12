@@ -433,7 +433,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             'pricebookEntry' => array('Id' => NULL),
         );
 
-        $this->_client = new Zend_Http_Client();
+        $this->_client = $this->getHttpClient();
         $this->_client->setConfig(
             array(
                 'maxredirects' => 0,

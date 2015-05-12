@@ -628,7 +628,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $row = $this->_write->query($sql)->fetch();
         $this->_productEntityTypeCode = ($row) ? (int)$row['entity_type_id'] : NULL;
 
-        $this->_client = new Zend_Http_Client();
+        $this->_client = $this->getHttpClient();
         $this->_client->setConfig(
             array(
                 'maxredirects' => 0,
@@ -639,6 +639,13 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         );
 
         $this->_fillWebsiteSfIds();
+    }
+
+    public function getHttpClient()
+    {
+        $client = new Zend_Http_Client();
+        return $client;
+
     }
 
     protected function _fillWebsiteSfIds(){

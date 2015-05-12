@@ -1,0 +1,40 @@
+config:
+  default/salesforce_customer/lead_config/customer_integration: 0
+  default/salesforce/syncronization/sync_type_realtime: 'Queue Interval'
+eav:
+  customer:
+    - entity_id: 1
+      email: test1@email.com
+      firstname: firstname1
+      lastname: lastname1
+      store_id: 0
+    - entity_id: 2
+      email: test2@email.com
+      firstname: firstname2
+      lastname: lastname2
+      store_id: 0
+  customer_address:
+    - entity_id: 60 #billing/shipping
+      parent_id: 1
+      company: test123
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+      default_billing: true
+      is_default_billing: true
+      default_shipping: true
+      is_default_shipping: true
+    - entity_id: 70 #billing/shipping
+      parent_id: 2
+      company: test123
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+      default_billing: true
+      is_default_billing: true
+      default_shipping: true
+      is_default_shipping: true

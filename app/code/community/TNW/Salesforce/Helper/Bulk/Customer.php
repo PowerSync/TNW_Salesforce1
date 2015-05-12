@@ -776,15 +776,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             'account' => array('Id' => NULL),
         );
 
-        $this->_client = new Zend_Http_Client();
-        $this->_client->setConfig(
-            array(
-                'maxredirects' => 0,
-                'timeout' => 10,
-                'keepalive' => true,
-                'storeresponse' => true,
-            )
-        );
 
         $valid = $this->check();
 
