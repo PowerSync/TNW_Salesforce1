@@ -6,7 +6,7 @@
 class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesforce_Customer
 {
     /**
-     * @var null
+     * @var null|Zend_Http_Client
      */
     protected $_client = NULL;
 

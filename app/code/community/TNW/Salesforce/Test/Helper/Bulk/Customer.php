@@ -1,12 +1,22 @@
 <?php
 
-class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Case
+/**
+ * Author: Evgeniy Ermolaev
+ * Email: eermolaev@yandex.ru
+ *
+ * Class TNW_Salesforce_Test_Helper_Bulk_Customer
+ */
+
+class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Bulkcase
 {
+
     /**
      * @loadFixture
      */
     public function testProcess()
     {
+        $this->_prepareClientData();
+
         $this->mockClient(array('upsert', 'query'));
         $this->mockConnection(array('initConnection', 'isLoggedIn', 'tryWsdl', 'tryToConnect', 'tryToLogin'));
         $this->mockApplyClientToConnection();
@@ -43,9 +53,7 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Case
             $customerIds[] = $customerData['entity_id'];
         }
 
-
-//        //$instance_url = explode('/', $this->getConnectionMock()->getServerUrl());
-        $salesforceServerDomain = Mage::app()->getStore()->getBaseUrl() . '/';
+        $salesforceServerDomain = 'https://localhost:443';
 
         /**
          * @var $syncHelper TNW_Salesforce_Helper_Bulk_Customer|EcomDev_PHPUnit_Mock_Proxy
@@ -62,21 +70,7 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Case
 
         $syncHelper->expects($this->any())
             ->method('getHttpClient')
-            ->will($this->returnCallback(function() {
-                $bulkClient = $this->mockClass('Zend_Http_Client', array('request'));
-
-                $response = new Varien_Object();
-                $response->setBody('12321321312');
-
-                $bulkClient->expects($this->any())
-                    ->method('request')
-                    ->will($this->returnValue($response));
-
-                return $bulkClient;
-            }));
-
-        $class = new ReflectionClass($syncHelper);
-        $method = $class->getMethod('getHttpClient');
+            ->will($this->returnCallback(array($this, 'getHttpClient')));
 
         $syncHelper->setIsFromCLI(true);
         $this->assertTrue($syncHelper->reset());
@@ -84,11 +78,6 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Case
         $syncHelper->massAdd($customerIds);
         $syncHelper->process();
 
-
     }
 
-    public function getClient()
-    {
-
-    }
 }

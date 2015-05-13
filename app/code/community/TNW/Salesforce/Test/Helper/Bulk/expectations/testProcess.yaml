@@ -1,0 +1,233 @@
+account-upsertCreateJob:
+  uri: https://localhost:443/services/async/32.0/job
+  request: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+      <operation>upsert</operation>
+      <object>Account</object><externalIdFieldName>Id</externalIdFieldName><contentType>XML</contentType>
+    </jobInfo>
+
+  response: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <id>111111111111111111</id>
+        <operation>upsert</operation>
+        <object>Account</object>
+        <createdById>createdById</createdById>
+        <createdDate>2015-05-13T10:09:03.000Z</createdDate>
+        <systemModstamp>2015-05-13T10:09:03.000Z</systemModstamp>
+        <state>Open</state>
+        <externalIdFieldName>Id</externalIdFieldName>
+        <concurrencyMode>Parallel</concurrencyMode>
+        <contentType>XML</contentType>
+        <numberBatchesQueued>0</numberBatchesQueued>
+        <numberBatchesInProgress>0</numberBatchesInProgress>
+        <numberBatchesCompleted>0</numberBatchesCompleted>
+        <numberBatchesFailed>0</numberBatchesFailed>
+        <numberBatchesTotal>0</numberBatchesTotal>
+        <numberRecordsProcessed>0</numberRecordsProcessed>
+        <numberRetries>0</numberRetries>
+        <apiVersion>32.0</apiVersion>
+        <numberRecordsFailed>0</numberRecordsFailed>
+        <totalProcessingTime>0</totalProcessingTime>
+        <apiActiveProcessingTime>0</apiActiveProcessingTime>
+        <apexProcessingTime>0</apexProcessingTime>
+    </jobInfo>
+
+account-push:
+  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  request: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <sObject>
+            <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
+            <Name><![CDATA[firstname1 lastname1]]></Name>
+        </sObject>
+        <sObject>
+            <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
+            <Name><![CDATA[firstname2 lastname2]]></Name>
+        </sObject>
+    </sObjects>
+  response: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <batchInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+       <id>222222222222222222</id>
+       <jobId>111111111111111111</jobId>
+       <state>Queued</state>
+       <createdDate>2015-05-13T15:21:18.000Z</createdDate>
+       <systemModstamp>2015-05-13T15:21:18.000Z</systemModstamp>
+       <numberRecordsProcessed>0</numberRecordsProcessed>
+       <numberRecordsFailed>0</numberRecordsFailed>
+       <totalProcessingTime>0</totalProcessingTime>
+       <apiActiveProcessingTime>0</apiActiveProcessingTime>
+       <apexProcessingTime>0</apexProcessingTime>
+    </batchInfo>
+
+
+account-check-batch:
+  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  request:
+  response: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <batchInfoList xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <batchInfo>
+            <id>75124000000ObDFAA0</id>
+            <jobId>75024000000OKPfAAO</jobId>
+            <state>Completed</state>
+            <createdDate>2015-05-13T16:27:20.000Z</createdDate>
+            <systemModstamp>2015-05-13T16:27:21.000Z</systemModstamp>
+            <numberRecordsProcessed>2</numberRecordsProcessed>
+            <numberRecordsFailed>0</numberRecordsFailed>
+            <totalProcessingTime>181</totalProcessingTime>
+            <apiActiveProcessingTime>80</apiActiveProcessingTime>
+            <apexProcessingTime>10</apexProcessingTime>
+        </batchInfo>
+    </batchInfoList>
+
+account-assignAccountIds:
+  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch/222222222222222/result
+  request:
+  response: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <results xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <result>
+            <id>00124000008UM8DAAW</id>
+            <success>true</success>
+            <created>true</created>
+        </result>
+    </results>
+
+contact-upsertCreateJob:
+  uri: https://localhost:443/services/async/32.0/job
+  request: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <operation>upsert</operation>
+        <object>Contact</object><externalIdFieldName>tnw_mage_basic__Magento_ID__c</externalIdFieldName><contentType>XML</contentType>
+    </jobInfo>
+
+  response: |
+  <?xml version="1.0" encoding="UTF-8"?>
+  <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+     <id>111111111111111111</id>
+     <operation>upsert</operation>
+     <object>Contact</object>
+     <createdById>00524000000eEKzAAM</createdById>
+     <createdDate>2015-05-13T15:43:30.000Z</createdDate>
+     <systemModstamp>2015-05-13T15:43:30.000Z</systemModstamp>
+     <state>Open</state>
+     <externalIdFieldName>tnw_mage_basic__Magento_ID__c</externalIdFieldName>
+     <concurrencyMode>Parallel</concurrencyMode>
+     <contentType>XML</contentType>
+     <numberBatchesQueued>0</numberBatchesQueued>
+     <numberBatchesInProgress>0</numberBatchesInProgress>
+     <numberBatchesCompleted>0</numberBatchesCompleted>
+     <numberBatchesFailed>0</numberBatchesFailed>
+     <numberBatchesTotal>0</numberBatchesTotal>
+     <numberRecordsProcessed>0</numberRecordsProcessed>
+     <numberRetries>0</numberRetries>
+     <apiVersion>32.0</apiVersion>
+     <numberRecordsFailed>0</numberRecordsFailed>
+     <totalProcessingTime>0</totalProcessingTime>
+     <apiActiveProcessingTime>0</apiActiveProcessingTime>
+     <apexProcessingTime>0</apexProcessingTime>
+  </jobInfo>
+
+contact-push:
+  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  request: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <sObject>
+            <OwnerId><![CDATA[00524000000eEKzAAM]]></OwnerId>
+            <Email><![CDATA[jacobi.d'angelo.281776@example.org]]></Email>
+            <FirstName><![CDATA[Karelle]]></FirstName>
+            <LastName><![CDATA[Mohr]]></LastName>
+            <MailingStreet><![CDATA[365 Treutel Dam]]></MailingStreet>
+            <MailingCity><![CDATA[West Heidimouth]]></MailingCity>
+            <MailingPostalCode><![CDATA[76949]]></MailingPostalCode>
+            <MailingCountry><![CDATA[PT]]></MailingCountry>
+            <OtherStreet><![CDATA[365 Treutel Dam]]></OtherStreet>
+            <OtherCity><![CDATA[West Heidimouth]]></OtherCity>
+            <OtherPostalCode><![CDATA[76949]]></OtherPostalCode>
+            <OtherCountry><![CDATA[PT]]></OtherCountry>
+            <OtherPhone><![CDATA[698-562-1610x46097]]></OtherPhone>
+            <Phone><![CDATA[698-562-1610x46097]]></Phone>
+            <tnw_mage_basic__Magento_ID__c><![CDATA[1967]]></tnw_mage_basic__Magento_ID__c>
+            <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
+            <AccountId><![CDATA[00124000008UMBcAAO]]></AccountId>
+            <tnw_mage_basic__Magento_Website__c><![CDATA[a03240000010L27AAE]]></tnw_mage_basic__Magento_Website__c>
+        </sObject>
+        <sObject>
+            <OwnerId><![CDATA[00524000000eEKzAAM]]></OwnerId>
+            <Email><![CDATA[wilson.balistreri.014022@example.com]]></Email>
+            <FirstName><![CDATA[Ned]]></FirstName>
+            <LastName><![CDATA[Kreiger]]></LastName>
+            <MailingStreet><![CDATA[9095 Streich Islands Apt. 994]]></MailingStreet>
+            <MailingCity><![CDATA[West Joaquin]]></MailingCity>
+            <MailingPostalCode><![CDATA[68198-6964]]></MailingPostalCode>
+            <MailingCountry><![CDATA[IT]]></MailingCountry>
+            <OtherStreet><![CDATA[9095 Streich Islands Apt. 994]]></OtherStreet>
+            <OtherCity><![CDATA[West Joaquin]]></OtherCity>
+            <OtherPostalCode><![CDATA[68198-6964]]></OtherPostalCode>
+            <OtherCountry><![CDATA[IT]]></OtherCountry>
+            <OtherPhone><![CDATA[105.539.5932x11874]]></OtherPhone>
+            <Phone><![CDATA[105.539.5932x11874]]></Phone>
+            <tnw_mage_basic__Magento_ID__c><![CDATA[1968]]></tnw_mage_basic__Magento_ID__c>
+            <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
+            <AccountId><![CDATA[]]></AccountId>
+            <tnw_mage_basic__Magento_Website__c><![CDATA[a03240000010L27AAE]]></tnw_mage_basic__Magento_Website__c>
+        </sObject>
+    </sObjects>
+  response: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <batchInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <id>222222222222222222</id>
+        <jobId>111111111111111111</jobId>
+        <state>Queued</state>
+        <createdDate>2015-05-13T15:48:57.000Z</createdDate>
+        <systemModstamp>2015-05-13T15:48:57.000Z</systemModstamp>
+        <numberRecordsProcessed>0</numberRecordsProcessed>
+        <numberRecordsFailed>0</numberRecordsFailed>
+        <totalProcessingTime>0</totalProcessingTime>
+        <apiActiveProcessingTime>0</apiActiveProcessingTime>
+        <apexProcessingTime>0</apexProcessingTime>
+    </batchInfo>
+
+
+contact-check-batch:
+  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  request:
+  response: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <batchInfoList xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+     <batchInfo>
+      <id>222222222222222222</id>
+      <jobId>111111111111111111</jobId>
+      <state>Completed</state>
+      <createdDate>2015-05-13T15:48:57.000Z</createdDate>
+      <systemModstamp>2015-05-13T15:48:58.000Z</systemModstamp>
+      <numberRecordsProcessed>2</numberRecordsProcessed>
+      <numberRecordsFailed>0</numberRecordsFailed>
+      <totalProcessingTime>514</totalProcessingTime>
+      <apiActiveProcessingTime>421</apiActiveProcessingTime>
+      <apexProcessingTime>8</apexProcessingTime>
+     </batchInfo>
+    </batchInfoList>
+contact-assignContactIds:
+  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch/222222222222222/result
+  request:
+  response: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <results xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+        <result>
+            <id>003240000060aioAAA</id>
+            <success>true</success>
+            <created>true</created>
+        </result>
+        <result>
+            <id>003240000060aipAAA</id>
+            <success>true</success>
+            <created>true</created>
+        </result>
+    </results>

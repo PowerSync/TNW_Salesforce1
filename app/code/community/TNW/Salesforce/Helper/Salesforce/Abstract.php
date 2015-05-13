@@ -77,7 +77,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected $_maxBatchLimit = 0;
 
     /**
-     * @var null
+     * @var Zend_Http_Client
      */
     protected $_client = NULL;
 
