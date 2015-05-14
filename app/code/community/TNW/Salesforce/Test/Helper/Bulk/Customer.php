@@ -78,6 +78,16 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Bulkc
         $syncHelper->massAdd($customerIds);
         $syncHelper->process();
 
+        $accountId = -1;
+        foreach ($customerIds as $customerId) {
+            $customer = \Mage::getModel('customer/customer')->load($customerId);
+
+            if ($accountId != -1) {
+                $this->assertEquals($accountId, $customer->getSalesforceAccountId());
+            }
+            $accountId = $customer->getSalesforceAccountId();
+        }
+
     }
 
 }

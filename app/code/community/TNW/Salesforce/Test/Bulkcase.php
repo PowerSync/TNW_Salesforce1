@@ -106,8 +106,6 @@ abstract class TNW_Salesforce_Test_Bulkcase extends TNW_Salesforce_Test_Case
 
             $response = new Varien_Object();
 
-            $response->setClient($this->_bulkClient);
-
             /**
              * @comment try to find response by request or uri
              */

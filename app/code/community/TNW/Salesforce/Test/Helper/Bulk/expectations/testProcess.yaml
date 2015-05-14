@@ -10,7 +10,7 @@ account-upsertCreateJob:
   response: |
     <?xml version="1.0" encoding="UTF-8"?>
     <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
-        <id>111111111111111111</id>
+        <id>job-id-1-111</id>
         <operation>upsert</operation>
         <object>Account</object>
         <createdById>createdById</createdById>
@@ -35,7 +35,7 @@ account-upsertCreateJob:
     </jobInfo>
 
 account-push:
-  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  uri: https://localhost:443/services/async/32.0/job/job-id-1-/batch
   request: |
     <?xml version="1.0" encoding="UTF-8"?>
     <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">
@@ -51,8 +51,8 @@ account-push:
   response: |
     <?xml version="1.0" encoding="UTF-8"?>
     <batchInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
-       <id>222222222222222222</id>
-       <jobId>111111111111111111</jobId>
+       <id>batch-id-1-222</id>
+       <jobId>job-id-1-111</jobId>
        <state>Queued</state>
        <createdDate>2015-05-13T15:21:18.000Z</createdDate>
        <systemModstamp>2015-05-13T15:21:18.000Z</systemModstamp>
@@ -65,7 +65,7 @@ account-push:
 
 
 account-check-batch:
-  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  uri: https://localhost:443/services/async/32.0/job/job-id-1-/batch
   request:
   response: |
     <?xml version="1.0" encoding="UTF-8"?>
@@ -85,13 +85,13 @@ account-check-batch:
     </batchInfoList>
 
 account-assignAccountIds:
-  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch/222222222222222/result
+  uri: https://localhost:443/services/async/32.0/job/job-id-1-/batch/batch-id-1-/result
   request:
   response: |
     <?xml version="1.0" encoding="UTF-8"?>
     <results xmlns="http://www.force.com/2009/06/asyncapi/dataload">
         <result>
-            <id>00124000008UM8DAAW</id>
+            <id>ACCOUNT-ID-UM8DAAW</id>
             <success>true</success>
             <created>true</created>
         </result>
@@ -107,34 +107,34 @@ contact-upsertCreateJob:
     </jobInfo>
 
   response: |
-  <?xml version="1.0" encoding="UTF-8"?>
-  <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
-     <id>111111111111111111</id>
-     <operation>upsert</operation>
-     <object>Contact</object>
-     <createdById>00524000000eEKzAAM</createdById>
-     <createdDate>2015-05-13T15:43:30.000Z</createdDate>
-     <systemModstamp>2015-05-13T15:43:30.000Z</systemModstamp>
-     <state>Open</state>
-     <externalIdFieldName>tnw_mage_basic__Magento_ID__c</externalIdFieldName>
-     <concurrencyMode>Parallel</concurrencyMode>
-     <contentType>XML</contentType>
-     <numberBatchesQueued>0</numberBatchesQueued>
-     <numberBatchesInProgress>0</numberBatchesInProgress>
-     <numberBatchesCompleted>0</numberBatchesCompleted>
-     <numberBatchesFailed>0</numberBatchesFailed>
-     <numberBatchesTotal>0</numberBatchesTotal>
-     <numberRecordsProcessed>0</numberRecordsProcessed>
-     <numberRetries>0</numberRetries>
-     <apiVersion>32.0</apiVersion>
-     <numberRecordsFailed>0</numberRecordsFailed>
-     <totalProcessingTime>0</totalProcessingTime>
-     <apiActiveProcessingTime>0</apiActiveProcessingTime>
-     <apexProcessingTime>0</apexProcessingTime>
-  </jobInfo>
+    <?xml version="1.0" encoding="UTF-8"?>
+    <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
+      <id>job-id-2-111</id>
+      <operation>upsert</operation>
+      <object>Contact</object>
+      <createdById>00524000000eEKzAAM</createdById>
+      <createdDate>2015-05-13T15:43:30.000Z</createdDate>
+      <systemModstamp>2015-05-13T15:43:30.000Z</systemModstamp>
+      <state>Open</state>
+      <externalIdFieldName>tnw_mage_basic__Magento_ID__c</externalIdFieldName>
+      <concurrencyMode>Parallel</concurrencyMode>
+      <contentType>XML</contentType>
+      <numberBatchesQueued>0</numberBatchesQueued>
+      <numberBatchesInProgress>0</numberBatchesInProgress>
+      <numberBatchesCompleted>0</numberBatchesCompleted>
+      <numberBatchesFailed>0</numberBatchesFailed>
+      <numberBatchesTotal>0</numberBatchesTotal>
+      <numberRecordsProcessed>0</numberRecordsProcessed>
+      <numberRetries>0</numberRetries>
+      <apiVersion>32.0</apiVersion>
+      <numberRecordsFailed>0</numberRecordsFailed>
+      <totalProcessingTime>0</totalProcessingTime>
+      <apiActiveProcessingTime>0</apiActiveProcessingTime>
+      <apexProcessingTime>0</apexProcessingTime>
+    </jobInfo>
 
 contact-push:
-  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  uri: https://localhost:443/services/async/32.0/job/job-id-2-/batch
   request: |
     <?xml version="1.0" encoding="UTF-8"?>
     <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">
@@ -155,7 +155,7 @@ contact-push:
             <Phone><![CDATA[698-562-1610x46097]]></Phone>
             <tnw_mage_basic__Magento_ID__c><![CDATA[1967]]></tnw_mage_basic__Magento_ID__c>
             <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
-            <AccountId><![CDATA[00124000008UMBcAAO]]></AccountId>
+            <AccountId><![CDATA[ACCOUNT-ID-UM8DAAW]]></AccountId>
             <tnw_mage_basic__Magento_Website__c><![CDATA[a03240000010L27AAE]]></tnw_mage_basic__Magento_Website__c>
         </sObject>
         <sObject>
@@ -182,11 +182,11 @@ contact-push:
   response: |
     <?xml version="1.0" encoding="UTF-8"?>
     <batchInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
-        <id>222222222222222222</id>
-        <jobId>111111111111111111</jobId>
+        <id>batch-id-2-222</id>
+        <jobId>job-id-2-111</jobId>
         <state>Queued</state>
-        <createdDate>2015-05-13T15:48:57.000Z</createdDate>
-        <systemModstamp>2015-05-13T15:48:57.000Z</systemModstamp>
+        <createdDate>2015-05-14T12:58:48.000Z</createdDate>
+        <systemModstamp>2015-05-14T12:58:48.000Z</systemModstamp>
         <numberRecordsProcessed>0</numberRecordsProcessed>
         <numberRecordsFailed>0</numberRecordsFailed>
         <totalProcessingTime>0</totalProcessingTime>
@@ -196,26 +196,27 @@ contact-push:
 
 
 contact-check-batch:
-  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch
+  uri: https://localhost:443/services/async/32.0/job/job-id-2-/batch
   request:
   response: |
     <?xml version="1.0" encoding="UTF-8"?>
     <batchInfoList xmlns="http://www.force.com/2009/06/asyncapi/dataload">
-     <batchInfo>
-      <id>222222222222222222</id>
-      <jobId>111111111111111111</jobId>
-      <state>Completed</state>
-      <createdDate>2015-05-13T15:48:57.000Z</createdDate>
-      <systemModstamp>2015-05-13T15:48:58.000Z</systemModstamp>
-      <numberRecordsProcessed>2</numberRecordsProcessed>
-      <numberRecordsFailed>0</numberRecordsFailed>
-      <totalProcessingTime>514</totalProcessingTime>
-      <apiActiveProcessingTime>421</apiActiveProcessingTime>
-      <apexProcessingTime>8</apexProcessingTime>
-     </batchInfo>
+        <batchInfo>
+            <id>batch-id-2-222</id>
+            <jobId>job-id-2-111</jobId>
+            <state>Completed</state>
+            <createdDate>2015-05-13T15:48:57.000Z</createdDate>
+            <systemModstamp>2015-05-13T15:48:58.000Z</systemModstamp>
+            <numberRecordsProcessed>2</numberRecordsProcessed>
+            <numberRecordsFailed>0</numberRecordsFailed>
+            <totalProcessingTime>514</totalProcessingTime>
+            <apiActiveProcessingTime>421</apiActiveProcessingTime>
+            <apexProcessingTime>8</apexProcessingTime>
+        </batchInfo>
     </batchInfoList>
+
 contact-assignContactIds:
-  uri: https://localhost:443/services/async/32.0/job/111111111111111/batch/222222222222222/result
+  uri: https://localhost:443/services/async/32.0/job/job-id-2-/batch/batch-id-2-/result
   request:
   response: |
     <?xml version="1.0" encoding="UTF-8"?>
