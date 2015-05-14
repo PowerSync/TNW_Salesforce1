@@ -8,11 +8,15 @@ eav:
       firstname: firstname1
       lastname: lastname1
       store_id: 0
+      default_billing: 60
+      default_shipping: 60
     - entity_id: 2
       email: test2@email.com
       firstname: firstname2
       lastname: lastname2
       store_id: 0
+      default_billing: 70
+      default_shipping: 70
   customer_address:
     - entity_id: 60 #billing/shipping
       parent_id: 1

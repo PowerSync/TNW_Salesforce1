@@ -11,6 +11,10 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Bulkc
 {
 
     /**
+     * @comment test a bug: if 2 customers have same Company name - new account should be assigned for the both
+     * @comment at the present time account assign to the fiest one only
+     * @comment test based on the fixture data. Customer default mapping should be defined
+     *
      * @loadFixture
      */
     public function testProcess()
@@ -68,9 +72,20 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Bulkc
             ->method('getSalesforceServerDomain')
             ->will($this->returnValue($salesforceServerDomain));
 
+        $this->_bulkClient = $this->mockClass('Zend_Http_Client', array('request', 'setRawData'));
+
+        $this->_bulkClient->expects($spy = $this->any())
+            ->method('setRawData')
+            ->will($this->returnCallback($this->setRawData()));
+
+        $this->_bulkClient->expects($this->any())
+            ->method('request')
+            ->will($this->returnCallback($this->request()));
+
+
         $syncHelper->expects($this->any())
             ->method('getHttpClient')
-            ->will($this->returnCallback(array($this, 'getHttpClient')));
+            ->will($this->returnValue($this->_bulkClient));
 
         $syncHelper->setIsFromCLI(true);
         $this->assertTrue($syncHelper->reset());
@@ -78,15 +93,16 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Bulkc
         $syncHelper->massAdd($customerIds);
         $syncHelper->process();
 
-        $accountId = -1;
-        foreach ($customerIds as $customerId) {
-            $customer = \Mage::getModel('customer/customer')->load($customerId);
-
-            if ($accountId != -1) {
-                $this->assertEquals($accountId, $customer->getSalesforceAccountId());
+        //check if needed log found
+        $found = false;
+        $contactPushTransaction = $this->expected('contact-push');
+        foreach ($spy->getInvocations() as $invocation) {
+            if ($this->trimXmlString($invocation->parameters[0]) == $this->trimXmlString($contactPushTransaction->getRequest())) {
+                $found = true;
+                break;
             }
-            $accountId = $customer->getSalesforceAccountId();
         }
+        $this->assertTrue($found);
 
     }
 

@@ -32,23 +32,11 @@ abstract class TNW_Salesforce_Test_Bulkcase extends TNW_Salesforce_Test_Case
     {
         $expected = $this->expected();
         if (!empty($expected)) {
-            foreach ($expected->getData() as $requestType => $data) {
-                if (
-                    (isset($data['request']) || isset($data['uri']))
-                    && isset($data['response'])
-                ) {
+            $this->_requestToResponse = $expected->getData();
 
-                    $request = $this->trimXmlString($data['request']);
-                    $uri = $data['uri'];
-                    $response = $data['response'];
-
-                    $key = $request;
-                    if (empty($key)) {
-                        $key = $uri;
-                    }
-
-                    $this->_requestToResponse[$key] = $response;
-                }
+            foreach ($this->_requestToResponse as $key => $data) {
+                $data['request'] = $this->trimXmlString($data['request']);
+                $this->_requestToResponse[$key] = $data;
             }
         }
     }
@@ -58,28 +46,11 @@ abstract class TNW_Salesforce_Test_Bulkcase extends TNW_Salesforce_Test_Case
      * @param $xmlString
      * @return mixed
      */
-    public function trimXmlString($xmlString)
+    public function trimXmlString(&$xmlString)
     {
         $xmlString = str_replace(array(' ', "\n", "\r", "\t"), '', $xmlString);
 
         return $xmlString;
-    }
-    /**
-     *
-     */
-    public function getHttpClient()
-    {
-        $this->_bulkClient = $this->mockClass('Zend_Http_Client', array('request', 'setRawData'));
-
-        $this->_bulkClient->expects($this->any())
-            ->method('setRawData')
-            ->will($this->returnCallback($this->setRawData()));
-
-        $this->_bulkClient->expects($this->any())
-            ->method('request')
-            ->will($this->returnCallback($this->request()));
-
-        return $this->_bulkClient;
     }
 
     /**
@@ -87,7 +58,7 @@ abstract class TNW_Salesforce_Test_Bulkcase extends TNW_Salesforce_Test_Case
      */
     public function setRawData()
     {
-        return function($data, $enctype = null) {
+        return function ($data, $enctype = null) {
             $this->_bulkClientRawData = $data;
             $this->_bulkClientRawData = $this->trimXmlString($this->_bulkClientRawData);
             return $this;
@@ -109,14 +80,23 @@ abstract class TNW_Salesforce_Test_Bulkcase extends TNW_Salesforce_Test_Case
             /**
              * @comment try to find response by request or uri
              */
-            $key = $this->_bulkClientRawData;
-            if (!isset($this->_requestToResponse[$key])) {
-                $key = $this->_bulkClient->getUri(true);
+            $responseBody = null;
+
+            if (!empty($this->_bulkClientRawData)) {
+                $searchBy = 'request';
+                $searchSign = $this->_bulkClientRawData;
+            } else {
+                $searchBy = 'uri';
+                $searchSign = $this->_bulkClient->getUri(true);
             }
 
-            if (isset($this->_requestToResponse[$key])) {
-                $response->setBody($this->_requestToResponse[$key]);
+            foreach ($this->_requestToResponse as $transactionData) {
+                if ($transactionData[$searchBy] == $searchSign) {
+                    $responseBody = $transactionData['response'];
+                }
             }
+
+            $response->setBody($responseBody);
 
             $this->_bulkClient->setRawData(null);
             return $response;

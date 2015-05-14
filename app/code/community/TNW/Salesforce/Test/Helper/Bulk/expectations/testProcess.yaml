@@ -40,12 +40,8 @@ account-push:
     <?xml version="1.0" encoding="UTF-8"?>
     <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">
         <sObject>
+            <Name><![CDATA[test123]]></Name>
             <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
-            <Name><![CDATA[firstname1 lastname1]]></Name>
-        </sObject>
-        <sObject>
-            <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
-            <Name><![CDATA[firstname2 lastname2]]></Name>
         </sObject>
     </sObjects>
   response: |
@@ -139,44 +135,36 @@ contact-push:
     <?xml version="1.0" encoding="UTF-8"?>
     <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">
         <sObject>
-            <OwnerId><![CDATA[00524000000eEKzAAM]]></OwnerId>
-            <Email><![CDATA[jacobi.d'angelo.281776@example.org]]></Email>
-            <FirstName><![CDATA[Karelle]]></FirstName>
-            <LastName><![CDATA[Mohr]]></LastName>
-            <MailingStreet><![CDATA[365 Treutel Dam]]></MailingStreet>
-            <MailingCity><![CDATA[West Heidimouth]]></MailingCity>
-            <MailingPostalCode><![CDATA[76949]]></MailingPostalCode>
-            <MailingCountry><![CDATA[PT]]></MailingCountry>
-            <OtherStreet><![CDATA[365 Treutel Dam]]></OtherStreet>
-            <OtherCity><![CDATA[West Heidimouth]]></OtherCity>
-            <OtherPostalCode><![CDATA[76949]]></OtherPostalCode>
-            <OtherCountry><![CDATA[PT]]></OtherCountry>
-            <OtherPhone><![CDATA[698-562-1610x46097]]></OtherPhone>
-            <Phone><![CDATA[698-562-1610x46097]]></Phone>
-            <tnw_mage_basic__Magento_ID__c><![CDATA[1967]]></tnw_mage_basic__Magento_ID__c>
+            <Email><![CDATA[test1@email.com]]></Email>
+            <FirstName><![CDATA[firstname1]]></FirstName>
+            <LastName><![CDATA[lastname1]]></LastName>
+            <MailingStreet><![CDATA[Lubyanka 100]]></MailingStreet>
+            <MailingCity><![CDATA[Moscow]]></MailingCity>
+            <MailingPostalCode><![CDATA[123000]]></MailingPostalCode>
+            <MailingCountry><![CDATA[RU]]></MailingCountry>
+            <OtherStreet><![CDATA[Lubyanka 100]]></OtherStreet>
+            <OtherCity><![CDATA[Moscow]]></OtherCity>
+            <OtherPostalCode><![CDATA[123000]]></OtherPostalCode>
+            <OtherCountry><![CDATA[RU]]></OtherCountry>
+            <tnw_mage_basic__Magento_ID__c><![CDATA[1]]></tnw_mage_basic__Magento_ID__c>
             <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
             <AccountId><![CDATA[ACCOUNT-ID-UM8DAAW]]></AccountId>
-            <tnw_mage_basic__Magento_Website__c><![CDATA[a03240000010L27AAE]]></tnw_mage_basic__Magento_Website__c>
         </sObject>
         <sObject>
-            <OwnerId><![CDATA[00524000000eEKzAAM]]></OwnerId>
-            <Email><![CDATA[wilson.balistreri.014022@example.com]]></Email>
-            <FirstName><![CDATA[Ned]]></FirstName>
-            <LastName><![CDATA[Kreiger]]></LastName>
-            <MailingStreet><![CDATA[9095 Streich Islands Apt. 994]]></MailingStreet>
-            <MailingCity><![CDATA[West Joaquin]]></MailingCity>
-            <MailingPostalCode><![CDATA[68198-6964]]></MailingPostalCode>
-            <MailingCountry><![CDATA[IT]]></MailingCountry>
-            <OtherStreet><![CDATA[9095 Streich Islands Apt. 994]]></OtherStreet>
-            <OtherCity><![CDATA[West Joaquin]]></OtherCity>
-            <OtherPostalCode><![CDATA[68198-6964]]></OtherPostalCode>
-            <OtherCountry><![CDATA[IT]]></OtherCountry>
-            <OtherPhone><![CDATA[105.539.5932x11874]]></OtherPhone>
-            <Phone><![CDATA[105.539.5932x11874]]></Phone>
-            <tnw_mage_basic__Magento_ID__c><![CDATA[1968]]></tnw_mage_basic__Magento_ID__c>
+            <Email><![CDATA[test2@email.com]]></Email>
+            <FirstName><![CDATA[firstname2]]></FirstName>
+            <LastName><![CDATA[lastname2]]></LastName>
+            <MailingStreet><![CDATA[Lubyanka 100]]></MailingStreet>
+            <MailingCity><![CDATA[Moscow]]></MailingCity>
+            <MailingPostalCode><![CDATA[123000]]></MailingPostalCode>
+            <MailingCountry><![CDATA[RU]]></MailingCountry>
+            <OtherStreet><![CDATA[Lubyanka 100]]></OtherStreet>
+            <OtherCity><![CDATA[Moscow]]></OtherCity>
+            <OtherPostalCode><![CDATA[123000]]></OtherPostalCode>
+            <OtherCountry><![CDATA[RU]]></OtherCountry>
+            <tnw_mage_basic__Magento_ID__c><![CDATA[2]]></tnw_mage_basic__Magento_ID__c>
             <tnw_mage_enterp__disableMagentoSync__c><![CDATA[1]]></tnw_mage_enterp__disableMagentoSync__c>
-            <AccountId><![CDATA[]]></AccountId>
-            <tnw_mage_basic__Magento_Website__c><![CDATA[a03240000010L27AAE]]></tnw_mage_basic__Magento_Website__c>
+            <AccountId><![CDATA[ACCOUNT-ID-UM8DAAW]]></AccountId>
         </sObject>
     </sObjects>
   response: |
