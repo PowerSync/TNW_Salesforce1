@@ -12,7 +12,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandoned_Opportunity_Edit_Form extends Mag
         ));
         $form->setUseContainer(true);
         $this->setForm($form);
-        $fieldset = $form->addFieldset('opportunity_map', array('legend' => Mage::helper('tnw_salesforce')->__('Mapping Information')));
+        $fieldset = $form->addFieldset('opportunity_map', array('legend' => $this->__('Mapping Information')));
         $formData = Mage::registry('salesforce_opportunity_data')->getData();
 
         if (array_key_exists('default_value', $formData) && $formData['default_value']) {
@@ -36,18 +36,18 @@ class TNW_Salesforce_Block_Adminhtml_Abandoned_Opportunity_Edit_Form extends Mag
         } catch (Exception $e) {
             $sfFields[] = array(
                 'value' => '',
-                'label' => 'Could not retrieve Salesforce fields'
+                'label' => $this->__('Could not retrieve Salesforce fields'),
             );
         }
 
 
         $fieldset->addField('sf_field', 'select', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Salesforce Name'),
+            'label' => $this->__('Salesforce Name'),
             'name' => 'sf_field',
-            'after_element_html' => '<p class="note">Salesforce API field name.</p>',
+            'note' => $this->__('Salesforce API field name.'),
             'style' => 'width:400px',
-            //	'required'  => true,
             'values' => $sfFields,
+            'class' => 'chosen-select',
         ));
 
         $mageFields = array();
@@ -56,37 +56,32 @@ class TNW_Salesforce_Block_Adminhtml_Abandoned_Opportunity_Edit_Form extends Mag
         } catch (Exception $e) {
             $mageFields[] = array(
                 'value' => '',
-                'label' => 'Could not retrieve Magento fields'
+                'label' => $this->__('Could not retrieve Magento fields'),
             );
         }
 
         $fieldset->addField('local_field', 'select', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Local Name'),
-            'class' => 'required-entry',
-            'after_element_html' => '<p class="note">Choose Magento field you wish to map to Salesforce API.</p>',
-            //'required'  => true,
+            'label' => $this->__('Local Name'),
+            'class' => 'required-entry chosen-select',
+            'note' => $this->__('Choose Magento field you wish to map to Salesforce API.'),
             'style' => 'width:400px',
             'name' => 'local_field',
             'values' => $mageFields,
         ));
 
         /* Custom Value */
-        $fieldset = $form->addFieldset('opportunity_map_custom', array('legend' => Mage::helper('tnw_salesforce')->__('Custom Mapping')));
+        $fieldset = $form->addFieldset('opportunity_map_custom', array('legend' => $this->__('Custom Mapping')));
 
         $fieldset->addField('default_code', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Attribute Code'),
-            //'class'     => 'required-entry',
-            'after_element_html' => '<p class="note">Unique attribute code.</p>',
-            //'required'  => true,
+            'label' => $this->__('Attribute Code'),
+            'note' => $this->__('Unique attribute code.'),
             'style' => 'width:400px',
             'name' => 'default_code',
         ));
 
         $fieldset->addField('default_value', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Attribute Value'),
-            //'class'     => 'required-entry',
-            'after_element_html' => '<p class="note">Value to be used when Object is created</p>',
-            //'required'  => true,
+            'label' => $this->__('Attribute Value'),
+            'note' => $this->__('Value to be used when Object is created'),
             'style' => 'width:400px',
             'name' => 'default_value',
         ));
