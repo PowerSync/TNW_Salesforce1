@@ -12,7 +12,7 @@ class TNW_Salesforce_Block_Adminhtml_Product_Edit_Form extends Mage_Adminhtml_Bl
         ));
         $form->setUseContainer(true);
         $this->setForm($form);
-        $fieldset = $form->addFieldset('product_map', array('legend' => Mage::helper('tnw_salesforce')->__('Mapping Information')));
+        $fieldset = $form->addFieldset('product_map', array('legend' => $this->__('Mapping Information')));
         $formData = Mage::registry('salesforce_product_data')->getData();
 
         if (array_key_exists('default_value', $formData) && $formData['default_value']) {
@@ -34,35 +34,36 @@ class TNW_Salesforce_Block_Adminhtml_Product_Edit_Form extends Mage_Adminhtml_Bl
         }
 
         $fieldset->addField('sf_field', 'select', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Salesforce Name'),
+            'label' => $this->__('Salesforce Name'),
             'name' => 'sf_field',
-            'after_element_html' => '<p class="note">Salesforce API field name.</p>',
+            'note' => $this->__('Salesforce API field name.'),
             'style' => 'width:400px',
             'values' => $sfFields,
+            'class' => 'chosen-select',
         ));
 
         $fieldset->addField('local_field', 'select', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Local Name'),
-            'class' => 'required-entry',
-            'after_element_html' => '<p class="note">Choose Magento field you wish to map to Salesforce API.</p>',
+            'label' => $this->__('Local Name'),
+            'class' => 'required-entry chosen-select',
+            'note' => $this->__('Choose Magento field you wish to map to Salesforce API.'),
             'style' => 'width:400px',
             'name' => 'local_field',
             'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes('Product'),
         ));
 
         /* Custom Value */
-        $fieldset = $form->addFieldset('product_map_custom', array('legend' => Mage::helper('tnw_salesforce')->__('Custom Mapping')));
+        $fieldset = $form->addFieldset('product_map_custom', array('legend' => $this->__('Custom Mapping')));
 
         $fieldset->addField('default_code', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Attribute Code'),
-            'after_element_html' => '<p class="note">Unique attribute code.</p>',
+            'label' => $this->__('Attribute Code'),
+            'note' => $this->__('Unique attribute code.'),
             'style' => 'width:400px',
             'name' => 'default_code',
         ));
 
         $fieldset->addField('default_value', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Attribute Value'),
-            'after_element_html' => '<p class="note">Value to be used when Object is created</p>',
+            'label' => $this->__('Attribute Value'),
+            'note' => $this->__('Value to be used when Object is created'),
             'style' => 'width:400px',
             'name' => 'default_value',
         ));

@@ -44,7 +44,7 @@ class TNW_Salesforce_Block_Adminhtml_Domains
         foreach ($this->getShippingMethods() as $_id => $_accountName) {
             $html .= '<option value="' . $this->escapeHtml($_id) . '" '
                 . $this->_getSelected('account/' . $rowIndex, $_id)
-                . ' style="background:white;">' . $this->escapeHtml($_accountName) . '</option>';
+                . '>' . $this->escapeHtml($_accountName) . '</option>';
         }
         $html .= '</select>';
 
@@ -118,7 +118,7 @@ class TNW_Salesforce_Block_Adminhtml_Domains
                 ->setType('button')
                 ->setClass('add ' . $this->_getDisabled())
                 ->setLabel($this->__($title))
-                ->setOnClick("Element.insert($('" . $container . "'), {bottom: $('" . $template . "').innerHTML})")
+                ->setOnClick("$('" . $container . "').insert({bottom: $('" . $template . "').innerHTML}); new Chosen($('" . $container . "').select('select').last());")
                 ->setDisabled($this->_getDisabled())
                 ->toHtml();
         }

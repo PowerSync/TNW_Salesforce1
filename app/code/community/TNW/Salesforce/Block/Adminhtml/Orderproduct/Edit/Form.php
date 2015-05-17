@@ -46,16 +46,17 @@ class TNW_Salesforce_Block_Adminhtml_Orderproduct_Edit_Form extends Mage_Adminht
         $fieldset->addField('sf_field', 'select', array(
             'label' => Mage::helper('tnw_salesforce')->__('Salesforce Name'),
             'name' => 'sf_field',
-            'after_element_html' => '<p class="note">Salesforce API field name.</p>',
+            'note' => $this->__('Salesforce API field name.'),
             'style' => 'width:400px',
             'required' => true,
             'values' => $sfFields,
+            'class' => 'chosen-select',
         ));
 
         $fieldset->addField('local_field', 'select', array(
             'label' => Mage::helper('tnw_salesforce')->__('Local Name'),
-            'class' => 'required-entry',
-            'after_element_html' => '<p class="note">Choose Magento field you wish to map to Salesforce API.</p>',
+            'class' => 'required-entry chosen-select',
+            'note' => $this->__('Choose Magento field you wish to map to Salesforce API.'),
             'required' => true,
             'style' => 'width:400px',
             'name' => 'local_field',
@@ -67,14 +68,14 @@ class TNW_Salesforce_Block_Adminhtml_Orderproduct_Edit_Form extends Mage_Adminht
 
         $fieldset->addField('default_code', 'text', array(
             'label' => Mage::helper('tnw_salesforce')->__('Attribute Code'),
-            'after_element_html' => '<p class="note">Unique attribute code.</p>',
+            'note' => $this->__('Unique attribute code.'),
             'style' => 'width:400px',
             'name' => 'default_code',
         ));
 
         $fieldset->addField('default_value', 'text', array(
             'label' => Mage::helper('tnw_salesforce')->__('Attribute Value'),
-            'after_element_html' => '<p class="note">Value to be used when Object is created</p>',
+            'note' => $this->__('Value to be used when Object is created'),
             'style' => 'width:400px',
             'name' => 'default_value',
         ));
