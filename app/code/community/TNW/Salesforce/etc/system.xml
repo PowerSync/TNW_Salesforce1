@@ -532,11 +532,11 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <customer_integration>1</customer_integration>
                             </depends>
-                            <comment>This owner will be assigned to a Contact and Account when Lead is converted
-                            </comment>
+                            <comment>This owner will be assigned to a Contact and Account when Lead is converted</comment>
                         </customer_lead_owner>
                     </fields>
                 </lead_config>
@@ -565,6 +565,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <customer_form_enable>1</customer_form_enable>
                             </depends>
@@ -720,6 +721,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <frontend_class>chosen-select</frontend_class>
                             <comment>Salesforce Pricebook used for this store</comment>
                         </default_pricebook>
                         <price_accuracy translate="label">
@@ -951,6 +953,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
@@ -986,6 +989,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <abandoned_customer_opportunity_role_enable>1</abandoned_customer_opportunity_role_enable>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>

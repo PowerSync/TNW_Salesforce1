@@ -1,12 +1,32 @@
 <?xml version="1.0"?>
 <layout>
+    <tnw_salesforce_chosen>
+        <reference name="head">
+            <action method="addJs">
+                <file>tnw-salesforce/chosen/chosen.proto.min.js</file>
+            </action>
+            <action method="addItem">
+                <type>js_css</type>
+                <file>tnw-salesforce/chosen/chosen.min.css</file>
+            </action>
+            <action method="addJs">
+                <file>tnw-salesforce/chosen-enable.js</file>
+            </action>
+            <action method="addItem">
+                <type>js_css</type>
+                <file>tnw-salesforce/chosen-enable.css</file>
+            </action>
+        </reference>
+    </tnw_salesforce_chosen>
+
     <adminhtml_system_config_edit>
-		<reference name="content">
-			<block type="tnw_salesforce/adminhtml_check" name="tnw_salesforce.test.results"  before="-" template="salesforce/config/test/results.phtml">
-				<block type="tnw_salesforce/adminhtml_check_grid" name="sf_test_results" as="sf_test_results"/>
-			</block>
-		</reference>
-	</adminhtml_system_config_edit>
+        <reference name="content">
+            <block type="tnw_salesforce/adminhtml_check" name="tnw_salesforce.test.results" before="-"
+                   template="salesforce/config/test/results.phtml">
+                <block type="tnw_salesforce/adminhtml_check_grid" name="sf_test_results" as="sf_test_results"/>
+            </block>
+        </reference>
+    </adminhtml_system_config_edit>
     <adminhtml_salesforcesync_ordersync_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_ordersync_grid" name="ordersync.grid" output="toHtml"></block>
@@ -30,20 +50,52 @@
 
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
-        <update handle="order_salesforce_info" />
+        <update handle="order_salesforce_info"/>
     </adminhtml_sales_order_view>
 
     <order_salesforce_info>
         <reference name="order_info">
-            <block after="order_info" type="tnw_salesforce/sales_order_view_salesforce" name="salesforce_info" template="salesforce/sales/order/view/salesforce.phtml"/>
+            <block after="order_info" type="tnw_salesforce/sales_order_view_salesforce" name="salesforce_info"
+                   template="salesforce/sales/order/view/salesforce.phtml"/>
         </reference>
     </order_salesforce_info>
 
     <!-- Disable Cache -->
     <reference name="tnw_salesforce.test.results">
-        <action method="setCacheLifetime" />
+        <action method="setCacheLifetime"/>
     </reference>
     <reference name="sf_test_results">
-        <action method="setCacheLifetime" />
+        <action method="setCacheLifetime"/>
     </reference>
-</layout>   
+
+    <!-- Enabled chosen selects -->
+    <adminhtml_salesforce_product_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_product_edit>
+    <adminhtml_salesforce_lead_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_lead_edit>
+    <adminhtml_salesforce_contact_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_contact_edit>
+    <adminhtml_salesforce_account_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_account_edit>
+    <adminhtml_salesforce_abandoned_opportunity_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_abandoned_opportunity_edit>
+    <adminhtml_salesforce_abandoned_opportunitylineitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_abandoned_opportunitylineitem_edit>
+    <adminhtml_salesforce_order_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_order_edit>
+    <adminhtml_salesforce_orderproduct_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_orderproduct_edit>
+
+    <!-- Add Chosen to system config page -->
+    <adminhtml_system_config_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_system_config_edit>
+</layout>
