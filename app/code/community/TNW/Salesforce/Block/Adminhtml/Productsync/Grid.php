@@ -118,6 +118,14 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
                 'width' => '50px',
                 'type' => 'number',
                 'index' => 'entity_id',
+                'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+                'actions' => array(
+                    array(
+                        'url' => array('base' => '*/catalog_product/edit'),
+                        'field' => 'id',
+                        'getter' => 'getId',
+                    )
+                ),
             ));
         $this->addColumn('name',
             array(
