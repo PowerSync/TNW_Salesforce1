@@ -14,7 +14,8 @@ class TNW_Salesforce_Test_Helper_Bulk_Customer extends TNW_Salesforce_Test_Bulkc
      * @comment test a bug: if 2 customers have same Company name - new account should be assigned for the both
      * @comment at the present time account assign to the fiest one only
      * @comment test based on the fixture data. Customer default mapping should be defined
-     *
+     * @singleton tnw_salesforce/sync_mapping_customer_account
+     * @singleton tnw_salesforce/sync_mapping_customer_contact
      * @loadFixture
      */
     public function testProcess()
