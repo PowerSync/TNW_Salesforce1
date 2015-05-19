@@ -16,7 +16,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
 
     /**
      * @comment Mapping collection container
-     * @var null
+     * @var null|TNW_Salesforce_Model_Mysql4_Mapping_Collection
      */
     protected $_mappingCollection = null;
 
