@@ -13,6 +13,15 @@ class TNW_Salesforce_Model_Observer
 
     protected $exportedOrders = array();
 
+    /**
+     * @return array
+     */
+    public function getExportedOrders()
+    {
+        return $this->exportedOrders;
+    }
+
+
     public function adjustMenu() {
 
         // Update Magento admin menu

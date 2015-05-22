@@ -220,7 +220,13 @@ class TNW_Salesforce_Model_Sale_Observer
             return;
         }
 
-        if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
+        $exportedOrders = Mage::getSingleton('tnw_salesforce/observer')->getExportedOrders();
+
+        if (
+            !Mage::getSingleton('core/session')->getFromSalesForce()
+            && !in_array($order->getId(), $exportedOrders)
+        ) {
+
             Mage::helper('tnw_salesforce/salesforce_opportunity')->resetOrder($order->getId());
         }
 

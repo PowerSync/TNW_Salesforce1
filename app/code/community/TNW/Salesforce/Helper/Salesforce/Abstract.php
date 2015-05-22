@@ -686,7 +686,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             } else {
                 Mage::helper('tnw_salesforce')->log("Entity Key: " . $k);
             }
-            if (empty($_obj) || !is_array($_obj)) {
+            if (empty($_obj) || (!is_array($_obj) && !is_object($_obj))) {
                 Mage::helper('tnw_salesforce')->log($type . " Object is empty!", 1, "sf-errors");
             } else {
                 foreach ($_obj as $_key => $_value) {
