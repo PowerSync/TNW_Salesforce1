@@ -167,7 +167,15 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     public function updateObjectStatusById(array $idSet = array(), $status = 'sync_running')
     {
         $idLine = empty($idSet) ? "" : "'" . join("', '", $idSet) . "'";
-        $sql = "UPDATE " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " SET status = '" . $status . "' where id in (" . $idLine . ")";
+
+        $additinalUpdate = '';
+        if ($status == 'sync_running') {
+            $additinalUpdate = ', sync_attempt = sync_attempt + 1 ';
+        } elseif ($status == 'new') {
+            $additinalUpdate = ', sync_attempt = 1 ';
+        }
+
+        $sql = "UPDATE " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " SET status = '" . $status . "' $additinalUpdate where id in (" . $idLine . ")";
         $res = $this->getDbConnection()->query($sql);
 
         return $res;

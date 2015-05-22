@@ -13,7 +13,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     protected $_wsdl = NULL;
 
     /**
-     * @var bool
+     * @var bool|SoapClient
      */
     protected $_connection = FALSE;
 

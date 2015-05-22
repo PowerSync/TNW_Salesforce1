@@ -41,7 +41,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
-     * @return mixed
+     * @return mixed|Salesforce_SforceEnterpriseClient
      */
     public function getClient()
     {

@@ -5,6 +5,8 @@
  */
 class TNW_Salesforce_Model_Mysql4_Queue_Storage_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
 {
+    const SYNC_ATTEMPT_LIMIT = 10;
+
     protected function _construct()
     {
         parent::_construct();
@@ -31,6 +33,17 @@ class TNW_Salesforce_Model_Mysql4_Queue_Storage_Collection extends Mage_Core_Mod
     {
         $this->getSelect()
             ->where('main_table.sf_object_type = ?', $sfType);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function addSyncAttemptToFilter()
+    {
+        $this->getSelect()
+            ->where('main_table.sync_attempt <= ?', self::SYNC_ATTEMPT_LIMIT);
 
         return $this;
     }
