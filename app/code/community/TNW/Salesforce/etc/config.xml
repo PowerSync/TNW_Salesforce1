@@ -210,7 +210,6 @@
                 </observers>
             </aitcfm_order_save_after>
 
-            <!-- show sf status info in admin part -->
             <adminhtml_controller_action_predispatch_start>
                 <observers>
                     <tnw_salesforce_controller_action_predispatch_start>
@@ -220,16 +219,6 @@
                     </tnw_salesforce_controller_action_predispatch_start>
                 </observers>
             </adminhtml_controller_action_predispatch_start>
-            <!--<controller_action_layout_load_before>-->
-            <controller_action_layout_render_before>
-                <observers>
-                    <tnw_salesforce_block_load_observer>
-                        <type>singleton</type>
-                        <class>tnw_salesforce/observer</class>
-                        <method>showSfStatus</method>
-                    </tnw_salesforce_block_load_observer>
-                </observers>
-            </controller_action_layout_render_before>
 
             <!-- admin login success -->
             <admin_session_user_login_success>
@@ -424,6 +413,20 @@
             </updates>
         </layout>
         <events>
+            <!--
+                show sf status info
+                this event because it should be executed only once and if no redirect
+            -->
+            <controller_action_layout_generate_xml_before>
+                <observers>
+                    <tnw_salesforce_block_load_observer>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/observer</class>
+                        <method>showSfStatus</method>
+                    </tnw_salesforce_block_load_observer>
+                </observers>
+            </controller_action_layout_generate_xml_before>
+
             <!-- Blocks for admin panel: update adminhtml/sales_order_view_info html if module enabled -->
             <core_block_abstract_to_html_after>
                 <observers>
