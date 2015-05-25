@@ -28,7 +28,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
         if (!property_exists($this->getObj(), 'FirstName') || !$this->getObj()->FirstName) {
             // Check if lookup has the data
             if (
-                array_key_exists($this->_email, $this->_cache['contactsLookup'])
+                !empty($this->_cache['contactsLookup'])
+                && array_key_exists($this->_email, $this->_cache['contactsLookup'])
                 && property_exists($this->_cache['contactsLookup'][$this->_email], 'FirstName')
                 && $this->_cache['contactsLookup'][$this->_email]->FirstName
             ) {
@@ -40,7 +41,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Contact extends TNW_Salesforce_
         if (!property_exists($this->getObj(), 'LastName') || !$this->getObj()->LastName) {
             // Check if lookup has the data
             if (
-                array_key_exists($this->_email, $this->_cache['contactsLookup'])
+                !empty($this->_cache['contactsLookup'])
+                && array_key_exists($this->_email, $this->_cache['contactsLookup'])
                 && property_exists($this->_cache['contactsLookup'][$this->_email], 'LastName')
                 && $this->_cache['contactsLookup'][$this->_email]->LastName
             ) {

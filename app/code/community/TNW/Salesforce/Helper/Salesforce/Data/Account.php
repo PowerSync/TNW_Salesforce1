@@ -108,7 +108,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
         foreach ($_results as $result) {
 
-            if (!property_exists($result, 'records') || empty($result->records)) {
+            if (!is_object($result) || !property_exists($result, 'records') || empty($result->records)) {
                 continue;
             }
 

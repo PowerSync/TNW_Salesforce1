@@ -45,7 +45,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     /**
      * Process Products
      */
-    protected function _processProducts() {
+    protected function _processProducts()
+    {
         $_type = 'Product';
         $_module = 'tnw_salesforce/bulk_product';
 
@@ -55,7 +56,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     /**
      * Process Customers
      */
-    protected function _processCustomers() {
+    protected function _processCustomers()
+    {
         $_type = 'Customer';
         $_module = 'tnw_salesforce/bulk_customer';
 
@@ -65,7 +67,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     /**
      * Process Website
      */
-    protected function _processWebsites() {
+    protected function _processWebsites()
+    {
         $_type = 'Website';
         $_module = 'tnw_salesforce/bulk_website';
 
@@ -75,7 +78,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     /**
      * Process Order
      */
-    protected function _processInvoices() {
+    protected function _processInvoices()
+    {
         $_type = 'Invoice';
         // Allow Powersync to overwite fired event for customizations
         $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
@@ -101,7 +105,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     /**
      * Process Order
      */
-    protected function _processOrders() {
+    protected function _processOrders()
+    {
         $_type = 'Order';
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
         $_module = 'tnw_salesforce/bulk_' . $_syncType;
@@ -123,7 +128,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     /**
      * Process Abandoned carts
      */
-    protected function _processAbandoned() {
+    protected function _processAbandoned()
+    {
         $_type = 'Abandoned';
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
         $_module = 'tnw_salesforce/bulk_abandoned_' . $_syncType;
@@ -145,7 +151,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     /**
      * Used for customization
      */
-    protected function _processCustomObjects() {
+    protected function _processCustomObjects()
+    {
 
     }
 
@@ -154,24 +161,25 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
      * @return mixed
      * Load queued enteties
      */
-    protected function _loadQueue($_type = NULL) {
+    protected function _loadQueue($_type = NULL)
+    {
         $_collection = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addStatusNoToFilter('sync_running')
             ->addStatusNoToFilter('success')
-            ->setOrder('status', 'ASC')
-        ;
+            ->setOrder('status', 'ASC');
         if ($_type) {
             $_collection->addSftypeToFilter($_type);
         }
 
-        if (count($this->_itemIds) > 0){
+        if (count($this->_itemIds) > 0) {
             $_collection->getSelect()->where('id IN (?)', $this->_itemIds);
         }
 
         return $_collection;
     }
 
-    protected function _synchronizePreSet() {
+    protected function _synchronizePreSet()
+    {
         $_collection = $this->_loadQueue();
 
         $_idSet = array();
@@ -213,11 +221,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 Mage::dispatchEvent(
                     'tnw_sales_process_' . $_syncType,
                     array(
-                        $_idPrefix . 'Ids'      => $_objectIdSet,
-                        'message'       => NULL,
-                        'type'          => 'bulk',
-                        'isQueue'       => true,
-                        'queueIds'      => $_idSet
+                        $_idPrefix . 'Ids' => $_objectIdSet,
+                        'message' => NULL,
+                        'type' => 'bulk',
+                        'isQueue' => true,
+                        'queueIds' => $_idSet
                     )
                 );
             } elseif ($_type == 'Invoice') {
@@ -226,11 +234,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 Mage::dispatchEvent(
                     'tnw_sales_process_' . $_syncType,
                     array(
-                        'orderIds'      => $_objectIdSet,
-                        'message'       => NULL,
-                        'type'          => 'bulk',
-                        'isQueue'       => true,
-                        'queueIds'      => $_idSet
+                        'orderIds' => $_objectIdSet,
+                        'message' => NULL,
+                        'type' => 'bulk',
+                        'isQueue' => true,
+                        'queueIds' => $_idSet
                     )
                 );
             } else {
@@ -270,7 +278,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
      * @param $_type
      * Process selected queue items
      */
-    protected function _synchronize($_type, $_module, $_getAlternativeKey = false) {
+    protected function _synchronize($_type, $_module, $_getAlternativeKey = false)
+    {
 
         $_collection = $this->_loadQueue($_type);
 
@@ -296,12 +305,12 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 Mage::dispatchEvent(
                     'tnw_sales_process_' . $_syncType,
                     array(
-                        'orderIds'      => $_objectIdSet,
-                        'message'       => NULL,
-                        'type'          => 'bulk',
-                        'isQueue'       => true,
-                        'queueIds'      => $_idSet,
-                        'object_type'   => $_type
+                        'orderIds' => $_objectIdSet,
+                        'message' => NULL,
+                        'type' => 'bulk',
+                        'isQueue' => true,
+                        'queueIds' => $_idSet,
+                        'object_type' => $_type
                     )
                 );
             } else {
@@ -334,39 +343,23 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         }
     }
 
-    //
-    public function prepareRecordsToBeAddedToQueue($itemIds = array(), $_sfObject = NULL, $_mageModel = NULL) {
+    /**
+     * @TODO change this method calling to the addObject localstorage method
+     * @deprecated, exists modules compatibility for
+     * @param array $itemIds
+     * @param null $_sfObject
+     * @param null $_mageModel
+     */
+    public function prepareRecordsToBeAddedToQueue($itemIds = array(), $_sfObject = NULL, $_mageModel = NULL)
+    {
         if (empty($itemIds) || !$_sfObject || !$_mageModel) {
             Mage::getSingleton('adminhtml/session')->addError('Could not add records to the queue!');
         }
 
-        $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
-        unset($itemIds);
-        foreach($_chunks as $_chunk) {
-            $_queue = Mage::getModel('tnw_salesforce/queue');
-            $_queue->setData('record_ids', serialize($_chunk));
-            $_queue->setData('mage_object_type', $_mageModel);
-            $_queue->setData('sf_object_type', $_sfObject);
 
-            Mage::dispatchEvent(
-                "tnw_salesforce_add_to_queue_before",
-                array(
-                    "record_ids" => $_queue->getData('record_ids'),
-                    "mage_object_type" => $_queue->getData('mage_object_type'),
-                    "sf_object_type" => $_queue->getData('sf_object_type'),
-                )
-            );
-            $_queue->save();
-            Mage::dispatchEvent(
-                "tnw_salesforce_add_to_queue_after",
-                array(
-                    "record_ids" => $_queue->getData('record_ids'),
-                    "mage_object_type" => $_queue->getData('mage_object_type'),
-                    "sf_object_type" => $_queue->getData('sf_object_type'),
-                    "id" => $_queue->getData('entity_id')
-                )
-            );
-            Mage::helper('tnw_salesforce')->clearMemory();
-        }
+        $localstorage = Mage::getModel('tnw_salesforce/localstorage');
+
+        $localstorage->addObject($itemIds, $_sfObject, $_mageModel);
+
     }
 }

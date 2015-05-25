@@ -77,7 +77,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected $_maxBatchLimit = 0;
 
     /**
-     * @var null
+     * @var Zend_Http_Client
      */
     protected $_client = NULL;
 
@@ -628,7 +628,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $row = $this->_write->query($sql)->fetch();
         $this->_productEntityTypeCode = ($row) ? (int)$row['entity_type_id'] : NULL;
 
-        $this->_client = new Zend_Http_Client();
+        $this->_client = $this->getHttpClient();
         $this->_client->setConfig(
             array(
                 'maxredirects' => 0,
@@ -639,6 +639,13 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         );
 
         $this->_fillWebsiteSfIds();
+    }
+
+    public function getHttpClient()
+    {
+        $client = new Zend_Http_Client();
+        return $client;
+
     }
 
     protected function _fillWebsiteSfIds(){
@@ -679,7 +686,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             } else {
                 Mage::helper('tnw_salesforce')->log("Entity Key: " . $k);
             }
-            if (empty($_obj) || !is_array($_obj)) {
+            if (empty($_obj) || (!is_array($_obj) && !is_object($_obj))) {
                 Mage::helper('tnw_salesforce')->log($type . " Object is empty!", 1, "sf-errors");
             } else {
                 foreach ($_obj as $_key => $_value) {

@@ -1244,7 +1244,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                  !$this->_isPerson
             ) {
                 $this->_obj->AccountId = $this->getCustomerAccount($_email);
-                if (!$this->_obj->AccountId) {
+                if (!$this->_obj->AccountId && !empty($this->_cache['accountLookup'])) {
                     $this->_obj->AccountId = $this->_cache['accountLookup'][0][$_email]->Id;
                 }
 
@@ -1636,35 +1636,37 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 /**
                  * @comment try to find lead
                  */
-                foreach ($this->_cache['leadLookup'] as $_websiteId => $_leads) {
-                    foreach ($_leads as $_email => $_lead) {
-                        if ($_lead->IsConverted) {
-                            // TODO: if no contacts found, confirm that new contact and account should be created.
-                            continue;
+                if (!empty($this->_cache['leadLookup'])) {
+                    foreach ($this->_cache['leadLookup'] as $_websiteId => $_leads) {
+                        foreach ($_leads as $_email => $_lead) {
+                            if ($_lead->IsConverted) {
+                                // TODO: if no contacts found, confirm that new contact and account should be created.
+                                continue;
+                            }
+
+                            if (!$_lead->Id) {
+                                // Skip if there is no Lead ID
+                                continue;
+                            }
+
+                            $leadConvert = new stdClass();
+
+                            if (isset($this->_cache['accountLookup'][0][$_email])) {
+                                $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
+                            }
+
+                            if (isset($this->_cache['contactsLookup'][$_websiteId][$_email])) {
+                                $leadConvert->contactId = $this->_cache['contactsLookup'][$_websiteId][$_email]->Id;
+                            }
+
+                            $leadConvert = $this->_prepareLeadConversionObject($_lead, $leadConvert);
+
+                            $_productId = array_search($_email, $_emailsArray);
+                            $this->_cache['leadsToConvert'][$_productId] = $leadConvert;
+
+                            unset($_emailsArray[$_productId]);
+
                         }
-
-                        if (!$_lead->Id) {
-                            // Skip if there is no Lead ID
-                            continue;
-                        }
-
-                        $leadConvert = new stdClass();
-
-                        if (isset($this->_cache['accountLookup'][0][$_email])) {
-                            $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
-                        }
-
-                        if (isset($this->_cache['contactsLookup'][$_websiteId][$_email])) {
-                            $leadConvert->contactId = $this->_cache['contactsLookup'][$_websiteId][$_email]->Id;
-                        }
-
-                        $leadConvert = $this->_prepareLeadConversionObject($_lead, $leadConvert);
-
-                        $_productId = array_search($_email, $_emailsArray);
-                        $this->_cache['leadsToConvert'][$_productId] = $leadConvert;
-
-                        unset($_emailsArray[$_productId]);
-
                     }
                 }
             }

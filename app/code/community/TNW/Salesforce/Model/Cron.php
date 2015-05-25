@@ -455,6 +455,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         // get entity id list from local storage
         $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
             ->addSftypeToFilter($type)
+            ->addSyncAttemptToFilter()
             ->addStatusNoToFilter('sync_running')
             ->addStatusNoToFilter('success')
             ->setOrder('status', 'ASC')    // Leave 'error' at the end of the collection

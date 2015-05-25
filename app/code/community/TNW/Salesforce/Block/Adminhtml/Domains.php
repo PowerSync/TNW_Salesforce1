@@ -38,13 +38,13 @@ class TNW_Salesforce_Block_Adminhtml_Domains
     protected function _getRowTemplateHtml($rowIndex = 0)
     {
         $html = '<li>';
-        $html .= '<select name="' . $this->getElement()->getName() . '[account][]" ' . $this->_getDisabled() . '>';
+        $html .= '<select class="chosen-select" name="' . $this->getElement()->getName() . '[account][]" ' . $this->_getDisabled() . '>';
         $html .= '<option value="">' . $this->__('* Select an Account') . '</option>';
 
         foreach ($this->getShippingMethods() as $_id => $_accountName) {
             $html .= '<option value="' . $this->escapeHtml($_id) . '" '
                 . $this->_getSelected('account/' . $rowIndex, $_id)
-                . ' style="background:white;">' . $this->escapeHtml($_accountName) . '</option>';
+                . '>' . $this->escapeHtml($_accountName) . '</option>';
         }
         $html .= '</select>';
 
@@ -118,7 +118,7 @@ class TNW_Salesforce_Block_Adminhtml_Domains
                 ->setType('button')
                 ->setClass('add ' . $this->_getDisabled())
                 ->setLabel($this->__($title))
-                ->setOnClick("Element.insert($('" . $container . "'), {bottom: $('" . $template . "').innerHTML})")
+                ->setOnClick("$('" . $container . "').insert({bottom: $('" . $template . "').innerHTML}); new Chosen($('" . $container . "').select('select').last());")
                 ->setDisabled($this->_getDisabled())
                 ->toHtml();
         }

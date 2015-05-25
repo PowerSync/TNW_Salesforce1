@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.52.00.0000</version>
+            <version>0.01.53.00.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -81,6 +81,9 @@
                     <contact>
                         <table>Contact</table>
                     </contact>
+                    <opportunity>
+                        <table>Opportunity</table>
+                    </opportunity>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>
@@ -129,17 +132,6 @@
             </tnw_salesforce>
         </helpers>
         <events>
-            <!-- Blocks for admin panel -->
-            <core_block_abstract_to_html_after>
-                <observers>
-                    <tnw_salesforce_block_observer>
-                        <type>model</type>
-                        <class>tnw_salesforce/blocks_observer</class>
-                        <method>updateBlocks</method>
-                    </tnw_salesforce_block_observer>
-                </observers>
-            </core_block_abstract_to_html_after>
-
             <!-- Product duplication -->
             <catalog_model_product_duplicate>
                 <observers>
@@ -218,7 +210,6 @@
                 </observers>
             </aitcfm_order_save_after>
 
-            <!-- show sf status info in admin part -->
             <adminhtml_controller_action_predispatch_start>
                 <observers>
                     <tnw_salesforce_controller_action_predispatch_start>
@@ -228,16 +219,6 @@
                     </tnw_salesforce_controller_action_predispatch_start>
                 </observers>
             </adminhtml_controller_action_predispatch_start>
-            <!--<controller_action_layout_load_before>-->
-            <controller_action_layout_render_before>
-                <observers>
-                    <tnw_salesforce_block_load_observer>
-                        <type>singleton</type>
-                        <class>tnw_salesforce/observer</class>
-                        <method>showSfStatus</method>
-                    </tnw_salesforce_block_load_observer>
-                </observers>
-            </controller_action_layout_render_before>
 
             <!-- admin login success -->
             <admin_session_user_login_success>
@@ -413,132 +394,17 @@
                     </persistent>
                 </observers>
             </sales_quote_save_before>
-
+            <tnw_salesforce_order_send_after>
+                <observers>
+                    <tnw_salesforce_update_abandoned_status>
+                        <class>tnw_salesforce/observer</class>
+                        <method>updateAbandonedStatus</method>
+                    </tnw_salesforce_update_abandoned_status>
+                </observers>
+            </tnw_salesforce_order_send_after>
         </events>
     </global>
     <adminhtml>
-        <acl>
-            <resources>
-                <admin>
-                    <children>
-                        <system>
-                            <children>
-                                <!-- Add missing items for the drop down menu -->
-                                <salesforce>
-                                    <title>Salesforce API</title>
-                                    <children>
-                                        <setup>
-                                            <title>Integration Setup</title>
-                                            <children>
-                                                <api_config>
-                                                    <title>API Configuration</title>
-                                                </api_config>
-                                                <customer_config>
-                                                    <title>Customer Configuration</title>
-                                                </customer_config>
-                                                <order_product>
-                                                    <title>Product Configuration</title>
-                                                </order_product>
-                                                <order_config>
-                                                    <title>Sales Configuration</title>
-                                                </order_config>
-                                            </children>
-                                        </setup>
-                                        <product_mapping>
-                                            <title>Product Mappings</title>
-                                        </product_mapping>
-                                        <customer_mapping>
-                                            <title>Customer Mappings</title>
-                                            <children>
-                                                <contact_mapping>
-                                                    <title>Contact</title>
-                                                </contact_mapping>
-                                                <account_mapping>
-                                                    <title>Account</title>
-                                                </account_mapping>
-                                                <lead_mapping>
-                                                    <title>Lead</title>
-                                                </lead_mapping>
-                                            </children>
-                                        </customer_mapping>
-                                        <order_mapping>
-                                            <title>Order Mappings</title>
-                                            <children>
-                                                <opportunity_mapping>
-                                                    <title>Opportunity</title>
-                                                </opportunity_mapping>
-                                                <opportunity_cart_mapping>
-                                                    <title>Opportunity Products</title>
-                                                </opportunity_cart_mapping>
-                                                <order_mapping>
-                                                    <title>Order</title>
-                                                </order_mapping>
-                                                <order_cart_mapping>
-                                                    <title>Order Products</title>
-                                                </order_cart_mapping>
-                                                <status_mapping>
-                                                    <title>Statuses</title>
-                                                </status_mapping>
-                                            </children>
-                                        </order_mapping>
-                                        <abandoned_mapping>
-                                            <title>Abandoned Cart Mappings</title>
-                                            <children>
-                                                <order_mapping>
-                                                    <title>Opportunity</title>
-                                                </order_mapping>
-                                                <order_cart_mapping>
-                                                    <title>Opportunity Products</title>
-                                                </order_cart_mapping>
-                                            </children>
-                                        </abandoned_mapping>
-                                        <manual_sync>
-                                            <title>Manual Sync</title>
-                                            <children>
-                                                <order_sync>
-                                                    <title>Sales Orders (BETA)</title>
-                                                </order_sync>
-                                                <opportunity_sync>
-                                                    <title>Orders</title>
-                                                </opportunity_sync>
-                                                <product_sync>
-                                                    <title>Products</title>
-                                                </product_sync>
-                                                <customer_sync>
-                                                    <title>Customers</title>
-                                                </customer_sync>
-                                                <abandoned_sync>
-                                                    <title>Abandoned Cart</title>
-                                                </abandoned_sync>
-                                            </children>
-                                        </manual_sync>
-                                        <queue_sync>
-                                            <title>Sync Queue</title>
-                                        </queue_sync>
-                                    </children>
-                                </salesforce>
-                                <config>
-                                    <children>
-                                        <salesforce>
-                                            <title>Salesforce API Configuration</title>
-                                        </salesforce>
-                                        <salesforce_order>
-                                            <title>Salesforce Order Configuration</title>
-                                        </salesforce_order>
-                                        <salesforce_product>
-                                            <title>Salesforce Product Configuration</title>
-                                        </salesforce_product>
-                                        <salesforce_customer>
-                                            <title>Salesforce Customer Configuration</title>
-                                        </salesforce_customer>
-                                    </children>
-                                </config>
-                            </children>
-                        </system>
-                    </children>
-                </admin>
-            </resources>
-        </acl>
         <layout>
             <updates>
                 <tnw_salesforce>
@@ -546,6 +412,32 @@
                 </tnw_salesforce>
             </updates>
         </layout>
+        <events>
+            <!--
+                show sf status info
+                this event because it should be executed only once and if no redirect
+            -->
+            <controller_action_layout_generate_xml_before>
+                <observers>
+                    <tnw_salesforce_block_load_observer>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/observer</class>
+                        <method>showSfStatus</method>
+                    </tnw_salesforce_block_load_observer>
+                </observers>
+            </controller_action_layout_generate_xml_before>
+
+            <!-- Blocks for admin panel: update adminhtml/sales_order_view_info html if module enabled -->
+            <core_block_abstract_to_html_after>
+                <observers>
+                    <tnw_salesforce_block_observer>
+                        <type>model</type>
+                        <class>tnw_salesforce/blocks_observer</class>
+                        <method>updateBlocks</method>
+                    </tnw_salesforce_block_observer>
+                </observers>
+            </core_block_abstract_to_html_after>
+        </events>
     </adminhtml>
     <frontend>
         <events>

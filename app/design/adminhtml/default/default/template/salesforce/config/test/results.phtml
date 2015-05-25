@@ -1,10 +1,8 @@
 <?php
 /**
-  *
-  *
-  */
-?>
-<?php if ($this->isSalesforceSection() && $this->isIntegrationEnabled()): ?>
+ * @var $this TNW_Salesforce_Block_Adminhtml_Check
+ */
+if ($results = $this->getChildHtml('sf_test_results')): ?>
 	<div class="content-header">
 		<table cellspacing="0">
 			<tbody>
@@ -19,9 +17,5 @@
 			</tbody>
 		</table>
 	</div>
-	<?php
-        if ($results = $this->getChildHtml('sf_test_results')) {
-            echo $results;
-        }
-	?>
-<?php endif; ?>
+	<?php echo $results ?>
+<?php endif;

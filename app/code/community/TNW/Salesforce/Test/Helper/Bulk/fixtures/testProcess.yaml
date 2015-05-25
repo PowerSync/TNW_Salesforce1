@@ -1,0 +1,516 @@
+config:
+  default/salesforce_customer/lead_config/customer_integration: 0
+  default/salesforce/syncronization/sync_type_realtime: 'Queue Interval'
+eav:
+  customer:
+    - entity_id: 1
+      email: test1@email.com
+      firstname: firstname1
+      lastname: lastname1
+      store_id: 0
+      default_billing: 60
+      default_shipping: 60
+    - entity_id: 2
+      email: test2@email.com
+      firstname: firstname2
+      lastname: lastname2
+      store_id: 0
+      default_billing: 70
+      default_shipping: 70
+  customer_address:
+    - entity_id: 60 #billing/shipping
+      parent_id: 1
+      company: test123
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+      default_billing: true
+      is_default_billing: true
+      default_shipping: true
+      is_default_shipping: true
+    - entity_id: 70 #billing/shipping
+      parent_id: 2
+      company: test123
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: RU
+      address_type: billing
+      default_billing: true
+      is_default_billing: true
+      default_shipping: true
+      is_default_shipping: true
+
+tables:
+  tnw_salesforce_mapping:
+    - mapping_id: 1
+      local_field:  "Customer : email"
+      sf_field: Email
+      attribute_id: 9
+      backend_type: static
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 2
+      local_field:  "Customer : firstname"
+      sf_field: FirstName
+      attribute_id: 5
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 3
+      local_field:  "Customer : lastname"
+      sf_field: LastName
+      attribute_id: 7
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 4
+      local_field:  "Billing : company"
+      sf_field: Name
+      attribute_id: 24
+      backend_type: varchar
+      sf_object: Account
+      default_value: NULL
+    - mapping_id: 5
+      local_field:  "Customer : email"
+      sf_field: Email
+      attribute_id: 9
+      backend_type: static
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 6
+      local_field:  "Customer : firstname"
+      sf_field: FirstName
+      attribute_id: 5
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 7
+      local_field:  "Customer : lastname"
+      sf_field: LastName
+      attribute_id: 7
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 8
+      local_field:  "Product : name"
+      sf_field: Name
+      attribute_id: 71
+      backend_type: varchar
+      sf_object: Product2
+      default_value: NULL
+    - mapping_id: 9
+      local_field:  "Product : sku"
+      sf_field: ProductCode
+      attribute_id: 74
+      backend_type: static
+      sf_object: Product2
+      default_value: NULL
+    - mapping_id: 10
+      local_field:  "Order : created_at"
+      sf_field: CloseDate
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Opportunity
+      default_value: NULL
+    - mapping_id: 11
+      local_field:  "Order : number"
+      sf_field: tnw_mage_basic__Magento_ID__c
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Opportunity
+      default_value: NULL
+    - mapping_id: 12
+      local_field:  "Billing : company"
+      sf_field: Company
+      attribute_id: 24
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 13
+      local_field:  "Billing : telephone"
+      sf_field: Phone
+      attribute_id: 31
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 14
+      local_field:  "Billing : street"
+      sf_field: Street
+      attribute_id: 25
+      backend_type: text
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 15
+      local_field:  "Billing : city"
+      sf_field: City
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 16
+      local_field:  "Billing : region"
+      sf_field: State
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 17
+      local_field:  "Billing : postcode"
+      sf_field: PostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 18
+      local_field:  "Billing : country_id"
+      sf_field: Country
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Lead
+      default_value: NULL
+    - mapping_id: 19
+      local_field:  "Custom : lead_source"
+      sf_field: LeadSource
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Lead
+      default_value: Web
+    - mapping_id: 20
+      local_field:  "Shipping : street"
+      sf_field: MailingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 21
+      local_field:  "Shipping : city"
+      sf_field: MailingCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 22
+      local_field:  "Shipping : region"
+      sf_field: MailingState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 23
+      local_field:  "Shipping : postcode"
+      sf_field: MailingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 24
+      local_field:  "Shipping : country_id"
+      sf_field: MailingCountry
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 25
+      local_field:  "Billing : street"
+      sf_field: OtherStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 26
+      local_field:  "Billing : city"
+      sf_field: OtherCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 27
+      local_field:  "Billing : region"
+      sf_field: OtherState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 28
+      local_field:  "Billing : postcode"
+      sf_field: OtherPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 29
+      local_field:  "Billing : country_id"
+      sf_field: OtherCountry
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 30
+      local_field:  "Billing : telephone"
+      sf_field: OtherPhone
+      attribute_id: 31
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 31
+      local_field:  "Shipping : telephone"
+      sf_field: Phone
+      attribute_id: 31
+      backend_type: varchar
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 32
+      local_field:  "Customer : dob"
+      sf_field: Birthdate
+      attribute_id: 11
+      backend_type: datetime
+      sf_object: Contact
+      default_value: NULL
+    - mapping_id: 33
+      local_field:  "Order : cart_all"
+      sf_field: Description
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Opportunity
+      default_value: NULL
+    - mapping_id: 34
+      local_field:  "Billing : street"
+      sf_field: BillingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 35
+      local_field:  "Billing : city"
+      sf_field: BillingCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 36
+      local_field:  "Billing : region"
+      sf_field: BillingState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 37
+      local_field:  "Billing : postcode"
+      sf_field: BillingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 38
+      local_field:  "Billing : country_id"
+      sf_field: BillingCountry
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 39
+      local_field:  "Shipping : street"
+      sf_field: ShippingStreet
+      attribute_id: 25
+      backend_type: text
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 40
+      local_field:  "Shipping : city"
+      sf_field: ShippingCity
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 41
+      local_field:  "Shipping : region"
+      sf_field: ShippingState
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 42
+      local_field:  "Shipping : postcode"
+      sf_field: ShippingPostalCode
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 43
+      local_field:  "Shipping : country_id"
+      sf_field: ShippingCountry
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 44
+      local_field:  "Payment : po_number"
+      sf_field: PoNumber
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 45
+      local_field:  "Order : cart_all"
+      sf_field: Description
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Order
+      default_value: NULL
+    - mapping_id: 46
+      local_field:  "Custom : order_type"
+      sf_field: Type
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Order
+      default_value: Magento
+    - mapping_id: 47
+      local_field:  "Shipping : street"
+      sf_field: AcctSeedERP__Shipping_Street__c
+      attribute_id: 25
+      backend_type: text
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 48
+      local_field:  "Shipping : city"
+      sf_field: AcctSeedERP__Shipping_City__c
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 49
+      local_field:  "Shipping : region"
+      sf_field: AcctSeedERP__Shipping_State__c
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 50
+      local_field:  "Shipping : postcode"
+      sf_field: AcctSeedERP__Shipping_PostalCode__c
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 51
+      local_field:  "Shipping : country_id"
+      sf_field: AcctSeedERP__Shipping_Country__c
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 52
+      local_field:  "Order : number"
+      sf_field: tnw_aseed__Magento_ID__c
+      attribute_id: NULL
+      backend_type: NULL
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 53
+      local_field:  "Billing : street"
+      sf_field: AcctSeedERP__Billing_Street__c
+      attribute_id: 25
+      backend_type: text
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 54
+      local_field:  "Billing : city"
+      sf_field: AcctSeedERP__Billing_City__c
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 55
+      local_field:  "Billing : region"
+      sf_field: AcctSeedERP__Billing_State__c
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 56
+      local_field:  "Billing : postcode"
+      sf_field: AcctSeedERP__Billing_PostalCode__c
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 57
+      local_field:  "Billing : country_id"
+      sf_field: AcctSeedERP__Billing_Country__c
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Sales_Order
+      default_value: NULL
+    - mapping_id: 58
+      local_field:  "Billing : street"
+      sf_field: AcctSeed__Billing_Street__c
+      attribute_id: 25
+      backend_type: text
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 59
+      local_field:  "Billing : city"
+      sf_field: AcctSeed__Billing_City__c
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 60
+      local_field:  "Billing : region"
+      sf_field: AcctSeed__Billing_State__c
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 61
+      local_field:  "Billing : postcode"
+      sf_field: AcctSeed__Billing_PostalCode__c
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 62
+      local_field:  "Billing : country_id"
+      sf_field: AcctSeed__Billing_Country__c
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 63
+      local_field:  "Shipping : street"
+      sf_field: AcctSeed__Shipping_Street__c
+      attribute_id: 25
+      backend_type: text
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 64
+      local_field:  "Shipping : city"
+      sf_field: AcctSeed__Shipping_City__c
+      attribute_id: 26
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 65
+      local_field:  "Shipping : region"
+      sf_field: AcctSeed__Shipping_State__c
+      attribute_id: 28
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 66
+      local_field:  "Shipping : postcode"
+      sf_field: AcctSeed__Shipping_PostalCode__c
+      attribute_id: 30
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL
+    - mapping_id: 67
+      local_field:  "Shipping : country_id"
+      sf_field: AcctSeed__Shipping_Country__c
+      attribute_id: 27
+      backend_type: varchar
+      sf_object: Billing
+      default_value: NULL

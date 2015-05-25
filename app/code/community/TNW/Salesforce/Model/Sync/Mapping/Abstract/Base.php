@@ -16,7 +16,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
 
     /**
      * @comment Mapping collection container
-     * @var null
+     * @var null|TNW_Salesforce_Model_Mysql4_Mapping_Collection
      */
     protected $_mappingCollection = null;
 
@@ -91,7 +91,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
         }
 
         Mage::dispatchEvent(
-            'tnw_salesforce_sync_mapping_' . $this->_type . '_before',
+            'tnw_salesforce_sync_mapping_' . strtolower($this->_type) . '_before',
             array(
                 'mapping' => $this,
                 'entity' => $entity,
@@ -102,7 +102,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
         $this->_processMapping($entity, $additionalObject);
 
         Mage::dispatchEvent(
-            'tnw_salesforce_sync_mapping_' . $this->_type . '_after',
+            'tnw_salesforce_sync_mapping_' . strtolower($this->_type) . '_after',
             array(
                 'mapping' => $this,
                 'entity' => $entity,

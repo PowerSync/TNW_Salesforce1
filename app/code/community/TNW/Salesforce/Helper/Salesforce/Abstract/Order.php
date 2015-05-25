@@ -601,7 +601,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         // Load by product Id only if bundled OR simple with options
         $id = $this->getProductIdFromCart($item);
-        $product = null;
+
+        /**
+         * @comment empty object for paroduct/tax/shipping/discount data
+         */
+        $product = new Varien_Object();
 
         /**
          * @comment do some additional actions if we add real product to the order
@@ -634,6 +638,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         } else {
 
             $pricebookEntryId = Mage::app()->getStore($storeId)->getConfig($item->getPricebookEntryConfig());
+            $product->setSalesforceId($pricebookEntryId);
+
             $identifier = $pricebookEntryId;
             $this->_obj->Description = $item->getDescription();
         }
@@ -755,5 +761,30 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         return $this;
+    }
+
+    /**
+     * @comment See if created from Abandoned Cart
+     * @param $quotes
+     */
+    protected function _findAbandonedCart($quotes)
+    {
+        if (!is_array($quotes)) {
+            $quotes = array($quotes);
+        }
+
+        // See if created from Abandoned Cart
+        if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && !empty($quotes)) {
+            $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id IN ('" . join("','", $quotes) . "')";
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetchAll();
+            if ($row) {
+                foreach ($row as $_item) {
+                    if (array_key_exists('salesforce_id', $_item) && $_item['salesforce_id']) {
+                        $this->_cache['abandonedCart'][$_item['entity_id']] = $_item['salesforce_id'];
+                    }
+                }
+            }
+
+        }
     }
 }

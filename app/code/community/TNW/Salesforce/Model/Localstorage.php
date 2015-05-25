@@ -9,18 +9,37 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 {
     protected $_mageModels = array();
 
-    public function __construct() {
+    public function __construct()
+    {
         if (empty($this->_mageModels)) {
-            $this->_mageModels['order']     =   'sales/order';
-            $this->_mageModels['abandoned'] =   'sales/quote';
-            $this->_mageModels['customer']  =   'customer/customer';
-            $this->_mageModels['product']   =   'catalog/product';
-            $this->_mageModels['website']   =   'core/website';
-            $this->_mageModels['invoice']   =   'sales/order_invoice';
+            $this->_mageModels['order'] = 'sales/order';
+            $this->_mageModels['abandoned'] = 'sales/quote';
+            $this->_mageModels['customer'] = 'customer/customer';
+            $this->_mageModels['product'] = 'catalog/product';
+            $this->_mageModels['website'] = 'core/website';
+            $this->_mageModels['invoice'] = 'sales/order_invoice';
         }
     }
 
-    public function getAllDependencies() {
+    /**
+     * @comment get entity model name by the alias
+     * @return array|string|null
+     */
+    public function getMageModels($type = null)
+    {
+        $return = $type;
+
+        if (!$type) {
+            $return = $this->_mageModels;
+        } elseif (isset($this->_mageModels[$type])) {
+            $return = $this->_mageModels[$type];
+        }
+
+        return $return;
+    }
+
+    public function getAllDependencies()
+    {
         $_dependencies = array();
         $_sql = "SELECT object_id, sf_object_type FROM " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " WHERE mage_object_type IN ('" . $this->_mageModels['customer'] . "', '" . $this->_mageModels['product'] . "')";
         $_results = $this->getDbConnection('read')->query($_sql)->fetchAll();
@@ -30,11 +49,12 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         return $_dependencies;
     }
 
-    public function updateQueue($_orderIds, $_queueIds, $_results, $_alternativeKeyes = array()) {
+    public function updateQueue($_orderIds, $_queueIds, $_results, $_alternativeKeyes = array())
+    {
         $_errorsSet = array();
         $_successSet = array();
 
-        foreach($_results as $_object => $_responses) {
+        foreach ($_results as $_object => $_responses) {
             foreach ($_responses as $_entityKey => $_response) {
                 $_key = (!empty($_alternativeKeyes)) ? $_queueIds[array_search(array_search($_entityKey, $_alternativeKeyes), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
 
@@ -63,10 +83,10 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                         }
                     }
 
-                    $_errorsSet[$_key][] =  '(' . $_object . ') '. $errorMessage;
+                    $_errorsSet[$_key][] = '(' . $_object . ') ' . $errorMessage;
                 } else {
                     // Reset the status from error back to running so we can delete
-                    if (!in_array($_key,$_successSet)) {
+                    if (!in_array($_key, $_successSet)) {
                         $_successSet[] = $_key;
                     }
                 }
@@ -146,8 +166,16 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      */
     public function updateObjectStatusById(array $idSet = array(), $status = 'sync_running')
     {
-        $idLine = empty($idSet) ? "" : "'" . join("', '", $idSet) ."'";
-        $sql = "UPDATE " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " SET status = '" . $status . "' where id in (" . $idLine . ")";
+        $idLine = empty($idSet) ? "" : "'" . join("', '", $idSet) . "'";
+
+        $additinalUpdate = '';
+        if ($status == 'sync_running') {
+            $additinalUpdate = ', sync_attempt = sync_attempt + 1 ';
+        } elseif ($status == 'new') {
+            $additinalUpdate = ', sync_attempt = 1 ';
+        }
+
+        $sql = "UPDATE " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " SET status = '" . $status . "' $additinalUpdate where id in (" . $idLine . ")";
         $res = $this->getDbConnection()->query($sql);
 
         return $res;
@@ -182,7 +210,8 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         return true;
     }
 
-    public function getObject($_objectId = NULL) {
+    public function getObject($_objectId = NULL)
+    {
         // ToDo: read from Queue
         // return false assuming nothing is found in the queue
         return false;
@@ -201,31 +230,51 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         // TODO: Need to rewrite to use insertMultiple
         // TODO: (Trello) https://trello.com/c/mJkQlYv3/144-performance-rewrite-addobject-to-insert-multiple-rows-with-1-query-to-optimize-performance
         // save to table
-        foreach ($idSet as $obId) {
-            $insertData = array(
-                'object_id' => $obId,
-                'mage_object_type' => $this->_mageModels[$mageObType],
-                'sf_object_type' => $sfObType,
-                'date_created' => Mage::helper('tnw_salesforce')->getDate(),
-            );
-            // check if record with id exists, then we update record
-            $row = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
-                ->addObjectidToFilter($obId)
-                ->addSftypeToFilter($sfObType);
-            if ($row->count() > 0) {
-                $rowData = $row->getData();
-                $insertData['id'] = $rowData[0]['id'];
-            }
-            // set data to model instance
-            $m = Mage::getModel('tnw_salesforce/queue_storage')->setData($insertData);
-            try {
-                $getId = $m->save()->getId();
-            } catch (Exception $e) {
-                Mage::helper('tnw_salesforce')->log("error: object not saved in local storage");
-                Mage::helper('tnw_salesforce')->log("mysql response: " . $e->getMessage());
 
-                return false;
+        $entityModelAlias = $this->getMageModels($mageObType);
+
+        /**
+         * @var $entityModel Mage_Sales_Model_Order|Mage_Catalog_Model_Product
+         */
+        $entityModel = Mage::getModel($entityModelAlias);
+
+        /**
+         * @var $collection Mage_Sales_Model_Resource_Order_Collection|Mage_Catalog_Model_Resource_Product_Collection
+         */
+        $collection = $entityModel->getCollection();
+
+        $_chunks = array_chunk($idSet, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+        unset($itemIds);
+        try {
+            foreach ($_chunks as $_chunk) {
+
+                $collection->resetData();
+
+                $select = $collection->getSelect();
+                $inCond = $collection->getConnection()->prepareSqlCondition($entityModel->getIdFieldName(), array('in' => $_chunk));
+
+                $select->where($inCond);
+
+                $select->reset(Zend_Db_Select::COLUMNS);
+
+                $columns = array(
+                    'object_id' => $entityModel->getIdFieldName(),
+                    'mage_object_type' => new Zend_Db_Expr('"' . $entityModelAlias . '"'),
+                    'sf_object_type' => new Zend_Db_Expr('"' . $sfObType . '"'),
+                    'date_created' => new Zend_Db_Expr('"' . Mage::helper('tnw_salesforce')->getDate() . '"')
+                );
+
+                $select->columns($columns);
+
+                $query = $select->insertFromSelect(
+                    Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
+                    array_keys($columns)
+                );
+
+                Mage::helper('tnw_salesforce')->getDbConnection('write')->query($query);
             }
+        } catch (\Exception $e) {
+            return false;
         }
 
         return true;
@@ -244,18 +293,20 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     public function addObjectProduct(array $idSet = array(), $sfObType, $mageObType)
     {
         // we filter grouped and configurable products
-        $idSetFiltered = array();
         $productsCollection = Mage::getModel('catalog/product')
             ->getCollection()
             ->addAttributeToFilter('entity_id', array('in' => $idSet))
-            ->addAttributeToSelect('salesforce_disable_sync');
+            ->addAttributeToSelect('salesforce_disable_sync')
+            ->addAttributeToFilter(
+                array(
+                    array('attribute'=> 'salesforce_disable_sync', 'neq' => '1'),
+                    array('attribute'=> 'salesforce_disable_sync', 'null' => true),
+                ),
+                null,
+                'left'
+            );
 
-        foreach ($productsCollection as $_product) {
-            if (intval($_product->getData('salesforce_disable_sync')) == 1) {
-                continue;
-            }
-            $idSetFiltered[] = $_product->getId();
-        }
+        $idSetFiltered = $productsCollection->getAllIds();
 
         return $this->addObject($idSetFiltered, $sfObType, $mageObType);
     }

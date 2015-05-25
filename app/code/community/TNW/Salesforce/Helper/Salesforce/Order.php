@@ -177,14 +177,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 return;
             }
 
-            // See if created from Abandoned Cart
-            if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && $_order->getQuoteId()) {
-                $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id = '" . $_order->getQuoteId() . "'";
-                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetch();
-                if ($row && array_key_exists('salesforce_id', $row) && $row['salesforce_id']) {
-                    $this->_cache['abandonedCart'][$_order->getQuoteId()] = $row['salesforce_id'];
-                }
-            }
+            $this->_findAbandonedCart($_order->getQuoteId());
 
             // Get Magento customer object
             $this->_cache['orderCustomers'][$_order->getRealOrderId()] = $this->_getCustomer($_order);
@@ -211,9 +204,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
 
             // Store order number and customer Email into a variable for future use
-            $_orderEmail = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail()) ? strtolower($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail()) : strtolower($_order->getCustomerEmail());
-            $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-0';
-            $_websiteId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id')) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getData('website_id') : Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
+            $orderCustomer = $this->_cache['orderCustomers'][$_order->getRealOrderId()];
+            $_orderEmail = $orderCustomer->getEmail()
+                ? strtolower($orderCustomer->getEmail()) : strtolower($_order->getCustomerEmail());
+            $_customerId = $orderCustomer->getId() ? $orderCustomer->getId() : 'guest-0';
+            $_websiteId = $orderCustomer->getData('website_id')
+                ? $orderCustomer->getData('website_id') : $_order->getStore()->getWebsiteId();
             $_orderNumber = $_order->getRealOrderId();
 
             if (empty($_orderEmail)) {
@@ -821,6 +817,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $_entityArray = array_flip($this->_cache['entitiesUpdating']);
 
             $_undeleteIds = array();
+            if (!$results) {
+                $results = array();
+            }
             foreach ($results as $_key => $_result) {
                 $_orderNum = $_keys[$_key];
 

@@ -156,6 +156,8 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->clearMemory();
                 }
             } catch (Exception $e) {
+                Mage::helper('tnw_salesforce')->log('_updatePriceBookEntry error ' . $e->getMessage() . '!');
+
                 // TODO:  Log error, quit
             }
         }
@@ -249,6 +251,8 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->_addPriceBookEntry($_magentoId, $this->_cache['toSaveInMagento'][$_magentoId]->productId);
                 }
             } catch (Exception $e) {
+                Mage::helper('tnw_salesforce')->log('_preparePriceBooks function has an error: '.$e->getMessage());
+
                 // TODO:  Log error, quit
             }
         }
@@ -433,7 +437,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             'pricebookEntry' => array('Id' => NULL),
         );
 
-        $this->_client = new Zend_Http_Client();
+        $this->_client = $this->getHttpClient();
         $this->_client->setConfig(
             array(
                 'maxredirects' => 0,

@@ -11,6 +11,17 @@ class TNW_Salesforce_Model_Observer
     protected $_menu = NULL;
     protected $_acl = NULL;
 
+    protected $exportedOrders = array();
+
+    /**
+     * @return array
+     */
+    public function getExportedOrders()
+    {
+        return $this->exportedOrders;
+    }
+
+
     public function adjustMenu() {
 
         // Update Magento admin menu
@@ -152,57 +163,77 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * show sf status message on every admin page
+     * Show sf status message on every admin page
      *
-     * @return bool
+     * @param Varien_Event_Observer $observer
      */
-    public function showSfStatus()
+    public function showSfStatus(Varien_Event_Observer $observer)
     {
+        /** @var Mage_Core_Controller_Varien_Action $controller */
+        $controller = $observer->getEvent()->getAction();
         // Set common header on all pages for tracking purposes
-        Mage::app()->getFrontController()->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
+        $controller->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
 
-        // skip if sf synchronization is disabled or we are on api config page
+        $helper = Mage::helper('tnw_salesforce');
 
-        if (!Mage::helper('tnw_salesforce')->isWorking()
-            || Mage::app()->getRequest()->getControllerName() == 'index'
-        ) {
-            return false;
+        $loginPage = $controller->getRequest()->getModuleName() == 'admin'
+            && $controller->getRequest()->getControllerName() == 'index'
+            && $controller->getRequest()->getActionName() == 'login';
+
+        // skip if sf synchronization is disabled or we are on api config or login page
+        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isWorking()) {
+            return;
         }
 
         // show message
-        $sfNotWorking = $Data = Mage::getSingleton('core/session')->getSfNotWorking();
-        if ($sfNotWorking) {
-            $sfPApiUrl = Mage::helper("adminhtml")->getUrl("adminhtml/system_config/edit/section/salesforce");
-            $message = "IMPORTANT: Salesforce connection cannot be established or has expired. Please visit API configuration page to re-establish the connection. <a href='$sfPApiUrl'>API configuration</a>";
-            // Only show warnings and messages if in the Admin Panel
-            if (Mage::helper('tnw_salesforce')->isAdmin()) {
-                Mage::getSingleton('core/session')->addWarning($message);
-            }
+        if (Mage::getSingleton('core/session')->getSfNotWorking()) {
+            $sfPApiUrl = Mage::helper('adminhtml')->getUrl('adminhtml/system_config/edit',
+                array('section' => 'salesforce'));
+            $message = 'IMPORTANT: Salesforce connection cannot be established or has expired.'
+                . ' Please visit API configuration page to re-establish the connection.'
+                . " <a href='$sfPApiUrl'>API configuration</a>";
+            Mage::getSingleton('adminhtml/session')->addWarning($message);
         } else {
             if (!Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')) {
                 Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
             }
         }
-
-        return true;
     }
 
-    public function pushOrder(Varien_Event_Observer $observer) {
-        $_orderIds = $observer->getEvent()->getData('orderIds');
-        $_message = $observer->getEvent()->getMessage();
-        $_type = $observer->getEvent()->getType();
-        $_isQueue = $observer->getEvent()->getData('isQueue');
+    /**
+     * Method executed by tnw_sales_process_order event
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function pushOrder(Varien_Event_Observer $observer)
+    {
+        $helper = Mage::helper('tnw_salesforce');
 
-        $_objectType = $observer->getEvent()->getData('object_type');
-
-        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
-
-        if (count($_orderIds) == 1 && $_type == 'bulk') {
-            $_type = 'salesforce';
+        $orderIds = $observer->getEvent()->getData('orderIds');
+        //check that order has been already exported
+        foreach ($orderIds as $key => $orderId) {
+            if (in_array($orderId, $this->exportedOrders)) {
+                $helper->log('Skipping export order ' . $orderId . '. Already exported.');
+                unset($orderIds[$key]);
+            } else {
+                $this->exportedOrders[] = $orderId;
+            }
+        }
+        if (empty($orderIds)) {
+            return;
         }
 
+        $type = $observer->getEvent()->getType();
+        if (count($orderIds) == 1 && $type == 'bulk') {
+            $type = 'salesforce';
+        }
+
+        $message = $observer->getEvent()->getMessage();
+        $queueIds = $observer->getEvent()->getData('isQueue')
+            ? $observer->getEvent()->getData('queueIds') : array();
+
         Mage::helper('tnw_salesforce')->log('Pushing Order(s) ... ');
-        $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_order', $_queueIds);
+        $this->_processOrderPush($orderIds, $message, 'tnw_salesforce/' . $type . '_order', $queueIds);
     }
 
     public function pushOpportunity(Varien_Event_Observer $observer) {
@@ -387,6 +418,40 @@ class TNW_Salesforce_Model_Observer
         }
 
         $quote->setSfSyncForce(1);
+
+    }
+
+    /**
+     * @comment change related Opportunity status to CloseWon
+     * @param $observer
+     */
+    public function updateAbandonedStatus($observer)
+    {
+        $orders = array_values($observer->getEvent()->getData('data'));
+        $result = $observer->getEvent()->getResult();
+        $opportunityField = $observer->getEvent()->getField();
+        if (!$opportunityField) {
+            $opportunityField = 'OpportunityId';
+        }
+
+        $abandonedOpportunities = array();
+
+        foreach ($orders as $key => $order) {
+            if (property_exists($order, $opportunityField)) {
+                $abandonedOpportunities[] = $order->$opportunityField;
+            }
+        }
+
+        if (!empty($abandonedOpportunities)) {
+            /**
+             * @var $collection TNW_Salesforce_Model_Api_Entity_Resource_Opportunity_Collection
+             */
+            $collection = Mage::getModel('tnw_salesforce/api_entity_opportunity')->getCollection();
+            $collection->addFieldToFilter('Id', array('in' => $abandonedOpportunities));
+
+            $collection->setDataToAll('StageName', 'Closed Won');
+            $collection->save();
+        }
 
     }
 }

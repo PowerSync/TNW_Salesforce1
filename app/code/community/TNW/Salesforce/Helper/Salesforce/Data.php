@@ -41,7 +41,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
-     * @return mixed
+     * @return mixed|Salesforce_SforceEnterpriseClient
      */
     public function getClient()
     {
@@ -410,7 +410,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         try {
             $_users = array();
             if (Mage::helper('tnw_salesforce')->isWorking()) {
-                $query = "SELECT Id, Name FROM User WHERE IsActive = true AND UserType = 'Standard'";
+                $query = "SELECT Id, Name FROM User WHERE IsActive = true AND UserType != 'CsnOnly'";
                 if (!is_object($this->getClient())) {
                     return $this->_noConnectionArray;
                 }
