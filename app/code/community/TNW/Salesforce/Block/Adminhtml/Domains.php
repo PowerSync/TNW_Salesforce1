@@ -38,7 +38,7 @@ class TNW_Salesforce_Block_Adminhtml_Domains
     protected function _getRowTemplateHtml($rowIndex = 0)
     {
         $html = '<li>';
-        $html .= '<select name="' . $this->getElement()->getName() . '[account][]" ' . $this->_getDisabled() . '>';
+        $html .= '<select class="chosen-select" name="' . $this->getElement()->getName() . '[account][]" ' . $this->_getDisabled() . '>';
         $html .= '<option value="">' . $this->__('* Select an Account') . '</option>';
 
         foreach ($this->getShippingMethods() as $_id => $_accountName) {
