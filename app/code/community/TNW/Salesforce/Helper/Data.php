@@ -614,21 +614,23 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->_clientTypes;
     }
 
-    // check if we are allowed to use the extension
+    /**
+     * Check if we are allowed to use the extension
+     *
+     * @return bool
+     */
     public function isWorking()
     {
         try {
-            if (
-                $this->isEnabled() &&
-                $this->checkPhpVersion() &&
-                Mage::getSingleton('tnw_salesforce/license')->getStatus()
+            if ($this->isEnabled() && $this->checkPhpVersion()
+                && Mage::getSingleton('tnw_salesforce/license')->getStatus()
             ) {
                 return true;
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::helper('tnw_salesforce')->log('ERROR: ' . $e->getMessage());
         }
-        Mage::helper('tnw_salesforce')->log("INFO: Extension is not working!");
+        Mage::helper('tnw_salesforce')->log('INFO: Extension is not working!');
 
         return false;
     }
@@ -1016,17 +1018,28 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function isAdmin()
     {
-        if(Mage::app()->getStore()->isAdmin())
-        {
+        if (Mage::app()->getStore()->isAdmin()) {
             return true;
         }
 
-        if(Mage::getDesign()->getArea() == 'adminhtml')
-        {
+        if (Mage::getDesign()->getArea() == 'adminhtml') {
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Check if we currently on Api Configuration page
+     *
+     * @return bool
+     */
+    public function isApiConfigurationPage()
+    {
+        return $this->_getRequest()->getModuleName() == 'admin'
+            && $this->_getRequest()->getControllerName() == 'system_config'
+            && $this->_getRequest()->getActionName() == 'edit'
+            && $this->_getRequest()->getParam('section') == 'salesforce';
     }
 
     /**

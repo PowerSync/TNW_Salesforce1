@@ -8,4 +8,4 @@ powersync/bulk-sync.php powersync/bulk-sync.php
 powersync/cli-sync.php powersync/cli-sync.php
 powersync/sf-sync.php powersync/sf-sync.php
 skin/adminhtml/default/default/images/preloader-sm.gif skin/adminhtml/default/default/images/preloader-sm.gif
-
+skin/adminhtml/default/default/images/sf-logo.png skin/adminhtml/default/default/images/sf-logo.png

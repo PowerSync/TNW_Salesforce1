@@ -163,39 +163,41 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * show sf status message on every admin page
+     * Show sf status message on every admin page
      *
-     * @return bool
+     * @param Varien_Event_Observer $observer
      */
-    public function showSfStatus()
+    public function showSfStatus(Varien_Event_Observer $observer)
     {
+        /** @var Mage_Core_Controller_Varien_Action $controller */
+        $controller = $observer->getEvent()->getAction();
         // Set common header on all pages for tracking purposes
-        Mage::app()->getFrontController()->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
+        $controller->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
 
-        // skip if sf synchronization is disabled or we are on api config page
+        $helper = Mage::helper('tnw_salesforce');
 
-        if (!Mage::helper('tnw_salesforce')->isWorking()
-            || Mage::app()->getRequest()->getControllerName() == 'index'
-        ) {
-            return false;
+        $loginPage = $controller->getRequest()->getModuleName() == 'admin'
+            && $controller->getRequest()->getControllerName() == 'index'
+            && $controller->getRequest()->getActionName() == 'login';
+
+        // skip if sf synchronization is disabled or we are on api config or login page
+        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isWorking()) {
+            return;
         }
 
         // show message
-        $sfNotWorking = $Data = Mage::getSingleton('core/session')->getSfNotWorking();
-        if ($sfNotWorking) {
-            $sfPApiUrl = Mage::helper("adminhtml")->getUrl("adminhtml/system_config/edit/section/salesforce");
-            $message = "IMPORTANT: Salesforce connection cannot be established or has expired. Please visit API configuration page to re-establish the connection. <a href='$sfPApiUrl'>API configuration</a>";
-            // Only show warnings and messages if in the Admin Panel
-            if (Mage::helper('tnw_salesforce')->isAdmin()) {
-                Mage::getSingleton('core/session')->addWarning($message);
-            }
+        if (Mage::getSingleton('core/session')->getSfNotWorking()) {
+            $sfPApiUrl = Mage::helper('adminhtml')->getUrl('adminhtml/system_config/edit',
+                array('section' => 'salesforce'));
+            $message = 'IMPORTANT: Salesforce connection cannot be established or has expired.'
+                . ' Please visit API configuration page to re-establish the connection.'
+                . " <a href='$sfPApiUrl'>API configuration</a>";
+            Mage::getSingleton('adminhtml/session')->addWarning($message);
         } else {
             if (!Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')) {
                 Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
             }
         }
-
-        return true;
     }
 
     /**

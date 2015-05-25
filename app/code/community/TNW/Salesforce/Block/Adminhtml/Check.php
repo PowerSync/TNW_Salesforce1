@@ -9,34 +9,48 @@ class TNW_Salesforce_Block_Adminhtml_Check extends Mage_Adminhtml_Block_Widget_G
     {
         $this->_blockGroup = 'tnw_salesforce';
         $this->_controller = 'adminhtml_check';
-        $this->_headerText = Mage::helper('tnw_salesforce')->__('Integration Check');
+        $this->_headerText = $this->__('Integration Check');
         parent::__construct();
         $this->_buttons = array();
     }
 
     /**
+     * Do not prepare layout if cannot show
+     *
+     * @return TNW_Salesforce_Block_Adminhtml_Check
+     */
+    protected function _prepareLayout()
+    {
+        return $this->canShow() ? parent::_prepareLayout() : $this;
+    }
+
+    /**
+     * Do not render html if cannot show
+     *
+     * @return string
+     */
+    protected function _toHtml()
+    {
+        if (!$this->canShow()) {
+            return '';
+        }
+
+        return parent::_toHtml();
+    }
+
+    /**
      * @return bool
      */
-    public function isSalesforceSection()
+    protected function isSalesforceSection()
     {
-        return strtolower(trim($this->getParam('section'))) == 'salesforce';
+        return $this->helper('tnw_salesforce')->isApiConfigurationPage();
     }
 
     /**
-     * @param $param
-     * @param null $default
-     * @return mixed
+     * @return bool
      */
-    public function getParam($param, $default = null)
+    public function canShow()
     {
-        return Mage::app()->getRequest()->getParam($param, $default);
-    }
-
-    /**
-     * @return mixed
-     */
-    public function isIntegrationEnabled()
-    {
-        return Mage::helper('tnw_salesforce')->isEnabled();
+        return $this->isSalesforceSection() && Mage::helper('tnw_salesforce')->isEnabled();
     }
 }
