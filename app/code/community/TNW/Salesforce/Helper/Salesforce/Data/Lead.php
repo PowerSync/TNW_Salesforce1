@@ -393,6 +393,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 && array_key_exists($salesforceWebsiteId, $this->_cache['leadLookup'])
                 && array_key_exists($email, $this->_cache['leadLookup'][$salesforceWebsiteId])
                 && is_object($this->_cache['leadLookup'][$salesforceWebsiteId][$email])
+                && !$this->_cache['leadLookup'][$salesforceWebsiteId][$email]->IsConverted
             ) {
                 $leadData = $this->_cache['leadLookup'][$salesforceWebsiteId][$email];
                 $leadConvert = $this->_prepareLeadConversionObjectSimple($leadData);

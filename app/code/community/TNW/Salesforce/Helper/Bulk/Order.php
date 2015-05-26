@@ -159,6 +159,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             $_leadsToLookup = array();
 
             $_count = 0;
+
             foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
                 $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->load($_key);
                 $_email = $this->_cache['orderToEmail'][$_orderNumber];
@@ -170,11 +171,24 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     && array_key_exists($_email, $this->_cache['accountsLookup'][0])
                 ) {
                     if (property_exists($this->_cache['accountsLookup'][0][$_email], 'Id')) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$_email]->Id);
+                    }
+
+                    if (property_exists($this->_cache['accountsLookup'][0][$_email], 'Id')) {
                         $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_email]->Id);
                     }
                     // Overwrite Contact Id for Person Account
                     if (property_exists($this->_cache['accountsLookup'][0][$_email], 'PersonContactId')) {
                         $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_email]->PersonContactId);
+                    }
+
+                    // Overwrite from Contact Lookup if value exists there
+                    if (
+                        is_array($this->_cache['contactsLookup'])
+                        && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['contactsLookup'])
+                        && array_key_exists($_email, $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]])
+                    ) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id);
                     }
                 } else {
                     $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_count;
