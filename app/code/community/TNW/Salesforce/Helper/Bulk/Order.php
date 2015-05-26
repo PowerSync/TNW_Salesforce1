@@ -169,9 +169,12 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     && array_key_exists(0, $this->_cache['accountsLookup'])
                     && array_key_exists($_email, $this->_cache['accountsLookup'][0])
                 ) {
-
-                    if (property_exists($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'Id')) {
+                    if (property_exists($this->_cache['accountsLookup'][0][$_email], 'Id')) {
                         $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_email]->Id);
+                    }
+                    // Overwrite Contact Id for Person Account
+                    if (property_exists($this->_cache['accountsLookup'][0][$_email], 'PersonContactId')) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_email]->PersonContactId);
                     }
                 } else {
                     $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_count;
@@ -507,7 +510,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $_batchKeys = array_keys($_batch);
                     foreach ($response as $_item) {
                         //Report Transaction
-                        $this->_cache['responses']['orderItems'][] = json_decode(json_encode($_item), TRUE);
+                        $this->_cache['responses']['orderProducts'][] = json_decode(json_encode($_item), TRUE);
                         $_orderId = (string)$_batch[$_batchKeys[$_i]]->OrderId;
                         if ($_item->success == "false") {
                             $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);

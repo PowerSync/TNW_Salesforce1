@@ -79,7 +79,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         $_extra = NULL;
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
             $_personMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
-            $_extra = ", Account.OwnerId, Account.Name, Account.RecordTypeId, Account.IsPersonAccount, Account.PersonEmail, Account." . $_personMagentoId . ", Account.Id";
+            $_extra = ", Account.OwnerId, Account.Name, Account.RecordTypeId, Account.IsPersonAccount, Account.PersonContactId, Account.PersonEmail, Account." . $_personMagentoId . ", Account.Id";
         } else {
             $_extra = ", Account.OwnerId, Account.Name";
         }
