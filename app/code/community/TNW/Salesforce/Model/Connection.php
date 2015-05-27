@@ -59,12 +59,14 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     {
         $this->_errorMessage = NULL;
         if (empty($_SERVER['HTTP_USER_AGENT'])) {
-            $_SERVER['HTTP_USER_AGENT'] = array(
+            $system = array(
                 'name' => 'unrecognized',
                 'version' => 'unknown',
                 'platform' => 'unrecognized',
                 'userAgent' => ''
             );
+            // Array was causing issues with Redis Cache, this variable has to be a string
+            $_SERVER['HTTP_USER_AGENT'] = join(' ', $system);
         }
         $this->_userAgent = $_SERVER['HTTP_USER_AGENT'];
         # Disable SOAP cache
