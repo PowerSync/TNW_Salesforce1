@@ -41,7 +41,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      * @comment salesforce field name to assign parent entity
      * @var string
      */
-    protected $_salesforceParentIdField = 'orderId';
+    protected $_salesforceParentIdField = 'OrderId';
 
     /**
      * @param string $type

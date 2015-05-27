@@ -304,7 +304,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $_options = unserialize($_item->getData('product_options'));
         if (
             $_item->getData('product_type') == 'bundle'
-            || array_key_exists('options', $_options)
+            || (is_array($_options) && array_key_exists('options', $_options))
         ) {
             $id = $_item->getData('product_id');
         } else {

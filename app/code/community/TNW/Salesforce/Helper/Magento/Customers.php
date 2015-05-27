@@ -320,6 +320,15 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             // Set / Update sync params
             if (property_exists($this->_salesforceObject, 'Id')) {
+                // Fix for PersonAccount
+                if (
+                    property_exists($this->_salesforceObject, 'IsPersonAccount')
+                    && $this->_salesforceObject->IsPersonAccount
+                    && property_exists($this->_salesforceObject, 'PersonContactId')
+                ) {
+                    $this->_salesforceObject->Id = $this->_salesforceObject->PersonContactId;
+                }
+
                 Mage::helper('tnw_salesforce')->log('Customer: salesforce_id = ' . $this->_salesforceObject->Id);
                 $_entity->setData('salesforce_id', $this->_salesforceObject->Id);
             }

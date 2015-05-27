@@ -147,7 +147,18 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                             $this->_processErrors($_item, 'contact', $this->_cache['batch']['contacts'][$_on][$_key][$_cid]);
                             continue;
                         }
-                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = (string)$_item->id;
+
+                        $contactId = (string)$_item->id;
+
+                        if (
+                            $_on == 'Id'
+                            && property_exists($this->_cache['batch']['contacts'][$_on][$_key][$_cid], 'Id')
+                            && $this->_cache['batch']['contacts'][$_on][$_key][$_cid]->Id != $contactId
+                        ) {
+                            $contactId = $this->_cache['batch']['contacts'][$_on][$_key][$_cid]->Id;
+                        }
+
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $contactId;
                         if (
                             !$this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId
                             && is_array($this->_cache['accountsToContactLink'])
@@ -185,7 +196,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     /**
      * @param string $_on
      */
-    protected function _prepareAccountId($_cid, $_item) {
+    protected function _prepareAccountId($_cid, $_item, $_key) {
 
         $_websiteId = $this->_getWebsiteIdByCustomerId($_cid);
 
@@ -284,10 +295,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 foreach ($response as $_item) {
                     $_cid = $_batch[$_i];
                     $_i++;
-                    $this->_prepareAccountId($_cid, $_item);
+                    $this->_prepareAccountId($_cid, $_item, $_key);
                     if (!empty($this->_cache['accountsToUpsertDuplicates'][$_cid])) {
                         foreach ($this->_cache['accountsToUpsertDuplicates'][$_cid] as $customerId) {
-                            $this->_prepareAccountId($customerId, $_item);
+                            $this->_prepareAccountId($customerId, $_item, $_key);
                         }
                     }
                 }
@@ -549,6 +560,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         // Lookup existing Contacts & Accounts
         $_emailsArray = array();
         $_websiteArray = array();
+        $_companies = array();
 
         $_i = 0;
         foreach ($this->_toSyncOrderCustomers as $_orderNum => $_customer) {
@@ -587,7 +599,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             if (!Mage::helper("tnw_salesforce")->createPersonAccount() && !$_companyName) {
                 $_companyName = $_customer->getFirstname() . " " . $_customer->getLastname();
             }
-            $_companies[$_email] = $_companyName;
+            // only add company name to array if it exists
+            if ($_companyName) {
+                $_companies[$_email] = $_companyName;
+            }
 
             $this->_cache['customerToWebsite'] = $_websites;
             $this->_allOrderCustomers[$_orderNum] = $_customer;
@@ -602,8 +617,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $_i++;
         }
 
-        $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
-        $_companies = $_salesforceDataAccount->lookupByCompanies($_companies, 'CustomIndex');
+        if (!empty($_companies)) {
+            $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
+            $_companies = $_salesforceDataAccount->lookupByCompanies($_companies, 'CustomIndex');
+        }
 
         $foundCustomers = array();
 
@@ -770,6 +787,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         }
 
         $this->_cache['notFoundCustomers'] = $_emailsArray;
+
     }
 
     public function reset()

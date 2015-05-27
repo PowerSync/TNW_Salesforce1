@@ -753,14 +753,20 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_cache['responses']['contacts'][$_contactIds[$_key]] = $_result;
 
                 if (property_exists($_result, 'success') && $_result->success) {
-                    $_entitites[] = $_result->id;
+                    $contactId = $_result->id;
+                    // Fix Contact Id for PersonAccount, update returns Person Account Id instead of a contact Id
+                    if ($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->Id != $contactId) {
+                        $contactId = $this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->Id;
+                    }
+
+                    $_entitites[] = $contactId;
                     if (array_key_exists('guest_0', $this->_cache['guestsFromOrder'])) {
-                        $this->_cache['guestsFromOrder']['guest_0']->setSalesforceId($_result->id);
+                        $this->_cache['guestsFromOrder']['guest_0']->setSalesforceId($contactId);
                     }
                     $_email = $this->_cache['entitiesUpdating'][$_contactIds[$_key]];
                     $_websiteId = $this->_getWebsiteIdByCustomerId($_contactIds[$_key]);
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $_result->id;
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $contactId;
 
                     if (
                         !property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId') ||
@@ -1443,9 +1449,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                      * @comment remove from array if customer found as lead or lead is converted but no related account+contact
                      */
                     if (
-                        !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
+                        !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted
                         || !isset($this->_cache['accountLookup'][0][$_email])
-                        || !isset($this->_cache['contactsLookup'][$_websites[$_key]][$_email])
+                        || !isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email])
 
                     ) {
                         unset($_emailsArray[$_key]);
