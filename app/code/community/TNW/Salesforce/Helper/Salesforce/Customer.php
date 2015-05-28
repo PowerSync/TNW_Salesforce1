@@ -1509,22 +1509,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_email = strtolower($_customer->getEmail());
                 $_emailsArray[$_customer->getId()] = $_email;
 
-                /**
-                 * @comment try to find customer company name
-                 */
-                $_companyName = $_customer->getCompany();
-
-                if (!$_companyName) {
-                    $_companyName = (
-                        $_customer->getDefaultBillingAddress() &&
-                        $_customer->getDefaultBillingAddress()->getCompany() &&
-                        strlen($_customer->getDefaultBillingAddress()->getCompany())
-                    ) ? $_customer->getDefaultBillingAddress()->getCompany() : NULL;
-                }
-                /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
-                if (!Mage::helper("tnw_salesforce")->createPersonAccount() && !$_companyName) {
-                    $_companyName = $_customer->getFirstname() . " " . $_customer->getLastname();
-                }
+                $_companyName = Mage::helper('tnw_salesforce/salesforce_data_lead')->getCompanyByCustomer($_customer);
                 $_companies[$_email] = $_companyName;
 
                 if ($_customer->getData('website_id') != NULL) {
