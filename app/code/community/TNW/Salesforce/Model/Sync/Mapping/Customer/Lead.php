@@ -20,14 +20,9 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Lead extends TNW_Salesforce_Mod
 
         parent::_processMapping($_customer);
 
-        if ($_customer->getData('company')) {
-            $this->getObj()->Company = $_customer->getData('company');
-        }
-        if (
-            !Mage::helper('tnw_salesforce')->usePersonAccount()
-            && (!isset($this->getObj()->Company) || !$this->getObj()->Company)
-        ) {
-            $this->getObj()->Company = $_customer->getFirstname() . ' ' . $_customer->getLastname();
+        $company = Mage::helper('tnw_salesforce/salesforce_data_lead')->getCompanyByCustomer($_customer);
+        if ($company) {
+            $this->getObj()->Company = $company;
         }
         if (Mage::helper('tnw_salesforce')->isCustomerSingleRecordType() == 2 && property_exists($this->getObj(), 'Company')) {
             // B2C only

@@ -27,13 +27,24 @@ abstract class TNW_Salesforce_Test_Case extends EcomDev_PHPUnit_Test_Case
             ->will($this->returnValue(true));
         $this->replaceByMock('helper', 'tnw_salesforce', $helperMock);
 
-        //return isConnected true
-        $methods[] = 'isConnected';
-        $this->_mockConnection = $this->getModelMock('tnw_salesforce/connection', $methods);
-        $this->_mockConnection->expects($this->any())
-            ->method('isConnected')
-            ->will($this->returnValue(true));
+        $returnTrueMethods = array(
+            'isConnected',
+            'isLoggedIn',
+            'tryWsdl',
+            'tryToConnect',
+            'tryToLogin',
+        );
+
+        $methods = array_merge($methods, $returnTrueMethods, array('initConnection'));
+
+        $this->_mockConnection = $this->getModelMock('tnw_salesforce/connection', array_unique($methods));
         $this->replaceByMock('model', 'tnw_salesforce/connection', $this->_mockConnection);
+
+        foreach ($returnTrueMethods as $method) {
+            $this->_mockConnection->expects($this->any())
+                ->method($method)
+                ->willReturn(true);
+        }
     }
 
     public function getConnectionMock()
