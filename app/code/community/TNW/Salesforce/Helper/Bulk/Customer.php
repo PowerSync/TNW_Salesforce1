@@ -871,7 +871,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         foreach ($_collections as $_collection) {
 
             $this->_cache[$_collection . 'Duplicates'] = array();
-
+            $_compiledKey = null;
             if (array_key_exists('Id', $this->_cache[$_collection]) && is_array($this->_cache[$_collection]['Id']) && !empty($this->_cache[$_collection]['Id'])) {
                 $_salesforceIds = array();
                 foreach ($this->_cache[$_collection]['Id'] as $_magentoId => $_object) {
@@ -886,12 +886,14 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                             }
                         }
 
-                        if (!in_array($_compiledKey, $_salesforceIds)) {
-                            $_salesforceIds[$_magentoId] = $_compiledKey;
-                        } else {
-                            $firstEntity = array_search($_compiledKey, $_salesforceIds);
-                            $this->_cache[$_collection . 'Duplicates'][$firstEntity][] = $_magentoId;
-                            unset($this->_cache[$_collection]['Id'][$_magentoId]);
+                        if (!empty($_compiledKey)) {
+                            if (!in_array($_compiledKey, $_salesforceIds)) {
+                                $_salesforceIds[$_magentoId] = $_compiledKey;
+                            } else {
+                                $firstEntity = array_search($_compiledKey, $_salesforceIds);
+                                $this->_cache[$_collection . 'Duplicates'][$firstEntity][] = $_magentoId;
+                                unset($this->_cache[$_collection]['Id'][$_magentoId]);
+                            }
                         }
                     } else {
                         $_compiledKey = $_object->Email;
