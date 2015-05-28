@@ -257,6 +257,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $_returnObject = new stdClass();
                 $_returnObject->Id = (isset($_item['Id'])) ? $_item['Id'] : NULL;
                 $_returnObject->OwnerId = (isset($_item['OwnerId'])) ? $_item['OwnerId'] : NULL;
+                $_returnObject->Name = (isset($_item['Name'])) ? $_item['Name'] : NULL;
 
                 foreach ($criteria as $_customIndex => $_value) {
                     if ($_item[$field] == $_value) {

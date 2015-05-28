@@ -778,4 +778,39 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     {
         return $this->_convertLeads($parentEntityType);
     }
+
+    /**
+     * @param Mage_Customer_Model_Customer $customer
+     *
+     * @return string
+     */
+    public function getCompanyByCustomer(Mage_Customer_Model_Customer $customer)
+    {
+        //company from customer
+        $company = $customer->getCompany();
+
+        //set company from billing address
+        if (!$company && $customer->getDefaultBillingAddress()) {
+            $address = $customer->getDefaultBillingAddress();
+            if ($address->getCompany() && strlen($address->getCompany())) {
+                $company = $address->getCompany();
+            }
+        }
+
+        //set from domains
+        if (!$company) {
+            $lookupByDomain = Mage::helper('tnw_salesforce/salesforce_data_account')->lookupByEmailDomain(
+                array($customer->getEmail() => $customer->getEmail()));
+            if (!empty($lookupByDomain) && isset($lookupByDomain[$customer->getEmail()]->Name)) {
+                $company = $lookupByDomain[$customer->getEmail()]->Name;
+            }
+        }
+
+        //set company from firstname + lastname
+        if (!$company && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+            $company = $customer->getFirstname() . " " . $customer->getLastname();
+        }
+
+        return trim($company);
+    }
 }
