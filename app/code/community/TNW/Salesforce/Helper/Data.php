@@ -1036,7 +1036,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function isApiConfigurationPage()
     {
-        return $this->_getRequest()->getModuleName() == 'admin'
+        return $this->_getRequest()->getRouteName() == 'adminhtml'
             && $this->_getRequest()->getControllerName() == 'system_config'
             && $this->_getRequest()->getActionName() == 'edit'
             && $this->_getRequest()->getParam('section') == 'salesforce';
