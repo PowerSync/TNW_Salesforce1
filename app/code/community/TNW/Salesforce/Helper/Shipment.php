@@ -2,6 +2,9 @@
 
 class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
 {
+    const CARRIER_MATCHING = 'salesforce_order/shipment_configuration/carrier_matching';
+    const SYNC_SHIPMENT_ENABLED = 'salesforce_order/shipment_configuration/sync_enabled';
+
     protected $_mySforceConnection = NULL;
     protected $_oli = NULL;
     protected $_shippedOLI = NULL;
@@ -188,5 +191,30 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
             default:
                 break;
         }
+    }
+
+    /**
+     * @param string $carrier
+     *
+     * @return null|string
+     */
+    public function getAccountByCarrier($carrier)
+    {
+        $config = unserialize(Mage::getStoreConfig(self::CARRIER_MATCHING));
+        foreach ($config as $configRow) {
+            if (isset($configRow['carrier']) && $configRow['carrier'] == $carrier) {
+                return isset($configRow['account']) ? (string)$configRow['account'] : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return bool
+     */
+    public function syncEnabled()
+    {
+        return Mage::getStoreConfigFlag(self::SYNC_SHIPMENT_ENABLED);
     }
 }

@@ -815,51 +815,40 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
      */
     public function getAllAccounts()
     {
-        $_useCache = Mage::app()->useCache('tnw_salesforce');
-        $cache = Mage::app()->getCache();
+        $jobId = $this->_createJobQuery('Account');
+        $batchId = $this->_query('SELECT Id, Name FROM Account', $jobId);
+        $maxAttempts = 50;
 
-        if (!$_useCache || ($_useCache && !$cache->load("tnw_salesforce_all_accounts"))) {
-            $_jobId = $this->_createJobQuery('Account');
-            $_batchId = $this->_query('SELECT Id, Name FROM Account', $_jobId);
+        Mage::helper('tnw_salesforce')->log('Checking query completion...');
+        $isComplete = $this->_checkBatchCompletion($jobId);
+        $attempt = 0;
+        while (strval($isComplete) != 'exception' && !$isComplete && ++$attempt <= $maxAttempts) {
+            sleep(5);
+            $isComplete = $this->_checkBatchCompletion($jobId);
+            Mage::helper('tnw_salesforce')->log('Still checking [5] (job: ' . $jobId . ')...');
+            // Break infinite loop after 50 attempts.
+            if (!$isComplete && $attempt == $maxAttempts) {
+                $isComplete = 'exception';
+            }
+        }
+        $this->_closeJob($jobId);
+        Mage::helper('tnw_salesforce')->log("Closing job: " . $jobId);
 
-            Mage::helper('tnw_salesforce')->log('Checking query completion...');
-            $_isComplete = $this->_checkBatchCompletion($_jobId);
-            $_attempt = 1;
-            while (strval($_isComplete) != 'exception' && !$_isComplete && $_attempt < 51) {
-                sleep(5);
-                $_isComplete = $this->_checkBatchCompletion($_jobId);
-                Mage::helper('tnw_salesforce')->log('Still checking [5] (job: ' . $_jobId . ')...');
-                $_attempt++;
-                // Break infinite loop after 50 attempts.
-                if (!$_isComplete && $_attempt == 50) {
-                    $_isComplete = 'exception';
+        $result = array();
+        if ($attempt != $maxAttempts) {
+            $resultIds = $this->getBatch($jobId, $batchId);
+            foreach ($resultIds as $_resultId) {
+                $tmpResult = $this->getBatchResult($jobId, $batchId, $_resultId);
+                foreach ($tmpResult->records as $record) {
+                    $result[(string)$record->Name] = (string)$record->Id[0];
                 }
             }
-            $this->_closeJob($_jobId);
-            Mage::helper('tnw_salesforce')->log("Closing job: " . $_jobId);
 
-            $_resultBatch = array();
-            if ($_attempt != 50) {
-                $resultIds = $this->getBatch($_jobId, $_batchId);
-                foreach ($resultIds as $_resultId) {
-                    $_tmp = $this->getBatchResult($_jobId, $_batchId, $_resultId);
-                    foreach ($_tmp->records as $_record) {
-                        $_resultBatch[(string)$_record->Name] = (string)$_record->Id[0];
-                    }
-                }
-
-                ksort($_resultBatch);
-                $_result = array_flip($_resultBatch);
-
-                if ($_useCache) {
-                    $cache->save(serialize($_result), 'tnw_salesforce_all_accounts', array("TNW_SALESFORCE"), 60 * 60 * 24);
-                }
-            }
-        } elseif ($cache->load("tnw_salesforce_all_accounts")) {
-            $_result = unserialize($cache->load("tnw_salesforce_all_accounts"));
+            ksort($result);
+            $result = array_flip($result);
         }
 
-        return $_result;
+        return $result;
     }
 
     /**

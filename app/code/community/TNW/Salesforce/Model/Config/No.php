@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Class TNW_Salesforce_Model_Config_Order_Invoice
+ * Class TNW_Salesforce_Model_Config_No
  */
-class TNW_Salesforce_Model_Config_Order_Invoice
+class TNW_Salesforce_Model_Config_No
 {
     /**
      * @var array
