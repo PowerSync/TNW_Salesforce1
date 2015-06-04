@@ -86,7 +86,11 @@ class TNW_Salesforce_Test_Model_Api_Client extends TNW_Salesforce_Test_Case
 
     public function testUpsertReturnResult()
     {
-        $expectedResult = 'SOME RESULT';
+        $expectedResultData = array(
+            'success' => true,
+            'id' => 'SOMEITEMID',
+            'created' => true,
+        );
 
         $this->getConnectionMock(array('initConnection'))
             ->expects($this->any())
@@ -97,11 +101,11 @@ class TNW_Salesforce_Test_Model_Api_Client extends TNW_Salesforce_Test_Case
         $this->mockApplyClientToConnection();
         $this->getClientMock()->expects($this->any())
             ->method('upsert')
-            ->willReturn($expectedResult);
+            ->willReturn(array($this->arrayToObject($expectedResultData)));
 
         $result = Mage::getModel('tnw_salesforce/api_client')->upsert('Id',
             array($this->arrayToObject(array('TEST' => 'TEST'))), 'Lead');
-        $this->assertEquals($expectedResult, $result);
+        $this->assertEquals(array(new Varien_Object($expectedResultData)), $result);
     }
 
     public function testUpsertObjectAsArray()

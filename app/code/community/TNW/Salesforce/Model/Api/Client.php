@@ -110,6 +110,14 @@ class TNW_Salesforce_Model_Api_Client
             Mage::throwException('Cannot init connection: ' . $this->getConnection()->getLastErrorMessage());
         }
 
-        return $this->getClient()->upsert((string)$id, $data, (string)$entity);
+        $clientResult = $this->getClient()->upsert((string)$id, $data, (string)$entity);
+        $result = array();
+        if (is_array($clientResult)) {
+            foreach ($clientResult as $key => $object) {
+                $result[$key] = new Varien_Object((array)$object);
+            }
+        }
+
+        return $result;
     }
 }
