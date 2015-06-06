@@ -93,6 +93,12 @@
     <adminhtml_salesforce_orderproduct_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_orderproduct_edit>
+    <adminhtml_salesforce_opportunity_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_edit>
+    <adminhtml_salesforce_opportunitylineitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunitylineitem_edit>
 
     <!-- Add Chosen to system config page -->
     <adminhtml_system_config_edit>

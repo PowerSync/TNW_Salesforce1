@@ -50,6 +50,7 @@ class TNW_Salesforce_Block_Adminhtml_Opportunitylineitem_Edit_Form extends Mage_
             'style' => 'width:400px',
             'required' => true,
             'values' => $sfFields,
+            'class' => 'chosen-select',
         ));
 
         $fieldset->addField('local_field', 'select', array(
@@ -60,6 +61,7 @@ class TNW_Salesforce_Block_Adminhtml_Opportunitylineitem_Edit_Form extends Mage_
             'style' => 'width:400px',
             'name' => 'local_field',
             'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes('OpportunityLineItem'),
+            'class' => 'chosen-select',
         ));
 
         /* Custom Value */
