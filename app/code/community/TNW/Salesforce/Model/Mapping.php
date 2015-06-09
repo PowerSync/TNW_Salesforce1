@@ -31,4 +31,34 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
         return $this;
     }
+
+    /**
+     * @return bool|null|string
+     * @throws Mage_Core_Exception
+     */
+    public function getProcessedDefaultValue()
+    {
+        $value = $this->getDefaultValue();
+        switch ($this->getDefaultValue()) {
+            case '{{url}}':
+                return Mage::helper('core/url')->getCurrentUrl();
+            case '{{today}}':
+                return date('Y-m-d', Mage::getModel('core/date')->timestamp(time()));
+            case '{{end of month}}':
+                return date('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
+            case '{{contact id}}':
+                /**
+                 * @deprecated
+                 */
+                return null;
+            case '{{store view name}}':
+                return Mage::app()->getStore()->getName();
+            case '{{store group name}}':
+                return Mage::app()->getStore()->getGroup()->getName();
+            case '{{website name}}':
+                return Mage::app()->getWebsite()->getName();
+            default:
+                return $value;
+        }
+    }
 }

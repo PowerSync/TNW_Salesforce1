@@ -30,6 +30,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
     {
 
         foreach ($this->getMappingCollection() as $_map) {
+            /** @var TNW_Salesforce_Model_Mapping $_map */
 
             $value = false;
 
@@ -40,7 +41,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
                 continue;
             }
 
-            $sf_field = $_map->sf_field;
+            $sf_field = $_map->getSfField();
 
             $value = $this->_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
 
@@ -92,29 +93,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
                         } elseif ($attributeCode == "website_name") {
                             $value = Mage::app()->getWebsite()->getName();
                         } else {
-                            $value = $_map->default_value;
-                            if ($value == "{{url}}") {
-                                $value = Mage::helper('core/url')->getCurrentUrl();
-                            } elseif ($value == "{{today}}") {
-                                $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                            } elseif ($value == "{{end of month}}") {
-                                $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                                $value = date("Y-m-d", $lastday);
-                            } elseif ($value == "{{contact id}}") {
-                                /**
-                                 * @deprecated
-                                 */
-                                $value = null;//$this->_contactId;
-                            } elseif ($value == "{{store view name}}") {
-                                $value = Mage::app()->getStore()->getName();
-                            } elseif ($value == "{{store group name}}") {
-                                $value = Mage::app()->getStore()->getGroup()->getName();
-                            } elseif ($value == "{{website name}}") {
-                                $value = Mage::app()->getWebsite()->getName();
-                            }
+                            $value = $_map->getProcessedDefaultValue();
                         }
-                        break;
-                    default:
                         break;
                 }
             } else {
