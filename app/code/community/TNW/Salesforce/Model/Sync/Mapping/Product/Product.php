@@ -44,7 +44,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Product_Product extends TNW_Salesforce_M
         foreach ($this->getMappingCollection() as $_map) {
             $value = false;
 
-            list($mappingType, $attributeCode) = explode(" : ", $_map->local_field);
+            $mappingType = $_map->getLocalFieldType();
+            $attributeCode = $_map->getLocalFieldAttributeCode();
 
             if (!$this->_mappingTypeAllowed($mappingType)) {
                 continue;

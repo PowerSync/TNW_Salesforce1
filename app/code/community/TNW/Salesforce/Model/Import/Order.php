@@ -112,7 +112,8 @@ class TNW_Salesforce_Model_Import_Order
             }
             $newValue = $this->getObject()->{$mapping->getSfField()};
             /** @var $mapping TNW_Salesforce_Model_Mapping */
-            list($entityName, $field) = explode(' : ', $mapping->getLocalField());
+            $entityName = $mapping->getLocalFieldType();
+            $field = $mapping->getLocalFieldAttributeCode();
             $entity = $this->getEntity($entityName);
             if (!$entity) {
                 continue;

@@ -2,6 +2,8 @@
 
 /**
  * @method string getLocalField
+ * @method string getLocalFieldType
+ * @method string getLocalFieldAttributeCode
  * @method string getSfField
  * @method string getAttributeId
  * @method string getBackendType
@@ -17,5 +19,16 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         parent::_construct();
 
         $this->_init('tnw_salesforce/mapping');
+    }
+
+    protected function _afterLoad()
+    {
+        parent::_afterLoad();
+
+        list($mappingType, $attributeCode) = explode(" : ", $this->getLocalField());
+        $this->setLocalFieldType($mappingType);
+        $this->setLocalFieldAttributeCode($attributeCode);
+
+        return $this;
     }
 }

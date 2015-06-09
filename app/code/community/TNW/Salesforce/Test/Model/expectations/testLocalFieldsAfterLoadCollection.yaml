@@ -1,0 +1,6 @@
+mapping-1:
+  local_field_type: Shipment
+  local_field_attribute_code: total_weight
+mapping-2:
+  local_field_type: Order
+  local_field_attribute_code: created_at

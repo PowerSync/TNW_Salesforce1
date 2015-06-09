@@ -33,7 +33,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
 
             $value = false;
 
-            list($mappingType, $attributeCode) = explode(" : ", $_map->local_field);
+            $mappingType = $_map->getLocalFieldType();
+            $attributeCode = $_map->getLocalFieldAttributeCode();
 
             if (!$this->_mappingTypeAllowed($mappingType)) {
                 continue;

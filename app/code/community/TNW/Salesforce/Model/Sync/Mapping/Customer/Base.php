@@ -68,7 +68,8 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
         foreach ($this->getMappingCollection() as $_map) {
             $_doSkip = $value = false;
 
-            list($mappingType, $attributeCode) = explode(" : ", $_map->local_field);
+            $mappingType = $_map->getLocalFieldType();
+            $attributeCode = $_map->getLocalFieldAttributeCode();
 
             if (!$this->_mappingTypeAllowed($mappingType)) {
                 continue;
