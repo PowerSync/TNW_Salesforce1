@@ -48,8 +48,8 @@ class TNW_Salesforce_Test_Model_Mapping extends TNW_Salesforce_Test_Case
             //provided => expected
             'text value' => 'text value',
             '{{url}}' => Mage::helper('core/url')->getCurrentUrl(),
-            '{{today}}' => date('Y-m-d', Mage::getModel('core/date')->timestamp(time())),
-            '{{end of month}}' => date('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y'))),
+            '{{today}}' => gmdate('Y-m-d'),
+            '{{end of month}}' => gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y'))),
             '{{contact id}}' => null,
             '{{store view name}}' => Mage::app()->getStore()->getName(),
             '{{store group name}}' => Mage::app()->getStore()->getGroup()->getName(),
@@ -61,5 +61,32 @@ class TNW_Salesforce_Test_Model_Mapping extends TNW_Salesforce_Test_Case
             $model->setDefaultValue($defaultValue);
             $this->assertEquals($expectation, $model->getProcessedDefaultValue());
         }
+    }
+
+    public function testGetCustomValue()
+    {
+        $model = $this->getModel();
+        $expected = array(
+            //provided attributeCode => expected
+            'text value' => null,
+            'current_url' => Mage::helper('core/url')->getCurrentUrl(),
+            'todays_date' => gmdate('Y-m-d'),
+            'todays_timestamp' => gmdate(DATE_ATOM),
+            'end_of_month' => gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y'))),
+            'store_view_name' => Mage::app()->getStore()->getName(),
+            'store_group_name' => Mage::app()->getStore()->getGroup()->getName(),
+            'website_name' => Mage::app()->getWebsite()->getName(),
+
+        );
+
+        foreach ($expected as $attributeCode => $expectation) {
+            $model->setLocalFieldAttributeCode($attributeCode);
+            $this->assertEquals($expectation, $model->getCustomValue(), 'Incorrect ' . $attributeCode);
+        }
+
+        $store = Mage::getModel('core/store');
+        $store->setName('Some Test Store');
+        $model->setLocalFieldAttributeCode('store_view_name');
+        $this->assertEquals('Some Test Store', $model->getCustomValue($store));
     }
 }

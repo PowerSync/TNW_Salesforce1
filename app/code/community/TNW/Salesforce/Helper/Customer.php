@@ -910,40 +910,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                     }
                     break;
                 case "Custom":
-                    if ($conf[1] == "current_url") {
-                        $value = Mage::helper('core/url')->getCurrentUrl();
-                    } elseif ($conf[1] == "todays_date") {
-                        $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($conf[1] == "todays_timestamp") {
-                        $value = gmdate(DATE_ATOM, strtotime(Mage::getModel('core/date')->timestamp(time())));
-                    } elseif ($conf[1] == "end_of_month") {
-                        $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                        $value = date("Y-m-d", $lastday);
-                    } elseif ($conf[1] == "store_view_name") {
-                        $value = Mage::app()->getStore()->getName();
-                    } elseif ($conf[1] == "store_group_name") {
-                        $value = Mage::app()->getStore()->getGroup()->getName();
-                    } elseif ($conf[1] == "website_name") {
-                        $value = Mage::app()->getWebsite()->getName();
-                    } else {
-                        $value = $_map->default_value;
-                        if ($value == "{{url}}") {
-                            $value = Mage::helper('core/url')->getCurrentUrl();
-                        } elseif ($value == "{{today}}") {
-                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                        } elseif ($value == "{{end of month}}") {
-                            $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                            $value = date("Y-m-d", $lastday);
-                        } elseif ($value == "{{contact id}}") {
-                            $value = $this->_contactId;
-                        } elseif ($value == "{{store view name}}") {
-                            $value = Mage::app()->getStore()->getName();
-                        } elseif ($value == "{{store group name}}") {
-                            $value = Mage::app()->getStore()->getGroup()->getName();
-                        } elseif ($value == "{{website name}}") {
-                            $value = Mage::app()->getWebsite()->getName();
-                        }
-                    }
+                    $value = $_map->getCustomValue();
                     break;
                 default:
                     break;

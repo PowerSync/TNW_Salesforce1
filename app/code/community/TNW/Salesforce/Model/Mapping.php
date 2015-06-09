@@ -43,9 +43,9 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
             case '{{url}}':
                 return Mage::helper('core/url')->getCurrentUrl();
             case '{{today}}':
-                return date('Y-m-d', Mage::getModel('core/date')->timestamp(time()));
+                return gmdate('Y-m-d');
             case '{{end of month}}':
-                return date('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
+                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
             case '{{contact id}}':
                 /**
                  * @deprecated
@@ -59,6 +59,33 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
                 return Mage::app()->getWebsite()->getName();
             default:
                 return $value;
+        }
+    }
+
+    /**
+     * @param null|int|Mage_Core_Model_Store $store
+     * @return bool|null|string
+     */
+    public function getCustomValue($store = null)
+    {
+        $store = Mage::app()->getStore($store);
+        switch ($this->getLocalFieldAttributeCode()) {
+            case 'current_url':
+                return Mage::helper('core/url')->getCurrentUrl();
+            case 'todays_date':
+                return gmdate('Y-m-d');
+            case 'todays_timestamp':
+                return gmdate(DATE_ATOM);
+            case 'end_of_month':
+                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
+            case 'store_view_name':
+                return $store->getName();
+            case 'store_group_name':
+                return is_object($store->getGroup()) ? $store->getGroup()->getName() : null;
+            case 'website_name':
+                return $store->getWebsite()->getName();
+            default:
+                return $this->getProcessedDefaultValue();
         }
     }
 }
