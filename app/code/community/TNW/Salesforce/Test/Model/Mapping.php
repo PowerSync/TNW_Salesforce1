@@ -89,4 +89,57 @@ class TNW_Salesforce_Test_Model_Mapping extends TNW_Salesforce_Test_Case
         $model->setLocalFieldAttributeCode('store_view_name');
         $this->assertEquals('Some Test Store', $model->getCustomValue($store));
     }
+
+    /**
+     * @loadFixture
+     * @dataProvider dataProvider
+     *
+     * @param $mappingId
+     */
+    public function testGetValue($mappingId)
+    {
+        $order = Mage::getModel('sales/order')->load(1);
+        $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
+        $objectMappings = array(
+            'Store' => $order->getStore(),
+            'Order' => $order,
+            'Payment' => $order->getPayment(),
+            'Customer' => $customer,
+            'Customer Group' => Mage::getModel('customer/group')->load($customer->getGroupId()),
+            'Billing' => $order->getBillingAddress(),
+            'Shipping' => $order->getShippingAddress(),
+        );
+        $value = $this->getModel()->load($mappingId)->getValue($objectMappings);
+        $this->assertEquals($this->expected('mapping-%s', $mappingId)->getValue(), $value);
+    }
+
+    /**
+     * @loadFixture testGetValue
+     */
+    public function testGetAllValues()
+    {
+        $order = Mage::getModel('sales/order')->load(1);
+        $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
+        $objectMappings = array(
+            'Store' => $order->getStore(),
+            'Order' => $order,
+            'Payment' => $order->getPayment(),
+            'Customer' => $customer,
+            'Customer Group' => Mage::getModel('customer/group')->load($customer->getGroupId()),
+            'Billing' => $order->getBillingAddress(),
+            'Shipping' => $order->getShippingAddress(),
+        );
+
+        $collection = $this->getModel()->getCollection()
+            ->addObjectToFilter(TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT);
+        //check that fixture loaded properly
+        $this->assertNotEquals(0, count($collection));
+
+        $expectation = array();
+        foreach ($collection as $item) {
+            $expectation[$item->getSfField()] = $item->getValue($objectMappings);
+        }
+
+        $this->assertEquals($expectation, $collection->getAllValues($objectMappings));
+    }
 }

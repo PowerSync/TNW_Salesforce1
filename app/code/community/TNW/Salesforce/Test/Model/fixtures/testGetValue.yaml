@@ -1,0 +1,73 @@
+scope:
+  store:
+    - store_id: 10
+      code: custom_one
+      name: "Custom One"
+eav:
+  customer:
+    - entity_id: 1
+      firstname: John
+      group_id: 1
+tables:
+  customer/customer_group:
+    - customer_group_id: 1
+      customer_group_code: General
+  sales/order:
+    - entity_id: 1
+      salesforce_id: ORDERSALESFORCEID1
+      shipping_method: flatrate_flatrate
+      customer_id: 1
+      shipping_description: "Flat Rate - Fixed"
+      shipping_address_id: 50
+      billing_address_id: 60
+      store_id: 10
+  sales/order_address:
+    - entity_id: 50 #shipping
+      parent_id: 1
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: UK
+      address_type: shipping
+    - entity_id: 60 #billing
+      parent_id: 1
+      region: Moscow
+      postcode: 123000
+      street: Lubyanka 100
+      city: Moscow
+      country_id: UK
+      address_type: billing
+  sales/order_payment:
+    - entity_id: 1
+      parent_id: 1
+      method: checkmo
+  tnw_salesforce/mapping:
+    - mapping_id: 1
+      local_field: "Customer : firstname"
+      sf_field: CustomerFirstName__c
+      sf_object: Order
+    - mapping_id: 2
+      local_field: "Order : shipping_description"
+      sf_field: ShippingDescription__c
+      sf_object: Order
+    - mapping_id: 3
+      local_field: "Payment : method"
+      sf_field: PaymentMethodCode__c
+      sf_object: Order
+    - mapping_id: 4
+      local_field: "Shipping : country_id"
+      sf_field: ShippingCountry__c
+      sf_object: Order
+    - mapping_id: 5
+      local_field: "Billing : country_id"
+      sf_field: BillingCountry__c
+      sf_object: Order
+    - mapping_id: 6
+      local_field: "Customer Group : customer_group_code"
+      sf_field: CustomerGroup__c
+      sf_object: Order
+    - mapping_id: 7
+      local_field: "Custom : store_view_name"
+      sf_field: StoreName__c
+      sf_object: Order

@@ -25,9 +25,11 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     {
         parent::_afterLoad();
 
-        list($mappingType, $attributeCode) = explode(" : ", $this->getLocalField());
-        $this->setLocalFieldType($mappingType);
-        $this->setLocalFieldAttributeCode($attributeCode);
+        $cutLocalField = explode(" : ", $this->getLocalField());
+        if (count($cutLocalField) > 1) {
+            $this->setLocalFieldType($cutLocalField[0]);
+            $this->setLocalFieldAttributeCode($cutLocalField[1]);
+        }
 
         return $this;
     }
@@ -87,5 +89,22 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
             default:
                 return $this->getProcessedDefaultValue();
         }
+    }
+
+    public function getValue(array $objectMappings = array())
+    {
+        $value = null;
+        $attributeCode = $this->getLocalFieldAttributeCode();
+        $object = isset($objectMappings[$this->getLocalFieldType()])
+            ? $objectMappings[$this->getLocalFieldType()] : null;
+        if ($object) {
+            $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+            $value = $object->$method();
+        } elseif ($this->getLocalFieldType() == 'Custom') {
+            $store = isset($objectMappings['Store']) ? $objectMappings['Store'] : null;
+            $value = $this->getCustomValue($store);
+        }
+
+        return $value;
     }
 }

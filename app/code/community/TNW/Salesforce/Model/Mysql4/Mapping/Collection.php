@@ -31,4 +31,14 @@ class TNW_Salesforce_Model_Mysql4_Mapping_Collection extends Mage_Core_Model_Mys
 
         return $this;
     }
+
+    public function getAllValues(array $objectMappings = array())
+    {
+        $values = array();
+        foreach ($this as $item) {
+            $values[$item->getSfField()] = $item->getValue($objectMappings);
+        }
+
+        return $values;
+    }
 }
