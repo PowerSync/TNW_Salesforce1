@@ -95,16 +95,43 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     {
         $value = null;
         $attributeCode = $this->getLocalFieldAttributeCode();
+        /** @var Mage_Catalog_Model_Product $object */
         $object = isset($objectMappings[$this->getLocalFieldType()])
             ? $objectMappings[$this->getLocalFieldType()] : null;
         if ($object) {
-            $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-            $value = $object->$method();
+            $value = $this->getSpecialValues($objectMappings);
+            if (!$value) {
+                $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+                $value = $object->$method();
+
+                if (is_array($value)) {
+                    $value = implode(' ', $value);
+                } elseif ($this->getBackendType() == 'datetime') {
+                    $value = gmdate(DATE_ATOM, strtotime($value));
+                } elseif ($attributeCode == 'created_at') {
+                    $value = date('Y-m-d', strtotime($value));
+                } else {
+                    //check if get option text required
+                    if (is_object($object->getResource()) && method_exists($object->getResource(), 'getAttribute')
+                        && is_object($object->getResource()->getAttribute($attributeCode))
+                        && $object->getResource()->getAttribute($attributeCode)->getFrontendInput() == 'select'
+                    ) {
+                        $value = $object->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($value);
+                    }
+                }
+            }
         } elseif ($this->getLocalFieldType() == 'Custom') {
             $store = isset($objectMappings['Store']) ? $objectMappings['Store'] : null;
             $value = $this->getCustomValue($store);
         }
 
         return $value;
+    }
+
+    protected function getSpecialValues(array $objectMappings = array())
+    {
+        if ($this->getLocalFieldType() == 'Customer' && $this->getLocalFieldAttributeCode() == 'email') {
+            return isset($objectMappings['Order']) ? $objectMappings['Order']->getCustomerEmail() : null;
+        }
     }
 }

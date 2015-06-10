@@ -12,3 +12,13 @@ mapping-6:
   value: General
 mapping-7:
   value: "Custom One"
+mapping-8:
+  value: some@email.com
+mapping-9:
+  value: Male
+mapping-10:
+  value: "2012-11-10T09:08:07+00:00"
+mapping-11:
+  value: 2011-10-09
+mapping-12:
+  value: "Oxford Street 145 apt 45"
