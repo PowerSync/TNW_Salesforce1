@@ -130,8 +130,11 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
     protected function getSpecialValues(array $objectMappings = array())
     {
+        $helper = Mage::helper('tnw_salesforce/mapping');
         if ($this->getLocalFieldType() == 'Customer' && $this->getLocalFieldAttributeCode() == 'email') {
             return isset($objectMappings['Order']) ? $objectMappings['Order']->getCustomerEmail() : null;
+        } elseif ($this->getLocalFieldType() == 'Order' && $this->getLocalFieldAttributeCode() == 'description') {
+            return isset($objectMappings['Order']) ? $helper->getOrderDescription($objectMappings['Order']) : null;
         }
     }
 }

@@ -1,0 +1,52 @@
+tables:
+  sales/order:
+    - entity_id: 1
+      shipping_description: "Free Saturday Delivery (order by 3pm)"
+      discount_amount: 10.0000
+      grand_total: 210.0000
+      shipping_amount: 20.0000
+      subtotal: 166.0000
+      tax_amount: 34.0000
+      total_qty_ordered: 2.0000
+      order_currency_code: GBP
+    - entity_id: 2
+      shipping_description: "Free Saturday Delivery (order by 3pm)"
+      discount_amount: 10.0000
+      base_discount_amount: 5.0000
+      grand_total: 210.0000
+      base_grand_total: 105.0000
+      shipping_amount: 20.0000
+      base_shipping_amount: 10.0000
+      subtotal: 166.0000
+      base_subtotal: 83.0000
+      tax_amount: 34.0000
+      base_tax_amount: 17.0000
+      total_qty_ordered: 2.0000
+      order_currency_code: USD
+      base_currency_code: GBP
+  sales/order_item:
+    - item_id: 1
+      order_id: 1
+      sku: ORDEREDPRODUCT1
+      name: "Ordered Product 1"
+      qty_ordered: 2.0000
+      price: 83.0000
+      tax_amount: 17.0000
+      discount_amount: 5.0000
+      row_total: 166.000
+      row_total_incl_tax: 200.0000
+    - item_id: 2
+      order_id: 2
+      sku: ORDEREDPRODUCT2
+      name: "Ordered Product 2"
+      qty_ordered: 2.0000
+      price: 83.0000
+      base_price: 41.5000
+      tax_amount: 17.0000
+      base_tax_amount: 8.5000
+      discount_amount: 5.0000
+      base_discount_amount: 2.5000
+      row_total: 166.000
+      base_row_total: 83.000
+      row_total_incl_tax: 200.0000
+      base_row_total_incl_tax: 100.0000

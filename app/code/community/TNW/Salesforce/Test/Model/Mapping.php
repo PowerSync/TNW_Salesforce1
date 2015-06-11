@@ -110,7 +110,11 @@ class TNW_Salesforce_Test_Model_Mapping extends TNW_Salesforce_Test_Case
             'Shipping' => $order->getShippingAddress(),
         );
         $value = $this->getModel()->load($mappingId)->getValue($objectMappings);
-        $this->assertEquals($this->expected('mapping-%s', $mappingId)->getValue(), $value);
+        $expected = $this->expected('mapping-%s', $mappingId)->getValue();
+        if ($expected == '!order_description') {
+            $expected = Mage::helper('tnw_salesforce/mapping')->getOrderDescription($order);
+        }
+        $this->assertEquals($expected, $value);
     }
 
     /**

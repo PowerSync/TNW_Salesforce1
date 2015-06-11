@@ -96,3 +96,7 @@ tables:
       local_field: "Shipping : street"
       sf_field: ShippingAddress__c
       sf_object: Order
+    - mapping_id: 13 #test implode for array attribute values
+      local_field: "Order : description"
+      sf_field: Description__c
+      sf_object: Order
