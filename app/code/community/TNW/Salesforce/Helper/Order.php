@@ -301,7 +301,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         // Account ID
         $this->_lead->AccountId = $this->_customer->getSalesforceAccountId();
         // Description
-        $this->_lead->Description = $this->_getDescriptionCart($order);
+        $this->_lead->Description = Mage::helper('tnw_salesforce/mapping')->getOrderDescription($order);
 
         $this->_processMapping($order, "Opportunity");
 
@@ -318,47 +318,6 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
     protected function _setOpportunityName()
     {
         $this->_lead->Name = "Request #" . $this->_orderRealId . " from " . $this->_fromAccount;
-    }
-
-    protected function _getDescriptionCart($order)
-    {
-        ## Put Products into Single field
-        $descriptionCart = "";
-        $descriptionCart .= "Items ordered:\n";
-        $descriptionCart .= "=======================================\n";
-        $descriptionCart .= "SKU, Qty, Name";
-        $descriptionCart .= ", Price";
-        $descriptionCart .= ", Tax";
-        $descriptionCart .= ", Subtotal";
-        $descriptionCart .= ", Net Total";
-        $descriptionCart .= "\n";
-        $descriptionCart .= "=======================================\n";
-
-        foreach ($order->getAllVisibleItems() as $itemId => $item) {
-            $descriptionCart .= $item->getSku() . ", " . $this->numberFormat($item->getQtyOrdered()) . ", " . $item->getName();
-            //Price
-            $unitPrice = $this->numberFormat(($item->getPrice()));
-            $descriptionCart .= ", " . $unitPrice;
-            //Tax
-            $tax = $this->numberFormat(($item->getTaxAmount()));
-            $descriptionCart .= ", " . $tax;
-            //Subtotal
-            $subtotal = $this->numberFormat((($item->getPrice() + $item->getTaxAmount()) * $item->getQtyOrdered()));
-            $descriptionCart .= ", " . $subtotal;
-            //Net Total
-            $netTotal = $this->numberFormat(($subtotal - $item->getDiscountAmount()));
-            $descriptionCart .= ", " . $netTotal;
-            $descriptionCart .= "\n";
-        }
-        $descriptionCart .= "=======================================\n";
-        $descriptionCart .= "Sub Total: " . $this->numberFormat(($order->getSubtotal())) . "\n";
-        $descriptionCart .= "Tax: " . $this->numberFormat(($order->getTaxAmount())) . "\n";
-        $descriptionCart .= "Shipping (" . $order->getShippingDescription() . "): " . $this->numberFormat(($order->getShippingAmount())) . "\n";
-        $descriptionCart .= "Discount Amount : " . $this->numberFormat($order->getGrandTotal() - ($order->getShippingAmount() + $order->getTaxAmount() + $order->getSubtotal())) . "\n";
-        $descriptionCart .= "Total: " . $this->numberFormat(($order->getGrandTotal()));
-        $descriptionCart .= "\n";
-        unset($order);
-        return $descriptionCart;
     }
 
     /**
@@ -427,7 +386,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
                     break;
                 case "Order":
                     if ($conf[1] == "cart_all") {
-                        $value = $this->_getDescriptionCart($order);
+                        $value = Mage::helper('tnw_salesforce/mapping')->getOrderDescription($order);
                     } elseif ($conf[1] == "number") {
                         $value = $this->_orderRealId;
                     } elseif ($conf[1] == "created_at") {

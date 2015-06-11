@@ -341,8 +341,8 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
 
     /**
      * @comment based on config returns price in base currency or in currency selected by the customer
-     * @param $entity
-     * @param $priceField should be in camelcase
+     * @param string $entity
+     * @param string $priceField should be in camelcase
      */
     protected function _getEntityPrice($entity, $priceField)
     {
