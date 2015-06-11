@@ -24,3 +24,9 @@ mapping-12:
   value: "Oxford Street 145 apt 45"
 mapping-13:
   value: !order_description
+mapping-14:
+  value: ORDERINCREMENTID1
+mapping-15:
+  value: Check / Money order
+mapping-16:
+  value: !order_notes

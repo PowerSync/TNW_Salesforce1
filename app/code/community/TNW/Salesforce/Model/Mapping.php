@@ -130,11 +130,64 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
     protected function getSpecialValues(array $objectMappings = array())
     {
+        $attribute = $this->getLocalFieldAttributeCode();
+        $type = $this->getLocalFieldType();
         $helper = Mage::helper('tnw_salesforce/mapping');
-        if ($this->getLocalFieldType() == 'Customer' && $this->getLocalFieldAttributeCode() == 'email') {
-            return isset($objectMappings['Order']) ? $objectMappings['Order']->getCustomerEmail() : null;
-        } elseif ($this->getLocalFieldType() == 'Order' && $this->getLocalFieldAttributeCode() == 'cart_all') {
-            return isset($objectMappings['Order']) ? $helper->getOrderDescription($objectMappings['Order']) : null;
+        if (isset($objectMappings['Order'])) {
+            /** @var Mage_Sales_Model_Order $order */
+            $order = $objectMappings['Order'];
+            if ($type == 'Customer' && $attribute == 'email') {
+                return $order->getCustomerEmail();
+            } elseif ($type == 'Order') {
+                switch ($attribute) {
+                    case 'cart_all':
+                        return $helper->getOrderDescription($order);
+                    case 'number':
+                        return $order->getIncrementId();
+                    case 'payment_method':
+                        $value = '';
+                        if ($order->getPayment()) {
+                            $paymentMethods = Mage::helper('payment')->getPaymentMethodList(true);
+                            $method = $order->getPayment()->getMethod();
+                            if (array_key_exists($method, $paymentMethods)) {
+                                $value = $paymentMethods[$method];
+                            } else {
+                                $value = $method;
+                            }
+                        }
+                        return $value;
+                    case 'notes':
+                        $allNotes = '';
+                        foreach ($order->getStatusHistoryCollection() as $historyItem) {
+                            $comment = trim(strip_tags($historyItem->getComment()));
+                            if (!$comment || empty($comment)) {
+                                continue;
+                            }
+                            $allNotes .= Mage::helper('core')->formatTime($historyItem->getCreatedAtDate(), 'medium')
+                                . " | " . $historyItem->getStatusLabel() . "\n";
+                            $allNotes .= strip_tags($historyItem->getComment()) . "\n";
+                            $allNotes .= "-----------------------------------------\n\n";
+                        }
+                        return empty($allNotes) ? null : $allNotes;
+
+                }
+            } elseif ($type == 'Aitoc') {
+                //TODO: Write a unit test for this part
+                $modules = Mage::getConfig()->getNode('modules')->children();
+                if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
+                    $aCustomAttrList = Mage::getModel('aitcheckoutfields/transport')->loadByOrderId($order->getId());
+                    foreach ($aCustomAttrList->getData() as $_key => $_data) {
+                        if ($_data['code'] == $attribute) {
+                            $value = $_data['value'];
+                            if ($_data['type'] == "date") {
+                                return date("Y-m-d", strtotime($value));
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        return null;
     }
 }

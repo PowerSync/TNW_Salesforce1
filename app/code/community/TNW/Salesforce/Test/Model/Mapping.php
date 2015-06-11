@@ -113,6 +113,19 @@ class TNW_Salesforce_Test_Model_Mapping extends TNW_Salesforce_Test_Case
         $expected = $this->expected('mapping-%s', $mappingId)->getValue();
         if ($expected == '!order_description') {
             $expected = Mage::helper('tnw_salesforce/mapping')->getOrderDescription($order);
+        } elseif ($expected == '!order_notes') {
+            $allNotes = '';
+            foreach ($order->getStatusHistoryCollection() as $historyItem) {
+                $comment = trim(strip_tags($historyItem->getComment()));
+                if (!$comment || empty($comment)) {
+                    continue;
+                }
+                $allNotes .= Mage::helper('core')->formatTime($historyItem->getCreatedAtDate(), 'medium')
+                    . " | " . $historyItem->getStatusLabel() . "\n";
+                $allNotes .= strip_tags($historyItem->getComment()) . "\n";
+                $allNotes .= "-----------------------------------------\n\n";
+            }
+            $expected = $allNotes;
         }
         $this->assertEquals($expected, $value);
     }

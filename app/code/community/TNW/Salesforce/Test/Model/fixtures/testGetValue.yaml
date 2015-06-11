@@ -25,6 +25,7 @@ tables:
       billing_address_id: 60
       store_id: 10
       customer_email: some@email.com
+      increment_id: ORDERINCREMENTID1
   sales/order_address:
     - entity_id: 50 #shipping
       parent_id: 1
@@ -46,6 +47,26 @@ tables:
     - entity_id: 1
       parent_id: 1
       method: checkmo
+  sales/order_status_history:
+    - entity_id: 1
+      parent_id: 1
+      status: processing
+      created_at: 2011-07-05 18:19:18
+    - entity_id: 2
+      parent_id: 1
+      comment: Some cool comment about status
+      status: processing
+      created_at: 2011-08-05 18:19:18
+    - entity_id: 3
+      parent_id: 1
+      comment: ""
+      status: closed
+      created_at: 2011-08-05 21:19:18
+    - entity_id: 4
+      parent_id: 1
+      comment: "Whats up"
+      status: closed
+      created_at: 2011-08-05 21:19:18
   tnw_salesforce/mapping:
     - mapping_id: 1
       local_field: "Customer : firstname"
@@ -96,7 +117,19 @@ tables:
       local_field: "Shipping : street"
       sf_field: ShippingAddress__c
       sf_object: Order
-    - mapping_id: 13 #test implode for array attribute values
+    - mapping_id: 13 #test get order description
       local_field: "Order : cart_all"
       sf_field: Description__c
+      sf_object: Order
+    - mapping_id: 14 #test get order number
+      local_field: "Order : number"
+      sf_field: Number__c
+      sf_object: Order
+    - mapping_id: 15 #test payment method label
+      local_field: "Order : payment_method"
+      sf_field: PaymentMethod__c
+      sf_object: Order
+    - mapping_id: 16 #test notes
+      local_field: "Order : notes"
+      sf_field: Notes__c
       sf_object: Order

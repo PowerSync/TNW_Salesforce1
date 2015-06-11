@@ -36,13 +36,13 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
     protected $_cacheIdField = 'increment_id';
 
     /**
-     * @comment Apply mapping rules
-     * @param Mage_Sales_Model_Order $entity
+     * Apply mapping rules
      */
-    protected function _processMapping($entity = null)
+    protected function _processMapping()
     {
-
-        $cacheId = $entity->getData($this->getCacheIdField());
+        /** @var  $order Mage_Sales_Model_Order */
+        $order = func_get_arg(0);
+        $cacheId = $order->getData($this->getCacheIdField());
 
         if (isset($this->_cache[$this->getCachePrefix() . 'Customers'])
             && is_array($this->_cache[$this->getCachePrefix() . 'Customers'])
@@ -50,11 +50,10 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
         ) {
             $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
         } else {
-            $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId] = $this->_getCustomer($entity);
+            $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId] = $this->_getCustomer($order);
             $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
         }
 
-        $order = $entity;
         $objectMappings = array(
             'Store' => $order->getStore(),
             'Order' => $order,
@@ -78,72 +77,13 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
             $sf_field = $_map->getSfField();
 
             $value = '';
-            $value = $this->_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
-
-            switch ($mappingType) {
-                case "Order":
-                case "Cart":
-                case "Quote":
-                    if ($attributeCode == "number") {
-                        $value = $cacheId;
-                    } elseif ($attributeCode == "payment_method") {
-                        if (is_object($entity->getPayment())) {
-                            $paymentMethods = Mage::helper('payment')->getPaymentMethodList(true);
-                            $method = $entity->getPayment()->getMethod();
-                            if (array_key_exists($method, $paymentMethods)) {
-                                $value = $paymentMethods[$method];
-                            } else {
-                                $value = $method;
-                            }
-                        } else {
-                            Mage::helper('tnw_salesforce')->log($this->_type . ' MAPPING: Payment Method is not set in magento for the order: ' . $cacheId . ', SKIPPING!');
-                        }
-                    } elseif ($attributeCode == "notes") {
-                        $allNotes = NULL;
-                        foreach ($entity->getStatusHistoryCollection() as $_comment) {
-                            $comment = trim(strip_tags($_comment->getComment()));
-                            if (!$comment || empty($comment)) {
-                                continue;
-                            }
-                            if (!$allNotes) {
-                                $allNotes = "";
-                            }
-                            $allNotes .= Mage::helper('core')->formatTime($_comment->getCreatedAtDate(), 'medium') . " | " . $_comment->getStatusLabel() . "\n";
-                            $allNotes .= strip_tags($_comment->getComment()) . "\n";
-                            $allNotes .= "-----------------------------------------\n\n";
-                        }
-                        $value = $allNotes;
-                    } else {
-                        //Common attributes
-                        $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-                        $value = ($entity->getAttributeText($attributeCode)) ? $entity->getAttributeText($attributeCode) : $entity->$attr();
-                        break;
-                    }
-                    break;
-                case "Aitoc":
-                    $modules = Mage::getConfig()->getNode('modules')->children();
-                    $value = NULL;
-                    if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-                        $aCustomAtrrList = Mage::getModel('aitcheckoutfields/transport')->loadByOrderId($entity->getId());
-                        foreach ($aCustomAtrrList->getData() as $_key => $_data) {
-                            if ($_data['code'] == $attributeCode) {
-                                $value = $_data['value'];
-                                if ($_data['type'] == "date") {
-                                    $value = date("Y-m-d", strtotime($value));
-                                }
-                                break;
-                            }
-                        }
-                        unset($aCustomAtrrList);
-                    }
-                    break;
-            }
+            $value = $this->_fieldMappingBefore($order, $mappingType, $attributeCode, $value);
 
             if (!$value) {
                 $value = $_map->getValue($objectMappings);
             }
 
-            $value = $this->_fieldMappingAfter($entity, $mappingType, $attributeCode, $value);
+            $value = $this->_fieldMappingAfter($order, $mappingType, $attributeCode, $value);
 
             if ($value) {
                 $this->getObj()->$sf_field = trim($value);
