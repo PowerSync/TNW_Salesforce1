@@ -50,15 +50,13 @@
 
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
-        <update handle="order_salesforce_info"/>
-    </adminhtml_sales_order_view>
-
-    <order_salesforce_info>
-        <reference name="order_info">
-            <block after="order_info" type="tnw_salesforce/sales_order_view_salesforce" name="salesforce_info"
-                   template="salesforce/sales/order/view/salesforce.phtml"/>
+        <reference name="sales_order_tabs">
+            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce" template="salesforce/sales/order/view/tab/salesforce.phtml">
+                <block type="tnw_salesforce/sales_order_view_tab_salesforce_info" name="salesforce_info" template="salesforce/sales/order/view/tab/salesforce/info.phtml"></block>
+            </block>
+            <action method="addTab"><name>order_salesforce</name><block>order_tab_salesforce</block></action>
         </reference>
-    </order_salesforce_info>
+    </adminhtml_sales_order_view>
 
     <!-- Disable Cache -->
     <reference name="tnw_salesforce.test.results">
