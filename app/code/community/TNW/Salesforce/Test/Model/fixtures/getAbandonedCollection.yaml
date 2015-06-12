@@ -1,3 +1,7 @@
+scope:
+  store:
+    - store_id: 1
+      code: yo
 config:
   default/salesforce_order/customer_opportunity/abandoned_cart_limit: 1
 tables:
