@@ -249,7 +249,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 || !array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
                 || !array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])) {
                 $_order = Mage::registry('order_cached_' . $_orderNumber);
-                $_leadsToLookup[$_customerId] = $_orderEmail;
+                //$_leadsToLookup[$_customerId] = $_orderEmail;
                 $this->_cache['orderCustomersToSync'][] = $_orderNumber;
             }
 
@@ -293,19 +293,22 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     }
                 }
 
-                if (is_array($this->_cache['leadLookup'])
+                if (is_array($this->_cache['accountsLookup'])
+                    && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+                    && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])) {
+                    // Found Contact & Account
+
+                    $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceId($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->Id);
+                    $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceAccountId($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->AccountId);
+
+                    Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer synchronization.');
+                } elseif (is_array($this->_cache['leadLookup'])
                     && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
                     && array_key_exists($_orderEmail, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])) {
-
                     // Need to convert a Lead
                     Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->prepareLeadConversionObject($_orderNumber, $_foundAccounts, 'order');
 
                     Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer Lead prepared to be converted.');
-                } elseif (is_array($this->_cache['accountsLookup'])
-                    && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-                    && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])) {
-                    // Found Contact & Account
-                    Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer synchronization.');
                 } else {
                     // Something is wrong, could not create / find Magento customer in SalesForce
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {

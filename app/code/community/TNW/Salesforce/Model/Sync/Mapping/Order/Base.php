@@ -54,9 +54,8 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
             $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
         }
 
-        if ($_customer->getGroupId()) {
-
-            if (!isset($this->_customerGroups[$_customer->getGroupId()])) {
+        if ($_customer->getGroupId() !== NULL ) {
+            if (is_array($this->_customerGroups) && (!array_key_exists($_customer->getGroupId(), $this->_customerGroups) || !$this->_customerGroups[$_customer->getGroupId()])) {
                 $this->_customerGroups[$_customer->getGroupId()] = $this->_customerGroupModel->load($_customer->getGroupId());
             }
         }

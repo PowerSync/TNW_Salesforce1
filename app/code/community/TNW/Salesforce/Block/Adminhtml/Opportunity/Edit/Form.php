@@ -47,6 +47,7 @@ class TNW_Salesforce_Block_Adminhtml_Opportunity_Edit_Form extends Mage_Adminhtm
             'after_element_html' => '<p class="note">Salesforce API field name.</p>',
             'style' => 'width:400px',
             'values' => $sfFields,
+            'class' => 'chosen-select',
         ));
 
         $mageFields = array();
@@ -66,6 +67,7 @@ class TNW_Salesforce_Block_Adminhtml_Opportunity_Edit_Form extends Mage_Adminhtm
             'style' => 'width:400px',
             'name' => 'local_field',
             'values' => $mageFields,
+            'class' => 'chosen-select',
         ));
 
         /* Custom Value */

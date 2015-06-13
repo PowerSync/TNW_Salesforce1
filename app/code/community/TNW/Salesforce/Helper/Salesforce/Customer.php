@@ -830,13 +830,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 //Report Transaction
                 $this->_cache['responses']['contacts'][$_contactIds[$_key]] = $_result;
                 $_websiteId = $this->_getWebsiteIdByCustomerId($_contactIds[$_key]);
+                $customerId = $_contactIds[$_key];
 
                 if (property_exists($_result, 'success') && $_result->success) {
                     $_entitites[] = $_result->id;
                     if (array_key_exists('guest_0', $this->_cache['guestsFromOrder'])) {
                         $this->_cache['guestsFromOrder']['guest_0']->setSalesforceId($_result->id);
                     }
-                    $_email = $this->_cache['entitiesUpdating'][$_contactIds[$_key]];
+                    $_email = $this->_cache['entitiesUpdating'][$customerId];
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $_result->id;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
                     // Skip Magento update if guest
@@ -844,7 +845,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         unset($this->_cache['toSaveInMagento'][$_websiteId][$_email]);
                     }
                 } else {
-                    $this->_processErrors($_result, 'contact', $this->_cache['contactsToUpsert'][$_contactIds[$_key]]);
+                    $this->_processErrors($_result, 'contact', $this->_cache['contactsToUpsert'][$customerId]);
                 }
             }
 
