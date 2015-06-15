@@ -428,19 +428,19 @@
                                 <sort_order>100</sort_order>
                                 <children>
                                     <product_sync>
-                                        <title>Products</title>
+                                        <title>Synchronize Products</title>
                                         <sort_order>10</sort_order>
                                     </product_sync>
                                     <customer_sync>
-                                        <title>Customers</title>
+                                        <title>Synchronize Customers</title>
                                         <sort_order>20</sort_order>
                                     </customer_sync>
                                     <order_sync>
-                                        <title>Orders</title>
+                                        <title>Synchronize Orders</title>
                                         <sort_order>30</sort_order>
                                     </order_sync>
                                     <abandoned_sync>
-                                        <title>Abandoned Cart</title>
+                                        <title>Synchronize Abandoned Cart</title>
                                         <sort_order>50</sort_order>
                                     </abandoned_sync>
                                 </children>
@@ -458,15 +458,15 @@
                                         <sort_order>200</sort_order>
                                         <children>
                                             <contact_mapping>
-                                                <title>Contact</title>
+                                                <title>Contact Field Mappings</title>
                                                 <sort_order>20</sort_order>
                                             </contact_mapping>
                                             <account_mapping>
-                                                <title>Account</title>
+                                                <title>Account Field Mappings</title>
                                                 <sort_order>30</sort_order>
                                             </account_mapping>
                                             <lead_mapping>
-                                                <title>Lead</title>
+                                                <title>Lead Field Mappings</title>
                                                 <sort_order>10</sort_order>
                                             </lead_mapping>
                                         </children>
@@ -476,11 +476,11 @@
                                         <sort_order>300</sort_order>
                                         <children>
                                             <order_mapping>
-                                                <title>Order</title>
+                                                <title>Order Field Mappings</title>
                                                 <sort_order>50</sort_order>
                                             </order_mapping>
                                             <order_cart_mapping>
-                                                <title>Order Products</title>
+                                                <title>Order Product Field Mappings</title>
                                                 <sort_order>60</sort_order>
                                             </order_cart_mapping>
                                             <opportunity_mapping>
@@ -502,11 +502,11 @@
                                         <sort_order>300</sort_order>
                                         <children>
                                             <order_mapping>
-                                                <title>Opportunity</title>
+                                                <title>Opportunity Field Mappings</title>
                                                 <sort_order>70</sort_order>
                                             </order_mapping>
                                             <order_cart_mapping>
-                                                <title>Opportunity Products</title>
+                                                <title>Opportunity Products Field Mappings</title>
                                                 <sort_order>80</sort_order>
                                             </order_cart_mapping>
                                         </children>
@@ -514,7 +514,7 @@
                                 </children>
                             </mappings>
                             <queue_sync>
-                                <title>Sync Queue</title>
+                                <title>Synchronization Queue</title>
                                 <sort_order>300</sort_order>
                             </queue_sync>
                             <setup>
