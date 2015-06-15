@@ -11,7 +11,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderproductController extends Mage_Ad
         }
 
         $this->loadLayout()
-            ->_setActiveMenu('system/salesforce')
+            ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Ordered Products Mapping'), Mage::helper('tnw_salesforce')->__('Ordered Products Mapping'));
 
         return $this;

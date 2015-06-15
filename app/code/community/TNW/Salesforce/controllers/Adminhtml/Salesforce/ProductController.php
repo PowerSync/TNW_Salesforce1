@@ -17,7 +17,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_ProductController extends Mage_Adminht
         }
 
         $this->loadLayout()
-            ->_setActiveMenu('system/salesforce')
+            ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Product Fields Mapping'), Mage::helper('tnw_salesforce')->__('Product Field Mapping'));
 
         return $this;

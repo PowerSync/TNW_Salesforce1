@@ -14,7 +14,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_ContactController extends Mage_Adminht
         }
 
         $this->loadLayout()
-            ->_setActiveMenu('system/salesforce')
+            ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Contact Field Mapping'), Mage::helper('tnw_salesforce')->__('Contact Field Mapping'));
 
         return $this;

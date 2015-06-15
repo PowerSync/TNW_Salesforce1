@@ -1,38 +1,40 @@
 <?xml version="1.0"?>
 <config>
     <menu>
-        <system>
+        <tnw_salesforce>
+            <title>Salesforce</title>
+            <sort_order>89</sort_order>
             <children>
-                <salesforce translate="title" module="tnw_salesforce">
-                    <title>Salesforce API</title>
-                    <sort_order>5</sort_order>
+                <manual_sync translate="title" module="tnw_salesforce">
+                    <title>Manual Sync</title>
+                    <sort_order>10</sort_order>
                     <children>
-                        <manual_sync translate="title" module="tnw_salesforce">
-                            <title>Manual Sync</title>
+                        <order_sync translate="title" module="tnw_salesforce">
+                            <title>Orders</title>
+                            <action>adminhtml/salesforcesync_ordersync</action>
+                            <sort_order>30</sort_order>
+                        </order_sync>
+                        <product_sync translate="title" module="tnw_salesforce">
+                            <title>Products</title>
+                            <action>adminhtml/salesforcesync_productsync</action>
                             <sort_order>10</sort_order>
-                            <children>
-                                <order_sync translate="title" module="tnw_salesforce">
-                                    <title>Orders</title>
-                                    <action>adminhtml/salesforcesync_ordersync</action>
-                                    <sort_order>30</sort_order>
-                                </order_sync>
-                                <product_sync translate="title" module="tnw_salesforce">
-                                    <title>Products</title>
-                                    <action>adminhtml/salesforcesync_productsync</action>
-                                    <sort_order>10</sort_order>
-                                </product_sync>
-                                <customer_sync translate="title" module="tnw_salesforce">
-                                    <title>Customers</title>
-                                    <action>adminhtml/salesforcesync_customersync</action>
-                                    <sort_order>20</sort_order>
-                                </customer_sync>
-                                <abandoned_sync translate="title" module="tnw_salesforce">
-                                    <title>Abandoned Cart</title>
-                                    <action>adminhtml/salesforcesync_abandonedsync</action>
-                                    <sort_order>50</sort_order>
-                                </abandoned_sync>
-                            </children>
-                        </manual_sync>
+                        </product_sync>
+                        <customer_sync translate="title" module="tnw_salesforce">
+                            <title>Customers</title>
+                            <action>adminhtml/salesforcesync_customersync</action>
+                            <sort_order>20</sort_order>
+                        </customer_sync>
+                        <abandoned_sync translate="title" module="tnw_salesforce">
+                            <title>Abandoned Cart</title>
+                            <action>adminhtml/salesforcesync_abandonedsync</action>
+                            <sort_order>50</sort_order>
+                        </abandoned_sync>
+                    </children>
+                </manual_sync>
+                <mappings translate="title" module="tnw_salesforce">
+                    <title>Field Mappings</title>
+                    <sort_order>20</sort_order>
+                    <children>
                         <product_mapping translate="title" module="tnw_salesforce">
                             <title>Product Mappings</title>
                             <sort_order>100</sort_order>
@@ -106,164 +108,441 @@
                                 </order_cart_mapping>
                             </children>
                         </abandoned_mapping>
-                        <queue_sync translate="title" module="tnw_salesforce">
-                            <title>Sync Queue</title>
-                            <action>adminhtml/salesforcesync_queuesync</action>
-                            <sort_order>400</sort_order>
-                        </queue_sync>
-                        <setup translate="title" module="tnw_salesforce">
-                            <title>Integration Setup</title>
-                            <sort_order>500</sort_order>
-                            <children>
-                                <api_config translate="title" module="tnw_salesforce">
-                                    <title>API Configuration</title>
-                                    <action>adminhtml/system_config/edit/section/salesforce</action>
-                                    <sort_order>10</sort_order>
-                                </api_config>
-                                <customer_config translate="title" module="tnw_salesforce">
-                                    <title>Customer Configuration</title>
-                                    <action>adminhtml/system_config/edit/section/salesforce_customer</action>
-                                    <sort_order>20</sort_order>
-                                </customer_config>
-                                <order_product translate="title" module="tnw_salesforce">
-                                    <title>Product Configuration</title>
-                                    <action>adminhtml/system_config/edit/section/salesforce_product</action>
-                                    <sort_order>30</sort_order>
-                                </order_product>
-                                <order_config translate="title" module="tnw_salesforce">
-                                    <title>Order Configuration</title>
-                                    <action>adminhtml/system_config/edit/section/salesforce_order</action>
-                                    <sort_order>40</sort_order>
-                                </order_config>
-                            </children>
-                        </setup>
                     </children>
-                </salesforce>
+                </mappings>
+                <queue_sync translate="title" module="tnw_salesforce">
+                    <title>Sync Queue</title>
+                    <action>adminhtml/salesforcesync_queuesync</action>
+                    <sort_order>400</sort_order>
+                </queue_sync>
+                <setup translate="title" module="tnw_salesforce">
+                    <title>Integration Setup</title>
+                    <sort_order>500</sort_order>
+                    <children>
+                        <api_config translate="title" module="tnw_salesforce">
+                            <title>API Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce</action>
+                            <sort_order>10</sort_order>
+                        </api_config>
+                        <customer_config translate="title" module="tnw_salesforce">
+                            <title>Customer Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_customer</action>
+                            <sort_order>20</sort_order>
+                        </customer_config>
+                        <order_product translate="title" module="tnw_salesforce">
+                            <title>Product Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_product</action>
+                            <sort_order>30</sort_order>
+                        </order_product>
+                        <order_config translate="title" module="tnw_salesforce">
+                            <title>Sales Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_order</action>
+                            <sort_order>40</sort_order>
+                        </order_config>
+                    </children>
+                </setup>
             </children>
-        </system>
+        </tnw_salesforce>
+        <catalog>
+            <children>
+                <tnw_salesforce>
+                    <title>Salesforce</title>
+                    <sort_order>500</sort_order>
+                    <children>
+                        <manual_sync>
+                            <title>Manual Sync</title>
+                            <sort_order>10</sort_order>
+                            <action>adminhtml/salesforcesync_productsync</action>
+                        </manual_sync>
+                        <mappings>
+                            <title>Field Mappings</title>
+                            <sort_order>20</sort_order>
+                            <action>adminhtml/salesforce_product</action>
+                        </mappings>
+                        <configuration>
+                            <title>Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_product</action>
+                            <sort_order>30</sort_order>
+                        </configuration>
+                    </children>
+                </tnw_salesforce>
+            </children>
+        </catalog>
+        <customer>
+            <children>
+                <tnw_salesforce>
+                    <title>Salesforce</title>
+                    <sort_order>500</sort_order>
+                    <children>
+                        <manual_sync>
+                            <title>Manual Sync</title>
+                            <sort_order>10</sort_order>
+                            <action>adminhtml/salesforcesync_customersync</action>
+                        </manual_sync>
+                        <mappings>
+                            <title>Field Mappings</title>
+                            <sort_order>20</sort_order>
+                            <children>
+                                <contact_mapping translate="title" module="tnw_salesforce">
+                                    <title>Contact</title>
+                                    <action>adminhtml/salesforce_contact</action>
+                                    <sort_order>20</sort_order>
+                                </contact_mapping>
+                                <account_mapping translate="title" module="tnw_salesforce">
+                                    <title>Account</title>
+                                    <action>adminhtml/salesforce_account</action>
+                                    <sort_order>30</sort_order>
+                                </account_mapping>
+                                <lead_mapping translate="title" module="tnw_salesforce">
+                                    <title>Lead</title>
+                                    <action>adminhtml/salesforce_lead</action>
+                                    <sort_order>50</sort_order>
+                                </lead_mapping>
+                            </children>
+                        </mappings>
+                        <configuration>
+                            <title>Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_customer</action>
+                            <sort_order>30</sort_order>
+                        </configuration>
+                    </children>
+                </tnw_salesforce>
+            </children>
+        </customer>
+        <sales>
+            <children>
+                <tnw_salesforce>
+                    <title>Salesforce</title>
+                    <sort_order>900</sort_order>
+                    <children>
+                        <manual_sync>
+                            <title>Manual Sync</title>
+                            <sort_order>10</sort_order>
+                            <children>
+                                <sync_orders translate="title" module="tnw_salesforce">
+                                    <title>Orders</title>
+                                    <sort_order>10</sort_order>
+                                    <action>adminhtml/salesforcesync_ordersync</action>
+                                </sync_orders>
+                                <sync_abandoned_carts translate="title" module="tnw_salesforce">
+                                    <title>Abandoned Carts</title>
+                                    <sort_order>10</sort_order>
+                                    <action>adminhtml/salesforcesync_abandonedsync</action>
+                                </sync_abandoned_carts>
+                            </children>
+                        </manual_sync>
+                        <order_mappings>
+                            <title>Order Mappings</title>
+                            <sort_order>30</sort_order>
+                            <children>
+                                <order_mapping translate="title" module="tnw_salesforce">
+                                    <title>Order</title>
+                                    <action>adminhtml/salesforce_order</action>
+                                    <sort_order>50</sort_order>
+                                </order_mapping>
+                                <order_cart_mapping translate="title" module="tnw_salesforce">
+                                    <title>Order Products</title>
+                                    <action>adminhtml/salesforce_orderproduct</action>
+                                    <sort_order>60</sort_order>
+                                </order_cart_mapping>
+                                <opportunity_mapping translate="title" module="tnw_salesforce">
+                                    <title>Opportunity</title>
+                                    <action>adminhtml/salesforce_opportunity</action>
+                                    <sort_order>70</sort_order>
+                                </opportunity_mapping>
+                                <opportunity_cart_mapping translate="title" module="tnw_salesforce">
+                                    <title>Opportunity Products</title>
+                                    <action>adminhtml/salesforce_opportunitylineitem</action>
+                                    <sort_order>80</sort_order>
+                                </opportunity_cart_mapping>
+                                <status_mapping translate="title" module="tnw_salesforce">
+                                    <title>Statuses</title>
+                                    <action>adminhtml/sales_order_status</action>
+                                    <sort_order>1000</sort_order>
+                                </status_mapping>
+                            </children>
+                        </order_mappings>
+                        <abandoned_mapping translate="title" module="tnw_salesforce">
+                            <title>Abandoned Cart Mappings</title>
+                            <sort_order>40</sort_order>
+                            <children>
+                                <order_mapping translate="title" module="tnw_salesforce">
+                                    <title>Opportunity</title>
+                                    <action>adminhtml/salesforce_abandoned_opportunity</action>
+                                    <sort_order>70</sort_order>
+                                </order_mapping>
+                                <order_cart_mapping translate="title" module="tnw_salesforce">
+                                    <title>Opportunity Products</title>
+                                    <action>adminhtml/salesforce_abandoned_opportunitylineitem</action>
+                                    <sort_order>80</sort_order>
+                                </order_cart_mapping>
+                            </children>
+                        </abandoned_mapping>
+                        <configuration>
+                            <title>Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_order</action>
+                            <sort_order>100</sort_order>
+                        </configuration>
+                    </children>
+                </tnw_salesforce>
+            </children>
+        </sales>
     </menu>
     <acl>
         <resources>
             <admin>
                 <children>
-                    <system>
+                    <sales>
                         <children>
-                            <salesforce translate="title" module="tnw_salesforce">
-                                <title>Salesforce API</title>
-                                <sort_order>5</sort_order>
+                            <tnw_salesforce>
+                                <title>Salesforce</title>
+                                <sort_order>900</sort_order>
                                 <children>
-                                    <manual_sync translate="title" module="tnw_salesforce">
+                                    <manual_sync>
                                         <title>Manual Sync</title>
                                         <sort_order>10</sort_order>
                                         <children>
-                                            <order_sync translate="title" module="tnw_salesforce">
-                                                <title>Orders</title>
-                                                <sort_order>30</sort_order>
-                                            </order_sync>
-                                            <product_sync translate="title" module="tnw_salesforce">
-                                                <title>Products</title>
+                                            <sync_orders>
+                                                <title>Orders Synchronization</title>
                                                 <sort_order>10</sort_order>
-                                            </product_sync>
-                                            <customer_sync translate="title" module="tnw_salesforce">
-                                                <title>Customers</title>
-                                                <sort_order>20</sort_order>
-                                            </customer_sync>
-                                            <abandoned_sync translate="title" module="tnw_salesforce">
-                                                <title>Abandoned Cart</title>
-                                                <sort_order>50</sort_order>
-                                            </abandoned_sync>
+                                            </sync_orders>
+                                            <sync_abandoned_carts>
+                                                <title>Abandoned Carts Synchronization</title>
+                                                <sort_order>10</sort_order>
+                                            </sync_abandoned_carts>
                                         </children>
                                     </manual_sync>
-                                    <product_mapping translate="title" module="tnw_salesforce">
+                                    <order_mappings>
+                                        <title>Order Mappings</title>
+                                        <sort_order>30</sort_order>
+                                        <children>
+                                            <order_mapping>
+                                                <title>Order Field Mapping</title>
+                                                <sort_order>50</sort_order>
+                                            </order_mapping>
+                                            <order_cart_mapping>
+                                                <title>Order Products Field Mapping</title>
+                                                <sort_order>60</sort_order>
+                                            </order_cart_mapping>
+                                            <opportunity_mapping>
+                                                <title>Opportunity Field Mapping</title>
+                                                <sort_order>70</sort_order>
+                                            </opportunity_mapping>
+                                            <opportunity_cart_mapping>
+                                                <title>Opportunity Products Field Mapping</title>
+                                                <sort_order>80</sort_order>
+                                            </opportunity_cart_mapping>
+                                            <status_mapping>
+                                                <title>Order Status Mapping</title>
+                                                <sort_order>1000</sort_order>
+                                            </status_mapping>
+                                        </children>
+                                    </order_mappings>
+                                    <abandoned_mapping>
+                                        <title>Abandoned Cart Mappings</title>
+                                        <sort_order>40</sort_order>
+                                        <children>
+                                            <order_mapping>
+                                                <title>Opportunity Field Mapping</title>
+                                                <sort_order>70</sort_order>
+                                            </order_mapping>
+                                            <order_cart_mapping>
+                                                <title>Opportunity Products Field Mapping</title>
+                                                <sort_order>80</sort_order>
+                                            </order_cart_mapping>
+                                        </children>
+                                    </abandoned_mapping>
+                                    <configuration>
+                                        <title>Sales Configuration</title>
+                                        <sort_order>100</sort_order>
+                                    </configuration>
+                                </children>
+                            </tnw_salesforce>
+                        </children>
+                    </sales>
+                    <catalog>
+                        <children>
+                            <tnw_salesforce>
+                                <title>Salesforce</title>
+                                <sort_order>500</sort_order>
+                                <children>
+                                    <manual_sync>
+                                        <title>Manual Product Sync</title>
+                                        <sort_order>10</sort_order>
+                                    </manual_sync>
+                                    <mappings>
+                                        <title>Product Field Mappings</title>
+                                        <sort_order>20</sort_order>
+                                    </mappings>
+                                    <configuration>
+                                        <title>Product Configuration</title>
+                                        <sort_order>30</sort_order>
+                                    </configuration>
+                                </children>
+                            </tnw_salesforce>
+                        </children>
+                    </catalog>
+                    <customer>
+                        <children>
+                            <tnw_salesforce>
+                                <title>Salesforce</title>
+                                <sort_order>500</sort_order>
+                                <children>
+                                    <manual_sync>
+                                        <title>Manual Customer Sync</title>
+                                        <sort_order>10</sort_order>
+                                    </manual_sync>
+                                    <mappings>
+                                        <title>Field Mappings</title>
+                                        <sort_order>20</sort_order>
+                                        <children>
+                                            <contact_mapping>
+                                                <title>Contact Mappings</title>
+                                                <sort_order>20</sort_order>
+                                            </contact_mapping>
+                                            <account_mapping>
+                                                <title>Account Mappings</title>
+                                                <sort_order>30</sort_order>
+                                            </account_mapping>
+                                            <lead_mapping>
+                                                <title>Lead Mappings</title>
+                                                <sort_order>50</sort_order>
+                                            </lead_mapping>
+                                        </children>
+                                    </mappings>
+                                    <configuration>
+                                        <title>Configuration</title>
+                                        <action>adminhtml/system_config/edit/section/salesforce_customer</action>
+                                        <sort_order>30</sort_order>
+                                    </configuration>
+                                </children>
+                            </tnw_salesforce>
+                        </children>
+                    </customer>
+                    <tnw_salesforce>
+                        <title>Salesforce</title>
+                        <sort_order>500</sort_order>
+                        <children>
+                            <manual_sync>
+                                <title>Manual Sync</title>
+                                <sort_order>100</sort_order>
+                                <children>
+                                    <product_sync>
+                                        <title>Products</title>
+                                        <sort_order>10</sort_order>
+                                    </product_sync>
+                                    <customer_sync>
+                                        <title>Customers</title>
+                                        <sort_order>20</sort_order>
+                                    </customer_sync>
+                                    <order_sync>
+                                        <title>Orders</title>
+                                        <sort_order>30</sort_order>
+                                    </order_sync>
+                                    <abandoned_sync>
+                                        <title>Abandoned Cart</title>
+                                        <sort_order>50</sort_order>
+                                    </abandoned_sync>
+                                </children>
+                            </manual_sync>
+                            <mappings>
+                                <title>Field Mappings</title>
+                                <sort_order>200</sort_order>
+                                <children>
+                                    <product_mapping>
                                         <title>Product Mappings</title>
                                         <sort_order>100</sort_order>
                                     </product_mapping>
-                                    <customer_mapping translate="title" module="tnw_salesforce">
+                                    <customer_mapping>
                                         <title>Customer Mappings</title>
                                         <sort_order>200</sort_order>
                                         <children>
-                                            <contact_mapping translate="title" module="tnw_salesforce">
+                                            <contact_mapping>
                                                 <title>Contact</title>
                                                 <sort_order>20</sort_order>
                                             </contact_mapping>
-                                            <account_mapping translate="title" module="tnw_salesforce">
+                                            <account_mapping>
                                                 <title>Account</title>
                                                 <sort_order>30</sort_order>
                                             </account_mapping>
-                                            <lead_mapping translate="title" module="tnw_salesforce">
+                                            <lead_mapping>
                                                 <title>Lead</title>
                                                 <sort_order>10</sort_order>
                                             </lead_mapping>
                                         </children>
                                     </customer_mapping>
-                                    <order_mapping translate="title" module="tnw_salesforce">
+                                    <order_mapping>
                                         <title>Order Mappings</title>
                                         <sort_order>300</sort_order>
                                         <children>
-                                            <order_mapping translate="title" module="tnw_salesforce">
+                                            <order_mapping>
                                                 <title>Order</title>
                                                 <sort_order>50</sort_order>
                                             </order_mapping>
-                                            <order_cart_mapping translate="title" module="tnw_salesforce">
+                                            <order_cart_mapping>
                                                 <title>Order Products</title>
                                                 <sort_order>60</sort_order>
                                             </order_cart_mapping>
-                                            <opportunity_mapping translate="title" module="tnw_salesforce">
+                                            <opportunity_mapping>
                                                 <title>Opportunity</title>
                                                 <sort_order>70</sort_order>
                                             </opportunity_mapping>
-                                            <opportunity_cart_mapping translate="title" module="tnw_salesforce">
+                                            <opportunity_cart_mapping>
                                                 <title>Opportunity Products</title>
                                                 <sort_order>80</sort_order>
                                             </opportunity_cart_mapping>
-                                            <status_mapping translate="title" module="tnw_salesforce">
+                                            <status_mapping>
                                                 <title>Statuses</title>
                                                 <sort_order>1000</sort_order>
                                             </status_mapping>
                                         </children>
                                     </order_mapping>
-                                    <abandoned_mapping translate="title" module="tnw_salesforce">
+                                    <abandoned_mapping>
                                         <title>Abandoned Cart Mappings</title>
                                         <sort_order>300</sort_order>
                                         <children>
-                                            <order_mapping translate="title" module="tnw_salesforce">
+                                            <order_mapping>
                                                 <title>Opportunity</title>
                                                 <sort_order>70</sort_order>
                                             </order_mapping>
-                                            <order_cart_mapping translate="title" module="tnw_salesforce">
+                                            <order_cart_mapping>
                                                 <title>Opportunity Products</title>
                                                 <sort_order>80</sort_order>
                                             </order_cart_mapping>
                                         </children>
                                     </abandoned_mapping>
-                                    <queue_sync translate="title" module="tnw_salesforce">
-                                        <title>Sync Queue</title>
-                                        <sort_order>400</sort_order>
-                                    </queue_sync>
-                                    <setup translate="title" module="tnw_salesforce">
-                                        <title>Integration Setup</title>
-                                        <sort_order>500</sort_order>
-                                        <children>
-                                            <api_config translate="title" module="tnw_salesforce">
-                                                <title>API Configuration</title>
-                                                <sort_order>10</sort_order>
-                                            </api_config>
-                                            <customer_config translate="title" module="tnw_salesforce">
-                                                <title>Customer Configuration</title>
-                                                <sort_order>20</sort_order>
-                                            </customer_config>
-                                            <order_product translate="title" module="tnw_salesforce">
-                                                <title>Product Configuration</title>
-                                                <sort_order>30</sort_order>
-                                            </order_product>
-                                            <order_config translate="title" module="tnw_salesforce">
-                                                <title>Order Configuration</title>
-                                                <sort_order>40</sort_order>
-                                            </order_config>
-                                        </children>
-                                    </setup>
                                 </children>
-                            </salesforce>
+                            </mappings>
+                            <queue_sync>
+                                <title>Sync Queue</title>
+                                <sort_order>300</sort_order>
+                            </queue_sync>
+                            <setup>
+                                <title>Integration Setup</title>
+                                <sort_order>1000</sort_order>
+                                <children>
+                                    <api_config>
+                                        <title>API Configuration</title>
+                                        <sort_order>10</sort_order>
+                                    </api_config>
+                                    <customer_config>
+                                        <title>Customer Configuration</title>
+                                        <sort_order>20</sort_order>
+                                    </customer_config>
+                                    <order_product>
+                                        <title>Product Configuration</title>
+                                        <sort_order>30</sort_order>
+                                    </order_product>
+                                    <order_config>
+                                        <title>Sales Configuration</title>
+                                        <sort_order>40</sort_order>
+                                    </order_config>
+                                </children>
+                            </setup>
+                        </children>
+                    </tnw_salesforce>
+                    <system>
+                        <children>
                             <config>
                                 <children>
                                     <salesforce translate="title" module="tnw_salesforce">
@@ -279,7 +558,7 @@
                                         <sort_order>10300</sort_order>
                                     </salesforce_product>
                                     <salesforce_order translate="title" module="tnw_salesforce">
-                                        <title>Salesforce Order Configuration</title>
+                                        <title>Salesforce Sales Configuration</title>
                                         <sort_order>10400</sort_order>
                                     </salesforce_order>
                                 </children>
