@@ -17,7 +17,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends Mage_Adminht
         }
 
         $this->loadLayout()
-            ->_setActiveMenu('system/salesforce')
+            ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Account Field Mapping'), Mage::helper('tnw_salesforce')->__('Account Field Mapping'));
 
         return $this;

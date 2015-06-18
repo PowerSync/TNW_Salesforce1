@@ -26,6 +26,10 @@ class TNW_Salesforce_Block_Adminhtml_Domains
         $html .= $this->_getAddRowButtonHtml('salesforce_catchall_account_container',
             'salesforce_catchall_account_template', $this->__('Add Email Domain'));
 
+        $html .= "<script type=\"text/javascript\">
+            $$('#salesforce_catchall_account_container select').each(function (el) {new Chosen(el);});
+        </script>";
+
         return $html;
     }
 
@@ -38,7 +42,7 @@ class TNW_Salesforce_Block_Adminhtml_Domains
     protected function _getRowTemplateHtml($rowIndex = 0)
     {
         $html = '<li>';
-        $html .= '<select class="chosen-select" name="' . $this->getElement()->getName() . '[account][]" ' . $this->_getDisabled() . '>';
+        $html .= '<select name="' . $this->getElement()->getName() . '[account][]" ' . $this->_getDisabled() . '>';
         $html .= '<option value="">' . $this->__('* Select an Account') . '</option>';
 
         foreach ($this->getShippingMethods() as $_id => $_accountName) {
@@ -48,9 +52,9 @@ class TNW_Salesforce_Block_Adminhtml_Domains
         }
         $html .= '</select>';
 
-        $html .= '<div style="margin:5px 0 10px;">';
+        $html .= '<div style="margin:10px 0; padding-bottom: 10px; border-bottom: 1px solid #dedede;">';
         $html .= '<label>' . $this->__('Email Domain:') . '</label> ';
-        $html .= '<input class="input-text" style="width:140px;" name="'
+        $html .= '<input type="text" class="input-text" style="width:125px;" name="'
             . $this->getElement()->getName() . '[domain][]" value="'
             . $this->_getValue('domain/' . $rowIndex) . '" ' . $this->_getDisabled() . '/> ';
 

@@ -23,7 +23,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     protected function _updateMagento()
     {
         // Update
-        Mage::helper('tnw_salesforce')->log("---------- Start: Magento Update ----------");
+        $this->getHelper()->log("---------- Start: Magento Update ----------");
         $this->_sqlToRun = "";
         $ids = array();
 
@@ -133,16 +133,16 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 $_i = 0;
                 foreach ($response as $_result) {
                     $_tmp = explode(':::', $_keys[$_i]);
-
+                    $pricebookItem = $this->_cache['batch'][$_type]['Id'][$_key][$_keys[$_i]];
                     //Report Transaction
                     $this->_cache['responses']['pricebooks'][$_keys[$_i]] = json_decode(json_encode($_result), TRUE);
 
                     $_magentoId = $_tmp[1];
                     $_storeId = $_tmp[0];
-                    $_i++;
+                    ++$_i;
                     if ((string)$_result->success == "false") {
                         $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = false;
-                        $this->_processErrors($_result, 'productPricebook', $this->_cache['batch'][$_type]['Id'][$_key][$_keys[$_i]]);
+                        $this->_processErrors($_result, 'productPricebook', $pricebookItem);
                         continue;
                     }
                     if (!is_array($this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds)) {
@@ -156,7 +156,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->clearMemory();
                 }
             } catch (Exception $e) {
-                Mage::helper('tnw_salesforce')->log('_updatePriceBookEntry error ' . $e->getMessage() . '!');
+                $this->getHelper()->log('_updatePriceBookEntry error ' . $e->getMessage() . '!');
 
                 // TODO:  Log error, quit
             }
@@ -168,7 +168,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         if (!empty($this->_cache['standardPricebooksToUpsert']) || !empty($this->_cache['pricebookEntriesForUpsert'])) {
             if (!$this->_cache['bulkJobs']['pricebookEntry']['Id']) {
                 $this->_cache['bulkJobs']['pricebookEntry']['Id'] = $this->_createJob('PricebookEntry', 'upsert', 'Id');
-                Mage::helper('tnw_salesforce')->log('Syncronizing Products Pricebook Entries, created job: ' . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
+                $this->getHelper()->log('Syncronizing Products Pricebook Entries, created job: ' . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
             }
         }
         if (!empty($this->_cache['standardPricebooksToUpsert'])) {
@@ -274,12 +274,15 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     {
         parent::massAdd($ids);
 
+        $defaultObject = new stdClass();
+        $defaultObject->productId = null;
+        $defaultObject->pricebookEntityIds = null;
+        $defaultObject->syncComplete = null;
+
         foreach ($ids as $id) {
-            $this->_cache['toSaveInMagento'][$id] = new stdClass();
-            $this->_cache['toSaveInMagento'][$id]->magentoId = $id;
-            $this->_cache['toSaveInMagento'][$id]->productId = NULL;
-            $this->_cache['toSaveInMagento'][$id]->pricebookEntityIds = NULL;
-            $this->_cache['toSaveInMagento'][$id]->syncComplete = NULL;
+            $object = clone $defaultObject;
+            $object->magentoId = $id;
+            $this->_cache['toSaveInMagento'][$id] = $object;
         }
     }
 
@@ -416,7 +419,18 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             if (!$this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds) {
                 $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds = array();
             }
-            $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds[$_updateStoreId] = $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds[$_fromStoreId];
+            if (
+                is_array($this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds)
+                && array_key_exists($_fromStoreId, $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds)
+            ) {
+                $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds[$_updateStoreId] = $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds[$_fromStoreId];
+            } elseif (
+                is_array($this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds)
+                && array_key_exists(0, $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds)
+            ) {
+                $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds[$_updateStoreId] = $this->_cache['toSaveInMagento'][$_productId]->pricebookEntityIds[0];
+            }
+
             $this->_cache['toSaveInMagento'][$_productId]->syncComplete = $this->_cache['toSaveInMagento'][$_productId]->syncComplete;
         }
     }

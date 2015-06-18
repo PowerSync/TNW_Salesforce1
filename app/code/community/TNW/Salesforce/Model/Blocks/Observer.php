@@ -14,6 +14,7 @@ class TNW_Salesforce_Model_Blocks_Observer
     {
         $block = $observer->getEvent()->getBlock();
         /** @var Mage_Core_Block_Abstract $block */
+        /*
         if ($block->getType() == 'adminhtml/sales_order_view_info'
             && Mage::helper('tnw_salesforce')->isWorking()
         ) {
@@ -26,5 +27,6 @@ class TNW_Salesforce_Model_Blocks_Observer
 
             $observer->getTransport()->setHtml($newBlock . $normalOutput);
         }
+        */
     }
 }

@@ -123,7 +123,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                             $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->$_magentoId : NULL;
                             $tmp->PriceBooks = array();
                             foreach ($_resultsPBE as $resultPBE) {
-                                if (is_array($resultPBE->records)) {
+                                if (property_exists($resultPBE, 'records') && is_array($resultPBE->records)) {
                                     foreach ($resultPBE->records as $_itm) {
                                         if ($_itm->Product2Id != $_item->Id) {
                                             continue;
@@ -146,8 +146,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
             return $returnArray;
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find a product by Magento SKU #" . $sku);
-            unset($sku);
+            Mage::helper('tnw_salesforce')->log("Could not find a product by Magento SKU #" . var_export($sku, true));
             return false;
         }
     }

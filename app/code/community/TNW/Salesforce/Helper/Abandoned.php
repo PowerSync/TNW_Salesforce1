@@ -16,6 +16,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     const ABANDONED_CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
     const ABANDONED_SYNC = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
     const ABANDONED_CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
+    const ABANDONED_CUSTOMER_ROLE_FALLBACK = 'salesforce_order/customer_opportunity/customer_integration_opp';
 
     const NOW = -1;
     const THREE_HOURS = 1;
@@ -88,7 +89,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     // Default Customer Opportunity Role
     public function getDefaultCustomerRole()
     {
-        return $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE);
+        return ($this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE)) ? $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE) : $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE_FALLBACK);
     }
 
 

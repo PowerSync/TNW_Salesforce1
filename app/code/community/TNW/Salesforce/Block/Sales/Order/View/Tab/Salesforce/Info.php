@@ -6,7 +6,7 @@
  * @package    TNW_Salesforce
  * @author      Powersync Core Team <support@powersync.biz>
  */
-class TNW_Salesforce_Block_Sales_Order_View_Salesforce extends Mage_Adminhtml_Block_Sales_Order_Abstract
+class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce_Info extends Mage_Adminhtml_Block_Sales_Order_Abstract
 {
     /**
      * Return array of additional account data

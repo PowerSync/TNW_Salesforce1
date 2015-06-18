@@ -1,5 +1,17 @@
 <?xml version="1.0"?>
 <layout>
+    <tnw_salesforce_admin>
+        <reference name="head">
+            <action method="addJs">
+                <file>tnw-salesforce/admin/js/adminhtml.js</file>
+            </action>
+            <action method="addItem">
+                <type>js_css</type>
+                <file>tnw-salesforce/admin/css/adminhtml.css</file>
+            </action>
+        </reference>
+    </tnw_salesforce_admin>
+
     <tnw_salesforce_chosen>
         <reference name="head">
             <action method="addJs">
@@ -19,7 +31,12 @@
         </reference>
     </tnw_salesforce_chosen>
 
+    <default>
+        <update handle="tnw_salesforce_admin"/>
+    </default>
+
     <adminhtml_system_config_edit>
+        <update handle="tnw_salesforce_chosen"/>
         <reference name="content">
             <block type="tnw_salesforce/adminhtml_check" name="tnw_salesforce.test.results" before="-"
                    template="salesforce/config/test/results.phtml">
@@ -27,22 +44,27 @@
             </block>
         </reference>
     </adminhtml_system_config_edit>
+
     <adminhtml_salesforcesync_ordersync_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_ordersync_grid" name="ordersync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_ordersync_grid>
+
     <adminhtml_salesforcesync_abandonedsync_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_abandonedsync_grid" name="abandonedsync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_abandonedsync_grid>
+
     <adminhtml_salesforcesync_productsync_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_productsync_grid" name="productsync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_productsync_grid>
+
     <adminhtml_salesforcesync_customersync_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_customersync_grid" name="customersync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_customersync_grid>
+
     <adminhtml_salesforcesync_queuesync_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_queuesync_grid" name="queuesync.grid" output="toHtml"></block>
@@ -50,15 +72,13 @@
 
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
-        <update handle="order_salesforce_info"/>
-    </adminhtml_sales_order_view>
-
-    <order_salesforce_info>
-        <reference name="order_info">
-            <block after="order_info" type="tnw_salesforce/sales_order_view_salesforce" name="salesforce_info"
-                   template="salesforce/sales/order/view/salesforce.phtml"/>
+        <reference name="sales_order_tabs">
+            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce" template="salesforce/sales/order/view/tab/salesforce.phtml">
+                <block type="tnw_salesforce/sales_order_view_tab_salesforce_info" name="salesforce_info" template="salesforce/sales/order/view/tab/salesforce/info.phtml"></block>
+            </block>
+            <action method="addTab"><name>order_salesforce</name><block>order_tab_salesforce</block></action>
         </reference>
-    </order_salesforce_info>
+    </adminhtml_sales_order_view>
 
     <!-- Disable Cache -->
     <reference name="tnw_salesforce.test.results">
@@ -72,30 +92,40 @@
     <adminhtml_salesforce_product_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_product_edit>
+
     <adminhtml_salesforce_lead_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_lead_edit>
+
     <adminhtml_salesforce_contact_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_contact_edit>
+
     <adminhtml_salesforce_account_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_account_edit>
+
     <adminhtml_salesforce_abandoned_opportunity_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_abandoned_opportunity_edit>
+
     <adminhtml_salesforce_abandoned_opportunitylineitem_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_abandoned_opportunitylineitem_edit>
+
     <adminhtml_salesforce_order_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_order_edit>
+
     <adminhtml_salesforce_orderproduct_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_orderproduct_edit>
 
-    <!-- Add Chosen to system config page -->
-    <adminhtml_system_config_edit>
+    <adminhtml_salesforce_opportunity_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_system_config_edit>
+    </adminhtml_salesforce_opportunity_edit>
+
+    <adminhtml_salesforce_opportunitylineitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunitylineitem_edit>
 </layout>
