@@ -23,7 +23,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     protected function _updateMagento()
     {
         // Update
-        Mage::helper('tnw_salesforce')->log("---------- Start: Magento Update ----------");
+        $this->getHelper()->log("---------- Start: Magento Update ----------");
         $this->_sqlToRun = "";
         $ids = array();
 
@@ -139,7 +139,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
                     $_magentoId = $_tmp[1];
                     $_storeId = $_tmp[0];
-                    $_i++;
+                    ++$_i;
                     if ((string)$_result->success == "false") {
                         $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = false;
                         $this->_processErrors($_result, 'productPricebook', $pricebookItem);
@@ -156,7 +156,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->clearMemory();
                 }
             } catch (Exception $e) {
-                Mage::helper('tnw_salesforce')->log('_updatePriceBookEntry error ' . $e->getMessage() . '!');
+                $this->getHelper()->log('_updatePriceBookEntry error ' . $e->getMessage() . '!');
 
                 // TODO:  Log error, quit
             }
@@ -168,7 +168,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         if (!empty($this->_cache['standardPricebooksToUpsert']) || !empty($this->_cache['pricebookEntriesForUpsert'])) {
             if (!$this->_cache['bulkJobs']['pricebookEntry']['Id']) {
                 $this->_cache['bulkJobs']['pricebookEntry']['Id'] = $this->_createJob('PricebookEntry', 'upsert', 'Id');
-                Mage::helper('tnw_salesforce')->log('Syncronizing Products Pricebook Entries, created job: ' . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
+                $this->getHelper()->log('Syncronizing Products Pricebook Entries, created job: ' . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
             }
         }
         if (!empty($this->_cache['standardPricebooksToUpsert'])) {
@@ -274,12 +274,15 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     {
         parent::massAdd($ids);
 
+        $defaultObject = new stdClass();
+        $defaultObject->productId = null;
+        $defaultObject->pricebookEntityIds = null;
+        $defaultObject->syncComplete = null;
+
         foreach ($ids as $id) {
-            $this->_cache['toSaveInMagento'][$id] = new stdClass();
-            $this->_cache['toSaveInMagento'][$id]->magentoId = $id;
-            $this->_cache['toSaveInMagento'][$id]->productId = NULL;
-            $this->_cache['toSaveInMagento'][$id]->pricebookEntityIds = NULL;
-            $this->_cache['toSaveInMagento'][$id]->syncComplete = NULL;
+            $object = clone $defaultObject;
+            $object->magentoId = $id;
+            $this->_cache['toSaveInMagento'][$id] = $object;
         }
     }
 

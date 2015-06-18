@@ -274,10 +274,20 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * @deprecated mistake
+     * @param $path
+     * @return mixed
+     */
+    protected function getStroreConfig($path)
+    {
+        return $this->getStoreConfig($path);
+    }
+
+    /**
      * @param $path
      * @return mixed|null|string
      */
-    protected function getStroreConfig($path)
+    protected function getStoreConfig($path)
     {
         $_currentWebsite = Mage::app()->getStore()->getWebsiteId();
         $_currentStoreId = Mage::app()->getStore()->getStoreId();
@@ -320,7 +330,15 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      */
     public function getStoreId()
     {
-        return (Mage::app()->getRequest()->getParam('store')) ? (int)Mage::app()->getRequest()->getParam('store') : (int)Mage::app()->getStore()->getStoreId();
+        $store = null;
+        if ($storeId = Mage::app()->getRequest()->getParam('store')) {
+            $store = Mage::app()->getStore($storeId);
+        }
+        if (!$store) {
+            $store = Mage::app()->getStore();
+        }
+
+        return (int)$store->getId();
     }
 
     /**
@@ -328,7 +346,15 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      */
     public function getWebsiteId()
     {
-        return (Mage::app()->getRequest()->getParam('website')) ? (int)Mage::app()->getRequest()->getParam('website') : (int)Mage::app()->getStore()->getWebsiteId();
+        $website = null;
+        if ($websiteId = Mage::app()->getRequest()->getParam('website')) {
+            $website = Mage::app()->getWebsite($websiteId);
+        }
+        if (!$website) {
+            $website = Mage::app()->getWebsite();
+        }
+
+        return (int)$website->getId();
     }
 
     public function _initCache()
