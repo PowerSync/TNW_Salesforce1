@@ -14,6 +14,8 @@ class TNW_Salesforce_Model_Config_Objects
     const PRODUCT_OBJECT            =   'Product';
     const INVOICE_OBJECT            =   'Invoice';
     const INVOICE_ITEM_OBJECT       =   'InvoiceItem';
+    const SHIPMENT_OBJECT           =   'Shipment';
+    const SHIPMENT_ITEM_OBJECT      =   'ShipmentItem';
 
     protected $_objects = NULL;
     protected $_oObjects = NULL;

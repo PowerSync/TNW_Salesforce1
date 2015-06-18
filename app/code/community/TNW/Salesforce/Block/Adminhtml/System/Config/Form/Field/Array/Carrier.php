@@ -40,7 +40,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Form_Field_Array_Carrier
 
             if ($element->getValue() && is_array($element->getValue())) {
                 foreach ($element->getValue() as $rowId => $row) {
-                    if (array_key_exists($row['carrier'], $prepareData)) {
+                    if (array_key_exists($row['carrier'], $prepareData) && isset($row['account'])) {
                         $prepareData[$row['carrier']]['account'] = $row['account'];
                         $prepareData[$row['carrier']]['_id'] = $rowId;
                     }

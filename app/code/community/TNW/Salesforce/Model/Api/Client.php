@@ -12,6 +12,7 @@ class TNW_Salesforce_Model_Api_Client
     protected function getClient()
     {
         if (is_null($this->client)) {
+            $this->getConnection()->initConnection();
             $this->client = $this->getConnection()->getClient();
         }
 
