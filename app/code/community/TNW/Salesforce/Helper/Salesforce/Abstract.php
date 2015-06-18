@@ -574,9 +574,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     {
         if (empty($this->_currencies)) {
             // Set all currencies
-            // TODO: can a single store use more than one currency?
-            foreach (Mage::app()->getStores() as $_storeId => $_store) {
-                $this->_currencies[$_storeId] = Mage::app()->getStore($_storeId)->getCurrentCurrencyCode();
+            foreach (Mage::app()->getStores() as $storeId => $store) {
+                $this->_currencies[$storeId] = $store->getCurrentCurrencyCode();
             }
         }
         return $this->_currencies;
