@@ -298,8 +298,16 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])) {
                     // Found Contact & Account
 
-                    $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceId($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->Id);
-                    $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceAccountId($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->AccountId);
+                    if (isset($this->_cache['orderCustomers'][$_orderNumber])
+                        && $this->_cache['orderCustomers'][$_orderNumber] instanceof Varien_Object
+                    ) {
+                        $lookupItem = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail];
+                        $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceId($lookupItem->Id);
+                        $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceAccountId($lookupItem->AccountId);
+                    } else {
+                        //TODO: Check possible logic issue here
+                        Mage::helper("tnw_salesforce")->log('Cannot find customer in cache.');
+                    }
 
                     Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer synchronization.');
                 } elseif (is_array($this->_cache['leadLookup'])
