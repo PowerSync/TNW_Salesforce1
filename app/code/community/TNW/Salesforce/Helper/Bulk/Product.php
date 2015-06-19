@@ -138,7 +138,8 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->_cache['responses']['pricebooks'][$_keys[$_i]] = json_decode(json_encode($_result), TRUE);
 
                     $_magentoId = $_tmp[1];
-                    $_storeId = $_tmp[0];
+                    //$_storeId = $_tmp[0];
+                    $storeIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$_keys[$_i]]);
                     ++$_i;
                     if ((string)$_result->success == "false") {
                         $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = false;
@@ -148,7 +149,10 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     if (!is_array($this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds)) {
                         $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds = array();
                     }
-                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$_storeId] = (string)$_result->id;
+                    //$this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$_storeId] = (string)$_result->id;
+                    foreach ($storeIds as $_storeId) {
+                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$_storeId] = (string)$_result->id;
+                    }
 
                     if ($this->_cache['toSaveInMagento'][$_magentoId]->syncComplete != false) {
                         $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = true;
