@@ -11,7 +11,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_LeadController extends Mage_Adminhtml_
         }
 
         $this->loadLayout()
-            ->_setActiveMenu('system/salesforce')
+            ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Lead Fields Mapping'), Mage::helper('tnw_salesforce')->__('Lead Field Mapping'));
         return $this;
     }

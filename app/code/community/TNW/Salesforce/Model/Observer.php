@@ -8,7 +8,9 @@ class TNW_Salesforce_Model_Observer
     const ORDER_PREFIX = 'order';
     const OPPORTUNITY_PREFIX = 'opportunity';
 
+    protected $_nativeMenu = NULL;
     protected $_menu = NULL;
+    protected $_nativeAcl = NULL;
     protected $_acl = NULL;
 
     protected $exportedOrders = array();
@@ -21,114 +23,195 @@ class TNW_Salesforce_Model_Observer
         return $this->exportedOrders;
     }
 
-
     public function adjustMenu() {
 
         // Update Magento admin menu
-        $this->_menu = Mage::getSingleton('admin/config')
+        $this->_nativeMenu = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
             ->getNode('menu')
-            ->descend('system')
-            ->descend('children')
-            ->descend('salesforce')
-            ->descend('children')
         ;
+        $this->_menu = $this->_nativeMenu
+            ->descend('tnw_salesforce')->descend('children');
 
         // Update Magento ACL
-        $this->_acl = Mage::getSingleton('admin/config')
+        $this->_nativeAcl = Mage::getSingleton('admin/config')
             ->getAdminhtmlConfig()
             ->getNode('acl')
             ->descend('resources')
-            ->descend('admin')
-            ->descend('children')
-            ->descend('system')
-            ->descend('children')
-            ->descend('salesforce')
-            ->descend('children')
-        ;
+            ->descend('admin')->descend('children');
+
+        $this->_acl = $this->_nativeAcl
+            ->descend('tnw_salesforce')->descend('children');
 
         $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
-        $_leverageLeads = Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
-
         $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
+
         if (defined($_constantName)) {
             $_itemsToRetain = constant($_constantName);
 
-            if ($this->_menu) {
-                $_manualSyncNode = $this->_menu->descend('manual_sync')->descend('children');
+            // Remove / update Order related mapping links per configuration
+            $this->_updateOrderLinks(
+                $this->_menu
+                    ->descend('mappings')->descend('children')
+                    ->descend('order_mapping')->descend('children'),
+                $_itemsToRetain
+            );
+            $this->_updateOrderLinks(
+                $this->_nativeMenu
+                    ->descend('sales')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->descend('order_mappings')->descend('children'),
+                $_itemsToRetain
+            );
 
-                $_orderNode = $this->_menu->descend('order_mapping')->descend('children');
-                $_customerNode = $this->_menu->descend('customer_mapping')->descend('children');
-            }
-            if ($this->_acl) {
-                $_orderAclNode = $this->_acl->descend('order_mapping')->descend('children');
-                $_customerAclNode = $this->_acl->descend('customer_mapping')->descend('children');
-            }
-
-            if (
-                $_manualSyncNode
-                && !(
-                    Mage::helper('tnw_salesforce')->getType() == "PRO"
-                    &&Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED)
-                )
-            ) {
-                unset($_manualSyncNode->abandoned_sync);
-                unset($this->_menu->abandoned_mapping);
-            }
-            if ($_orderAclNode) {
-                $_keysToUnset = array();
-                foreach($_orderAclNode as $_items) {
-                    foreach($_items as $_key => $_item) {
-                        if (
-                            $_key != $_itemsToRetain . '_mapping'
-                            && $_key != $_itemsToRetain . '_cart_mapping'
-                            && $_key != 'status_mapping'
-                        ) {
-                            $_keysToUnset[] =  $_key;
-                        }
-                    }
-                }
-                if (!empty($_keysToUnset)) {
-                    foreach($_keysToUnset as $_key) {
-                        unset($_orderAclNode->{$_key});
-                    }
-                }
-            }
-
-            if ($_orderNode) {
-                $_keysToUnset = array();
-                foreach($_orderNode as $_items) {
-                    foreach($_items as $_key => $_item) {
-                        if (
-                            $_key != $_itemsToRetain . '_mapping'
-                            && $_key != $_itemsToRetain . '_cart_mapping'
-                            && $_key != 'status_mapping'
-                        ) {
-                            $_keysToUnset[] =  $_key;
-                        }
-                    }
-                }
-                if (!empty($_keysToUnset)) {
-                    foreach($_keysToUnset as $_key) {
-                        unset($_orderNode->{$_key});
-                    }
-                }
-            }
+            // Remove / update Order ACL related configuration
+            $this->_updateOrderLinks(
+                $this->_acl
+                    ->descend('mappings')->descend('children')
+                    ->descend('order_mapping')->descend('children'),
+                $_itemsToRetain
+            );
+            $this->_updateOrderLinks(
+                $this->_nativeAcl
+                    ->descend('sales')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->descend('order_mappings')->descend('children'),
+                $_itemsToRetain
+            );
         }
 
-        // Remove Sync Queue menu item
-        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            unset($this->_menu->queue_sync);
-            unset($this->_acl->queue_sync);
+        // Remove Abandoned Cart links
+        $this->_updateAbandonedCartLinks();
+
+        // Remove Sync Queue link
+        $this->_updateQueueLinks();
+
+        // Remove Lead Mapping links
+        $this->_updateCustomerLinks();
+    }
+
+    /**
+     * Remove Lead Mapping links
+     */
+    protected function _updateCustomerLinks() {
+        $_leverageLeads = Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
+
+        if ($this->_menu) {
+            // Customer Menus
+            $_customerNode = $this->_menu
+                ->descend('mappings')->descend('children')
+                ->descend('customer_mapping')->descend('children');
+            $_customerNativeNode = $this->_nativeMenu
+                ->descend('customer')->descend('children')
+                ->descend('tnw_salesforce')->descend('children')
+                ->descend('mappings')->descend('children');
+        }
+        if ($this->_acl) {
+            // Customer ACL
+            $_customerAclNode = $this->_acl
+                ->descend('mappings')->descend('children')
+                ->descend('customer_mapping')->descend('children');
+            $_customerNativeAclNode = $this->_nativeAcl
+                ->descend('customer')->descend('children')
+                ->descend('tnw_salesforce')->descend('children')
+                ->descend('mappings')->descend('children');
         }
 
         if (!$_leverageLeads) {
             if ($_customerNode) {
                 unset($_customerNode->lead_mapping);
             }
+            if ($_customerNativeNode) {
+                unset($_customerNativeNode->lead_mapping);
+            }
             if ($_customerAclNode) {
                 unset($_customerAclNode->lead_mapping);
             }
+            if ($_customerNativeAclNode) {
+                unset($_customerNativeAclNode->lead_mapping);
+            }
+        }
+    }
+
+    /**
+     * Removed Order or Opportunity mappings and status mapping links and ACL configuration
+     * @param $xmlNode
+     * @param $_itemsToRetain
+     */
+    protected function _updateOrderLinks($xmlNode, $_itemsToRetain) {
+        if ($xmlNode) {
+            $_keysToUnset = array();
+            foreach($xmlNode as $_items) {
+                foreach($_items as $_key => $_item) {
+                    if (
+                        $_key != $_itemsToRetain . '_mapping'
+                        && $_key != $_itemsToRetain . '_cart_mapping'
+                        && $_key != 'status_mapping'
+                    ) {
+                        $_keysToUnset[] =  $_key;
+                    }
+                }
+            }
+            if (!empty($_keysToUnset)) {
+                foreach($_keysToUnset as $_key) {
+                    unset($xmlNode->{$_key});
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove Sync Queue menu item
+     */
+    protected function _updateQueueLinks() {
+        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
+            unset($this->_menu->queue_sync);
+            unset($this->_acl->queue_sync);
+        }
+    }
+
+    /**
+     * Remove Abandoned Cart Links
+     */
+    protected function _updateAbandonedCartLinks() {
+        if (
+            $this->_menu->descend('manual_sync')->descend('children')
+            && !(
+                Mage::helper('tnw_salesforce')->getType() == "PRO"
+                && Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(
+                    TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED
+                )
+            )
+        ) {
+            // Removing menu links
+            unset($this->_menu->descend('manual_sync')->descend('children')->abandoned_sync);
+            unset($this->_menu->descend('mappings')->descend('children')->abandoned_mapping);
+            unset($this->_nativeMenu
+                ->descend('sales')->descend('children')
+                ->descend('tnw_salesforce')->descend('children')
+                ->descend('manual_sync')->descend('children')
+                ->sync_abandoned_carts
+            );
+            unset($this->_nativeMenu
+                ->descend('sales')->descend('children')
+                ->descend('tnw_salesforce')->descend('children')
+                ->abandoned_mapping
+            );
+
+            // Removing ACL configuration
+            unset($this->_acl->descend('manual_sync')->descend('children')->abandoned_sync);
+            unset($this->_acl->descend('mappings')->descend('children')->abandoned_mapping);
+            unset($this->_nativeAcl
+                ->descend('sales')->descend('children')
+                ->descend('tnw_salesforce')->descend('children')
+                ->descend('manual_sync')->descend('children')
+                ->sync_abandoned_carts
+            );
+            unset($this->_nativeAcl
+                ->descend('sales')->descend('children')
+                ->descend('tnw_salesforce')->descend('children')
+                ->abandoned_mapping
+            );
         }
     }
 

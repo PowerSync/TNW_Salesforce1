@@ -11,7 +11,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderController extends Mage_Adminhtml
         }
 
         $this->loadLayout()
-            ->_setActiveMenu('system/salesforce')
+            ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Order Fields Mapping'), Mage::helper('tnw_salesforce')->__('Order Field Mapping'));
 
         return $this;
