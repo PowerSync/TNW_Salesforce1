@@ -24,70 +24,73 @@ class TNW_Salesforce_Model_Observer
     }
 
     public function adjustMenu() {
+        try {
+            // Update Magento admin menu
+            $this->_nativeMenu = Mage::getSingleton('admin/config')
+                ->getAdminhtmlConfig()
+                ->getNode('menu')
+            ;
+            $this->_menu = $this->_nativeMenu
+                ->descend('tnw_salesforce')->descend('children');
 
-        // Update Magento admin menu
-        $this->_nativeMenu = Mage::getSingleton('admin/config')
-            ->getAdminhtmlConfig()
-            ->getNode('menu')
-        ;
-        $this->_menu = $this->_nativeMenu
-            ->descend('tnw_salesforce')->descend('children');
+            // Update Magento ACL
+            $this->_nativeAcl = Mage::getSingleton('admin/config')
+                ->getAdminhtmlConfig()
+                ->getNode('acl')
+                ->descend('resources')
+                ->descend('admin')->descend('children');
 
-        // Update Magento ACL
-        $this->_nativeAcl = Mage::getSingleton('admin/config')
-            ->getAdminhtmlConfig()
-            ->getNode('acl')
-            ->descend('resources')
-            ->descend('admin')->descend('children');
+            $this->_acl = $this->_nativeAcl
+                ->descend('tnw_salesforce')->descend('children');
 
-        $this->_acl = $this->_nativeAcl
-            ->descend('tnw_salesforce')->descend('children');
+            $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
+            $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
 
-        $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
-        $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
+            if (defined($_constantName)) {
+                $_itemsToRetain = constant($_constantName);
 
-        if (defined($_constantName)) {
-            $_itemsToRetain = constant($_constantName);
+                // Remove / update Order related mapping links per configuration
+                $this->_updateOrderLinks(
+                    $this->_menu
+                        ->descend('mappings')->descend('children')
+                        ->descend('order_mapping')->descend('children'),
+                    $_itemsToRetain
+                );
+                $this->_updateOrderLinks(
+                    $this->_nativeMenu
+                        ->descend('sales')->descend('children')
+                        ->descend('tnw_salesforce')->descend('children')
+                        ->descend('order_mappings')->descend('children'),
+                    $_itemsToRetain
+                );
 
-            // Remove / update Order related mapping links per configuration
-            $this->_updateOrderLinks(
-                $this->_menu
-                    ->descend('mappings')->descend('children')
-                    ->descend('order_mapping')->descend('children'),
-                $_itemsToRetain
-            );
-            $this->_updateOrderLinks(
-                $this->_nativeMenu
-                    ->descend('sales')->descend('children')
-                    ->descend('tnw_salesforce')->descend('children')
-                    ->descend('order_mappings')->descend('children'),
-                $_itemsToRetain
-            );
+                // Remove / update Order ACL related configuration
+                $this->_updateOrderLinks(
+                    $this->_acl
+                        ->descend('mappings')->descend('children')
+                        ->descend('order_mapping')->descend('children'),
+                    $_itemsToRetain
+                );
+                $this->_updateOrderLinks(
+                    $this->_nativeAcl
+                        ->descend('sales')->descend('children')
+                        ->descend('tnw_salesforce')->descend('children')
+                        ->descend('order_mappings')->descend('children'),
+                    $_itemsToRetain
+                );
+            }
 
-            // Remove / update Order ACL related configuration
-            $this->_updateOrderLinks(
-                $this->_acl
-                    ->descend('mappings')->descend('children')
-                    ->descend('order_mapping')->descend('children'),
-                $_itemsToRetain
-            );
-            $this->_updateOrderLinks(
-                $this->_nativeAcl
-                    ->descend('sales')->descend('children')
-                    ->descend('tnw_salesforce')->descend('children')
-                    ->descend('order_mappings')->descend('children'),
-                $_itemsToRetain
-            );
+            // Remove Abandoned Cart links
+            $this->_updateAbandonedCartLinks();
+
+            // Remove Sync Queue link
+            $this->_updateQueueLinks();
+
+            // Remove Lead Mapping links
+            $this->_updateCustomerLinks();
+        } catch (Exception $e) {
+            // SKIP: to deal with caching during the upgrade
         }
-
-        // Remove Abandoned Cart links
-        $this->_updateAbandonedCartLinks();
-
-        // Remove Sync Queue link
-        $this->_updateQueueLinks();
-
-        // Remove Lead Mapping links
-        $this->_updateCustomerLinks();
     }
 
     /**
