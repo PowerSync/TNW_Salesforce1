@@ -222,10 +222,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         if (!empty($this->_sqlToRun)) {
             try {
-                if (!$this->_write) {
-                    $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-                }
-                $this->_write->query($this->_sqlToRun . 'commit;');
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($this->_sqlToRun);
             } catch (Exception $e) {
                 $this->getHelper()->log("Exception: " . $e->getMessage());
             }
@@ -289,7 +286,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         if ($_value || $_value === 0) {
             // Update Account Id
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE " . $storeIdQuery . " attribute_id = '" . $this->_attributes[$_attributeName] . "' AND entity_id = " . $_entityId;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
                 $sql .= "UPDATE `" . $_table . "` SET value = '" . $_value . "' WHERE value_id = " . $row['value_id'] . ";";
@@ -300,7 +297,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         } else {
             // Reset value
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE " . $storeIdQuery . " attribute_id = " . $this->_attributes[$_attributeName] . " AND entity_id = " . $_entityId;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
                 $sql .= "DELETE FROM `" . $_table . "` WHERE value_id = " . $row['value_id'] . ";";
