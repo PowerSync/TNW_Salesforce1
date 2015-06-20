@@ -183,6 +183,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         /** @var $collection Mage_Reports_Model_Resource_Quote_Collection */
         $collection = Mage::getModel('tnw_salesforce/abandoned')->getAbandonedCollection();
         $collection->addFieldToFilter('sf_sync_force', 1);
+        $collection->addFieldToFilter('customer_id', array('neq' => 'NULL' ));
         $collection->addFieldToSelect('sf_insync');
         $itemIds = $collection->getAllIds();
 

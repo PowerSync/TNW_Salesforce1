@@ -28,19 +28,17 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_websites = $_emails = array();
             $sql = '';
 
-
-            foreach ($ids as $_id) {
-                // Clear Opportunity ID
-                $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET sf_sync_force = 0, sf_insync = 0, created_at = created_at WHERE entity_id = " . $_id . ";";
-            }
-            if (!empty($sql)) {
-                $this->_write->query($sql);
-                Mage::helper('tnw_salesforce')->log("Opportunity ID and Sync Status for quote (#" . join(',', $ids) . ") were reset.");
-            }
             $_guestCount = 0;
 
             foreach ($ids as $_count => $_id) {
                 $_quote = $this->_loadQuote($_id);
+
+                if (!$_quote->getData('customer_id')) {
+                    continue;
+                } else {
+                    $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET sf_sync_force = 0, sf_insync = 0, created_at = created_at WHERE entity_id = " . $_id . ";";
+                }
+
                 // Add to cache
                 if (!Mage::registry('quote_cached_' . $_quote->getId())) {
                     Mage::register('quote_cached_' . $_quote->getId(), $_quote);
@@ -86,6 +84,11 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
                 $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
                 $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
+            }
+
+            if (!empty($sql)) {
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+                Mage::helper('tnw_salesforce')->log("Opportunity ID and Sync Status for quote (#" . join(',', $ids) . ") were reset.");
             }
 
             if (empty($_quoteNumbers)) {
@@ -554,7 +557,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
         if ($sql != '') {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            $this->_write->query($sql);
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
 
@@ -597,7 +600,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            $this->_write->query($sql);
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
 

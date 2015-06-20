@@ -755,7 +755,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 if (property_exists($_result, 'success') && $_result->success) {
                     $contactId = $_result->id;
                     // Fix Contact Id for PersonAccount, update returns Person Account Id instead of a contact Id
-                    if ($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->Id != $contactId) {
+                    if (
+                        property_exists($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]], 'Id')
+                        && $this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->Id != $contactId
+                    ) {
                         $contactId = $this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->Id;
                     }
 

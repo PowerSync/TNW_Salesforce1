@@ -499,7 +499,11 @@ class TNW_Salesforce_Model_Observer
 
         /** @var $quote Mage_Sales_Model_Quote */
         $quote = $observer->getEvent()->getQuote();
-        if (!$quote) {
+        if (
+            !$quote
+            || !$quote->getData('customer_id')
+            || !$quote->getData('customer_email')
+        ) {
             return false;
         }
 

@@ -301,7 +301,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 1, salesforce_id = '" . $_result->id . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
 
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                    $this->_write->query($sql . ' commit;');
+                    Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
                     $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNum] = $_result->id;
                     Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $_result->id);
                 }
@@ -523,7 +523,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 // Reset sync status
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                $this->_write->query($sql . ' commit;');
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (quote: ' . $_quoteNum . ') failed to upsert.', 1, "sf-errors");
                 $this->_processErrors($_result, 'quoteCart', $chunk[$_key]);
@@ -581,7 +581,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     // Reset sync status
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId . "';";
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                    $this->_write->query($sql . ' commit;');
+                    Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                     Mage::helper('tnw_salesforce')->log('ERROR: Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (quote: ' . $_quoteNum . ') failed to upsert.', 1, "sf-errors");
                     $this->_processErrors($_result, 'quoteCart', $this->_cache['contactRolesToUpsert'][$_key]);
@@ -984,7 +984,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 //UPDATE quote to record Customer Id
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET customer_id = " . $_customer->getId() . ", created_at = created_at WHERE entity_id = " . $quote->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote_address') . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $quote->getId() . ";";
-                $this->_write->query($sql);
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
                 Mage::helper("tnw_salesforce")->log('Guest user found in Magento, updating abandoned cart #' . $quote->getId() . ' attaching cusomter ID: ' . $_customer->getId());
             }
         }
@@ -1074,14 +1074,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     public function resetAbandoned($_id)
     {
-        if (!is_object($this->_write)) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
-
         $quoteTable = Mage::getResourceSingleton('sales/quote')->getMainTable();
 
         $sql = "UPDATE `" . $quoteTable . "` SET sf_insync = 0, created_at = created_at WHERE entity_id = " . $_id . ";";
-        $this->_write->query($sql);
+        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
     }
 
 }
