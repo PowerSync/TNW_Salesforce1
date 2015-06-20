@@ -876,7 +876,12 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $_salesforceIds = array();
                 foreach ($this->_cache[$_collection]['Id'] as $_magentoId => $_object) {
                     if ($_collection == 'accountsToUpsert') {
-                        $contact = $this->_cache['contactsToUpsert']['Id'][$_magentoId];
+                        if (array_key_exists($_magentoId, $this->_cache['contactsToUpsert']['Id'])) {
+                            $contact = $this->_cache['contactsToUpsert']['Id'][$_magentoId];
+                        } else {
+                            $contact = $this->_cache['contactsToUpsertBackup']['Id'][$_magentoId];
+                        }
+
                         $_email = ($contact->Email) ? $contact->Email : $contact->PersonEmail;
 
                         if (property_exists($contact, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject('_pc'))) {
@@ -918,6 +923,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         } else {
                             $_key = array_search($_compiledKey, $_salesforceIds);
                             $this->_cache['guestDuplicates'][$_magentoId] = $_key;
+                            $this->_cache[$_collection . 'Backup']['Id'][$_magentoId] = $this->_cache[$_collection]['Id'][$_magentoId];
                             unset($this->_cache[$_collection]['Id'][$_magentoId]);
                         }
                     }
