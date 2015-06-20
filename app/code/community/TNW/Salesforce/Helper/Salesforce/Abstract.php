@@ -689,7 +689,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 Mage::helper('tnw_salesforce')->log($type . " Object is empty!", 1, "sf-errors");
             } else {
                 foreach ($_obj as $_key => $_value) {
-                    if (is_object($_value)){
+                    if (is_object($_value) || is_array($_value)){
                         foreach($_value as $k1 => $v1) {
                             if ($isError) {
                                 Mage::helper('tnw_salesforce')->log($type . " Object: " . $k1 . " = '" . $v1 . "'", 1, "sf-errors");

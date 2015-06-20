@@ -676,11 +676,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     public function resetOrder($_id)
     {
-        if (!is_object($this->_write)) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = NULL, sf_insync = 0 WHERE entity_id = " . $_id . ";";
-        $this->_write->query($sql);
+        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
     }
 
     /**
@@ -700,7 +697,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $_customer = Mage::getModel("customer/customer");
             if (Mage::helper('tnw_salesforce')->getMagentoVersion() < 1500) {
                 $sql = "SELECT website_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $customer_id . "'";
-                $row = $this->_write->query($sql)->fetch();
+                $row = Mage::helper('tnw_salesforce')->getDbConnection()->query($sql)->fetch();
                 if (!$row) {
                     $_customer->setWebsiteId($row['website_id']);
                 }
@@ -738,7 +735,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_grid') . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_address') . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $order->getId() . ";";
-                $this->_write->query($sql);
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
                 Mage::helper("tnw_salesforce")->log('Guest user found in Magento, updating order #' . $order->getRealOrderId() . ' attaching cusomter ID: ' . $_customer->getId());
             }
         }
@@ -1158,11 +1155,23 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach($this->_cache['orderToActivate'] as $_orderNum => $_object) {
+                $salesforceOrderId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
                 if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
-                    $_object->Id = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
+                    $_object->Id = $salesforceOrderId;
                 } else {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
                     Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+                }
+                // Check if at least 1 product was added to the order before we try to activate
+                if (
+                    !array_key_exists($salesforceOrderId, $this->_cache['orderItemsProductsToSync'])
+                    || empty($this->_cache['orderItemsProductsToSync'][$salesforceOrderId])
+                ) {
+                    unset($this->_cache['orderToActivate'][$_orderNum]);
+                    Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');
+                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                        Mage::getSingleton('adminhtml/session')->addNotice("SKIPPING ORDER ACTIVATION: Order (" . $_orderNum . ") could not be activated w/o any products!");
+                    }
                 }
             }
             if (!empty($this->_cache['orderToActivate'])) {
@@ -1229,7 +1238,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            $this->_write->query($sql . ' commit;');
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
 
@@ -1305,9 +1314,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
             if (!$_result->success) {
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['orderItemsToUpsert'][$_key]->OrderId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE increment_id = '" . $_orderNum . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                $this->_write->query($sql . ' commit;');
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::helper('tnw_salesforce')->log('ERROR: Order: ' . $_orderNum . ') failed to activate.', 1, "sf-errors");
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {

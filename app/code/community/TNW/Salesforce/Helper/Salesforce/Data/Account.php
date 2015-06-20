@@ -260,7 +260,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $_returnObject->Name = (isset($_item['Name'])) ? $_item['Name'] : NULL;
 
                 foreach ($criteria as $_customIndex => $_value) {
-                    if ($_item[$field] == $_value) {
+                    // Need case insensitive match
+                    if (strtolower($_item[$field]) == strtolower($_value)) {
                         $_returnObject->$field = $_value;
                         $_returnObject->CustomIndex = $_customIndex;
                         break;
