@@ -602,7 +602,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 // Reset sync status
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                $this->_write->query($sql . ' commit;');
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.', 1, "sf-errors");
                 $this->_processErrors($_result, 'orderCart', $chunk[$_chunkKeys[$_key]]);
@@ -680,7 +680,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     // Reset sync status
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId . "';";
                     Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                    $this->_write->query($sql . ' commit;');
+                    Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                     Mage::helper('tnw_salesforce')->log('ERROR: Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (order: ' . $_orderNum . ') failed to upsert.', 1, "sf-errors");
                     $this->_processErrors($_result, 'orderCart', $this->_cache['contactRolesToUpsert'][$_key]);
@@ -1145,7 +1145,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
         if (!empty($sql)) {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            $this->_write->query($sql . ' commit;');
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
 
@@ -1189,7 +1189,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_customer = Mage::getModel("customer/customer");
             if (Mage::helper('tnw_salesforce')->getMagentoVersion() < 1500) {
                 $sql = "SELECT website_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $customer_id . "'";
-                $row = $this->_write->query($sql)->fetch();
+                $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetch();
                 if (!$row) {
                     $_customer->setWebsiteId($row['website_id']);
                 }
@@ -1227,7 +1227,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_grid') . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_address') . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $order->getId() . ";";
-                $this->_write->query($sql);
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
                 Mage::helper("tnw_salesforce")->log('Guest user found in Magento, updating order #' . $order->getRealOrderId() . ' attaching cusomter ID: ' . $_customer->getId());
             }
         }
@@ -1356,11 +1356,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     public function resetOrder($_id)
     {
-        if (!is_object($this->_write)) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-        }
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE entity_id = " . $_id . ";";
-        $this->_write->query($sql);
+        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
     }
 
     /**
