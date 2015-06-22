@@ -176,16 +176,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_OpportunitylineitemController extends 
         $this->_redirect('*/*/index');
     }
 
-    /**
-     * Check current user permission
-     *
-     * @return boolean
-     */
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/opportunitylineitem');
-    }
-
     protected function _validate($data)
     {
         if (!$id = $this->getRequest()->getParam('mapping_id')) {
