@@ -24,111 +24,99 @@ class TNW_Salesforce_Model_Observer
     }
 
     public function adjustMenu() {
+        try {
+            // Update Magento admin menu
+            $this->_nativeMenu = Mage::getSingleton('admin/config')
+                ->getAdminhtmlConfig()
+                ->getNode('menu')
+            ;
+            $this->_menu = $this->_nativeMenu
+                ->descend('tnw_salesforce')->descend('children');
 
-        // Update Magento admin menu
-        $this->_nativeMenu = Mage::getSingleton('admin/config')
-            ->getAdminhtmlConfig()
-            ->getNode('menu')
-        ;
-        $this->_menu = $this->_nativeMenu
-            ->descend('tnw_salesforce')->descend('children');
+            // Update Magento ACL
+            $this->_nativeAcl = Mage::getSingleton('admin/config')
+                ->getAdminhtmlConfig()
+                ->getNode('acl')
+                ->descend('resources')
+                ->descend('admin')->descend('children');
 
-        // Update Magento ACL
-        $this->_nativeAcl = Mage::getSingleton('admin/config')
-            ->getAdminhtmlConfig()
-            ->getNode('acl')
-            ->descend('resources')
-            ->descend('admin')->descend('children');
+            $this->_acl = $this->_nativeAcl
+                ->descend('tnw_salesforce')->descend('children');
 
-        $this->_acl = $this->_nativeAcl
-            ->descend('tnw_salesforce')->descend('children');
+            $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
+            $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
 
-        $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
-        $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
+            if (defined($_constantName)) {
+                $_itemsToRetain = constant($_constantName);
 
-        if (defined($_constantName)) {
-            $_itemsToRetain = constant($_constantName);
+                // Remove / update Order related mapping links per configuration
+                $this->_updateOrderLinks(
+                    $this->_menu
+                        ->descend('mappings')->descend('children')
+                        ->descend('order_mapping')->descend('children'),
+                    $_itemsToRetain
+                );
+                $this->_updateOrderLinks(
+                    $this->_nativeMenu
+                        ->descend('sales')->descend('children')
+                        ->descend('tnw_salesforce')->descend('children')
+                        ->descend('order_mappings')->descend('children'),
+                    $_itemsToRetain
+                );
 
-            // Remove / update Order related mapping links per configuration
-            $this->_updateOrderLinks(
-                $this->_menu
-                    ->descend('mappings')->descend('children')
-                    ->descend('order_mapping')->descend('children'),
-                $_itemsToRetain
-            );
-            $this->_updateOrderLinks(
-                $this->_nativeMenu
-                    ->descend('sales')->descend('children')
-                    ->descend('tnw_salesforce')->descend('children')
-                    ->descend('order_mappings')->descend('children'),
-                $_itemsToRetain
-            );
+                // Remove / update Order ACL related configuration
+                $this->_updateOrderLinks(
+                    $this->_acl
+                        ->descend('mappings')->descend('children')
+                        ->descend('order_mapping')->descend('children'),
+                    $_itemsToRetain
+                );
+            }
 
-            // Remove / update Order ACL related configuration
-            $this->_updateOrderLinks(
-                $this->_acl
-                    ->descend('mappings')->descend('children')
-                    ->descend('order_mapping')->descend('children'),
-                $_itemsToRetain
-            );
-            $this->_updateOrderLinks(
-                $this->_nativeAcl
-                    ->descend('sales')->descend('children')
-                    ->descend('tnw_salesforce')->descend('children')
-                    ->descend('order_mappings')->descend('children'),
-                $_itemsToRetain
-            );
+            // Remove Abandoned Cart links
+            $this->_updateAbandonedCartLinks();
+
+            // Remove Sync Queue link
+            $this->_updateQueueLinks();
+
+            // Remove Lead Mapping links
+            $this->_updateCustomerLinks();
+        } catch (Exception $e) {
+            // SKIP: to deal with caching during the upgrade
         }
-
-        // Remove Abandoned Cart links
-        $this->_updateAbandonedCartLinks();
-
-        // Remove Sync Queue link
-        $this->_updateQueueLinks();
-
-        // Remove Lead Mapping links
-        $this->_updateCustomerLinks();
     }
 
     /**
      * Remove Lead Mapping links
      */
     protected function _updateCustomerLinks() {
-        $_leverageLeads = Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
+        $leverageLeads = Mage::getStoreConfigFlag(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
 
-        if ($this->_menu) {
-            // Customer Menus
-            $_customerNode = $this->_menu
-                ->descend('mappings')->descend('children')
-                ->descend('customer_mapping')->descend('children');
-            $_customerNativeNode = $this->_nativeMenu
-                ->descend('customer')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->descend('mappings')->descend('children');
-        }
-        if ($this->_acl) {
-            // Customer ACL
-            $_customerAclNode = $this->_acl
-                ->descend('mappings')->descend('children')
-                ->descend('customer_mapping')->descend('children');
-            $_customerNativeAclNode = $this->_nativeAcl
-                ->descend('customer')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->descend('mappings')->descend('children');
-        }
-
-        if (!$_leverageLeads) {
-            if ($_customerNode) {
-                unset($_customerNode->lead_mapping);
+        if (!$leverageLeads) {
+            if ($this->_menu) {
+                // Customer Menus
+                $_customerNode = $this->_menu
+                    ->descend('mappings')->descend('children')
+                    ->descend('customer_mapping')->descend('children');
+                $_customerNativeNode = $this->_nativeMenu
+                    ->descend('customer')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->descend('mappings')->descend('children');
+                if ($_customerNode) {
+                    unset($_customerNode->lead_mapping);
+                }
+                if ($_customerNativeNode) {
+                    unset($_customerNativeNode->lead_mapping);
+                }
             }
-            if ($_customerNativeNode) {
-                unset($_customerNativeNode->lead_mapping);
-            }
-            if ($_customerAclNode) {
-                unset($_customerAclNode->lead_mapping);
-            }
-            if ($_customerNativeAclNode) {
-                unset($_customerNativeAclNode->lead_mapping);
+            if ($this->_acl) {
+                // Customer ACL
+                $_customerAclNode = $this->_acl
+                    ->descend('mappings')->descend('children')
+                    ->descend('customer_mapping')->descend('children');
+                if ($_customerAclNode) {
+                    unset($_customerAclNode->lead_mapping);
+                }
             }
         }
     }
@@ -235,14 +223,58 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * this model method calls our facade pattern class method mageAdminLoginEvent()
-     *
-     * @param Varien_Event_Observer $observer
-     * @return mixed
+     * Fix admin user acl after login
      */
-    public function mageLoginEventCall(Varien_Event_Observer $observer)
+    public function fixAcl()
     {
-        return Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
+        $session = Mage::getSingleton('admin/session');
+        /** @var Mage_Admin_Model_User $user */
+        $user = $session->getUser();
+        $acl = $session->getAcl();
+        $aclRole = $user->getAclRole();
+
+        //allow order status page
+        if ($session->isAllowed('tnw_salesforce/mappings/order_mapping/status_mapping')
+            || $session->isAllowed('sales/tnw_salesforce/order_mappings/status_mapping')
+        ) {
+            $acl->allow($user->getAclRole(), 'admin/system/order_statuses');
+        }
+
+        //allow api config - if not allowed in system
+        if ($session->isAllowed('tnw_salesforce/setup/api_config')) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce');
+        }
+
+        //allow order configuration page - if not allowed in system
+        if ($session->isAllowed('sales/tnw_salesforce/configuration')
+            || $session->isAllowed('tnw_salesforce/setup/order_config')) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce_order');
+        }
+
+        //allow product configuration page - if not allowed in system
+        if ($session->isAllowed('catalog/tnw_salesforce/configuration')
+            || $session->isAllowed('tnw_salesforce/setup/order_product')) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce_product');
+        }
+
+        //allow customer configuration page - if not allowed in system
+        if ($session->isAllowed('customer/tnw_salesforce/configuration')
+            || $session->isAllowed('tnw_salesforce/setup/customer_config')
+        ) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce_customer');
+        }
+    }
+
+    /**
+     * this model method calls our facade pattern class method mageAdminLoginEvent()
+     */
+    public function mageLoginEventCall()
+    {
+        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
     }
 
     /**
@@ -496,7 +528,11 @@ class TNW_Salesforce_Model_Observer
 
         /** @var $quote Mage_Sales_Model_Quote */
         $quote = $observer->getEvent()->getQuote();
-        if (!$quote) {
+        if (
+            !$quote
+            || !$quote->getData('customer_id')
+            || !$quote->getData('customer_email')
+        ) {
             return false;
         }
 

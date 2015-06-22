@@ -222,10 +222,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         if (!empty($this->_sqlToRun)) {
             try {
-                if (!$this->_write) {
-                    $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
-                }
-                $this->_write->query($this->_sqlToRun . 'commit;');
+                Mage::helper('tnw_salesforce')->getDbConnection()->query($this->_sqlToRun);
             } catch (Exception $e) {
                 $this->getHelper()->log("Exception: " . $e->getMessage());
             }
@@ -289,7 +286,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         if ($_value || $_value === 0) {
             // Update Account Id
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE " . $storeIdQuery . " attribute_id = '" . $this->_attributes[$_attributeName] . "' AND entity_id = " . $_entityId;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
                 $sql .= "UPDATE `" . $_table . "` SET value = '" . $_value . "' WHERE value_id = " . $row['value_id'] . ";";
@@ -300,7 +297,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         } else {
             // Reset value
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE " . $storeIdQuery . " attribute_id = " . $this->_attributes[$_attributeName] . " AND entity_id = " . $_entityId;
-            $row = $this->_write->query($sqlCheck)->fetch();
+            $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
                 $sql .= "DELETE FROM `" . $_table . "` WHERE value_id = " . $row['value_id'] . ";";
@@ -653,67 +650,20 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $this->getHelper()->log('----------' . strtoupper($type) . ' PRODUCTS: End----------');
         $this->getHelper()->log('----------UPSERTING Pricebook: Start----------');
 
-        $_cache = array();
-        $_duplicates = array();
         foreach ($this->_cache['pricebookEntryToSync'] as $_key => $tmpObject) {
             // Dump products that will be synced
             if (!$this->isFromCLI()) {
                 foreach ($tmpObject as $key => $value) {
                     $this->getHelper()->log("Pricebook Object: " . $key . " = '" . $value . "'");
                 }
-            }
 
-            // Don't insert duplicate Pricebook Entries
-            if (
-                (
-                    property_exists($tmpObject, 'Pricebook2Id')
-                    && in_array($tmpObject->Pricebook2Id . $tmpObject->Product2Id, $_cache)
-                ) || (
-                    property_exists($tmpObject, 'Id')
-                    && in_array($tmpObject->Id, $_cache)
-                )
-            ) {
-                if (property_exists($tmpObject, 'Id')) {
-                    $_foundKey = array_search($tmpObject->Id, $_cache);
-                } else {
-                    $_newKey = $tmpObject->Pricebook2Id . $tmpObject->Product2Id;
-                    if ($this->getHelper()->isMultiCurrency()) {
-                        $_newKey .= property_exists($tmpObject, 'CurrencyIsoCode') ? $tmpObject->CurrencyIsoCode : null;
-                    }
-                    $_foundKey = array_search($_newKey, $_cache);
-                }
-                $_duplicates[$_key] = $_foundKey;
-            } else {
-                $this->_cache['pricebookEntriesForUpsert'][$_key] = $tmpObject;
-                if (property_exists($tmpObject, 'Pricebook2Id')) {
-                    $_newKey = $tmpObject->Pricebook2Id . $tmpObject->Product2Id;
-                    if ($this->getHelper()->isMultiCurrency()) {
-                        $_newKey .= property_exists($tmpObject, 'CurrencyIsoCode') ? $tmpObject->CurrencyIsoCode : null;
-                    }
-                    $_cache[$_key] = $_newKey;
-                } else if (property_exists($tmpObject, 'Id')) {
-                    $_cache[$_key] = $tmpObject->Id;
-                }
+                $this->getHelper()->log("---------------------------------------");
             }
-
-            $this->getHelper()->log("---------------------------------------");
         }
 
         $this->_pushPricebookChunked($this->_cache['pricebookEntriesForUpsert']);
 
-        //Make sure duplicates are updated in Magento
-        foreach ($_duplicates as $_toUpdate => $_fromWhere) {
-            $_tmp = explode(':::', $_toUpdate);
-            $updateStoreIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$_toUpdate]);
-            $_productId = $_tmp[1];
-            $_fromStoreId = strstr($_fromWhere, ':::' . $_productId, true);
-            foreach ($updateStoreIds as $_updateStoreId) {
-                $this->_cache['toSaveInMagento'][$_productId]->pricebookEntryIds[$_updateStoreId]
-                    = $this->_cache['toSaveInMagento'][$_productId]->pricebookEntryIds[$_fromStoreId];
-            }
-        }
         $this->getHelper()->log('----------UPSERTING Pricebook: End----------');
-
     }
 
     protected function _pushPriceBookSegment($chunk = array())

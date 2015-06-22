@@ -607,6 +607,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          */
         $product = new Varien_Object();
 
+        $sku = ($product->getSku()) ? $product->getSku() : $item->getSku();
+
         /**
          * @comment do some additional actions if we add real product to the order
          */
@@ -617,11 +619,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $productModel = Mage::getModel('catalog/product')->setStoreId($storeId);
             $product = $productModel->load($id);
 
-            $sku = $product->getSku();
 
             if (!$product->getSalesforcePricebookId()) {
 
-                throw new Exception("ERROR: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+                throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
             }
 
             /**
@@ -711,9 +712,23 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_obj->Quantity = $qty;
 
         $this->_prepareItemObjFinish($item, $product);
-        /* Dump OpportunityLineItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::helper('tnw_salesforce')->log("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
+
+        $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)] = array();
+
+        if (
+            (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
+            || (property_exists($this->_obj, 'Id') && $this->_obj->Id)
+        ) {
+            /* Dump OpportunityLineItem object into the log */
+            foreach ($this->_obj as $key => $_item) {
+                Mage::helper('tnw_salesforce')->log("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
+            }
+
+            $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)][] = $sku;
+
+            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert'][] = $this->_obj;
+        } else {
+            Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted!');
         }
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getId()] = $this->_obj;

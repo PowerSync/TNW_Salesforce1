@@ -199,16 +199,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_Abandoned_OpportunityController extend
         $this->_redirect('*/*/index');
     }
 
-    /**
-     * Check current user permission
-     *
-     * @return boolean
-     */
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/abandoned');
-    }
-
     protected function _validate($data)
     {
         if (!$id = $this->getRequest()->getParam('mapping_id')) {

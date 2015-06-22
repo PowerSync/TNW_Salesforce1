@@ -557,7 +557,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     }
                     if (!empty($sql)) {
                         Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                        $this->_write->query($sql);
+                        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
@@ -682,7 +682,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
         if ($sql != '') {
             Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            $this->_write->query($sql);
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
 

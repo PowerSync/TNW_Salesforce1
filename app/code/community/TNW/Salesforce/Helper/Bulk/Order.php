@@ -441,12 +441,23 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         // Mark orders as failed or successful
         $this->_updateOrders();
 
-
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach($this->_cache['orderToActivate'] as $_orderNum => $_object) {
                 if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
                     $_object->Id = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
+
+                    // Check if at least 1 product was added to the order before we try to activate
+                    if (
+                        !array_key_exists($_object->Id, $this->_cache['orderItemsProductsToSync'])
+                        || empty($this->_cache['orderItemsProductsToSync'][$_object->Id])
+                    ) {
+                        unset($this->_cache['orderToActivate'][$_orderNum]);
+                        Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');
+                        if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                            Mage::getSingleton('adminhtml/session')->addNotice("SKIPPING ORDER ACTIVATION: Order (" . $_orderNum . ") could not be activated w/o any products!");
+                        }
+                    }
                 } else {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
                     Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');

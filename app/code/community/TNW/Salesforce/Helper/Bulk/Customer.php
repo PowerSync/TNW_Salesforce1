@@ -564,7 +564,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
         $_i = 0;
         foreach ($this->_toSyncOrderCustomers as $_orderNum => $_customer) {
-            $_email = $_customer->getEmail();
+            // Customer email has to be lowercased
+            $_email = strtolower($_customer->getEmail());
             $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : Mage::app()->getWebsite()->getId();
             $tmp = new stdClass();
             if (!$_customer->getId()) {
@@ -858,15 +859,31 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     {
         $_collections = array('leadsToUpsert', 'contactsToUpsert', 'accountsToUpsert');
         foreach ($_collections as $_collection) {
-
             $this->_cache[$_collection . 'Duplicates'] = array();
             $_compiledKey = null;
             if (array_key_exists('Id', $this->_cache[$_collection]) && is_array($this->_cache[$_collection]['Id']) && !empty($this->_cache[$_collection]['Id'])) {
                 $_salesforceIds = array();
                 foreach ($this->_cache[$_collection]['Id'] as $_magentoId => $_object) {
                     if ($_collection == 'accountsToUpsert') {
+                        if (array_key_exists($_magentoId, $this->_cache['contactsToUpsert']['Id'])) {
+                            $contact = $this->_cache['contactsToUpsert']['Id'][$_magentoId];
+                        } else {
+                            $contact = $this->_cache['contactsToUpsertBackup']['Id'][$_magentoId];
+                        }
+
+                        $_email = ($contact->Email) ? $contact->Email : $contact->PersonEmail;
+
+                        if (property_exists($contact, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject('_pc'))) {
+                            $sfWebsiteId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject('_pc');
+                        } else {
+                            $sfWebsiteId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+                        }
+                        $_sfWebsite = $contact->{$sfWebsiteId};
+
                         if (property_exists($_object, 'Name')) {
                             $_compiledKey = $_object->Name;
+                        } elseif ($this->_getAccountName(NULL, $_email, $_sfWebsite)) {
+                            $_compiledKey = $this->_getAccountName(NULL, $_email, $_sfWebsite);
                         } else {
                             // B2C account
                             $_compiledKey = $_object->PersonEmail;
@@ -895,6 +912,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         } else {
                             $_key = array_search($_compiledKey, $_salesforceIds);
                             $this->_cache['guestDuplicates'][$_magentoId] = $_key;
+                            $this->_cache[$_collection . 'Backup']['Id'][$_magentoId] = $this->_cache[$_collection]['Id'][$_magentoId];
                             unset($this->_cache[$_collection]['Id'][$_magentoId]);
                         }
                     }
