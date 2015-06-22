@@ -143,14 +143,4 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
         }
         return $url;
     }
-
-    /**
-     * Check current user permission
-     *
-     * @return boolean
-     */
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/queuesync');
-    }
 }

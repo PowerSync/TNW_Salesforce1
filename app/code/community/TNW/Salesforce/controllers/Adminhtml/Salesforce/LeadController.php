@@ -181,16 +181,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_LeadController extends Mage_Adminhtml_
         $this->_redirect('*/*/index');
     }
 
-    /**
-     * Check current user permission
-     *
-     * @return boolean
-     */
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/lead');
-    }
-
     protected function _validate($data)
     {
         if (!$id = $this->getRequest()->getParam('mapping_id')) {
