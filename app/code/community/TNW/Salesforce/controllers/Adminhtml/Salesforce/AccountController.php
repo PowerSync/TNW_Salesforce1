@@ -183,16 +183,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends Mage_Adminht
     }
 
     /**
-     * Check current user permission
-     *
-     * @return boolean
-     */
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/account');
-    }
-
-    /**
      * @param $data
      * @return bool
      */

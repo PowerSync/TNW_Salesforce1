@@ -146,14 +146,4 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
         }
         $this->_redirect('*/*/index');
     }
-
-    /**
-     * Check current user permission
-     *
-     * @return boolean
-     */
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/customersync');
-    }
 }

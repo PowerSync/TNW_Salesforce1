@@ -228,6 +228,11 @@
                         <class>tnw_salesforce/observer</class>
                         <method>mageLoginEventCall</method>
                     </tnw_salesforce_admin_login_observer>
+                    <tnw_salesforce_fix_acl>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/observer</class>
+                        <method>fixAcl</method>
+                    </tnw_salesforce_fix_acl>
                 </observers>
             </admin_session_user_login_success>
 

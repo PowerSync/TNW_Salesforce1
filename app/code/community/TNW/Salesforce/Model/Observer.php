@@ -71,13 +71,6 @@ class TNW_Salesforce_Model_Observer
                         ->descend('order_mapping')->descend('children'),
                     $_itemsToRetain
                 );
-                $this->_updateOrderLinks(
-                    $this->_nativeAcl
-                        ->descend('sales')->descend('children')
-                        ->descend('tnw_salesforce')->descend('children')
-                        ->descend('order_mappings')->descend('children'),
-                    $_itemsToRetain
-                );
             }
 
             // Remove Abandoned Cart links
@@ -97,41 +90,33 @@ class TNW_Salesforce_Model_Observer
      * Remove Lead Mapping links
      */
     protected function _updateCustomerLinks() {
-        $_leverageLeads = Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
+        $leverageLeads = Mage::getStoreConfigFlag(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
 
-        if ($this->_menu) {
-            // Customer Menus
-            $_customerNode = $this->_menu
-                ->descend('mappings')->descend('children')
-                ->descend('customer_mapping')->descend('children');
-            $_customerNativeNode = $this->_nativeMenu
-                ->descend('customer')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->descend('mappings')->descend('children');
-        }
-        if ($this->_acl) {
-            // Customer ACL
-            $_customerAclNode = $this->_acl
-                ->descend('mappings')->descend('children')
-                ->descend('customer_mapping')->descend('children');
-            $_customerNativeAclNode = $this->_nativeAcl
-                ->descend('customer')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->descend('mappings')->descend('children');
-        }
-
-        if (!$_leverageLeads) {
-            if ($_customerNode) {
-                unset($_customerNode->lead_mapping);
+        if (!$leverageLeads) {
+            if ($this->_menu) {
+                // Customer Menus
+                $_customerNode = $this->_menu
+                    ->descend('mappings')->descend('children')
+                    ->descend('customer_mapping')->descend('children');
+                $_customerNativeNode = $this->_nativeMenu
+                    ->descend('customer')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->descend('mappings')->descend('children');
+                if ($_customerNode) {
+                    unset($_customerNode->lead_mapping);
+                }
+                if ($_customerNativeNode) {
+                    unset($_customerNativeNode->lead_mapping);
+                }
             }
-            if ($_customerNativeNode) {
-                unset($_customerNativeNode->lead_mapping);
-            }
-            if ($_customerAclNode) {
-                unset($_customerAclNode->lead_mapping);
-            }
-            if ($_customerNativeAclNode) {
-                unset($_customerNativeAclNode->lead_mapping);
+            if ($this->_acl) {
+                // Customer ACL
+                $_customerAclNode = $this->_acl
+                    ->descend('mappings')->descend('children')
+                    ->descend('customer_mapping')->descend('children');
+                if ($_customerAclNode) {
+                    unset($_customerAclNode->lead_mapping);
+                }
             }
         }
     }
@@ -238,14 +223,58 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * this model method calls our facade pattern class method mageAdminLoginEvent()
-     *
-     * @param Varien_Event_Observer $observer
-     * @return mixed
+     * Fix admin user acl after login
      */
-    public function mageLoginEventCall(Varien_Event_Observer $observer)
+    public function fixAcl()
     {
-        return Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
+        $session = Mage::getSingleton('admin/session');
+        /** @var Mage_Admin_Model_User $user */
+        $user = $session->getUser();
+        $acl = $session->getAcl();
+        $aclRole = $user->getAclRole();
+
+        //allow order status page
+        if ($session->isAllowed('tnw_salesforce/mappings/order_mapping/status_mapping')
+            || $session->isAllowed('sales/tnw_salesforce/order_mappings/status_mapping')
+        ) {
+            $acl->allow($user->getAclRole(), 'admin/system/order_statuses');
+        }
+
+        //allow api config - if not allowed in system
+        if ($session->isAllowed('tnw_salesforce/setup/api_config')) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce');
+        }
+
+        //allow order configuration page - if not allowed in system
+        if ($session->isAllowed('sales/tnw_salesforce/configuration')
+            || $session->isAllowed('tnw_salesforce/setup/order_config')) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce_order');
+        }
+
+        //allow product configuration page - if not allowed in system
+        if ($session->isAllowed('catalog/tnw_salesforce/configuration')
+            || $session->isAllowed('tnw_salesforce/setup/order_product')) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce_product');
+        }
+
+        //allow customer configuration page - if not allowed in system
+        if ($session->isAllowed('customer/tnw_salesforce/configuration')
+            || $session->isAllowed('tnw_salesforce/setup/customer_config')
+        ) {
+            $acl->allow($aclRole, 'admin/system/config');
+            $acl->allow($aclRole, 'admin/system/config/salesforce_customer');
+        }
+    }
+
+    /**
+     * this model method calls our facade pattern class method mageAdminLoginEvent()
+     */
+    public function mageLoginEventCall()
+    {
+        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
     }
 
     /**
