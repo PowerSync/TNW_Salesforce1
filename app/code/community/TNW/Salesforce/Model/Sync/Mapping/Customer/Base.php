@@ -59,7 +59,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
         $this->_email = strtolower($entity->getEmail());
         $this->_websiteId = $entity->getData('website_id');
 
-        if ($entity->getGroupId() !== NULL ) {
+        if ($entity->getGroupId() !== NULL) {
             if (is_array($this->_customerGroups) && (!array_key_exists($entity->getGroupId(), $this->_customerGroups) || !$this->_customerGroups[$entity->getGroupId()])) {
                 $this->_customerGroups[$entity->getGroupId()] = $this->_customerGroupModel->load($entity->getGroupId());
             }
@@ -123,11 +123,22 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                     case "Billing":
                     case "Shipping":
                         $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-                        $var = 'getDefault' . $mappingType . 'Address';
+
+                        $var = 'get';
+                        if ($entity->getId()) {
+                            $var .= 'Default';
+                        }
+                        $var .= $mappingType . 'Address';
+
                         /* only push default address if set */
                         $address = $entity->$var();
                         if ($address) {
                             $value = $address->$attr();
+
+                            if (!$value) {
+                                $value = $entity->$attr();
+                            }
+
                             if (is_array($value)) {
                                 $value = implode(", ", $value);
                             } else {
