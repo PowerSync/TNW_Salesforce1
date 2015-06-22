@@ -292,23 +292,15 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         $_currentWebsite = Mage::app()->getStore()->getWebsiteId();
         $_currentStoreId = Mage::app()->getStore()->getStoreId();
         if ($_currentWebsite == 0 && $_currentStoreId == 0) {
-            if (Mage::app()->getRequest()->getParam('store')) {
-                $_currentStoreId = Mage::app()->getRequest()->getParam('store');
-                if (is_object(Mage::app()->getStore($_currentStoreId))) {
-                    return Mage::app()->getStore($_currentStoreId)->getConfig($path);
-                }
-
+            if ($this->getStoreId()) {
+                return Mage::getStoreConfig($path, $this->getStoreId());
             }
-            if (Mage::app()->getRequest()->getParam('website')) {
-                $_currentWebsite = Mage::app()->getRequest()->getParam('website');
-                if (is_object(Mage::app()->getWebsite($_currentWebsite))) {
-                    return Mage::app()->getWebsite($_currentWebsite)->getConfig($path);
-                }
+            if ($this->getWebsiteId()) {
+                return Mage::app()->getWebsite($this->getWebsiteId())->getConfig($path);
             }
-            return Mage::getStoreConfig($path);
         }
 
-        return Mage::app()->getStore($_currentStoreId)->getConfig($path);
+        return Mage::getStoreConfig($path);
     }
 
     /**
@@ -332,7 +324,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     {
         $store = null;
         if ($storeId = Mage::app()->getRequest()->getParam('store')) {
-            $store = Mage::app()->getStore($storeId);
+            if (!is_array($storeId)) {
+                $store = Mage::app()->getStore($storeId);
+            }
         }
         if (!$store) {
             $store = Mage::app()->getStore();
@@ -348,7 +342,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     {
         $website = null;
         if ($websiteId = Mage::app()->getRequest()->getParam('website')) {
-            $website = Mage::app()->getWebsite($websiteId);
+            if (!is_array($websiteId)) {
+                $website = Mage::app()->getWebsite($websiteId);
+            }
         }
         if (!$website) {
             $website = Mage::app()->getWebsite();

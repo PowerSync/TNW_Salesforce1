@@ -195,16 +195,6 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderController extends Mage_Adminhtml
         $this->_redirect('*/*/index');
     }
 
-    /**
-     * Check current user permission
-     *
-     * @return boolean
-     */
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/order');
-    }
-
     protected function _validate($data)
     {
         if (!$id = $this->getRequest()->getParam('mapping_id')) {
