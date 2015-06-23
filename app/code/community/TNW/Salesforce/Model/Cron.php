@@ -206,15 +206,16 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         );
 
         $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+        $localstorage = Mage::getModel('tnw_salesforce/localstorage');
 
         foreach ($_productChunks as $_chunk) {
-            Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Product', 'product');
+            $localstorage->addObject($itemIds, 'Product', 'product');
         }
 
         $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
         unset($itemIds, $_chunk);
         foreach ($_chunks as $_chunk) {
-            Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Abandoned', 'abandoned');
+            $localstorage->addObject($_chunk, 'Abandoned', 'abandoned');
             $bind = array(
                 'sf_sync_force' => 0
             );

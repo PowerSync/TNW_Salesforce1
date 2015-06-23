@@ -426,6 +426,10 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         }
     }
 
+    /**
+     * @param string $_type
+     * @return Varien_Db_Adapter_Interface
+     */
     public function getDbConnection($_type = 'write') {
         $_function = '_getDb' . ucwords($_type);
         return $this->{$_function}();
