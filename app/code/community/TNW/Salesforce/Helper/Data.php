@@ -16,6 +16,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * @comment Base batch limit for simple sync
      */
     const BASE_UPDATE_LIMIT = 200;
+    /**
+     * @comment Base batch Lead conversion limit for simple sync
+     */
+    const BASE_CONVERT_LIMIT = 100;
 
     /* License Configuration */
     const API_LICENSE_EMAIL = 'salesforce/api_license/api_email';
@@ -457,7 +461,16 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     // Customer get Lead Converted Status
     public function getLeadConvertedStatus()
     {
-        return $this->getStroreConfig(self::LEAD_CONVERTED_STATUS);
+        $status = $this->getStroreConfig(self::LEAD_CONVERTED_STATUS);
+
+        /**
+         * @comment use default status
+         */
+        if (!$status) {
+            $status = 'Closed - Converted';
+        }
+
+        return $status;
     }
 
     // Default Lead owner to be used during conversion

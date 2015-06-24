@@ -206,15 +206,16 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         );
 
         $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+        $localstorage = Mage::getModel('tnw_salesforce/localstorage');
 
         foreach ($_productChunks as $_chunk) {
-            Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Product', 'product');
+            $localstorage->addObject($itemIds, 'Product', 'product');
         }
 
         $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
         unset($itemIds, $_chunk);
         foreach ($_chunks as $_chunk) {
-            Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Abandoned', 'abandoned');
+            $localstorage->addObject($_chunk, 'Abandoned', 'abandoned');
             $bind = array(
                 'sf_sync_force' => 0
             );
@@ -758,6 +759,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 $leadConvert->accountId = $_accounts[$_email];
             }
 
+            Mage::helper("tnw_salesforce")->log('+++++++++++++++++++++++++++++');
             // logs
             foreach ($leadConvert as $key => $value) {
                 Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'", 1, 'sf-cron');
@@ -772,18 +774,12 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
             } else {
                 Mage::helper("tnw_salesforce")->log('Customer (email: ' . $_email . ') could not be converted, Lead Id is missing in cached customer object!', 1, "sf-cron");
             }
+            Mage::helper("tnw_salesforce")->log('+++++++++++++++++++++++++++++');
         }
         return true;
     }
 
-    /**
-     * Used in TNW_Quote module
-     *
-     * @param $_toConvertCustomerIds
-     */
-    protected function _convertLeads($_toConvertCustomerIds)
-    {
-        //TODO: if more than 200 id's passed this call will fail. Add batching.
+    protected function _pushLeadSegment($_toConvertCustomerIds) {
         if (!$this->_mySforceConnection) {
             Mage::helper("tnw_salesforce")->log('Salesforce connection cannot be established.', 1, "sf-cron");
         }
@@ -838,5 +834,39 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 Mage::helper('tnw_salesforce')->log('Cache upadated!');
             }
         }
+    }
+
+    /**
+     * Used in TNW_Quote module
+     *
+     * @param $_toConvertCustomerIds
+     */
+    protected function _convertLeads($_toConvertCustomerIds)
+    {
+        $_entities = $this->_data['leadsToConvert'];
+        //Push On ID
+        if (!empty($_entities)) {
+            $_ttl = count($_entities);
+            $_success = true;
+            if ($_ttl > 99) {
+                $_steps = ceil($_ttl / 99);
+                for ($_i = 0; $_i < $_steps; $_i++) {
+                    $_start = $_i * 100;
+                    $_itemsToPush = array_slice($_entities, $_start, $_start + 99);
+                    $_success = $this->_pushLeadSegment($_itemsToPush, $_toConvertCustomerIds);
+                }
+            } else {
+                $_success = $this->_pushLeadSegment($_entities, $_toConvertCustomerIds);
+            }
+            if (!$_success) {
+                if ($this->canDisplayErrors()) {
+                    Mage::getSingleton('adminhtml/session')
+                        ->addError('WARNING: Leads conversion failed, see logs for details');
+                }
+                Mage::helper('tnw_salesforce')->log('ERROR: Leads conversion failed, see logs for details', 1, "sf-errors");
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -298,10 +298,21 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     }
                     $this->_cache['failedOpportunities'][] = $_quoteNum;
                 } else {
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 1, salesforce_id = '" . $_result->id . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_quoteNum] . ";";
+                    $quoteBind = array(
+                        'sf_sync_force' => 0,
+                        'sf_insync' => 1,
+                        'salesforce_id' => $_result->id,
+                    );
+                    $abandonedCustomer = $this->_cache['abandonedCustomers'][$_quoteNum];
+                    $quoteBind['contact_salesforce_id'] = $abandonedCustomer->getSalesforceId() ? :  null;
+                    $quoteBind['account_salesforce_id'] = $abandonedCustomer->getSalesforceAccountId() ? : null;
+                    $connection = Mage::helper('tnw_salesforce')->getDbConnection();
+                    $connection->update(
+                        Mage::helper('tnw_salesforce')->getTable('sales_flat_quote'),
+                        $quoteBind,
+                        $connection->quoteInto('entity_id = ?', $_entityArray[$_quoteNum])
+                    );
 
-                    Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-                    Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
                     $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNum] = $_result->id;
                     Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $_result->id);
                 }

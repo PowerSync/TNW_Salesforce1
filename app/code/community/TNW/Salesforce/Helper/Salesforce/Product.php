@@ -222,7 +222,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         if (!empty($this->_sqlToRun)) {
             try {
-                Mage::helper('tnw_salesforce')->getDbConnection()->query($this->_sqlToRun);
+                $chunks = array_chunk($this->_sqlToRun, 500);
+                foreach($chunks as $chunk) {
+                    Mage::helper('tnw_salesforce')->getDbConnection()->query(implode('', $chunk));
+                }
             } catch (Exception $e) {
                 $this->getHelper()->log("Exception: " . $e->getMessage());
             }
@@ -232,7 +235,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     protected function _updateMagento()
     {
         $this->getHelper()->log("---------- Start: Magento Update ----------");
-        $this->_sqlToRun = "";
+        $this->_sqlToRun = array();
         $ids = array();
 
         foreach ($this->_cache['toSaveInMagento'] as $_magentoId => $_product) {
@@ -304,7 +307,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
         }
         if (!empty($sql)) {
-            $this->_sqlToRun .= $sql;
+            $this->_sqlToRun[] = $sql;
             $this->getHelper()->log("SQL: " . $sql);
         }
     }

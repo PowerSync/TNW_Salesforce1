@@ -568,6 +568,9 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
         $_entityArray = array_flip($this->_cache['entitiesUpdating']);
         $sql = '';
+        $helper = Mage::helper('tnw_salesforce');
+        $quoteTable = Mage::getResourceSingleton('sales/quote')->getMainTable();
+        $connection = $helper->getDbConnection();
 
         foreach ($this->_cache['batchCache']['opportunities'][$this->_magentoId] as $_key => $_batchId) {
             $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] . '/batch/' . $_batchId . '/result');
@@ -583,24 +586,37 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $this->_cache['responses']['opportunities'][$_oid] = json_decode(json_encode($_item), TRUE);
 
                     if ($_item->success == "true") {
-                        $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
-                        $sql .= "UPDATE `" . Mage::getResourceSingleton('sales/quote')->getMainTable() . "` SET salesforce_id = '" . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] . "', created_at = created_at WHERE entity_id = " . $_entityArray[$_oid] . ";";
-                        Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
+                        $this->_cache['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
+                        $updateFields = array(
+                            'sf_insync = 1',
+                            $connection->quoteInto('salesforce_id = ?', $_item->id),
+                        );
 
-                        //unset($this->_cache['opportunitiesToUpsert'][$_oid]);
+                        $customer = $this->_cache  ['abandonedCustomers'][$_oid];
+                        $updateFields[] = $connection->quoteInto('contact_salesforce_id = ?',
+                            $customer->getData('salesforce_id') ? : null);
+                        $updateFields[] = $connection->quoteInto('account_salesforce_id = ?',
+                            $customer->getData('salesforce_account_id') ? : null);
+                        $sql .= "UPDATE `" . $quoteTable
+                            . "` SET " . implode(', ', $updateFields)
+                            . " WHERE entity_id = " . $_entityArray[$_oid] . ";";
+
+                        $helper->log('Opportunity Upserted: ' . $_item->id);
                     } else {
                         $this->_cache['failedOpportunities'][] = $_oid;
-                        $this->_processErrors($_item, 'opportunity', $this->_cache['batch']['opportunities'][$this->_magentoId][$_key][$_oid]);
+                        $this->_processErrors($_item, 'opportunity',
+                            $this->_cache['batch']['opportunities'][$this->_magentoId][$_key][$_oid]);
                     }
-                    $_i++;
+                    ++$_i;
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
+                Mage::logException($e);
             }
         }
         if (!empty($sql)) {
-            Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
-            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+            $helper->log('SQL: ' . $sql);
+            $connection->query($sql);
         }
     }
 

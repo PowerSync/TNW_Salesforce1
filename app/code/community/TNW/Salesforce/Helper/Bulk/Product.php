@@ -24,7 +24,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     {
         // Update
         $this->getHelper()->log("---------- Start: Magento Update ----------");
-        $this->_sqlToRun = "";
+        $this->_sqlToRun = array();
         $ids = array();
 
         foreach ($this->_cache['toSaveInMagento'] as $_magentoId => $_product) {
@@ -63,7 +63,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
         if (!empty($this->_sqlToRun)) {
             $this->processSql();
-            $this->_sqlToRun = "";
+            $this->_sqlToRun = array();
 
             if ($this->getOrderStoreId() !== NULL) {
                 try {

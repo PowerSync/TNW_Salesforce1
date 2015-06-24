@@ -293,7 +293,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     protected function _convertLeadsSimple()
     {
         if (!empty($this->_cache['leadsToConvert'])) {
-            $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT, true);
 
             foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
 
