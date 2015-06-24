@@ -1,0 +1,2 @@
+config:
+  default/salesforce_order/shipment_configuration/carrier_matching: a:4:{s:13:"556f20fc1e4ab";a:2:{s:7:"carrier";s:8:"flatrate";s:7:"account";s:18:"001240000094mfrAAA";}s:13:"556f20fc1e4d1";a:2:{s:7:"carrier";s:12:"freeshipping";s:7:"account";s:18:"001240000094mnHAAQ";}s:13:"556f20fc1e4ee";a:2:{s:7:"carrier";s:9:"tablerate";s:7:"account";s:18:"001240000094mmYAAQ";}s:13:"556f20fc1e50b";a:2:{s:7:"carrier";s:3:"ups";s:7:"account";s:18:"001240000094mmsAAA";}}

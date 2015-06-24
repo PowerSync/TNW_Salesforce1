@@ -42,7 +42,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         $this->_acl['order'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT
+            TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
         );
 
         $this->_acl['abandoned'] = array(
@@ -59,25 +60,34 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ABANDONED_OBJECT,
             TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::ACCOUNT_OBJECT
+            TNW_Salesforce_Model_Config_Objects::ACCOUNT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+
         );
         $this->_acl['cart'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT
+            TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
         );
         $this->_acl['product'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT
+            TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
         );
 
         $this->_acl['invoice'] = array(
-            0 => TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT
+            0 => TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
         );
         $this->_acl['invoiceItem'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
+        );
+
+        $this->_acl['shipment'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+        );
+        $this->_acl['shipmentItem'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::SHIPMENT_ITEM_OBJECT,
         );
     }
 
@@ -109,6 +119,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $this->_populateInvoiceAttributes($type);
         }
 
+        if (in_array($type, $this->_acl['shipment'])) {
+            $this->_populateShipmentAttributes($type);
+        }
+
         if (in_array($type, $this->_acl['order'])) {
             $this->_populateOrderAttributes($type);
             $this->_populatePaymentAttributes($type);
@@ -138,6 +152,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         if (in_array($type, $this->_acl['abandonedItem'])) {
             $this->_populateAbandonedItemAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['shipmentItem'])) {
+            $this->_populateShipmentItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['invoiceItem'])) {
@@ -257,6 +275,45 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 $this->_cache[$type]['invoice']['value'][] = array(
                     'value' => 'Invoice : ' . $key,
                     'label' => 'Invoice : ' . ucwords(str_replace("_", " ", $key)),
+                );
+            }
+        }
+    }
+
+    protected function _populateShipmentAttributes($type)
+    {
+        try {
+            $collection = $this->getTableColumnList(
+                Mage::getModel('sales/order_shipment')->getResource()->getMainTable());
+        } catch (Exception $e) {
+            $this->log("Could not load Magento shipment schema...");
+            $this->log("ERROR: " . $e->getMessage());
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['shipment'] = array(
+                'label' => 'Shipment',
+                'value' => array()
+            );
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['Field'];
+                if (in_array($key, array(
+                    'entity_id',
+                    'store_id',
+                    'order_id',
+                    'customer_id',
+                    'shipping_address_id',
+                    'billing_address_id',
+                    'sf_insync',
+                    'salesforce_id',
+                ))) {
+                    continue;
+                }
+
+                $this->_cache[$type]['shipment']['value'][] = array(
+                    'value' => 'Shipment : ' . $key,
+                    'label' => 'Shipment : ' . ucwords(str_replace("_", " ", $key)),
                 );
             }
         }

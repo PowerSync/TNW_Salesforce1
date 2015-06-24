@@ -66,15 +66,17 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
         }
 
         foreach ($this->getMappingCollection() as $_map) {
+            /** @var TNW_Salesforce_Model_Mapping $_map */
             $_doSkip = $value = false;
 
-            list($mappingType, $attributeCode) = explode(" : ", $_map->local_field);
+            $mappingType = $_map->getLocalFieldType();
+            $attributeCode = $_map->getLocalFieldAttributeCode();
 
             if (!$this->_mappingTypeAllowed($mappingType)) {
                 continue;
             }
 
-            $sf_field = $_map->sf_field;
+            $sf_field = $_map->getSfField();
 
             $value = $this->_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
 
@@ -165,50 +167,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                         }
                         break;
                     case "Custom":
-                        $store = ($entity->getStoreId()) ? Mage::getModel('core/store')->load($entity->getStoreId()) : NULL;
-                        if ($attributeCode == "current_url") {
-                            $value = Mage::helper('core/url')->getCurrentUrl();
-                        } elseif ($attributeCode == "todays_date") {
-                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                        } elseif ($attributeCode == "todays_timestamp") {
-                            $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
-                        } elseif ($attributeCode == "end_of_month") {
-                            $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp($lastday));
-                        } elseif ($attributeCode == "store_view_name") {
-                            $value = (is_object($store)) ? $store->getName() : NULL;
-                        } elseif ($attributeCode == "store_group_name") {
-                            $value = (
-                                is_object($store)
-                                && is_object($store->getGroup())
-                            ) ? $store->getGroup()->getName() : NULL;
-                        } elseif ($attributeCode == "website_name") {
-                            $value = (
-                                is_object($store)
-                                && is_object($store->getWebsite())
-                            ) ? $store->getWebsite()->getName() : NULL;
-                        } else {
-                            $value = $_map->default_value;
-                            if ($value == "{{url}}") {
-                                $value = Mage::helper('core/url')->getCurrentUrl();
-                            } elseif ($value == "{{today}}") {
-                                $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                            } elseif ($value == "{{end of month}}") {
-                                $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                                $value = date("Y-m-d", $lastday);
-                            } elseif ($value == "{{contact id}}") {
-                                /**
-                                 * @deprecated
-                                 */
-                                $value = null;
-                            } elseif ($value == "{{store view name}}") {
-                                $value = Mage::app()->getStore()->getName();
-                            } elseif ($value == "{{store group name}}") {
-                                $value = Mage::app()->getStore()->getGroup()->getName();
-                            } elseif ($value == "{{website name}}") {
-                                $value = Mage::app()->getWebsite()->getName();
-                            }
-                        }
+                        $value = $_map->getCustomValue($entity->getStoreId());
                 }
             } else {
                 $this->setBreak(false);

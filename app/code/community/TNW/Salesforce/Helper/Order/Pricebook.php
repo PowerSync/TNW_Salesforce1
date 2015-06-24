@@ -539,12 +539,17 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
     /**
      * Gets field mapping from Magento and creates OpportunityLineItem object
+     *
+     * @param Mage_Catalog_Model_Product|null $prod
+     * @param TNW_Salesforce_Model_Mapping $_map
+     * @param string $type
+     * @param Varien_Object $cartItem
      */
     protected function _processMapping($prod = NULL, $_map = NULL, $type = "_p", $cartItem = NULL)
     {
         $value = false;
-        $conf = explode(" : ", $_map->local_field);
-        $sf_field = $_map->sf_field;
+        $conf = explode(" : ", $_map->getLocalField());
+        $sf_field = $_map->getSfField();
 
         switch ($conf[0]) {
             case "Cart":
@@ -564,40 +569,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 $value = ($prod->getAttributeText($conf[1])) ? $prod->getAttributeText($conf[1]) : $prod->$attr();
                 break;
             case "Custom":
-                if ($conf[1] == "current_url") {
-                    $value = Mage::helper('core/url')->getCurrentUrl();
-                } elseif ($conf[1] == "todays_date") {
-                    $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                } elseif ($conf[1] == "todays_timestamp") {
-                    $value = gmdate(DATE_ATOM, strtotime(Mage::getModel('core/date')->timestamp(time())));
-                } elseif ($conf[1] == "end_of_month") {
-                    $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                    $value = date("Y-m-d", $lastday);
-                } elseif ($conf[1] == "store_view_name") {
-                    $value = Mage::app()->getStore()->getName();
-                } elseif ($conf[1] == "store_group_name") {
-                    $value = Mage::app()->getStore()->getGroup()->getName();
-                } elseif ($conf[1] == "website_name") {
-                    $value = Mage::app()->getWebsite()->getName();
-                } else {
-                    $value = $_map->default_value;
-                    if ($value == "{{url}}") {
-                        $value = Mage::helper('core/url')->getCurrentUrl();
-                    } elseif ($value == "{{today}}") {
-                        $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                    } elseif ($value == "{{end of month}}") {
-                        $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                        $value = date("Y-m-d", $lastday);
-                    } elseif ($value == "{{contact id}}") {
-                        $value = $this->_contactId;
-                    } elseif ($value == "{{store view name}}") {
-                        $value = Mage::app()->getStore()->getName();
-                    } elseif ($value == "{{store group name}}") {
-                        $value = Mage::app()->getStore()->getGroup()->getName();
-                    } elseif ($value == "{{website name}}") {
-                        $value = Mage::app()->getWebsite()->getName();
-                    }
-                }
+                $value = $_map->getCustomValue();
                 break;
             default:
                 break;

@@ -620,7 +620,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $product = $productModel->load($id);
 
 
-
             if (!$product->getSalesforcePricebookId()) {
 
                 throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
@@ -732,6 +731,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted!');
         }
 
+        $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getId()] = $this->_obj;
         Mage::helper('tnw_salesforce')->log('-----------------');
 
     }
@@ -766,7 +766,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $itemFieldAlias = $this->getItemFieldAlias();
         if (!empty($itemFieldAlias)) {
             foreach ($itemFieldAlias as $defaultName => $customName) {
-
+                if(!property_exists($this->_obj, $defaultName)) {
+                    continue;
+                }
                 if (!empty($customName)) {
                     $this->_obj->{$customName} = $this->_obj->{$defaultName};
                 }

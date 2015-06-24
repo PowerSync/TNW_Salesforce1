@@ -42,15 +42,18 @@ class TNW_Salesforce_Model_Sync_Mapping_Product_Product extends TNW_Salesforce_M
     protected function _processMapping($entity = NULL)
     {
         foreach ($this->getMappingCollection() as $_map) {
+            /** @var TNW_Salesforce_Model_Mapping $_map */
+
             $value = false;
 
-            list($mappingType, $attributeCode) = explode(" : ", $_map->local_field);
+            $mappingType = $_map->getLocalFieldType();
+            $attributeCode = $_map->getLocalFieldAttributeCode();
 
             if (!$this->_mappingTypeAllowed($mappingType)) {
                 continue;
             }
 
-            $sf_field = $_map->sf_field;
+            $sf_field = $_map->getSfField();
 
             $value = $this->_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
 
@@ -77,49 +80,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Product_Product extends TNW_Salesforce_M
                         }
                         break;
                     case "Custom":
-                        if ($attributeCode == "current_url") {
-                            $value = Mage::helper('core/url')->getCurrentUrl();
-                        } elseif ($attributeCode == "todays_date") {
-                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                        } elseif ($attributeCode == "todays_timestamp") {
-                            $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
-                        } elseif ($attributeCode == "end_of_month") {
-                            $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                            $value = date("Y-m-d", Mage::getModel('core/date')->timestamp($lastday));
-                        } elseif ($attributeCode == "store_view_name") {
-                            $value = Mage::app()->getStore()->getName();
-                        } elseif ($attributeCode == "store_group_name") {
-                            $value = Mage::app()->getStore()->getGroup()->getName();
-                        } elseif ($attributeCode == "website_name") {
-                            $value = Mage::app()->getWebsite()->getName();
-                        } else {
-                            $value = $_map->default_value;
-                            /**
-                             * deprecated conditionals
-                             */
-                            if ($value == "{{url}}") {
-                                $value = Mage::helper('core/url')->getCurrentUrl();
-                            } elseif ($value == "{{today}}") {
-                                $value = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-                            } elseif ($value == "{{end of month}}") {
-                                $lastday = mktime(0, 0, 0, date("n") + 1, 0, date("Y"));
-                                $value = date("Y-m-d", $lastday);
-                            } elseif ($value == "{{contact id}}") {
-                                /**
-                                 * @deprecated
-                                 */
-                                $value = null;//$this->_contactId;
-                            } elseif ($value == "{{store view name}}") {
-                                $value = Mage::app()->getStore()->getName();
-                            } elseif ($value == "{{store group name}}") {
-                                $value = Mage::app()->getStore()->getGroup()->getName();
-                            } elseif ($value == "{{website name}}") {
-                                $value = Mage::app()->getWebsite()->getName();
-                            }
-                        }
-                        break;
-                    default:
-                        break;
+                        $value = $_map->getCustomValue();
                 }
             } else {
                 $this->setBreak(false);

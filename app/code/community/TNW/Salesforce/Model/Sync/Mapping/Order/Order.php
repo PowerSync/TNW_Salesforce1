@@ -11,10 +11,10 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Order extends TNW_Salesforce_Model
 
     protected $_type = 'Order';
 
-    protected function _processMapping($_order = null)
+    protected function _processMapping($order = null)
     {
-        parent::_processMapping($_order);
-        $this->getObj()->Description = $this->_getDescriptionCart($_order);
+        parent::_processMapping($order);
+        $this->getObj()->Description = Mage::helper('tnw_salesforce/mapping')->getOrderDescription($order);
 
     }
 
