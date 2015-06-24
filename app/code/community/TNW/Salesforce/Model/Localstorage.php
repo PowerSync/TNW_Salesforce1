@@ -191,8 +191,8 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     public function deleteObject($objectId = array(), $_isForced = false)
     {
         try {
-            Mage::helper('tnw_salesforce')->log("Deletion Objects are empty!");
             if (empty($objectId)) {
+                Mage::helper('tnw_salesforce')->log("Deletion Objects are empty!");
                 return true;
             }
 

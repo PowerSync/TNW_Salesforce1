@@ -16,6 +16,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * @comment Base batch limit for simple sync
      */
     const BASE_UPDATE_LIMIT = 200;
+    /**
+     * @comment Base batch Lead conversion limit for simple sync
+     */
+    const BASE_CONVERT_LIMIT = 100;
 
     /* License Configuration */
     const API_LICENSE_EMAIL = 'salesforce/api_license/api_email';
