@@ -207,7 +207,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 
         if ($this->isLoggingEnabled()) {
             if ($message == trim($message)) {
-                return Mage::log($message, $level, $file);
+                Mage::log($message, $level, $file);
             }
         }
     }

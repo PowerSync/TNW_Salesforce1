@@ -55,50 +55,54 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
      */
     public function syncAction()
     {
+        $session = $this->_getSession();
         if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
+            $session->addError("API Integration is disabled.");
+            $this->_redirect('adminhtml/system_config/edit', array('section' => 'salesforce'));
+            return;
         }
-        if ($this->getRequest()->getParam('product_id') > 0) {
+
+        $productId = $this->getRequest()->getParam('product_id');
+        if (!$productId) {
+            $session->addError($this->__('Incorrect product id'));
+        } else {
             try {
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     // pass data to local storage
-                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array($this->getRequest()->getParam('product_id')), 'Product', 'product');
-                    if (!$res) {
-                        Mage::getSingleton('adminhtml/session')->addError('Could not add products to the queue!');
+                    $res = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObjectProduct(array($productId), 'Product', 'product');
+                    if ($res) {
+                        $session->addSuccess($this->__('Record was added to synchronization queue!'));
                     } else {
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Record was added to synchronization queue!')
-                            );
-                        }
+                        $session->addError($this->__('Could not add products to the queue!'));
                     }
                 } else {
-                    $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-                    if ($manualSync->reset()) {
-                        $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                        $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+                    $sync = Mage::helper('tnw_salesforce/salesforce_product');
+                    if ($sync->reset()) {
 
-                        $manualSync->massAdd(array($this->getRequest()->getParam('product_id')));
-                        $manualSync->process();
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()
-                            && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('tnw_salesforce')->__('Product was successfully synchronized'));
+                        $sync->setSalesforceServerDomain(
+                            Mage::getSingleton('core/session')->getSalesforceServerDomain());
+                        $sync->setSalesforceSessionId(
+                            Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+
+                        $sync->massAdd(array($this->getRequest()->getParam('product_id')));
+                        $sync->process();
+                        if (!$session->getMessages()->getErrors()
+                            && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()
+                        ) {
+                            $session->addSuccess($this->__('Product was successfully synchronized'));
                         }
                     } else {
-                        Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
+                        $session->addError($this->__('Salesforce connection could not be established!'));
                     }
                 }
             } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+                $session->addError($e->getMessage());
+                Mage::logException($e);
             }
         }
-        $url = '*/*/index';
-        if (Mage::helper('tnw_salesforce')->getStoreId() != 0) {
-            $url .= '/store/' . Mage::helper('tnw_salesforce')->getStoreId();
-        }
-        $this->_redirect($url);
+
+        $this->_redirectReferer($this->getUrl('*/*/index', array('_current' => true)));
     }
 
     public function massSyncAction()
