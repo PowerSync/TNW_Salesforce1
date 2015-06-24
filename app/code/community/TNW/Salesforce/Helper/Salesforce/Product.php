@@ -664,7 +664,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
         }
 
-        $this->_pushPricebookChunked($this->_cache['pricebookEntriesForUpsert']);
+        $this->_pushPricebookChunked($this->_cache['pricebookEntryToSync']);
 
         $this->getHelper()->log('----------UPSERTING Pricebook: End----------');
     }
