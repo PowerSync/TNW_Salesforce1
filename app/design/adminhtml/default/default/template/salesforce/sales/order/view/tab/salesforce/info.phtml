@@ -1,5 +1,4 @@
 <?php if ($this->doesHaveOrder()) : ?>
-<div class="box-left">
     <!--Salesforce Info-->
     <div class="entry-edit">
         <div class="entry-edit-head">
@@ -7,14 +6,13 @@
         </div>
         <fieldset>
             <table cellspacing="0" class="form-list">
-                <?php foreach ($this->getSalesforceData() as $data):?>
+                <?php foreach ($this->getSalesforceData() as $data): ?>
                     <tr>
                         <td class="label"><label><?php echo $data['label'] ?></label></td>
                         <td class="value"><strong><?php echo $data['value'] ?></strong></td>
                     </tr>
-                <?php endforeach;?>
+                <?php endforeach; ?>
             </table>
         </fieldset>
     </div>
-</div>
 <?php endif; ?>

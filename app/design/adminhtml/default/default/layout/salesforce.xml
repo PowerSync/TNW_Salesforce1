@@ -75,6 +75,7 @@
         <reference name="sales_order_tabs">
             <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce" template="salesforce/sales/order/view/tab/salesforce.phtml">
                 <block type="tnw_salesforce/sales_order_view_tab_salesforce_info" name="salesforce_info" template="salesforce/sales/order/view/tab/salesforce/info.phtml"></block>
+                <block type="tnw_salesforce/sales_order_view_tab_salesforce_form" name="salesforce_form"></block>
             </block>
             <action method="addTab"><name>order_salesforce</name><block>order_tab_salesforce</block></action>
         </reference>
