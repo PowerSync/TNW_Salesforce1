@@ -14,6 +14,44 @@ class TNW_Salesforce_Model_Sale_Observer
         Mage::dispatchEvent('tnw_sales_order_shipment_save', array('shipment' => $shipment));
     }
 
+    /**
+     * @comment try to find related opportunity for order
+     * @param $observer
+     */
+    public function addOpportunity($observer)
+    {
+        /**
+         * @var $order Mage_Sales_Model_Order
+         */
+        $order = $observer->getEvent()->getOrder();
+
+        if ($quoteId = $order->getQuoteId()) {
+
+            $quote = Mage::getModel('sales/quote')->load($quoteId);
+
+            if ($quote->getSalesforceId()) {
+
+                $update = array(
+                    'opportunity_id' => $quote->getSalesforceId()
+                );
+
+                $where = array(
+                    'entity_id = ?' => $order->getId()
+                );
+
+                Mage::getSingleton('core/resource')->getConnection('core_write')
+                    ->update(
+                        Mage::helper('tnw_salesforce')->getTable('sales/order'),
+                        $update,
+                        $where
+                    );
+
+                $order->setOpportunityId($quote->getSalesforceId());
+            }
+        }
+    }
+
+
     /* Shipment Sync */
     public function shipmentPush($observer)
     {

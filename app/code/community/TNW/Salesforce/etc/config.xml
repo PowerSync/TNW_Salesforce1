@@ -465,6 +465,12 @@
                         <class>tnw_salesforce/sale_observer</class>
                         <method>triggerSalesforceEvent</method>
                     </tnw_salesforce_sale_observer_paypal>
+
+                    <tnw_salesforce_sale_observer_add_opportunity>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>addOpportunity</method>
+                    </tnw_salesforce_sale_observer_add_opportunity>
+
                 </observers>
             </sales_order_place_after>
         </events>
