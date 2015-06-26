@@ -105,6 +105,7 @@
                             <label>PowerSync Email</label>
                             <frontend_type>text</frontend_type>
                             <sort_order>10</sort_order>
+                            <validate>validate-email</validate>
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
@@ -128,6 +129,7 @@
                     <fields>
                         <fail_order translate="label">
                             <label>Notification email</label>
+                            <validate>validate-email</validate>
                             <frontend_type>text</frontend_type>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
@@ -902,6 +904,19 @@
                                 <order_or_opportunity>Opportunity</order_or_opportunity>
                             </depends>
                         </customer_integration_opp>
+
+                        <opportunity_to_order_status translate="label">
+                            <label>Change opportunity status when related order placed</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_opportunity_state</source_model>
+                            <sort_order>95</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </opportunity_to_order_status>
 
                         <abandoned_cart_enabled translate="label">
                             <label>Capture Abandoned Carts</label>

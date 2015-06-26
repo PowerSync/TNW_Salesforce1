@@ -568,7 +568,7 @@ class TNW_Salesforce_Model_Observer
             $collection = Mage::getModel('tnw_salesforce/api_entity_opportunity')->getCollection();
             $collection->addFieldToFilter('Id', array('in' => $abandonedOpportunities));
 
-            $collection->setDataToAll('StageName', 'Closed Won');
+            $collection->setDataToAll('StageName', Mage::helper('tnw_salesforce/config_sales')->getOpportunityToOrderStatus());
             $collection->save();
         }
 
