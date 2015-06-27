@@ -329,6 +329,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         ) {
             // Existing Lead
             $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
+            if ($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
+                $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->ConvertedContactId;
+            }
         } else {
             $_fullName = explode(' ', strip_tags($_data['name']));
             if (count($_fullName) == 1) {
