@@ -601,7 +601,7 @@
                             <source_model>tnw_salesforce/config_account_business</source_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Please select appropriate business account record type, contact your Salesforce rep
                                 if you don't know!
@@ -613,7 +613,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Does your Salesforce allow you to create Person Accounts [<a href="https://na14.salesforce.com/help/doc/en/account_person.htm" target="_blank">?</a>]
@@ -628,7 +628,7 @@
                             </depends>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 <strong style="color: red;">IMPORTANT!</strong> Only enabled if your Salesforce supports Person Accounts, contact your Salesforce representative for more information

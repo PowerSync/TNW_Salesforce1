@@ -932,27 +932,27 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         }
 
         // Additional de duplication logic for PersonAccounts
-        if (
-            Mage::helper('tnw_salesforce')->usePersonAccount()
-            && Mage::helper('tnw_salesforce')->isCustomerSingleRecordType() != TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
-        ) {
-            $_salesforceIds = array();
-            foreach ($this->_cache['accountsToUpsert']['Id'] as $_magentoId => $_object) {
-                if (!property_exists($_object, 'Name')) {
-                    // Only applies to  Person Accounts
-                    $_compiledKey = $_object->PersonEmail;
-                    if (property_exists($_object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
-                        $_compiledKey .= ':::' . $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
+        $_salesforceIds = array();
+        foreach ($this->_cache['accountsToUpsert']['Id'] as $_magentoId => $_object) {
+            $_websiteId = $this->_getWebsiteIdByCustomerId($_magentoId);
+            if (
+                Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
+                && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE) != TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
+                && !property_exists($_object, 'Name')
+            ) {
+                // Only applies to  Person Accounts
+                $_compiledKey = $_object->PersonEmail;
+                if (property_exists($_object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+                    $_compiledKey .= ':::' . $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
+                }
+                if (!in_array($_compiledKey, $_salesforceIds)) {
+                    $_salesforceIds[$_magentoId] = $_compiledKey;
+                } else {
+                    $_key = array_search($_compiledKey, $_salesforceIds);
+                    if (array_key_exists($_magentoId, $this->_cache['guestDuplicates'])) {
+                        $this->_cache['guestDuplicates'][$_magentoId] = $_key;
                     }
-                    if (!in_array($_compiledKey, $_salesforceIds)) {
-                        $_salesforceIds[$_magentoId] = $_compiledKey;
-                    } else {
-                        $_key = array_search($_compiledKey, $_salesforceIds);
-                        if (array_key_exists($_magentoId, $this->_cache['guestDuplicates'])) {
-                            $this->_cache['guestDuplicates'][$_magentoId] = $_key;
-                        }
-                        unset($this->_cache['accountsToUpsert']['Id'][$_magentoId]);
-                    }
+                    unset($this->_cache['accountsToUpsert']['Id'][$_magentoId]);
                 }
             }
         }

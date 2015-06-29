@@ -33,11 +33,15 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
 
         parent::_processMapping($_customer);
 
+        // Get Customer Website Id
+        $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : NULL;
+
         if (
-            Mage::helper('tnw_salesforce')->getBusinessAccountRecordType()
-            && Mage::helper('tnw_salesforce')->getBusinessAccountRecordType() != ''
+            Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE)
+            && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE) != ''
         ) {
-            $this->getObj()->RecordTypeId = Mage::helper('tnw_salesforce')->getBusinessAccountRecordType();
+            //$this->getObj()->RecordTypeId = Mage::helper('tnw_salesforce')->getBusinessAccountRecordType();
+            $this->getObj()->RecordTypeId = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
         }
 
         if ($_customer->getSalesforceAccountId()) {
@@ -65,8 +69,11 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
         }
 
         if (
-            !Mage::helper('tnw_salesforce')->usePersonAccount()
-            || (Mage::helper('tnw_salesforce')->usePersonAccount() && Mage::helper('tnw_salesforce')->isCustomerSingleRecordType() == TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT)
+            !Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
+            || (
+                Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
+                && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE) == TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
+            )
         ) {
             // This is a potential B2B Account
             if (!property_exists($this->getObj(), 'Name')) {
@@ -98,7 +105,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                     $this->getObj()->Name = $_accountName;
                 }
             }
-        } else if (Mage::helper('tnw_salesforce')->getPersonAccountRecordType()) {
+        } else if (Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE)) {
             // Configuration is set
             if (
                 $this->_cache['contactsLookup']
@@ -112,7 +119,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                     && $this->_cache['contactsLookup'][$sfWebsite][$this->_email]->IsPersonAccount
                 ) {
                     // This is a potential B2C Account
-                    $this->getObj()->RecordTypeId = Mage::helper('tnw_salesforce')->getPersonAccountRecordType();
+                    $this->getObj()->RecordTypeId = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
                     $this->_addAccountRequiredFields($_customer);
                 } else {
                     // This is a potential B2B Account
@@ -126,10 +133,16 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                         $this->getObj()->Name = $_accountName;
                     }
                 }
-            } else if (!property_exists($this->getObj(), 'Name')) {
+            } else if (
+                !property_exists($this->getObj(), 'Name')
+                || Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE) == TNW_Salesforce_Model_Config_Account_Recordtypes::B2C_ACCOUNT
+            ) {
+                if (property_exists($this->getObj(), 'Name')) {
+                    unset($this->getObj()->Name);
+                }
                 /* New customer, where account Name is not set */
                 // This is a potential B2C Account
-                $this->getObj()->RecordTypeId = Mage::helper('tnw_salesforce')->getPersonAccountRecordType();
+                $this->getObj()->RecordTypeId = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
                 $this->_addAccountRequiredFields($_customer);
             }
         }
