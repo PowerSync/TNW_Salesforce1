@@ -169,7 +169,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
     protected function _pushPricebooks()
     {
-        if (!empty($this->_cache['standardPricebooksToUpsert']) || !empty($this->_cache['pricebookEntriesForUpsert'])) {
+        if (!empty($this->_cache['standardPricebooksToUpsert']) || !empty($this->_cache['pricebookEntryToSync'])) {
             if (!$this->_cache['bulkJobs']['pricebookEntry']['Id']) {
                 $this->_cache['bulkJobs']['pricebookEntry']['Id'] = $this->_createJob('PricebookEntry', 'upsert', 'Id');
                 $this->getHelper()->log('Syncronizing Products Pricebook Entries, created job: ' . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
@@ -195,8 +195,8 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             }
         }
 
-        if (!empty($this->_cache['pricebookEntriesForUpsert'])) {
-            $this->_pushChunked($this->_cache['bulkJobs']['pricebookEntry']['Id'], 'product_default_entries', $this->_cache['pricebookEntriesForUpsert']);
+        if (!empty($this->_cache['pricebookEntryToSync'])) {
+            $this->_pushChunked($this->_cache['bulkJobs']['pricebookEntry']['Id'], 'product_default_entries', $this->_cache['pricebookEntryToSync']);
 
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['pricebookEntry']['Id']);
             $_attempt = 1;
@@ -218,7 +218,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         if (!empty($this->_cache['standardPricebooksToUpsert'])) {
             $this->_updatePriceBookEntry('product_standard_entries', $this->_cache['bulkJobs']['pricebookEntry']['Id']);
         }
-        if (!empty($this->_cache['pricebookEntriesForUpsert'])) {
+        if (!empty($this->_cache['pricebookEntryToSync'])) {
             $this->_updatePriceBookEntry('product_default_entries', $this->_cache['bulkJobs']['pricebookEntry']['Id']);
         }
     }
@@ -377,7 +377,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     continue;
                 }
             }
-            $this->_cache['pricebookEntriesForUpsert'][$_key] = $_pricebookEntry;
+            $this->_cache['pricebookEntryToSync'][$_key] = $_pricebookEntry;
         }
 
         $this->_pushPricebooks();

@@ -87,7 +87,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $logger->add('Salesforce', 'Product2', $this->_cache['productsToSync'][$this->_magentoId], $this->_cache['responses']['products']);
             }
 
-            $logger->add('Salesforce', 'PricebookEntry', $this->_cache['pricebookEntriesForUpsert'], $this->_cache['responses']['pricebooks']);
+            $logger->add('Salesforce', 'PricebookEntry', $this->_cache['pricebookEntryToSync'], $this->_cache['responses']['pricebooks']);
             $logger->send();
         }
 
@@ -752,7 +752,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $this->_magentoId => array()
             ),
             'pricebookEntryToSync' => array(),
-            'pricebookEntriesForUpsert' => array(),
             'productIdToSku' => array(),
             'productPrices' => array(),
             'toSaveInMagento' => array(),
