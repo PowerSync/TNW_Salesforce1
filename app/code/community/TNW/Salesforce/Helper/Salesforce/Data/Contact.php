@@ -27,7 +27,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         $_lookup = array();
         foreach($_emails as $_id => $_email) {
             if (empty($_email)) {continue;}
-            $tmp = "((Email='" . addslashes($_email) . "'";
+            $tmp = "(((";
+            $tmp .= "Email='" . addslashes($_email) . "'";
+            if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+                $tmp .= " OR Account.PersonEmail='" . addslashes($_email) . "'";
+            }
+            $tmp .= ")";
 
             if (
                 !empty($_id)

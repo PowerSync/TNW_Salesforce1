@@ -105,6 +105,7 @@
                             <label>PowerSync Email</label>
                             <frontend_type>text</frontend_type>
                             <sort_order>10</sort_order>
+                            <validate>validate-email</validate>
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
@@ -128,6 +129,7 @@
                     <fields>
                         <fail_order translate="label">
                             <label>Notification email</label>
+                            <validate>validate-email</validate>
                             <frontend_type>text</frontend_type>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
@@ -601,7 +603,7 @@
                             <source_model>tnw_salesforce/config_account_business</source_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Please select appropriate business account record type, contact your Salesforce rep
                                 if you don't know!
@@ -613,7 +615,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Does your Salesforce allow you to create Person Accounts [<a href="https://na14.salesforce.com/help/doc/en/account_person.htm" target="_blank">?</a>]
@@ -628,7 +630,7 @@
                             </depends>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 <strong style="color: red;">IMPORTANT!</strong> Only enabled if your Salesforce supports Person Accounts, contact your Salesforce representative for more information
@@ -902,6 +904,19 @@
                                 <order_or_opportunity>Opportunity</order_or_opportunity>
                             </depends>
                         </customer_integration_opp>
+
+                        <opportunity_to_order_status translate="label">
+                            <label>Change opportunity status when related order placed</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_opportunity_state</source_model>
+                            <sort_order>95</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </opportunity_to_order_status>
 
                         <abandoned_cart_enabled translate="label">
                             <label>Capture Abandoned Carts</label>

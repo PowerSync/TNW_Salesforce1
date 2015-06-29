@@ -114,7 +114,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_isContact = true;
             $_isLead = false;
             if (
-                Mage::helper('tnw_salesforce')->usePersonAccount()
+                Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
                 && property_exists($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], 'Account')
                 && property_exists($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Account, 'IsPersonAccount')
             ) {
@@ -175,7 +175,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
 
         if ($_isLead) {
-            if (!Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            if (!Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)) {
                 $this->_obj->Company = 'N/A';
             }
 
@@ -328,6 +328,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         ) {
             // Existing Lead
             $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
+            if ($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
+                $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->ConvertedContactId;
+            }
         } else {
             $_fullName = explode(' ', strip_tags($_data['name']));
             if (count($_fullName) == 1) {
@@ -342,7 +345,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_obj->FirstName = ($_lastName) ? $_fullName[0] : '';
             $this->_obj->LastName = ($_lastName) ? $_lastName : $_fullName[0];
             $this->_obj->Company = (array_key_exists('company', $_data)) ? strip_tags($_data['company']) : NULL;
-            if (!$this->_obj->Company && !Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            if (!$this->_obj->Company && !Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)) {
                 $this->_obj->Company = 'N/A';
             }
             $this->_obj->Phone = strip_tags($_data['telephone']);
@@ -1206,7 +1209,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if ($this->_cache['contactsLookup'] && array_key_exists($_sfWebsite, $this->_cache['contactsLookup']) && array_key_exists($_email, $this->_cache['contactsLookup'][$_sfWebsite])) {
             $_customer->setSalesforceId($this->_cache['contactsLookup'][$_sfWebsite][$_email]->Id);
             $_customer->setSalesforceAccountId($this->_cache['contactsLookup'][$_sfWebsite][$_email]->AccountId);
-            if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            if (Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)) {
                 if (!property_exists($this->_cache['contactsLookup'][$_sfWebsite][$_email], 'IsPersonAccount')) {
                     $_customer->setSalesforceIsPerson(false);
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount = false;
@@ -1292,7 +1295,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             if (
                 property_exists($this->_obj, 'RecordTypeId')
-                && $this->_obj->RecordTypeId == Mage::helper('tnw_salesforce')->getPersonAccountRecordType()
+                //&& $this->_obj->RecordTypeId == Mage::helper('tnw_salesforce')->getPersonAccountRecordType($_websiteId)
+                && $this->_obj->RecordTypeId == Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE)
             ) {
                 // This is Person Account
                 if (!$this->_isPerson) {

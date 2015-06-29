@@ -27,6 +27,12 @@ class TNW_Salesforce_Model_Config_Opportunity_State
     {
 
         if (!$this->_statusOptions) {
+
+            $this->_statusOptions[] = array(
+                'value' => '',
+                'label' => Mage::helper('tnw_salesforce')->__('No status')
+            );
+
             foreach ($this->getStatuses() as $key => $field) {
                 $this->_statusOptions[] = array(
                     'value' => $field->MasterLabel,

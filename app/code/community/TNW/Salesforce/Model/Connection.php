@@ -138,6 +138,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function tryToLogin()
     {
+        $success = true;
         if (!is_object($this->_client)) {
             return false;
         }
@@ -188,6 +189,39 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 unset($e);
                 return false;
             }
+
+            $success = $this->checkPackage();
+        }
+
+        return $success;
+    }
+
+    /**
+     * @comment check if our package is installed in Salesforce
+     * @return bool
+     */
+    public function checkPackage()
+    {
+        try {
+            /**
+             * @comment try to take object from our package
+             */
+            $salesforceWebsiteDescr = $this
+                ->getClient()
+                ->describeSObject(
+                    Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
+                );
+
+        } catch (Exception $e) {
+            $this->_loggedIn = null;
+
+            $errorMessage = Mage::helper('tnw_salesforce')->__('Cannot find PowerSync package in you Salesforce');
+
+            $this->_errorMessage = $errorMessage;
+            Mage::helper('tnw_salesforce')->log("checkPackage Failure: " . $errorMessage);
+            Mage::helper('tnw_salesforce')->log("checkPackage Failure, Error details: " . $e->getMessage());
+            unset($e);
+            return false;
         }
 
         return true;
@@ -215,7 +249,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             }
         } catch (Exception $e) {
             $this->_errorMessage = $e->getMessage();
-            Mage::helper('tnw_salesforce')->log("Login Failure: " . $e->getMessage());
+            Mage::helper('tnw_salesforce')->log("Connection Failure: " . $e->getMessage());
         }
 
         return false;
