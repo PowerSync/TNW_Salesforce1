@@ -139,7 +139,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     {
         try {
             if (!is_object($this->getClient())) {
-
                 return $this->_noConnectionArray;
             }
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -149,6 +148,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='Account'";
                 $allRules = $this->getClient()->query(($query));
             }
+
             if ($allRules && property_exists($allRules, 'done') && $allRules->done) {
                 if (!property_exists($allRules, 'records') || $allRules->size < 1) {
                     $_default = new stdClass();
@@ -163,9 +163,16 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
             Mage::helper('tnw_salesforce')->log("Could not get a Business Record Type of the Account");
+
+            // Captures a usecase for Professional version of Salesforce
+            $_default = new stdClass();
+            $_default->Id = '';
+            $_default->Name = 'Use Default';
+            $allRules->records = array($_default);
+
             unset($e);
 
-            return false;
+            return $allRules->records;
         }
     }
 
