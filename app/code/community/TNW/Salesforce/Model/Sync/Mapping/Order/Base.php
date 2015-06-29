@@ -53,13 +53,14 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
             $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId] = $this->_getCustomer($order);
             $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
         }
+        $_groupId = ($order->getCustomerGroupId() !== NULL) ? $order->getCustomerGroupId() :  $_customer->getGroupId();
 
         $objectMappings = array(
             'Store' => $order->getStore(),
             'Order' => $order,
             'Payment' => $order->getPayment(),
             'Customer' => $_customer,
-            'Customer Group' => Mage::getModel('customer/group')->load($_customer->getGroupId()),
+            'Customer Group' => Mage::getModel('customer/group')->load($_groupId),
             'Billing' => $order->getBillingAddress(),
             'Shipping' => $order->getShippingAddress(),
         );
