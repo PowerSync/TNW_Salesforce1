@@ -717,6 +717,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         if (
             (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
+            || (property_exists($this->_obj, 'Product__c') && $this->_obj->Product__c)
             || (property_exists($this->_obj, 'Id') && $this->_obj->Id)
         ) {
             /* Dump OpportunityLineItem object into the log */
