@@ -321,4 +321,17 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
         return false;
     }
+
+    public function lookupContactIds($where)
+    {
+        $sql = "SELECT Id, PersonContactId FROM Account WHERE Id IN ('" . implode("','", array_values($where)) . "')";
+        $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
+
+        if (empty($result)) {
+            $this->log("PersonAccount lookup did not return any results...");
+            return false;
+        }
+
+        return $result;
+    }
 }

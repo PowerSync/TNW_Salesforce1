@@ -464,6 +464,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_pushToSalesforce($_return);
             $this->clearMemory();
 
+            //Deal with Person Accounts
+            $this->_personAccountUpdate();
+
             // Update Magento
             if ($this->_customerEntityTypeCode) {
                 $this->_updateMagento();
@@ -556,6 +559,39 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $this->reset();
         $this->clearMemory();
+    }
+
+
+    protected function _personAccountUpdate() {
+        $accountsToFind = array();
+
+        foreach ($this->_cache['toSaveInMagento'] as $_websiteId => $_websiteCustomers) {
+            foreach ($_websiteCustomers as $_email => $_customer) {
+                $_customer->SalesforceId = (property_exists($_customer, 'SalesforceId')) ? $_customer->SalesforceId : NULL;
+                $_customer->AccountId = (property_exists($_customer, 'AccountId')) ? $_customer->AccountId : NULL;
+
+                if ($_customer->AccountId != NULL && $_customer->AccountId == $_customer->SalesforceId) {
+                    // Lookup needed
+                    $accountsToFind[$_customer->AccountId] = $_customer->AccountId;
+                }
+            }
+        }
+
+        $lookedupAccounts = Mage::helper('tnw_salesforce/salesforce_data_account')->lookupContactIds($accountsToFind);
+        foreach($lookedupAccounts as $account) {
+            if (array_key_exists($account['Id'], $accountsToFind)) {
+                $accountsToFind[$account['Id']] = $account['PersonContactId'];
+            }
+        }
+
+        foreach ($this->_cache['toSaveInMagento'] as $_websiteId => &$_websiteCustomers) {
+            foreach ($_websiteCustomers as $_email => $_customer) {
+                $_customer->AccountId = (property_exists($_customer, 'AccountId')) ? $_customer->AccountId : NULL;
+                if ($_customer->AccountId != NULL && array_key_exists($_customer->AccountId, $accountsToFind)) {
+                    $_websiteCustomers[$_email]->SalesforceId = $accountsToFind[$_customer->AccountId];
+                }
+            }
+        }
     }
 
     protected function _updateMagento()
@@ -1969,4 +2005,5 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_mySforceConnection->delete($_recordIds);
         }
     }
+
 }
