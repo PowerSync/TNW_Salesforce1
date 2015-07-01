@@ -161,7 +161,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
 
-        $this->_obj->HasOptedOutOfEmail = ($_status == 3 || $_type == 'delete') ? 1 : 0;
+        $this->_obj->HasOptedOutOfEmail =
+            ($_status == Mage_Newsletter_Model_Subscriber::STATUS_UNSUBSCRIBED || $_type == 'delete') ? 1 : 0;
         $this->_obj->Email = strip_tags($_email);
 
         // Link to a Website
@@ -170,7 +171,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField()} = $this->_websiteSfIds[$_websiteId];
         }
 
         if ($_isLead) {
@@ -178,9 +179,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_obj->Company = 'N/A';
             }
 
-            foreach ($this->_obj as $key => $value) {
-                Mage::helper('tnw_salesforce')->log("Lead Object: " . $key . " = '" . $value . "'");
-            }
+            Mage::helper('tnw_salesforce')->logObject($this->_obj, 'Lead Object');
 
             $this->_cache['leadsToUpsert'][$_customerId] = $this->_obj;
 

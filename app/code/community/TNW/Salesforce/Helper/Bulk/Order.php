@@ -640,11 +640,16 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $this->_cache['responses']['orders'][$_oid] = json_decode(json_encode($_item), TRUE);
 
                     if ($_item->success == "true") {
-                        $_orderStatus = (
-                            is_array( $this->_cache['orderLookup'])
-                            && array_key_exists($_oid, $this->_cache['orderLookup'])
-                            && property_exists($this->_cache['orderLookup'][$_oid], 'Status')
-                        ) ? $this->_cache['orderLookup'][$_oid]->Status : $this->_cache['ordersToUpsert'][$_oid]->Status;
+                        $_orderStatus = is_array( $this->_cache['ordersToUpsert'])
+                                && array_key_exists($_oid, $this->_cache['ordersToUpsert'])
+                                && property_exists($this->_cache['ordersToUpsert'][$_oid], 'Status')
+                            ? $this->_cache['ordersToUpsert'][$_oid]->Status
+                            : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+
+                        $_orderStatus = is_array( $this->_cache['orderLookup'])
+                                && array_key_exists($_oid, $this->_cache['orderLookup'])
+                                && property_exists($this->_cache['orderLookup'][$_oid], 'Status')
+                            ? $this->_cache['orderLookup'][$_oid]->Status : $_orderStatus;
 
                         $this->_cache['upsertedOrderStatuses'][$_oid] = $_orderStatus;
 
