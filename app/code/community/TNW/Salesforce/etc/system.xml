@@ -2,7 +2,7 @@
 <config>
     <tabs>
         <tnw translate="label" module="tnw_salesforce">
-            <label>SalesForce</label>
+            <label><![CDATA[<div class="tnw-salesforce-primary-menu-icon">Salesforce</div>]]></label>
             <sort_order>300</sort_order>
         </tnw>
     </tabs>
@@ -906,8 +906,9 @@
                         </customer_integration_opp>
 
                         <opportunity_to_order_status translate="label">
-                            <label>Change opportunity status when related order placed</label>
+                            <label>Converted opportunity status</label>
                             <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
                             <source_model>tnw_salesforce/config_opportunity_state</source_model>
                             <sort_order>95</sort_order>
                             <show_in_default>1</show_in_default>
@@ -916,6 +917,7 @@
                             <depends>
                                 <order_or_opportunity>Order</order_or_opportunity>
                             </depends>
+                            <comment><![CDATA[ When order is placed for an existing opportunity, change opportunity stage name to the one from the list ]]></comment>
                         </opportunity_to_order_status>
 
                         <abandoned_cart_enabled translate="label">

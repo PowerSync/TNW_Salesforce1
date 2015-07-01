@@ -571,6 +571,7 @@
                 <abandoned_close_time_after>14</abandoned_close_time_after>
                 <abandoned_cart_state>Committed</abandoned_cart_state>
                 <order_opportunity_status>Closed Won</order_opportunity_status>
+                <opportunity_to_order_status>Closed Won</opportunity_to_order_status>
             </customer_opportunity>
             <opportunity_cart>
                 <use_tax_product>0</use_tax_product>
