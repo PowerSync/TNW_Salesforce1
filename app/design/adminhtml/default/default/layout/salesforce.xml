@@ -24,6 +24,9 @@
             <action method="addJs">
                 <file>tnw-salesforce/chosen-enable.js</file>
             </action>
+            <action method="addJs">
+                <file>tnw-salesforce/prototype-simulate.js</file>
+            </action>
             <action method="addItem">
                 <type>js_css</type>
                 <file>tnw-salesforce/chosen-enable.css</file>
