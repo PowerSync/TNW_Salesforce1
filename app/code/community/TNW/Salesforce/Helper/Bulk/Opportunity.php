@@ -164,7 +164,32 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $_email = $this->_cache['orderToEmail'][$_orderNumber];
                 $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
                 // here may be potential bug where we lost some orders
-                if (!is_array($this->_cache['accountsLookup']) || !array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup']) || !array_key_exists($_email, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])) {
+                if (
+                    is_array($this->_cache['accountsLookup'])
+                    && array_key_exists(0, $this->_cache['accountsLookup'])
+                    && array_key_exists($_email, $this->_cache['accountsLookup'][0])
+                ) {
+                    if (property_exists($this->_cache['accountsLookup'][0][$_email], 'Id')) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$_email]->Id);
+                    }
+
+                    if (property_exists($this->_cache['accountsLookup'][0][$_email], 'Id')) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_email]->Id);
+                    }
+                    // Overwrite Contact Id for Person Account
+                    if (property_exists($this->_cache['accountsLookup'][0][$_email], 'PersonContactId')) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_email]->PersonContactId);
+                    }
+
+                    // Overwrite from Contact Lookup if value exists there
+                    if (
+                        is_array($this->_cache['contactsLookup'])
+                        && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['contactsLookup'])
+                        && array_key_exists($_email, $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]])
+                    ) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id);
+                    }
+                } else {
                     $_customerId = ($this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId()) ? $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getId() : 'guest-' . $_count;
                     $_leadsToLookup[$_customerId] = $_email;
                     $_leadsToLookupWebsites[$_customerId] = $this->_websiteSfIds[$_websiteId];
