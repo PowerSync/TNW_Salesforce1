@@ -5,7 +5,7 @@
  */
 class TNW_Salesforce_Model_Mysql4_Queue_Storage_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
 {
-    const SYNC_ATTEMPT_LIMIT = 10;
+    const SYNC_ATTEMPT_LIMIT = 3;
 
     protected function _construct()
     {
