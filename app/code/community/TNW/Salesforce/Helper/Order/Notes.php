@@ -28,12 +28,12 @@ class TNW_Salesforce_Helper_Order_Notes extends TNW_Salesforce_Helper_Order
         $note->ParentId = $order->getSalesforceId();
         //$note->OwnerId = $customerId; //Needs to be Salesforce User
         $note->IsPrivate = false;
-        $note->Body = $comment->getComment();
+        $note->Body = utf8_encode($comment->getComment());
 
         if (strlen($comment->getComment()) > 75) {
-            $note->Title = substr($comment->getComment(), 0, 75) . '...';
+            $note->Title = utf8_encode(substr($comment->getComment(), 0, 75) . '...');
         } else {
-            $note->Title = $comment->getComment();
+            $note->Title = utf8_encode($comment->getComment());
         }
 
         unset($opportunityId, $contactId);

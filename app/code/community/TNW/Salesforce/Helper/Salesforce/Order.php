@@ -1067,13 +1067,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     $this->_obj = new stdClass();
                     $this->_obj->ParentId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNumber];
                     $this->_obj->IsPrivate = 0;
-                    $this->_obj->Body = $_note->getData('comment');
-                    $this->_obj->Title = $_note->getData('comment');
+                    $this->_obj->Body = utf8_encode($_note->getData('comment'));
+                    $this->_obj->Title = ($_note->getData('comment'));
 
                     if (strlen($this->_obj->Title) > 75) {
-                        $this->_obj->Title = substr($_note->getData('comment'), 0, 75) . '...';
+                        $this->_obj->Title = utf8_encode(substr($_note->getData('comment'), 0, 75) . '...');
                     } else {
-                        $this->_obj->Title = $_note->getData('comment');
+                        $this->_obj->Title = utf8_encode($_note->getData('comment'));
                     }
                     $this->_cache['notesToUpsert'][$_note->getData('entity_id')] = $this->_obj;
 
