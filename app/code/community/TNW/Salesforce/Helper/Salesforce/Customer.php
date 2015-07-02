@@ -304,7 +304,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $logger = Mage::helper('tnw_salesforce/report');
         $logger->reset();
 
-        $_data = $_formData->getData();
+        $_data = $_formData;
         $_email = strtolower($_data['email']);
         $_websiteId = Mage::app()->getWebsite()->getId();
         // Check for Contact and Account

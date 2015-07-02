@@ -55,18 +55,21 @@ class TNW_Salesforce_Model_Customer_Observer
             Mage::helper("tnw_salesforce")->log('SKIPING: Contact form synchronization disabled');
             return; // Disabled
         }
-        $formData = $observer->getEvent()->getForm();
 
-        try {
-            $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+        $formData = $observer->getData('controller_action')->getRequest()->getPost();
 
-            if ($manualSync->reset()) {
-                $manualSync->pushLead($formData);
+        if (!empty($formData)) {
+            try {
+                $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
+                $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
+                $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+
+                if ($manualSync->reset()) {
+                    $manualSync->pushLead($formData);
+                }
+            } catch (Exception $e) {
+                Mage::helper("tnw_salesforce")->log('SKIPING: Contact form synchronization, error: ' . $e->getMessage());
             }
-        } catch (Exception $e) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Contact form synchronization, error: ' . $e->getMessage());
         }
     }
 

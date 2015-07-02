@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.02.0006</version>
+            <version>0.01.53.02.0007</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -16,11 +16,6 @@
             </types>
         </cache>
         <models>
-            <core>
-                <rewrite>
-                    <email_template>TNW_Salesforce_Model_Email_Template</email_template>
-                </rewrite>
-            </core>
             <customer>
                 <rewrite>
                     <entity_setup>TNW_Salesforce_Model_Customer_Entity_Setup</entity_setup>
@@ -132,6 +127,16 @@
             </tnw_salesforce>
         </helpers>
         <events>
+            <!-- Contact Us form event -->
+            <controller_action_postdispatch_contacts>
+                <observers>
+                    <tnw_salesforce_customer_observer>
+                        <class>tnw_salesforce/customer_observer</class>
+                        <method>triggerWebToLead</method>
+                    </tnw_salesforce_customer_observer>
+                </observers>
+            </controller_action_postdispatch_contacts>
+
             <!-- Product duplication -->
             <catalog_model_product_duplicate>
                 <observers>
@@ -200,16 +205,6 @@
                 </observers>
 
             </tnw_salesforce_order_save_form>
-
-            <!-- Contact Us Event: Lead -->
-            <tnw_contact_form_submit>
-                <observers>
-                    <tnw_salesforce_customer_observer>
-                        <class>tnw_salesforce/customer_observer</class>
-                        <method>triggerWebToLead</method>
-                    </tnw_salesforce_customer_observer>
-                </observers>
-            </tnw_contact_form_submit>
 
             <aitcfm_order_save_after>
                 <observers>
