@@ -2,6 +2,8 @@
 
 class TNW_Salesforce_Model_Sale_Observer
 {
+    protected $orderObject = NULL;
+
     /* Shipment Sync Event */
     public function triggerSalesforceShippmentEvent($observer)
     {
@@ -322,6 +324,11 @@ class TNW_Salesforce_Model_Sale_Observer
         }
 
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+
+        if (!$this->orderHelper) {
+            $this->orderHelper = 'tnw_salesforce/salesforce_' . $_syncType;
+        }
+
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             // pass data to local storage
@@ -356,7 +363,7 @@ class TNW_Salesforce_Model_Sale_Observer
             if ($manualSync->reset()) {
                 $itemIds = array();
                 foreach ($order->getAllVisibleItems() as $_item) {
-                    $itemIds[] = (int)Mage::helper('tnw_salesforce/salesforce_' . $_syncType)->getProductIdFromCart($_item);
+                    $itemIds[] = (int)Mage::helper($this->orderHelper)->getProductIdFromCart($_item);
                 }
                 if (!empty($itemIds)) {
                     $manualSync->massAdd($itemIds);
@@ -369,6 +376,4 @@ class TNW_Salesforce_Model_Sale_Observer
             Mage::helper('tnw_salesforce')->log("================ INVENTORY SYNC: END ================");
         }
     }
-
-
 }
