@@ -706,11 +706,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)] = array();
 
-        if (
-            (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
-            || (property_exists($this->_obj, 'Product__c') && $this->_obj->Product__c)
-            || (property_exists($this->_obj, 'Id') && $this->_obj->Id)
-        ) {
+        if ($this->isItemObjectValid()) {
             /* Dump OpportunityLineItem object into the log */
             foreach ($this->_obj as $key => $_item) {
                 Mage::helper('tnw_salesforce')->log("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
@@ -725,6 +721,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         Mage::helper('tnw_salesforce')->log('-----------------');
 
+    }
+
+    /*
+     * Should Item object be added to SF
+     * aka validation to prevent errors
+     */
+    protected function isItemObjectValid() {
+        return (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
+        || (property_exists($this->_obj, 'Product__c') && $this->_obj->Product__c)
+        || (property_exists($this->_obj, 'Id') && $this->_obj->Id);
     }
 
     /**
