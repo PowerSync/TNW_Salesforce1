@@ -314,9 +314,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
     protected function _buildProductObject($product)
     {
-        $preparedObject = new stdClass();
+        $this->_obj = new stdClass();
         $sku = $product->getSku();
-        $preparedObject->ProductCode = $sku;
+        $this->_obj->ProductCode = $sku;
 
         $productsLookup = $this->_cache['productsLookup'];
         $sfProductId = is_array($productsLookup) && isset($productsLookup[$sku]) && is_object($productsLookup[$sku])
@@ -326,49 +326,49 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
 
         if ($product->getSalesforceId()) {
-            $preparedObject->Id = $product->getSalesforceId();
+            $this->_obj->Id = $product->getSalesforceId();
         }
 
-        $preparedObject->IsActive = true;
+        $this->_obj->IsActive = true;
 
         //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_product_product')
+        Mage::getModel('tnw_salesforce/sync_mapping_product_product')
             ->setSync($this)
             ->processMapping($product);
 
         // if "Synchronize product attributes" is set to "yes" we replace sf description with product attributes
         if (intval($this->getHelper()->getProductAttributesSync()) == 1) {
-            $preparedObject->Description = $this->_formatProductAttributesForSalesforce($product, false);
+            $this->_obj->Description = $this->_formatProductAttributesForSalesforce($product, false);
         }
 
-        if (property_exists($preparedObject, 'IsActive')) {
-            $preparedObject->IsActive = ($preparedObject->IsActive == "Enabled") ? 1 : 0;
+        if (property_exists($this->_obj, 'IsActive')) {
+            $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
         }
 
         if ($this->getHelper()->getType() == 'PRO') {
             $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
-            $preparedObject->$disableSyncField = true;
+            $this->_obj->$disableSyncField = true;
         }
 
 
         if ($product->getId()) {
             $magentoIdField = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
-            $preparedObject->{$magentoIdField} = $product->getId();
+            $this->_obj->{$magentoIdField} = $product->getId();
 
             //get name from salesforce or from magento
-            if (!property_exists($preparedObject, 'Name')) {
+            if (!property_exists($this->_obj, 'Name')) {
                 if (empty($productsLookup)
                     || !array_key_exists($sku, $productsLookup)
                     || !property_exists($productsLookup[$sku], 'Name')
                 ) {
-                    $preparedObject->Name = $product->getName();
+                    $this->_obj->Name = $product->getName();
                 } else {
-                    $preparedObject->Name = $productsLookup[$sku]->Name;
+                    $this->_obj->Name = $productsLookup[$sku]->Name;
                 }
             }
 
-            $syncId = property_exists($preparedObject, 'Id') ? 'Id' : $magentoIdField;
-            $this->_cache['productsToSync'][$syncId][$product->getId()] = $preparedObject;
+            $syncId = property_exists($this->_obj, 'Id') ? 'Id' : $magentoIdField;
+            $this->_cache['productsToSync'][$syncId][$product->getId()] = $this->_obj;
         } else {
             if ($this->canDisplayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not synchronize product (sku: '

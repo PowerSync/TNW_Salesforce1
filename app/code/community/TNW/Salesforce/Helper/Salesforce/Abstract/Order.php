@@ -237,7 +237,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier)
     {
-
         $_cartItemFound = false;
 
         /**
@@ -603,13 +602,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $id = $this->getProductIdFromCart($item);
 
         /**
-         * @comment empty object for paroduct/tax/shipping/discount data
-         */
-        $product = new Varien_Object();
-
-        $sku = ($product->getSku()) ? $product->getSku() : $item->getSku();
-
-        /**
          * @comment do some additional actions if we add real product to the order
          */
         if ($id) {
@@ -619,6 +611,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $productModel = Mage::getModel('catalog/product')->setStoreId($storeId);
             $product = $productModel->load($id);
 
+            $sku = ($product->getSku()) ? $product->getSku() : $item->getSku();
 
             if (!$product->getSalesforcePricebookId()) {
 
@@ -637,7 +630,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $pricebookEntryId = $product->getSalesforcePricebookId();
 
         } else {
-
+            $product = new Varien_Object();
+            $sku = $item->getSku();
             $pricebookEntryId = Mage::app()->getStore($storeId)->getConfig($item->getPricebookEntryConfig());
             $product->setSalesforceId($pricebookEntryId);
 
@@ -660,7 +654,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_obj->UnitPrice = $this->_prepareItemPrice($item, $qty);
 
         $opt = array();
-        $options = $item->getData('product_options');
+        $options = (is_array($item->getData('product_options'))) ? $item->getData('product_options') : @unserialize($item->getData('product_options'));
+
         $_summary = array();
         if (
             is_array($options)
@@ -694,14 +689,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $opt[] = '<tr>' . $_string . '</tr>';
             }
         }
+
         if (count($opt) > 0) {
-            /**
-             * @comment this code works for opportunity only
-             */
-            if ($this->_salesforceEntityName == 'opportunity') {
-                $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
-                $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
-            }
+            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
+            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
 
             $this->_obj->Description = join(", ", $_summary);
             if (strlen($this->_obj->Description) > 200) {
