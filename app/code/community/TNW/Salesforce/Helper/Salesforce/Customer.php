@@ -1332,6 +1332,25 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $this->_cache['contactsToUpsert'][$_upsertOn][$_id] = $this->_obj;
+
+            if ($this->_isPerson) {
+                // Move the prepared Contact data to Person Account
+                if (
+                    array_key_exists('Id', $this->_cache['contactsToUpsert'])
+                    && array_key_exists($_id, $this->_cache['contactsToUpsert']['Id'])
+                    && array_key_exists('Id', $this->_cache['accountsToUpsert'])
+                    && array_key_exists($_id, $this->_cache['accountsToUpsert']['Id'])
+                ) {
+                    foreach ($this->_cache['contactsToUpsert']['Id'][$_id] as $_key => $_value) {
+                        if (!property_exists($this->_cache['accountsToUpsert']['Id'][$_id], $_key)) {
+                            $this->_cache['accountsToUpsert']['Id'][$_id]->{$_key} = $_value;
+                        }
+                    }
+                }
+
+                $this->_fixPersonAccountFields($this->_cache['accountsToUpsert']['Id'][$_id]);
+            }
+
         } else if ($type == "Account") {
 
             if (isset($this->_cache['accountLookup'][0][$_email])) {
@@ -1339,28 +1358,20 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             if (
-                property_exists($this->_obj, 'RecordTypeId')
-                //&& $this->_obj->RecordTypeId == Mage::helper('tnw_salesforce')->getPersonAccountRecordType($_websiteId)
-                && $this->_obj->RecordTypeId == Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE)
+                (
+                    property_exists($this->_obj, 'RecordTypeId')
+                    && $this->_obj->RecordTypeId == Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE)
+                ) || $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount
             ) {
                 // This is Person Account
                 if (!$this->_isPerson) {
                     $this->_isPerson = true;
                 }
 
-                // Move the prepared Contact data to Person Account
-                if (
-                    array_key_exists('Id', $this->_cache['contactsToUpsert'])
-                    && array_key_exists($_id, $this->_cache['contactsToUpsert']['Id'])
-                ) {
-                    foreach ($this->_cache['contactsToUpsert']['Id'][$_id] as $_key => $_value) {
-                        if (!property_exists($this->_obj, $_key)) {
-                            $this->_obj->{$_key} = $_value;
-                        }
-                    }
+                if (property_exists($this->_obj, 'Name')) {
+                    unset($this->_obj->Name);
                 }
 
-                $this->_fixPersonAccountFields();
                 if (
                     array_key_exists('Id', $this->_cache['contactsToUpsert'])
                     && array_key_exists($_id, $this->_cache['contactsToUpsert']['Id'])
@@ -1409,6 +1420,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 if (
                     !Mage::helper('tnw_salesforce')->canRenameAccount()
                     && property_exists($this->_obj, 'Name')
+                    && !$this->_isPerson
                 ) {
                     $this->_obj->Name = $this->_getAccountName($this->_obj->Name, $_email, $_sfWebsite);
                 }
@@ -1849,38 +1861,38 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         return $_websiteId;
     }
 
-    protected function _fixPersonAccountFields()
+    protected function _fixPersonAccountFields(&$object)
     {
         // Rename Magento ID field name
-        if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c')) {
+        if (property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c')) {
             $_pcMagentoIdFieldName = str_replace('__c', '__pc', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c');
-            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'};
-            if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c')) {
-                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
+            $object->{$_pcMagentoIdFieldName} = $object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'};
+            if (property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c')) {
+                unset($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
             }
         } else {
-            unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
+            unset($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
         }
         // Rename Website API field name
-        if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+        if (property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
             $_pcMagentoIdFieldName = str_replace('__c', '__pc', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject());
-            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
-            if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
-                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
+            $object->{$_pcMagentoIdFieldName} = $object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
+            if (property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
+                unset($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
             }
         } else {
-            unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
+            unset($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
         }
 
         // Rename Disable Magento Sync API field name
-        if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c')) {
+        if (property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c')) {
             $_pcMagentoIdFieldName = str_replace('__c', '__pc', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c');
-            $this->_obj->{$_pcMagentoIdFieldName} = $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'};
-            if (property_exists($this->_obj, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c')) {
-                unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'});
+            $object->{$_pcMagentoIdFieldName} = $object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'};
+            if (property_exists($object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c')) {
+                unset($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'});
             }
         } else {
-            unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'});
+            unset($object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c'});
         }
 
         $_standardFields = array(
@@ -1889,68 +1901,68 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             'Title'
         );
         foreach ($_standardFields as $_field) {
-            $this->_replacePersonField($_field);
+            $this->_replacePersonField($_field, $object);
         }
 
         // Rename Billing Street API field name
-        if (property_exists($this->_obj, 'OtherStreet')) {
-            $this->_obj->BillingStreet = $this->_obj->OtherStreet;
-            unset($this->_obj->OtherStreet);
+        if (property_exists($object, 'OtherStreet')) {
+            $object->BillingStreet = $object->OtherStreet;
+            unset($object->OtherStreet);
         }
         // Rename Billing City API field name
-        if (property_exists($this->_obj, 'OtherCity')) {
-            $this->_obj->BillingCity = $this->_obj->OtherCity;
-            unset($this->_obj->OtherCity);
+        if (property_exists($object, 'OtherCity')) {
+            $object->BillingCity = $object->OtherCity;
+            unset($object->OtherCity);
         }
         // Rename Billing State API field name
-        if (property_exists($this->_obj, 'OtherState')) {
-            $this->_obj->BillingState = $this->_obj->OtherState;
-            unset($this->_obj->OtherState);
+        if (property_exists($object, 'OtherState')) {
+            $object->BillingState = $object->OtherState;
+            unset($object->OtherState);
         }
         // Rename Billing Postal Code API field name
-        if (property_exists($this->_obj, 'OtherPostalCode')) {
-            $this->_obj->BillingPostalCode = $this->_obj->OtherPostalCode;
-            unset($this->_obj->OtherPostalCode);
+        if (property_exists($object, 'OtherPostalCode')) {
+            $object->BillingPostalCode = $object->OtherPostalCode;
+            unset($object->OtherPostalCode);
         }
         // Rename Billing Country API field name
-        if (property_exists($this->_obj, 'OtherCountry')) {
-            $this->_obj->BillingCountry = $this->_obj->OtherCountry;
-            unset($this->_obj->OtherCountry);
+        if (property_exists($object, 'OtherCountry')) {
+            $object->BillingCountry = $object->OtherCountry;
+            unset($object->OtherCountry);
         }
         // Rename Shipping Street API field name
-        if (property_exists($this->_obj, 'MailingStreet')) {
-            $this->_obj->ShippingStreet = $this->_obj->MailingStreet;
-            unset($this->_obj->MailingStreet);
+        if (property_exists($object, 'MailingStreet')) {
+            $object->ShippingStreet = $object->MailingStreet;
+            unset($object->MailingStreet);
         }
         // Rename Shipping City API field name
-        if (property_exists($this->_obj, 'MailingCity')) {
-            $this->_obj->ShippingCity = $this->_obj->MailingCity;
-            unset($this->_obj->MailingCity);
+        if (property_exists($object, 'MailingCity')) {
+            $object->ShippingCity = $object->MailingCity;
+            unset($object->MailingCity);
         }
         // Rename Shipping State API field name
-        if (property_exists($this->_obj, 'MailingState')) {
-            $this->_obj->ShippingState = $this->_obj->MailingState;
-            unset($this->_obj->MailingState);
+        if (property_exists($object, 'MailingState')) {
+            $object->ShippingState = $object->MailingState;
+            unset($object->MailingState);
         }
         // Rename Shipping Postal Code API field name
-        if (property_exists($this->_obj, 'MailingPostalCode')) {
-            $this->_obj->ShippingPostalCode = $this->_obj->MailingPostalCode;
-            unset($this->_obj->MailingPostalCode);
+        if (property_exists($object, 'MailingPostalCode')) {
+            $object->ShippingPostalCode = $object->MailingPostalCode;
+            unset($object->MailingPostalCode);
         }
         // Rename Shipping Country API field name
-        if (property_exists($this->_obj, 'MailingCountry')) {
-            $this->_obj->ShippingCountry = $this->_obj->MailingCountry;
-            unset($this->_obj->MailingCountry);
+        if (property_exists($object, 'MailingCountry')) {
+            $object->ShippingCountry = $object->MailingCountry;
+            unset($object->MailingCountry);
         }
 
         // Rename Phone API field name
-        if (property_exists($this->_obj, 'Phone')) {
-            $this->_obj->PersonHomePhone = $this->_obj->Phone;
-            unset($this->_obj->Phone);
+        if (property_exists($object, 'Phone')) {
+            $object->PersonHomePhone = $object->Phone;
+            unset($object->Phone);
         }
 
-        if (property_exists($this->_obj, 'AccountId')) {
-            unset($this->_obj->AccountId);
+        if (property_exists($object, 'AccountId')) {
+            unset($object->AccountId);
         }
     }
 
@@ -1958,12 +1970,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      * @param $_field
      * Replace standard field with Person Account equivalent
      */
-    protected function _replacePersonField($_field)
+    protected function _replacePersonField($_field, &$object)
     {
-        if (property_exists($this->_obj, $_field)) {
+        if (property_exists($object, $_field)) {
             $_newKey = 'Person' . $_field;
-            $this->_obj->{$_newKey} = $this->_obj->{$_field};
-            unset($this->_obj->{$_field});
+            $object->{$_newKey} = $object->{$_field};
+            unset($object->{$_field});
         }
     }
 
