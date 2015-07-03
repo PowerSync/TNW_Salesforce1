@@ -374,6 +374,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             if (!property_exists($_pricebookEntry, 'Id')) {
                 if ($_pricebookEntry->Pricebook2Id == $this->_standardPricebookId) {
                     $this->_cache['standardPricebooksToUpsert'][$_key] = $_pricebookEntry;
+                    unset($this->_cache['pricebookEntryToSync'][$_key]); // remove duplicate
                     continue;
                 }
             }
