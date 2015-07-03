@@ -179,7 +179,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_obj->Company = 'N/A';
             }
 
-            Mage::helper('tnw_salesforce')->logObject($this->_obj, 'Lead Object');
+            foreach ($this->_obj as $key => $value) {
+                Mage::helper('tnw_salesforce')->log("Lead Object: " . $key . " = '" . $value . "'");
+            }
 
             $this->_cache['leadsToUpsert'][$_customerId] = $this->_obj;
 
