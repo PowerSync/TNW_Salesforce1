@@ -1142,18 +1142,6 @@
                             <show_in_store>0</show_in_store>
                             <comment>Enable / Disable automated shipment synchronization</comment>
                         </sync_enabled>
-                        <carrier_matching translate="label" module="tnw_salesforce">
-                            <label>Carrier Matching</label>
-                            <backend_model>adminhtml/system_config_backend_serialized_array</backend_model>
-                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_field_array_carrier</frontend_model>
-                            <sort_order>200</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <depends>
-                                <sync_enabled>1</sync_enabled>
-                            </depends>
-                        </carrier_matching>
                     </fields>
                 </shipment_configuration>
             </groups>
