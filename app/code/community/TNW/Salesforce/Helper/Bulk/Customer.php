@@ -817,7 +817,19 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     public function getAllAccounts()
     {
         $jobId = $this->_createJobQuery('Account');
-        $batchId = $this->_query('SELECT Id, Name FROM Account', $jobId);
+        $sql = 'SELECT Id, Name ';
+        $recordTypes = Mage::helper('tnw_salesforce')->getBusinessAccountRecordIds();
+        if (!empty($recordTypes) && !in_array(TNW_Salesforce_Helper_Salesforce_Data::PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL, $recordTypes)) {
+            $sql .= ', RecordTypeId ';
+        }
+        $sql .= 'FROM Account';
+
+        // Don't return Person Accounts
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $sql .= " WHERE IsPersonAccount != true";
+        }
+
+        $batchId = $this->_query($sql, $jobId);
         $maxAttempts = 50;
 
         Mage::helper('tnw_salesforce')->log('Checking query completion...');
@@ -841,12 +853,13 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             foreach ($resultIds as $_resultId) {
                 $tmpResult = $this->getBatchResult($jobId, $batchId, $_resultId);
                 foreach ($tmpResult->records as $record) {
-                    $result[(string)$record->Name] = (string)$record->Id[0];
+                    $result[(string)$record->Id[0]] = new stdClass();
+                    $result[(string)$record->Id[0]]->Name = (string)$record->Name;
+                    if (!empty($recordTypes) && !in_array(TNW_Salesforce_Helper_Salesforce_Data::PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL, $recordTypes)) {
+                        $result[(string)$record->Id[0]]->RecordTypeId = (string)$record->RecordTypeId;
+                    }
                 }
             }
-
-            ksort($result);
-            $result = array_flip($result);
         }
 
         return $result;

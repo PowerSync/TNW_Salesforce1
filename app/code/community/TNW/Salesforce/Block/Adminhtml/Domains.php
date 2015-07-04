@@ -45,10 +45,10 @@ class TNW_Salesforce_Block_Adminhtml_Domains
         $html .= '<select name="' . $this->getElement()->getName() . '[account][]" ' . $this->_getDisabled() . '>';
         $html .= '<option value="">' . $this->__('* Select an Account') . '</option>';
 
-        foreach ($this->getShippingMethods() as $_id => $_accountName) {
+        foreach ($this->getB2BAccounts() as $_id => $_account) {
             $html .= '<option value="' . $this->escapeHtml($_id) . '" '
                 . $this->_getSelected('account/' . $rowIndex, $_id)
-                . '>' . $this->escapeHtml($_accountName) . '</option>';
+                . '>' . $this->escapeHtml($_account->Name) . '</option>';
         }
         $html .= '</select>';
 
@@ -65,7 +65,7 @@ class TNW_Salesforce_Block_Adminhtml_Domains
         return $html;
     }
 
-    protected function getShippingMethods()
+    protected function getB2BAccounts()
     {
         return $this->helper('tnw_salesforce/config')->getSalesforceAccounts();
     }

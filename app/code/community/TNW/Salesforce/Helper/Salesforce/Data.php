@@ -5,6 +5,7 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesforce
 {
+    const PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL = 'NOT IN USE';
     /**
      * @var null
      */
@@ -167,7 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             // Captures a usecase for Professional version of Salesforce
             $_default = new stdClass();
             $_default->Id = '';
-            $_default->Name = 'Use Default';
+            $_default->Name = self::PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL;
             $allRules->records = array($_default);
 
             unset($e);

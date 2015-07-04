@@ -1359,11 +1359,22 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_obj->Id = $this->_cache['accountLookup'][0][$_email]->Id;
             }
 
+            // If Guest, the key for the lookup is cusotmer Id instead fo an email
+            $lookupGuestMatch = $this->getCustomerAccount($_id);
+
             if (
                 (
                     property_exists($this->_obj, 'RecordTypeId')
                     && $this->_obj->RecordTypeId == Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE)
-                ) || $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount
+                    // Following logic checks if an existing Account is found and it happends to be B2B
+                    && !(
+                        $lookupGuestMatch
+                        && array_key_exists($lookupGuestMatch, Mage::helper('tnw_salesforce/config')->getSalesforceAccounts())
+                    )
+                ) || (
+                    property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'IsPersonAccount')
+                    && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount
+                )
             ) {
                 // This is Person Account
                 if (!$this->_isPerson) {
@@ -1387,6 +1398,20 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     unset($this->_cache['contactsToUpsert'][$this->_magentoId][$_id]);
                 }
             } else {
+                // Reset Record Type Id (incase if it was set to B2C
+                $this->_obj->RecordTypeId = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
+
+                // Reset pre-defined fields for B2C
+                // Reason we do this here is because of the advanced lookup key for guests is unique and not available in the mapping model
+                if (property_exists($this->_obj, 'PersonEmail')) {
+                    unset($this->_obj->PersonEmail);
+                }
+                if (property_exists($this->_obj, 'FirstName')) {
+                    unset($this->_obj->FirstName);
+                }
+                if (property_exists($this->_obj, 'LastName')) {
+                    unset($this->_obj->LastName);
+                }
                 // This is a B2B Account
                 unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()});
                 unset($this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c'});
@@ -1411,8 +1436,19 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             // Skip Account upsert if Advanced lookup is suggesting to use existing account
-            if ($this->getCustomerAccount($_email)) {
+
+            if (
+                $this->getCustomerAccount($_email)
+                || $lookupGuestMatch
+            ) {
                 $_found = true;
+                if ($lookupGuestMatch) {
+                    $this->_obj->Id = $lookupGuestMatch;
+                    if (property_exists($this->_obj, 'Name')) {
+                        // Remove Name since Account exists in Salesforce and we should not rename it
+                        unset($this->_obj->Name);
+                    }
+                }
             }
 
             // Skip duplicate account for one of the contacts
@@ -1445,6 +1481,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 if (!empty($this->_obj->Name)) {
                     $this->_cache['accountsToUpsert']['Id'][$_id] = $this->_obj;
                 }
+            } else if (
+                property_exists($this->_obj, 'Id')
+                && empty($this->_obj->Name)
+            ) {
+                $this->_cache['accountsToUpsert']['Id'][$_id] = $this->_obj;
             }
         }
     }
