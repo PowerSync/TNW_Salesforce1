@@ -15,10 +15,7 @@ class TNW_Salesforce_Model_Config_Order_Object
 
     protected function _setOptions() {
         $this->_data[TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT] = TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
-
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->_data[TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT] = TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT;
-        }
+        $this->_data[TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT] = TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT;
     }
 
     /**
