@@ -893,7 +893,9 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         }
                         $_sfWebsite = $contact->{$sfWebsiteId};
 
-                        if (property_exists($_object, 'Name')) {
+                        if (property_exists($_object, 'Id')) {
+                            $_compiledKey = $_object->Id;
+                        } elseif (property_exists($_object, 'Name')) {
                             $_compiledKey = $_object->Name;
                         } elseif ($this->_getAccountName(NULL, $_email, $_sfWebsite)) {
                             $_compiledKey = $this->_getAccountName(NULL, $_email, $_sfWebsite);
@@ -941,6 +943,9 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
                 && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE) != TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
                 && !property_exists($_object, 'Name')
+                && property_exists($_object, 'RecordTypeId')
+                && Mage::helper('tnw_salesforce')->usePersonAccount()
+                && array_key_exists($_object->RecordTypeId, Mage::helper('tnw_salesforce')->getPersonAccountRecordIds())
             ) {
                 // Only applies to  Person Accounts
                 $_compiledKey = $_object->PersonEmail;
