@@ -494,6 +494,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             ->setSync($this)
             ->processMapping($order);
 
+        Zend_Debug::dump($this->_obj);
+        die();
+
         // Get Account Name from Salesforce
         $_accountName = (
             $this->_cache['accountsLookup']

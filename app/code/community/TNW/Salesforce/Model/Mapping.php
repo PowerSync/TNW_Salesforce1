@@ -91,6 +91,35 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         }
     }
 
+    public function getAitocValues($aCustomAtrrList, $attributeCode) {
+        $value = NULL;
+        foreach($aCustomAtrrList as $_type => $_object) {
+            if (is_object($aCustomAtrrList[$_type]) && is_array($aCustomAtrrList[$_type]->getData())) {
+                $value = $this->getAitocValue($aCustomAtrrList[$_type], $attributeCode);
+                if ($value) {
+                    break;
+                }
+            }
+        }
+
+        return $value;
+    }
+
+    protected function getAitocValue($aitocValueCollection, $attributeCode) {
+        $value = NULL;
+        foreach ($aitocValueCollection->getData() as $_key => $_data) {
+            if ($_data['code'] == $attributeCode) {
+                $value = $_data['value'];
+                if ($_data['type'] == "date") {
+                    $value = date("Y-m-d", strtotime($value));
+                }
+                break;
+            }
+        }
+
+        return $value;
+    }
+
     public function getValue(array $objectMappings = array())
     {
         $value = null;
@@ -98,7 +127,10 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         /** @var Mage_Catalog_Model_Product $object */
         $object = isset($objectMappings[$this->getLocalFieldType()])
             ? $objectMappings[$this->getLocalFieldType()] : null;
-        if ($object) {
+        if ($this->getLocalFieldType() == 'Aitoc') {
+            $collection = isset($objectMappings['Aitoc']) ? $objectMappings['Aitoc'] : null;
+            $value = $this->getAitocValues($collection, $attributeCode);
+        } elseif ($object) {
             $value = $this->getSpecialValues($objectMappings);
             if (!$value) {
                 $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));

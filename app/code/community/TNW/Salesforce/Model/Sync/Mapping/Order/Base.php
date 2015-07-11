@@ -55,6 +55,13 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
         }
         $_groupId = ($order->getCustomerGroupId() !== NULL) ? $order->getCustomerGroupId() :  $_customer->getGroupId();
 
+        $modules = Mage::getConfig()->getNode('modules')->children();
+        $aitocValues = array('order' => NULL, 'customer' => NULL);
+        if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
+            $aitocValues['customer'] = Mage::getModel('aitcheckoutfields/transport')->loadByCustomerId($_customer->getId());
+            $aitocValues['order'] = Mage::getModel('aitcheckoutfields/transport')->loadByOrderId($order->getId());
+        }
+
         $objectMappings = array(
             'Store' => $order->getStore(),
             'Order' => $order,
@@ -63,6 +70,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
             'Customer Group' => Mage::getModel('customer/group')->load($_groupId),
             'Billing' => $order->getBillingAddress(),
             'Shipping' => $order->getShippingAddress(),
+            'Aitoc' => $aitocValues
         );
 
         foreach ($this->getMappingCollection() as $_map) {
