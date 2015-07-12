@@ -1451,6 +1451,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
 
+            //Unset Record Type if blank
+            if (property_exists($this->_obj, 'RecordTypeId') && empty($this->_obj->RecordTypeId)) {
+                unset($this->_obj->RecordTypeId);
+            }
+
             // Skip duplicate account for one of the contacts
             if (!$_found) {
                 // Make sure Name of the Account is taken from Salesforce, if found
