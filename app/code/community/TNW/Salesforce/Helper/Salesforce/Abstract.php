@@ -5,7 +5,7 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Abstract
 {
-    protected $_salesforceApiVersion = '32.0';
+    protected $_salesforceApiVersion = '34.0';
     /**
      * @var null
      */
@@ -526,7 +526,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                     $logHelper->log('INFO: State: ' . $_responseRow->state);
                     $logHelper->log('INFO: Batch ID: ' . $_responseRow->id);
                     $logHelper->log('INFO: RecordsProcessed: ' . $_responseRow->numberRecordsProcessed);
-                    if ('Completed' != $_responseRow->state) {
+                    if ('Failed' == $_responseRow->state) {
+                        $completed = 'exception';
+                        break;
+                        // completed but failed
+                    } elseif ('Completed' != $_responseRow->state) {
                         $completed = false;
                         break;
                         // try later
