@@ -18,6 +18,8 @@ class TNW_Salesforce_Helper_Salesforce_NewsletterSubscriber extends TNW_Salesfor
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
+        $this->reset();
+
         if(!$helper->isEnabled()){
             $helper->log('SKIPPING: Powersync is disabled');
             return false;
