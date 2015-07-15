@@ -12,7 +12,7 @@ class TNW_Salesforce_Model_Newsletter_Observer
     public function triggerCreateEvent($observer)
     {
         $subscriber = $observer->getSubscriber();
-        /** @var TNW_Salesforce_Helper_Salesforce_NewsletterSubscriber  $manualSync */
+        /** @var TNW_Salesforce_Helper_Salesforce_Newslettersubscriber  $manualSync */
         $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
         $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
@@ -26,7 +26,7 @@ class TNW_Salesforce_Model_Newsletter_Observer
     public function triggerDeleteEvent($observer)
     {
         $subscriber = $observer->getSubscriber();
-        /** @var TNW_Salesforce_Helper_Salesforce_NewsletterSubscriber  $manualSync */
+        /** @var TNW_Salesforce_Helper_Salesforce_Newslettersubscriber  $manualSync */
         $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
         $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));

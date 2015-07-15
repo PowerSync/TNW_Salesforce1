@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Customer
  */
-class TNW_Salesforce_Helper_Salesforce_NewsletterSubscriber extends TNW_Salesforce_Helper_Salesforce_Abstract
+class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesforce_Helper_Salesforce_Abstract
 {
 
 
