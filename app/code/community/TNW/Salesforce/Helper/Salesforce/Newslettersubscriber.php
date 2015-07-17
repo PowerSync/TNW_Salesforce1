@@ -188,13 +188,15 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      * @param Mage_Customer_Model_Customer $customer
      * @return stdClass
      */
-    private function getTransferObject($id, $subscriber, $websiteId, $customer)
+    protected function getTransferObject($id, $subscriber, $websiteId, $customer)
     {
         $this->_obj = new stdClass();
         $this->_obj->Id = $id;
 
         // If no loaded customer - checking seession
-        if(!$customer) $customer = Mage::getSingleton('customer/session')->getCustomer();
+        if(!$customer && Mage::getSingleton('customer/session')->isLoggedIn()){
+            $customer =  Mage::getSingleton('customer/session')->getCustomer();
+        }
 
         if($customer) {
             $this->_obj->FirstName = $customer->getFirstname();
