@@ -11,7 +11,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      * @param Mage_Newsletter_Model_Subscriber $subscriber
      * @return bool
      */
-    private function validate(Mage_Newsletter_Model_Subscriber $subscriber)
+    protected function validate(Mage_Newsletter_Model_Subscriber $subscriber)
     {
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
@@ -65,7 +65,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      * @param Mage_Customer_Model_Customer $customer
      * @return stdClass
      */
-    private function subscribeLead($id, $subscriber, $websiteId, $customer)
+    protected function subscribeLead($id, $subscriber, $websiteId, $customer)
     {
         $this->_obj = $this->getTransferObject($id, $subscriber, $websiteId, $customer);
 
@@ -126,7 +126,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      * @param book $isPerson
      * @return stdClass
      */
-    private function subscribeContact($id, $subscriber, $websiteId, $customer, $isPerson)
+    protected function subscribeContact($id, $subscriber, $websiteId, $customer, $isPerson)
     {
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
