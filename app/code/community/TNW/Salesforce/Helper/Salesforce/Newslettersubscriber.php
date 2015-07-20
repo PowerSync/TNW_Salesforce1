@@ -8,10 +8,9 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     /**
      * Validation before sync
      *
-     * @param Mage_Newsletter_Model_Subscriber $subscriber
      * @return bool
      */
-    protected function validate(Mage_Newsletter_Model_Subscriber $subscriber)
+    protected function validate()
     {
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
@@ -42,16 +41,6 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $helper->log("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
             return false;
         }
-        if (!is_object($subscriber) || !$subscriber->getData('subscriber_email')) {
-            $helper->log("SKIPPING: Subscriber object is invalid.");
-            return false;
-        }
-        $status = $subscriber->getSubscriberStatus();
-
-        if ($status === NULL) {
-            $helper->log("SKIPPING: Unknown subscriber status.");
-            return false;
-        }
 
         return true;
 
@@ -59,13 +48,15 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
 
     /**
-     * @param int $id
+     * Add Lead in cache for future sync
+     *
+     * @param string $id
      * @param Mage_Newsletter_Model_Subscriber $subscriber
      * @param int $websiteId
      * @param Mage_Customer_Model_Customer $customer
-     * @return stdClass
+     * @param int $index
      */
-    protected function subscribeLead($id, $subscriber, $websiteId, $customer)
+    protected function addLeadForSubscription($id, $subscriber, $websiteId, $customer, $index)
     {
         $this->_obj = $this->getTransferObject($id, $subscriber, $websiteId, $customer);
 
@@ -80,9 +71,23 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $helper->log("Lead Object: " . $key . " = '" . $value . "'");
         }
 
-        $customerId = $subscriber->getData('customer_id');
+        $this->_cache['leadsToUpsert'][$index] = $this->_obj;
 
-        $this->_cache['leadsToUpsert'][$customerId] = $this->_obj;
+    }
+
+
+    /**
+     * Sync Leads
+     *
+     * @param Mage_Newsletter_Model_Subscriber[] $subscribers
+     * @return bool
+     */
+    protected function subscribeLeads($subscribers)
+    {
+        if(empty($this->_cache['leadsToUpsert'])) return false;
+
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
 
         $assignmentRule = $helper->isLeadRule();
 
@@ -92,6 +97,8 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $this->_mySforceConnection->setAssignmentRuleHeader($header);
             unset($assignmentRule, $header);
         }
+
+        $subscriberIndexes = array_keys($this->_cache['leadsToUpsert']);
 
         Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']));
 
@@ -104,29 +111,32 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
         foreach ($results as $key => $result) {
             //Report Transaction
-            $this->_cache['responses']['leads'][$customerId] = $result;
+            $this->_cache['responses']['leads'][$subscriberIndexes[$key]] = $result;
 
             if (property_exists($result, 'success') && $result->success) {
                 $helper->log('SUCCESS: Lead upserted (id: ' . $result->id . ')');
                 $id = $result->id;
-                $this->_prepareCampaignMember('LeadId', $id, $subscriber, $customerId);
+                $this->_prepareCampaignMember('LeadId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
             } else {
-                $this->_processErrors($result, 'lead', $this->_cache['leadsToUpsert'][$key]);
+                $this->_processErrors($result, 'lead', $this->_cache['leadsToUpsert'][$subscriberIndexes[$key]]);
             }
         }
 
         return true;
     }
 
+
     /**
-     * @param int $id
+     * Add Contact in cache for future sync
+     *
+     * @param string $id
      * @param Mage_Newsletter_Model_Subscriber $subscriber
      * @param int $websiteId
      * @param Mage_Customer_Model_Customer $customer
-     * @param book $isPerson
-     * @return stdClass
+     * @param bool $isPerson
+     * @param int $index
      */
-    protected function subscribeContact($id, $subscriber, $websiteId, $customer, $isPerson)
+    protected function addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index)
     {
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
@@ -148,11 +158,26 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $this->_obj->$syncParam = true;
         }
 
-        $customerId = $subscriber->getData('customer_id');
+        $this->_cache['contactsToUpsert'][$index] = $this->_obj;
 
-        $this->_cache['contactsToUpsert'][$customerId] = $this->_obj;
+    }
 
-        $contactIds = array_keys($this->_cache['contactsToUpsert']);
+
+    /**
+     * Sync Contacts
+     *
+     * @param Mage_Newsletter_Model_Subscriber[] $subscribers
+     * @return bool
+     */
+    protected function subscribeContacts($subscribers)
+    {
+
+        if(empty($this->_cache['contactsToUpsert'])) return false;
+
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
+
+        $subscriberIndexes = array_keys($this->_cache['contactsToUpsert']);
 
         Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']));
 
@@ -165,23 +190,24 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
         foreach ($results as $key => $result) {
             //Report Transaction
-            $this->_cache['responses']['contacts'][$customerId] = $result;
+            $this->_cache['responses']['contacts'][$subscriberIndexes[$key]] = $result;
 
             if (property_exists($result, 'success') && $result->success) {
                 $helper->log('SUCCESS: Contact updated (id: ' . $result->id . ')');
                 $id = $result->id;
                 // create campaign member using campaign id form magento config and id as current contact
-                $this->_prepareCampaignMember('ContactId', $id, $subscriber, $customerId);
+                $this->_prepareCampaignMember('ContactId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
             } else {
-                $this->_processErrors($result, 'contact', $this->_cache['contactsToUpsert'][$contactIds[$key]]);
+                $this->_processErrors($result, 'contact', $this->_cache['contactsToUpsert'][$subscriberIndexes[$key]]);
             }
         }
 
         return true;
-
     }
 
     /**
+     * Build transfer objes from subscriber
+     *
      * @param int $id
      * @param Mage_Newsletter_Model_Subscriber $subscriber
      * @param int $websiteId
@@ -201,9 +227,10 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         if($customer) {
             $this->_obj->FirstName = $customer->getFirstname();
             $this->_obj->LastName = $customer->getLastname();
-            if(empty($this->_obj->LastName)){
-                $this->_obj->LastName = $subscriber->getData('subscriber_email');
-            }
+        }
+
+        if(empty($this->_obj->LastName)){
+            $this->_obj->LastName = $subscriber->getData('subscriber_email');
         }
 
         $this->_obj->Email = $subscriber->getData('subscriber_email');
@@ -222,77 +249,105 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     }
 
 
-
     /**
-     * Manual one record newsletter subscriber sync
+     * Manual multi-record newsletter subscriber sync
      *
-     * @param Mage_Newsletter_Model_Subscriber $subscriber
-     * @param string $_type
+     * @param Mage_Newsletter_Model_Subscriber[] $subscribers
+     * @param string $type
      * @return bool
      */
-    public function newsletterSubscription($subscriber = NULL, $_type = 'update')
+    public function newsletterSubscription($subscribers, $type = 'update')
     {
-        /*
-         * NOTE: This method only works with a signle subscription - 1 magento subscriber - 1 campaign
-         */
-
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
-        // 1. Validate config and data
-        if(!$this->validate($subscriber)){
+        // 1. Validate config
+        if(!$this->validate()){
             return false;
         }
 
-        $helper->log("###################################### Subscriber Update Start ######################################");
+        $helper->log("###################################### Subscribers Update Start ######################################");
 
-        // 2. Extract subscriber information
-        $email = strtolower($subscriber->getData('subscriber_email'));
-        $customerId = $subscriber->getData('customer_id');
 
-        /** @var Mage_Customer_Model_Customer|null $customer */
-        $customer = null;
+        $emailsArray = array();
+        $websitesArray = array();
+        $sfWebsitesArray = array();
+        $customersArray = array();
+        $contactsEmailArray = array();
+        $subscriberIdsArray = array();
 
-        if ($customerId) {
-            $customer = Mage::getModel('customer/customer')->load($customerId);
-            $websiteId = $customer->getData('website_id');
-        }else{
-            $websiteId = Mage::getModel('core/store')->load($subscriber->getData('store_id'))->getWebsiteId();
+
+        // 2 Prepare Data for Lookup and Updates
+        foreach($subscribers as $index => $subscriber)
+        {
+            // 2.1 Extract subscriber information
+            $email = strtolower($subscriber->getData('subscriber_email'));
+            $customerId = $subscriber->getData('customer_id');
+
+            /** @var Mage_Customer_Model_Customer|null $customer */
+            $customer = null;
+
+            if ($customerId) {
+                $customer = Mage::getModel('customer/customer')->load($customerId);
+                $websiteId = $customer->getData('website_id');
+            }else{
+                $websiteId = Mage::getModel('core/store')->load($subscriber->getData('store_id'))->getWebsiteId();
+            }
+
+            // 2.1 Save data by indexes
+            $customersArray[$index] = $customer;
+            $emailsArray[$index] = $email;
+            $websitesArray[$index] = $websiteId;
+            $sfWebsitesArray[$index] = $this->_websiteSfIds[$websiteId];
+            $subscriberIdsArray[$index] = $subscriber->getId();
         }
+
 
         /** @var TNW_Salesforce_Helper_Salesforce_Data_Contact $helperContact */
         $helperContact = Mage::helper('tnw_salesforce/salesforce_data_contact');
 
-        /** @var TNW_Salesforce_Helper_Salesforce_Data_Lead $helperLead */
-        $helperLead = Mage::helper('tnw_salesforce/salesforce_data_lead');
-
-        $id = NULL;
-        $isContact = $isPerson = false;
-
         // 3. Check for Contact
-        $contactLookup = $helperContact->lookup( array($customerId=>$email),
-            array($customerId => $this->_websiteSfIds[$websiteId]) );
-        $accountLookup = null;
-        $leadLookup = null;
-        // 3.1 If Contact - Take Contact Id
-        if($contactLookup && array_key_exists($this->_websiteSfIds[$websiteId], $contactLookup)
-            && array_key_exists($email, $contactLookup[$this->_websiteSfIds[$websiteId]]) )
+        $contactLookup = $helperContact->lookup($emailsArray, $sfWebsitesArray);
+
+        // 3.1 Going throw Contact matches and add Contact for sync
+        foreach($subscribers as $index => $subscriber)
         {
-            $id = $contactLookup[$this->_websiteSfIds[$websiteId]][$email]->Id;
-            $isContact = true;
-            // Check for PersonAccount config
-            if (Mage::app()->getWebsite($websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
-                && property_exists($contactLookup[$this->_websiteSfIds[$websiteId]][$email], 'Account')
-                && property_exists($contactLookup[$this->_websiteSfIds[$websiteId]][$email]->Account, 'IsPersonAccount')
-            ) {
-                $isPerson = true;
+            $email = $emailsArray[$index];
+            $websiteId = $websitesArray[$index];
+            $customer = $customersArray[$index];
+
+            if($contactLookup && array_key_exists($this->_websiteSfIds[$websiteId], $contactLookup)
+                && array_key_exists($email, $contactLookup[$this->_websiteSfIds[$websiteId]]) )
+            {
+                $isPerson = false;
+                $id = $contactLookup[$this->_websiteSfIds[$websiteId]][$email]->Id;
+                // Check for PersonAccount config
+                if (Mage::app()->getWebsite($websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
+                    && property_exists($contactLookup[$this->_websiteSfIds[$websiteId]][$email], 'Account')
+                    && property_exists($contactLookup[$this->_websiteSfIds[$websiteId]][$email]->Account, 'IsPersonAccount')
+                ) {
+                    $isPerson = true;
+                }
+                $this->addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index);
+                $contactsEmailArray[$index] = $email;
             }
         }
 
-        // 4. if no Contact and no Account - check for Lead
-        if(!$contactLookup){
-            $leadLookup = $helperLead->lookup( array($customerId=>$email),
-                array($customerId => $this->_websiteSfIds[$websiteId]) );
+        /** @var TNW_Salesforce_Helper_Salesforce_Data_Lead $helperLead */
+        $helperLead = Mage::helper('tnw_salesforce/salesforce_data_lead');
+
+        // 4. Check for Leads
+        $leadLookup = $helperLead->lookup($emailsArray, $sfWebsitesArray);
+
+        // 4.1 Going throw Leads matches and add Lync for sync
+        foreach($subscribers as $index => $subscriber)
+        {
+            $email = $emailsArray[$index];
+
+            if(in_array($email,$contactsEmailArray)) continue;
+            $websiteId = $websitesArray[$index];
+            $customer = $customersArray[$index];
+            $id = null;
 
             if ($leadLookup && array_key_exists($this->_websiteSfIds[$websiteId], $leadLookup)
                 && array_key_exists($email, $leadLookup[$this->_websiteSfIds[$websiteId]]))
@@ -300,21 +355,18 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 // Existing Lead
                 $id = $leadLookup[$this->_websiteSfIds[$websiteId]][$email]->Id;
             }
+
+            $this->addLeadForSubscription($id, $subscriber, $websiteId, $customer, $index);
         }
 
-        // 5. do subscription
-        if($isContact && $id){
-            $sResult = $this->subscribeContact($id, $subscriber, $websiteId, $customer, $isPerson);
-        }else{
-            $sResult = $this->subscribeLead($id, $subscriber, $websiteId, $customer);
-        }
 
-        if(!$sResult){
-            $helper->log("###################################### Subscriber Update Failed ######################################");
-            return false;
-        }
+        //5. sync Contacts
+        $this->subscribeContacts($subscribers);
 
-        // 6. update campaigns
+        //6. sync Leads
+        $this->subscribeLeads($subscribers);
+
+        //7. update campaigns
         if (!empty($this->_cache['campaignsToUpsert'])) {
             try {
 
@@ -329,28 +381,30 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
                 foreach ($results as $key => $result) {
                     //Report Transaction
-                    $this->_cache['responses']['campaigns'][$customerId] = $result;
+                    $this->_cache['responses']['campaigns'][$key] = $result;
                 }
             } catch (Exception $e) {
                 $helper->log("error [add lead as campaign member to sf failed]: " . $e->getMessage());
             }
         }
 
+        //8. Finalization
         $this->_onComplete();
         $helper->log("###################################### Subscriber Update End ######################################");
 
         return true;
     }
 
+
     /**
-     * Assing campaign for newsletter
+     * Prepare Campaign Member
      *
      * @param string $_type
      * @param $_id
      * @param $_subscription
-     * @param $_key
+     * @param $index
      */
-    protected function _prepareCampaignMember($_type = 'LeadId', $_id, $_subscription, $_key)
+    protected function _prepareCampaignMember($_type = 'LeadId', $_id, $_subscription, $index)
     {
         // create campaign member using campaign id form magento config and id as current lead
         if (
@@ -361,7 +415,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $campaignMemberOb->{$_type} = strval($_id);
             $campaignMemberOb->CampaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
 
-            $this->_cache['campaignsToUpsert'][$_key] = $campaignMemberOb;
+            $this->_cache['campaignsToUpsert'][$index] = $campaignMemberOb;
         }
         Mage::helper('tnw_salesforce')->log("Campaigns prepared");
     }
