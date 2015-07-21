@@ -101,6 +101,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     /* Leads */
     const LEAD_CONVERTED_STATUS = 'salesforce_customer/lead_config/customer_lead_status';
     const LEAD_CONVERTED_OWNER = 'salesforce_customer/lead_config/customer_lead_owner';
+    const LEAD_SOURCE = 'salesforce_customer/lead_config/lead_source';
     const CUSTOMER_RULE = 'salesforce_customer/lead_config/lead_rule';
 
     /* Existing Constants */
@@ -108,30 +109,25 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CUSTOMER_ACCOUNT_SHARING = 'customer/account_share/scope';
 
     /* Defaults */
+    const MODULE_TYPE = 'PRO';
     protected $_types = array("Enterprise", "Partner");
     protected $_clientTypes = NULL;
-
     protected $_pricebooks = array(0 => "Select Pricebook");
     protected $_pricebookTypes = NULL;
-
     protected $_customerRoles = array();
     protected $_customerRoleTypes = NULL;
     protected $_customerGroups = NULL;
-
     protected $_leadStatus = array();
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = array();
 
+    //const MODULE_TYPE = 'BASIC';
     /**
      * @comment this variable contains parameter name used in SalesForce
      * @var null
      */
     protected $_magentoId = NULL;
-
-    //const MODULE_TYPE = 'BASIC';
-    const MODULE_TYPE = 'PRO';
-
     /**
      * sync frequency
      *
@@ -173,6 +169,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         '12 hours' => 43200,
     );
 
+    /**
+     * @return mixed|null|string
+     */
+    public function getLeadSource()
+    {
+        return $this->getStoreConfig(self::LEAD_SOURCE);
+    }
+
     /* Getters */
     public function isMultiCurrency()
     {
@@ -209,45 +213,47 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     }
 
     // Is extension enabled in config
-    public function isEnabled()
-    {
-        return $this->getStroreConfig(self::API_ENABLED);
-    }
 
-    // Salesforce API Username
     public function getApiUsername()
     {
         return $this->getStroreConfig(self::API_USERNAME);
     }
 
-    // Salesforce API Password
+    // Salesforce API Username
+
     public function getApiPassword()
     {
         return $this->getStroreConfig(self::API_PASSWORD);
     }
 
-    // Salesforce API User Tocken
+    // Salesforce API Password
+
     public function getApiToken()
     {
         return $this->getStroreConfig(self::API_TOKEN);
     }
 
-    // Salesforce WSDL file location
+    // Salesforce API User Tocken
+
     public function getApiWSDL()
     {
         return $this->getStroreConfig(self::API_WSDL);
     }
 
-    // Salesforce object where Magento orders will go to
+    // Salesforce WSDL file location
+
     public function getOrderObject()
     {
         return $this->getStroreConfig(self::ORDER_OBJECT);
     }
+
     // Salesforce object where Magento orders will go to
+
     public function getAbandonedObject()
     {
         return TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
     }
+    // Salesforce object where Magento orders will go to
 
     /**
      * Get Invoice Object
@@ -265,123 +271,141 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $object->getObjectType();
     }
 
-    // Is debug log enabled
     public function isLogEnabled()
     {
         return $this->getStroreConfig(self::API_LOG);
     }
 
-    // Integration debug email where to send errors
+    // Is debug log enabled
+
     public function getFailEmail()
     {
         return $this->getStroreConfig(self::FAIL_EMAIL);
     }
 
-    // Integration debug email subject prefix
+    // Integration debug email where to send errors
+
     public function getFailEmailPrefix()
     {
         return $this->getStroreConfig(self::FAIL_EMAIL_SUBJECT);
     }
 
-    // Push data to idealdata.io for debugging
+    // Integration debug email subject prefix
+
     public function isRemoteLogEnabled()
     {
         return $this->getStroreConfig(self::REMOTE_LOG);
     }
 
-    // Is order synchronization enabled
+    // Push data to idealdata.io for debugging
+
     public function isEnabledOrderSync()
     {
         return $this->getStroreConfig(self::ORDER_SYNC);
     }
 
-    // Attach Opportunity Line items
+    // Is order synchronization enabled
+
     public function doPushShoppingCart()
     {
         return $this->getStroreConfig(self::ORDER_PRODUCT_SYNC);
     }
 
-    // is Customer Opportunity Role Enabled
+    // Attach Opportunity Line items
+
     public function isEnabledCustomerRole()
     {
         return $this->getStroreConfig(self::CUSTOMER_ROLE_ENABLED);
     }
 
-    // Default Customer Opportunity Role
+    // is Customer Opportunity Role Enabled
+
     public function getDefaultCustomerRole()
     {
         return $this->getStroreConfig(self::CUSTOMER_ROLE);
     }
 
-    // queue object sync type
+    // Default Customer Opportunity Role
+
     public function getObjectSyncType()
     {
         return $this->getStroreConfig(self::OBJECT_SYNC_TYPE);
     }
 
-    // cron run last time
+    // queue object sync type
+
     public function getCronLastRunTimestamp()
     {
         return $this->getStroreConfig(self::CRON_LAST_RUN_TIMESTAMP);
     }
 
-    // object sync spec time frequency
+    // cron run last time
+
     public function getObjectSyncSpectimeFreq()
     {
         return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_FREQ);
     }
 
-    // get sync day of week
+    // object sync spec time frequency
+
     public function getObjectSyncSpectimeFreqWeekday()
     {
         return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_WEEKLY);
     }
 
-    // get sync day of month
+    // get sync day of week
+
     public function getObjectSyncSpectimeFreqMonthday()
     {
         return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_MONTH_DAY);
     }
+
+    // get sync day of month
 
     public function getObjectSyncIntervalValue()
     {
         return $this->getStroreConfig(self::OBJECT_SYNC_INTERVAL_VALUE);
     }
 
-    // order sync period
     public function getOrderSyncPeriod()
     {
         return $this->getStroreConfig(self::ORDER_SYNC_INTERVAL);
     }
 
-    // spectime hour
+    // order sync period
+
     public function getObjectSpectimeHour()
     {
         return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_HOUR);
     }
 
-    // spectime minute
+    // spectime hour
+
     public function getObjectSpectimeMinute()
     {
         return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_MINUTE);
     }
+
+    // spectime minute
 
     public function isOrderNotesEnabled()
     {
         return true;
     }
 
-    // Is product synchronization enabled
     public function isEnabledProductSync()
     {
         return $this->getStroreConfig(self::PRODUCT_SYNC);
     }
 
-    // Salesforce default Pricebook used to store Product prices from Magento
+    // Is product synchronization enabled
+
     public function getDefaultPricebook()
     {
         return $this->getStroreConfig(self::PRODUCT_PRICEBOOK);
     }
+
+    // Salesforce default Pricebook used to store Product prices from Magento
 
     public function getProductAttributesSync()
     {
@@ -398,67 +422,69 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStroreConfig(self::CUSTOMER_CAMPAIGN_ID);
     }
 
-    // Customer integration type
     public function isEnabledCustomerSync()
     {
         return $this->getStroreConfig(self::CUSTOMER_SYNC);
     }
 
-    // Syn all customer groups by default
+    // Customer integration type
+
     public function getSyncAllGroups()
     {
         return $this->getStroreConfig(self::CUSTOMER_ALL_GROUPS);
     }
 
-    // Get list of enabled CustomerGroups
-    public function getAllowedCustomerGroups()
-    {
-        return explode(',', $this->getStroreConfig(self::CUSTOMER_GROUPS));
-    }
+    // Syn all customer groups by default
 
-    // Customer integration form
     public function isEnabledContactForm()
     {
         return $this->getStroreConfig(self::CUSTOMER_INTEGRATION_FORM);
     }
 
-    // Customer default taska signee
+    // Get list of enabled CustomerGroups
+
     public function getTaskAssignee()
     {
         return $this->getStroreConfig(self::CUSTOMER_TASK_ASSIGNEE);
     }
 
-    // Customer integration type
+    // Customer integration form
+
     public function isCustomerAsLead()
     {
         return $this->getStroreConfig(self::CUSTOMER_CREATE_AS_LEAD);
     }
 
-    // Can rename Account in Salesforce
+    // Customer default taska signee
+
     public function canRenameAccount()
     {
         return !$this->getStroreConfig(self::ACCOUNT_RENAME);
     }
 
-    // Customer is Person Account Enabled
+    // Customer integration type
+
     public function usePersonAccount()
     {
         return $this->getStroreConfig(self::CUSTOMER_PERSON_ACCOUNT);
     }
 
-    // Customer Person Account Record Type
+    // Can rename Account in Salesforce
+
     public function getPersonAccountRecordType()
     {
         return $this->getStroreConfig(self::PERSON_RECORD_TYPE);
     }
 
-    // Customer Business Account Record Type
+    // Customer is Person Account Enabled
+
     public function getBusinessAccountRecordType()
     {
         return $this->getStroreConfig(self::BUSINESS_RECORD_TYPE);
     }
 
-    // Customer get Lead Converted Status
+    // Customer Person Account Record Type
+
     public function getLeadConvertedStatus()
     {
         $status = $this->getStroreConfig(self::LEAD_CONVERTED_STATUS);
@@ -473,109 +499,147 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $status;
     }
 
-    // Default Lead owner to be used during conversion
+    // Customer Business Account Record Type
+
     public function getLeadDefaultOwner()
     {
         return $this->getStroreConfig(self::LEAD_CONVERTED_OWNER);
     }
 
-    // Default Lead/Contact/Account owner to be used during conversion
+    // Customer get Lead Converted Status
+
     public function getDefaultOwner()
     {
         return $this->getStroreConfig(self::DEFAULT_ENTITY_OWNER);
     }
 
-    // Check if Customer Record Type is forced to one per website
+    // Default Lead owner to be used during conversion
+
     public function isCustomerSingleRecordType()
     {
         return $this->getStroreConfig(self::CUSTOMER_FORCE_RECORDTYPE);
     }
 
-    // Default Assignment rule to use when creating a lead
+    // Default Lead/Contact/Account owner to be used during conversion
+
     public function isLeadRule()
     {
         return $this->getStroreConfig(self::CUSTOMER_RULE);
     }
 
-    // Use Tax Fee Product
+    // Check if Customer Record Type is forced to one per website
+
     public function useTaxFeeProduct()
     {
         return $this->getStroreConfig(self::ORDER_USE_TAX_PRODUCT);
     }
 
-    // Use Shipping Fee Product
+    // Default Assignment rule to use when creating a lead
+
     public function useShippingFeeProduct()
     {
         return $this->getStroreConfig(self::ORDER_USE_SHIPPING_PRODUCT);
     }
 
-    // Use Discount Fee Product
+    // Use Tax Fee Product
+
     public function useDiscountFeeProduct()
     {
         return $this->getStroreConfig(self::ORDER_USE_DISCOUNT_PRODUCT);
     }
 
-    // Sync all orders or not
-    public function syncAllOrders() {
+    // Use Shipping Fee Product
+
+    public function syncAllOrders()
+    {
         return $this->getStroreConfig(self::ORDER_STATUS_ALL);
     }
 
-    // get a list of allowed order states for the sync
-    public function getAllowedOrderStates() {
+    // Use Discount Fee Product
+
+    public function getAllowedOrderStates()
+    {
         return $this->getStroreConfig(self::ORDER_STATUS_ALLOW);
     }
 
-    // Tax Fee Product
+    // Sync all orders or not
+
     public function getTaxProduct()
     {
         return $this->getStroreConfig(self::ORDER_TAX_PRODUCT);
     }
 
-    // Shipping Fee Product
+    // get a list of allowed order states for the sync
+
     public function getShippingProduct()
     {
         return $this->getStroreConfig(self::ORDER_SHIPPING_PRODUCT);
     }
 
-    // Discount Fee Product
+    // Tax Fee Product
+
     public function getDiscountProduct()
     {
         return $this->getStroreConfig(self::ORDER_DISCOUNT_PRODUCT);
     }
 
-    // Customer integration type
-    // @deprecated
+    // Shipping Fee Product
+
     public function getDefaultAccountId()
     {
         return $this->getStroreConfig(self::CUSTOMER_DEFAULT_ACCOUNT);
     }
-    // Customer is Person Account Enabled
-    // @deprecated
+
+    // Discount Fee Product
+
     public function createPersonAccount()
     {
         return $this->getStroreConfig(self::CUSTOMER_PERSON_ACCOUNT);
     }
 
+    // Customer integration type
+    // @deprecated
+
     public function isSoapEnabled()
     {
         return (class_exists('SoapClient')) ? true : false;
     }
+    // Customer is Person Account Enabled
+    // @deprecated
 
-    //Get Preset Config
     public function getPricebookId($storeId)
     {
         return $this->_getPresetConfig(self::PRODUCT_PRICEBOOK, $storeId);
     }
 
-    //Get Customer Account
-    public function getCustomerScope() {
+    public function getCustomerScope()
+    {
         return $this->getStroreConfig(self::CUSTOMER_ACCOUNT_SHARING);
     }
 
-    // Magento version
+    //Get Preset Config
+
     public function getMagentoVersion()
     {
         return (int)str_replace(".", "", Mage::getVersion());
+    }
+
+    //Get Customer Account
+
+    public function getDate($_time = NULL, $_isTrue = true)
+    {
+        $_timeStamp = (!$_isTrue) ? $this->getMagentoTime($_time) : $this->getTime($_time);
+        return gmdate(DATE_ATOM, $_timeStamp);
+    }
+
+    // Magento version
+
+    public function getMagentoTime($_time = NULL)
+    {
+        if (!$_time) {
+            $_time = time();
+        }
+        return Mage::getModel('core/date')->timestamp($_time);
     }
 
     public function getTime($_time = NULL) {
@@ -585,34 +649,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $_time;
     }
 
-    public function getMagentoTime($_time = NULL) {
-        if (!$_time) {
-            $_time = time();
-        }
-        return Mage::getModel('core/date')->timestamp($_time);
-    }
-
-    public function getDate($_time = NULL, $_isTrue = true) {
-        $_timeStamp = (!$_isTrue) ? $this->getMagentoTime($_time) : $this->getTime($_time);
-        return gmdate(DATE_ATOM, $_timeStamp);
-    }
-
-    // PHP Version
-    public function checkPhpVersion()
-    {
-        if (!defined('PHP_VERSION_ID')) {
-            $version = explode('.', PHP_VERSION);
-            define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
-            unset($version);
-        }
-
-        if (PHP_VERSION_ID > 50300) {
-            return true;
-        }
-        return false;
-    }
-
-    // Salesforce org type: Partner or Enterprise
     public function getClientTypes()
     {
         if (!$this->_clientTypes) {
@@ -626,6 +662,25 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         }
         return $this->_clientTypes;
     }
+
+    /**
+     * check if our client (mage) is authorized to work with sf
+     *
+     * @return bool
+     */
+    public function canPush()
+    {
+        if ($this->isWorking()
+            && Mage::getSingleton('tnw_salesforce/connection')->getClient()
+        ) {
+            Mage::getSingleton('core/session')->setSfNotWorking(false);
+            return true;
+        }
+
+        return false;
+    }
+
+    // PHP Version
 
     /**
      * Check if we are allowed to use the extension
@@ -648,20 +703,24 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return false;
     }
 
-    /**
-     * check if our client (mage) is authorized to work with sf
-     *
-     * @return bool
-     */
-    public function canPush()
+    // Salesforce org type: Partner or Enterprise
+
+    public function isEnabled()
     {
-        if ($this->isWorking()
-            && Mage::getSingleton('tnw_salesforce/connection')->getClient()
-        ) {
-            Mage::getSingleton('core/session')->setSfNotWorking(false);
-            return true;
+        return $this->getStroreConfig(self::API_ENABLED);
+    }
+
+    public function checkPhpVersion()
+    {
+        if (!defined('PHP_VERSION_ID')) {
+            $version = explode('.', PHP_VERSION);
+            define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
+            unset($version);
         }
 
+        if (PHP_VERSION_ID > 50300) {
+            return true;
+        }
         return false;
     }
 
@@ -843,7 +902,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $res;
     }
 
-    // Get Salesforce Person Account Record Id
     public function getPersonAccountRecordIds()
     {
         if ($this->isWorking()) {
@@ -866,7 +924,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->_personAccountRecordTypes;
     }
 
-    // Get Salesforce Business Account Record Id
+    // Get Salesforce Person Account Record Id
+
     public function getBusinessAccountRecordIds()
     {
         if ($this->isWorking()) {
@@ -889,7 +948,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->_businessAccountRecordTypes;
     }
 
-    // Get Salesforce Pricebooks
+    // Get Salesforce Business Account Record Id
+
     public function getPriceBooks()
     {
         if ($this->isWorking()) {
@@ -912,7 +972,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->_pricebookTypes;
     }
 
-    // Get Salesforce Opportunity Customer Roles
+    // Get Salesforce Pricebooks
+
     public function getCustomerRoles()
     {
         if ($this->isWorking() && $this->isEnabled()) {
@@ -937,6 +998,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     }
 
     // Get Salesforce Opportunity Customer Roles
+
     public function getCustomerGroups()
     {
         if (!$this->_customerGroups) {
@@ -951,6 +1013,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         }
         return $this->_customerGroups;
     }
+
+    // Get Salesforce Opportunity Customer Roles
 
     /**
      * @return bool
@@ -1003,6 +1067,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         }
 
         return false;
+    }
+
+    public function getAllowedCustomerGroups()
+    {
+        return explode(',', $this->getStroreConfig(self::CUSTOMER_GROUPS));
     }
 
     /**
