@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.02.0018</version>
+            <version>0.01.53.02.0019</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -533,6 +533,7 @@
             </sync>
             <lead_config>
                 <customer_integration>0</customer_integration>
+                <lead_source>Web</lead_source>
             </lead_config>
             <contactus>
                 <customer_form_enable>0</customer_form_enable>

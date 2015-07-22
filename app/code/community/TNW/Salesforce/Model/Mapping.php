@@ -14,112 +14,6 @@
  */
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {
-    protected function _construct()
-    {
-        parent::_construct();
-
-        $this->_init('tnw_salesforce/mapping');
-    }
-
-    protected function _afterLoad()
-    {
-        parent::_afterLoad();
-
-        $cutLocalField = explode(" : ", $this->getLocalField());
-        if (count($cutLocalField) > 1) {
-            $this->setLocalFieldType($cutLocalField[0]);
-            $this->setLocalFieldAttributeCode($cutLocalField[1]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return bool|null|string
-     * @throws Mage_Core_Exception
-     */
-    public function getProcessedDefaultValue()
-    {
-        $value = $this->getDefaultValue();
-        switch ($this->getDefaultValue()) {
-            case '{{url}}':
-                return Mage::helper('core/url')->getCurrentUrl();
-            case '{{today}}':
-                return gmdate('Y-m-d');
-            case '{{end of month}}':
-                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
-            case '{{contact id}}':
-                /**
-                 * @deprecated
-                 */
-                return null;
-            case '{{store view name}}':
-                return Mage::app()->getStore()->getName();
-            case '{{store group name}}':
-                return Mage::app()->getStore()->getGroup()->getName();
-            case '{{website name}}':
-                return Mage::app()->getWebsite()->getName();
-            default:
-                return $value;
-        }
-    }
-
-    /**
-     * @param null|int|Mage_Core_Model_Store $store
-     * @return bool|null|string
-     */
-    public function getCustomValue($store = null)
-    {
-        $store = Mage::app()->getStore($store);
-        switch ($this->getLocalFieldAttributeCode()) {
-            case 'current_url':
-                return Mage::helper('core/url')->getCurrentUrl();
-            case 'todays_date':
-                return gmdate('Y-m-d');
-            case 'todays_timestamp':
-                return gmdate(DATE_ATOM);
-            case 'end_of_month':
-                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
-            case 'store_view_name':
-                return $store->getName();
-            case 'store_group_name':
-                return is_object($store->getGroup()) ? $store->getGroup()->getName() : null;
-            case 'website_name':
-                return $store->getWebsite()->getName();
-            default:
-                return $this->getProcessedDefaultValue();
-        }
-    }
-
-    public function getAitocValues($aCustomAtrrList, $attributeCode) {
-        $value = NULL;
-        foreach($aCustomAtrrList as $_type => $_object) {
-            if (is_object($aCustomAtrrList[$_type]) && is_array($aCustomAtrrList[$_type]->getData())) {
-                $value = $this->getAitocValue($aCustomAtrrList[$_type], $attributeCode);
-                if ($value) {
-                    break;
-                }
-            }
-        }
-
-        return $value;
-    }
-
-    protected function getAitocValue($aitocValueCollection, $attributeCode) {
-        $value = NULL;
-        foreach ($aitocValueCollection->getData() as $_key => $_data) {
-            if ($_data['code'] == $attributeCode) {
-                $value = $_data['value'];
-                if ($_data['type'] == "date") {
-                    $value = date("Y-m-d", strtotime($value));
-                }
-                break;
-            }
-        }
-
-        return $value;
-    }
-
     public function getValue(array $objectMappings = array())
     {
         $value = null;
@@ -155,6 +49,37 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         } elseif ($this->getLocalFieldType() == 'Custom') {
             $store = isset($objectMappings['Store']) ? $objectMappings['Store'] : null;
             $value = $this->getCustomValue($store);
+        }
+
+        return $value;
+    }
+
+    public function getAitocValues($aCustomAtrrList, $attributeCode)
+    {
+        $value = NULL;
+        foreach ($aCustomAtrrList as $_type => $_object) {
+            if (is_object($aCustomAtrrList[$_type]) && is_array($aCustomAtrrList[$_type]->getData())) {
+                $value = $this->getAitocValue($aCustomAtrrList[$_type], $attributeCode);
+                if ($value) {
+                    break;
+                }
+            }
+        }
+
+        return $value;
+    }
+
+    protected function getAitocValue($aitocValueCollection, $attributeCode)
+    {
+        $value = NULL;
+        foreach ($aitocValueCollection->getData() as $_key => $_data) {
+            if ($_data['code'] == $attributeCode) {
+                $value = $_data['value'];
+                if ($_data['type'] == "date") {
+                    $value = date("Y-m-d", strtotime($value));
+                }
+                break;
+            }
         }
 
         return $value;
@@ -221,5 +146,89 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         }
 
         return null;
+    }
+
+    /**
+     * @param null|int|Mage_Core_Model_Store $store
+     * @return bool|null|string
+     */
+    public function getCustomValue($store = null)
+    {
+        $store = Mage::app()->getStore($store);
+        switch ($this->getLocalFieldAttributeCode()) {
+            case 'current_url':
+                return Mage::helper('core/url')->getCurrentUrl();
+            case 'todays_date':
+                return gmdate('Y-m-d');
+            case 'todays_timestamp':
+                return gmdate(DATE_ATOM);
+            case 'end_of_month':
+                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
+            case 'store_view_name':
+                return $store->getName();
+            case 'store_group_name':
+                return is_object($store->getGroup()) ? $store->getGroup()->getName() : null;
+            case 'website_name':
+                return $store->getWebsite()->getName();
+            default:
+                return $this->getProcessedDefaultValue();
+        }
+    }
+
+    /**
+     * @return bool|null|string
+     * @throws Mage_Core_Exception
+     */
+    public function getProcessedDefaultValue()
+    {
+        $value = $this->getDefaultValue();
+        switch ($this->getDefaultValue()) {
+            case '{{url}}':
+                return Mage::helper('core/url')->getCurrentUrl();
+            case '{{today}}':
+                return gmdate('Y-m-d');
+            case '{{end of month}}':
+                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
+            case '{{contact id}}':
+                /**
+                 * @deprecated
+                 */
+                return null;
+            case '{{store view name}}':
+                return Mage::app()->getStore()->getName();
+            case '{{store group name}}':
+                return Mage::app()->getStore()->getGroup()->getName();
+            case '{{website name}}':
+                return Mage::app()->getWebsite()->getName();
+            default:
+                /**
+                 * Is it config path
+                 */
+                if (substr_count($value, '/') > 1) {
+                    $value = Mage::getStoreConfig($value);
+                }
+
+                return $value;
+        }
+    }
+
+    protected function _construct()
+    {
+        parent::_construct();
+
+        $this->_init('tnw_salesforce/mapping');
+    }
+
+    protected function _afterLoad()
+    {
+        parent::_afterLoad();
+
+        $cutLocalField = explode(" : ", $this->getLocalField());
+        if (count($cutLocalField) > 1) {
+            $this->setLocalFieldType($cutLocalField[0]);
+            $this->setLocalFieldAttributeCode($cutLocalField[1]);
+        }
+
+        return $this;
     }
 }
