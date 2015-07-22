@@ -131,7 +131,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     {
         try {
             set_time_limit(30);
-            // Creating Customer Entity
+            // Creating Product Entity
             if ($_isNew) {
                 $_product = Mage::getModel('catalog/product');
                 if ($_magentoId) {
@@ -263,7 +263,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     }
 
     /**
-     * Accepts a single customer object and upserts a contact into the DB
+     * Accepts a single product object and upserts a contact into the DB
      *
      * @param null $object
      * @return bool|false|Mage_Core_Model_Abstract
@@ -312,7 +312,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             }
 
             if ($_magentoId) {
-                Mage::helper('tnw_salesforce')->log("Customer #" . $_magentoId . " Loaded by using Salesforce ID: " . $_salesforceId);
+                Mage::helper('tnw_salesforce')->log("Product #" . $_magentoId . " Loaded by using Salesforce ID: " . $_salesforceId);
             } else {
                 //Last reserve, try to find by SKU
                 $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` WHERE value = '" . $_sku . "' AND attribute_id = '" . $this->_attributes['sku'] . "' AND entity_type_id = '" . $this->_productEntityTypeId . "'";
@@ -320,7 +320,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                 $_magentoId = ($row) ? $row['entity_id'] : null;
 
                 if ($_magentoId) {
-                    Mage::helper('tnw_salesforce')->log("Customer #" . $_magentoId . " Loaded by using SKU: " . $_sku);
+                    Mage::helper('tnw_salesforce')->log("Product #" . $_magentoId . " Loaded by using SKU: " . $_sku);
                 } else {
                     //Brand new user
                     $_isNew = true;
