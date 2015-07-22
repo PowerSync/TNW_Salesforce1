@@ -236,7 +236,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         $this->_obj->Email = $subscriber->getData('subscriber_email');
         $status = $subscriber->getSubscriberStatus();
         $this->_obj->HasOptedOutOfEmail =
-            ($status == Mage_Newsletter_Model_Subscriber::STATUS_UNSUBSCRIBED) ? 0 : 1;
+            ($status == Mage_Newsletter_Model_Subscriber::STATUS_UNSUBSCRIBED) ? 1 : 0;
 
         // Link to a Website
         if ( $websiteId !== NULL && array_key_exists($websiteId, $this->_websiteSfIds)
