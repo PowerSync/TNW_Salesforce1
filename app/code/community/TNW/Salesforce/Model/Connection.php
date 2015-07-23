@@ -3,6 +3,11 @@
 class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
 {
     /**
+     * seconds
+     */
+    const CONNECTION_TIME_LIMIT = 60;
+
+    /**
      * @var Salesforce_SforceEnterpriseClient
      */
     protected $_client = NULL;
@@ -270,6 +275,18 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
 
     public function isConnected()
     {
+        $currentTime = time();
+        if (!$this->getPreviousTime() || $currentTime - $this->getPreviousTime() > self::CONNECTION_TIME_LIMIT) {
+            $this->setPreviousTime($currentTime);
+            $this->_connection = null;
+            $this->_loggedIn = null;
+
+            if ($this->tryWsdl()) {
+                $this->tryToConnect();
+                $this->tryToLogin();
+            }
+        }
+
         if (!$this->_connection && $this->tryWsdl()) {
             $this->tryToConnect();
         }
