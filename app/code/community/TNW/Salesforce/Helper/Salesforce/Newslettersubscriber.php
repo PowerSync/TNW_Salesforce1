@@ -275,7 +275,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
                 if (property_exists($result, 'success') && $result->success) {
                     $helper->log('SUCCESS: Account created (id: ' . $result->id . ')');
-                    $this->_cache['accountContactsToUpsert'][$key]->AccountId = $result->id;
+                    $this->_cache['accountContactsToUpsert'][$accountIndexes[$key]]->AccountId = $result->id;
                 } else {
                     $unsetKeys[] = $key;
                     $this->_processErrors($result, 'account', $this->_cache['accountsToUpsert'][$accountIndexes[$key]]);
