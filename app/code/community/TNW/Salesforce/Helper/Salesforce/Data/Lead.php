@@ -24,7 +24,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param array $ids
      * @return array|bool
      */
-    public function lookup($email = NULL, $ids = array(), $leadSource = '')
+    public function lookup($email = NULL, $ids = array(), $leadSource = '', $idPrefix = '')
     {
         $_howMany = 35;
         try {
@@ -44,10 +44,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 for ($_i = 0; $_i < $_steps; $_i++) {
                     $_start = $_i * $_howMany;
                     $_emails = array_slice($email, $_start, $_howMany, true);
-                    $_results[] = $this->_queryLeads($_magentoId, $_emails, $ids, $leadSource);
+                    $_results[] = $this->_queryLeads($_magentoId, $_emails, $ids, $leadSource, $idPrefix);
                 }
             } else {
-                $_results[] = $this->_queryLeads($_magentoId, $email, $ids, $leadSource);
+                $_results[] = $this->_queryLeads($_magentoId, $email, $ids, $leadSource, $idPrefix);
             }
 
             unset($query);
@@ -114,7 +114,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param $_websites
      * @return mixed
      */
-    protected function _queryLeads($_magentoId, $emails, $_websites, $leadSource = '')
+    protected function _queryLeads($_magentoId, $emails, $_websites, $leadSource = '', $idPrefix = '')
     {
         if (empty($emails)) {
             return array();
@@ -133,7 +133,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 !empty($_id)
                 && $_id != 0
             ) {
-                $tmp .= " OR " . $_magentoId . "='" . $_id . "'";
+                $tmp .= " OR " . $_magentoId . "='" . $idPrefix . $_id . "'";
             }
             $tmp .= ")";
             if (
