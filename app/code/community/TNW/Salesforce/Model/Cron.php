@@ -5,12 +5,14 @@
  */
 class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 {
+    /* Moved into Magento configuration
     const ORDER_BATCH_SIZE = 500;
     const ABANDONED_BATCH_SIZE = 500;
     const INVOICE_BATCH_SIZE = 500;
     const PRODUCT_BATCH_SIZE = 500;
     const CUSTOMER_BATCH_SIZE = 1000;
     const WEBSITE_BATCH_SIZE = 500;
+    */
 
     /**
      *
@@ -339,24 +341,25 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
     public function getBatchSize($type)
     {
+        $_configHelper = Mage::helper('tnw_salesforce/config_bulk');
         switch ($type) {
             case 'customer':
-                $batchSize = self::CUSTOMER_BATCH_SIZE;
+                $batchSize = $_configHelper->getCustomerBatchSize();
                 break;
             case 'product':
-                $batchSize = self::PRODUCT_BATCH_SIZE;
+                $batchSize = $_configHelper->getProductBatchSize();
                 break;
             case 'website':
-                $batchSize = self::WEBSITE_BATCH_SIZE;
+                $batchSize = $_configHelper->getWebsiteBatchSize();
                 break;
             case 'order':
-                $batchSize = self::ORDER_BATCH_SIZE;
+                $batchSize = $_configHelper->getOrderBatchSize();
                 break;
             case 'abandoned':
-                $batchSize = self::ABANDONED_BATCH_SIZE;
+                $batchSize = $_configHelper->getAbandonedBatchSize();
                 break;
             case 'invoice':
-                $batchSize = self::INVOICE_BATCH_SIZE;
+                $batchSize = $_configHelper->getInvoiceBatchSize();
                 break;
             default:
                 throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');

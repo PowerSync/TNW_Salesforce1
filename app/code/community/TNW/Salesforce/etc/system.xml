@@ -375,6 +375,90 @@
                             </depends>
                         </zend.enable_gc>
 
+                        <bulk_batch_label translate="label">
+                            <label>Bulk batch size limits</label>
+                            <frontend_model>adminhtml/system_config_form_field_heading</frontend_model>
+                            <sort_order>90</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </bulk_batch_label>
+
+                        <product_batch_size translate="label">
+                            <label>Product Limit</label>
+                            <sort_order>100</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Product batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </product_batch_size>
+
+                        <customer_batch_size translate="label">
+                            <label>Customer Limit</label>
+                            <sort_order>110</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Customer batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </customer_batch_size>
+
+                        <website_batch_size translate="label">
+                            <label>Website Limit</label>
+                            <sort_order>120</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Website batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </website_batch_size>
+
+                        <order_batch_size translate="label">
+                            <label>Order Limit</label>
+                            <sort_order>130</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Order batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </order_batch_size>
+
+                        <abandoned_batch_size translate="label">
+                            <label>Abandoned Cart Limit</label>
+                            <sort_order>140</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Abandoned Cart batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </abandoned_batch_size>
+
+                        <invoice_batch_size translate="label">
+                            <label>Invoice Limit</label>
+                            <sort_order>150</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Invoice batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </invoice_batch_size>
+
                         <!-- Bulk settings end -->
                     </fields>
                 </development_and_debugging>
