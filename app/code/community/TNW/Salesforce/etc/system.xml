@@ -376,7 +376,7 @@
                         </zend.enable_gc>
 
                         <bulk_batch_label translate="label">
-                            <label>Bulk batch size limits</label>
+                            <label><![CDATA[Bulk batch size limits. <span style="color: red;">USE AT YOUR OWN RISK.</span>]]></label>
                             <frontend_model>adminhtml/system_config_form_field_heading</frontend_model>
                             <sort_order>90</sort_order>
                             <show_in_default>1</show_in_default>
@@ -393,7 +393,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[Product batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <comment><![CDATA[Product batch size limit]]></comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
@@ -405,7 +405,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[Customer batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <comment><![CDATA[Customer batch size limit]]></comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
@@ -417,7 +417,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[Website batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <comment><![CDATA[Website batch size limit]]></comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
@@ -429,7 +429,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[Order batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <comment><![CDATA[Order batch size limit]]></comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
@@ -441,7 +441,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[Abandoned Cart batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <comment><![CDATA[Abandoned Cart batch size limit]]></comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
@@ -453,7 +453,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[Invoice batch size limit. USE AT YOUR OWN RISK.]]></comment>
+                            <comment><![CDATA[Invoice batch size limit]]></comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
