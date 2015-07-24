@@ -559,6 +559,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                                     $_syncType = $type;
                             }
 
+                            $this->log("Processing $type: " . count($objectIdSet) . " records", 1, 'sf-cron');
+
                             Mage::dispatchEvent(
                                 'tnw_sales_process_' . $_syncType,
                                 array(
