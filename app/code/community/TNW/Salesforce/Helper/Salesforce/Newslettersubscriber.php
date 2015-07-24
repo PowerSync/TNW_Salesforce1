@@ -135,8 +135,10 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      * @param Mage_Customer_Model_Customer $customer
      * @param bool $isPerson
      * @param int $index
+     *
+     * @return bool
      */
-    protected function addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index)
+    protected function addAccountContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index)
     {
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
@@ -146,6 +148,54 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         if ($isPerson) {
             $this->_obj->PersonHasOptedOutOfEmail = $this->_obj->HasOptedOutOfEmail;
             unset($this->_obj->HasOptedOutOfEmail);
+        }
+
+        // Log Contact Object
+        foreach ($this->_obj as $key => $value) {
+            $helper->log("Account Contact Object: " . $key . " = '" . $value . "'");
+        }
+
+        if ($helper->getType() == "PRO") {
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+            $this->_obj->$syncParam = true;
+
+        }
+
+        $this->_cache['accountContactsToUpsert'][$index] = $this->_obj;
+
+
+        $this->_obj = new stdClass();
+        $this->_obj->Name = $subscriber->getData('subscriber_email');
+        $this->_cache['accountsToUpsert'][$index] = $this->_obj;
+
+        return true;
+    }
+
+
+    /**
+     * Add Contact in cache for future sync
+     *
+     * @param string $id
+     * @param Mage_Newsletter_Model_Subscriber $subscriber
+     * @param int $websiteId
+     * @param Mage_Customer_Model_Customer $customer
+     * @param bool $isPerson
+     * @param int $index
+     */
+    protected function addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index, $accountId = null)
+    {
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
+
+        $this->_obj = $this->getTransferObject($id, $subscriber, $websiteId, $customer);
+
+        if ($isPerson) {
+            $this->_obj->PersonHasOptedOutOfEmail = $this->_obj->HasOptedOutOfEmail;
+            unset($this->_obj->HasOptedOutOfEmail);
+        }
+
+        if($accountId){
+            $this->_obj->AccountId = $accountId;
         }
 
         // Log Contact Object
@@ -171,37 +221,96 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     protected function subscribeContacts($subscribers)
     {
-
-        if(empty($this->_cache['contactsToUpsert'])) return false;
-
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
-        $subscriberIndexes = array_keys($this->_cache['contactsToUpsert']);
+        if(!empty($this->_cache['contactsToUpsert'])) {
 
-        Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']));
 
-        $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['contactsToUpsert']), 'Contact');
 
-        Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
-            "data" => $this->_cache['contactsToUpsert'],
-            "result" => $results
-        ));
+            $subscriberIndexes = array_keys($this->_cache['contactsToUpsert']);
 
-        foreach ($results as $key => $result) {
-            //Report Transaction
-            $this->_cache['responses']['contacts'][$subscriberIndexes[$key]] = $result;
+            Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']));
 
-            if (property_exists($result, 'success') && $result->success) {
-                $helper->log('SUCCESS: Contact updated (id: ' . $result->id . ')');
-                $id = $result->id;
-                // create campaign member using campaign id form magento config and id as current contact
-                $this->_prepareCampaignMember('ContactId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
-            } else {
-                $this->_processErrors($result, 'contact', $this->_cache['contactsToUpsert'][$subscriberIndexes[$key]]);
+            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['contactsToUpsert']), 'Contact');
+
+            Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
+                "data" => $this->_cache['contactsToUpsert'],
+                "result" => $results
+            ));
+
+            foreach ($results as $key => $result) {
+                //Report Transaction
+                $this->_cache['responses']['contacts'][$subscriberIndexes[$key]] = $result;
+
+                if (property_exists($result, 'success') && $result->success) {
+                    $helper->log('SUCCESS: Contact updated (id: ' . $result->id . ')');
+                    $id = $result->id;
+                    // create campaign member using campaign id form magento config and id as current contact
+                    $this->_prepareCampaignMember('ContactId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
+                } else {
+                    $this->_processErrors($result, 'contact', $this->_cache['contactsToUpsert'][$subscriberIndexes[$key]]);
+                }
             }
         }
 
+        // If there is new contact without account - creating new accounts and then creating new Contacts
+        if(!empty($this->_cache['accountsToUpsert'])){
+
+            $accountIndexes = array_keys($this->_cache['accountsToUpsert']);
+
+            Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']));
+
+            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']), 'Account');
+
+            Mage::dispatchEvent("tnw_salesforce_account_send_before", array(
+                "data" => $this->_cache['accountsToUpsert'],
+                "result" => $results
+            ));
+
+            $unsetKeys = array();
+            foreach ($results as $key => $result) {
+                //Report Transaction
+                $this->_cache['responses']['accounts'][$accountIndexes[$key]] = $result;
+
+                if (property_exists($result, 'success') && $result->success) {
+                    $helper->log('SUCCESS: Account created (id: ' . $result->id . ')');
+                    $this->_cache['accountContactsToUpsert'][$key]->AccountId = $result->id;
+                } else {
+                    $unsetKeys[] = $key;
+                    $this->_processErrors($result, 'account', $this->_cache['accountsToUpsert'][$accountIndexes[$key]]);
+                }
+            }
+
+            foreach($unsetKeys as $key){
+                unset($this->_cache['accountContactsToUpsert'][$key]);
+            }
+
+            $subscriberIndexes = array_keys($this->_cache['accountContactsToUpsert']);
+
+            Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['accountContactsToUpsert']));
+
+            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountContactsToUpsert']), 'Contact');
+
+            Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
+                "data" => $this->_cache['accountContactsToUpsert'],
+                "result" => $results
+            ));
+
+            foreach ($results as $key => $result) {
+                //Report Transaction
+                $this->_cache['responses']['contacts'][$subscriberIndexes[$key]] = $result;
+
+                if (property_exists($result, 'success') && $result->success) {
+                    $helper->log('SUCCESS: Contact updated (id: ' . $result->id . ')');
+                    $id = $result->id;
+                    // create campaign member using campaign id form magento config and id as current contact
+                    $this->_prepareCampaignMember('ContactId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
+                } else {
+                    $this->_processErrors($result, 'contact', $this->_cache['accountContactsToUpsert'][$subscriberIndexes[$key]]);
+                }
+            }
+        }
         return true;
     }
 
@@ -303,19 +412,23 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         }
 
 
+
+        // 3.1 Check for Contact
         /** @var TNW_Salesforce_Helper_Salesforce_Data_Contact $helperContact */
         $helperContact = Mage::helper('tnw_salesforce/salesforce_data_contact');
-
-        // 3. Check for Contact
         $contactLookup = $helperContact->lookup($emailsArray, $sfWebsitesArray);
 
-        // 3.1 Going throw Contact matches and add Contact for sync
+        /** @var TNW_Salesforce_Helper_Salesforce_Data $helperSf */
+        $helperSf = Mage::helper('tnw_salesforce/salesforce_data');
+        $accountsFound = $helperSf->accountLookupByEmailDomain($emailsArray);
+
         foreach($subscribers as $index => $subscriber)
         {
             $email = $emailsArray[$index];
             $websiteId = $websitesArray[$index];
             $customer = $customersArray[$index];
 
+            // 3.1 Going throw Contact matches and add Contact for sync
             if($contactLookup && array_key_exists($this->_websiteSfIds[$websiteId], $contactLookup)
                 && array_key_exists($email, $contactLookup[$this->_websiteSfIds[$websiteId]]) )
             {
@@ -330,41 +443,57 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 }
                 $this->addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index);
                 $contactsEmailArray[$index] = $email;
+            // 3.2 Looking for Account and if found - create Contact linked to the Account
+            }elseif(!$helper->isCustomerAsLead() && array_key_exists($index,$accountsFound)){
+                $accountId = $accountsFound[$index];
+                $isPerson = false;
+                $id = null;
+                $this->addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index, $accountId);
+                $contactsEmailArray[$index] = $email;
+            // 3.3 Create Account add AccountId and create new Contact
+            }elseif(!$helper->isCustomerAsLead()){
+                $isPerson = false;
+                $id = null;
+                $this->addAccountContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index);
+                $contactsEmailArray[$index] = $email;
             }
         }
 
-        /** @var TNW_Salesforce_Helper_Salesforce_Data_Lead $helperLead */
-        $helperLead = Mage::helper('tnw_salesforce/salesforce_data_lead');
-
-        // 4. Check for Leads
-        $leadLookup = $helperLead->lookup($emailsArray, $sfWebsitesArray);
-
-        // 4.1 Going throw Leads matches and add Lync for sync
-        foreach($subscribers as $index => $subscriber)
-        {
-            $email = $emailsArray[$index];
-
-            if(in_array($email,$contactsEmailArray)) continue;
-            $websiteId = $websitesArray[$index];
-            $customer = $customersArray[$index];
-            $id = null;
-
-            if ($leadLookup && array_key_exists($this->_websiteSfIds[$websiteId], $leadLookup)
-                && array_key_exists($email, $leadLookup[$this->_websiteSfIds[$websiteId]]))
-            {
-                // Existing Lead
-                $id = $leadLookup[$this->_websiteSfIds[$websiteId]][$email]->Id;
-            }
-
-            $this->addLeadForSubscription($id, $subscriber, $websiteId, $customer, $index);
-        }
-
-
-        //5. sync Contacts
+        // sync Contacts
         $this->subscribeContacts($subscribers);
 
-        //6. sync Leads
-        $this->subscribeLeads($subscribers);
+
+        // 3.3 Check for Leads
+        if($helper->isCustomerAsLead()) {
+            /** @var TNW_Salesforce_Helper_Salesforce_Data_Lead $helperLead */
+            $helperLead = Mage::helper('tnw_salesforce/salesforce_data_lead');
+            $leadLookup = $helperLead->lookup($emailsArray, $sfWebsitesArray);
+
+            // 4.1 Going throw Leads matches and add Lync for sync
+            foreach ($subscribers as $index => $subscriber) {
+                $email = $emailsArray[$index];
+
+                if (in_array($email, $contactsEmailArray)) continue;
+                $websiteId = $websitesArray[$index];
+                $customer = $customersArray[$index];
+                $id = null;
+
+                if ($leadLookup && array_key_exists($this->_websiteSfIds[$websiteId], $leadLookup)
+                    && array_key_exists($email, $leadLookup[$this->_websiteSfIds[$websiteId]])
+                ) {
+                    // Existing Lead
+                    $id = $leadLookup[$this->_websiteSfIds[$websiteId]][$email]->Id;
+                }
+
+                $this->addLeadForSubscription($id, $subscriber, $websiteId, $customer, $index);
+            }
+
+            //6. sync Leads
+            $this->subscribeLeads($subscribers);
+        }
+
+
+
 
         //7. update campaigns
         if (!empty($this->_cache['campaignsToUpsert'])) {

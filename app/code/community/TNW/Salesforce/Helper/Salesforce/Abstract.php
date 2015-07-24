@@ -891,7 +891,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected function _onComplete()
     {
         // Store results
-        if (
+        if ($this->_cache &&
             array_key_exists('responses', $this->_cache)
             && is_array($this->_cache['responses'])
         ) {
