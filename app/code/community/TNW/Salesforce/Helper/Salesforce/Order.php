@@ -556,32 +556,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
-     * @param $_order
-     * Figure out and assign proper pricebook to the order
-     */
-    protected function _assignPricebookToOrder($_order)
-    {
-        try {
-            $_storeId = $_order->getStoreId();
-            $_helper = Mage::helper('tnw_salesforce');
-            if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-                if ($_order->getData('order_currency_code') != $_order->getData('store_currency_code')) {
-                    $_storeId = $this->_getStoreIdByCurrency($_order->getData('order_currency_code'));
-                }
-            }
-
-            $this->_obj->Pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
-
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("INFO: Could not load pricebook based on the order ID. Loading default pricebook based on current store ID.");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
-            if ($this->_defaultPriceBook) {
-                $this->_obj->Pricebook2Id = $this->_defaultPriceBook;
-            }
-        }
-    }
-
-    /**
      * @return bool|void
      * Prepare values for the synchroization
      */

@@ -592,11 +592,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         $storeId = $parentEntity->getStoreId();
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($this->getCurrencyCode($parentEntity) != $parentEntity->getData('store_currency_code')) {
-                $storeId = $this->_getStoreIdByCurrency($this->getCurrencyCode($parentEntity));
-            }
-        }
 
         // Load by product Id only if bundled OR simple with options
         $id = $this->getProductIdFromCart($item);
@@ -799,6 +794,26 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 }
             }
 
+        }
+    }
+
+    /**
+     * @param $_order Mage_Sales_Model_Order|Mage_Sales_Model_Quote
+     */
+    protected function _assignPricebookToOrder($_order)
+    {
+        try {
+            $_storeId = $_order->getStoreId();
+            $_helper = Mage::helper('tnw_salesforce');
+
+            $this->_obj->Pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
+
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("INFO: Could not load pricebook based on the order ID. Loading default pricebook based on current store ID.");
+            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            if ($this->_defaultPriceBook) {
+                $this->_obj->Pricebook2Id = $this->_defaultPriceBook;
+            }
         }
     }
 }

@@ -914,31 +914,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
-     * @param $_quote Mage_Sales_Model_Quote
-     */
-    protected function _assignPricebookToQuote($_quote)
-    {
-        try {
-            $_storeId = $_quote->getStoreId();
-            $_helper = Mage::helper('tnw_salesforce');
-            if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-                if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                    $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
-                }
-            }
-
-            $this->_obj->Pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
-
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("INFO: Could not load pricebook based on the quote ID. Loading default pricebook based on current store ID.");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
-            if ($this->_defaultPriceBook) {
-                $this->_obj->Pricebook2Id = $this->_defaultPriceBook;
-            }
-        }
-    }
-
-    /**
      * Sync customer w/ SF before creating the quote
      *
      * @param $quote Mage_Sales_Model_Quote
