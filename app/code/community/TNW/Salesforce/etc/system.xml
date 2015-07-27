@@ -635,6 +635,9 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>This value will be used as filter in lead lookup query</comment>
+                            <depends>
+                                <customer_integration>1</customer_integration>
+                            </depends>
                         </lead_source>
 
                     </fields>
