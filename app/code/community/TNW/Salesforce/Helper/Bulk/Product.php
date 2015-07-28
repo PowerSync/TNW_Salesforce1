@@ -138,6 +138,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->_cache['responses']['pricebooks'][$_keys[$_i]] = json_decode(json_encode($_result), TRUE);
 
                     $_magentoId = $_tmp[1];
+                    $currencyCode = $_tmp[2];
                     $pricebookEntryKey = $_keys[$_i];
                     ++$_i;
                     if ((string)$_result->success == "false") {
@@ -151,7 +152,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
                     $updateStoreIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]);
                     foreach ($updateStoreIds as $uStoreId) {
-                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] = (string)$_result->id;
+                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] .= $currencyCode.':'.(string)$_result->id . ';';
                     }
 
                     if ($this->_cache['toSaveInMagento'][$_magentoId]->syncComplete != false) {

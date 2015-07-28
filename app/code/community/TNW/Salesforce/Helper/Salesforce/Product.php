@@ -525,14 +525,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $this->addPriceBookEntryToSync(0, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
             }
 
-            foreach ($this->getCurrencies() as $_storeId => $_code) {
-                // Skip store if product is not assigned to it
-                if (!in_array($_storeId, $_magentoProduct->getStoreIds())) {
-                    continue;
-                }
-                $this->addPriceBookEntryToSync($_storeId, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
-            }
-
             // Sync remaining Stores
             foreach ($_magentoProduct->getStoreIds() as $_storeId) {
                 $_storePriceBookId = $this->getHelper()->getPricebookId($_storeId) ?: $this->_defaultPriceBook;
@@ -722,6 +714,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
             $_tmp = explode(':::', $_keys[$_key]);
             $_magentoId = $_tmp[1];
+            $currencyCode = $_tmp[2];
             $storeIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$_keys[$_key]]);
 
             //Report Transaction
@@ -734,7 +727,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds = array();
                 }
                 foreach ($storeIds as $_storeId) {
-                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] = $_response->id;
+                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] .= $currencyCode.':'.(string)$_response->id . ';';
                 }
             } else {
                 $this->_cache['toSaveInMagento'][$_magentoId]->SfInSync = 0;

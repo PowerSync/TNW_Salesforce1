@@ -232,7 +232,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             return false;
         }
 
-        if ($this->_stopFurtherProcessing){
+        if ($this->_stopFurtherProcessing) {
             return false;
         }
 
@@ -541,7 +541,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 }
             }
         } catch (Exception $e) {
-            $logHelper->log('_checkBatchCompletion function has an error: '.$e->getMessage());
+            $logHelper->log('_checkBatchCompletion function has an error: ' . $e->getMessage());
             $completed = 'exception';
         }
 
@@ -651,7 +651,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     }
 
-    protected function _fillWebsiteSfIds(){
+    protected function _fillWebsiteSfIds()
+    {
         $websiteHelper = Mage::helper('tnw_salesforce/magento_websites');
         $website = Mage::getModel('core/website')->load(0);
         $this->_websiteSfIds[0] = $websiteHelper->getWebsiteSfId($website);
@@ -659,7 +660,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             Mage::helper('tnw_salesforce/salesforce_website');
             $websiteSfId = $websiteHelper->getWebsiteSfId($website);
             $this->_websiteSfIds[$website->getData('website_id')] = $websiteSfId;
-            if (empty($websiteSfId)){
+            if (empty($websiteSfId)) {
                 $this->_stopFurtherProcessing = true;
             }
         }
@@ -693,8 +694,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 Mage::helper('tnw_salesforce')->log($type . " Object is empty!", 1, "sf-errors");
             } else {
                 foreach ($_obj as $_key => $_value) {
-                    if (is_object($_value) || is_array($_value)){
-                        foreach($_value as $k1 => $v1) {
+                    if (is_object($_value) || is_array($_value)) {
+                        foreach ($_value as $k1 => $v1) {
                             if ($isError) {
                                 Mage::helper('tnw_salesforce')->log($type . " Object: " . $k1 . " = '" . $v1 . "'", 1, "sf-errors");
                             } else {
@@ -790,7 +791,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @param string $_statusCode
      * @return stdClass
      */
-    protected function _buildErrorResponse($_text = NULL, $_statusCode = 'POWERSYNC_EXCEPTION') {
+    protected function _buildErrorResponse($_text = NULL, $_statusCode = 'POWERSYNC_EXCEPTION')
+    {
         if ($this->_mageCache === NULL) {
             $this->_initCache();
         }
@@ -821,7 +823,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @param null $_sfUserId
      * @return bool
      */
-    public function isUserActive($_sfUserId = NULL) {
+    public function isUserActive($_sfUserId = NULL)
+    {
         return $this->_isUserActive($_sfUserId);
     }
 
@@ -831,13 +834,15 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @param null $_sfUserId
      * @return bool
      */
-    protected function _isUserActive($_sfUserId = NULL) {
+    protected function _isUserActive($_sfUserId = NULL)
+    {
 
         return Mage::helper('tnw_salesforce/salesforce_data_user')->isUserActive($_sfUserId);
     }
 
-    protected function _getStoreIdByCurrency($_currenctCurrencyCode) {
-        foreach(Mage::app()->getStores() as $_store) {
+    protected function _getStoreIdByCurrency($_currenctCurrencyCode)
+    {
+        foreach (Mage::app()->getStores() as $_store) {
             $_currency = Mage::app()->getStore($_store->getId())->getDefaultCurrencyCode();
             if ($_currenctCurrencyCode == $_currency) {
                 return $_store->getId();
@@ -846,23 +851,46 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         return false;
     }
 
-    public function generateLinkToSalesforce($_field) {
-        $_data = 'N/A';
+    /**
+     * input paremeter: salesforceId or string type1:salesforceId1;type2:salesforceId2;
+     * @param $_field
+     * @return string
+     */
+    public function generateLinkToSalesforce($_field)
+    {
+        $_data = null;
 
         if ($_field) {
-            $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') .'/' . $_field;
-            if (Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url')) {
-                $_data = '<strong><a target="_blank" href="' . $_url . '">' . $_field . "</a></strong>";
-            } else {
-                $_data = '<strong>' . $_field . "</strong>";
+            $valuesArray = explode(';', $_field);
+
+            foreach ($valuesArray as $value) {
+
+                if (strpos($value, ':') !== false) {
+                    $_field = $value;
+                    $tmp = explode(':', $value);
+                    $value = $tmp[1];
+                }
+
+                $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') . '/' . $value;
+                if (Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url')) {
+                    $_data .= '<strong><a target="_blank" href="' . $_url . '">' . $_field . "</a></strong><br />";
+                } else {
+                    $_data .= '<strong>' . $value . "</strong><br />";
+                }
             }
         }
+
+        if (!$_data) {
+            $_data = 'N/A';
+        }
+
         return $_data;
     }
 
-    protected function _whenToStopWaiting($_result = NULL, $_attempt = 50, $_jobRecords = NULL) {
+    protected function _whenToStopWaiting($_result = NULL, $_attempt = 50, $_jobRecords = NULL)
+    {
         // Break infinite loop after 50 attempts.
-        if(
+        if (
             (
                 !$_result
                 && $_attempt == 50
@@ -881,7 +909,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * Get results from SF sync for all objects
      * @return array
      */
-    public function getSyncResults() {
+    public function getSyncResults()
+    {
         return $this->_syncedResults;
     }
 
@@ -1013,12 +1042,12 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $priceField = 'Base' . $priceField;
         }
 
-        $priceGetter = 'get' .$priceField;
+        $priceGetter = 'get' . $priceField;
 
         $result = $entity->$priceGetter();
 
         if (!$result) {
-            $origPriceGetter = 'get' .$origPriceField;
+            $origPriceGetter = 'get' . $origPriceField;
             $result = $entity->$origPriceGetter();
         }
 
