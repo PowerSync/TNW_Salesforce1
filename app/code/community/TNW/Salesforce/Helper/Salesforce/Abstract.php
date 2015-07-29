@@ -866,9 +866,13 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             foreach ($valuesArray as $value) {
 
                 if (strpos($value, ':') !== false) {
-                    $_field = $value;
                     $tmp = explode(':', $value);
+                    $_field = $tmp[1];
                     $value = $tmp[1];
+                }
+
+                if (empty($value)) {
+                    continue;
                 }
 
                 $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') . '/' . $value;

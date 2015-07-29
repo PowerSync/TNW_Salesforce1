@@ -152,7 +152,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
                     $updateStoreIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]);
                     foreach ($updateStoreIds as $uStoreId) {
-                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] .= $currencyCode.':'.(string)$_result->id . ';';
+                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] .= $currencyCode . ':' . (string)$_result->id . ';';
                     }
 
                     if ($this->_cache['toSaveInMagento'][$_magentoId]->syncComplete != false) {

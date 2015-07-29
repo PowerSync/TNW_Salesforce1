@@ -550,7 +550,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_cache['pricebookEntryKeyToStore'][$cacheCode][] = $store->getId();
 
             if (isset($this->_cache['pricebookEntryToSync']) && isset($this->_cache['pricebookEntryToSync'][$cacheCode])) {
-                return;
+                continue;
             }
 
             $price = is_array($this->_cache['productPrices'][$magentoProductId])
@@ -622,7 +622,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
     public function getCurrency($currencyCode)
     {
-        if (!$this->_currencies[$currencyCode]) {
+        if (!isset($this->_currencies[$currencyCode])) {
             $this->_currencies[$currencyCode] = Mage::getModel('directory/currency')->load($currencyCode);
         }
 

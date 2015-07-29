@@ -624,6 +624,23 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $identifier = $sku;
             $pricebookEntryId = $product->getSalesforcePricebookId();
 
+            $valuesArray = explode(';', $pricebookEntryId);
+
+            if (!empty($valuesArray)) {
+                foreach ($valuesArray as $value) {
+
+                    if (strpos($value, ':') !== false) {
+                        $tmp = explode(':', $value);
+                        if (
+                            isset($tmp[0])
+                            && ($tmp[0] == $_currencyCode || empty($_currencyCode))
+                        ) {
+                            $pricebookEntryId = $tmp[1];
+                            break;
+                        }
+                    }
+                }
+            }
         } else {
             $product = new Varien_Object();
             $sku = $item->getSku();
@@ -722,7 +739,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * Should Item object be added to SF
      * aka validation to prevent errors
      */
-    protected function isItemObjectValid() {
+    protected function isItemObjectValid()
+    {
         return (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
         || (property_exists($this->_obj, 'Product__c') && $this->_obj->Product__c)
         || (property_exists($this->_obj, 'Id') && $this->_obj->Id);
@@ -758,7 +776,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $itemFieldAlias = $this->getItemFieldAlias();
         if (!empty($itemFieldAlias)) {
             foreach ($itemFieldAlias as $defaultName => $customName) {
-                if(!property_exists($this->_obj, $defaultName)) {
+                if (!property_exists($this->_obj, $defaultName)) {
                     continue;
                 }
                 if (!empty($customName)) {
