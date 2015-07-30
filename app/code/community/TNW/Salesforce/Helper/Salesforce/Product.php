@@ -520,6 +520,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
             // If $_flag == true - create a standard Pricebook as well
             $_flag = !$_prod || !$_standardPbeId;
+            $_flag = true;
 
             if ($_flag) {
                 $this->addPriceBookEntryToSync(0, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);

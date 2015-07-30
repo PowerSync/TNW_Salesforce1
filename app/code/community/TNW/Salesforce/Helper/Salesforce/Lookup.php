@@ -36,19 +36,33 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
         return Mage::getSingleton('tnw_salesforce/connection')->isLoggedIn();
     }
 
-    protected function _queryProducts($_magentoId, $sku)
+    protected function _queryProducts($_magentoId, $sku, $searchByName = false)
     {
         if (is_array($sku)) {
-            $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode IN ('" . implode("','", $sku) . "')";
-            $query .= " OR " . $_magentoId . " IN ('".implode("', '", array_keys($sku))."')";
+            $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE (ProductCode IN ('" . implode("','", $sku) . "')";
+            $query .= " OR " . $_magentoId . " IN ('".implode("', '", array_keys($sku))."'))";
         } else {
-            $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode='" . $sku . "'";
+            $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE (ProductCode='" . $sku . "')";
+        }
+
+        if ($searchByName == true) {
+
+            if (!is_array($sku)) {
+                $sku = array($sku);
+            }
+            $where = array();
+
+            foreach ($sku as $s) {
+
+                $where[] = " Name LIKE '%" . $s . "%'";
+            }
+            $query .= " OR (" . implode(' OR ', $where) . ") ";
         }
 
         return $this->getClient()->query(($query));
     }
 
-    protected function _queryPricebookEntries($sku)
+    protected function _queryPricebookEntries($sku, $searchByName = false)
     {
         $query = "SELECT ID, Product2Id, Pricebook2Id, UnitPrice";
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
@@ -60,16 +74,30 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
             $query .= "IN ('" . implode("','", $sku) . "')";
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
             $query .= " OR " . $_magentoId . " IN ('".implode("', '", array_keys($sku))."')";
-            $query .= ")";
+            $query .= "";
 
         } else {
-            $query .= " = '" . $sku . "')";
+            $query .= " = '" . $sku . "'";
+        }
+
+        if ($searchByName == true) {
+
+            if (!is_array($sku)) {
+                $sku = array($sku);
+            }
+            $where = array();
+
+            foreach ($sku as $s) {
+
+                $where[] = " Name LIKE '%" . $s . "%'";
+            }
+            $query .= " OR " . implode(' OR ', $where) . ") ";
         }
 
         return $this->getClient()->query(($query));
     }
 
-    public function productLookup($sku = NULL)
+    public function productLookup($sku = NULL, $searchByName = false)
     {
         if (!$sku) {
             Mage::helper('tnw_salesforce')->log("SKU is missing for product lookup");
@@ -94,12 +122,12 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                 for ($_i = 0; $_i < $_steps; $_i++) {
                     $_start = $_i * $_howMany;
                     $_skus = array_slice($sku, $_start, $_howMany, true);
-                    $_results[] = $this->_queryProducts($_magentoId, $_skus);
-                    $_resultsPBE[] = $this->_queryPricebookEntries($_skus);
+                    $_results[] = $this->_queryProducts($_magentoId, $_skus, $searchByName);
+                    $_resultsPBE[] = $this->_queryPricebookEntries($_skus, $searchByName);
                 }
             } else {
-                $_results[] = $this->_queryProducts($_magentoId, $sku);
-                $_resultsPBE[] = $this->_queryPricebookEntries($sku);
+                $_results[] = $this->_queryProducts($_magentoId, $sku, $searchByName);
+                $_resultsPBE[] = $this->_queryPricebookEntries($sku, $searchByName);
             }
             Mage::helper('tnw_salesforce')->log("Check if the product already exist in SalesForce...");
             if (!$_results[0] || $_results[0]->size < 1) {

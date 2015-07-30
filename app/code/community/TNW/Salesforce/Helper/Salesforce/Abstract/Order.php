@@ -649,6 +649,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $identifier = $pricebookEntryId;
             $this->_obj->Description = $item->getDescription();
+            $id = $sku;
         }
 
         /**

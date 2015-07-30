@@ -32,7 +32,7 @@ class TNW_Salesforce_Model_Config_Products
      * @param $type
      */
     protected function _getProducts($type) {
-        if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->productLookupAdvanced(NULL, $type)) {
+        if ($collection = Mage::helper('tnw_salesforce/salesforce_lookup')->productLookup($type, true)) {
             foreach ($collection as $_item) {
                 $this->_productsLookup[$this->_getKey($_item)] = $_item->Name;
             }
@@ -46,7 +46,11 @@ class TNW_Salesforce_Model_Config_Products
      * @return mixed
      */
     protected function _getKey($_item) {
-        return $_item->PricebookEntityId;
+        $key = '';
+        if (isset($_item->PriceBooks) && !empty($_item->PriceBooks)) {
+
+        }
+        return $_item->Id;
     }
 
 }
