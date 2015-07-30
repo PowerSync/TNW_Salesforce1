@@ -44,25 +44,28 @@ class TNW_Salesforce_Model_Config_Lead_Source
                     'value' => '',
                 )
             );
-            $leadDescription = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject('Lead');
-            foreach ($leadDescription->fields as $field) {
-                if ($field->name == 'LeadSource') {
-                    foreach ($field->picklistValues as $data) {
-                        if (!$data->active) {
-                            continue;
+            $client = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
+            if ($client) {
+                $leadDescription = $client->describeSObject('Lead');
+                foreach ($leadDescription->fields as $field) {
+                    if ($field->name == 'LeadSource') {
+                        foreach ($field->picklistValues as $data) {
+                            if (!$data->active) {
+                                continue;
+                            }
+                            $leadSource[] = array(
+                                'value' => $data->value,
+                                'label' => $data->label
+                            );
+
                         }
-                        $leadSource[] = array(
-                            'value' => $data->value,
-                            'label' => $data->label
-                        );
-
+                        break;
                     }
-                    break;
                 }
-            }
 
-            if ($_useCache) {
-                $cache->save(serialize($leadSource), 'tnw_salesforce_lead_source', array("TNW_SALESFORCE"));
+                if ($_useCache) {
+                    $cache->save(serialize($leadSource), 'tnw_salesforce_lead_source', array("TNW_SALESFORCE"));
+                }
             }
         }
 
