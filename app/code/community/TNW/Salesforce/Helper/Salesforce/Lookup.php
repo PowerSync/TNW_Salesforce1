@@ -36,6 +36,28 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
         return Mage::getSingleton('tnw_salesforce/connection')->isLoggedIn();
     }
 
+
+    /**
+     * @param $_magentoId
+     * @param $sku
+     * @param bool|false $searchByName
+     * @return mixed
+     */
+    public function queryProducts($_magentoId, $sku, $searchByName = false)
+    {
+        $return = array();
+
+        $result = $this->_queryProducts($_magentoId, $sku, $searchByName);
+
+        if (property_exists($result, 'records') && is_array($result->records)) {
+            foreach ($result->records as $item) {
+                $return[] = (array)$item;
+            }
+        }
+
+        return $return;
+    }
+
     protected function _queryProducts($_magentoId, $sku, $searchByName = false)
     {
         if (is_array($sku)) {
@@ -61,6 +83,31 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
 
         return $this->getClient()->query(($query));
     }
+
+    /**
+     * @param $sku
+     * @param bool|false $searchByName
+     * @return mixed
+     */
+    public function queryPricebookEntries($sku, $searchByName = false) {
+
+        $return = array();
+
+        $result = $this->_queryPricebookEntries($sku, $searchByName);
+
+        if (property_exists($result, 'records') && is_array($result->records)) {
+            foreach ($result->records as $item) {
+                $key = null;
+                if (property_exists($item, 'CurrencyIsoCode')) {
+                    $key = (string)$item->CurrencyIsoCode;
+                }
+                $return[$key] = (array)$item;
+            }
+        }
+
+        return $return;
+    }
+
 
     protected function _queryPricebookEntries($sku, $searchByName = false)
     {
@@ -91,8 +138,10 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
 
                 $where[] = " Name LIKE '%" . $s . "%'";
             }
-            $query .= " OR " . implode(' OR ', $where) . ") ";
+            $query .= " OR " . implode(' OR ', $where) . " ";
         }
+
+        $query .= ")";
 
         return $this->getClient()->query(($query));
     }

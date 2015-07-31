@@ -392,7 +392,7 @@ class TNW_Salesforce_Model_Observer
 
         if ($manualSync->reset()) {
             if ($manualSync->massAdd($_ids)) {
-                if ($_message === NULL) {
+                if ($_message === NULL && Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     $manualSync->setIsCron(true);
                 }
                 $res = $manualSync->process('full');

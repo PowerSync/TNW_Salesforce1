@@ -334,6 +334,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @param $parentEntityNumber
+     * @return Mage_Core_Model_Abstract|mixed
+     */
+    public function getSalesforceParentEntity($parentEntityNumber)
+    {
+        return $this->_cache[strtolower($this->getManyParentEntityType()) . 'ToUpsert'][$parentEntityNumber];
+    }
+
+    /**
      * @comment returns item qty
      * @param $item
      * @return mixed
@@ -454,8 +463,17 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     $qty = 1;
 
                     $item = new Varien_Object();
+
+                    $feeData = Mage::app()->getStore($parentEntity->getStoreId())->getConfig($_helper->getFeeProduct($feeName));
+                    if ($feeData) {
+                        $feeData = unserialize($feeData);
+                    } else {
+                        continue;
+                    }
+
+                    $item->setData($feeData);
                     $item->setData($this->getItemQtyField(), $qty);
-                    $item->setPricebookEntryConfig($_helper->getFeeProduct($feeName));
+
                     $item->setDescription($_helper->__($ucFee));
 
                     $item->setRowTotalInclTax($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
@@ -608,7 +626,31 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $sku = ($product->getSku()) ? $product->getSku() : $item->getSku();
 
-            if (!$product->getSalesforcePricebookId()) {
+            $pricebookEntryId = $product->getSalesforcePricebookId();
+
+            if (!empty($pricebookEntryId)) {
+                $valuesArray = explode(';', $pricebookEntryId);
+
+                $pricebookEntryId = '';
+
+                if (!empty($valuesArray)) {
+                    foreach ($valuesArray as $value) {
+
+                        if (strpos($value, ':') !== false) {
+                            $tmp = explode(':', $value);
+                            if (
+                                isset($tmp[0])
+                                && ($tmp[0] == $_currencyCode || empty($_currencyCode))
+                            ) {
+                                $pricebookEntryId = $tmp[1];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!$pricebookEntryId) {
 
                 throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
             }
@@ -622,29 +664,27 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 ->processMapping($item, $product);
 
             $identifier = $sku;
-            $pricebookEntryId = $product->getSalesforcePricebookId();
 
-            $valuesArray = explode(';', $pricebookEntryId);
-
-            if (!empty($valuesArray)) {
-                foreach ($valuesArray as $value) {
-
-                    if (strpos($value, ':') !== false) {
-                        $tmp = explode(':', $value);
-                        if (
-                            isset($tmp[0])
-                            && ($tmp[0] == $_currencyCode || empty($_currencyCode))
-                        ) {
-                            $pricebookEntryId = $tmp[1];
-                            break;
-                        }
-                    }
-                }
-            }
         } else {
             $product = new Varien_Object();
-            $sku = $item->getSku();
-            $pricebookEntryId = Mage::app()->getStore($storeId)->getConfig($item->getPricebookEntryConfig());
+            $sku = $item->getData('ProductCode');
+            $salesforceParentEntity = $this->getSalesforceParentEntity($parentEntityNumber);
+
+            $pricebookId = $this->_getPricebookIdToOrder($parentEntity);
+
+            $pricebookEntryIds = Mage::helper('tnw_salesforce/salesforce_data_product')->getProductPricebookEntry($item->getData('Id'), $pricebookId);
+
+            $currencyCode = 0;
+
+            if (isset($pricebookEntryIds[$salesforceParentEntity->CurrencyIsoCode])) {
+                $currencyCode = $salesforceParentEntity->CurrencyIsoCode;
+            }
+
+            if (!isset($pricebookEntryIds[$currencyCode]) || !isset($pricebookEntryIds[$currencyCode]['Id'])) {
+                throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+            }
+            $pricebookEntryId = $pricebookEntryIds[$currencyCode]['Id'];
+
             $product->setSalesforceId($pricebookEntryId);
 
             $identifier = $pricebookEntryId;
@@ -727,7 +767,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)][] = $sku;
 
-            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getId()] = $this->_obj;
+            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $id] = $this->_obj;
         } else {
             Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted!');
         }
@@ -817,22 +857,34 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @param $_order Mage_Sales_Model_Order|Mage_Sales_Model_Quote
+     * @param $order
+     * @return null|string
      */
-    protected function _assignPricebookToOrder($_order)
+    protected function _getPricebookIdToOrder($order)
     {
+        $pricebook2Id = null;
+
         try {
-            $_storeId = $_order->getStoreId();
+            $_storeId = $order->getStoreId();
             $_helper = Mage::helper('tnw_salesforce');
 
-            $this->_obj->Pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
+            $pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
 
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("INFO: Could not load pricebook based on the order ID. Loading default pricebook based on current store ID.");
             Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
             if ($this->_defaultPriceBook) {
-                $this->_obj->Pricebook2Id = $this->_defaultPriceBook;
+                $pricebook2Id = $this->_defaultPriceBook;
             }
         }
+        return $pricebook2Id;
+    }
+
+    /**
+     * @param $_order Mage_Sales_Model_Order|Mage_Sales_Model_Quote
+     */
+    protected function _assignPricebookToOrder($_order)
+    {
+        $this->_obj->Pricebook2Id = $this->_getPricebookIdToOrder($_order);
     }
 }

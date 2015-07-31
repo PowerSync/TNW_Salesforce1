@@ -499,10 +499,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         // Is Multi Site Sync?
         if (!$this->isMultiSync()) {
-            /* Do I need to create Standard Pricebook Entry or update existing one? */
-            if (!$_prod || !$_standardPbeId) {
-                $this->addPriceBookEntryToSync($currentStore, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
-            }
+            $this->addPriceBookEntryToSync($currentStore, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
+
             /* Do I need to create Default Pricebook Entry or update existing one? */
             if ($this->_standardPricebookId != $this->_defaultPriceBook) {
                 $this->addPriceBookEntryToSync($currentStore, $_magentoId, $_prod, $_sfProductId, $this->_defaultPriceBook);
@@ -518,13 +516,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             // TODO: place this into cache? in massAdd and read from it?
             $_magentoProduct = Mage::getModel('catalog/product')->load($_magentoId);
 
-            // If $_flag == true - create a standard Pricebook as well
-            $_flag = !$_prod || !$_standardPbeId;
-            $_flag = true;
-
-            if ($_flag) {
-                $this->addPriceBookEntryToSync(0, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
-            }
+            $this->addPriceBookEntryToSync(0, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
 
             // Sync remaining Stores
             foreach ($_magentoProduct->getStoreIds() as $_storeId) {
