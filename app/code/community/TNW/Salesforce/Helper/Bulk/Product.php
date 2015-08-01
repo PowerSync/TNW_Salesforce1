@@ -28,6 +28,12 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         $ids = array();
 
         foreach ($this->_cache['toSaveInMagento'] as $_magentoId => $_product) {
+            /**
+             * skip order fee products, these products don't exist in magento and use sku instead Id
+             */
+            if (!is_numeric($_magentoId)) {
+                continue;
+            }
             $_product->salesforceId = (property_exists($_product, 'productId')) ? $_product->productId : NULL;
             $_product->pricebookEntityIds = (property_exists($_product, 'pricebookEntityIds')) ? $_product->pricebookEntityIds : array();
             $_product->SfInSync = (property_exists($_product, 'syncComplete')) ? $_product->syncComplete : 0;

@@ -672,24 +672,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $pricebookId = $this->_getPricebookIdToOrder($parentEntity);
 
-            $pricebookEntryIds = Mage::helper('tnw_salesforce/salesforce_data_product')->getProductPricebookEntry($item->getData('Id'), $pricebookId);
+            $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')->getProductPricebookEntry($item->getData('Id'), $pricebookId, $salesforceParentEntity->CurrencyIsoCode);
 
-            $currencyCode = 0;
-
-            if (isset($pricebookEntryIds[$salesforceParentEntity->CurrencyIsoCode])) {
-                $currencyCode = $salesforceParentEntity->CurrencyIsoCode;
-            }
-
-            if (!isset($pricebookEntryIds[$currencyCode]) || !isset($pricebookEntryIds[$currencyCode]['Id'])) {
+            if (!$pricebookEntry || !isset($pricebookEntry['Id'])) {
                 throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
             }
-            $pricebookEntryId = $pricebookEntryIds[$currencyCode]['Id'];
+            $pricebookEntryId = $pricebookEntry['Id'];
 
             $product->setSalesforceId($pricebookEntryId);
 
             $identifier = $pricebookEntryId;
             $this->_obj->Description = $item->getDescription();
-            $id = $sku;
+            $id = $item->getData('Id');;
         }
 
         /**
