@@ -629,7 +629,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $pricebookEntryId = $product->getSalesforcePricebookId();
 
             if (!empty($pricebookEntryId)) {
-                $valuesArray = explode(';', $pricebookEntryId);
+                $valuesArray = explode("\n", $pricebookEntryId);
 
                 $pricebookEntryId = '';
 

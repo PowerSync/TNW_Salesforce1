@@ -277,7 +277,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 unset($_product->pricebookEntryIds['Standard']);
             }
             foreach ($_product->pricebookEntryIds as $_key => $_pbeId) {
-                $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_varchar', $_key);
+                $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_text', $_key);
             }
             $ids[] = $_magentoId;
         }
@@ -766,7 +766,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds = array();
                 }
                 foreach ($storeIds as $_storeId) {
-                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] .= $currencyCode . ':' . (string)$_response->id . ';';
+                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] .= $currencyCode . ':' . (string)$_response->id . "\n";
                 }
             } else {
                 $this->_cache['toSaveInMagento'][$_magentoId]->SfInSync = 0;

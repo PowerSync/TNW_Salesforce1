@@ -861,7 +861,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $_data = null;
 
         if ($_field) {
-            $valuesArray = explode(';', $_field);
+            $valuesArray = explode("\n", $_field);
 
             foreach ($valuesArray as $value) {
 

@@ -57,7 +57,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 Mage::helper('tnw_salesforce')->log("Could not extract product (ID: " . $_magentoId . ") prices from Salesforce!");
             } else {
                 foreach ($_product->pricebookEntityIds as $_key => $_pbeId) {
-                    $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_varchar', $_key);
+                    $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_text', $_key);
                 }
             }
 
@@ -158,7 +158,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
                     $updateStoreIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]);
                     foreach ($updateStoreIds as $uStoreId) {
-                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] .= $currencyCode . ':' . (string)$_result->id . ';';
+                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] .= $currencyCode . ':' . (string)$_result->id . "\n";
                     }
 
                     if ($this->_cache['toSaveInMagento'][$_magentoId]->syncComplete != false) {
