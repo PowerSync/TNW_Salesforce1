@@ -79,8 +79,8 @@ class TNW_Salesforce_Model_Import_Order
                 $this->_order = false;
                 return false;
             }
+            $this->log('Order Loaded: ' . $this->_order->getIncrementId());
         }
-
         return $this->_order;
     }
 
@@ -90,9 +90,12 @@ class TNW_Salesforce_Model_Import_Order
     public function process()
     {
         if ($this->getOrder()) {
+            $this->log('Attempt to update order status');
             $this->updateStatus()
                 ->updateMappedFields()
                 ->saveEntities();
+        } else {
+            $this->log('ERROR: Order object is not set');
         }
     }
 
@@ -191,6 +194,7 @@ class TNW_Salesforce_Model_Import_Order
     {
         $order = $this->getOrder();
         if (!isset($this->getObject()->Status) || !$this->getObject()->Status) {
+            $this->log('SKIPPING: Order status is not avaialble');
             return $this;
         }
 
@@ -200,6 +204,7 @@ class TNW_Salesforce_Model_Import_Order
         if (count($matchedStatuses) === 1) {
             foreach ($matchedStatuses as $_status) {
                 if ($order->getStatus() != $_status->getStatus()) {
+                    $this->log('SUCCESS: Order status updated to ' . $_status->getStatus());
                     $oldStatusLabel = $order->getStatusLabel();
                     $order->setStatus($_status->getStatus());
                     $order->addStatusHistoryComment(
@@ -208,6 +213,8 @@ class TNW_Salesforce_Model_Import_Order
                         $order->getStatus()
                     );
                     $this->addEntityToSave('Order', $order);
+                } else {
+                    $this->log('SUCCESS: Order status is in sync');
                 }
                 break;
             }
@@ -217,11 +224,14 @@ class TNW_Salesforce_Model_Import_Order
             $log .= ' - not sure which one should be selected';
             $order->addStatusHistoryComment($log);
             $this->addEntityToSave('Order', $order);
+            $this->log('SKIPPING: ' . $log);
         } else {
+            $message = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
+                . ' Mapped Salesforce status does not match any Magento Order status';
             $order->addStatusHistoryComment(
-                sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
-                . ' Mapped Salesforce status does not match any Magento Order status'
+                $message
             );
+            $this->log('SKIPPING: ' . $message);
             $this->addEntityToSave('Order', $order);
         }
 
