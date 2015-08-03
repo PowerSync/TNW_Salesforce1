@@ -668,11 +668,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         } else {
             $product = new Varien_Object();
             $sku = $item->getData('ProductCode');
-            $salesforceParentEntity = $this->getSalesforceParentEntity($parentEntityNumber);
 
             $pricebookId = $this->_getPricebookIdToOrder($parentEntity);
 
-            $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')->getProductPricebookEntry($item->getData('Id'), $pricebookId, $salesforceParentEntity->CurrencyIsoCode);
+            $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')->getProductPricebookEntry($item->getData('Id'), $pricebookId, $_currencyCode);
 
             if (!$pricebookEntry || !isset($pricebookEntry['Id'])) {
                 throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");

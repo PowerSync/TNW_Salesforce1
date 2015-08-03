@@ -398,7 +398,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             if (property_exists($result, 'records') && is_array($result->records)) {
                 foreach ($result->records as $item) {
-                    $key = null;
+                    $key = 0;
                     if (property_exists($item, 'CurrencyIsoCode')) {
                         $key = (string)$item->CurrencyIsoCode;
                     }
