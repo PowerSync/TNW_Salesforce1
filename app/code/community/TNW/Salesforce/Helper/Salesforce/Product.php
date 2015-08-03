@@ -521,7 +521,23 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
 
         if ($this->getHelper()->isMultiCurrency()) {
-            $currencyCodes = $store->getAvailableCurrencyCodes();
+            /**
+             * Add all possible currencies to standard pricebook
+             */
+            if ($priceBookId == $this->_standardPricebookId) {
+                $currencyCodes = array();
+                foreach(Mage::app()->getStores(true) as $storeItem) {
+                    $storeCurrencyCodes = $storeItem->getAvailableCurrencyCodes();
+                    if (!empty($storeCurrencyCodes)) {
+                        $currencyCodes = array_merge($currencyCodes, $storeCurrencyCodes);
+                    }
+                    $currencyCodes = array_unique($currencyCodes);
+                }
+
+            } else {
+                $currencyCodes = $store->getAvailableCurrencyCodes();
+            }
+
         } else {
             $currencyCodes = $store->getDefaultCurrencyCode();
         }
