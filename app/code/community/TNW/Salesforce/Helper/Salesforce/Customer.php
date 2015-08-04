@@ -555,6 +555,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
 
                 $this->_fixPersonAccountFields($this->_cache['accountsToUpsert']['Id'][$_id]);
+
+                /**
+                 * remove contact upsert if it is person account
+                 */
+                unset($this->_cache['contactsToUpsert'][$_upsertOn][$_id]);
             }
 
         } else if ($type == "Account") {
