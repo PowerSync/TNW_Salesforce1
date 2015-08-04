@@ -878,7 +878,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
                 $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') . '/' . $value;
                 if (Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url')) {
-                    $_data .=  $currency . '<strong><a target="_blank" href="' . $_url . '">' . $_field . "</a></strong><br />";
+                    $_data .=  '<strong>' . $currency . '<a target="_blank" href="' . $_url . '">' . $_field . "</a></strong><br />";
                 } else {
                     $_data .= '<strong>' . $value . "</strong><br />";
                 }
