@@ -437,22 +437,16 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         // Set proper Status
         $this->_updateOrderStatus($order);
 
-        // If trying to update activated order, change status to draft first, then activate it at the end
-        if (
-            !is_array($this->_cache['orderLookup'])
-            || (
-                $this->_obj->Status == TNW_Salesforce_Helper_Salesforce_Data_Order::ACTIVATED_STATUS
-            )
-        ) {
-            $_currentStatus = $this->_obj->Status;
+        /**
+         * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
+         */
+        $_currentStatus = $this->_obj->Status;
+        if ($_currentStatus != TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS) {
             $this->_obj->Status = TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
-            // Only activate if already activated
-            if ($_currentStatus == TNW_Salesforce_Helper_Salesforce_Data_Order::ACTIVATED_STATUS) {
-                $_toActivate = new stdClass();
-                $_toActivate->Status = TNW_Salesforce_Helper_Salesforce_Data_Order::ACTIVATED_STATUS;
-                $_toActivate->Id = NULL;
-                $this->_cache['orderToActivate'][$_orderNumber] = $_toActivate;
-            }
+            $_toActivate = new stdClass();
+            $_toActivate->Status = $_currentStatus;
+            $_toActivate->Id = NULL;
+            $this->_cache['orderToActivate'][$_orderNumber] = $_toActivate;
         }
 
         // Link to a Website
