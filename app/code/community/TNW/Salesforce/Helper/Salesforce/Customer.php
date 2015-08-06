@@ -1697,7 +1697,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         unset($this->_cache['toSaveInMagento'][$_websiteId][$_email]);
                     }
                 } else {
-                    $this->_processErrors($_result, 'contact', $this->_cache['contactsToUpsert'][$customerId]);
+                    $this->_processErrors($_result, 'contact', $this->_cache['contactsToUpsert'][$this->_magentoId][$customerId]);
                 }
             }
 
@@ -1748,7 +1748,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = $_result->id;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
                 } else {
-                    $this->_processErrors($_result, 'lead', $this->_cache['leadsToUpsert'][$_contactIds[$_key]]);
+                    $this->_processErrors($_result, 'lead', $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]);
                 }
             }
             Mage::helper('tnw_salesforce')->log("Leads: " . implode(',', $_entitites) . " upserted!");

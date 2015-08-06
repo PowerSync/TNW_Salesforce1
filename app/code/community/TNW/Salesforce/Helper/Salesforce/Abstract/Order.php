@@ -363,7 +363,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         if (!$this->getSalesforceParentIdField()) {
             $this->setSalesforceParentIdField($this->getUcParentEntityType() . 'Id');
         }
-        return $this->_cache['upserted' . $this->getManyParentEntityType()][$parentEntityNumber];
+        $upsertedEntity = $this->_cache['upserted' . $this->getManyParentEntityType()];
+        //return $this->_cache['upserted' . $this->getManyParentEntityType()][$parentEntityNumber];
+        return (array_key_exists($parentEntityNumber, $upsertedEntity)) ? $upsertedEntity[$parentEntityNumber] :  NULL;
     }
 
     /**

@@ -511,6 +511,10 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
         }
 
+        if (property_exists($this->_obj, 'OpportunityId') && empty($this->_obj->OpportunityId)) {
+            unset($this->_obj->OpportunityId);
+        }
+
         $this->_setOrderName($_orderNumber, $_accountName);
         unset($order);
     }
