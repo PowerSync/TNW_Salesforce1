@@ -160,10 +160,49 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $_data = $_formData;
         $_email = strtolower($_data['email']);
         $_websiteId = Mage::app()->getWebsite()->getId();
+
+        $_fullName = explode(' ', strip_tags($_data['name']));
+        if (count($_fullName) == 1) {
+            $_lastName = NULL;
+        } else if (count($_fullName) == 2) {
+            $_lastName = $_fullName[1];
+        } else {
+            unset($_fullName[0]);
+            $_lastName = join(' ', $_fullName);
+        }
+
+        /**
+         * prepare fake customer object to use it in lookup
+         */
+        $fakeCustomer = new Varien_Object();
+        $fakeCustomer->setData($_formData);
+
+        $firstName = ($_lastName) ? $_fullName[0] : '';
+        $lastName = ($_lastName) ? $_lastName : $_fullName[0];
+        $company = (array_key_exists('company', $_data)) ? strip_tags($_data['company']) : NULL;
+
+        $fakeCustomer->setFirstname($firstName);
+        $fakeCustomer->setLastname($lastName);
+        $fakeCustomer->setCompany($company);
+
+        $fakeCustomer->setEmail($_email);
+
+        $billingAddress = new Varien_Object();
+        $billingAddress->setTelephone(strip_tags($_data['telephone']));
+        $fakeCustomer->setBillingAddress($billingAddress);
+
+        $customerId = (int)$fakeCustomer->getId();
+        if (Mage::registry('customer_cached_' . $customerId)) {
+            Mage::unregister('customer_cached_' . $customerId);
+        }
+
+        Mage::register('customer_cached_' . $customerId, $fakeCustomer);
+
+
         // Check for Contact and Account
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array(0 => $_email), array(0 => $this->_websiteSfIds[$_websiteId]));
-        $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup(array(0 => $_email), array(0 => $this->_websiteSfIds[$_websiteId]));
-        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup(array(0 => $_email), array(0 => $this->_websiteSfIds[$_websiteId]), Mage::helper('tnw_salesforce/data')->getLeadSource());
+        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array($customerId => $_email), array($customerId => $this->_websiteSfIds[$_websiteId]));
+        $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup(array($customerId => $_email), array($customerId => $this->_websiteSfIds[$_websiteId]));
+        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup(array($customerId => $_email), array($customerId => $this->_websiteSfIds[$_websiteId]), Mage::helper('tnw_salesforce/data')->getLeadSource());
 
         $this->_obj = new stdClass();
         $_id = NULL;
@@ -185,24 +224,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->ConvertedContactId;
             }
         } else {
-            $_fullName = explode(' ', strip_tags($_data['name']));
-            if (count($_fullName) == 1) {
-                $_lastName = NULL;
-            } else if (count($_fullName) == 2) {
-                $_lastName = $_fullName[1];
-            } else {
-                unset($_fullName[0]);
-                $_lastName = join(' ', $_fullName);
-            }
 
-            $this->_obj->FirstName = ($_lastName) ? $_fullName[0] : '';
-            $this->_obj->LastName = ($_lastName) ? $_lastName : $_fullName[0];
-            $this->_obj->Company = (array_key_exists('company', $_data)) ? strip_tags($_data['company']) : NULL;
-            if (!$this->_obj->Company && !Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)) {
-                $this->_obj->Company = 'N/A';
-            }
-            $this->_obj->Phone = strip_tags($_data['telephone']);
-            $this->_obj->Email = strip_tags($_email);
+            $this->_assignOwner($fakeCustomer, 'Lead', $this->_websiteSfIds[$_websiteId]);
+
+            //Process mapping
+            Mage::getSingleton('tnw_salesforce/sync_mapping_customer_lead')
+                ->setSync($this)
+                ->processMapping($fakeCustomer);
 
             // Link to a Website
             if (
