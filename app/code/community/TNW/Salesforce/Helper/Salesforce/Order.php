@@ -310,14 +310,23 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     }
 
                     Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer synchronization.');
-                } elseif (is_array($this->_cache['leadLookup'])
+                }
+
+                if (is_array($this->_cache['leadLookup'])
                     && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup'])
                     && array_key_exists($_orderEmail, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])) {
                     // Need to convert a Lead
                     Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->prepareLeadConversionObject($_orderNumber, $_foundAccounts, 'order');
 
                     Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer Lead prepared to be converted.');
-                } else {
+                }
+
+                /**
+                 * No customers for this order in salesforce - error
+                 */
+                if (!isset($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail])
+                    && !isset($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail])
+                ) {
                     // Something is wrong, could not create / find Magento customer in SalesForce
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for order #' . $_order->getId() . ', could not locate / create Magento customer (' . $_orderEmail . ') in Salesforce!');
