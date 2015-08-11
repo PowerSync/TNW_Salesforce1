@@ -56,6 +56,14 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     }
 
     /**
+     * push data to Salesforce
+     */
+    protected function _updateCampaings()
+    {
+        Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaingsBulk();
+    }
+
+    /**
      * @param array $_customers
      * @param array $_existmingCustomers
      */

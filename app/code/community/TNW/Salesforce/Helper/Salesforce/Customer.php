@@ -329,6 +329,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 Mage::helper('tnw_salesforce')->log("WARNING: Failed to update Magento with Salesforce Ids. Try manual synchronization.", 2);
             }
 
+            /**
+             * send data to Salesforce
+             */
+            $this->_updateCampaings();
 
             if ($_return) {
                 if ($this instanceof TNW_Salesforce_Helper_Bulk_Customer && $_return == 'bulk') {
@@ -380,6 +384,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
     }
 
+
+    /**
+     * push data to Salesforce
+     */
+    protected function _updateCampaings()
+    {
+        Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaings();
+    }
+
+    /**
+     * Create Lead object for sync
+     */
     protected function _prepareLeads()
     {
         // Existing Leads
@@ -1439,6 +1455,27 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
                 $_updatedCustomer = Mage::getModel('customer/customer')->load($_customer->MagentoId);
                 Mage::register('customer_cached_' . $_customer->MagentoId, $_updatedCustomer);
+
+                $subscriber = Mage::getModel('newsletter/subscriber')->loadByCustomer($_updatedCustomer);
+                if ($subscriber->isSubscribed()) {
+
+                    $campaignMemberType = 'LeadId';
+                    $campaignMemberId = $_updatedCustomer->getSalesforceLeadId();
+                    if ($_updatedCustomer->getSalesforceId()) {
+                        $campaignMemberType = 'ContactId';
+                        $campaignMemberId = $_updatedCustomer->getSalesforceId();
+                    }
+
+                    if ($campaignMemberId) {
+                        /**
+                         * prepare subscriber data to add new members
+                         */
+                        Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
+                            ->prepareCampaignMember($campaignMemberType, $campaignMemberId, $subscriber, $_updatedCustomer->getEmail());
+                    }
+                }
+
+
                 $_updatedCustomer = NULL;
                 unset($_updatedCustomer);
             }
@@ -1500,6 +1537,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
     protected function _pushToSalesforce($_isOrder)
     {
+        /**
+         * Upsert Accounts
+         */
         if (!empty($this->_cache['accountsToUpsert']['Id'])) {
             Mage::helper('tnw_salesforce')->log("---------- Start: Account Sync ----------");
             $this->_dumpObjectToLog($this->_cache['accountsToUpsert']['Id'], 'Account');
@@ -1573,6 +1613,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::helper('tnw_salesforce')->log("---------- End: Account Sync ----------");
         }
 
+        /**
+         * Upsert Contacts
+         */
         // On Id
         if (!empty($this->_cache['contactsToUpsert']['Id'])) {
             Mage::helper('tnw_salesforce')->log("---------- Start: Contact Sync ----------");
@@ -1653,6 +1696,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::helper('tnw_salesforce')->log("---------- End: Contact Sync ----------");
         }
 
+        /**
+         * Upsert Contacts more
+         */
         // On Magento Id
         if (!empty($this->_cache['contactsToUpsert'][$this->_magentoId])) {
             Mage::helper('tnw_salesforce')->log("---------- Start: Contact Sync ----------");
@@ -1705,6 +1751,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::helper('tnw_salesforce')->log("---------- End: Contact Sync ----------");
         }
 
+        /**
+         * Upsert Leads
+         */
         // On Magento ID
         if (!empty($this->_cache['leadsToUpsert'][$this->_magentoId])) {
             // Lead Sync
@@ -1755,6 +1804,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::helper('tnw_salesforce')->log("---------- End: Lead Sync ----------");
         }
 
+        /**
+         * Upsert Leads more
+         */
         // On Id
         if (!empty($this->_cache['leadsToUpsert']['Id'])) {
             // Lead Sync

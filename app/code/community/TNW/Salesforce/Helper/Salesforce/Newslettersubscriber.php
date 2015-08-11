@@ -5,6 +5,29 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesforce_Helper_Salesforce_Abstract
 {
+
+    /**
+     * @return null
+     */
+    public function getSalesforceSessionId()
+    {
+        if (!$this->_salesforceSessionId = parent::getSalesforceSessionId()); {
+            $this->_salesforceSessionId = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id');
+        }
+
+        return $this->_salesforceSessionId;
+    }
+
+    public function getSalesforceServerDomain()
+    {
+        if (!$this->_salesforceServerDomain = parent::getSalesforceServerDomain()) {
+            $this->_salesforceServerDomain = Mage::getSingleton('core/session')->getSalesforceServerDomain();
+        }
+
+        return $this->_salesforceServerDomain;
+    }
+
+
     /**
      * Validation before sync
      *
@@ -492,10 +515,40 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $this->subscribeLeads($subscribers);
         }
 
+        //7. update campaigns on Salesforce
+        $this->_updateCampaings();
 
+        //8. Finalization
+        $this->_onComplete();
+        $helper->log("###################################### Subscriber Update End ######################################");
 
+        return true;
+    }
 
-        //7. update campaigns
+    /**
+     * Public access to the  Realtime campaings updating
+     */
+    public function updateCampaings()
+    {
+        $this->_updateCampaings();
+    }
+
+    /**
+     * Public access to the  Bulk campaings updating
+     */
+    public function updateCampaingsBulk()
+    {
+        $this->_updateCampaingsBulk();
+    }
+
+    /**
+     * Realtime campaings updating
+     */
+    protected function _updateCampaings()
+    {
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
+
         if (!empty($this->_cache['campaignsToUpsert'])) {
             try {
 
@@ -513,17 +566,132 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                     $this->_cache['responses']['campaigns'][$key] = $result;
                 }
             } catch (Exception $e) {
+                $helper->log("error add campaign member to sf failed]: " . $e->getMessage());
+            }
+        }
+    }
+    /**
+     * Realtime campaings updating, bulk sync
+     */
+    protected function _updateCampaingsBulk()
+    {
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
+
+        if (!empty($this->_cache['campaignsToUpsert'])) {
+            try {
+
+                // before we send data to sf - check if connection / login / wsdl is valid
+                // related ticket https://trello.com/c/TNEu7Rk1/54-salesforce-maintenance-causes-bulk-sync-to-run-indefinately
+                $sfClient = Mage::getSingleton('tnw_salesforce/connection');
+                if (
+                    !$sfClient->tryWsdl()
+                    || !$sfClient->tryToConnect()
+                    || !$sfClient->tryToLogin()
+                ) {
+                    Mage::helper('tnw_salesforce')->log("error on push contacts: logging to salesforce api failed, cannot push data to salesforce");
+                    return false;
+                }
+
+
+                // Push Accounts on Id
+
+                    if (!$this->_cache['bulkJobs']['campaigns']['Id']) {
+                        // Create Job
+                        $this->_cache['bulkJobs']['campaigns']['Id'] = $this->_createJob('CampaignMember', 'upsert', 'Id');
+                        Mage::helper('tnw_salesforce')->log('Syncronizing campaigns, created job: ' . $this->_cache['bulkJobs']['campaigns']['Id']);
+                    }
+
+                    Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before", array("data" => $this->_cache['campaignsToUpsert']));
+
+                    // send to sf
+                    $this->_pushChunked($this->_cache['bulkJobs']['campaigns']['Id'], 'campaigns', $this->_cache['campaignsToUpsert'], 'Id');
+
+                    // Check if all campaigns got Updated
+                    Mage::helper('tnw_salesforce')->log('Checking if campaigns were successfully synced...');
+                    $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['campaigns']['Id']);
+                    $_attempt = 1;
+                    while (strval($_result) != 'exception' && !$_result) {
+                        sleep(5);
+                        $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['campaigns']['Id']);
+                        Mage::helper('tnw_salesforce')->log('Still checking [1] (job: ' . $this->_cache['bulkJobs']['campaigns']['Id'] . ')...');
+                        $_attempt++;
+
+                        $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['campaigns']['Id']);
+                    }
+                    if (strval($_result) != 'exception') {
+                        Mage::helper('tnw_salesforce')->log('Campaigns sync is complete! Moving on...');
+                        // Update New Account ID's
+                        $this->_assignCampaignsIds();
+                    }
+
+            } catch (Exception $e) {
                 $helper->log("error [add lead as campaign member to sf failed]: " . $e->getMessage());
             }
         }
-
-        //8. Finalization
-        $this->_onComplete();
-        $helper->log("###################################### Subscriber Update End ######################################");
-
-        return true;
     }
 
+
+    /**
+     * work with sf response
+     *
+     * @param string $_on
+     */
+    protected function _assignCampaignsIds($_on = 'Id')
+    {
+        $this->_client->setMethod('GET');
+        $this->_client->setHeaders('Content-Type: application/xml');
+        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
+
+        foreach ($this->_cache['batchCache']['campaigns'][$_on] as $_key => $_batchId) {
+            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['campaigns'][$_on] . '/batch/' . $_batchId . '/result');
+            try {
+                $response = $this->_client->request()->getBody();
+                $response = simplexml_load_string($response);
+                $_i = 0;
+                $_batch = array_keys($this->_cache['batch']['campaigns'][$_on][$_key]);
+                foreach ($response as $_item) {
+                    $_cid = $_batch[$_i];
+
+                    // report transaction
+                    $this->_cache['responses']['campaigns'][$_cid] = json_decode(json_encode($_item), TRUE);
+
+
+                    if ((string)$_item->success == "false") {
+                        $this->_processErrors($_item, 'campaigns', $this->_cache['batch']['campaigns'][$_on][$_key][$_cid]);
+                        continue;
+                    }
+                }
+            } catch (Exception $e) {
+                // TODO:  Log error, quit
+            }
+        }
+
+
+        Mage::dispatchEvent("tnw_salesforce_campaignmember_send_after", array(
+            "data" => $this->_cache['campaignsToUpsert'],
+            "result" => $this->_cache['responses']['campaigs']
+        ));
+
+    }
+
+    /**
+     * public method for  Prepare Campaign Member
+     * @param string $_type
+     * @param $_id
+     * @param $_subscription
+     * @param $index
+     * @return bool
+     */
+    public function prepareCampaignMember($_type = 'LeadId', $_id, $_subscription, $index)
+    {
+        // 1. Validate config
+        if(!$this->validate()){
+            return false;
+        }
+
+        $this->_prepareCampaignMember($_type, $_id, $_subscription, $index);
+    }
 
     /**
      * Prepare Campaign Member
