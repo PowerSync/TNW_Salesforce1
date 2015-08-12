@@ -1421,12 +1421,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         Mage::helper('tnw_salesforce')->log("---------- Start: Magento Update ----------");
 
+        $customerIds = array();
         foreach ($this->_cache['toSaveInMagento'] as $_websiteId => $_websiteCustomers) {
             foreach ($_websiteCustomers as $_customer) {
                 if (!is_object($_customer) || !property_exists($_customer, 'MagentoId') || !$_customer->MagentoId || strpos($_customer->MagentoId, 'guest_') === 0) {
                     continue;
                 }
 
+                $customerIds[] = $_customer->MagentoId;
                 $_customer->SalesforceId = (property_exists($_customer, 'SalesforceId')) ? $_customer->SalesforceId : NULL;
                 $_customer->AccountId = (property_exists($_customer, 'AccountId')) ? $_customer->AccountId : NULL;
                 $_customer->LeadId = (property_exists($_customer, 'LeadId')) ? $_customer->LeadId : NULL;
@@ -1456,26 +1458,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_updatedCustomer = Mage::getModel('customer/customer')->load($_customer->MagentoId);
                 Mage::register('customer_cached_' . $_customer->MagentoId, $_updatedCustomer);
 
-                $subscriber = Mage::getModel('newsletter/subscriber')->loadByCustomer($_updatedCustomer);
-                if ($subscriber->isSubscribed()) {
-
-                    $campaignMemberType = 'LeadId';
-                    $campaignMemberId = $_updatedCustomer->getSalesforceLeadId();
-                    if ($_updatedCustomer->getSalesforceId()) {
-                        $campaignMemberType = 'ContactId';
-                        $campaignMemberId = $_updatedCustomer->getSalesforceId();
-                    }
-
-                    if ($campaignMemberId) {
-                        /**
-                         * prepare subscriber data to add new members
-                         */
-                        Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
-                            ->prepareCampaignMember($campaignMemberType, $campaignMemberId, $subscriber, $_updatedCustomer->getEmail());
-                    }
-                }
-
-
                 $_updatedCustomer = NULL;
                 unset($_updatedCustomer);
             }
@@ -1483,7 +1465,45 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::helper('tnw_salesforce')->log("Updated: " . count($_websiteCustomers) . " customers!");
         }
 
+        $this->_prepareCampaignMembers($customerIds);
+
         Mage::helper('tnw_salesforce')->log("---------- End: Magento Update ----------");
+    }
+
+    /**
+     * prepare campaign members data fo SF
+     */
+    protected function _prepareCampaignMembers($customerIds)
+    {
+        $_ids = array_chunk($customerIds, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+        foreach ($_ids as $_recordIds) {
+
+            $subscribers = Mage::getModel('newsletter/subscriber')->getCollection()->addFieldToFilter('customer_id', $_recordIds);
+            $subscribers->addFieldToFilter('subscriber_status', Mage_Newsletter_Model_Subscriber::STATUS_SUBSCRIBED);
+
+            foreach ($subscribers as $subscriber) {
+
+                if (!$subscriber->getCustomerId()) {
+                    continue;
+                }
+
+                $_updatedCustomer = Mage::registry('customer_cached_' . $subscriber->getCustomerId());
+                $campaignMemberType = 'LeadId';
+                $campaignMemberId = $_updatedCustomer->getSalesforceLeadId();
+                if ($_updatedCustomer->getSalesforceId()) {
+                    $campaignMemberType = 'ContactId';
+                    $campaignMemberId = $_updatedCustomer->getSalesforceId();
+                }
+
+                if ($campaignMemberId) {
+                    /**
+                     * prepare subscriber data to add new members
+                     */
+                    Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
+                        ->prepareCampaignMember($campaignMemberType, $campaignMemberId, $subscriber, $_updatedCustomer->getEmail());
+                }
+            }
+        }
     }
 
     public function updateMagentoEntityValue($_customerId = NULL, $_value = 0, $_attributeName = NULL, $_tableName = 'customer_entity_varchar')
