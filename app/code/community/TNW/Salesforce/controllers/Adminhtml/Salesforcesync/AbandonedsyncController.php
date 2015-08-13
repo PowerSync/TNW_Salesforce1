@@ -76,7 +76,18 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                     $abandoned = Mage::getModel('sales/quote')->setSharedStoreIds($storeIds)->load($this->getRequest()->getParam('abandoned_id'));
                     $_productIds = array();
                     foreach ($abandoned->getAllVisibleItems() as $_item) {
-                        $_productIds[] = (int)$this->_getProductIdFromCart($_item);
+                        if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                            if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                                $_productIds = array_merge(
+                                    $_productIds,
+                                    $this->_getChildProductIdsFromCart($_item)
+                                );
+                            } else {
+                                $_productIds[] = (int)$this->_getProductIdFromCart($_item);
+                            }
+                        } else {
+                            $_productIds[] = (int)$this->_getProductIdFromCart($_item);
+                        }
                     }
 
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
@@ -211,6 +222,25 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
             $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
         }
         return $id;
+    }
+
+    /**
+     * Get child product ids
+     *
+     * @param Mage_Sales_Model_Order_Item $_item
+     * @return array
+     */
+    protected function _getChildProductIdsFromCart(Mage_Sales_Model_Order_Item $_item) {
+        $Ids = array();
+        $productId = $_item->getItemId();
+        $Ids[] = (int) $_item->getProductId();
+
+        foreach ($_item->getOrder()->getAllItems() as $_itemProduct) {
+            if ($_itemProduct->getParentItemId() == $productId) {
+                $Ids[] = (int) $_itemProduct->getProductId();
+            }
+        }
+        return $Ids;
     }
 
 }

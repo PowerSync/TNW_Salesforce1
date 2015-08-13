@@ -353,21 +353,19 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
 
                 foreach ($_quote->getAllVisibleItems() as $_item) {
-                    $id = $this->getProductIdFromCart($_item);
-                    $_storeId = $_quote->getStoreId();
-
-                    if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-                        if ($_quote->getData('quote_currency_code') != $_quote->getData('store_currency_code')) {
-                            $_storeId = $this->_getStoreIdByCurrency($_quote->getData('quote_currency_code'));
+                    if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                        if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                            $this->_prepareStoreId($_item);
+                            foreach ($_quote->getAllItems() as $_childItem) {
+                                if ($_childItem->getParentItemId() == $_item->getItemId()) {
+                                    $this->_prepareStoreId($_childItem);
+                                }
+                            }
+                        } else {
+                            $this->_prepareStoreId($_item);
                         }
-                    }
-
-                    if (!array_key_exists($_storeId, $this->_stockItems)) {
-                        $this->_stockItems[$_storeId] = array();
-                    }
-                    // Item's stock needs to be updated in Salesforce
-                    if (!in_array($id, $this->_stockItems[$_storeId])) {
-                        $this->_stockItems[$_storeId][] = $id;
+                    } else {
+                        $this->_prepareStoreId($_item);
                     }
                 }
             }
@@ -388,6 +386,31 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
+    }
+
+    /**
+     * Prepare Store Id for upsert
+     *
+     * @param Mage_Sales_Model_Quote $_item
+     */
+    protected function _prepareStoreId(Mage_Sales_Model_Quote $_item) {
+        $itemId = $this->getProductIdFromCart($_item);
+        $_quote = $_item->getQuote();
+        $_storeId = $_quote->getStoreId();
+
+        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+            if ($_quote->getOrderCurrencyCode() != $_quote->getStoreCurrencyCode()) {
+                $_storeId = $this->_getStoreIdByCurrency($_quote->getOrderCurrencyCode());
+            }
+        }
+
+        if (!array_key_exists($_storeId, $this->_stockItems)) {
+            $this->_stockItems[$_storeId] = array();
+        }
+        // Item's stock needs to be updated in Salesforce
+        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
+            $this->_stockItems[$_storeId][] = $itemId;
+        }
     }
 
     /**

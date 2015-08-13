@@ -233,9 +233,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @param $parentEntityNumber
      * @param $qty
      * @param $productIdentifier
+     * @param $description
+     *
      * @return bool
      */
-    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier)
+    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default')
     {
         $_cartItemFound = false;
 
@@ -257,6 +259,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                         || (property_exists($_cartItem, 'PricebookEntry')
                             && property_exists($_cartItem->PricebookEntry, 'ProductCode')
                             && ($_cartItem->PricebookEntry->ProductCode == trim($productIdentifier))
+                            && ($description === 'default' || $_cartItem->Description == $description)
                         )
                     )
                     && $_cartItem->Quantity == (float)$qty
@@ -629,6 +632,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $identifier = $sku;
             $pricebookEntryId = $product->getSalesforcePricebookId();
 
+            if ($item->getBundleItemToSync()) {
+                $this->_obj->Description = $item->getBundleItemToSync();
+            }
+
         } else {
             $product = new Varien_Object();
             $sku = $item->getSku();
@@ -637,16 +644,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $identifier = $pricebookEntryId;
             $this->_obj->Description = $item->getDescription();
-        }
-
-        /**
-         * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
-         * @TODO: check, may be it sould be better search product by SalesforcePricebookId too
-         */
-        if ($cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier)) {
-            $this->_obj->Id = $cartItemFound;
-        } else {
-            $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($parentEntityNumber);
@@ -698,6 +695,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             if (strlen($this->_obj->Description) > 200) {
                 $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
             }
+        }
+
+        /**
+         * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
+         * @TODO: check, may be it sould be better search product by SalesforcePricebookId too
+         */
+        $description = $item->getBundleItemToSync() ? $item->getBundleItemToSync() : $this->_obj->Description;
+        $cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier, $description);
+        if ($cartItemFound) {
+            $this->_obj->Id = $cartItemFound;
+        } else {
+            $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
         $this->_obj->Quantity = $qty;
