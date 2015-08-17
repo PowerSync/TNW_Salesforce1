@@ -108,6 +108,20 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         }
     }
 
+    public function getLeadDuplicates()
+    {
+        $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
+
+        $collection->removeAllFieldsFromSelect();
+        $collection->addFieldToSelect('Email');
+        $collection->addExpressionFieldToSelect('same_items_count', 'COUNT{{same_items_count}}', array('same_items_count' => 'Id'));
+
+        $collection->getSelect()->group('Email');
+        $collection->getSelect()->having('same_items_count > ?', 1);
+
+        return $collection;
+    }
+
     /**
      * @param $_magentoId
      * @param $emails
