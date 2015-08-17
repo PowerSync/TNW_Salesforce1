@@ -442,15 +442,25 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $email = strtolower($customer->getEmail());
             $websiteId = $customer->getWebsiteId() ? $customer->getWebsiteId() : $quote->getStore()->getWebsiteId();
 
-            if ((bool)$customer->getSalesforceIsPerson()
-                || (isset($this->_cache['accountsLookup'])
-                    && isset($this->_cache['accountsLookup'][$websiteId])
-                    && isset($this->_cache['accountsLookup'][$websiteId][$email])
-                    && is_object($this->_cache['accountsLookup'][$websiteId][$email])
-                    && property_exists($this->_cache['accountsLookup'][$websiteId][$email], 'IsPersonAccount')
-                )
+            /**
+             * we use SF websiteId in lookup arrays in this class
+             */
+            $websiteSfId = $this->_websiteSfIds[$websiteId];
+
+            /**
+             * try to use data from lookup array for person accounts or get data from customer directly
+             */
+            if (
+                 isset($this->_cache['accountsLookup'])
+                    && isset($this->_cache['accountsLookup'][$websiteSfId])
+                    && isset($this->_cache['accountsLookup'][$websiteSfId][$email])
+                    && is_object($this->_cache['accountsLookup'][$websiteSfId][$email])
+                    && (property_exists($this->_cache['accountsLookup'][$websiteSfId][$email], 'IsPersonAccount')
+                        || (bool)$customer->getSalesforceIsPerson()
+                    )
+
             ) {
-                $contactRole->ContactId = $this->_cache['accountsLookup'][$websiteId][$email]->Id;
+                $contactRole->ContactId = $this->_cache['accountsLookup'][$websiteSfId][$email]->Id;
             } else {
                 $contactRole->ContactId = $customer->getSalesforceId();
             }
