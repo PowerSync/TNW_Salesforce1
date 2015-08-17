@@ -12,6 +12,83 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     protected $_companyName = null;
 
+
+    /**
+     * @param $duplicateData
+     * @return $this
+     */
+    public function mergeDuplicates($duplicateData)
+    {
+        try {
+            $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
+            $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+
+            $collection->getSelect()->columns('Id');
+            $collection->getSelect()->columns('Name');
+
+            $collection->getSelect()->where("Name = ?", $duplicateData->getData('Name'));
+
+            if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+                $collection->getSelect()->where('IsPersonAccount != ?', true);
+            }
+
+            $allDuplicates = $collection->getItems();
+            $allDuplicatesCount = count($allDuplicates);
+
+            $counter = 0;
+            $duplicatesToMergeCount = 0;
+
+            $duplicateToMerge = array();
+            foreach ($allDuplicates as $k => $duplicate) {
+                $counter++;
+                $duplicatesToMergeCount++;
+                $duplicateToMerge[] = (object)$duplicate->getData();
+
+                /**
+                 * try to merge piece-by-piece
+                 */
+                if (
+                    $duplicatesToMergeCount == TNW_Salesforce_Helper_Salesforce_Data_User::MERGE_LIMIT
+                    || ($allDuplicatesCount == $counter && $duplicatesToMergeCount > 1)
+                ) {
+                    $masterObject = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Account');
+
+                    $duplicateToMerge = array();
+                    $duplicateToMerge[] = $masterObject;
+
+                    $duplicatesToMergeCount = 1;
+                }
+
+            }
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("ERROR: Leads merging error: " . $e->getMessage());
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection
+     */
+    public function getDuplicates()
+    {
+        $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
+
+        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+        $collection->getSelect()->columns('Name');
+        $collection->getSelect()->columns('COUNT(Id) items_count');
+
+        $collection->getSelect()->group('Name');
+
+        $collection->getSelect()->having('COUNT(Id) > ?', 1);
+
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $collection->getSelect()->where('IsPersonAccount != ?', true);
+        }
+
+        return $collection;
+    }
+
     /**
      * @param $_customerEmails
      * @param array $_websites

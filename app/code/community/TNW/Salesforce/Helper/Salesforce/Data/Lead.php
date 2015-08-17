@@ -108,16 +108,90 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         }
     }
 
-    public function getLeadDuplicates()
+    /**
+     * @param $duplicateData
+     * @return $this
+     */
+    public function mergeDuplicates($duplicateData)
+    {
+        try {
+            $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
+            $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+
+            $collection->getSelect()->columns('Id');
+            $collection->getSelect()->columns('Email');
+
+            $collection->getSelect()->where("Email = ?", $duplicateData->getData('Email'));
+
+            if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+                $collection->getSelect()->where(
+                    $websiteField . " = ?",
+                    $duplicateData->getData($websiteField));
+            }
+
+            $allDuplicates = $collection->getItems();
+            $allDuplicatesCount = count($allDuplicates);
+
+            $counter = 0;
+            $duplicatesToMergeCount = 0;
+
+            $duplicateToMerge = array();
+            foreach ($allDuplicates as $k => $duplicate) {
+                $counter++;
+                $duplicatesToMergeCount++;
+                $duplicateToMerge[] = (object)$duplicate->getData();
+
+                /**
+                 * try to merge piece-by-piece
+                 */
+                if (
+                    $duplicatesToMergeCount == TNW_Salesforce_Helper_Salesforce_Data_User::MERGE_LIMIT
+                    || ($allDuplicatesCount == $counter && $duplicatesToMergeCount > 1)
+                ) {
+                    $masterObject = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Lead');
+
+                    /**
+                     * remove technical information
+                     */
+                    unset($masterObject->success);
+                    unset($masterObject->mergedRecordIds);
+
+                    $duplicateToMerge = array();
+                    $duplicateToMerge[] = $masterObject;
+
+                    $duplicatesToMergeCount = 1;
+                }
+
+            }
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("ERROR: Leads merging error: " . $e->getMessage());
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
+     */
+    public function getDuplicates()
     {
         $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
 
-        $collection->removeAllFieldsFromSelect();
-        $collection->addFieldToSelect('Email');
-        $collection->addExpressionFieldToSelect('same_items_count', 'COUNT{{same_items_count}}', array('same_items_count' => 'Id'));
+        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+        $collection->getSelect()->columns('Email');
+        $collection->getSelect()->columns('COUNT(Id) items_count');
+
+        $collection->getSelect()->where("Email != ''");
 
         $collection->getSelect()->group('Email');
-        $collection->getSelect()->having('same_items_count > ?', 1);
+
+        $collection->getSelect()->having('COUNT(Id) > ?', 1);
+
+        if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+            $collection->getSelect()->columns(Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject());
+            $collection->getSelect()->group(Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject());
+        }
 
         return $collection;
     }

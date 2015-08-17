@@ -8,6 +8,11 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_Salesforce_Data
 {
+    /**
+     * @see https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_merge.htm
+     * Limit defined by SF
+     */
+    const MERGE_LIMIT = 3;
 
     /**
      * @var null
@@ -25,7 +30,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
      * @param null $sfUserId
      * @return bool
      */
-    protected function _isUserActive($sfUserId = NULL) {
+    protected function _isUserActive($sfUserId = NULL)
+    {
         if ($this->_mageCache === NULL) {
             $this->_initCache();
         }
@@ -40,7 +46,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
         }
 
         if (is_array($this->_sfUsers)) {
-            foreach($this->_sfUsers as $user) {
+            foreach ($this->_sfUsers as $user) {
                 $activeUsers[] = $user['value'];
             }
         }
@@ -87,6 +93,65 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
     public function isUserActive($sfUserId = NULL)
     {
         return $this->_isUserActive($sfUserId);
+    }
+
+    /**
+     * Find customer duplicates in SF
+     */
+    public function getDuplicates()
+    {
+        foreach (array('lead', 'account', 'contact') as $sfEntityType) {
+            /**
+             * @var $helper TNW_Salesforce_Helper_Salesforce_Data_Lead|TNW_Salesforce_Helper_Salesforce_Data_Account|TNW_Salesforce_Helper_Salesforce_Data_Contact
+             */
+            $helper = Mage::helper('tnw_salesforce/salesforce_data_' . $sfEntityType);
+            $duplicates = $helper->getDuplicates();
+
+            foreach ($duplicates as $duplicate) {
+                $helper->mergeDuplicates($duplicate);
+            }
+        }
+    }
+
+    /**
+     * Send merge request to Salesforce
+     * @param array $objects
+     * @param string $type
+     * @return $this
+     * @throws Exception
+     */
+    public function sendMergeRequest($objects, $type = 'Lead')
+    {
+        try {
+            $mergeRequest = new stdclass();
+
+            Mage::helper('tnw_salesforce')->log("INFO: $type to merge: " . print_r($objects, 1));
+
+            $masterObject = array_shift($objects);
+
+            $mergeRequest->masterRecord = $masterObject;
+
+            $mergeRequest->comments = Mage::helper('tnw_salesforce')->__('Automate merge by Magento');
+
+            $mergeRequest->recordToMergeIds = array();
+            foreach ($objects as $object) {
+                $mergeRequest->recordToMergeIds[] = $object->Id;
+            }
+
+            $result = $this->getClient()->merge($mergeRequest, $type);
+
+            $result = array_shift($result);
+            if (!property_exists($result, 'success') || $result->success != true) {
+                throw new Exception("$type merging error: " . print_r($result));
+            }
+            Mage::helper('tnw_salesforce')->log("INFO: $type merging result: " . print_r($result, 1));
+
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("ERROR: $type merging error: " . $e->getMessage());
+            throw $e;
+        }
+
+        return $result;
     }
 
 }
