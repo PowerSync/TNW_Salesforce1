@@ -16,8 +16,13 @@ class TNW_Salesforce_Helper_Mapping
 
         $currency = '';
         $baseCurrency = Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency();
+        $currency = $baseCurrency ? $order->getBaseCurrencyCode() : $order->getOrderCurrencyCode();
+        /**
+         * use custome currency if Multicurrency enabled
+         */
         if ($helper->isMultiCurrency()) {
-            $currency = $baseCurrency ? $order->getBaseCurrencyCode() : $order->getOrderCurrencyCode();
+            $currency = $order->getOrderCurrencyCode();
+            $baseCurrency = false;
         }
 
         ## Put Products into Single field

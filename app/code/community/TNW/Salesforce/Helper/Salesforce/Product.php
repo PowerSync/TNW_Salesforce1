@@ -554,12 +554,20 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             && array_key_exists($store->getId(), $this->_cache['productPrices'][$magentoProductId])
                 ? $this->_cache['productPrices'][$magentoProductId][$store->getId()] : 0;
 
+        /**
+         * convert price to currency
+         */
+        if ($this->getHelper()->isMultiCurrency()) {
+            $price = Mage::app()->getStore()->getBaseCurrency()->convert($price, $currencyCode);
+        }
+
+        $this->_cache['pricebookEntryToSync'][$cacheCode]
+            = $this->_addEntryToQueue($price, $priceBookId, $sfProductId, $sfProduct, $store->getId(), $currencyCode);
             $this->_cache['pricebookEntryToSync'][$cacheCode]
                 = $this->_addEntryToQueue($price, $priceBookId, $sfProductId, $sfProduct, $store->getId(), $currencyCode);
         }
 
         /**
-         * @TODO add order fee products pricebooks sync
          * try sync pricebooks for order fee products
          */
         $_helper = Mage::helper('tnw_salesforce');
@@ -660,7 +668,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         } else {
             $object->Pricebook2Id = $priceBookId;
             $object->Product2Id = $sfProductId;
-
 
             if ($this->getHelper()->isMultiCurrency()) {
                 $object->CurrencyIsoCode = $currencyCode;
