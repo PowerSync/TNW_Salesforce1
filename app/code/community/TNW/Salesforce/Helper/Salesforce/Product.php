@@ -18,6 +18,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     protected $_orderStoreId = NULL;
 
     /**
+     * currency models array
+     * @var array
+     */
+    protected $_currencies = array();
+
+    /**
      * @return TNW_Salesforce_Helper_Data
      */
     protected function getHelper()
@@ -223,7 +229,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         if (!empty($this->_sqlToRun)) {
             try {
                 $chunks = array_chunk($this->_sqlToRun, 500);
-                foreach($chunks as $chunk) {
+                foreach ($chunks as $chunk) {
                     Mage::helper('tnw_salesforce')->getDbConnection()->query(implode('', $chunk));
                 }
             } catch (Exception $e) {
@@ -239,6 +245,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $ids = array();
 
         foreach ($this->_cache['toSaveInMagento'] as $_magentoId => $_product) {
+            /**
+             * skip order fee products, these products don't exist in magento and use sku instead Id
+             */
+            if (!is_numeric($_magentoId)) {
+                continue;
+            }
 
             $_product->salesforceId = (isset($_product->salesforceId)) ? $_product->salesforceId : NULL;
             $_product->pricebookEntryIds = (isset($_product->pricebookEntryIds)) ? $_product->pricebookEntryIds : array();
@@ -265,7 +277,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 unset($_product->pricebookEntryIds['Standard']);
             }
             foreach ($_product->pricebookEntryIds as $_key => $_pbeId) {
-                $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_varchar', $_key);
+                $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_text', $_key);
             }
             $ids[] = $_magentoId;
         }
@@ -404,7 +416,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
         }
 
-        return $serialize ? serialize($sfDescriptionSerializeFormat) :  $sfDescriptionCustomFormat;
+        return $serialize ? serialize($sfDescriptionSerializeFormat) : $sfDescriptionCustomFormat;
     }
 
     protected function _pushProductsSegment($chunk = array(), $_upsertOn = 'Id')
@@ -416,12 +428,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $_productIds = array_keys($chunk);
 
         try {
-            Mage::dispatchEvent("tnw_salesforce_product_send_before",array("data" => $chunk));
+            Mage::dispatchEvent("tnw_salesforce_product_send_before", array("data" => $chunk));
             $_responses = $this->_mySforceConnection->upsert($_upsertOn, array_values($chunk), 'Product2');
-            Mage::dispatchEvent("tnw_salesforce_product_send_after",array("data" => $chunk, "result" => $_responses));
+            Mage::dispatchEvent("tnw_salesforce_product_send_after", array("data" => $chunk, "result" => $_responses));
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach($_productIds as $_id) {
+            foreach ($_productIds as $_id) {
                 $this->_cache['responses']['products'][$_id] = $_response;
             }
             $_responses = array();
@@ -459,10 +471,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
     protected function _addPriceBookEntry($_magentoId, $_sfProductId)
     {
-        $standardPricebookId = $this->_standardPricebookId;
-        $_standardPbeId = $_defaultPbeId = NULL;
+
         $currentStore = Mage::app()->getStore($this->getHelper()->getStoreId());
-        $currentCurrencyCode = $currentStore->getDefaultCurrencyCode();
 
         $_prod = null;
         if (is_array($this->_cache['productsLookup'])) {
@@ -475,34 +485,16 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
         }
 
-        if ($_prod) {
-            if (!$this->getHelper()->isMultiCurrency()) {
-                // Check if Pricebooks Entry exist already
-                foreach ($_prod->PriceBooks as $_key => $_pbeObject) {
-                    if ($_pbeObject->Pricebook2Id == $standardPricebookId) {
-                        $_standardPbeId = $_pbeObject->Id;
-                    }
-                }
-            } else {
-                $_standardKey = $this->_doesPricebookEntryExist($_prod, $standardPricebookId, $currentCurrencyCode);
-                if ($_standardKey !== false) {
-                    $_standardPbeId = $_prod->PriceBooks[$_standardKey]->Id;
-                }
-            }
-        }
-
         // Is Multi Site Sync?
         if (!$this->isMultiSync()) {
-            /* Do I need to create Standard Pricebook Entry or update existing one? */
-            if (!$_prod || !$_standardPbeId) {
-                $this->addPriceBookEntryToSync($currentStore, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
-            }
+            $this->addPriceBookEntryToSync($currentStore, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
+
             /* Do I need to create Default Pricebook Entry or update existing one? */
             if ($this->_standardPricebookId != $this->_defaultPriceBook) {
                 $this->addPriceBookEntryToSync($currentStore, $_magentoId, $_prod, $_sfProductId, $this->_defaultPriceBook);
                 if ($currentStore->getId() == 0) {
                     foreach (Mage::app()->getStores() as $_storeId => $_store) {
-                        $_storePriceBookId = $this->getHelper()->getPricebookId($_storeId) ? : $this->_defaultPriceBook;
+                        $_storePriceBookId = $this->getHelper()->getPricebookId($_storeId) ?: $this->_defaultPriceBook;
                         $this->addPriceBookEntryToSync($_store, $_magentoId, $_prod, $_sfProductId, $_storePriceBookId);
                     }
                 }
@@ -512,24 +504,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             // TODO: place this into cache? in massAdd and read from it?
             $_magentoProduct = Mage::getModel('catalog/product')->load($_magentoId);
 
-            // If $_flag == true - create a standard Pricebook as well
-            $_flag = !$_prod || !$_standardPbeId;
-
-            if ($_flag) {
-                $this->addPriceBookEntryToSync(0, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
-            }
-
-            foreach ($this->getCurrencies() as $_storeId => $_code) {
-                // Skip store if product is not assigned to it
-                if (!in_array($_storeId, $_magentoProduct->getStoreIds())) {
-                    continue;
-                }
-                $this->addPriceBookEntryToSync($_storeId, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
-            }
+            $this->addPriceBookEntryToSync(0, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
 
             // Sync remaining Stores
             foreach ($_magentoProduct->getStoreIds() as $_storeId) {
-                $_storePriceBookId = $this->getHelper()->getPricebookId($_storeId) ? : $this->_defaultPriceBook;
+                $_storePriceBookId = $this->getHelper()->getPricebookId($_storeId) ?: $this->_defaultPriceBook;
                 $this->addPriceBookEntryToSync($_storeId, $_magentoId, $_prod, $_sfProductId, $_storePriceBookId);
             }
         }
@@ -541,27 +520,108 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $store = Mage::app()->getStore($store);
         }
 
-        $currencyCode = $store->getDefaultCurrencyCode();
-        $cacheCode = $priceBookId . ':::' . $magentoProductId . ':::' . $currencyCode;
-        $this->_cache['pricebookEntryKeyToStore'][$cacheCode][] = $store->getId();
+        if ($this->getHelper()->isMultiCurrency()) {
+            /**
+             * Add all possible currencies to standard pricebook
+             */
+            if ($priceBookId == $this->_standardPricebookId) {
+                $currencyCodes = array();
+                foreach(Mage::app()->getStores(true) as $storeItem) {
+                    $storeCurrencyCodes = $storeItem->getAvailableCurrencyCodes();
+                    if (!empty($storeCurrencyCodes)) {
+                        $currencyCodes = array_merge($currencyCodes, $storeCurrencyCodes);
+                    }
+                    $currencyCodes = array_unique($currencyCodes);
+                }
 
-        if (isset($this->_cache['pricebookEntryToSync'])  && isset($this->_cache['pricebookEntryToSync'][$cacheCode])) {
-            return;
+            } else {
+                $currencyCodes = $store->getAvailableCurrencyCodes();
+            }
+
+        } else {
+            $currencyCodes = array($store->getDefaultCurrencyCode());
         }
 
-        $price = is_array($this->_cache['productPrices'][$magentoProductId])
-            && array_key_exists($store->getId(), $this->_cache['productPrices'][$magentoProductId])
-            ? $this->_cache['productPrices'][$magentoProductId][$store->getId()] : 0;
+        foreach ($currencyCodes as $currencyCode) {
+            $cacheCode = $priceBookId . ':::' . $magentoProductId . ':::' . $currencyCode;
+            $this->_cache['pricebookEntryKeyToStore'][$cacheCode][] = $store->getId();
 
-        $this->_cache['pricebookEntryToSync'][$cacheCode]
-            = $this->_addEntryToQueue($price, $priceBookId, $sfProductId, $sfProduct, $store->getId(), $currencyCode);
+            if (isset($this->_cache['pricebookEntryToSync']) && isset($this->_cache['pricebookEntryToSync'][$cacheCode])) {
+                continue;
+            }
+
+            $price = is_array($this->_cache['productPrices'][$magentoProductId])
+            && array_key_exists($store->getId(), $this->_cache['productPrices'][$magentoProductId])
+                ? $this->_cache['productPrices'][$magentoProductId][$store->getId()] : 0;
+
+            $this->_cache['pricebookEntryToSync'][$cacheCode]
+                = $this->_addEntryToQueue($price, $priceBookId, $sfProductId, $sfProduct, $store->getId(), $currencyCode);
+        }
+
+        /**
+         * @TODO add order fee products pricebooks sync
+         * try sync pricebooks for order fee products
+         */
+        $_helper = Mage::helper('tnw_salesforce');
+
+        $availableFees = Mage::helper('tnw_salesforce/salesforce_order')->getAvailableFees();
+        foreach ($availableFees as $feeName) {
+            $ucFee = ucfirst($feeName);
+
+            $configMethod = 'use' . $ucFee . 'FeeProduct';
+            if (Mage::helper('tnw_salesforce')->$configMethod()) {
+                $getProductMethod = 'get' . $ucFee . 'Product';
+
+                if (Mage::helper('tnw_salesforce')->$getProductMethod()) {
+                    /**
+                     * Give fee product data from the config, it's serialized array
+                     */
+                    $feeData = Mage::app()->getStore($store->getId())->getConfig($_helper->getFeeProduct($feeName));
+                    if ($feeData) {
+                        $feeData = unserialize($feeData);
+                    } else {
+                        continue;
+                    }
+                    $sfProductId = $feeData['Id'];
+
+                    foreach ($currencyCodes as $currencyCode) {
+                        $cacheCode = $priceBookId . ':::' . $sfProductId . ':::' . $currencyCode;
+                        $this->_cache['pricebookEntryKeyToStore'][$cacheCode][] = $store->getId();
+
+                        $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')->getProductPricebookEntry($sfProductId, $priceBookId, $currencyCode);
+                        /**
+                         * check if pricebook entries already added for sync
+                         * don't add if pricebook entry already exists
+                         */
+                        if ((isset($this->_cache['pricebookEntryToSync'])
+                                && isset($this->_cache['pricebookEntryToSync'][$cacheCode]))
+                            || !empty($pricebookEntry)
+
+                        ) {
+                            continue;
+                        }
+                        $this->_cache['pricebookEntryToSync'][$cacheCode]
+                            = $this->_addEntryToQueue(0, $priceBookId, $sfProductId, null, $store->getId(), $currencyCode);
+                        /**
+                         * reset cache data
+                         */
+                        $cache = Mage::app()->getCache();
+                        $useCache = Mage::app()->useCache('tnw_salesforce');
+
+                        if ($useCache) {
+                            $cache->remove('tnw_salesforce_products_pricebook_entry');
+                        }
+                    }
+                }
+            }
+        }
     }
 
     protected function _doesPricebookEntryExist($sfProduct, $priceBookId, $currencyCode)
     {
         $_return = false;
 
-        if (is_object($sfProduct) && property_exists($sfProduct, 'PriceBooks')  && !empty($sfProduct->PriceBooks)) {
+        if (is_object($sfProduct) && property_exists($sfProduct, 'PriceBooks') && !empty($sfProduct->PriceBooks)) {
             foreach ($sfProduct->PriceBooks as $_key => $_pricebookEntry) {
                 if (property_exists($_pricebookEntry, 'Pricebook2Id')
                     && $_pricebookEntry->Pricebook2Id == $priceBookId
@@ -601,12 +661,29 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $object->Pricebook2Id = $priceBookId;
             $object->Product2Id = $sfProductId;
 
+
             if ($this->getHelper()->isMultiCurrency()) {
-                $object->CurrencyIsoCode = Mage::app()->getStore($storeId)->getDefaultCurrencyCode();
+                $object->CurrencyIsoCode = $currencyCode;
             }
         }
+
+        if ($this->getHelper()->isMultiCurrency()) {
+            $object->UnitPrice = Mage::app()->getStore($storeId)->getBaseCurrency()->convert($price, $this->getCurrency($currencyCode));
+            $object->UnitPrice = $this->numberFormat($object->UnitPrice);
+        }
+
         return $object;
     }
+
+    public function getCurrency($currencyCode)
+    {
+        if (!isset($this->_currencies[$currencyCode])) {
+            $this->_currencies[$currencyCode] = Mage::getModel('directory/currency')->load($currencyCode);
+        }
+
+        return $this->_currencies[$currencyCode];
+    }
+
 
     protected function _pushProductChunked($_entities = array(), $_upsertOn = 'Id')
     {
@@ -680,7 +757,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $_responses = $this->_mySforceConnection->upsert('Id', array_values($chunk), 'PricebookEntry');
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach($_keys as $_id) {
+            foreach ($_keys as $_id) {
                 $this->_cache['responses']['products'][$_id] = $_response;
             }
             $_responses = array();
@@ -692,19 +769,20 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
             $_tmp = explode(':::', $_keys[$_key]);
             $_magentoId = $_tmp[1];
+            $currencyCode = $_tmp[2];
             $storeIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$_keys[$_key]]);
 
             //Report Transaction
             $this->_cache['responses']['pricebooks'][$_keys[$_key]] = $_response;
 
             if (property_exists($_response, 'success') && $_response->success) {
-                $this->getHelper()->log('PRICEBOOK ENTRY: magentoID (' . $_magentoId 
+                $this->getHelper()->log('PRICEBOOK ENTRY: magentoID (' . $_magentoId
                     . ') : salesforceID (' . $_response->id . ')');
                 if (!property_exists($this->_cache['toSaveInMagento'][$_magentoId], 'pricebookEntryIds')) {
                     $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds = array();
                 }
                 foreach ($storeIds as $_storeId) {
-                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] = $_response->id;
+                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] .= $currencyCode . ':' . (string)$_response->id . "\n";
                 }
             } else {
                 $this->_cache['toSaveInMagento'][$_magentoId]->SfInSync = 0;
@@ -763,11 +841,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         );
 
         $this->_standardPricebookId = Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
-        $this->_defaultPriceBook = $this->getHelper()->getDefaultPricebook() ? : $this->_standardPricebookId;
+        $this->_defaultPriceBook = $this->getHelper()->getDefaultPricebook() ?: $this->_standardPricebookId;
 
         $resource = Mage::getResourceModel('eav/entity_attribute');
         $this->_attributes['salesforce_id'] = $resource->getIdByCode('catalog_product', 'salesforce_id');
-        $this->_attributes['salesforce_pricebook_id'] 
+        $this->_attributes['salesforce_pricebook_id']
             = $resource->getIdByCode('catalog_product', 'salesforce_pricebook_id');
         $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
 

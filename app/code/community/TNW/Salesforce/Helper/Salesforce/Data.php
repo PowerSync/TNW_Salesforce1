@@ -319,20 +319,40 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     /**
      * @param null $prodId
      * @param null $pricebookId
+     * @return bool
+     */
+    protected function _pricebookEntryLookup($prodId = NULL, $pricebookId = NULL)
+    {
+        if (!is_object($this->getClient())) {
+            return false;
+        }
+
+        $query = "SELECT ID, Product2Id, Pricebook2Id, UnitPrice";
+
+        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+            $query .= ", CurrencyIsoCode";
+        }
+
+        $query .= " FROM PricebookEntry WHERE ";
+
+        if (is_array($prodId)) {
+            $query .= " Product2Id IN ('" . implode("','", $prodId) . "') AND Pricebook2Id = '" . $pricebookId . "'";
+        } else {
+            $query .= " Product2Id='" . $prodId . "' AND Pricebook2Id = '" . $pricebookId . "'";
+        }
+        $result = $this->getClient()->query(($query));
+
+        return $result;
+    }
+    /**
+     * @param null $prodId
+     * @param null $pricebookId
      * @return array|bool
      */
     public function pricebookEntryLookup($prodId = NULL, $pricebookId = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return false;
-            }
-            if (is_array($prodId)) {
-                $query = "SELECT ID, Product2Id, Pricebook2Id, UnitPrice FROM PricebookEntry WHERE Product2Id IN ('" . implode("','", $prodId) . "') AND Pricebook2Id = '" . $pricebookId . "'";
-            } else {
-                $query = "SELECT ID, Product2Id, Pricebook2Id, UnitPrice FROM PricebookEntry WHERE Product2Id='" . $prodId . "' AND Pricebook2Id = '" . $pricebookId . "'";
-            }
-            $result = $this->getClient()->query(($query));
+            $result = $this->_pricebookEntryLookup($prodId, $pricebookId);
             unset($query);
             if (!$result || $result->size < 1) {
                 return false;
@@ -351,6 +371,43 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             } else {
                 return $result->records[0]->Id;
             }
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
+            Mage::helper('tnw_salesforce')->log("Could not lookup Pricebook Entry for Product #" . $prodId . " & Procebook #" . $pricebookId);
+            unset($prodId, $pricebookId, $e);
+            return false;
+        }
+    }
+
+    /**
+     * @param null $prodId
+     * @param null $pricebookId
+     * @return array|bool
+     */
+    public function pricebookEntryLookupMultiple($prodId = NULL, $pricebookId = NULL)
+    {
+
+        try {
+            $result = $this->_pricebookEntryLookup($prodId, $pricebookId);
+
+            if (!$result || $result->size < 1) {
+                return false;
+            }
+
+            $return = array();
+
+            if (property_exists($result, 'records') && is_array($result->records)) {
+                foreach ($result->records as $item) {
+                    $key = 0;
+                    if (property_exists($item, 'CurrencyIsoCode')) {
+                        $key = (string)$item->CurrencyIsoCode;
+                    }
+                    $return[$key] = (array)$item;
+                }
+            }
+
+            return $return;
+
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
             Mage::helper('tnw_salesforce')->log("Could not lookup Pricebook Entry for Product #" . $prodId . " & Procebook #" . $pricebookId);

@@ -352,12 +352,12 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             $sql .= "INSERT INTO `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` VALUES (NULL,4," . $this->_attributes['salesforce_id'] . "," . Mage::helper('tnw_salesforce')->getStoreId() . "," . $product->getId() . ",'" . $product->getSalesforceId() . "');";
         }
         $vid = NULL;
-        $row = $this->_write->query("SELECT value_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` WHERE store_id = '" . Mage::helper('tnw_salesforce')->getStoreId() . "' AND attribute_id = '" . $this->_attributes['salesforce_pricebook_id'] . "' AND entity_id = '" . $product->getId() . "'")->fetch();
+        $row = $this->_write->query("SELECT value_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_text') . "` WHERE store_id = '" . Mage::helper('tnw_salesforce')->getStoreId() . "' AND attribute_id = '" . $this->_attributes['salesforce_pricebook_id'] . "' AND entity_id = '" . $product->getId() . "'")->fetch();
         $vid = ($row) ? $row['value_id'] : NULL;
         if ($vid) {
-            $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` SET value = '" . $product->getSalesforcePricebookId() . "' WHERE value_id = '" . $vid . "';";
+            $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_text') . "` SET value = '" . $product->getSalesforcePricebookId() . "' WHERE value_id = '" . $vid . "';";
         } else {
-            $sql .= "INSERT INTO `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` VALUES (NULL,4," . $this->_attributes['salesforce_pricebook_id'] . "," . Mage::helper('tnw_salesforce')->getStoreId() . "," . $product->getId() . ",'" . $product->getSalesforcePricebookId() . "');";
+            $sql .= "INSERT INTO `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_text') . "` VALUES (NULL,4," . $this->_attributes['salesforce_pricebook_id'] . "," . Mage::helper('tnw_salesforce')->getStoreId() . "," . $product->getId() . ",'" . $product->getSalesforcePricebookId() . "');";
         }
         Mage::helper("tnw_salesforce")->log($sql);
         $this->_write->query($sql);

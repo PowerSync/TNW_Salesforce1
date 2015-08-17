@@ -28,6 +28,12 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         $ids = array();
 
         foreach ($this->_cache['toSaveInMagento'] as $_magentoId => $_product) {
+            /**
+             * skip order fee products, these products don't exist in magento and use sku instead Id
+             */
+            if (!is_numeric($_magentoId)) {
+                continue;
+            }
             $_product->salesforceId = (property_exists($_product, 'productId')) ? $_product->productId : NULL;
             $_product->pricebookEntityIds = (property_exists($_product, 'pricebookEntityIds')) ? $_product->pricebookEntityIds : array();
             $_product->SfInSync = (property_exists($_product, 'syncComplete')) ? $_product->syncComplete : 0;
@@ -51,7 +57,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 Mage::helper('tnw_salesforce')->log("Could not extract product (ID: " . $_magentoId . ") prices from Salesforce!");
             } else {
                 foreach ($_product->pricebookEntityIds as $_key => $_pbeId) {
-                    $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_varchar', $_key);
+                    $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_text', $_key);
                 }
             }
 
@@ -138,6 +144,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->_cache['responses']['pricebooks'][$_keys[$_i]] = json_decode(json_encode($_result), TRUE);
 
                     $_magentoId = $_tmp[1];
+                    $currencyCode = $_tmp[2];
                     $pricebookEntryKey = $_keys[$_i];
                     ++$_i;
                     if ((string)$_result->success == "false") {
@@ -151,7 +158,10 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
                     $updateStoreIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]);
                     foreach ($updateStoreIds as $uStoreId) {
-                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] = (string)$_result->id;
+                        if (!isset($this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId])) {
+                            $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] = '';
+                        }
+                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds[$uStoreId] .= $currencyCode . ':' . (string)$_result->id . "\n";
                     }
 
                     if ($this->_cache['toSaveInMagento'][$_magentoId]->syncComplete != false) {
