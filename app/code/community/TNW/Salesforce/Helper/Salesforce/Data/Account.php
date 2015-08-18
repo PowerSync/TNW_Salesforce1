@@ -29,7 +29,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
             $collection->getSelect()->where("Name = ?", $duplicateData->getData('Name'));
 
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                $collection->getSelect()->where('IsPersonAccount != ?', true);
+                $collection->getSelect()->columns('IsPersonAccount');
+                $collection->getSelect()->where('IsPersonAccount = ' . ($duplicateData->getData('IsPersonAccount')? 'true': 'false'));
+                $order = new Zend_Db_Expr('IsPersonAccount ASC NULLS FIRST');
+                $collection->getSelect()->order($order);
+
             }
 
             $allDuplicates = $collection->getItems();
@@ -39,29 +43,58 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
             $duplicatesToMergeCount = 0;
 
             $duplicateToMerge = array();
+            $mergePersonAccount = false;
             foreach ($allDuplicates as $k => $duplicate) {
                 $counter++;
                 $duplicatesToMergeCount++;
-                $duplicateToMerge[] = (object)$duplicate->getData();
+
+                $duplicateToMerge[] = (object)array('Id' => $duplicate->getData('Id'));
 
                 /**
                  * try to merge piece-by-piece
+                 * merge if:
+                 * 1) items-per-merge limit is reached
+                 * 2) it's last item in collection
+                 * 3) IsPersonAccount changed, send merging request for previous accounts. Merge B2B with B2B and B2C with B2C only
                  */
                 if (
                     $duplicatesToMergeCount == TNW_Salesforce_Helper_Salesforce_Data_User::MERGE_LIMIT
                     || ($allDuplicatesCount == $counter && $duplicatesToMergeCount > 1)
+                    || ($duplicate->getData('IsPersonAccount') != $mergePersonAccount)
                 ) {
-                    $masterObject = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Account');
+
+                    /**
+                     * remove last account with not-matching 'IsPersonAccount' flag, it'll go through separate request
+                     */
+                    if ($duplicate->getData('IsPersonAccount') != $mergePersonAccount) {
+                        $masterObject = array_pop($duplicateToMerge);
+                    }
+
+                    if (count($duplicateToMerge) > 1) {
+
+                        $result = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Account');
+
+                        /**
+                         * remove technical information
+                         */
+                        unset($result->success);
+                        unset($result->mergedRecordIds);
+                        unset($result->updatedRelatedIds);
+
+                        $masterObject = $result;
+                    }
 
                     $duplicateToMerge = array();
                     $duplicateToMerge[] = $masterObject;
 
                     $duplicatesToMergeCount = 1;
+
+                    $mergePersonAccount = $duplicate->getData('IsPersonAccount');
                 }
 
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Leads merging error: " . $e->getMessage());
+            Mage::helper('tnw_salesforce')->log("ERROR: Account merging error: " . $e->getMessage());
         }
 
         return $this;
@@ -83,7 +116,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $collection->getSelect()->having('COUNT(Id) > ?', 1);
 
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $collection->getSelect()->where('IsPersonAccount != ?', true);
+            $collection->getSelect()->columns('IsPersonAccount');
+            $collection->getSelect()->group('IsPersonAccount');
         }
 
         return $collection;
@@ -215,8 +249,17 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                     $key = '_' . $key;
                 }
 
-                $returnArray[$key] = $_item->Account;
-                $returnArray[$key]->Id = $_item->AccountId;
+                /**
+                 * get item if no other results or if MagentoId is same: matching by MagentoId should has the hiest priority
+                 */
+                if (
+                    !isset($returnArray[$key])
+                    || isset($_emails[$_contactMagentoIdValue])
+                    || isset($_emails[$_accountMagentoIdValue])
+                ) {
+                    $returnArray[$key] = $_item->Account;
+                    $returnArray[$key]->Id = $_item->AccountId;
+                }
             }
         }
         return $returnArray;

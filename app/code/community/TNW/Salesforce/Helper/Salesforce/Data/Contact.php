@@ -53,6 +53,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 ) {
                     $masterObject = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Contact');
 
+                    /**
+                     * remove technical information
+                     */
+                    unset($masterObject->success);
+                    unset($masterObject->mergedRecordIds);
+                    unset($masterObject->updatedRelatedIds);
+
                     $duplicateToMerge = array();
                     $duplicateToMerge[] = $masterObject;
 
@@ -61,7 +68,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Leads merging error: " . $e->getMessage());
+            Mage::helper('tnw_salesforce')->log("ERROR: Contact merging error: " . $e->getMessage());
         }
 
         return $this;
@@ -84,6 +91,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
         if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
             $collection->getSelect()->group(Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject());
+        }
+
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $collection->getSelect()->where('Account.IsPersonAccount != true');
         }
 
         return $collection;
@@ -281,7 +292,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                             }
                         }
                     }
-                    $returnArray[$_websiteKey][$_key] = $tmp;
+
+                    /**
+                     * get item if no other results or if MagentoId is same: matching by MagentoId should has the hiest priority
+                     */
+                    if (
+                        !isset($returnArray[$_websiteKey][$_key])
+                        || ($tmp->MagentoId && isset($email[$tmp->MagentoId]))
+                    ) {
+                        $returnArray[$_websiteKey][$_key] = $tmp;
+                    }
                 }
             }
             return $returnArray;

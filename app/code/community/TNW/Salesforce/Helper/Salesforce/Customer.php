@@ -319,6 +319,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             //Deal with Person Accounts
             $this->_personAccountUpdate();
 
+            if (Mage::helper('tnw_salesforce/config_customer')->mergeDuplicates()) {
+                Mage::helper('tnw_salesforce/salesforce_data_user')->processDuplicates();
+            }
             // Update Magento
             if ($this->_customerEntityTypeCode) {
                 $this->_updateMagento();

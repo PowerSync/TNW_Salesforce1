@@ -96,19 +96,27 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * Find customer duplicates in SF
+     * Find customer and merge duplicates in SF
      */
-    public function getDuplicates()
+    public function processDuplicates()
     {
         foreach (array('lead', 'account', 'contact') as $sfEntityType) {
             /**
              * @var $helper TNW_Salesforce_Helper_Salesforce_Data_Lead|TNW_Salesforce_Helper_Salesforce_Data_Account|TNW_Salesforce_Helper_Salesforce_Data_Contact
              */
             $helper = Mage::helper('tnw_salesforce/salesforce_data_' . $sfEntityType);
-            $duplicates = $helper->getDuplicates();
+            if ($sfEntityType == 'lead') {
+                $duplicates = $helper->getDuplicates(Mage::helper('tnw_salesforce/data')->getLeadSource());
+            } else {
+                $duplicates = $helper->getDuplicates();
+            }
 
             foreach ($duplicates as $duplicate) {
-                $helper->mergeDuplicates($duplicate);
+                if ($sfEntityType == 'lead') {
+                    $helper->mergeDuplicates($duplicate, Mage::helper('tnw_salesforce/data')->getLeadSource());
+                } else {
+                    $helper->mergeDuplicates($duplicate);
+                }
             }
         }
     }
@@ -126,6 +134,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
             $mergeRequest = new stdclass();
 
             Mage::helper('tnw_salesforce')->log("INFO: $type to merge: " . print_r($objects, 1));
+
+            if (count($objects) < 2 || count($objects) > 3) {
+                throw new Exception('Incorrect objects count for merge request');
+            }
 
             $masterObject = array_shift($objects);
 

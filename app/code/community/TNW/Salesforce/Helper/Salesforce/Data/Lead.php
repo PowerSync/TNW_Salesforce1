@@ -89,14 +89,27 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                             }
                         }
                     }
+
+                    /**
+                     * check converted condition
+                     */
                     if (
                         !$tmp->IsConverted
                         || (
                             $tmp->ConvertedAccountId
                             && $tmp->ConvertedContactId
                         )
-                    )
-                        $returnArray[$_websiteKey][$tmp->Email] = $tmp;
+                    ) {
+                        /**
+                         * get item if no other results or if MagentoId is same: matching by MagentoId should has the hiest priority
+                         */
+                        if (
+                            !isset($returnArray[$_websiteKey][$tmp->Email])
+                            || ($tmp->MagentoId && isset($email[$tmp->MagentoId]))
+                        ) {
+                            $returnArray[$_websiteKey][$tmp->Email] = $tmp;
+                        }
+                    }
                 }
             }
             return $returnArray;
@@ -109,10 +122,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
+     * prepare duplicates for merge request and call request at the end
      * @param $duplicateData
+     * @param string $leadSource
      * @return $this
      */
-    public function mergeDuplicates($duplicateData)
+    public function mergeDuplicates($duplicateData, $leadSource = '')
     {
         try {
             $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
@@ -122,6 +137,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             $collection->getSelect()->columns('Email');
 
             $collection->getSelect()->where("Email = ?", $duplicateData->getData('Email'));
+            if ($leadSource) {
+                $collection->getSelect()->where("LeadSource = ?", $leadSource);
+            }
 
             if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
                 $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
@@ -156,6 +174,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                      */
                     unset($masterObject->success);
                     unset($masterObject->mergedRecordIds);
+                    unset($masterObject->updatedRelatedIds);
 
                     $duplicateToMerge = array();
                     $duplicateToMerge[] = $masterObject;
@@ -172,9 +191,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
+     * get duplicates minimal data
+     * @param string $leadSource
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
      */
-    public function getDuplicates()
+    public function getDuplicates($leadSource = '')
     {
         $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
 
@@ -183,6 +204,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $collection->getSelect()->columns('COUNT(Id) items_count');
 
         $collection->getSelect()->where("Email != ''");
+        if ($leadSource) {
+            $collection->getSelect()->where("LeadSource = ?", $leadSource);
+        }
 
         $collection->getSelect()->group('Email');
 
