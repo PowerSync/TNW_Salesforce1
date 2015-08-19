@@ -189,7 +189,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
 
             $result = array_shift($result);
             if (!property_exists($result, 'success') || $result->success != true) {
-                throw new Exception("$type merging error: " . print_r($result));
+                throw new Exception("$type merging error: " . print_r($result, 1));
             }
             Mage::helper('tnw_salesforce')->log("INFO: $type merging result: " . print_r($result, 1));
 

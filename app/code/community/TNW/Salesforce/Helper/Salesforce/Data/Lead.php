@@ -158,7 +158,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             foreach ($allDuplicates as $k => $duplicate) {
                 $counter++;
                 $duplicatesToMergeCount++;
-                $duplicateToMerge[] = (object)$duplicate->getData();
+                $duplicateToMerge[] = (object)array('Id' => $duplicate->getData('Id'));
 
                 /**
                  * try to merge piece-by-piece

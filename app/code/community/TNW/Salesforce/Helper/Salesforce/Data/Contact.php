@@ -42,7 +42,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             foreach ($allDuplicates as $k => $duplicate) {
                 $counter++;
                 $duplicatesToMergeCount++;
-                $duplicateToMerge[] = (object)$duplicate->getData();
+                $duplicateToMerge[] = (object)array('Id' => $duplicate->getData('Id'));
 
                 /**
                  * try to merge piece-by-piece
