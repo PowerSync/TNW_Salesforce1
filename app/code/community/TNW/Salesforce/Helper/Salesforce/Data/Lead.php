@@ -101,11 +101,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                         )
                     ) {
                         /**
-                         * get item if no other results or if MagentoId is same: matching by MagentoId should has the hiest priority
+                         * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
                          */
                         if (
                             !isset($returnArray[$_websiteKey][$tmp->Email])
-                            || ($tmp->MagentoId && isset($email[$tmp->MagentoId]))
+                            || ($tmp->MagentoId && isset($email[$tmp->MagentoId]) && $email[$tmp->MagentoId] == $tmp->Email)
                         ) {
                             $returnArray[$_websiteKey][$tmp->Email] = $tmp;
                         }

@@ -20,13 +20,22 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     public function mergeDuplicates($duplicateData)
     {
         try {
+
+            $mergedRecords = array();
+
             $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
             $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
 
             $collection->getSelect()->columns('Id');
-            $collection->getSelect()->columns('Name');
 
-            $collection->getSelect()->where("Name = ?", $duplicateData->getData('Name'));
+            if (!$duplicateData->getData('IsPersonAccount')) {
+
+                $collection->getSelect()->columns('Name');
+                $collection->getSelect()->where("Name = ?", $duplicateData->getData('Name'));
+            } else {
+                $collection->getSelect()->columns('PersonEmail');
+                $collection->getSelect()->where("PersonEmail = ?", $duplicateData->getData('PersonEmail'));
+            }
 
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $collection->getSelect()->columns('IsPersonAccount');
@@ -103,20 +112,31 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     /**
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection
      */
-    public function getDuplicates()
+    public function getDuplicates($isPersonAccount = false)
     {
         $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
 
         $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
-        $collection->getSelect()->columns('Name');
         $collection->getSelect()->columns('COUNT(Id) items_count');
 
-        $collection->getSelect()->group('Name');
+        /**
+         * search typical accounts by name
+         * search person accounts by email
+         */
+        if (!$isPersonAccount) {
+            $collection->getSelect()->columns('Name');
+            $collection->getSelect()->group('Name');
+
+        } else {
+            $collection->getSelect()->columns('PersonEmail');
+            $collection->getSelect()->group('PersonEmail');
+        }
 
         $collection->getSelect()->having('COUNT(Id) > ?', 1);
 
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
             $collection->getSelect()->columns('IsPersonAccount');
+            $collection->getSelect()->where('IsPersonAccount ' . ($isPersonAccount? ' = true': ' != true'));
             $collection->getSelect()->group('IsPersonAccount');
         }
 
@@ -250,12 +270,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 }
 
                 /**
-                 * get item if no other results or if MagentoId is same: matching by MagentoId should has the hiest priority
+                 * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
                  */
                 if (
                     !isset($returnArray[$key])
-                    || isset($_emails[$_contactMagentoIdValue])
-                    || isset($_emails[$_accountMagentoIdValue])
+                    || (isset($_emails[$_contactMagentoIdValue]) && $_emails[$_contactMagentoIdValue] == $_email)
+                    || (isset($_emails[$_accountMagentoIdValue]) && $_emails[$_accountMagentoIdValue] == $_email)
                 ) {
                     $returnArray[$key] = $_item->Account;
                     $returnArray[$key]->Id = $_item->AccountId;
@@ -324,6 +344,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         return $this->lookupByCriterias($companies, $hashField);
     }
 
+    /**
+     * @param $criteria
+     * @param $field
+     * @return bool|string
+     */
     protected function _prepareCriteriaSql($criteria, $field)
     {
         $sql = 'SELECT Id, OwnerId, Name FROM Account WHERE ';

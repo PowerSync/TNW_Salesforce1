@@ -25,6 +25,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
     protected $_queueList = NULL;
 
     /**
+     * global cache array
+     * @var
+     */
+    protected $_cache;
+
+    /**
      * Read from cache or pull from Salesforce Active users
      * Accept $sfUserId parameter and check if its in the array of active users
      * @param null $sfUserId
@@ -96,19 +102,48 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
     }
 
     /**
+     * set global cache data
+     *
+     * @param $cache
+     * @return $this
+     */
+    public function setCache(&$cache)
+    {
+        $this->_cache = &$cache;
+
+        return $this;
+    }
+
+    /**
      * Find customer and merge duplicates in SF
      */
     public function processDuplicates()
     {
         foreach (array('lead', 'account', 'contact') as $sfEntityType) {
+
+            $duplicates = array();
             /**
              * @var $helper TNW_Salesforce_Helper_Salesforce_Data_Lead|TNW_Salesforce_Helper_Salesforce_Data_Account|TNW_Salesforce_Helper_Salesforce_Data_Contact
              */
             $helper = Mage::helper('tnw_salesforce/salesforce_data_' . $sfEntityType);
-            if ($sfEntityType == 'lead') {
-                $duplicates = $helper->getDuplicates(Mage::helper('tnw_salesforce/data')->getLeadSource());
-            } else {
-                $duplicates = $helper->getDuplicates();
+            switch ($sfEntityType) {
+                case 'lead':
+                    $duplicates = $helper->getDuplicates(Mage::helper('tnw_salesforce/data')->getLeadSource());
+                    break;
+                case 'account':
+                    /**
+                     * @var $duplicates TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
+                     */
+                    $duplicates = $helper->getDuplicates();
+                    if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+                        $duplicatesPersonAccount = $helper->getDuplicates(true);
+                        $duplicates = array_merge($duplicates->getItems(), $duplicatesPersonAccount->getItems());
+                    }
+                    break;
+                case 'contact':
+                    $duplicates = $helper->getDuplicates();
+                    break;
+
             }
 
             foreach ($duplicates as $duplicate) {
@@ -157,6 +192,34 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
                 throw new Exception("$type merging error: " . print_r($result));
             }
             Mage::helper('tnw_salesforce')->log("INFO: $type merging result: " . print_r($result, 1));
+
+            /**
+             * replace Ids of duplicates to merge result Id
+             */
+            if (isset($this->_cache['toSaveInMagento'])) {
+                foreach ($this->_cache['toSaveInMagento'] as $websiteId => $websiteCustomers) {
+                    foreach ($websiteCustomers as $customer) {
+
+                        if ($type == 'Contact') {
+                            $sfEntryIdField = 'SalesforceId';
+                        } else {
+                            $sfEntryIdField = $type . 'Id';
+                        }
+
+                        if (!property_exists($customer, $sfEntryIdField)) {
+                            continue;
+                        }
+
+                        /**
+                         * replace duplicate Id to merge result Id
+                         */
+                        if (in_array($customer->{$sfEntryIdField}, $result->mergedRecordIds)) {
+                            $customer->{$sfEntryIdField} = $result->id;
+                        }
+                    }
+                }
+            }
+
 
         } catch (Exception $e) {
             Mage::helper('tnw_salesforce')->log("ERROR: $type merging error: " . $e->getMessage());
