@@ -586,12 +586,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if ($this->_isPerson) {
                 // Move the prepared Contact data to Person Account
                 if (
-                    array_key_exists('Id', $this->_cache['contactsToUpsert'])
-                    && array_key_exists($_id, $this->_cache['contactsToUpsert']['Id'])
-                    && array_key_exists('Id', $this->_cache['accountsToUpsert'])
+                    array_key_exists('Id', $this->_cache['accountsToUpsert'])
                     && array_key_exists($_id, $this->_cache['accountsToUpsert']['Id'])
                 ) {
-                    foreach ($this->_cache['contactsToUpsert']['Id'][$_id] as $_key => $_value) {
+                    foreach ($this->_cache['contactsToUpsert'][$_upsertOn][$_id] as $_key => $_value) {
                         if (!property_exists($this->_cache['accountsToUpsert']['Id'][$_id], $_key)) {
                             $this->_cache['accountsToUpsert']['Id'][$_id]->{$_key} = $_value;
                         }
