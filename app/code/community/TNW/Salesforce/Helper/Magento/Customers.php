@@ -139,6 +139,73 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         return $_entity;
     }
 
+    /**
+     * @param $_field
+     * Replace standard field with Person Account equivalent
+     */
+    protected function _replacePersonField($contactField, $personAccountField = null, &$object)
+    {
+        if (!$personAccountField || is_numeric($personAccountField)) {
+            $personAccountField = 'Person' . $contactField;
+        }
+
+        if (property_exists($object, $personAccountField)) {
+
+            $object->{$contactField} = $object->{$personAccountField};
+            unset($object->{$personAccountField});
+        }
+    }
+
+    /**
+     * rename PersonAccount fields for Contact mapping compatibility
+     * @param $object
+     */
+    protected function _fixPersonAccountFields(&$object)
+    {
+        $_standardFields = array(
+            /**
+             * Contact fields
+             */
+            'Birthdate',
+            'AssistantPhone',
+            'AssistantName',
+            'Department',
+            'DoNotCall',
+            'Email',
+            'HasOptedOutOfEmail',
+            'HasOptedOutOfFax',
+            'LastCURequestDate',
+            'LastCUUpdateDate',
+            'LeadSource',
+            'MobilePhone',
+            'OtherPhone',
+            'Title',
+
+            /**
+             *  PersonAccount field => Contact field
+             */
+            'BillingStreet' => 'OtherStreet',
+            'BillingCity' => 'OtherCity',
+            'BillingState' => 'OtherState',
+            'BillingPostalCode' => 'OtherPostalCode',
+            'BillingCountry' => 'OtherCountry',
+            'ShippingStreet' => 'MailingStreet',
+            'ShippingCity' => 'MailingCity ',
+            'ShippingState' => 'MailingState ',
+            'ShippingPostalCode' => 'MailingPostalCode',
+            'ShippingCountry' => 'MailingCountry',
+            'PersonHomePhone' => 'Phone',
+        );
+
+        foreach ($_standardFields as  $personAccountField => $contactField) {
+            $this->_replacePersonField($contactField, $personAccountField, $object);
+        }
+
+        if (property_exists($object, 'AccountId')) {
+            unset($object->AccountId);
+        }
+    }
+
     protected function _prepare()
     {
         parent::_prepare();
@@ -166,6 +233,8 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_salesforceObject->Email = (property_exists($this->_salesforceObject, "PersonEmail") && $this->_salesforceObject->PersonEmail) ? $this->_salesforceObject->PersonEmail : NULL;
             $this->_salesforceObject->AccountId = (property_exists($this->_salesforceObject, "Id") && $this->_salesforceObject->Id) ? $this->_salesforceObject->Id : NULL;
             $this->_isPersonAccount = true;
+
+            $this->_fixPersonAccountFields($this->_salesforceObject);
         }
 
         $this->_email = (is_object($this->_salesforceObject) && property_exists($this->_salesforceObject, "Email") && $this->_salesforceObject->Email) ? strtolower($this->_salesforceObject->Email) : NULL;
