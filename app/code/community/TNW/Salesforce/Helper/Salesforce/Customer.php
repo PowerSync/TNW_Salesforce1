@@ -938,6 +938,17 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (property_exists($object, 'AccountId')) {
             unset($object->AccountId);
         }
+
+        /**
+         * the PersonAccount field names have "__pc" postfix, but Contact field names have the "__c" postfix
+         */
+        foreach ($object as $personAccountField => $value) {
+            if (preg_match('/^.*__c$/', $personAccountField)) {
+                unset($object->$personAccountField);
+                $personAccountField = preg_replace('/__c$/', '__pc', $personAccountField);
+                $object->$personAccountField = $value;
+            }
+        }
     }
 
     /**
