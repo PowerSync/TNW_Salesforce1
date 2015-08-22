@@ -201,9 +201,17 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_replacePersonField($contactField, $personAccountField, $object);
         }
 
-        if (property_exists($object, 'AccountId')) {
-            unset($object->AccountId);
+        /**
+         * the PersonAccount field names have "__pc" postfix, but Contact field names have the "__c" postfix
+         */
+        foreach ($object as $personAccountField => $value) {
+            if (preg_match('/^.*__pc$/', $personAccountField)) {
+                unset($object->$personAccountField);
+                $personAccountField = preg_replace('/__pc$/', '__c', $personAccountField);
+                $object->$personAccountField = $value;
+            }
         }
+
     }
 
     protected function _prepare()
@@ -310,7 +318,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                                 continue;
                             }
                         } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
-                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
+                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->gmtTimestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
                         } elseif ($_magentoFieldName == 'website_ids') {
                             // website ids hack
                             $_value = explode(',', $this->_salesforceObject->{$_mapping->getSfField()});
