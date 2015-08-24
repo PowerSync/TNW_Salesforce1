@@ -30,6 +30,16 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
      */
     protected $_productEntityTypeId = null;
 
+
+    /**
+     * @comment contains list of the all available product types
+     * @var
+     */
+    protected $_productTypes;
+
+    /**
+     *
+     */
     public function __construct()
     {
         parent::__construct();
@@ -119,6 +129,26 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         }
     }
 
+
+    /**
+     * @param  $name string|null
+     * @return array|null
+     */
+    public function getProductTypeId($name)
+    {
+        if (empty($this->_productTypes)) {
+            $this->_productTypes = Mage::getModel('catalog/product_type')->getOptionArray();
+        }
+
+        $result = array_search($name, $this->_productTypes);
+
+        if ($result === false) {
+            $result = $name;
+        }
+
+        return $result;
+    }
+
     /**
      * @param $object
      * @param $_magentoId
@@ -189,13 +219,17 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                                 continue;
                             }
                         } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
-                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
+                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($object->{$_mapping->getSfField()})));
                         } elseif ($_magentoFieldName == 'website_ids') {
                             // websiteids hack
                             $_value = explode(',', $object->{$_mapping->getSfField()});
                         } elseif ($_magentoFieldName == 'status') {
                             // status hack
                             $_value = ($object->{$_mapping->getSfField()} === 1 || $object->{$_mapping->getSfField()} === true) ? 'Enabled' : 'Disabled';
+                        } elseif ($_magentoFieldName == 'type_id') {
+                            // status hack
+                            $_value = $object->{$_mapping->getSfField()};
+                            $_value = $this->getProductTypeId($_value);
                         } else {
                             $_value = $object->{$_mapping->getSfField()};
                         }
@@ -237,8 +271,8 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                 $_product->setData('updated_at', $_currentTime);
             }
             if (!$_product->getData('created_at') || $_product->getData('created_at') == '') {
-                if (property_exists($this->_salesforceObject, 'CreatedDate')) {
-                    $_currentTime = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->CreatedDate)));
+                if (property_exists($object, 'CreatedDate')) {
+                    $_currentTime = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($object->CreatedDate)));
                 }
                 Mage::helper('tnw_salesforce')->log('Product: created_at = ' . $_currentTime);
                 $_product->setData('created_at', $_currentTime);
