@@ -591,6 +591,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 ) {
                     foreach ($this->_cache['contactsToUpsert'][$_upsertOn][$_id] as $_key => $_value) {
                         if (!property_exists($this->_cache['accountsToUpsert']['Id'][$_id], $_key)) {
+
+                            /**
+                             * the PersonAccount field names have "__pc" postfix, but Contact field names have the "__c" postfix
+                             */
+                            if (preg_match('/^.*__c$/', $_key)) {
+                                $_key = preg_replace('/__c$/', '__pc', $_key);
+                            }
                             $this->_cache['accountsToUpsert']['Id'][$_id]->{$_key} = $_value;
                         }
                     }
@@ -939,16 +946,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             unset($object->AccountId);
         }
 
-        /**
-         * the PersonAccount field names have "__pc" postfix, but Contact field names have the "__c" postfix
-         */
-        foreach ($object as $personAccountField => $value) {
-            if (preg_match('/^.*__c$/', $personAccountField)) {
-                unset($object->$personAccountField);
-                $personAccountField = preg_replace('/__c$/', '__pc', $personAccountField);
-                $object->$personAccountField = $value;
-            }
-        }
     }
 
     /**
