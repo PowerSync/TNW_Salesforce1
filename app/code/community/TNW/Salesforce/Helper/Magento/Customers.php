@@ -360,6 +360,15 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Customer Group : ') === 0) {
                     // Do we need to sync this?
+                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
+                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
+                        $targetGroup = Mage::getModel('customer/group');
+                        $targetGroup->load($_value, 'customer_group_code');
+                        if (is_object($targetGroup) && $targetGroup->getId()) {
+                            $_entity->setData('group_id', $targetGroup->getId());
+                        }
+                    }
+
                 }
             }
 
