@@ -326,7 +326,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
 
         // Force configured pricebook
-        $this->_assignPricebookToQuote($quote);
+        $this->_assignPricebookToOrder($quote);
 
         // Close Date
         if ($quote->getUpdatedAt()) {
