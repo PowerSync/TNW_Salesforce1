@@ -550,7 +550,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if (
             !$this->_isPerson
             ) {
-                $this->_obj->AccountId = $this->getCustomerAccount($_email);
+                // Set Conjoint AccountId
+                if (Mage::getStoreConfig('salesforce_customer/sync/single_account_sync_customer')
+                    && Mage::getStoreConfig('salesforce_customer/sync/single_account_select') !== 'null'
+                ) {
+                    $this->_obj->AccountId = Mage::getStoreConfig('salesforce_customer/sync/single_account_select');
+                } else {
+                    $this->_obj->AccountId = $this->getCustomerAccount($_email);
+                }
+
                 if (!$this->_obj->AccountId && !empty($this->_cache['accountLookup'])) {
                     $accountKeys = array_keys($this->_cache['accountLookup']);
 
@@ -655,6 +663,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 ) {
                     unset($this->_cache['contactsToUpsert'][$this->_magentoId][$_id]);
                 }
+            } elseif (Mage::getStoreConfig('salesforce_customer/sync/single_account_sync_customer')
+                && Mage::getStoreConfig('salesforce_customer/sync/single_account_select') !== 'null'
+                && !$this->_isPerson
+            ) {
+                // Skip Account sync
+                return;
             } else {
                 // Reset Record Type Id (incase if it was set to B2C
                 $this->_obj->RecordTypeId = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
