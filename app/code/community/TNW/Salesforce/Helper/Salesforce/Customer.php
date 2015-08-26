@@ -1145,6 +1145,78 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
+     * Update customer statistic data for using in mapping
+     * @param $ids
+     */
+    protected function _updateCustomerStatistic($ids)
+    {
+
+        $salesCollection = Mage::getModel('sales/order')->getCollection();
+        $salesCollection->removeAllFieldsFromSelect();
+
+        /**
+         * add customer_id in result
+         */
+        $salesCollection->addExpressionFieldToSelect(
+            'entity_id', "IFNULL(main_table.customer_id, log_customer.customer_id)", array());
+
+        /**
+         * select last_purchase value
+         */
+        $salesCollection
+            ->addExpressionFieldToSelect('last_purchase', "MAX({{created_at}})",
+                array('created_at' => 'main_table.created_at'));
+
+        /**
+         * salesct last_transaction_id
+         */
+        $salesCollection
+            ->addFieldToSelect('main_table.increment_id');
+
+
+        /**
+         * select total_order_count value
+         */
+        $salesCollection
+            ->addExpressionFieldToSelect('total_order_count', "COUNT(*)",
+                array());
+
+        /**
+         * select total_order_amount value
+         */
+        $salesCollection
+            ->addExpressionFieldToSelect('total_order_amount', "SUM(total_order_amount)",
+                array('total_order_amount' => 'base_grand_total'));
+
+        /**
+         * select last_login value
+         */
+//        $salesCollection->getSelect()->joinFull(
+//            array('log_customer' => $salesCollection->getTable('log/customer')),
+//            'main_table.customer_id = log_customer.customer_id',
+//            array('last_login' => 'login_at'));
+
+
+        $salesCollection->addFieldToFilter(
+            array(
+                'main_table.customer_id',
+                'log_customer.customer_id'
+            ),
+            array(
+                array('in' => $ids),
+                array('in' => $ids)
+            )
+        );
+
+        $salesCollection->setOrder('main_table.created_at');
+
+        $salesCollection->getSelect()->group('main_table.customer_id');
+
+
+        return $this;
+    }
+
+    /**
      * @param array $ids
      */
     public function massAdd($ids = array())
@@ -1153,6 +1225,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             // Lookup existing Contacts & Accounts
             $_emailsArray = array();
             $_companies = array();
+
+            $this->_updateCustomerStatistic($ids);
 
             $_collection = Mage::getModel('customer/customer')
                 ->getCollection()
