@@ -19,7 +19,8 @@ $newAttributes = array(
         'type' => Varien_Db_Ddl_Table::TYPE_INTEGER
     ),
     'total_order_amount' => array(
-        'type' => Varien_Db_Ddl_Table::TYPE_TIMESTAMP
+        'type' => Varien_Db_Ddl_Table::TYPE_DECIMAL,
+        'length' => '12,4'
     )
 );
 
@@ -29,8 +30,9 @@ foreach ($newAttributes as $code => $newAttributeData) {
         $installer->getTable('customer/entity'),
         $code,
         array(
+            'comment' => isset($newAttributeData['label'])? isset($newAttributeData['length']): $code,
             'type'    => $newAttributeData['type'],
-            'comment' => $code
+            'length' => isset($newAttributeData['length'])? $newAttributeData['length']: null,
         )
     );
 
