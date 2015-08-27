@@ -101,10 +101,17 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                             $newAttribute = $entity->$attr();
                         }
                         // Reformat date fields
-                        if ($_map->getBackendType() == "datetime" || $attributeCode == 'created_at' || $_map->getBackendType() == "date") {
+                        if (
+                            $_map->getBackendType() == "datetime"
+                            || $attributeCode == 'created_at'
+                            || $_map->getBackendType() == "date"
+                            || $_attr->getFrontendInput() == "date"
+                            || $_attr->getFrontendInput() == "datetime"
+
+                        ) {
                             if ($entity->$attr()) {
                                 $timestamp = Mage::getModel('core/date')->timestamp(strtotime($entity->$attr()));
-                                if ($attributeCode == 'created_at') {
+                                if ($attributeCode == 'created_at' || $_attr->getFrontendInput() == "datetime") {
                                     $newAttribute = gmdate(DATE_ATOM, $timestamp);
                                 } else {
                                     $newAttribute = date("Y-m-d", $timestamp);
