@@ -72,6 +72,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Product_Product extends TNW_Salesforce_M
                         } elseif ($attributeCode == 'type_id') {
                             $value = $entity->$attr();
                             $value = $this->getProductTypes($value);
+                       } elseif ($attributeCode == 'product_url') {
+                            $value = $entity->getProductUrl();
                         } elseif ($attributeCode == 'attribute_set_id') {
                             $value = $entity->$attr();
                             $value = $this->getAttributeSets($value);
