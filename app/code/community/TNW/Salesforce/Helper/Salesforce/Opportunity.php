@@ -441,21 +441,19 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 }
 
                 foreach ($_order->getAllVisibleItems() as $_item) {
-                    $id = $this->getProductIdFromCart($_item);
-                    $_storeId = $_order->getStoreId();
-
-                    if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-                        if ($_order->getData('order_currency_code') != $_order->getData('store_currency_code')) {
-                            $_storeId = $this->_getStoreIdByCurrency($_order->getData('order_currency_code'));
+                    if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                        if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                            $this->_prepareStoreId($_item);
+                            foreach ($_order->getAllItems() as $_childItem) {
+                                if ($_childItem->getParentItemId() == $_item->getItemId()) {
+                                    $this->_prepareStoreId($_childItem);
+                                }
+                            }
+                        } else {
+                            $this->_prepareStoreId($_item);
                         }
-                    }
-
-                    if (!array_key_exists($_storeId, $this->_stockItems)) {
-                        $this->_stockItems[$_storeId] = array();
-                    }
-                    // Item's stock needs to be updated in Salesforce
-                    if (!in_array($id, $this->_stockItems[$_storeId])) {
-                        $this->_stockItems[$_storeId][] = $id;
+                    } else {
+                        $this->_prepareStoreId($_item);
                     }
                 }
             }
@@ -476,6 +474,31 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
         }
         Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
+    }
+
+    /**
+     * Prepare Store Id for upsert
+     *
+     * @param Mage_Sales_Model_Order_Item $_item
+     */
+    protected function _prepareStoreId(Mage_Sales_Model_Order_Item $_item) {
+        $itemId = $this->getProductIdFromCart($_item);
+        $_order = $_item->getOrder();
+        $_storeId = $_order->getStoreId();
+
+        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+            if ($_order->getOrderCurrencyCode() != $_order->getStoreCurrencyCode()) {
+                $_storeId = $this->_getStoreIdByCurrency($_order->getOrderCurrencyCode());
+            }
+        }
+
+        if (!array_key_exists($_storeId, $this->_stockItems)) {
+            $this->_stockItems[$_storeId] = array();
+        }
+        // Item's stock needs to be updated in Salesforce
+        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
+            $this->_stockItems[$_storeId][] = $itemId;
+        }
     }
 
     protected function _prepareNotes()
@@ -1392,5 +1415,38 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 Mage::helper('tnw_salesforce')->log("SUCCESS: Updating Order #" . $order->getRealOrderId());
             }
         }
+    }
+
+    /**
+     * Return parent entity items and bundle items
+     *
+     * @param $parentEntity Mage_Sales_Model_Quote|Mage_Sales_Model_Order
+     * @return mixed
+     */
+    public function getItems($parentEntity)
+    {
+        if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+            $_items = array();
+            foreach ($parentEntity->getAllVisibleItems() as $_item) {
+                if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                    $_items[] = $_item;
+                    foreach ($parentEntity->getAllItems() as $_childItem) {
+                        if ($_childItem->getParentItemId() == $_item->getItemId()){
+                            $_childItem->setRowTotalInclTax(null)
+                                ->setRowTotal(null)
+                                ->setDiscountAmount(null)
+                                ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                                    . $_item->getSku());
+                            $_items[] = $_childItem;
+                        }
+                    }
+                } else {
+                    $_items[] = $_item;
+                }
+            }
+        } else {
+            $_items = $parentEntity->getAllVisibleItems();
+        }
+        return $_items;
     }
 }

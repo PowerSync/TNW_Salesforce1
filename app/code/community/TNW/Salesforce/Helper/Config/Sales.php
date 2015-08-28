@@ -13,6 +13,16 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     const OPPORTUNITY_TO_ORDER_STATUS = 'salesforce_order/customer_opportunity/opportunity_to_order_status';
 
     /**
+     * @comment config path
+     */
+    const XML_PATH_ORDERS_BUNDLE_ITEM_SYNC = 'salesforce_order/shopping_cart/orders_bundle_item_sync';
+
+    /**
+     * @comment Bundle Item marker
+     */
+    const BUNDLE_ITEM_MARKER = 'Bundle Item from: sku - ';
+
+    /**
      * @comment Should we use base currency
      * @return bool
      */

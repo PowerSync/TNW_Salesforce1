@@ -1229,6 +1229,27 @@
                         </discount_product_pricebook>
                     </fields>
                 </opportunity_cart>
+                <shopping_cart translate="label" module="tnw_salesforce">
+                    <label>Shopping Cart</label>
+                    <sort_order>200</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <orders_bundle_item_sync>
+                            <label>Sync Products</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_order_bundleitem</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                Should PowerSync break bundle products into leaf level products to enable better inventory managements of products in Salesforce.
+                            ]]></comment>
+                        </orders_bundle_item_sync>
+                    </fields>
+                </shopping_cart>
                 <invoice_configuration translate="label" module="tnw_salesforce">
                     <label>Invoice Configuration</label>
                     <sort_order>250</sort_order>
