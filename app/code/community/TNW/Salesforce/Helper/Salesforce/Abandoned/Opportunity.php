@@ -541,6 +541,18 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $this->_cache['responses']['opportunityLineItems'][] = $_result;
 
             if (!$_result->success) {
+                foreach ($_result->errors as $_error) {
+                    if ($_error->statusCode == 'FIELD_INTEGRITY_EXCEPTION'
+                        && $_error->message == 'field integrity exception: PricebookEntryId (pricebook entry has been archived)'
+                    ) {
+                        Mage::getSingleton('adminhtml/session')
+                            ->addWarning('A product in Quote #'
+                                . $_quoteNum
+                                . ' have not been synchronized. Pricebook entry has been archived.'
+                            );
+                        continue 2;
+                    }
+                }
                 // Reset sync status
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
@@ -863,7 +875,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
 
         // Force configured pricebook
-        $this->_assignPricebookToQuote($quote);
+        $this->_assignPricebookToOrder($quote);
 
         // Close Date
         if ($quote->getUpdatedAt()) {

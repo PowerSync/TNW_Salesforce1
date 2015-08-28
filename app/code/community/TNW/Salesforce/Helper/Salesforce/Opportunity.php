@@ -599,6 +599,19 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $this->_cache['responses']['opportunityLineItems'][] = $_result;
 
             if (!$_result->success) {
+                // Hide errors when product has been archived
+                foreach ($_result->errors as $_error) {
+                    if ($_error->statusCode == 'FIELD_INTEGRITY_EXCEPTION'
+                        && $_error->message == 'field integrity exception: PricebookEntryId (pricebook entry has been archived)'
+                    ) {
+                        Mage::getSingleton('adminhtml/session')
+                            ->addWarning('A product in Order #'
+                                . $_orderNum
+                                . ' have not been synchronized. Pricebook entry has been archived.'
+                            );
+                        continue 2;
+                    }
+                }
                 // Reset sync status
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId . "';";
                 Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);

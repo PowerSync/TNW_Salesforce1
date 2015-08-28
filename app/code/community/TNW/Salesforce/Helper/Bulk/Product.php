@@ -257,6 +257,18 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
                     $_i++;
                     if ((string)$_result->success == "false") {
+                        // Hide errors when product has been archived
+                        foreach ($_result->errors as $_error) {
+                            if ($_error->message == 'entity is deleted'
+                                && $_error->statusCode == 'ENTITY_IS_DELETED'){
+                                Mage::getSingleton('adminhtml/session')
+                                    ->addWarning('Product w/ SKU "'
+                                        . $this->_obj->ProductCode
+                                        . '" have not been synchronized. Entity is deleted or archived.'
+                                    );
+                                continue 2;
+                            }
+                        }
                         $this->_processErrors($_result, 'product', $this->_cache['batch']['product'][$_type][$_key][$_magentoId]);
                         continue;
                     }
