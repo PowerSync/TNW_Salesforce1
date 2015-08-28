@@ -1159,6 +1159,109 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
+     * Update customer statistic data for using in mapping
+     * @param $ids
+     */
+    protected function _updateCustomerStatistic($ids)
+    {
+
+        /**
+         * field names are necessary for customer table updating
+         */
+        $fields = array();
+
+        // 1. Save sales info
+        /**
+         * prepare query for sales statistic calculation
+         */
+        $salesCollection = Mage::getModel('sales/order')->getCollection();
+        $salesCollection->removeAllFieldsFromSelect();
+        $salesCollection->removeFieldFromSelect($salesCollection->getResource()->getIdFieldName());
+
+        /**
+         * add customer_id in result
+         */
+        $fields[] = 'entity_id';
+        $salesCollection->addFieldToSelect('customer_id', 'entity_id');
+
+        /**
+         * select last_purchase value
+         */
+        $fields[] = 'last_purchase';
+        //$salesCollection->addFieldToSelect('created_at', 'last_purchase');
+        $salesCollection->addExpressionFieldToSelect('last_purchase', 'MAX(created_at)', array());
+
+        /**
+         * salect last_transaction_id
+         */
+        $fields[] = 'last_transaction_id';
+        //$salesCollection->addFieldToSelect('increment_id', 'last_transaction_id');
+        $salesCollection->addExpressionFieldToSelect('last_transaction_id', 'MAX(increment_id)', array());
+
+
+        /**
+         * select total_order_count value
+         */
+        $fields[] = 'total_order_count';
+        $salesCollection
+            ->addExpressionFieldToSelect('total_order_count', "COUNT(*)", array());
+
+        /**
+         * select total_order_amount value
+         */
+        $fields[] = 'total_order_amount';
+        $salesCollection
+            ->addExpressionFieldToSelect('total_order_amount', 'SUM(base_grand_total)', array());
+
+        $salesCollection->addFieldToFilter('customer_id', array('in' => $ids));
+
+        $salesCollection->getSelect()->group('customer_id');
+
+        /**
+         * save sales statistic in customer table
+         */
+        $query = $salesCollection->getSelect()->insertFromSelect(
+            Mage::getModel('customer/customer')->getResource()->getEntityTable(),
+            $fields,
+            true
+        );
+        $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
+
+        $fields = array();
+
+        // 2. Save login date
+        /**
+         * prepare last login date
+         */
+        $logCustomerResource = Mage::getModel('log/customer')->getResource();
+        $select = $logCustomerResource->getReadConnection()->select();
+
+
+        $fields[] = 'entity_id';
+        $fields[] = 'last_login';
+
+        $select
+            ->from(
+                $logCustomerResource->getMainTable(),
+                array(
+                    'customer_id AS entity_id',
+                    'login_at AS last_login'
+                ));
+
+        $select->where('customer_id IN (?)', $ids);
+
+        $query = $select->insertFromSelect(
+            Mage::getModel('customer/customer')->getResource()->getEntityTable(),
+            $fields,
+            true
+        );
+
+        $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
+
+        return $this;
+    }
+
+    /**
      * @param array $ids
      */
     public function massAdd($ids = array())
@@ -1167,6 +1270,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             // Lookup existing Contacts & Accounts
             $_emailsArray = array();
             $_companies = array();
+
+            $this->_updateCustomerStatistic($ids);
 
             $_collection = Mage::getModel('customer/customer')
                 ->getCollection()
