@@ -17,8 +17,8 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
     protected function _addAccountRequiredFields($_customer)
     {
         $this->getObj()->PersonEmail = strtolower($_customer->getEmail());
-        $this->getObj()->FirstName = strtolower($_customer->getFirstname());
-        $this->getObj()->LastName = strtolower($_customer->getLastname());
+        $this->getObj()->FirstName = $_customer->getFirstname();
+        $this->getObj()->LastName = $_customer->getLastname();
         if (property_exists($this->getObj(), 'Name')) {
             unset($this->getObj()->Name);
         }
