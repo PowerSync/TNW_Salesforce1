@@ -57,7 +57,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $counter++;
                 $duplicatesToMergeCount++;
 
-                $duplicateToMerge[] = (object)array('Id' => $duplicate->getData('Id'));
+                $duplicateInfo = (object)array('Id' => $duplicate->getData('Id'));
+
+                /**
+                 * add next item to the beginning of array, so, record with websiteId will be last
+                 */
+                $duplicateToMerge[] = $duplicateInfo;
 
                 /**
                  * try to merge piece-by-piece

@@ -166,7 +166,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
     public function sendMergeRequest($objects, $type = 'Lead')
     {
         try {
-            $mergeRequest = new stdclass();
+            $mergeRequest = new stdClass();
 
             Mage::helper('tnw_salesforce')->log("INFO: $type to merge: " . print_r($objects, 1));
 
@@ -174,7 +174,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
                 throw new Exception('Incorrect objects count for merge request');
             }
 
-            $masterObject = array_shift($objects);
+            /**
+             * use last item as master record
+             */
+            $masterObject = array_pop($objects);
 
             $mergeRequest->masterRecord = $masterObject;
 
@@ -182,7 +185,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
 
             $mergeRequest->recordToMergeIds = array();
             foreach ($objects as $object) {
-                $mergeRequest->recordToMergeIds[] = $object->Id;
+                $mergeRequest->recordToMergeIds[] = property_exists($object, 'Id')? $object->Id: $object->id;
             }
 
             $result = $this->getClient()->merge($mergeRequest, $type);
