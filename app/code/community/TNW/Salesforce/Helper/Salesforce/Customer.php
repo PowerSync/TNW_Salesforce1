@@ -1068,6 +1068,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_forcedCustomerId = $_customer->getId();
                 $tmp->MagentoId = $_customer->getId();
                 $_emailsArray[$_customer->getId()] = $_email;
+                $this->_updateCustomerStatistic(array($_customerId));
                 if (!Mage::registry('customer_cached_' . $_customer->getId())) {
                     Mage::register('customer_cached_' . $_customer->getId(), $_customer);
                 }
@@ -1147,6 +1148,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     /**
      * Update customer statistic data for using in mapping
      * @param $ids
+     * @return $this
      */
     protected function _updateCustomerStatistic($ids)
     {
@@ -1174,14 +1176,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
          * select last_purchase value
          */
         $fields[] = 'last_purchase';
-        //$salesCollection->addFieldToSelect('created_at', 'last_purchase');
         $salesCollection->addExpressionFieldToSelect('last_purchase', 'MAX(created_at)', array());
 
         /**
          * salect last_transaction_id
          */
         $fields[] = 'last_transaction_id';
-        //$salesCollection->addFieldToSelect('increment_id', 'last_transaction_id');
         $salesCollection->addExpressionFieldToSelect('last_transaction_id', 'MAX(increment_id)', array());
 
 
@@ -1244,6 +1244,19 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
 
+        foreach ($ids as $customerId) {
+
+            /**
+             * reload customer if it saved in cache
+             */
+            if (Mage::registry('customer_cached_' . $customerId)) {
+                Mage::unregister('customer_cached_' . $customerId);
+                $customer = Mage::getModel('customer/customer')->load($customerId);
+                Mage::register('customer_cached_' . $customerId, $customer);
+
+                unset($customer);
+            }
+        }
         return $this;
     }
 
