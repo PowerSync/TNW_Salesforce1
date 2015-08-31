@@ -115,7 +115,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      * @param bool $_isCron
      * @return bool
      */
-    public function massAdd($_id = NULL, $_isCron = false)
+    public function massAdd($_id = NULL, $_isCron = false, $_skipCusotmerSync = false)
     {
         if (!$_id) {
             Mage::helper('tnw_salesforce')->log("Order Id is not specified, don't know what to synchronize!");
@@ -269,7 +269,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 if (!is_array($this->_cache['leadLookup']) || !array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['leadLookup']) || !array_key_exists($_orderEmail, $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]])) {
                     Mage::helper("tnw_salesforce")->log('Syncronizing Guest/New customer...');
                     $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-                    if ($manualSync->reset()) {
+                    // $_skipCusotmerSync - is set to true for status update
+                    if ($manualSync->reset() && !$_skipCusotmerSync) {
                         $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
                         $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
 
@@ -1369,7 +1370,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         $this->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
         $this->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
         $this->reset();
-        $this->massAdd($order->getId());
+        // Added a parameter to skip customer sync when updating order status
+        $this->massAdd($order->getId(), false, true);
 
         $this->_obj = new stdClass();
         // Magento Order ID
