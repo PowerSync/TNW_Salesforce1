@@ -177,7 +177,13 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $this->_cache['customerToWebsite'] = $_websites;
             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache['entitiesUpdating'], $_websites);
             $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_cache['entitiesUpdating'], $_websites);
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites, Mage::helper('tnw_salesforce/data')->getLeadSource());
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
+                ->lookup(
+                    $this->_cache['entitiesUpdating'],
+                    $_websites,
+                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+
+                );
             $this->_customerAccountId = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
         }
 
@@ -217,7 +223,13 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
         // Lookup existing Leads
         if (!empty($_emailsArray) || !empty($_converted)) {
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites, Mage::helper('tnw_salesforce/data')->getLeadSource());
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
+                ->lookup(
+                    $this->_cache['entitiesUpdating'],
+                    $_websites,
+                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+                );
+
             if (!empty($this->_cache['leadLookup'])) {
                 foreach ($this->_cache['leadLookup'] as $_websiteId => $leads) {
                     foreach ($leads as $email => $lead) {

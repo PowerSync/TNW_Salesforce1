@@ -102,6 +102,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const LEAD_CONVERTED_STATUS = 'salesforce_customer/lead_config/customer_lead_status';
     const LEAD_CONVERTED_OWNER = 'salesforce_customer/lead_config/customer_lead_owner';
     const LEAD_SOURCE = 'salesforce_customer/lead_config/lead_source';
+    const USE_LEAD_SOURCE_FILTER = 'salesforce_customer/lead_config/use_lead_source_filter';
     const CUSTOMER_RULE = 'salesforce_customer/lead_config/lead_rule';
 
     /* Existing Constants */
@@ -168,6 +169,23 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         '6 hours' => 21600,
         '12 hours' => 43200,
     );
+
+    /**
+     * @return mixed|null|string
+     */
+    public function getUseLeadSourceFilter()
+    {
+        return $this->getStoreConfig(self::USE_LEAD_SOURCE_FILTER);
+    }
+
+    /**
+     * alias for getUseLeadSourceFilter
+     * @return mixed|null|string
+     */
+    public function useLeadSourceFilter()
+    {
+        return $this->getUseLeadSourceFilter();
+    }
 
     /**
      * @return mixed|null|string

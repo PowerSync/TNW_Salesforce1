@@ -202,7 +202,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         // Check for Contact and Account
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array($customerId => $_email), array($customerId => $this->_websiteSfIds[$_websiteId]));
         $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup(array($customerId => $_email), array($customerId => $this->_websiteSfIds[$_websiteId]));
-        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup(array($customerId => $_email), array($customerId => $this->_websiteSfIds[$_websiteId]), Mage::helper('tnw_salesforce/data')->getLeadSource());
+        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
+            ->lookup(
+                array($customerId => $_email),
+                array($customerId => $this->_websiteSfIds[$_websiteId]),
+                (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+
+            );
 
         $this->_obj = new stdClass();
         $_id = NULL;
@@ -1101,7 +1107,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->findCustomerAccounts($_emailsArray);
             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
             $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]));
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emailsArray, array($_customerId => $this->_websiteSfIds[$_websiteId]), Mage::helper('tnw_salesforce/data')->getLeadSource());
+            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
+                ->lookup(
+                    $_emailsArray,
+                    array($_customerId => $this->_websiteSfIds[$_websiteId]),
+                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
+                );
 
             foreach ($_emailsArray as $_key => $_email) {
                 if (
@@ -1339,7 +1350,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             if (!empty($_emailsArray)) {
                 $this->_cache['customerToWebsite'] = $_websites;
-                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_cache['entitiesUpdating'], $_websites, Mage::helper('tnw_salesforce/data')->getLeadSource());
+                $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
+                    ->lookup(
+                        $this->_cache['entitiesUpdating'],
+                        $_websites,
+                        (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
+                    );
                 $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache['entitiesUpdating'], $_websites);
                 $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_cache['entitiesUpdating'], $_websites);
             }
