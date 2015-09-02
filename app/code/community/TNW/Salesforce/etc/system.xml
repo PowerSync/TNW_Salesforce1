@@ -24,16 +24,16 @@
                     <show_in_store>1</show_in_store>
                     <fields>
                         <build translate="label">
-                            <label>Build #</label>
+                            <label>Version #</label>
                             <frontend_type>label</frontend_type>
                             <frontend_model>tnw_salesforce/adminhtml_build</frontend_model>
-                            <sort_order>10</sort_order>
+                            <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                         </build>
                         <version translate="label">
-                            <label>Version</label>
+                            <label>Connector Type</label>
                             <frontend_type>label</frontend_type>
                             <frontend_model>tnw_salesforce/adminhtml_version</frontend_model>
                             <sort_order>10</sort_order>
@@ -51,7 +51,7 @@
                     <show_in_store>1</show_in_store>
                     <fields>
                         <api_enable translate="label">
-                            <label>Enable Integration</label>
+                            <label>Enable PowerSync</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>10</sort_order>
@@ -270,7 +270,7 @@
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
-                                    Last cron run datetime
+                                    <strong style="color: red;">IMPORTANT!</strong> If 'UNKNOWN' your Magento CRON is either not running OR is misconfigured. <strong>cron.sh</strong> must be executed by Apache user (eg. <i>www-data</i> or similar) and not as <i>root</i>
                             ]]></comment>
                         </cron_last_run_timestamp>
                     </fields>
@@ -309,7 +309,7 @@
                         </remote_log>
 
                         <developer_settings translate="label">
-                            <label>Show advanced developer settings</label>
+                            <label>Advanced developer settings</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
@@ -501,7 +501,7 @@
                             <comment>Allow Salesforce to create new customers, if those do not exist in Magento</comment>
                         </new_customer>
                         <account_rename translate="label">
-                            <label>Contact Account Name</label>
+                            <label>Change Account Name</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>20</sort_order>
@@ -511,14 +511,14 @@
                             <comment>Keep Account Name in Salesforce read only</comment>
                         </account_rename>
                         <single_account_sync_customer  translate="label">
-                            <label>Sync Customer into a single Account</label>
+                            <label>Force into a single Account</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>22</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[ Enable / Disable synchronization customers into a single Account ]]></comment>
+                            <comment><![CDATA[ Force Magento to assign all Contacts to a single Account in Salesforce ]]></comment>
                         </single_account_sync_customer>
                         <single_account_select translate="label">
                             <label>Single Account</label>
@@ -632,7 +632,7 @@
                                 <customer_integration>1</customer_integration>
                             </depends>
                             <comment>Apply this assignment rule to a created Lead. This value will be skipped when
-                                creating an Opportunity.
+                                synchronizing an Order.
                             </comment>
                         </lead_rule>
                         <customer_lead_owner translate="label">
@@ -651,20 +651,21 @@
                         </customer_lead_owner>
 
                         <lead_source translate="label">
-                            <label>Lead Source</label>
+                            <label>Magento LeadSource</label>
                             <frontend_type>select</frontend_type>
                             <source_model>tnw_salesforce/config_lead_source</source_model>
                             <sort_order>100</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <comment>LeadSource to be used for all Leads coming from Magento</comment>
                         </lead_source>
 
                         <use_lead_source_filter translate="label">
                             <label>Include into lookup</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <comment>Include LeadSource when trying to find matching Leads</comment>
+                            <comment>Match LeadSource when matching Leads in Salesforce</comment>
                             <sort_order>110</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -855,7 +856,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <frontend_class>chosen-select</frontend_class>
-                            <comment>Salesforce Pricebook used for this store</comment>
+                            <![CDATA[
+                                Salesforce Pricebook used for this store.<br/>
+                                <strong style="color: red;">IMPORTANT!</strong> DO NOT use 'Standard' Pricebook and make sure each store has it's own pricebook assigned.
+                            ]]>
                         </default_pricebook>
                         <price_accuracy translate="label">
                             <label>Price accuracy</label>
@@ -866,7 +870,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Salesforce Pricebook used for this store</comment>
+                            <comment>A number of decimal points for prices to be sent into Salesforce</comment>
                         </price_accuracy>
                     </fields>
                 </general>
@@ -923,7 +927,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable shopping cart integration</comment>
+                            <comment>Attach Salesforce products to the Order in Salesforce</comment>
                         </order_product_enable>
                         <order_status_all translate="label">
                             <label>Sync all orders</label>
@@ -933,7 +937,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Synchronize all orders regardless of status</comment>
+                            <comment>Synchronize all orders regardless of Magento status</comment>
                         </order_status_all>
                         <order_status_allow translate="label">
                             <label>Order Statuses</label>
@@ -947,10 +951,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                             <can_be_empty>0</can_be_empty>
-                            <comment>Only synchronize orders with above statuses</comment>
+                            <comment>Only synchronize orders with statuses selected above</comment>
                         </order_status_allow>
                         <order_multi_currency translate="label">
-                            <label>Multi-Currency (BETA)</label>
+                            <label>Multi-Currency</label>
                             <frontend_type>select</frontend_type>
                             <source_model>tnw_salesforce/config_currency</source_model>
                             <sort_order>100</sort_order>
@@ -967,7 +971,7 @@
                             <label>Which currency should be used</label>
                             <frontend_type>select</frontend_type>
                             <source_model>tnw_salesforce/config_sync_currency</source_model>
-                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mapping</comment>
+                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mappings</comment>
                             <sort_order>110</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -1015,7 +1019,7 @@
                                 <abandoned_cart_enabled>0</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
-                                Enable Opportunity Customer Role Integration.
+                                Enable Opportunity Customer Role Integration
                             ]]></comment>
                         </customer_opportunity_role_enable>
 
@@ -1047,7 +1051,7 @@
                             <depends>
                                 <order_or_opportunity>Order</order_or_opportunity>
                             </depends>
-                            <comment><![CDATA[ When order is placed for an existing opportunity, change opportunity stage name to the one from the list ]]></comment>
+                            <comment><![CDATA[ When order is placed for an existing Opportunity, change opportunity Stage Name to the one selected ]]></comment>
                         </opportunity_to_order_status>
 
                         <abandoned_cart_enabled translate="label">
@@ -1061,6 +1065,7 @@
                             <depends>
                                 <order_or_opportunity>Order</order_or_opportunity>
                             </depends>
+                            <comment><![CDATA[ Capture Abandoned Carts in Magento for registered customers ]]></comment>
                         </abandoned_cart_enabled>
 
                         <abandoned_cart_limit translate="label">
@@ -1075,7 +1080,7 @@
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
-                                When to consider shopping cart abandoned
+                                When to consider a shopping cart abandoned
                             ]]></comment>
                         </abandoned_cart_limit>
 
@@ -1107,7 +1112,7 @@
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
-                                Default Opportunity Stage Name to be used for an abandoned cart
+                                Default Opportunity Stage Name to be used for an Abandoned Cart
                             ]]></comment>
                         </abandoned_cart_state>
 
@@ -1124,7 +1129,7 @@
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
-                                Enable Opportunity Customer Role Integration.
+                                Enable Opportunity Customer Role Integration
                             ]]></comment>
                         </abandoned_customer_opportunity_role_enable>
 
@@ -1252,7 +1257,7 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
-                                Should PowerSync break bundle products into leaf level products to enable better inventory managements of products in Salesforce.
+                                Should PowerSync break bundle products into leaf level products to enable better inventory managements of products within Salesforce
                             ]]></comment>
                         </orders_bundle_item_sync>
                     </fields>
