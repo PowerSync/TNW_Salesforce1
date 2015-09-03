@@ -162,9 +162,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $allRules->records;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not get a Business Record Type of the Account");
-
             // Captures a usecase for Professional version of Salesforce
             $_default = new stdClass();
             $_default->Id = '';
