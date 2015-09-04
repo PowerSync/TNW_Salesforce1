@@ -202,7 +202,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                             $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
 
-                            unset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]);
+                            if (!isset($this->_cache['toSaveInMagento'][$_websiteId][$_customerId])) {
+                                $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
+                            }
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_customerEmail;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->getWebsiteSfIds($_websiteId);
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->LeadId = null;
 
                             // Update Salesforce Id
                             Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');

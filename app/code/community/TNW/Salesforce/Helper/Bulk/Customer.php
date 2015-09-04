@@ -316,6 +316,15 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
 
+
+        /**
+         * forceAdd method used for order sync process
+         * if lead sync enabled and order placed - we should convert lead to account + contact
+         */
+        if (Mage::helper('tnw_salesforce')->isCustomerAsLead()) {
+            $this->setForceLeadConvertaton(true);
+        }
+
         $this->_cache['notFoundCustomers'] = $_emailsArray;
 
     }
@@ -598,6 +607,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
 
+        if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation()) {
+            $this->findLeadsForConversion();
+        }
+
         $this->_convertLeads();
     }
 
@@ -719,6 +732,18 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     }
                 }
             }
+
+            /**
+             * Update lookup for lead convertation
+             */
+            if (isset($this->_cache['accountsToUpsert']['Id'][$_cid])) {
+
+                $this->_cache['accountsToUpsert']['Id'][$_cid]->Id = (string)$_item->id;
+                $this->_cache['accountLookup'][0][$_email] = $this->_cache['accountsToUpsert']['Id'][$_cid];
+                if (property_exists($this->_cache['accountLookup'][0][$_email], $this->_magentoId)) {
+                    $this->_cache['accountLookup'][0][$_email]->MagentoId = $this->_cache['accountLookup'][0][$_email]->{$this->_magentoId};
+                }
+            }
         }
     }
 
@@ -769,6 +794,18 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         $this->_cache['guestsFromOrder'][$_cid]->setSalesforceLeadId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId);
                     }
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+
+                    /**
+                     * Update lookup for lead convertation
+                     */
+                    if (isset($this->_cache['leadsToUpsert'][$_on][$_cid])) {
+
+                        $this->_cache['leadsToUpsert'][$_on][$_cid]->Id = (string)$_item->id;
+                        $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['leadsToUpsert'][$_on][$_cid];
+                        if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
+                            $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
+                        }
+                    }
                 }
             } catch (Exception $e) {
                 // TODO:  Log error, quit
@@ -847,6 +884,18 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         }
 
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+
+                        /**
+                         * Update lookup for lead convertation
+                         */
+                        if (isset($this->_cache['contactsToUpsert'][$_on][$_cid])) {
+
+                            $this->_cache['contactsToUpsert'][$_on][$_cid]->Id = (string)$_item->id;
+                            $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['contactsToUpsert'][$_on][$_cid];
+                            if (property_exists($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
+                                $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
+                            }
+                        }
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit

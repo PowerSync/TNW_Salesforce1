@@ -20,18 +20,17 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
      */
     public function massAdd($ids = array(), $_isCron = false)
     {
+
+        return parent::massAdd($ids, $_isCron);
+
         try {
             $this->_isCron = $_isCron;
 
             $_orderNumbers = array();
             $_websites = $_emails = array();
             $_quotes = array();
-            // Clear Order ID
-            $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = NULL WHERE entity_id IN (" . join(',', $ids) . ");";
-            $sql .= ";UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
 
-            $this->_write->query($sql);
-            Mage::helper('tnw_salesforce')->log("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
+            $this->resetOrder($ids);
 
             $_guestCount = 0;
             $_skippedOrders = array();
