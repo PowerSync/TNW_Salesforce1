@@ -789,7 +789,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds = array();
                 }
                 foreach ($storeIds as $_storeId) {
-                    $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] .= $currencyCode . ':' . (string)$_response->id . "\n";
+                    $value = $currencyCode . ':' . (string)$_response->id . "\n";
+                    if (array_key_exists($_storeId, $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds)) {
+                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] .= $value;
+                    } else {
+                        $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds[$_storeId] = $value;
+                    }
                 }
             } else {
                 $this->_cache['toSaveInMagento'][$_magentoId]->SfInSync = 0;

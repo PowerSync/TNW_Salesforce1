@@ -162,6 +162,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $allRules->records;
         } catch (Exception $e) {
+            $allRules = new stdClass();
             // Captures a usecase for Professional version of Salesforce
             $_default = new stdClass();
             $_default->Id = '';

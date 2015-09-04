@@ -1169,8 +1169,11 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 }
                 // Check if at least 1 product was added to the order before we try to activate
                 if (
-                    !array_key_exists($salesforceOrderId, $this->_cache['orderItemsProductsToSync'])
-                    || empty($this->_cache['orderItemsProductsToSync'][$salesforceOrderId])
+                    array_key_exists('orderItemsProductsToSync', $this->_cache)
+                    && (
+                        !array_key_exists($salesforceOrderId, $this->_cache['orderItemsProductsToSync'])
+                        || empty($this->_cache['orderItemsProductsToSync'][$salesforceOrderId])
+                    )
                 ) {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
                     Mage::helper('tnw_salesforce')->log('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');
