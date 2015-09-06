@@ -1212,7 +1212,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $leadConvert = new stdClass();
 
                     if (isset($this->_cache['accountLookup'][0][$_email])) {
-                        $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
+                        if (property_exists($this->_cache['accountLookup'][0][$_email], 'PersonEmail')) {
+                            $leadConvert->personAccountId = $this->_cache['accountLookup'][0][$_email]->Id;
+                        } else {
+                            $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
+                        }
                     }
 
                     if (
@@ -1858,6 +1862,17 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                             }
                             $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id = (string)$_result->id;
                             $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsPersonAccount = true;
+
+                            /**
+                             * Company name should be empty for convertation in PersonAccount
+                             */
+                            foreach ($this->_cache['leadsToUpsert'] as $_id => $_objects) {
+                                if (array_key_exists($_contactIds[$_key], $_objects)
+                                    && property_exists($this->_cache['leadsToUpsert'][$_id][$_contactIds[$_key]], 'Company')
+                                ) {
+                                    $this->_cache['leadsToUpsert'][$_id][$_contactIds[$_key]]->Company = null;
+                                }
+                            }
                         }
                     }
                 } else {
