@@ -1199,7 +1199,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (!empty($this->_cache['leadLookup'])) {
             foreach ($this->_cache['leadLookup'] as $_websiteId => $_leads) {
                 foreach ($_leads as $_email => $_lead) {
-                    if ($_lead->IsConverted) {
+                    if (property_exists($_lead, 'IsConverted') && $_lead->IsConverted) {
                         // TODO: if no contacts found, confirm that new contact and account should be created.
                         continue;
                     }
@@ -1212,11 +1212,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $leadConvert = new stdClass();
 
                     if (isset($this->_cache['accountLookup'][0][$_email])) {
-                        if (property_exists($this->_cache['accountLookup'][0][$_email], 'PersonEmail')) {
-                            $leadConvert->personAccountId = $this->_cache['accountLookup'][0][$_email]->Id;
-                        } else {
-                            $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
-                        }
+
+                        $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
                     }
 
                     if (
@@ -1864,13 +1861,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                             $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsPersonAccount = true;
 
                             /**
-                             * Company name should be empty for convertation in PersonAccount
+                             * Company name should be empty for convertation to PersonAccount
+                             * @see https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_lead.htm#LeadCompanyField
                              */
                             foreach ($this->_cache['leadsToUpsert'] as $_id => $_objects) {
                                 if (array_key_exists($_contactIds[$_key], $_objects)
-                                    && property_exists($this->_cache['leadsToUpsert'][$_id][$_contactIds[$_key]], 'Company')
                                 ) {
-                                    $this->_cache['leadsToUpsert'][$_id][$_contactIds[$_key]]->Company = null;
+                                    $this->_cache['leadsToUpsert'][$_id][$_contactIds[$_key]]->Company = '';
                                 }
                             }
                         }
