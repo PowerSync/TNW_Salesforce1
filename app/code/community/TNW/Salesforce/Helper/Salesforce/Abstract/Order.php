@@ -749,7 +749,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
          * @TODO: check, may be it sould be better search product by SalesforcePricebookId too
          */
-        $description = $item->getBundleItemToSync() ? $item->getBundleItemToSync() : $this->_obj->Description;
+        $description = $item->getBundleItemToSync();
+        if (!$description && property_exists($this->_obj, 'Description')) {
+            $description = $this->_obj->Description;
+        }
+
         $cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier, $description);
         if ($cartItemFound) {
             $this->_obj->Id = $cartItemFound;
