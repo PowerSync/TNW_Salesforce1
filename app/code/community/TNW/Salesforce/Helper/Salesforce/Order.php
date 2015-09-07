@@ -240,6 +240,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
             $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emails, $_websites);
 
+            // Salesforce lookup, find all orders by Magento order number
+            $this->_cache['orderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')->lookup($this->_cache['entitiesUpdating']);
+
             /**
              * Force sync of the customer if Account Rename is turned on
              * Or if Leads on
@@ -251,30 +254,23 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
                 $_customersToSync = array();
 
-                if (
-                    Mage::helper('tnw_salesforce')->canRenameAccount()
-                    || Mage::helper('tnw_salesforce')->isCustomerAsLead()
-                ) {
-                    $_customersToSync = $this->_cache['orderCustomers'];
-                } else {
-                    foreach ($this->_cache['orderCustomers'] as $orderIncrementId => $customer) {
-                        $customerId = $this->_cache['orderToCustomerId'][$orderIncrementId];
-                        $websiteId = $_websites[$customerId];
+                foreach ($this->_cache['orderCustomers'] as $orderIncrementId => $customer) {
+                    $customerId = $this->_cache['orderToCustomerId'][$orderIncrementId];
+                    $websiteSfId = $_websites[$customerId];
 
-                        $email = $this->_cache['orderToEmail'][$orderIncrementId];
+                    $email = $this->_cache['orderToEmail'][$orderIncrementId];
 
-                        /**
-                         * synchronize customer if no account/contact exists or lead not converted
-                         */
-                        if (!isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$websiteId]][$email])
-                            || !isset($this->_cache['accountsLookup'][0][$email])
-                            || (
-                                isset($this->_cache['leadsLookup'][$this->_websiteSfIds[$websiteId]][$email])
-                                && !$this->_cache['leadsLookup'][$this->_websiteSfIds[$websiteId]][$email]->IsConverted
-                            )
-                        ) {
-                            $_customersToSync[$orderIncrementId] = $customer;
-                        }
+                    /**
+                     * synchronize customer if no account/contact exists or lead not converted
+                     */
+                    if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
+                        || !isset($this->_cache['accountLookup'][0][$email])
+                        || (
+                            isset($this->_cache['leadsLookup'][$websiteSfId][$email])
+                            && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
+                        )
+                    ) {
+                        $_customersToSync[$orderIncrementId] = $customer;
                     }
                 }
 
@@ -283,7 +279,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
                     $helperType = 'salesforce';
                     if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-//                        $helperType = 'bulk';
+                        $helperType = 'bulk';
                     }
 
                     /**
@@ -298,15 +294,22 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                         set_time_limit(30);
                         $orderCustomers = $manualSync->process(true);
 
-                        $this->_cache['orderCustomers'][$_orderNumber] = array_merge($this->_cache['orderCustomers'][$_orderNumber], $orderCustomers);
-                        set_time_limit(30);
+                        if (!empty($orderCustomers)) {
+                            if (!is_array($orderCustomers)) {
+                                $orderIncrementIds = array_keys($_customersToSync);
+                                $orderCustomersArray[array_shift($orderIncrementIds)] = $orderCustomers;
+                            } else {
+                                $orderCustomersArray = $orderCustomers;
+                            }
 
-                        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup(array($_customerId => $_orderEmail), array($_customerId => $this->_websiteSfIds[$_websiteId]));
-                        $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup(array($_customerId => $_orderEmail), array($_customerId => $this->_websiteSfIds[$_websiteId]));
+                            $this->_cache['orderCustomers'] = $orderCustomersArray + $this->_cache['orderCustomers'];
+                            set_time_limit(30);
 
+                            $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
+                            $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
+                        }
                     }
                 }
-
             }
 
             /**
@@ -318,14 +321,17 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
                 if (isset($this->_cache['orderCustomers'][$_orderNumber])
                     && $this->_cache['orderCustomers'][$_orderNumber] instanceof Varien_Object
-                    && !empty($this->_cache['accountsLookup'][0][$_orderEmail])
+                    && !empty($this->_cache['accountLookup'][0][$_orderEmail])
                 ) {
-                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
-                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
+
+                    $_websiteId = $this->_cache['orderCustomers'][$_orderNumber]->getData('website_id');
+
+                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountLookup'][0][$_orderEmail]->Id);
+                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountLookup'][0][$_orderEmail]->Id);
 
                     // Overwrite Contact Id for Person Account
-                    if (property_exists($this->_cache['accountsLookup'][0][$_orderEmail], 'PersonContactId')) {
-                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->PersonContactId);
+                    if (property_exists($this->_cache['accountLookup'][0][$_orderEmail], 'PersonContactId')) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountLookup'][0][$_orderEmail]->PersonContactId);
                     }
 
                     // Overwrite from Contact Lookup if value exists there
@@ -434,12 +440,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         if (!array_key_exists($_orderNumber, $this->_cache['orderCustomers']) || !is_object($this->_cache['orderCustomers'][$_orderNumber])) {
             $_customer = $this->_getCustomer($order);
             $this->_cache['orderCustomers'][$_orderNumber] = $_customer;
-            if (is_array($this->_cache['accountsLookup'])
-                && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-                && array_key_exists($_email, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
+            if (is_array($this->_cache['accountLookup'])
+                && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountLookup'])
+                && array_key_exists($_email, $this->_cache['accountLookup'][$this->_websiteSfIds[$_websiteId]])
             ) {
-                $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceId($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id);
-                $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceAccountId($this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->AccountId);
+                $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceId($this->_cache['accountLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id);
+                $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceAccountId($this->_cache['accountLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->AccountId);
             }
         } else {
             $_customer = $this->_cache['orderCustomers'][$_orderNumber];
@@ -517,11 +523,11 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         // Get Account Name from Salesforce
         $_accountName = (
-            $this->_cache['accountsLookup']
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customer->getEmail(), $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
-            && $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customer->getEmail()]->AccountName
-        ) ? $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customer->getEmail()]->AccountName : NULL;
+            $this->_cache['accountLookup']
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountLookup'])
+            && array_key_exists($_customer->getEmail(), $this->_cache['accountLookup'][$this->_websiteSfIds[$_websiteId]])
+            && $this->_cache['accountLookup'][$this->_websiteSfIds[$_websiteId]][$_customer->getEmail()]->AccountName
+        ) ? $this->_cache['accountLookup'][$this->_websiteSfIds[$_websiteId]][$_customer->getEmail()]->AccountName : NULL;
         if (!$_accountName) {
             $_accountName = ($order->getBillingAddress()->getCompany()) ? $order->getBillingAddress()->getCompany() : NULL;
             if (!$_accountName) {
@@ -608,7 +614,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         $this->_cache = array(
             'upsertedOrders' => array(),
             'upsertedOrderStatuses' => array(),
-            'accountsLookup' => array(),
+            'accountLookup' => array(),
             'entitiesUpdating' => array(),
             'abandonedCart' => array(),
             'orderLookup' => array(),
@@ -1473,17 +1479,17 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     $_email = $_lead->Email;
                     if (
                         $_lead->IsConverted
-                        && is_array($this->_cache['accountsLookup'])
-                        && !array_key_exists($_email, $this->_cache['accountsLookup'][$website])
+                        && is_array($this->_cache['accountLookup'])
+                        && !array_key_exists($_email, $this->_cache['accountLookup'][$website])
                     ) {
-                        $this->_cache['accountsLookup'][$website][$_email] = new stdClass();
-                        $this->_cache['accountsLookup'][$website][$_email]->Id = $_lead->ConvertedContactId;
-                        $this->_cache['accountsLookup'][$website][$_email]->Email = $_email;
-                        $this->_cache['accountsLookup'][$website][$_email]->OwnerId = $_lead->OwnerId;
-                        $this->_cache['accountsLookup'][$website][$_email]->AccountId = $_lead->ConvertedAccountId;
-                        $this->_cache['accountsLookup'][$website][$_email]->AccountName = NULL;
-                        $this->_cache['accountsLookup'][$website][$_email]->AccountOwnerId = $_lead->OwnerId;
-                        $this->_cache['accountsLookup'][$website][$_email]->MagentoId = $_lead->MagentoId;
+                        $this->_cache['accountLookup'][$website][$_email] = new stdClass();
+                        $this->_cache['accountLookup'][$website][$_email]->Id = $_lead->ConvertedContactId;
+                        $this->_cache['accountLookup'][$website][$_email]->Email = $_email;
+                        $this->_cache['accountLookup'][$website][$_email]->OwnerId = $_lead->OwnerId;
+                        $this->_cache['accountLookup'][$website][$_email]->AccountId = $_lead->ConvertedAccountId;
+                        $this->_cache['accountLookup'][$website][$_email]->AccountName = NULL;
+                        $this->_cache['accountLookup'][$website][$_email]->AccountOwnerId = $_lead->OwnerId;
+                        $this->_cache['accountLookup'][$website][$_email]->MagentoId = $_lead->MagentoId;
                         unset($websiteLeads[$_email]);
                         unset($_customersToSync[$_orderNum]);
                     }

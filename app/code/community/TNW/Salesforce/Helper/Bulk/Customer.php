@@ -271,51 +271,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
                 }
             }
-        } else {
-            foreach ($_converted as $_key => $data) {
-                $_data = $this->_cache['leadLookup'][$_websites[$_key]][$data['email']];
-
-                if ($_data->IsConverted) {
-                    // TODO: if no contacts found, confirm that new contact and account should be created.
-                    continue;
-                }
-                if (!$_data->Id) {
-                    // Skip if there is no Lead ID
-                    continue;
-                }
-
-                $leadData = new stdClass();
-
-                if (array_key_exists('accountId', $data) && !empty($data['accountId'])) {
-                    $leadData->accountId = $data['accountId'];
-                }
-
-                if (array_key_exists($data['email'], $_companies) && !empty($_companies[$data['email']]) && empty($leadData->accountId)) {
-                    $leadData->accountId = $_companies[$data['email']]->Id;
-
-                    $leadData->OwnerId = $_companies[$data['email']]->OwnerId;
-                    // Check if user is inactive, then overwrite from configuration
-                    if (!$this->_isUserActive($leadData->OwnerId)) {
-                        $this->_obj->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
-                    }
-                } elseif (!empty($this->_customerAccounts[$data['email']])) {
-                    $leadData->accountId = $this->_customerAccounts[$data['email']];
-                }
-
-                if (array_key_exists('contactId', $data) && $data['contactId'] && (!empty($leadData->accountId))) {
-                    if ($data['contactId']) {
-                        $leadData->contactId = $data['contactId'];
-                    }
-                }
-
-                $leadData = $this->_prepareLeadConversionObject($_data, $leadData);
-
-                $this->_cache['leadsToConvert'][$_key] = $leadData;
-
-                unset($_emailsArray[$_key]);
-            }
         }
-
 
         /**
          * forceAdd method used for order sync process
@@ -742,6 +698,27 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $this->_cache['accountLookup'][0][$_email] = $this->_cache['accountsToUpsert']['Id'][$_cid];
                 if (property_exists($this->_cache['accountLookup'][0][$_email], $this->_magentoId)) {
                     $this->_cache['accountLookup'][0][$_email]->MagentoId = $this->_cache['accountLookup'][0][$_email]->{$this->_magentoId};
+                } else {
+                    $this->_cache['accountLookup'][0][$_email]->MagentoId = $_cid;
+                }
+
+                if (property_exists($this->_cache['accountsToUpsert']['Id'][$_cid], 'PersonEmail')) {
+                    if (!isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email])) {
+                        $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = new stdClass();
+                    }
+                    $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id = (string)$_item->id;
+                    $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsPersonAccount = true;
+
+                    /**
+                     * Company name should be empty for convertation to PersonAccount
+                     * @see https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_lead.htm#LeadCompanyField
+                     */
+                    foreach ($this->_cache['leadsToUpsert'] as $_id => $_objects) {
+                        if (array_key_exists($_cid, $_objects)
+                        ) {
+                            $this->_cache['leadsToUpsert'][$_id][$_cid]->Company = '';
+                        }
+                    }
                 }
             }
         }
@@ -804,6 +781,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['leadsToUpsert'][$_on][$_cid];
                         if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
                             $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
+                        } else {
+                            $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $_cid;
                         }
                     }
                 }
@@ -894,6 +873,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                             $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['contactsToUpsert'][$_on][$_cid];
                             if (property_exists($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
                                 $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
+                            } else {
+                                $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $_cid;
                             }
                         }
                     }
