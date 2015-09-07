@@ -942,6 +942,13 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                             $contact = $this->_cache['contactsToUpsertBackup']['Id'][$_magentoId];
                         }
 
+                        /**
+                         * PersonAccount for
+                         */
+                        if (!$contact) {
+                            continue;
+                        }
+
                         $_email = ($contact->Email) ? $contact->Email : $contact->PersonEmail;
 
                         if (property_exists($contact, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject('_pc'))) {
