@@ -202,23 +202,15 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                             $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
 
-                            if (!isset($this->_cache['toSaveInMagento'][$_websiteId][$_customerId])) {
-                                $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
+                            if (!isset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail])) {
+                                $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail] = new stdClass();
                             }
-                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_customerEmail;
-                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->ContactId = $_result->contactId;
-                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->AccountId = $_result->accountId;
-                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->WebsiteId = $this->getWebsiteSfIds($_websiteId);
-                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->LeadId = null;
-
-                            // Update Salesforce Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                            // Update Account Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                            // Update Lead
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
-                            // Update Sync Status
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->Email = $_customerEmail;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->ContactId = $_result->contactId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->SalesforceId = $_result->contactId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->AccountId = $_result->accountId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->WebsiteId = $this->getWebsiteSfIds($_websiteId);
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->LeadId = null;
 
                         }
                     }

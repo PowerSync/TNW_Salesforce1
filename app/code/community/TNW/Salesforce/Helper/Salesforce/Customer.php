@@ -1658,9 +1658,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
                 $this->updateMagentoEntityValue($_customer->MagentoId, $_customer->SalesforceId, 'salesforce_id');
                 $this->updateMagentoEntityValue($_customer->MagentoId, $_customer->AccountId, 'salesforce_account_id');
-                if (!$_customer->SalesforceId || !$_customer->AccountId) {
-                    $this->updateMagentoEntityValue($_customer->MagentoId, $_customer->LeadId, 'salesforce_lead_id');
-                }
+                $this->updateMagentoEntityValue($_customer->MagentoId, $_customer->LeadId, 'salesforce_lead_id');
 
                 $this->updateMagentoEntityValue($_customer->MagentoId, $_customer->IsPersonAccount, 'salesforce_is_person');
                 $this->updateMagentoEntityValue($_customer->MagentoId, $_customer->SfInSync, 'sf_insync', 'customer_entity_int');
