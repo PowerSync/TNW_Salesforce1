@@ -22,59 +22,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     }
 
     /**
-     * @param null $_orderNumber
-     * @return null
-     */
-    protected function _getCustomerAccountId($_orderNumber = NULL)
-    {
-        $_accountId = NULL;
-        // Get email from the order object in Magento
-        $_orderEmail = $this->_cache['orderToEmail'][$_orderNumber];
-        // Get email from customer object in Magento
-        $_customerEmail = (
-            is_array($this->_cache['orderCustomers'])
-            && array_key_exists($_orderNumber, $this->_cache['orderCustomers'])
-            && is_object($this->_cache['orderCustomers'][$_orderNumber])
-            && $this->_cache['orderCustomers'][$_orderNumber]->getData('email')
-        ) ? strtolower($this->_cache['orderCustomers'][$_orderNumber]->getData('email')) : NULL;
-
-        $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-        $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-
-        if (
-            is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
-        ) {
-            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->AccountId;
-        } elseif (
-            $_customerEmail && $_orderEmail != $_customerEmail
-            && is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
-        ) {
-            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customerEmail]->AccountId;
-        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
-            $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
-        }
-
-        if (is_array($this->_cache['accountsLookup']) && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup']) && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])) {
-            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->AccountId;
-        } elseif (
-            $_customerEmail
-            && $_orderEmail != $_customerEmail
-            && is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
-        ) {
-            $_accountId = $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customerEmail]->AccountId;
-        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
-            $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
-        }
-        return $_accountId;
-    }
-
-    /**
      * Push cart items, notes
      */
     protected function _pushRemainingOrderData()

@@ -198,7 +198,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
         // update contact lookup data
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailArray, $_websites);
-        $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailArray, $_websites);
+        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailArray, $_websites);
         // assign owner id to opp
         foreach ($this->_cache['opportunitiesToUpsert'] as $_quoteNumber => $_opportunityData) {
             $_email = $this->_cache['abandonedToEmail'][$_quoteNumber];
@@ -700,7 +700,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 // Quote could not be loaded for some reason
                 if (!$_quote->getId()) {
                     $this->logError('WARNING: Sync for abandoned cart #' . $_id . ', quote could not be loaded!');
-                    $skippedOrders[$_id] = $_id;
+                    $_skippedAbandoned[$_id] = $_id;
                     continue;
                 }
 
@@ -726,7 +726,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
                     $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-                    $skippedOrders[$_id] = $_id;
+                    $_skippedAbandoned[$_id] = $_id;
                     continue;
                 }
 
@@ -741,7 +741,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (empty($_quoteEmail)) {
                     $this->logNotice('SKIPPED: Sync for quote #' . $_quoteNumber . ' failed, quote is missing an email address!');
-                    $skippedOrders[$_id] = $_id;
+                    $_skippedAbandoned[$_id] = $_id;
                     continue;
                 }
 
@@ -755,7 +755,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             // Salesforce lookup, find all contacts/accounts by email address
             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-            $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
+            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
             $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emails, $_websites);
 
             // Salesforce lookup, find all opportunities by Magento quote number
@@ -769,23 +769,23 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 $_customersToSync = array();
 
-                foreach ($this->_cache['abandonedCustomers'] as $orderIncrementId => $customer) {
-                    $customerId = $this->_cache['abandonedToCustomerId'][$orderIncrementId];
+                foreach ($this->_cache['abandonedCustomers'] as $_quoteNumber => $customer) {
+                    $customerId = $this->_cache['abandonedToCustomerId'][$_quoteNumber];
                     $websiteSfId = $_websites[$customerId];
 
-                    $email = $this->_cache['orderToEmail'][$orderIncrementId];
+                    $email = $this->_cache['abandonedToEmail'][$_quoteNumber];
 
                     /**
                      * synchronize customer if no account/contact exists or lead not converted
                      */
                     if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-                        || !isset($this->_cache['accountLookup'][0][$email])
+                        || !isset($this->_cache['accountsLookup'][0][$email])
                         || (
                             isset($this->_cache['leadsLookup'][$websiteSfId][$email])
                             && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
                         )
                     ) {
-                        $_customersToSync[$orderIncrementId] = $customer;
+                        $_customersToSync[$_quoteNumber] = $customer;
                     }
                 }
 
@@ -811,8 +811,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                         if (!empty($abandonedCustomers)) {
                             if (!is_array($abandonedCustomers)) {
-                                $orderIncrementIds = array_keys($_customersToSync);
-                                $abandonedCustomersArray[array_shift($orderIncrementIds)] = $abandonedCustomers;
+                                $_quoteNumbers = array_keys($_customersToSync);
+                                $abandonedCustomersArray[array_shift($_quoteNumbers)] = $abandonedCustomers;
                             } else {
                                 $abandonedCustomersArray = $abandonedCustomers;
                             }
@@ -821,7 +821,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                             set_time_limit(30);
 
                             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-                            $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
+                            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
                         }
                     }
                 }
@@ -830,28 +830,28 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             /**
              * define Salesforce data for order customers
              */
-            foreach ($this->_cache['entitiesUpdating'] as $id => $_orderNumber) {
+            foreach ($this->_cache['entitiesUpdating'] as $id => $_quoteNumber) {
 
-                $_orderEmail = $this->_cache['orderToEmail'][$_orderNumber];
+                $email = $this->_cache['abandonedToEmail'][$_quoteNumber];
 
-                if (isset($this->_cache['abandonedCustomers'][$_orderNumber])
-                    && $this->_cache['abandonedCustomers'][$_orderNumber] instanceof Varien_Object
-                    && !empty($this->_cache['accountLookup'][0][$_orderEmail])
+                if (isset($this->_cache['abandonedCustomers'][$_quoteNumber])
+                    && $this->_cache['abandonedCustomers'][$_quoteNumber] instanceof Varien_Object
+                    && !empty($this->_cache['accountsLookup'][0][$email])
                 ) {
 
-                    $_websiteId = $this->_cache['abandonedCustomers'][$_orderNumber]->getData('website_id');
+                    $_websiteId = $this->_cache['abandonedCustomers'][$_quoteNumber]->getData('website_id');
 
-                    $this->_cache['abandonedCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountLookup'][0][$_orderEmail]->Id);
-                    $this->_cache['abandonedCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountLookup'][0][$_orderEmail]->Id);
+                    $this->_cache['abandonedCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->Id);
+                    $this->_cache['abandonedCustomers'][$_quoteNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$email]->Id);
 
                     // Overwrite Contact Id for Person Account
-                    if (property_exists($this->_cache['accountLookup'][0][$_orderEmail], 'PersonContactId')) {
-                        $this->_cache['abandonedCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountLookup'][0][$_orderEmail]->PersonContactId);
+                    if (property_exists($this->_cache['accountsLookup'][0][$email], 'PersonContactId')) {
+                        $this->_cache['abandonedCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->PersonContactId);
                     }
 
                     // Overwrite from Contact Lookup if value exists there
-                    if (isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail])) {
-                        $this->_cache['abandonedCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->Id);
+                    if (isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email])) {
+                        $this->_cache['abandonedCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email]->Id);
                     }
 
                     Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer synchronization.');
@@ -861,8 +861,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                      * No customers for this order in salesforce - error
                      */
                     // Something is wrong, could not create / find Magento customer in SalesForce
-                    $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $_orderEmail . ') could not be created / found!');
-                    $skippedOrders[$id] = $id;
+                    $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $email . ') could not be created / found!');
+                    $_skippedAbandoned[$id] = $id;
 
                     continue;
                 }
@@ -970,9 +970,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $_accountName = (
             $this->_cache['accountsLookup']
             && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customer->getEmail(), $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]])
-            && $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customer->getEmail()]->AccountName
-        ) ? $this->_cache['accountsLookup'][$this->_websiteSfIds[$_websiteId]][$_customer->getEmail()]->AccountName : NULL;
+            && array_key_exists($_customer->getEmail(), $this->_cache['accountsLookup'][0])
+            && $this->_cache['accountsLookup'][0][$_customer->getEmail()]->AccountName
+        ) ? $this->_cache['accountsLookup'][0][$_customer->getEmail()]->AccountName : NULL;
         if (!$_accountName) {
             $_accountName = ($quote->getBillingAddress()->getCompany()) ? $quote->getBillingAddress()->getCompany() : NULL;
             if (!$_accountName) {

@@ -1029,7 +1029,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
 
             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-            $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
+            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
             $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emails, $_websites);
 
             $this->_prepareOrderLookup();
@@ -1058,7 +1058,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                      * synchronize customer if no account/contact exists or lead not converted
                      */
                     if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-                        || !isset($this->_cache['accountLookup'][0][$email])
+                        || !isset($this->_cache['accountsLookup'][0][$email])
                         || (
                             isset($this->_cache['leadsLookup'][$websiteSfId][$email])
                             && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
@@ -1100,7 +1100,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                             set_time_limit(30);
 
                             $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-                            $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
+                            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
                         }
                     }
                 }
@@ -1115,17 +1115,17 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                 if (isset($this->_cache['orderCustomers'][$_orderNumber])
                     && $this->_cache['orderCustomers'][$_orderNumber] instanceof Varien_Object
-                    && !empty($this->_cache['accountLookup'][0][$_orderEmail])
+                    && !empty($this->_cache['accountsLookup'][0][$_orderEmail])
                 ) {
 
                     $_websiteId = $this->_cache['orderCustomers'][$_orderNumber]->getData('website_id');
 
-                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountLookup'][0][$_orderEmail]->Id);
-                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountLookup'][0][$_orderEmail]->Id);
+                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
+                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
 
                     // Overwrite Contact Id for Person Account
-                    if (property_exists($this->_cache['accountLookup'][0][$_orderEmail], 'PersonContactId')) {
-                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountLookup'][0][$_orderEmail]->PersonContactId);
+                    if (property_exists($this->_cache['accountsLookup'][0][$_orderEmail], 'PersonContactId')) {
+                        $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->PersonContactId);
                     }
 
                     // Overwrite from Contact Lookup if value exists there
@@ -1194,6 +1194,60 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         Mage::helper('tnw_salesforce')->log("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
 
+    }
+
+
+    /**
+     * @param null $_orderNumber
+     * @return null
+     */
+    protected function _getCustomerAccountId($_orderNumber = NULL)
+    {
+        $_accountId = NULL;
+        // Get email from the order object in Magento
+        $_orderEmail = $this->_cache['orderToEmail'][$_orderNumber];
+        // Get email from customer object in Magento
+        $_customerEmail = (
+            is_array($this->_cache['orderCustomers'])
+            && array_key_exists($_orderNumber, $this->_cache['orderCustomers'])
+            && is_object($this->_cache['orderCustomers'][$_orderNumber])
+            && $this->_cache['orderCustomers'][$_orderNumber]->getData('email')
+        ) ? strtolower($this->_cache['orderCustomers'][$_orderNumber]->getData('email')) : NULL;
+
+        $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
+        $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
+
+        if (
+            is_array($this->_cache['accountsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])
+        ) {
+            $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->AccountId;
+        } elseif (
+            $_customerEmail && $_orderEmail != $_customerEmail
+            && is_array($this->_cache['accountsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
+        ) {
+            $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->AccountId;
+        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
+            $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
+        }
+
+        if (is_array($this->_cache['accountsLookup']) && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup']) && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])) {
+            $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->AccountId;
+        } elseif (
+            $_customerEmail
+            && $_orderEmail != $_customerEmail
+            && is_array($this->_cache['accountsLookup'])
+            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
+        ) {
+            $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->AccountId;
+        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
+            $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
+        }
+        return $_accountId;
     }
 
 }
