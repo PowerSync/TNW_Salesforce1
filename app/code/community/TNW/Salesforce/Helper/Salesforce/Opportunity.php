@@ -65,11 +65,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     /**
      * @var array
      */
-    protected $_allowedOrderStatuses = array();
-
-    /**
-     * @var array
-     */
     protected $_allResults = array(
         'opportunities_skipped' => 0,
     );
@@ -1157,12 +1152,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
 
         return $this->check();
-    }
-
-    public function resetOrder($_id)
-    {
-        $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE entity_id = " . $_id . ";";
-        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
     }
 
     /**

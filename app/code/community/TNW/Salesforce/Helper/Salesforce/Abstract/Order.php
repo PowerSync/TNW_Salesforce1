@@ -77,6 +77,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected $_itemFieldAlias = array();
 
     /**
+     * @var array
+     */
+    protected $_allowedOrderStatuses = array();
+
+    /**
      * @return string
      */
     public function getSalesforceEntityName()
@@ -976,11 +981,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     $_guestCount++;
                 }
 
-                $_emails[$_customerId] = $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail();
-
-                // Associate order Number with a customer Email
-                $this->_cache['orderToEmail'][$_order->getRealOrderId()] = $_emails[$_customerId];
-
                 // Check if customer from this group is allowed to be synchronized
                 $_customerGroup = $_order->getData('customer_group_id');
 
@@ -998,6 +998,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     $skippedOrders[$_order->getId()] = $_order->getId();
                     continue;
                 }
+
+                $_emails[$_customerId] = $this->_cache['orderCustomers'][$_order->getRealOrderId()]->getEmail();
+
+                // Associate order Number with a customer Email
+                $this->_cache['orderToEmail'][$_order->getRealOrderId()] = $_emails[$_customerId];
 
                 // Store order number and customer Email into a variable for future use
                 $_orderEmail = $this->_cache['orderToEmail'][$_order->getRealOrderId()];
@@ -1030,13 +1035,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_prepareOrderLookup();
 
             /**
-             * Force sync of the customer if Account Rename is turned on
-             * Or if Leads on
-             * Or if it's guest checkout: customer->getId() is empty
-             * Or $_skipCustomerSync - is set to true for status update
-             * Or customer was not synchronized before: no account/contact ids
+             * $_skipCustomerSync - is set to true for status update
              */
+
             if (!$_skipCustomerSync) {
+
+                /**
+                 * Force sync of the customer
+                 * Or if it's guest checkout: customer->getId() is empty
+                 * Or customer was not synchronized before: no account/contact ids ot lead not converted
+                 */
 
                 $_customersToSync = array();
 
@@ -1152,7 +1160,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
 
             /**
-             * all orders fais - return false otherwise return true
+             * all orders fails - return false otherwise return true
              */
             return (count($_skippedOrders) != count($_ids));
         } catch (Exception $e) {
@@ -1168,4 +1176,24 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache['orderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')->lookup($this->_cache['entitiesUpdating']);
     }
+
+
+    /**
+     * @param $_id
+     * Reset Salesforce ID in Magento for the order
+     */
+    public function resetOrder($ids)
+    {
+        if (!is_array($ids)) {
+            $ids = array($ids);
+        }
+
+        $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = NULL, sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
+
+        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+
+        Mage::helper('tnw_salesforce')->log("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
+
+    }
+
 }

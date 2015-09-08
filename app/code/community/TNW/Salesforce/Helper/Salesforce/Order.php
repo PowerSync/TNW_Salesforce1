@@ -413,24 +413,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
-     * @param $_id
-     * Reset Salesforce ID in Magento for the order
-     */
-    public function resetOrder($ids)
-    {
-        if (!is_array($ids)) {
-            $ids = array($ids);
-        }
-
-        $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = NULL, sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
-
-        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-
-        Mage::helper('tnw_salesforce')->log("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
-
-    }
-
-    /**
      * Sync customer w/ SF before creating the order
      *
      * @param $order
