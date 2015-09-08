@@ -1222,31 +1222,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
             && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])
         ) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->AccountId;
+            $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->Id;
         } elseif (
             $_customerEmail && $_orderEmail != $_customerEmail
             && is_array($this->_cache['accountsLookup'])
             && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
             && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
         ) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->AccountId;
-        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
-            $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
+            $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->Id;
         }
 
-        if (is_array($this->_cache['accountsLookup']) && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup']) && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->AccountId;
-        } elseif (
-            $_customerEmail
-            && $_orderEmail != $_customerEmail
-            && is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
-        ) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->AccountId;
-        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_orderNumber, $this->_cache['convertedLeads'])) {
-            $_accountId = $this->_cache['convertedLeads'][$_orderNumber]->accountId;
-        }
         return $_accountId;
     }
 

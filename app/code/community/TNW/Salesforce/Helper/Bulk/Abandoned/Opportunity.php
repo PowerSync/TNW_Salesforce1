@@ -40,29 +40,13 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         ) ? strtolower($this->_cache['abandonedCustomers'][$_quoteNumber]->getData('email')) : NULL;
 
         $_quote = $this->_loadQuote($_quoteNumber);;
-        $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
 
         if (is_array($this->_cache['accountsLookup']) && array_key_exists($_quoteEmail, $this->_cache['accountsLookup'][0])) {
-            $_accountId = $this->_cache['accountsLookup'][$_quoteEmail]->AccountId;
-        } elseif ($_customerEmail && $_quoteEmail != $_customerEmail && is_array($this->_cache['accountsLookup']) && array_key_exists($_customerEmail, $this->_cache['accountsLookup'])) {
-            $_accountId = $this->_cache['accountsLookup'][$_customerEmail]->AccountId;
-        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_quoteNumber, $this->_cache['convertedLeads'])) {
-            $_accountId = $this->_cache['convertedLeads'][$_quoteNumber]->accountId;
+            $_accountId = $this->_cache['accountsLookup'][0][$_quoteEmail]->Id;
+        } elseif ($_customerEmail && $_quoteEmail != $_customerEmail && is_array($this->_cache['accountsLookup']) && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])) {
+            $_accountId = $this->_cache['accountsLookup'][$_customerEmail][0]->Id;
         }
 
-        if (is_array($this->_cache['accountsLookup']) && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup']) && array_key_exists($_quoteEmail, $this->_cache['accountsLookup'][0])) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_quoteEmail]->AccountId;
-        } elseif (
-            $_customerEmail
-            && $_quoteEmail != $_customerEmail
-            && is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
-        ) {
-            $_accountId = $this->_cache['accountsLookup'][$_customerEmail]->AccountId;
-        } elseif (is_array($this->_cache['convertedLeads']) && array_key_exists($_quoteNumber, $this->_cache['convertedLeads'])) {
-            $_accountId = $this->_cache['convertedLeads'][$_quoteNumber]->accountId;
-        }
         return $_accountId;
     }
 
