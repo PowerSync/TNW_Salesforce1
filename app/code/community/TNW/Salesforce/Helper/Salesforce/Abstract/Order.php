@@ -653,7 +653,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                                 && ($tmp[0] == $_currencyCode || empty($_currencyCode))
                             ) {
                                 $pricebookEntryId = $tmp[1];
-                                break;
                             }
                         }
                     }
