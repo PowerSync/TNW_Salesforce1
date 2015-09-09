@@ -258,21 +258,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
 
-        if (Mage::helper('tnw_salesforce')->isCustomerAsLead()) {
-            foreach ($_emailsArray as $_key => $_email) {
-                if (
-                    $this->_cache['leadLookup']
-                    && array_key_exists($_websites[$_key], $this->_cache['leadLookup'])
-                    && array_key_exists(strtolower($_email), $this->_cache['leadLookup'][$_websites[$_key]])
-                    //&& $this->_cache['leadLookup'][$_email]->MagentoId == $_key
-                    && !$this->_cache['leadLookup'][$_websites[$_key]][$_email]->IsConverted
-                ) {
-                    unset($_emailsArray[$_key]);
-
-                }
-            }
-        }
-
         /**
          * forceAdd method used for order sync process
          * if lead sync enabled and order placed - we should convert lead to account + contact

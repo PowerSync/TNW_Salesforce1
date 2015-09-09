@@ -1080,10 +1080,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     (
                         Mage::helper('tnw_salesforce')->isCustomerAsLead()
                         && !$this->getCustomerAccount($_email)
-                    ) || (
-                        is_array($this->_cache['leadLookup'])
-                        && array_key_exists($this->_cache['customerToWebsite'][$_id], $this->_cache['leadLookup'])
-                        && array_key_exists($_email, $this->_cache['leadLookup'][$this->_cache['customerToWebsite'][$_id]])
+                        && !isset($this->_cache['leadLookup'][$this->_cache['customerToWebsite'][$_id]][$_email])
                     )
                 ) {
                     $this->_addToQueue($_id, "Lead");

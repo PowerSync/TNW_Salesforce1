@@ -76,17 +76,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 return false;
             }
 
-            if (!empty($this->_cache['leadsToConvert'])) {
-                Mage::helper('tnw_salesforce')->log('----------Converting Leads: Start----------');
-                $this->_convertLeads();
-                Mage::helper('tnw_salesforce')->log('----------Converting Leads: End----------');
-                if (!empty($this->_cache['toSaveInMagento'])) {
-                    //if (!empty($this->_cache['toSaveInMagento']) && Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                    $this->_updateMagento();
-                }
-                $this->clearMemory();
-            }
-
             $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
 
             $this->_prepareOpportunities();

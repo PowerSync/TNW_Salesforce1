@@ -67,16 +67,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 return false;
             }
 
-            if (!empty($this->_cache['leadsToConvert'])) {
-                Mage::helper('tnw_salesforce')->log('----------Converting Leads: Start----------');
-                $this->_convertLeads();
-                Mage::helper('tnw_salesforce')->log('----------Converting Leads: End----------');
-                if (!empty($this->_cache['toSaveInMagento'])) {
-                    $this->_updateMagento();
-                }
-                $this->clearMemory();
-            }
-
             $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
 
             $this->_prepareOrders($type);
