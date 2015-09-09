@@ -264,7 +264,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                         || (property_exists($_cartItem, 'PricebookEntry')
                             && property_exists($_cartItem->PricebookEntry, 'ProductCode')
                             && ($_cartItem->PricebookEntry->ProductCode == trim($productIdentifier))
-                            && ($description === 'default' || $_cartItem->Description == $description)
+                            && ($description === 'default' || !$description || (property_exists($_cartItem, 'Description') && $_cartItem->Description == $description))
                         )
                     )
                     && $_cartItem->Quantity == (float)$qty
