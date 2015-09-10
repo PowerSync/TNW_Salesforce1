@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.04.0000</version>
+            <version>0.01.53.05.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -79,6 +79,9 @@
                     <opportunity>
                         <table>Opportunity</table>
                     </opportunity>
+                    <campaign>
+                        <table>Campaign</table>
+                    </campaign>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>

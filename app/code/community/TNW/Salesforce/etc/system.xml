@@ -806,8 +806,10 @@
                             <comment>Enable / Disable automated newsletter synchronization</comment>
                         </customer_newsletter_enable_sync>
                         <customer_newletter_campaign_id translate="label">
-                            <label>Campaign Id</label>
-                            <frontend_type>text</frontend_type>
+                            <label>Campaign</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/api_entity_resource_campaign_collection</source_model>
+
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
