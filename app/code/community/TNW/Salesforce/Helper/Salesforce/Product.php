@@ -256,8 +256,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $_product->pricebookEntryIds = (isset($_product->pricebookEntryIds)) ? $_product->pricebookEntryIds : array();
             $_product->SfInSync = isset($_product->SfInSync) ? $_product->SfInSync : 0;
 
-            $this->updateMagentoEntityValue($_magentoId, $_product->salesforceId, 'salesforce_id');
-
             $this->updateMagentoEntityValue($_magentoId, $_product->SfInSync, 'sf_insync', 'catalog_product_entity_int', 0);
             foreach (Mage::app()->getStores() as $_storeId => $_store) {
                 if (
@@ -267,6 +265,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     continue;
                 }
                 $this->updateMagentoEntityValue($_magentoId, $_product->SfInSync, 'sf_insync', 'catalog_product_entity_int', $_storeId);
+                $this->updateMagentoEntityValue($_magentoId, $_product->salesforceId, 'salesforce_id','catalog_product_entity_varchar', $_storeId);
             }
 
             // Remove Standard Pricebook ID from being written into Magento, only store value for Store 0

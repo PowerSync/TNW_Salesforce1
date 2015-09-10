@@ -51,6 +51,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $this->updateMagentoEntityValue($_magentoId, $_product->SfInSync, 'sf_insync', 'catalog_product_entity_int', 0);
             foreach (Mage::app()->getStores() as $_storeId => $_store) {
                 $this->updateMagentoEntityValue($_magentoId, $_product->SfInSync, 'sf_insync', 'catalog_product_entity_int', $_storeId);
+                $this->updateMagentoEntityValue($_magentoId, $_product->salesforceId, 'salesforce_id','catalog_product_entity_varchar', $_storeId);
             }
 
             if (empty($_product->pricebookEntityIds)) {
