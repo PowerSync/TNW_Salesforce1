@@ -771,7 +771,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)][] = $sku;
 
-            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $id] = $this->_obj;
+            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getItemId()] = $this->_obj;
         } else {
             Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted!');
         }
