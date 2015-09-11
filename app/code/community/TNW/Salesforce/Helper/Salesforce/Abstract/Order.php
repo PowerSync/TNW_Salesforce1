@@ -902,11 +902,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
 
     /**
-     * @param array $ids
+     * @param array $_ids
      * @param bool $_isCron
+     * @param bool $orderStatusUpdateCustomer
      * @return bool
      */
-    public function massAdd($_ids = NULL, $_isCron = false, $_skipCustomerSync = false)
+    public function massAdd($_ids = NULL, $_isCron = false, $orderStatusUpdateCustomer = true)
     {
         if (!$_ids) {
             Mage::helper('tnw_salesforce')->log("Order Id is not specified, don't know what to synchronize!");
@@ -1032,11 +1033,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $this->_prepareOrderLookup();
 
-            /**
-             * $_skipCustomerSync - is set to true for status update
-             */
-
-            if (!$_skipCustomerSync) {
+            if ($orderStatusUpdateCustomer) {
 
                 /**
                  * Force sync of the customer

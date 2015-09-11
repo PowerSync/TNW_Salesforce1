@@ -1115,7 +1115,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         $this->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
         $this->reset();
         // Added a parameter to skip customer sync when updating order status
-        $this->massAdd($order->getId(), false, true);
+        $this->massAdd($order->getId(), false,
+            Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_STATUS_UPDATE_CUSTOMER)
+        );
 
         $this->_obj = new stdClass();
         // Magento Order ID
