@@ -31,7 +31,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 /**
                  * try to find records with the same websiteId or with empty websiteId
                  */
-                if (!empty($duplicateData->getData($websiteField))) {
+                $_value = $duplicateData->getData($websiteField);
+                if (!empty($_value)) {
 
                     $collection->getSelect()->where(
                         "($websiteField = ? OR $websiteField = '')",
