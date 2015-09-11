@@ -123,4 +123,41 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
 
         return $this;
     }
+
+    /**
+     * Proces loaded collection data
+     *
+     * @return Varien_Data_Collection_Db
+     */
+    protected function _afterLoadData()
+    {
+        /**
+         * prepare sql expression result if defined
+         */
+        foreach ($this->_data as &$data) {
+            if (isset($data['any'])) {
+                foreach ($data['any'] as $key => $expression) {
+                    if (is_numeric($key)) {
+
+                        /**
+                         * remove "sf:" namespace prefix
+                         */
+                        $expression = preg_replace('|([<\s]+\/?\s*)\w+:|', '$1', $expression);
+                        $expression = "<?xml version='1.0' standalone='yes'?><data>$expression</data>";
+
+                        $xml = new Varien_Simplexml_Element($expression);
+                        foreach ($xml->asCanonicalArray() as $subKey => $value) {
+                            $data[$subKey] = $value;
+                        }
+
+                    } else {
+                        $data[$key] = $expression;
+                    }
+                    unset($data['any'][$key]);
+                }
+                unset($data['any']);
+            }
+        }
+        return $this;
+    }
 }

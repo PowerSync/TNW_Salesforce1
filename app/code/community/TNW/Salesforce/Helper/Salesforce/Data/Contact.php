@@ -11,6 +11,134 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
+     * @param $duplicateData
+     * @return $this
+     */
+    public function mergeDuplicates($duplicateData)
+    {
+        try {
+            $collection = Mage::getModel('tnw_salesforce_api_entity/contact')->getCollection();
+            $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+
+            $collection->getSelect()->columns('Id');
+            $collection->getSelect()->columns('Email');
+
+            $collection->getSelect()->where("Email = ?", $duplicateData->getData('Email'));
+
+            if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+                /**
+                 * try to find records with the same websiteId or with empty websiteId
+                 */
+                if (!empty($duplicateData->getData($websiteField))) {
+
+                    $collection->getSelect()->where(
+                        "($websiteField = ? OR $websiteField = '')",
+                        $duplicateData->getData($websiteField));
+
+                } else {
+                    /**
+                     * if websiteId is empty - try to find one more record with websiteId for merging
+                     */
+                    $itemsCount = $duplicateData->getData('items_count');
+                    $collection->getSelect()->limit($itemsCount + 1);
+                }
+
+                /**
+                 * sorting reason: first record used as master object.
+                 * So, records without websiteId will be merged to record with websiteId
+                 */
+                $order = new Zend_Db_Expr($websiteField . ' DESC NULLS FIRST');
+                $collection->getSelect()->order($order);
+            }
+
+            $allDuplicates = $collection->getItems();
+            $allDuplicatesCount = count($allDuplicates);
+
+            $counter = 0;
+            $duplicatesToMergeCount = 0;
+
+            $duplicateToMerge = array();
+            foreach ($allDuplicates as $k => $duplicate) {
+                $counter++;
+                $duplicatesToMergeCount++;
+                $duplicateInfo = (object)array('Id' => $duplicate->getData('Id'));
+
+                /**
+                 * add next item to the beginning of array, so, record with websiteId will be last
+                 */
+                $duplicateToMerge[] = $duplicateInfo;
+
+                /**
+                 * try to merge piece-by-piece
+                 */
+                if (
+                    $duplicatesToMergeCount == TNW_Salesforce_Helper_Salesforce_Data_User::MERGE_LIMIT
+                    || ($allDuplicatesCount == $counter && $duplicatesToMergeCount > 1)
+                ) {
+                    $masterObject = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Contact');
+
+                    /**
+                     * remove technical information
+                     */
+                    unset($masterObject->success);
+                    unset($masterObject->mergedRecordIds);
+                    unset($masterObject->updatedRelatedIds);
+
+                    $duplicateToMerge = array();
+                    $duplicateToMerge[] = $masterObject;
+
+                    $duplicatesToMergeCount = 1;
+                }
+
+            }
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("ERROR: Contact merging error: " . $e->getMessage());
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return TNW_Salesforce_Model_Api_Entity_Resource_Contact_Collection
+     */
+    public function getDuplicates()
+    {
+        $collection = Mage::getModel('tnw_salesforce_api_entity/contact')->getCollection();
+
+        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+        $collection->getSelect()->columns('Email');
+        $collection->getSelect()->columns('COUNT(Id) items_count');
+
+        $collection->getSelect()->where("Email != ''");
+
+        $collection->getSelect()->group('Email');
+
+        $collection->getSelect()->having('COUNT(Id) > ?', 1);
+
+        if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+            $collection->getSelect()->columns($websiteField);
+            $collection->getSelect()->group($websiteField);
+            /**
+             * records with empty websiteId - are duplicates potentially
+             */
+            $collection->getSelect()->orHaving("$websiteField = '' ");
+
+            $order = new Zend_Db_Expr($websiteField . ' ASC NULLS LAST');
+            $collection->getSelect()->order($order);
+        }
+
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $collection->getSelect()->where('Account.IsPersonAccount != true');
+        }
+
+        return $collection;
+    }
+
+    /**
      * @param $_magentoId
      * @param $_extra
      * @param $email
@@ -25,8 +153,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         $query = "SELECT ID, FirstName, LastName, Email, AccountId, OwnerId, " . $_magentoId . $_extra . " FROM Contact WHERE ";
 
         $_lookup = array();
-        foreach($_emails as $_id => $_email) {
-            if (empty($_email)) {continue;}
+        foreach ($_emails as $_id => $_email) {
+            if (empty($_email)) {
+                continue;
+            }
             $tmp = "(((";
             $tmp .= "Email='" . addslashes($_email) . "'";
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -111,6 +241,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
         return $_results;
     }
+
     /**
      * @param null $email
      * @param array $ids
@@ -202,7 +333,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                             }
                         }
                     }
-                    $returnArray[$_websiteKey][$_key] = $tmp;
+
+                    /**
+                     * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
+                     */
+                    if (
+                        !isset($returnArray[$_websiteKey][$_key])
+                        || ($tmp->MagentoId && isset($email[$tmp->MagentoId]) && $email[$tmp->MagentoId] == $tmp->Email)
+                    ) {
+                        $returnArray[$_websiteKey][$_key] = $tmp;
+                    }
                 }
             }
             return $returnArray;
