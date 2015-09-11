@@ -1262,6 +1262,20 @@
                                 Should PowerSync break bundle products into leaf level products to enable better inventory managements of products within Salesforce
                             ]]></comment>
                         </orders_bundle_item_sync>
+
+                        <use_product_campaign_assignment>
+                            <label>Use product campaign assignment</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                When order is placed and if any products in the cart are associated to a Salesforce Campaign - Powersync automatically associates the Order and Contact with all campaigns that are attached to purchased products
+                            ]]></comment>
+                        </use_product_campaign_assignment>
+
                     </fields>
                 </shopping_cart>
                 <invoice_configuration translate="label" module="tnw_salesforce">

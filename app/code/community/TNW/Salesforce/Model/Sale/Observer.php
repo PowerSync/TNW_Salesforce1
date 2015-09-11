@@ -376,4 +376,20 @@ class TNW_Salesforce_Model_Sale_Observer
             Mage::helper('tnw_salesforce')->log("================ INVENTORY SYNC: END ================");
         }
     }
+
+    public function assignCustomerToProductCampaigns($observer)
+    {
+        $mode = $observer->getEvent()->getMode();
+
+        /**
+         * use_product_campaign_assignment
+         */
+        if (Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()) {
+            if ($mode == 'bulk') {
+                Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaingsBulk();
+            } else {
+                Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaings();
+            }
+        }
+    }
 }

@@ -415,6 +415,11 @@
                     </tnw_salesforce_update_abandoned_status>
                 </observers>
             </tnw_salesforce_order_send_after>
+
+            <tnw_salesforce_order_products_send_after>
+                <class>tnw_salesforce/sale_observer</class>
+                <method>assignCustomerToProductCampaigns</method>
+            </tnw_salesforce_order_products_send_after>
         </events>
     </global>
     <adminhtml>
@@ -584,6 +589,9 @@
                 <use_shipping_product>0</use_shipping_product>
                 <use_discount_product>0</use_discount_product>
             </opportunity_cart>
+            <shopping_cart>
+                <use_product_campaign_assignment>0</use_product_campaign_assignment>
+            </shopping_cart>
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>
             </invoice_configuration>

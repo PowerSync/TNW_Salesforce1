@@ -708,13 +708,41 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $_subscription->getData('subscriber_status') == 1
             && Mage::helper('tnw_salesforce')->getCutomerCampaignId()
         ) {
-            $campaignMemberOb = new stdClass();
-            $campaignMemberOb->{$_type} = strval($_id);
-            $campaignMemberOb->CampaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
-
-            $this->_cache['campaignsToUpsert'][$index] = $campaignMemberOb;
+            $this->_prepareCampaignMemberItem($_type, $_id, $index);
         }
         Mage::helper('tnw_salesforce')->log("Campaigns prepared");
+    }
+
+    public function prepareCampaignMemberItem($_type = 'LeadId', $_id, $index = null, $campaignId = null)
+    {
+        return $this->_prepareCampaignMemberItem($_type, $_id, $index, $campaignId);
+    }
+    /**
+     * Add data to cache for synchronization
+     *
+     * @param string $_type
+     * @param $_id
+     * @param $index
+     * @param null $campaignId
+     * @return $this
+     */
+    protected function _prepareCampaignMemberItem($_type = 'LeadId', $_id, $index = null, $campaignId = null)
+    {
+        if (!$campaignId) {
+            $campaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
+        }
+
+        $campaignMemberOb = new stdClass();
+        $campaignMemberOb->{$_type} = strval($_id);
+        $campaignMemberOb->CampaignId = $campaignId;
+
+        if (!is_null($index)) {
+            $this->_cache['campaignsToUpsert'][$index] = $campaignMemberOb;
+        } else {
+            $this->_cache['campaignsToUpsert'][] = $campaignMemberOb;
+        }
+
+        return $this;
     }
 
 }

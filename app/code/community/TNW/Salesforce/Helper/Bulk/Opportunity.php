@@ -495,7 +495,8 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         if (strval($_resultProducts) != 'exception') {
             Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
                 "data" => $this->_cache['opportunityLineItemsToUpsert'],
-                "result" => $this->_cache['responses']['opportunityLineItems']
+                "result" => $this->_cache['responses']['opportunityLineItems'],
+                'mode' => 'bulk'
             ));
         }
 

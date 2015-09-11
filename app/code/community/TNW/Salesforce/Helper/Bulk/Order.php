@@ -393,7 +393,8 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
                 Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
                     "data" => $this->_cache['orderItemsToUpsert'],
-                    "result" => $this->_cache['responses']['orderProducts']
+                    "result" => $this->_cache['responses']['orderProducts'],
+                    'mode' => 'bulk'
                 ));
             }
         }

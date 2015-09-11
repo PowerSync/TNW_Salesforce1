@@ -674,6 +674,20 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $this->_obj->Description = $item->getBundleItemToSync();
             }
 
+            /**
+             * use_product_campaign_assignment
+             */
+            if (
+                Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()
+                && $parentEntity instanceof Mage_Sales_Model_Order
+                && $product->getSalesforceCampaignId()
+            ) {
+                $contactId = $this->_cache['orderCustomers'][$parentEntity->getRealOrderId()]->getSalesforceId();
+
+                Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
+                    ->prepareCampaignMemberItem('ContactId', $contactId, null, $product->getSalesforceCampaignId());
+            }
+
         } else {
             $product = new Varien_Object();
             $sku = $item->getData('ProductCode');
