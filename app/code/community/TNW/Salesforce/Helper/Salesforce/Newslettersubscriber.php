@@ -11,7 +11,8 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     public function getSalesforceSessionId()
     {
-        if (!$this->_salesforceSessionId = parent::getSalesforceSessionId()); {
+        if (!$this->_salesforceSessionId = parent::getSalesforceSessionId()) ;
+        {
             $this->_salesforceSessionId = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id');
         }
 
@@ -27,25 +28,35 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         return $this->_salesforceServerDomain;
     }
 
+    /**
+     * Public method for validate
+     *
+     * @param bool|false $skipNewsletterChecking
+     * @return bool
+     */
+    public function validateSync($skipNewsletterChecking = false)
+    {
+        return $this->validate($skipNewsletterChecking);
+    }
 
     /**
      * Validation before sync
-     *
+     * @param bool|false $skipNewsletterChecking used for Campaign member synchronization
      * @return bool
      */
-    protected function validate()
+    protected function validate($skipNewsletterChecking = false)
     {
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
         $this->reset();
 
-        if(!$helper->isEnabled()){
+        if (!$helper->isEnabled()) {
             $helper->log('SKIPPING: Powersync is disabled');
             return false;
         }
 
-        if(!$helper->getCustomerNewsletterSync()){
+        if (!$helper->getCustomerNewsletterSync() && !$skipNewsletterChecking) {
             $helper->log('SKIPPING: Newsletter Sync is disabled');
             return false;
         }
@@ -107,7 +118,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     protected function subscribeLeads($subscribers)
     {
-        if(empty($this->_cache['leadsToUpsert'])) return false;
+        if (empty($this->_cache['leadsToUpsert'])) return false;
 
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
@@ -217,7 +228,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             unset($this->_obj->HasOptedOutOfEmail);
         }
 
-        if($accountId){
+        if ($accountId) {
             $this->_obj->AccountId = $accountId;
         }
 
@@ -247,8 +258,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
-        if(!empty($this->_cache['contactsToUpsert'])) {
-
+        if (!empty($this->_cache['contactsToUpsert'])) {
 
 
             $subscriberIndexes = array_keys($this->_cache['contactsToUpsert']);
@@ -278,7 +288,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         }
 
         // If there is new contact without account - creating new accounts and then creating new Contacts
-        if(!empty($this->_cache['accountsToUpsert'])){
+        if (!empty($this->_cache['accountsToUpsert'])) {
 
             $accountIndexes = array_keys($this->_cache['accountsToUpsert']);
 
@@ -305,7 +315,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 }
             }
 
-            foreach($unsetKeys as $key){
+            foreach ($unsetKeys as $key) {
                 unset($this->_cache['accountContactsToUpsert'][$key]);
             }
 
@@ -352,16 +362,16 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         $this->_obj->Id = $id;
 
         // If no loaded customer - checking seession
-        if(!$customer && Mage::getSingleton('customer/session')->isLoggedIn()){
-            $customer =  Mage::getSingleton('customer/session')->getCustomer();
+        if (!$customer && Mage::getSingleton('customer/session')->isLoggedIn()) {
+            $customer = Mage::getSingleton('customer/session')->getCustomer();
         }
 
-        if($customer) {
+        if ($customer) {
             $this->_obj->FirstName = $customer->getFirstname();
             $this->_obj->LastName = $customer->getLastname();
         }
 
-        if(empty($this->_obj->LastName)){
+        if (empty($this->_obj->LastName)) {
             $this->_obj->LastName = $subscriber->getData('subscriber_email');
         }
 
@@ -371,9 +381,9 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             ($status == Mage_Newsletter_Model_Subscriber::STATUS_UNSUBSCRIBED) ? 1 : 0;
 
         // Link to a Website
-        if ( $websiteId !== NULL && array_key_exists($websiteId, $this->_websiteSfIds)
-            && $this->_websiteSfIds[$websiteId])
-        {
+        if ($websiteId !== NULL && array_key_exists($websiteId, $this->_websiteSfIds)
+            && $this->_websiteSfIds[$websiteId]
+        ) {
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField()} = $this->_websiteSfIds[$websiteId];
         }
 
@@ -394,7 +404,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         $helper = Mage::helper('tnw_salesforce');
 
         // 1. Validate config
-        if(!$this->validate()){
+        if (!$this->validate()) {
             return false;
         }
 
@@ -410,8 +420,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
 
         // 2 Prepare Data for Lookup and Updates
-        foreach($subscribers as $index => $subscriber)
-        {
+        foreach ($subscribers as $index => $subscriber) {
             // 2.1 Extract subscriber information
             $email = strtolower($subscriber->getData('subscriber_email'));
             $customerId = $subscriber->getData('customer_id');
@@ -422,7 +431,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             if ($customerId) {
                 $customer = Mage::getModel('customer/customer')->load($customerId);
                 $websiteId = $customer->getData('website_id');
-            }else{
+            } else {
                 $websiteId = Mage::getModel('core/store')->load($subscriber->getData('store_id'))->getWebsiteId();
             }
 
@@ -435,7 +444,6 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         }
 
 
-
         // 3.1 Check for Contact
         /** @var TNW_Salesforce_Helper_Salesforce_Data_Contact $helperContact */
         $helperContact = Mage::helper('tnw_salesforce/salesforce_data_contact');
@@ -445,16 +453,15 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         $helperSf = Mage::helper('tnw_salesforce/salesforce_data');
         $accountsFound = $helperSf->accountLookupByEmailDomain($emailsArray);
 
-        foreach($subscribers as $index => $subscriber)
-        {
+        foreach ($subscribers as $index => $subscriber) {
             $email = $emailsArray[$index];
             $websiteId = $websitesArray[$index];
             $customer = $customersArray[$index];
 
             // 3.1 Going throw Contact matches and add Contact for sync
-            if($contactLookup && array_key_exists($this->_websiteSfIds[$websiteId], $contactLookup)
-                && array_key_exists($email, $contactLookup[$this->_websiteSfIds[$websiteId]]) )
-            {
+            if ($contactLookup && array_key_exists($this->_websiteSfIds[$websiteId], $contactLookup)
+                && array_key_exists($email, $contactLookup[$this->_websiteSfIds[$websiteId]])
+            ) {
                 $isPerson = false;
                 $id = $contactLookup[$this->_websiteSfIds[$websiteId]][$email]->Id;
                 // Check for PersonAccount config
@@ -466,15 +473,15 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 }
                 $this->addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index);
                 $contactsEmailArray[$index] = $email;
-            // 3.2 Looking for Account and if found - create Contact linked to the Account
-            }elseif(!$helper->isCustomerAsLead() && array_key_exists($index,$accountsFound)){
+                // 3.2 Looking for Account and if found - create Contact linked to the Account
+            } elseif (!$helper->isCustomerAsLead() && array_key_exists($index, $accountsFound)) {
                 $accountId = $accountsFound[$index];
                 $isPerson = false;
                 $id = null;
                 $this->addContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index, $accountId);
                 $contactsEmailArray[$index] = $email;
-            // 3.3 Create Account add AccountId and create new Contact
-            }elseif(!$helper->isCustomerAsLead()){
+                // 3.3 Create Account add AccountId and create new Contact
+            } elseif (!$helper->isCustomerAsLead()) {
                 $isPerson = false;
                 $id = null;
                 $this->addAccountContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index);
@@ -487,7 +494,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
 
         // 3.3 Check for Leads
-        if($helper->isCustomerAsLead()) {
+        if ($helper->isCustomerAsLead()) {
             /** @var TNW_Salesforce_Helper_Salesforce_Data_Lead $helperLead */
             $helperLead = Mage::helper('tnw_salesforce/salesforce_data_lead');
             $leadLookup = $helperLead->lookup($emailsArray, $sfWebsitesArray);
@@ -573,6 +580,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         }
         $this->_updateCampaingsAfter();
     }
+
     /**
      * Realtime campaings updating, bulk sync
      */
@@ -601,34 +609,34 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
                 // Push Accounts on Id
 
-                    if (!$this->_cache['bulkJobs']['campaigns']['Id']) {
-                        // Create Job
-                        $this->_cache['bulkJobs']['campaigns']['Id'] = $this->_createJob('CampaignMember', 'upsert', 'Id');
-                        Mage::helper('tnw_salesforce')->log('Syncronizing campaigns, created job: ' . $this->_cache['bulkJobs']['campaigns']['Id']);
-                    }
+                if (!$this->_cache['bulkJobs']['campaigns']['Id']) {
+                    // Create Job
+                    $this->_cache['bulkJobs']['campaigns']['Id'] = $this->_createJob('CampaignMember', 'upsert', 'Id');
+                    Mage::helper('tnw_salesforce')->log('Syncronizing campaigns, created job: ' . $this->_cache['bulkJobs']['campaigns']['Id']);
+                }
 
-                    Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before", array("data" => $this->_cache['campaignsToUpsert']));
+                Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before", array("data" => $this->_cache['campaignsToUpsert']));
 
-                    // send to sf
-                    $this->_pushChunked($this->_cache['bulkJobs']['campaigns']['Id'], 'campaigns', $this->_cache['campaignsToUpsert'], 'Id');
+                // send to sf
+                $this->_pushChunked($this->_cache['bulkJobs']['campaigns']['Id'], 'campaigns', $this->_cache['campaignsToUpsert'], 'Id');
 
-                    // Check if all campaigns got Updated
-                    Mage::helper('tnw_salesforce')->log('Checking if campaigns were successfully synced...');
+                // Check if all campaigns got Updated
+                Mage::helper('tnw_salesforce')->log('Checking if campaigns were successfully synced...');
+                $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['campaigns']['Id']);
+                $_attempt = 1;
+                while (strval($_result) != 'exception' && !$_result) {
+                    sleep(5);
                     $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['campaigns']['Id']);
-                    $_attempt = 1;
-                    while (strval($_result) != 'exception' && !$_result) {
-                        sleep(5);
-                        $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['campaigns']['Id']);
-                        Mage::helper('tnw_salesforce')->log('Still checking [1] (job: ' . $this->_cache['bulkJobs']['campaigns']['Id'] . ')...');
-                        $_attempt++;
+                    Mage::helper('tnw_salesforce')->log('Still checking [1] (job: ' . $this->_cache['bulkJobs']['campaigns']['Id'] . ')...');
+                    $_attempt++;
 
-                        $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['campaigns']['Id']);
-                    }
-                    if (strval($_result) != 'exception') {
-                        Mage::helper('tnw_salesforce')->log('Campaigns sync is complete! Moving on...');
-                        // Update New Account ID's
-                        $this->_assignCampaignsIds();
-                    }
+                    $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['campaigns']['Id']);
+                }
+                if (strval($_result) != 'exception') {
+                    Mage::helper('tnw_salesforce')->log('Campaigns sync is complete! Moving on...');
+                    // Update New Account ID's
+                    $this->_assignCampaignsIds();
+                }
 
             } catch (Exception $e) {
                 $helper->log("error [add lead as campaign member to sf failed]: " . $e->getMessage());
@@ -693,7 +701,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     public function prepareCampaignMember($_type = 'LeadId', $_id, $_subscription, $index)
     {
         // 1. Validate config
-        if(!$this->validate()){
+        if (!$this->validate()) {
             return false;
         }
 
@@ -724,6 +732,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     {
         return $this->_prepareCampaignMemberItem($_type, $_id, $index, $campaignId);
     }
+
     /**
      * Add data to cache for synchronization
      *
@@ -753,11 +762,34 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     }
 
     /**
+     * remove duplicate values
+     */
+    public function removeDuplicates()
+    {
+        if (!empty($this->_cache['campaignsToUpsert'])) {
+            foreach ($this->_cache['campaignsToUpsert'] as $i => $campaignsToUpsertI) {
+                foreach ($this->_cache['campaignsToUpsert'] as $j => $campaignsToUpsertI) {
+                    if (
+                        $i != $j
+                        && $this->_cache['campaignsToUpsert'][$i] == $this->_cache['campaignsToUpsert'][$j]
+                    ) {
+                        unset($this->_cache['campaignsToUpsert'][$j]);
+                    }
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Remove existing records
      * @return $this
      */
     protected function _updateCampaingsBefore()
     {
+
+        $this->removeDuplicates();
         if (!empty($this->_cache['campaignsToUpsert'])) {
 
             $campaignsToUpsert = array_chunk($this->_cache['campaignsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
@@ -810,7 +842,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                         if ((property_exists($item, 'LeadId')
                                 && $this->prepareId($item->LeadId) == $this->prepareId($campaignMember->getData('LeadId'))
                             )
-                            ||(property_exists($item, 'ContactId')
+                            || (property_exists($item, 'ContactId')
                                 && $this->prepareId($item->ContactId) == $this->prepareId($campaignMember->getData('ContactId'))
                             )
                         ) {

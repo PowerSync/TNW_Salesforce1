@@ -1169,6 +1169,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
 
             /**
+             * use_product_campaign_assignment, reset data
+             */
+            if (Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()) {
+
+                /**
+                 * @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber
+                 */
+                $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
+
+                $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
+                $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+                $manualSync->validateSync(true);
+            }
+
+            /**
              * all orders fails - return false otherwise return true
              */
             return (count($_skippedOrders) != count($_ids));
