@@ -549,6 +549,8 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
+        $this->_updateCampaingsBefore();
+
         if (!empty($this->_cache['campaignsToUpsert'])) {
             try {
 
@@ -569,6 +571,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 $helper->log("error add campaign member to sf failed]: " . $e->getMessage());
             }
         }
+        $this->_updateCampaingsAfter();
     }
     /**
      * Realtime campaings updating, bulk sync
@@ -577,6 +580,8 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     {
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
+
+        $this->_updateCampaingsBefore();
 
         if (!empty($this->_cache['campaignsToUpsert'])) {
             try {
@@ -629,6 +634,8 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 $helper->log("error [add lead as campaign member to sf failed]: " . $e->getMessage());
             }
         }
+
+        $this->_updateCampaingsAfter();
     }
 
 
@@ -741,6 +748,98 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         } else {
             $this->_cache['campaignsToUpsert'][] = $campaignMemberOb;
         }
+
+        return $this;
+    }
+
+    /**
+     * Remove existing records
+     * @return $this
+     */
+    protected function _updateCampaingsBefore()
+    {
+        if (!empty($this->_cache['campaignsToUpsert'])) {
+
+            $campaignsToUpsert = array_chunk($this->_cache['campaignsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($campaignsToUpsert as $chunk) {
+                /**
+                 * @var $campaignMemberCollection TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection
+                 */
+                $campaignMemberCollection = Mage::getModel('tnw_salesforce/api_entity_campaign_member')->getCollection();
+                $campaignMemberCollection->getSelect()->columns(array(
+                    'LeadId',
+                    'ContactId',
+                    'CampaignId'
+                ));
+
+                foreach ($chunk as $item) {
+
+                    $field = null;
+                    $value = null;
+                    if (property_exists($item, 'LeadId')) {
+                        $field = 'LeadId';
+                        $value = $item->LeadId;
+                    } elseif (property_exists($item, 'ContactId')) {
+                        $field = 'ContactId';
+                        $value = $item->ContactId;
+                    }
+
+                    $campaignIdCondition = $campaignMemberCollection->getConnection()->prepareSqlCondition('CampaignId', $item->CampaignId);
+                    $campaignMemberIdFilter = $campaignMemberCollection->getConnection()->prepareSqlCondition($field, $value);
+
+                    $campaignMemberCollection
+                        ->getSelect()
+                        ->orWhere(sprintf(' ( %s AND %s ) ', $campaignIdCondition, $campaignMemberIdFilter));
+                }
+
+                $campaignMemberCollection->load();
+
+                /**
+                 * remove item if data already exists in SF
+                 */
+                foreach ($campaignMemberCollection as $campaignMember) {
+                    foreach ($chunk as $key => $item) {
+
+                        $campaignId = $campaignMember->getData('CampaignId');
+                        $campaignId = $this->prepareId($campaignId);
+
+                        if ($this->prepareId($item->CampaignId) != $campaignId) {
+                            continue;
+                        }
+
+                        if ((property_exists($item, 'LeadId')
+                                && $this->prepareId($item->LeadId) == $this->prepareId($campaignMember->getData('LeadId'))
+                            )
+                            ||(property_exists($item, 'ContactId')
+                                && $this->prepareId($item->ContactId) == $this->prepareId($campaignMember->getData('ContactId'))
+                            )
+                        ) {
+                            unset($this->_cache['campaignsToUpsert'][$key]);
+                        }
+
+                    }
+                }
+
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * remove some technical data from Id, in fact first 15 symbols important only, last 3 - it's technical data for SF
+     * @param $id
+     * @return string
+     */
+    public function prepareId($id)
+    {
+        return substr($id, 0, 15);
+    }
+
+    /**
+     * @return $this
+     */
+    protected function _updateCampaingsAfter()
+    {
 
         return $this;
     }

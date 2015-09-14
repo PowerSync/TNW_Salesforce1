@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.05.0000</version>
+            <version>0.01.53.06.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -82,6 +82,9 @@
                     <campaign>
                         <table>Campaign</table>
                     </campaign>
+                    <campaign_member>
+                        <table>CampaignMember</table>
+                    </campaign_member>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>
@@ -417,9 +420,14 @@
             </tnw_salesforce_order_send_after>
 
             <tnw_salesforce_order_products_send_after>
-                <class>tnw_salesforce/sale_observer</class>
-                <method>assignCustomerToProductCampaigns</method>
+                <observers>
+                    <tnw_send_order_item_campaing>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>sendOrderItemCampaing</method>
+                    </tnw_send_order_item_campaing>
+                </observers>
             </tnw_salesforce_order_products_send_after>
+
         </events>
     </global>
     <adminhtml>

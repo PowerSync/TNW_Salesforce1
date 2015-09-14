@@ -377,7 +377,11 @@ class TNW_Salesforce_Model_Sale_Observer
         }
     }
 
-    public function assignCustomerToProductCampaigns($observer)
+    /**
+     * Assign customer to product's campaign, send this data to SF
+     * @param $observer
+     */
+    public function sendOrderItemCampaing($observer)
     {
         $mode = $observer->getEvent()->getMode();
 
