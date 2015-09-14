@@ -1067,4 +1067,54 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         return Mage::helper('tnw_salesforce/salesforce_data')->numberFormat($value);
     }
 
+    /**
+     * Add message to output
+     * @param $message
+     * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     */
+    public function logNotice($message)
+    {
+        return $this->logMessage($message, 'notice');
+    }
+
+    /**
+     * Add message to output
+     * @param $message
+     * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     */
+    public function logError($message)
+    {
+        return $this->logMessage($message, 'error');
+
+    }
+
+    /**
+     * Add message to output
+     * @param $message
+     * @param $level
+     * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     */
+    public function logMessage($message, $level)
+    {
+
+        $fileName = null;
+
+        switch ($level) {
+            case 'error':
+                $filename = 'sf-errors';
+                break;
+            default:
+                break;
+        }
+
+        if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+            $method = 'add' . uc_words($level);
+            Mage::getSingleton('adminhtml/session')->$method($message);
+        }
+
+        Mage::helper("tnw_salesforce")->log($message, $fileName);
+
+        return $this;
+    }
+
 }

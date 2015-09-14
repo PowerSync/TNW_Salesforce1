@@ -242,7 +242,31 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      */
     public function limit($sql, $count, $offset = 0)
     {
-        return '';
+        $count = intval($count);
+        if ($count <= 0) {
+            /**
+             * @see Zend_Db_Adapter_Mysqli_Exception
+             */
+            #require_once 'Zend/Db/Adapter/Mysqli/Exception.php';
+            throw new Zend_Db_Adapter_Mysqli_Exception("LIMIT argument count=$count is not valid");
+        }
+
+        $offset = intval($offset);
+        if ($offset < 0) {
+            /**
+             * @see Zend_Db_Adapter_Mysqli_Exception
+             */
+            #require_once 'Zend/Db/Adapter/Mysqli/Exception.php';
+            throw new Zend_Db_Adapter_Mysqli_Exception("LIMIT argument offset=$offset is not valid");
+        }
+
+        $sql .= " LIMIT $count";
+        if ($offset > 0) {
+            $sql .= " OFFSET $offset";
+        }
+
+        return $sql;
+
     }
 
     /**

@@ -89,14 +89,27 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                             }
                         }
                     }
+
+                    /**
+                     * check converted condition
+                     */
                     if (
                         !$tmp->IsConverted
                         || (
                             $tmp->ConvertedAccountId
                             && $tmp->ConvertedContactId
                         )
-                    )
-                        $returnArray[$_websiteKey][$tmp->Email] = $tmp;
+                    ) {
+                        /**
+                         * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
+                         */
+                        if (
+                            !isset($returnArray[$_websiteKey][$tmp->Email])
+                            || ($tmp->MagentoId && isset($email[$tmp->MagentoId]) && $email[$tmp->MagentoId] == $tmp->Email)
+                        ) {
+                            $returnArray[$_websiteKey][$tmp->Email] = $tmp;
+                        }
+                    }
                 }
             }
             return $returnArray;
@@ -106,6 +119,140 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             unset($email);
             return false;
         }
+    }
+
+    /**
+     * prepare duplicates for merge request and call request at the end
+     * @param $duplicateData
+     * @param string $leadSource
+     * @return $this
+     */
+    public function mergeDuplicates($duplicateData, $leadSource = '')
+    {
+        try {
+            $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
+            $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+
+            $collection->getSelect()->columns('Id');
+            $collection->getSelect()->columns('Email');
+
+            $collection->getSelect()->where("Email = ?", $duplicateData->getData('Email'));
+            if ($leadSource) {
+                $collection->getSelect()->where("LeadSource = ?", $leadSource);
+            }
+
+            if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+                /**
+                 * try to find records with the same websiteId or with empty websiteId
+                 */
+                $_value = $duplicateData->getData($websiteField);
+                if (!empty($_value)) {
+
+                    $collection->getSelect()->where(
+                        "($websiteField = ? OR $websiteField = '')",
+                        $duplicateData->getData($websiteField));
+
+                } else {
+                    /**
+                     * if websiteId is empty - try to find one more record with websiteId for merging
+                     */
+                    $itemsCount = $duplicateData->getData('items_count');
+                    $collection->getSelect()->limit($itemsCount + 1);
+                }
+
+                /**
+                 * sorting reason: first record used as master object.
+                 * So, records without websiteId will be merged to record with websiteId
+                 */
+                $order = new Zend_Db_Expr($websiteField . ' DESC NULLS FIRST');
+                $collection->getSelect()->order($order);
+            }
+
+            $allDuplicates = $collection->getItems();
+            $allDuplicatesCount = count($allDuplicates);
+
+            $counter = 0;
+            $duplicatesToMergeCount = 0;
+
+            $duplicateToMerge = array();
+            foreach ($allDuplicates as $k => $duplicate) {
+                $counter++;
+                $duplicatesToMergeCount++;
+                $duplicateInfo = (object)array('Id' => $duplicate->getData('Id'));
+
+                /**
+                 * add next item to the beginning of array, so, record with websiteId will be last
+                 */
+                $duplicateToMerge[] = $duplicateInfo;
+
+                /**
+                 * try to merge piece-by-piece
+                 */
+                if (
+                    $duplicatesToMergeCount == TNW_Salesforce_Helper_Salesforce_Data_User::MERGE_LIMIT
+                    || ($allDuplicatesCount == $counter && $duplicatesToMergeCount > 1)
+                ) {
+                    $masterObject = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Lead');
+
+                    /**
+                     * remove technical information
+                     */
+                    unset($masterObject->success);
+                    unset($masterObject->mergedRecordIds);
+                    unset($masterObject->updatedRelatedIds);
+
+                    $duplicateToMerge = array();
+                    $duplicateToMerge[] = $masterObject;
+
+                    $duplicatesToMergeCount = 1;
+                }
+
+            }
+        } catch (Exception $e) {
+            Mage::helper('tnw_salesforce')->log("ERROR: Leads merging error: " . $e->getMessage());
+        }
+
+        return $this;
+    }
+
+    /**
+     * get duplicates minimal data
+     * @param string $leadSource
+     * @return TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
+     */
+    public function getDuplicates($leadSource = '')
+    {
+        $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
+
+        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+        $collection->getSelect()->columns('Email');
+        $collection->getSelect()->columns('COUNT(Id) items_count');
+
+        $collection->getSelect()->where("Email != ''");
+        if ($leadSource) {
+            $collection->getSelect()->where("LeadSource = ?", $leadSource);
+        }
+
+        $collection->getSelect()->group('Email');
+
+        $collection->getSelect()->having('COUNT(Id) > ?', 1);
+
+        if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+
+            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+            $collection->getSelect()->columns($websiteField);
+            $collection->getSelect()->group($websiteField);
+
+            /**
+             * records with empty websiteId - are duplicates potentially
+             */
+            $collection->getSelect()->orHaving("$websiteField = '' ");
+        }
+
+        return $collection;
     }
 
     /**
@@ -202,16 +349,15 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                             $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
 
-                            unset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]);
-
-                            // Update Salesforce Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                            // Update Account Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                            // Update Lead
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
-                            // Update Sync Status
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
+                            if (!isset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail])) {
+                                $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail] = new stdClass();
+                            }
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->Email = $_customerEmail;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->ContactId = $_result->contactId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->SalesforceId = $_result->contactId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->AccountId = $_result->accountId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->WebsiteId = $this->getWebsiteSfIds($_websiteId);
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->LeadId = null;
 
                         }
                     }

@@ -18,6 +18,11 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     const XML_PATH_ORDERS_BUNDLE_ITEM_SYNC = 'salesforce_order/shopping_cart/orders_bundle_item_sync';
 
     /**
+     * @comment config path
+     */
+    const XML_PATH_ORDERS_STATUS_UPDATE_CUSTOMER = 'salesforce_order/general/order_status_update_customer';
+
+    /**
      * should we use product_campaign_assignment feature?
      */
     const XML_PATH_USE_PRODUCT_CAMPAIGN_ASSIGNMENT = 'salesforce_order/shopping_cart/use_product_campaign_assignment';

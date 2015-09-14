@@ -24,6 +24,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Lead extends TNW_Salesforce_Mod
          * if company name was not took from the mapping - try to find it in accounts
          */
         if (!property_exists($this->getObj(), 'Company') || empty($this->getObj()->Company)) {
+            $company = '';
             if (!empty($this->_cache['accountLookup'])) {
                 $customerEmail = strtolower($_customer->getEmail());
                 foreach ($this->_cache['accountLookup'] as $website => $websiteCustomers) {
