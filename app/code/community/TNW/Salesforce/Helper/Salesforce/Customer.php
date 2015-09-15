@@ -193,6 +193,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $_data = $_formData;
         $_email = strtolower($_data['email']);
         $_websiteId = Mage::app()->getWebsite()->getId();
+        $_storeId = Mage::app()->getStore()->getStoreId();
 
         $_fullName = explode(' ', strip_tags($_data['name']));
         if (count($_fullName) == 1) {
@@ -207,8 +208,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         /**
          * prepare fake customer object to use it in lookup
          */
-        $fakeCustomer = new Varien_Object();
-        $fakeCustomer->setData($_formData);
+        $fakeCustomer = Mage::getModel('customer/customer');
+        $fakeCustomer->setGroupId(0); // NOT LOGGED IN
+        $fakeCustomer->setStoreId($_storeId);
+        if (isset($_websiteId)) {
+            $fakeCustomer->setWebsiteId($_websiteId);
+        }
+        $fakeCustomer->setData($_data);
+
 
         $firstName = ($_lastName) ? $_fullName[0] : '';
         $lastName = ($_lastName) ? $_lastName : $_fullName[0];
@@ -220,9 +227,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $fakeCustomer->setEmail($_email);
 
-        $billingAddress = new Varien_Object();
-        $billingAddress->setTelephone(strip_tags($_data['telephone']));
-        $fakeCustomer->setBillingAddress($billingAddress);
+        $_billingAddress = Mage::getModel('customer/address');
+        $_billingAddress->setCustomerId(0)
+            ->setIsDefaultBilling('1')
+            ->setSaveInAddressBook('0')
+            ->setTelephone(strip_tags($_data['telephone']));
+        $fakeCustomer->setBillingAddress($_billingAddress);
 
         $customerId = (int)$fakeCustomer->getId();
         if (Mage::registry('customer_cached_' . $customerId)) {
@@ -239,7 +249,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             ->lookup(
                 array($customerId => $_email),
                 array($customerId => $this->_websiteSfIds[$_websiteId]),
-                (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+                (Mage::helper('tnw_salesforce')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce')->getLeadSource(): null
 
             );
 
