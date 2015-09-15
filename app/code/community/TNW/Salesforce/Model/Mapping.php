@@ -32,7 +32,7 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
                 if (is_array($value)) {
                     $value = implode(' ', $value);
-                } elseif ($this->getBackendType() == 'datetime') {
+                } elseif ($this->getBackendType() == 'datetime' || $this->getBackendType() == 'timestamp') {
                     $value = gmdate(DATE_ATOM, strtotime($value));
                 } elseif ($attributeCode == 'created_at') {
                     $value = date('Y-m-d', strtotime($value));
