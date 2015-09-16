@@ -23,6 +23,11 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     const XML_PATH_ORDERS_STATUS_UPDATE_CUSTOMER = 'salesforce_order/general/order_status_update_customer';
 
     /**
+     * should we use product_campaign_assignment feature?
+     */
+    const XML_PATH_USE_PRODUCT_CAMPAIGN_ASSIGNMENT = 'salesforce_order/shopping_cart/use_product_campaign_assignment';
+
+    /**
      * @comment Bundle Item marker
      */
     const BUNDLE_ITEM_MARKER = 'Bundle Item from: sku - ';
@@ -39,5 +44,21 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     public function getOpportunityToOrderStatus()
     {
         return $this->getStroreConfig(self::OPPORTUNITY_TO_ORDER_STATUS);
+    }
+
+    /**
+     * @return mixed|null|string
+     */
+    public function getUseProductCampaignAssignment()
+    {
+        return $this->getStoreConfig(self::XML_PATH_USE_PRODUCT_CAMPAIGN_ASSIGNMENT);
+    }
+
+    /**
+     * @return mixed|null|string
+     */
+    public function useProductCampaignAssignment()
+    {
+        return $this->getUseProductCampaignAssignment();
     }
 }

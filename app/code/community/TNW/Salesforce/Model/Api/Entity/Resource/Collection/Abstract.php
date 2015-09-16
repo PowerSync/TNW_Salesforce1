@@ -8,6 +8,13 @@
 class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
     extends Mage_Core_Model_Resource_Db_Collection_Abstract
 {
+
+    /**
+     * used in case if collection used as source for eav attribute
+     * @var null
+     */
+    protected $_attribute = null;
+
     /**
      * Init collection select
      *
@@ -122,6 +129,53 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
         }
 
         return $this;
+    }
+
+
+    /**
+     * Convert items array to array for select options
+     */
+    protected function _toOptionArray($valueField='Id', $labelField='Name', $additional=array())
+    {
+        $data = parent::_toOptionArray($valueField, $labelField, $additional);
+
+        if ($valueField == 'Id') {
+            /**
+             * update id: reav value - first 15 symbols
+             */
+            foreach ($data as $k => &$info) {
+                $info['value'] = substr($info['value'], 0, 15);
+            }
+        }
+
+        $emptyValue = array(
+            'value' => '',
+            'label' => ''
+        );
+
+        array_unshift($data, $emptyValue);
+
+        return $data;
+    }
+
+    /**
+     * Set attribute instance
+     *
+     * @param Mage_Catalog_Model_Resource_Eav_Attribute $attribute
+     * @return Mage_Eav_Model_Entity_Attribute_Frontend_Abstract
+     */
+    public function setAttribute($attribute)
+    {
+        $this->_attribute = $attribute;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAllOptions()
+    {
+        return $this->toOptionArray();
     }
 
     /**

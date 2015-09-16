@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.04.0000</version>
+            <version>0.01.53.06.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -79,6 +79,12 @@
                     <opportunity>
                         <table>Opportunity</table>
                     </opportunity>
+                    <campaign>
+                        <table>Campaign</table>
+                    </campaign>
+                    <campaign_member>
+                        <table>CampaignMember</table>
+                    </campaign_member>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>
@@ -412,6 +418,16 @@
                     </tnw_salesforce_update_abandoned_status>
                 </observers>
             </tnw_salesforce_order_send_after>
+
+            <tnw_salesforce_order_products_send_after>
+                <observers>
+                    <tnw_send_order_item_campaing>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>sendOrderItemCampaing</method>
+                    </tnw_send_order_item_campaing>
+                </observers>
+            </tnw_salesforce_order_products_send_after>
+
         </events>
     </global>
     <adminhtml>
@@ -581,6 +597,9 @@
                 <use_shipping_product>0</use_shipping_product>
                 <use_discount_product>0</use_discount_product>
             </opportunity_cart>
+            <shopping_cart>
+                <use_product_campaign_assignment>0</use_product_campaign_assignment>
+            </shopping_cart>
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>
             </invoice_configuration>

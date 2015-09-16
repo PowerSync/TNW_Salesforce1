@@ -678,6 +678,20 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $this->_obj->Description = $item->getBundleItemToSync();
             }
 
+            /**
+             * use_product_campaign_assignment
+             */
+            if (
+                Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()
+                && $parentEntity instanceof Mage_Sales_Model_Order
+                && $product->getSalesforceCampaignId()
+            ) {
+                $contactId = $this->_cache['orderCustomers'][$parentEntity->getRealOrderId()]->getSalesforceId();
+
+                Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
+                    ->prepareCampaignMemberItem('ContactId', $contactId, null, $product->getSalesforceCampaignId());
+            }
+
         } else {
             $product = new Varien_Object();
             $sku = $item->getData('ProductCode');
@@ -1152,6 +1166,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                         unset($this->_cache['entitiesUpdating'][$_idToRemove]);
                     }
                 }
+            }
+
+            /**
+             * use_product_campaign_assignment, reset data
+             */
+            if (Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()) {
+
+                /**
+                 * @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber
+                 */
+                $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
+
+                $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
+                $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+                $manualSync->validateSync(true);
             }
 
             /**
