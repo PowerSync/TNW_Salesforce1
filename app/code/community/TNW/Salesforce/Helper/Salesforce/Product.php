@@ -336,9 +336,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $product->setSalesforceId($sfProductId);
         }
 
-        //if ($product->getSalesforceId()) {
-        //    $this->_obj->Id = $product->getSalesforceId();
-        //}
+        if ($product->getSalesforceId()) {
+            $this->_obj->Id = $product->getSalesforceId();
+        }
 
         $this->_obj->IsActive = true;
 
