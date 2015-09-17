@@ -23,6 +23,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
                 return false;
             }
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+
+            $orderItemFieldsToSelect = 'Id, Quantity, UnitPrice, PricebookEntry.ProductCode, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name';
+
+            if (Mage::helper('tnw_salesforce/data')->isEnterpriseSalesforceVersionType()) {
+                $orderItemFieldsToSelect .=   ' , AvailableQuantity';
+            }
+
             $_selectFields = array(
                 "ID",
                 "AccountId",
@@ -30,7 +37,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
                 "StatusCode",
                 "Status",
                 $_magentoId,
-                "(SELECT Id, Quantity, AvailableQuantity, UnitPrice, PricebookEntry.ProductCode, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OrderItems)",
+                "(SELECT $orderItemFieldsToSelect FROM OrderItems)",
                 "(SELECT Id, Title, Body FROM Notes)"
             );
             if (is_array($ids)) {

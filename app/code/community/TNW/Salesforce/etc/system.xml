@@ -41,6 +41,15 @@
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                         </version>
+                        <salesforce_version translate="label">
+                            <label>Salesforce Version</label>
+                            <frontend_type>label</frontend_type>
+                            <frontend_model>tnw_salesforce/adminhtml_salesforceversion</frontend_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </salesforce_version>
                     </fields>
                 </info>
                 <api_config translate="label" module="tnw_salesforce">
