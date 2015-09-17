@@ -88,9 +88,9 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     }
 
     /**
-     * @return bool
+     * @return bool|null|string
      */
-    public function tryWsdl()
+    public function getWsdl()
     {
         if (defined('MAGENTO_ROOT')) {
             $basepath = MAGENTO_ROOT;
@@ -105,9 +105,22 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         }
 
         $this->_wsdl = $basepath . "/" . Mage::helper('tnw_salesforce')->getApiWSDL();
+
         if (!file_exists($this->_wsdl) || Mage::helper('tnw_salesforce')->getApiWSDL() == "") {
             $this->_wsdl = NULL;
             Mage::helper('tnw_salesforce')->log("WSDL file not found!");
+        }
+
+        return $this->_wsdl;
+    }
+
+    /**
+     * @return bool
+     */
+    public function tryWsdl()
+    {
+
+        if (!$this->getWsdl()) {
             return false;
         }
 

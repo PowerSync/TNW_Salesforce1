@@ -109,6 +109,9 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CATALOG_PRICE_SCOPE = 'catalog/price/scope';
     const CUSTOMER_ACCOUNT_SHARING = 'customer/account_share/scope';
 
+    const SALESFORCE_ENTERPRISE = 'Enterprise';
+    const SALESFORCE_PROFESSIONAL = 'Professional';
+
     /* Defaults */
     const MODULE_TYPE = 'PRO';
     protected $_types = array("Enterprise", "Partner");
@@ -169,6 +172,12 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         '6 hours' => 21600,
         '12 hours' => 43200,
     );
+
+    /**
+     * package names and versions from wsdl file
+     * @var null
+     */
+    protected $_sfVersions = null;
 
     /**
      * @return mixed|null|string
@@ -1162,6 +1171,69 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         Mage::throwException('Undefined fee product: for ' . $feeType);
 
         return NULL;
+    }
+
+    /**
+     * load package names and versions from wsdl file
+     * @return string
+     */
+    public function getSalesforcePackagesVersion()
+    {
+        if (!$this->_sfVersions) {
+            $sfClient = Mage::getSingleton('tnw_salesforce/connection');
+            $wsdlFile = $sfClient->getWsdl();
+
+            $wsdl = file_get_contents($wsdlFile);
+
+            $doc = new DOMDocument;
+            $doc->loadXML($wsdl);
+            $xpath = new DOMXPath($doc);
+
+            foreach ($xpath->query('//comment()') as $comment) {
+                if (strpos($comment->textContent, 'Package Versions:') !== false) {
+                    $this->_sfVersions = $comment->textContent;
+                    break;
+                }
+            }
+
+        }
+
+        return $this->_sfVersions;
+    }
+
+    /**
+     * try to find info about Salesforce version type: Enterprise or Professional
+     *
+     * @return string
+     */
+    public function getSalesforceVersionType()
+    {
+        /**
+         * default value
+         */
+        $result = 'Enterprise';
+
+        $salesforcePackagesVersion = $this->getSalesforcePackagesVersion();
+
+        /**
+         * try to find info about Salesforce version type (Enterprise or Professional) in wsdl file comments
+         */
+        preg_match("/.*Salesforce.com *(?<version_type>\w+) *Web Services API Version.*/i", $salesforcePackagesVersion, $matches);
+
+        if (isset($matches['version_type'])) {
+            $result = $matches['version_type'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Is Salesforce Enterprise version?
+     * @return bool
+     */
+    public function isEnterpriseSalesforceVersionType()
+    {
+        return $this->getSalesforceVersionType() == self::SALESFORCE_ENTERPRISE;
     }
 
 }
