@@ -1231,9 +1231,9 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * Is Salesforce Enterprise version?
      * @return bool
      */
-    public function isEnterpriseSalesforceVersionType()
+    public function isProfessionalSalesforceVersionType()
     {
-        return $this->getSalesforceVersionType() == self::SALESFORCE_ENTERPRISE;
+        return $this->getSalesforceVersionType() == self::SALESFORCE_PROFESSIONAL;
     }
 
 }

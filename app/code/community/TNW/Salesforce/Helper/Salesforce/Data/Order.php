@@ -26,7 +26,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
 
             $orderItemFieldsToSelect = 'Id, Quantity, UnitPrice, PricebookEntry.ProductCode, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name';
 
-            if (Mage::helper('tnw_salesforce/data')->isEnterpriseSalesforceVersionType()) {
+            if (!Mage::helper('tnw_salesforce/data')->isProfessionalSalesforceVersionType()) {
                 $orderItemFieldsToSelect .=   ' , AvailableQuantity';
             }
 
