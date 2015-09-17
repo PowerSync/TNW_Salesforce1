@@ -180,6 +180,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         if ($_customer->getData('salesforce_id')) {
             $this->_obj->BillToContactId = $_customer->getData('salesforce_id');
             $this->_obj->ShipToContactId = $_customer->getData('salesforce_id');
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'BillingCustomer__c'}
+                = $_customer->getData('salesforce_id');
         }
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
