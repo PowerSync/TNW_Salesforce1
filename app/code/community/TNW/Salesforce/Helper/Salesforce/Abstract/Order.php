@@ -445,7 +445,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         $this->_applyAdditionalFees($parentEntity, $parentEntityNumber);
-
     }
 
     /**
@@ -615,9 +614,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $qty = $this->getItemQty($item);
 
-        if (!$qty || $qty == 0) {
-            Mage::helper('tnw_salesforce')->log("NOTE: Product w/ SKU (" . $item->getSku() . ") is not synchronized, ordered quantity is zero!");
+        if ($qty === NULL) {
             $qty = 0;
+        }
+        if ($qty == 0) {
+            Mage::helper('tnw_salesforce')->log("NOTE: Product w/ SKU (" . $item->getSku() . ") is not synchronized, ordered quantity is zero!");
         }
 
         $storeId = $parentEntity->getStoreId();
@@ -786,9 +787,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)] = array();
 
-        if ($this->_obj->Quantity == 0) {
-            Mage::helper('tnw_salesforce')->log('SKIPPING: Purchased Magento product quantity is zero!');
-        } elseif ($this->isItemObjectValid()) {
+        if ($this->isItemObjectValid()) {
             /* Dump OpportunityLineItem object into the log */
             foreach ($this->_obj as $key => $_item) {
                 Mage::helper('tnw_salesforce')->log("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
@@ -798,7 +797,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getItemId()] = $this->_obj;
         } else {
-            Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted!');
+            Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted or quantity is zero!');
         }
 
         Mage::helper('tnw_salesforce')->log('-----------------');
@@ -811,9 +810,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function isItemObjectValid()
     {
-        return (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
-        || (property_exists($this->_obj, 'Product__c') && $this->_obj->Product__c)
-        || (property_exists($this->_obj, 'Id') && $this->_obj->Id);
+        return (
+            (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
+            || (property_exists($this->_obj, 'Product__c') && $this->_obj->Product__c)
+            || (property_exists($this->_obj, 'Id') && $this->_obj->Id)
+        ) && (
+            ($this->_obj->Quantity != 0)
+        )
+            ;
     }
 
     /**
