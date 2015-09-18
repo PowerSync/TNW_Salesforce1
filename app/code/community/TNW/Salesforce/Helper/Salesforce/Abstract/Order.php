@@ -615,8 +615,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $qty = $this->getItemQty($item);
 
-        if ($qty == 0) {
+        if (!$qty || $qty == 0) {
             Mage::helper('tnw_salesforce')->log("NOTE: Product w/ SKU (" . $item->getSku() . ") is not synchronized, ordered quantity is zero!");
+            $qty = 0;
         }
 
         $storeId = $parentEntity->getStoreId();
@@ -785,7 +786,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)] = array();
 
-        if ($this->isItemObjectValid()) {
+        if ($this->_obj->Quantity == 0) {
+            Mage::helper('tnw_salesforce')->log('SKIPPING: Purchased Magento product quantity is zero!');
+        } elseif ($this->isItemObjectValid()) {
             /* Dump OpportunityLineItem object into the log */
             foreach ($this->_obj as $key => $_item) {
                 Mage::helper('tnw_salesforce')->log("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
@@ -1120,10 +1123,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
              */
             foreach ($this->_cache['entitiesUpdating'] as $id => $_orderNumber) {
 
-                $_orderEmail = $this->_cache['orderToEmail'][$_orderNumber];
+                $_orderEmail = strtolower($this->_cache['orderToEmail'][$_orderNumber]);
 
                 if (isset($this->_cache['orderCustomers'][$_orderNumber])
-                    && $this->_cache['orderCustomers'][$_orderNumber] instanceof Varien_Object
+                    && is_object($this->_cache['orderCustomers'][$_orderNumber])
                     && !empty($this->_cache['accountsLookup'][0][$_orderEmail])
                 ) {
 

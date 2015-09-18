@@ -821,7 +821,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
              */
             foreach ($this->_cache['entitiesUpdating'] as $id => $_quoteNumber) {
 
-                $email = $this->_cache['abandonedToEmail'][$_quoteNumber];
+                $email = strtolower($this->_cache['abandonedToEmail'][$_quoteNumber]);
 
                 if (isset($this->_cache['abandonedCustomers'][$_quoteNumber])
                     && $this->_cache['abandonedCustomers'][$_quoteNumber] instanceof Varien_Object
