@@ -214,4 +214,39 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
         }
         return $this;
     }
+
+    /**
+     * Load data
+     * check, is table available before query
+     *
+     * @param   bool $printQuery
+     * @param   bool $logQuery
+     *
+     * @return  Varien_Data_Collection_Db
+     */
+    public function load($printQuery = false, $logQuery = false)
+    {
+        if ($this->isLoaded()) {
+            return $this;
+        }
+
+        if ($this->isTableAvailable($this->getMainTable())) {
+            parent::load($printQuery = false, $logQuery = false);
+        }
+
+        $this->_setIsLoaded();
+        return $this;
+    }
+
+    /**
+     * check, is this table available
+     *
+     * @param $tableName
+     * @return mixed
+     */
+    public function isTableAvailable($tableName)
+    {
+        return $this->getResource()->isTableAvailable($tableName);
+    }
+
 }

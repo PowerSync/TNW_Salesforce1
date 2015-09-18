@@ -768,7 +768,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     {
         if (!empty($this->_cache['campaignsToUpsert'])) {
             foreach ($this->_cache['campaignsToUpsert'] as $i => $campaignsToUpsertI) {
-                foreach ($this->_cache['campaignsToUpsert'] as $j => $campaignsToUpsertI) {
+                foreach ($this->_cache['campaignsToUpsert'] as $j => $campaignsToUpsertJ) {
                     if (
                         $i != $j
                         && $this->_cache['campaignsToUpsert'][$i] == $this->_cache['campaignsToUpsert'][$j]
@@ -788,6 +788,20 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     protected function _updateCampaingsBefore()
     {
+
+        /**
+         * @var $campaignResourceModel TNW_Salesforce_Model_Api_Entity_Resource_Abstract
+         * @var $campaignMemberResourceModel TNW_Salesforce_Model_Api_Entity_Resource_Abstract
+         */
+        $campaignResourceModel = Mage::getModel('tnw_salesforce/api_entity_campaign')->getResource();
+        $campaignMemberResourceModel = Mage::getModel('tnw_salesforce/api_entity_campaign_member')->getResource();
+
+        /**
+         * reset array if campaign and campaignMember not available
+         */
+        if (!$campaignResourceModel->isTableAvailable() || !$campaignMemberResourceModel->isTableAvailable()) {
+            $this->_cache['campaignsToUpsert'] = array();
+        }
 
         $this->removeDuplicates();
         if (!empty($this->_cache['campaignsToUpsert'])) {
