@@ -538,8 +538,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $this->_obj = new stdClass();
             $_order = Mage::getModel('sales/order')->load($_key);
 
+            $contactId = $this->_cache['orderCustomers'][$_orderNumber]->getData('salesforce_id');
             if ($_order->getData('contact_salesforce_id')) {
-                $this->_obj->ContactId = $_order->getData('contact_salesforce_id');
+                $this->_obj->ContactId = $contactId;
             }
 
             // Check if already exists
