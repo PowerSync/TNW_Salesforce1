@@ -131,8 +131,15 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     {
 
         if (!isset($this->_tablesDescription[$tableName])) {
-            $data = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject($tableName);
-            $this->_tablesDescription[$tableName] = $data->fields;
+            try {
+                $data = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject($tableName);
+                $this->_tablesDescription[$tableName] = $data->fields;
+            } catch (Exception $e) {
+                /**
+                 * some tables can be not available for our module, so, return empty array in this case
+                 */
+                $this->_tablesDescription[$tableName] = array();
+            }
         }
 
         return $this->_tablesDescription[$tableName];

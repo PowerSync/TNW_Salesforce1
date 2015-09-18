@@ -76,11 +76,16 @@
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
         <reference name="sales_order_tabs">
-            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce" template="salesforce/sales/order/view/tab/salesforce.phtml">
-                <block type="tnw_salesforce/sales_order_view_tab_salesforce_info" name="salesforce_info" template="salesforce/sales/order/view/tab/salesforce/info.phtml"></block>
+            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce"
+                   template="salesforce/sales/order/view/tab/salesforce.phtml">
+                <block type="tnw_salesforce/sales_order_view_tab_salesforce_info" name="salesforce_info"
+                       template="salesforce/sales/order/view/tab/salesforce/info.phtml"></block>
                 <block type="tnw_salesforce/sales_order_view_tab_salesforce_form" name="salesforce_form"></block>
             </block>
-            <action method="addTab"><name>order_salesforce</name><block>order_tab_salesforce</block></action>
+            <action method="addTab">
+                <name>order_salesforce</name>
+                <block>order_tab_salesforce</block>
+            </action>
         </reference>
     </adminhtml_sales_order_view>
 
@@ -132,4 +137,8 @@
     <adminhtml_salesforce_opportunitylineitem_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_opportunitylineitem_edit>
+
+    <adminhtml_catalog_product_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_catalog_product_edit>
 </layout>

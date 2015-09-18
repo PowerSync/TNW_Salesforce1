@@ -837,6 +837,7 @@
                             <depends>
                                 <customer_newsletter_enable_sync>1</customer_newsletter_enable_sync>
                             </depends>
+                            <frontend_class>chosen-select</frontend_class>
                             <comment>Text field to capture campaign ID to Newsletter config section</comment>
                         </customer_newletter_campaign_id>
                     </fields>

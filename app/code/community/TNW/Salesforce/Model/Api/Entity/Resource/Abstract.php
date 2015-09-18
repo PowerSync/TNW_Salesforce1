@@ -158,5 +158,12 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
         return $result;
     }
 
+    public function isTableAvailable($tableName = null)
+    {
+        if (empty($tableName)) {
+            $tableName = $this->getMainTable();
+        }
 
+        return !empty($this->_getReadAdapter()->describeTable($tableName));
+    }
 }
