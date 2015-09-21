@@ -3,12 +3,11 @@
  * Author: Tech-N-Web, LLC (dba PowerSync)
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
- * Date: 18.09.15
- * Time: 19:32
  *
- * Class TNW_Salesforce_Model_Config_Sync_Currency
+ * Class TNW_Salesforce_Model_Config_Sync_Customer_Address
  */
-class TNW_Salesforce_Model_Config_Sync_Currency
+
+class TNW_Salesforce_Model_Config_Sync_Customer_Address
 {
     /**
      * @comment possible values

@@ -607,7 +607,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function canUseOrderAddress()
     {
-        return $this->getCustomerAddress();
+        return $this->getOrderCustomerAddress();
     }
 
     // Sync all orders or not

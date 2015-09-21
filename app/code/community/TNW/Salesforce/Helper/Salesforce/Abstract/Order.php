@@ -917,6 +917,22 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_obj->Pricebook2Id = $this->_getPricebookIdToOrder($_order);
     }
 
+    /**
+     * @param $incrementId
+     * @return Mage_Sales_Model_Order
+     */
+    public function getOrderByIncrementId($incrementId)
+    {
+        $order = Mage::registry('order_cached_' . $incrementId);
+        // Add to cache
+        if (!$order) {
+            // Load order by ID
+            $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
+            Mage::register('order_cached_' . $incrementId, $order);
+        }
+
+        return $order;
+    }
 
     /**
      * @param array $_ids
@@ -1060,11 +1076,52 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                 $_customersToSync = array();
 
+                /**
+                 * @var $customer Mage_Customer_Model_Customer
+                 */
                 foreach ($this->_cache['orderCustomers'] as $orderIncrementId => $customer) {
                     $customerId = $this->_cache['orderToCustomerId'][$orderIncrementId];
                     $websiteSfId = $_websites[$customerId];
 
                     $email = $this->_cache['orderToEmail'][$orderIncrementId];
+
+                    $syncCustomer = false;
+
+                    /**
+                     * If customer has not default billing/shipping addresses - we can use data from order if it's allowed
+                     */
+                    if (Mage::helper('tnw_salesforce')->canUseOrderAddress()) {
+
+                        if (!$customer->getDefaultBillingAddress()) {
+                            $order = $this->getOrderByIncrementId($orderIncrementId);
+
+                            $customerAddress = Mage::getModel('customer/address');
+
+                            $orderAddress = $order->getBillingAddress();
+                            $customerAddress ->setData($orderAddress->getData());
+                            $customerAddress->setId(null);
+
+                            $customerAddress->setIsDefaultBilling(true);
+                            $customer->setData('default_billing', $customerAddress->getId());
+                            $customer->addAddress($customerAddress);
+                            $syncCustomer = true;
+                        }
+
+                        if (!$customer->getDefaultShippingAddress()) {
+                            $order = $this->getOrderByIncrementId($orderIncrementId);
+
+                            $customerAddress = Mage::getModel('customer/address');
+
+                            $orderAddress = $order->getShippingAddress();
+                            $customerAddress ->setData($orderAddress->getData());
+                            $customerAddress->setId(null);
+
+                            $customerAddress->setIsDefaultShipping(true);
+                            $customer->setData('default_shipping', $customerAddress->getId());
+                            $customer->addAddress($customerAddress);
+                            $syncCustomer = true;
+                        }
+                    }
 
                     /**
                      * synchronize customer if no account/contact exists or lead not converted
@@ -1076,7 +1133,26 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                             && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
                         )
                     ) {
+                        $syncCustomer = true;
+                    }
+
+                    if ($syncCustomer) {
                         $_customersToSync[$orderIncrementId] = $customer;
+                        /**
+                         * update cache, useful if we define some customer data from order
+                         */
+                        $this->_cache['orderCustomers'][$orderIncrementId] = $customer;
+
+                        /**
+                         * register custome, this data will be used in customer sync class
+                         */
+                        if ($customer->getId()) {
+                            if (Mage::registry('customer_cached_' . $customer->getId())) {
+                                Mage::unregister('customer_cached_' . $customer->getId());
+                            }
+                            Mage::register('customer_cached_' . $customer->getId(), $customer);
+                        }
+
                     }
                 }
 
