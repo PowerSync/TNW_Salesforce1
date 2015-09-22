@@ -1187,7 +1187,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                     $orderAddress = $order->getBillingAddress();
                     $customerAddress->setData($orderAddress->getData());
-                    $customerAddress->setId(null);
 
                     $customerAddress->setIsDefaultBilling(true);
                     $customer->setData('default_billing', $customerAddress->getId());
@@ -1202,7 +1201,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                     $orderAddress = $order->getShippingAddress();
                     $customerAddress->setData($orderAddress->getData());
-                    $customerAddress->setId(null);
 
                     $customerAddress->setIsDefaultShipping(true);
                     $customer->setData('default_shipping', $customerAddress->getId());
