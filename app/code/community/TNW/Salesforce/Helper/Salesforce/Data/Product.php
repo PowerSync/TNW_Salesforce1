@@ -25,7 +25,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
         $useCache = Mage::app()->useCache('tnw_salesforce');
 
         if ($useCache && empty($this->_feeProductsPricebook)) {
-            $this->_productsPricebookEntry = $cache->load('tnw_salesforce_products_pricebook_entry');
+            $this->_productsPricebookEntry = unserialize($cache->load('tnw_salesforce_products_pricebook_entry'));
         }
 
         /**
@@ -42,10 +42,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
             $this->_productsPricebookEntry[$salesforceProductId][$pricebookId] = Mage::helper('tnw_salesforce/salesforce_data')->pricebookEntryLookupMultiple($salesforceProductId, $pricebookId);
 
             if ($useCache) {
-                $cache->save($this->_productsPricebookEntry, "tnw_salesforce_products_pricebook_entry", array("TNW_SALESFORCE"));
+                $cache->save(serialize($this->_productsPricebookEntry), "tnw_salesforce_products_pricebook_entry", array("TNW_SALESFORCE"));
             }
         }
-
         /**
          * if currency code defined - use it as index or use '0', if multicurrency not enabled in Salesforce
          */

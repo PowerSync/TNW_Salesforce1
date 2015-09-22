@@ -770,7 +770,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * @TODO: check, may be it sould be better search product by SalesforcePricebookId too
          */
         $description = $item->getBundleItemToSync();
-        if (!$description && property_exists($this->_obj, 'Description')) {
+        if (!$description && property_exists($this->_obj, 'Description') && empty($this->_obj->Description)) {
             $description = $this->_obj->Description;
         }
 

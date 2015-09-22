@@ -256,7 +256,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $_product->pricebookEntryIds = (isset($_product->pricebookEntryIds)) ? $_product->pricebookEntryIds : array();
             $_product->SfInSync = isset($_product->SfInSync) ? $_product->SfInSync : 0;
 
+            /* Add product and sync flag for display in Admin */
             $this->updateMagentoEntityValue($_magentoId, $_product->SfInSync, 'sf_insync', 'catalog_product_entity_int', 0);
+            $this->updateMagentoEntityValue($_magentoId, $_product->salesforceId, 'salesforce_id','catalog_product_entity_varchar', 0);
+
+            /* Update for each store */
             foreach (Mage::app()->getStores() as $_storeId => $_store) {
                 if (
                     array_key_exists($_storeId, $this->_cache['skipMagentoUpdate'])
@@ -567,10 +571,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $ucFee = ucfirst($feeName);
 
             $configMethod = 'use' . $ucFee . 'FeeProduct';
-            if (Mage::helper('tnw_salesforce')->$configMethod()) {
+            if ($_helper->$configMethod()) {
                 $getProductMethod = 'get' . $ucFee . 'Product';
 
-                if (Mage::helper('tnw_salesforce')->$getProductMethod()) {
+                if ($_helper->$getProductMethod()) {
                     /**
                      * Give fee product data from the config, it's serialized array
                      */
