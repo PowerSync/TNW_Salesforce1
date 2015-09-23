@@ -1230,7 +1230,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
                     if (
                         isset($this->_cache['contactsLookup'][$_websiteId][$_email])
-                        && !$this->_cache['contactsLookup'][$_websiteId][$_email]->IsPersonAccount
+                        && (!property_exists($this->_cache['contactsLookup'][$_websiteId][$_email], 'IsPersonAccount')
+                            || !$this->_cache['contactsLookup'][$_websiteId][$_email]->IsPersonAccount)
                     ) {
                         $leadConvert->contactId = $this->_cache['contactsLookup'][$_websiteId][$_email]->Id;
                     }
