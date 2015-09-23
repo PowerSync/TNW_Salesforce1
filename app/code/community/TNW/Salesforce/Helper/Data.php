@@ -47,6 +47,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const ORDER_MULTI_CURRENCY = 'salesforce_order/general/order_multi_currency';
     const ORDER_STATUS_ALL = 'salesforce_order/general/order_status_all';
     const ORDER_STATUS_ALLOW = 'salesforce_order/general/order_status_allow';
+    const ORDER_CUSTOMER_ADDRESS = 'salesforce_order/general/customer_address';
 
     /* Order Customer Role */
     const ORDER_OBJECT = 'salesforce_order/customer_opportunity/order_or_opportunity';
@@ -587,6 +588,26 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getAllowedOrderStates()
     {
         return $this->getStroreConfig(self::ORDER_STATUS_ALLOW);
+    }
+
+    /**
+     * Can we use order address for customer
+     *
+     * @return mixed
+     */
+    public function getOrderCustomerAddress()
+    {
+        return $this->getStroreConfig(self::ORDER_CUSTOMER_ADDRESS);
+    }
+
+    /**
+     * Returns true if order address using is allowed
+     *
+     * @return mixed
+     */
+    public function canUseOrderAddress()
+    {
+        return $this->getOrderCustomerAddress();
     }
 
     // Sync all orders or not

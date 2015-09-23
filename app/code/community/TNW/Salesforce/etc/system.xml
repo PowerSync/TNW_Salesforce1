@@ -1015,6 +1015,17 @@
                             </depends>
                         </order_currency_sync>
 
+                        <customer_address translate="label">
+                            <label>Customer Address</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_sync_customer_address</source_model>
+                            <comment>What should we do if customer have not default address</comment>
+                            <sort_order>120</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </customer_address>
+
                     </fields>
                 </general>
                 <customer_opportunity translate="label" module="tnw_salesforce">

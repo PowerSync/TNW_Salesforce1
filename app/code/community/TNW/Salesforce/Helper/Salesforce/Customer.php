@@ -1365,9 +1365,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             /**
              * reload customer if it saved in cache
              */
-            if (Mage::registry('customer_cached_' . $customerId)) {
+            if ($customer = Mage::registry('customer_cached_' . $customerId)) {
                 Mage::unregister('customer_cached_' . $customerId);
-                $customer = Mage::getModel('customer/customer')->load($customerId);
+                $updatedCustomer = Mage::getModel('customer/customer')->load($customerId);
+
+                /**
+                 * If customer exists - just update data, some information can be defined via order sync (order address)
+                 */
+                $customer->addData($updatedCustomer->getData());
                 Mage::register('customer_cached_' . $customerId, $customer);
 
                 unset($customer);

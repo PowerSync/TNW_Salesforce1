@@ -582,6 +582,7 @@
                 <order_multi_currency>0</order_multi_currency>
                 <order_currency_sync>customer</order_currency_sync>
                 <order_status_all>1</order_status_all>
+                <customer_address>0</customer_address>
             </general>
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>

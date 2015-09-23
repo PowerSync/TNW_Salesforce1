@@ -921,6 +921,22 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_obj->Pricebook2Id = $this->_getPricebookIdToOrder($_order);
     }
 
+    /**
+     * @param $incrementId
+     * @return Mage_Sales_Model_Order
+     */
+    public function getOrderByIncrementId($incrementId)
+    {
+        $order = Mage::registry('order_cached_' . $incrementId);
+        // Add to cache
+        if (!$order) {
+            // Load order by ID
+            $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
+            Mage::register('order_cached_' . $incrementId, $order);
+        }
+
+        return $order;
+    }
 
     /**
      * @param array $_ids
@@ -1054,72 +1070,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $this->_prepareOrderLookup();
 
+            /**
+             * Order customers sync can be denied if we just update order status
+             */
             if ($orderStatusUpdateCustomer) {
-
-                /**
-                 * Force sync of the customer
-                 * Or if it's guest checkout: customer->getId() is empty
-                 * Or customer was not synchronized before: no account/contact ids ot lead not converted
-                 */
-
-                $_customersToSync = array();
-
-                foreach ($this->_cache['orderCustomers'] as $orderIncrementId => $customer) {
-                    $customerId = $this->_cache['orderToCustomerId'][$orderIncrementId];
-                    $websiteSfId = $_websites[$customerId];
-
-                    $email = $this->_cache['orderToEmail'][$orderIncrementId];
-
-                    /**
-                     * synchronize customer if no account/contact exists or lead not converted
-                     */
-                    if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-                        || !isset($this->_cache['accountsLookup'][0][$email])
-                        || (
-                            isset($this->_cache['leadsLookup'][$websiteSfId][$email])
-                            && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
-                        )
-                    ) {
-                        $_customersToSync[$orderIncrementId] = $customer;
-                    }
-                }
-
-                if (!empty($_customersToSync)) {
-                    Mage::helper("tnw_salesforce")->log('Syncronizing Guest/New customer...');
-
-                    $helperType = 'salesforce';
-                    if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                        $helperType = 'bulk';
-                    }
-
-                    /**
-                     * @var $manualSync TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Salesforce_Customer
-                     */
-                    $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
-                    if ($manualSync->reset()) {
-                        $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-                        $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
-
-                        $manualSync->forceAdd($_customersToSync, $this->_cache['orderCustomers']);
-                        set_time_limit(30);
-                        $orderCustomers = $manualSync->process(true);
-
-                        if (!empty($orderCustomers)) {
-                            if (!is_array($orderCustomers)) {
-                                $orderIncrementIds = array_keys($_customersToSync);
-                                $orderCustomersArray[array_shift($orderIncrementIds)] = $orderCustomers;
-                            } else {
-                                $orderCustomersArray = $orderCustomers;
-                            }
-
-                            $this->_cache['orderCustomers'] = $orderCustomersArray + $this->_cache['orderCustomers'];
-                            set_time_limit(30);
-
-                            $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-                            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
-                        }
-                    }
-                }
+                $this->syncOrderCustomers($_emails, $_websites);
             }
 
             /**
@@ -1196,6 +1151,136 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return (count($_skippedOrders) != count($_ids));
         } catch (Exception $e) {
             $this->logError("CRITICAL: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Check and synchronize order customers if it's necessary
+     * @param $_websites
+     */
+    public function syncOrderCustomers($_emails, $_websites)
+    {
+        /**
+         * Force sync of the customer
+         * Or if it's guest checkout: customer->getId() is empty
+         * Or customer was not synchronized before: no account/contact ids ot lead not converted
+         */
+
+        $_customersToSync = array();
+
+        /**
+         * @var $customer Mage_Customer_Model_Customer
+         */
+        foreach ($this->_cache['orderCustomers'] as $orderIncrementId => $customer) {
+            $customerId = $this->_cache['orderToCustomerId'][$orderIncrementId];
+            $websiteSfId = $_websites[$customerId];
+
+            $email = $this->_cache['orderToEmail'][$orderIncrementId];
+
+            $syncCustomer = false;
+
+            /**
+             * If customer has not default billing/shipping addresses - we can use data from order if it's allowed
+             */
+            if (Mage::helper('tnw_salesforce')->canUseOrderAddress()) {
+
+                if (!$customer->getDefaultBillingAddress()) {
+                    $order = $this->getOrderByIncrementId($orderIncrementId);
+
+                    $customerAddress = Mage::getModel('customer/address');
+
+                    $orderAddress = $order->getBillingAddress();
+                    $customerAddress->setData($orderAddress->getData());
+
+                    $customerAddress->setIsDefaultBilling(true);
+                    $customer->setData('default_billing', $customerAddress->getId());
+                    $customer->addAddress($customerAddress);
+                    $syncCustomer = true;
+                }
+
+                if (!$customer->getDefaultShippingAddress()) {
+                    $order = $this->getOrderByIncrementId($orderIncrementId);
+
+                    $customerAddress = Mage::getModel('customer/address');
+
+                    $orderAddress = $order->getShippingAddress();
+                    $customerAddress->setData($orderAddress->getData());
+
+                    $customerAddress->setIsDefaultShipping(true);
+                    $customer->setData('default_shipping', $customerAddress->getId());
+                    $customer->addAddress($customerAddress);
+                    $syncCustomer = true;
+                }
+            }
+
+            /**
+             * synchronize customer if no account/contact exists or lead not converted
+             */
+            if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
+                || !isset($this->_cache['accountsLookup'][0][$email])
+                || (
+                    isset($this->_cache['leadsLookup'][$websiteSfId][$email])
+                    && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
+                )
+            ) {
+                $syncCustomer = true;
+            }
+
+            if ($syncCustomer) {
+                $_customersToSync[$orderIncrementId] = $customer;
+                /**
+                 * update cache, useful if we define some customer data from order
+                 */
+                $this->_cache['orderCustomers'][$orderIncrementId] = $customer;
+
+                /**
+                 * register custome, this data will be used in customer sync class
+                 */
+                if ($customer->getId()) {
+                    if (Mage::registry('customer_cached_' . $customer->getId())) {
+                        Mage::unregister('customer_cached_' . $customer->getId());
+                    }
+                    Mage::register('customer_cached_' . $customer->getId(), $customer);
+                }
+
+            }
+        }
+
+        if (!empty($_customersToSync)) {
+            Mage::helper("tnw_salesforce")->log('Syncronizing Guest/New customer...');
+
+            $helperType = 'salesforce';
+            if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+                $helperType = 'bulk';
+            }
+
+            /**
+             * @var $manualSync TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Salesforce_Customer
+             */
+            $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
+            if ($manualSync->reset()) {
+                $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
+                $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
+
+                $manualSync->forceAdd($_customersToSync, $this->_cache['orderCustomers']);
+                set_time_limit(30);
+                $orderCustomers = $manualSync->process(true);
+
+                if (!empty($orderCustomers)) {
+                    if (!is_array($orderCustomers)) {
+                        $orderIncrementIds = array_keys($_customersToSync);
+                        $orderCustomersArray[array_shift($orderIncrementIds)] = $orderCustomers;
+                    } else {
+                        $orderCustomersArray = $orderCustomers;
+                    }
+
+                    $this->_cache['orderCustomers'] = $orderCustomersArray + $this->_cache['orderCustomers'];
+                    set_time_limit(30);
+
+                    $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
+                    $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
+                }
+            }
         }
     }
 
