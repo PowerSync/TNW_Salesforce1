@@ -132,7 +132,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
                     break;
                 case 'account':
                     /**
-                     * @var $duplicates TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
+                     * @var $duplicates TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection
                      */
                     $duplicates = $helper->getDuplicates();
                     if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
