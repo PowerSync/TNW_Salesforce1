@@ -32,10 +32,8 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
                 if (is_array($value)) {
                     $value = implode(' ', $value);
-                } elseif ($this->getBackendType() == 'datetime' || $this->getBackendType() == 'timestamp') {
+                } elseif ($this->getBackendType() == 'datetime' || $this->getBackendType() == 'timestamp' || $attributeCode == 'created_at') {
                     $value = gmdate(DATE_ATOM, strtotime($value));
-                } elseif ($attributeCode == 'created_at') {
-                    $value = date('Y-m-d', strtotime($value));
                 } else {
                     //check if get option text required
                     if (is_object($object->getResource()) && method_exists($object->getResource(), 'getAttribute')
