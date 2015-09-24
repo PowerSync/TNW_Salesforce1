@@ -10,10 +10,60 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
 {
 
     /**
+     * if we use some sql expression in query - returned records count should be limited
+     * otherwise the "Aggregate query does not support queryMore()" error appears
+     */
+    const USE_EXPRESSION_LIMIT_COUNT = 500;
+
+    /**
      * used in case if collection used as source for eav attribute
      * @var null
      */
     protected $_attribute = null;
+
+    /**
+     * @var bool
+     */
+    protected $_useExpressionLimit = false;
+
+    /**
+     * @return boolean
+     */
+    public function isUseExpressionLimit()
+    {
+        return $this->_useExpressionLimit;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getUseExpressionLimit()
+    {
+        return $this->_useExpressionLimit;
+    }
+
+    /**
+     * @param $useExpressionLimit
+     * @return $this
+     */
+    public function setUseExpressionLimit($useExpressionLimit)
+    {
+        $this->_useExpressionLimit = $useExpressionLimit;
+        return $this;
+    }
+
+    /**
+     * @param boolean $useExpressionLimit null
+     * @return bool
+     */
+    public function useExpressionLimit($useExpressionLimit = null)
+    {
+        if ($useExpressionLimit) {
+            $this->setUseExpressionLimit($useExpressionLimit);
+        }
+
+        return $this->getUseExpressionLimit();
+    }
 
     /**
      * Init collection select
@@ -213,6 +263,60 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
             }
         }
         return $this;
+    }
+
+    /**
+     * Get all data array for collection
+     *
+     * @return array
+     */
+    public function getData()
+    {
+        if ($this->_data === null) {
+            $this->_renderFilters()
+                ->_renderOrders()
+                ->_renderLimit();
+            if (is_null($this->_data)) {
+                $this->_data = array();
+            }
+
+            $select = clone $this->_select;
+            /**
+             * if sql expression used - can returns limited(500) records count only
+             * @see https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL_agg_fns.htm
+             */
+            $page = 0;
+            $data = array();
+            if ($this->useExpressionLimit() && !$select->getPart(Zend_Db_Select::LIMIT_COUNT)) {
+                $this->useExpressionLimit(false);
+            }
+
+            while ($page == 0 || !(count($data) < self::USE_EXPRESSION_LIMIT_COUNT)) {
+                $page++;
+                if ($this->useExpressionLimit()) {
+                    $select->limitPage($page, self::USE_EXPRESSION_LIMIT_COUNT);
+                }
+
+                try {
+                    $data = $this->_fetchAll($select);
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'NUMBER_OUTSIDE_VALID_RANGE') === false) {
+                        Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+                    }
+                    $data = array();
+                }
+
+                $this->_data = array_merge($this->_data, $data);
+            }
+
+            /**
+             * reset limit
+             */
+            $this->useExpressionLimit(false);
+
+            $this->_afterLoadData();
+        }
+        return $this->_data;
     }
 
     /**

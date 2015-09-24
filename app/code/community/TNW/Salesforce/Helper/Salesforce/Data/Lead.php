@@ -230,6 +230,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $collection->getSelect()->columns('Email');
         $collection->getSelect()->columns('COUNT(Id) items_count');
 
+        /**
+         * special option, define limitation for queries with sql expression
+         */
+        $collection->useExpressionLimit(true);
+
         $collection->getSelect()->where("Email != ''");
         if ($leadSource) {
             $collection->getSelect()->where("LeadSource = ?", $leadSource);

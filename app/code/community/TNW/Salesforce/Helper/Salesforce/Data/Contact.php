@@ -112,6 +112,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         $collection->getSelect()->columns('Email');
         $collection->getSelect()->columns('COUNT(Id) items_count');
 
+        /**
+         * special option, define limitation for queries with sql expression
+         */
+        $collection->useExpressionLimit(true);
+
         $collection->getSelect()->where("Email != ''");
 
         $collection->getSelect()->group('Email');
