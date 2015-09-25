@@ -224,8 +224,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     public function getDuplicates($leadSource = '')
     {
-        $result = null;
-
         $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
 
         $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
@@ -250,20 +248,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
             $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
-            $collectionWithEmptyWebsites = clone $collection;
-
             $collection->getSelect()->columns($websiteField);
             $collection->getSelect()->group($websiteField);
 
-            $collectionWithEmptyWebsites->getSelect()->columns('MIN(' . $websiteField . ') ' . $websiteField);
-
-            $result = array_merge($collection->getItems(), $collectionWithEmptyWebsites->getItems());
-
-        } else {
-            $result = $collection->getItems();
+            /**
+             * records with empty websiteId - are duplicates potentially
+             */
+            $collection->getSelect()->orHaving("$websiteField = '' ");
         }
 
-        return $result;
+        return $collection;
     }
 
     /**

@@ -106,8 +106,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
      */
     public function getDuplicates()
     {
-        $result = null;
-
         $collection = Mage::getModel('tnw_salesforce_api_entity/contact')->getCollection();
 
         $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
@@ -125,19 +123,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
         $collection->getSelect()->having('COUNT(Id) > ?', 1);
 
-
-        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $collection->getSelect()->where('Account.IsPersonAccount != true');
-        }
-
         if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
             $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
             $collection->getSelect()->columns($websiteField);
             $collection->getSelect()->group($websiteField);
-
-            $collectionWithEmptyWebsites = clone $collection;
-
             /**
              * records with empty websiteId - are duplicates potentially
              */
@@ -145,15 +135,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
             $order = new Zend_Db_Expr($websiteField . ' ASC NULLS LAST');
             $collection->getSelect()->order($order);
-
-            $collectionWithEmptyWebsites->getSelect()->columns('MIN(' . $websiteField . ') ' . $websiteField);
-
-            $result = array_merge($collection->getItems(), $collectionWithEmptyWebsites->getItems());
-        } else {
-            $result = $collection->getItems();
         }
 
-        return $result;
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $collection->getSelect()->where('Account.IsPersonAccount != true');
+        }
+
+        return $collection;
     }
 
     /**
