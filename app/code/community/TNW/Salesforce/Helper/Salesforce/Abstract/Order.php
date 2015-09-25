@@ -64,6 +64,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         'shipping',
         'discount'
     );
+
+    protected $_pricebookEntryId = NULL;
     /**
      * @comment salesforce field name to assign parent entity
      * @var string
@@ -666,6 +668,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
             }
 
+            $this->_pricebookEntryId = $pricebookEntryId;
+
             /**
              * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
              */
@@ -708,10 +712,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $pricebookEntryId = $pricebookEntry['Id'];
 
             $product->setSalesforceId($pricebookEntryId);
+            $this->_pricebookEntryId = $pricebookEntryId;
 
-            $identifier = $pricebookEntryId;
+            // Used for custom object integration and overrides
+            $this->_updatePreparedObjectInfo($item);
+
+            $identifier = $this->_pricebookEntryId;
             $this->_obj->Description = $item->getDescription();
-            $id = $item->getData('Id');;
+            $id = $item->getData('Id');
         }
 
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($parentEntityNumber);
@@ -1351,4 +1359,5 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         return $_accountId;
     }
 
+    protected function _updatePreparedObjectInfo($item) {}
 }
