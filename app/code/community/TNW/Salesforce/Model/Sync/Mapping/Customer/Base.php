@@ -86,6 +86,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                     case "Customer":
                         $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
                         $_attr = $entity->getAttribute($attributeCode);
+
                         if (
                             is_object($_attr) && $_attr->getFrontendInput() == "select"
                         ) {
@@ -102,12 +103,14 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                         }
                         // Reformat date fields
                         if (
-                            $_map->getBackendType() == "datetime"
-                            || $attributeCode == 'created_at'
-                            || $_map->getBackendType() == "date"
-                            || $_attr->getFrontendInput() == "date"
-                            || $_attr->getFrontendInput() == "datetime"
-
+                            is_object($_attr) &&
+                            (
+                                $_map->getBackendType() == "datetime"
+                                || $attributeCode == 'created_at'
+                                || $_map->getBackendType() == "date"
+                                || $_attr->getFrontendInput() == "date"
+                                || $_attr->getFrontendInput() == "datetime"
+                            )
                         ) {
                             if ($entity->$attr()) {
                                 $timestamp = Mage::getModel('core/date')->timestamp(strtotime($entity->$attr()));
