@@ -603,7 +603,14 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>PowerSync will attempt to merge duplicate contact/account/lead records automatically</comment>
+                            <comment><![CDATA[
+                                PowerSync will attempt to merge duplicate contact/account/lead records automatically
+                                <br />
+                                <strong style="color: red;">IMPORTANT!</strong>
+                                Don't enable this feature if you plan use a lot of Salesforce leads or contacts non-related to the Magento customers.
+                                In this case synchronization productivity can be too low!
+                                ]]></comment>
+                            <tooltip>Limitation described for this field related to the restrictions of Salesforce API query</tooltip>
                         </merge_duplicates>
 
                     </fields>

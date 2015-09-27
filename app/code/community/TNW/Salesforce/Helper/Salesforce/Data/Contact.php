@@ -35,7 +35,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 if (!empty($_value)) {
 
                     $collection->getSelect()->where(
-                        "($websiteField = ? OR $websiteField = '')",
+                        "($websiteField = ?)",
                         $duplicateData->getData($websiteField));
 
                 } else {

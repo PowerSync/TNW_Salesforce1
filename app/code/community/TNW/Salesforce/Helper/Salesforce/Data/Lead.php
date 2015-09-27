@@ -151,7 +151,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 if (!empty($_value)) {
 
                     $collection->getSelect()->where(
-                        "($websiteField = ? OR $websiteField = '')",
+                        "($websiteField = ?)",
                         $duplicateData->getData($websiteField));
 
                 } else {
