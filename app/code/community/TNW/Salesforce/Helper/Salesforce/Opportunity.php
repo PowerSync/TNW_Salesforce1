@@ -1006,7 +1006,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             if ($_customer->getSharingConfig()->isWebsiteScope()) {
                 $_customer->setWebsiteId($_websiteId);
             }
-            $_customer->loadByEmail($order->getCustomerEmail());
+
+            $_email = strtolower($order->getCustomerEmail());
+            $_customer->loadByEmail($_email);
 
             if (!$_customer->getId()) {
                 //Guest
@@ -1014,7 +1016,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $_customer->setGroupId(0); // NOT LOGGED IN
                 $_customer->setFirstname($order->getBillingAddress()->getFirstname());
                 $_customer->setLastname($order->getBillingAddress()->getLastname());
-                $_customer->setEmail($order->getCustomerEmail());
+                $_customer->setEmail($_email);
                 $_customer->setStoreId($_storeId);
                 if (isset($_websiteId)){
                     $_customer->setWebsiteId($_websiteId);
