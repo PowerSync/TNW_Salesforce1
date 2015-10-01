@@ -202,6 +202,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                             }
                         }
                     }
+                    $_websiteKey = $this->prepareId($_websiteKey);
                     $returnArray[$_websiteKey][$_key] = $tmp;
                 }
             }

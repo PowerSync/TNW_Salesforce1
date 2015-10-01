@@ -460,4 +460,14 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     {
         return number_format($value, $this->getStroreConfig(TNW_Salesforce_Helper_Order_Pricebook::PRICE_ACCURACY), ".", "");
     }
+
+    /**
+     * remove some technical data from Id, in fact first 15 symbols important only, last 3 - it's technical data for SF
+     * @param $id
+     * @return string
+     */
+    public function prepareId($id)
+    {
+        return substr($id, 0, 15);
+    }
 }

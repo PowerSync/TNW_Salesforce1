@@ -95,8 +95,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                             $tmp->ConvertedAccountId
                             && $tmp->ConvertedContactId
                         )
-                    )
+                    ) {
+                        $_websiteKey = $this->prepareId($_websiteKey);
                         $returnArray[$_websiteKey][$tmp->Email] = $tmp;
+                    }
                 }
             }
             return $returnArray;

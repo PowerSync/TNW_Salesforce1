@@ -238,7 +238,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 && array_key_exists($_websiteId, $this->_websiteSfIds)
                 && $this->_websiteSfIds[$_websiteId]
             ) {
-                $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
+                $websiteSfId = $this->_websiteSfIds[$_websiteId];
+                $websiteSfId = $this->prepareId($websiteSfId);
+                $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $websiteSfId;
             }
 
             $this->_cache['leadsToUpsert']['contactUs'] = $this->_obj;
@@ -531,7 +533,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             && array_key_exists($_websiteId, $this->_websiteSfIds)
             && $this->_websiteSfIds[$_websiteId]
         ) {
-            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
+            $websiteSfId = $this->_websiteSfIds[$_websiteId];
+            //$websiteSfId = $this->prepareId($websiteSfId);
+            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $websiteSfId;
         }
 
         // Add to queue
