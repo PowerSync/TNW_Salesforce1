@@ -111,60 +111,102 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
 
     /**
      * Save object object data
-     *
      * @param Mage_Core_Model_Abstract $object
-     * @return Mage_Core_Model_Resource_Db_Abstract
+     * @return $this|Mage_Core_Model_Resource_Db_Abstract
+     * @throws Exception
      */
     public function save(Mage_Core_Model_Abstract $object)
     {
-        if ($object->isDeleted()) {
-            return $this->delete($object);
+        if ($this->isTableAvailable($this->getMainTable())) {
+
+            if ($object->isDeleted()) {
+                return $this->delete($object);
+            }
+
+            $this->_serializeFields($object);
+            $this->_beforeSave($object);
+            $this->_checkUnique($object);
+
+            $result = Mage::helper('tnw_salesforce/salesforce_data')
+                ->getClient()
+                ->upsert(
+                    $this->getIdFieldName(),
+                    $this->_prepareDataForSave($object),
+                    $this->getMainTable()
+                );
+
+            if (!$object->getId() && isset($result[0]) && property_exists($result[0], 'success')) {
+                $object->setId($result[0]->id);
+            }
+
+            if (!$object->getId()) {
+                throw new Exception('Salesforce object was not saved!');
+            }
+
+            $this->unserializeFields($object);
+            $this->_afterSave($object);
         }
-
-        $this->_serializeFields($object);
-        $this->_beforeSave($object);
-        $this->_checkUnique($object);
-
-        $result = Mage::helper('tnw_salesforce/salesforce_data')
-            ->getClient()
-            ->upsert(
-                $this->getIdFieldName(),
-                $this->_prepareDataForSave($object),
-                $this->getMainTable()
-        );
-
-        if (!$object->getId() && isset($result[0]) && property_exists($result[0], 'success')) {
-            $object->setId($result[0]->id);
-        }
-
-        if (!$object->getId()) {
-            throw new Exception('Salesforce object was not saved!');
-        }
-
-        $this->unserializeFields($object);
-        $this->_afterSave($object);
 
         return $this;
     }
 
-    public function loadAll(Mage_Core_Model_Abstract $object, $value, $field = null)
+    /**
+     * check connection load before
+     *
+     * @param Mage_Core_Model_Abstract $object
+     * @param mixed $value
+     * @param null $field
+     * @return $this
+     */
+    public function load(Mage_Core_Model_Abstract $object, $value, $field = null)
     {
-        $read = $this->_getReadAdapter();
+        if ($this->isTableAvailable($this->getMainTable())) {
+            parent::load($object, $value, $field);
+        }
 
-        $read->setQueryAll(true);
-        $result = parent::load($object, $value, $field);
-        $read->setQueryAll(false);
-
-        return $result;
+        return $this;
     }
 
+    /**
+     * try to load deleted too
+     *
+     * @param Mage_Core_Model_Abstract $object
+     * @param $value
+     * @param null $field
+     * @return Mage_Core_Model_Resource_Db_Abstract
+     */
+    public function loadAll(Mage_Core_Model_Abstract $object, $value, $field = null)
+    {
+        if ($this->isTableAvailable($this->getMainTable())) {
+
+            $read = $this->_getReadAdapter();
+
+            $read->setQueryAll(true);
+            parent::load($object, $value, $field);
+            $read->setQueryAll(false);
+        }
+
+        return $this;
+    }
+
+    /**
+     * is table exists?
+     *
+     * @param null $tableName
+     * @return bool
+     */
     public function isTableAvailable($tableName = null)
     {
+        $tableDescription = null;
+
         if (empty($tableName)) {
             $tableName = $this->getMainTable();
         }
 
-        $tableDescription = $this->_getReadAdapter()->describeTable($tableName);
+        if (Mage::helper('tnw_salesforce/salesforce_data')->getClient()) {
+
+            $tableDescription = $this->_getReadAdapter()->describeTable($tableName);
+        }
 
         return !empty($tableDescription);
     }
