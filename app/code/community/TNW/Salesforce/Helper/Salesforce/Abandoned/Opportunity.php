@@ -33,7 +33,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      * @comment salesforce field name to assign parent entity
      * @var string
      */
-    protected $_salesforceParentIdField = 'opportunityId';
+    protected $_salesforceParentIdField = 'OpportunityId';
 
     /**
      * @var null
@@ -382,14 +382,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      *
      * @param Mage_Sales_Model_Quote $_item
      */
-    protected function _prepareStoreId(Mage_Sales_Model_Quote $_item) {
+    protected function _prepareStoreId($_item) {
         $itemId = $this->getProductIdFromCart($_item);
         $_quote = $_item->getQuote();
         $_storeId = $_quote->getStoreId();
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             if ($_quote->getOrderCurrencyCode() != $_quote->getStoreCurrencyCode()) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getOrderCurrencyCode());
+                $_storeId = $this->_getStoreIdByCurrency($_quote->getQuoteCurrencyCode());
             }
         }
 
@@ -535,6 +535,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             return false;
         }
         $_quoteNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
+        $_quoteCartNumbers = array_keys($chunk);
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OpportunityLineItem');
         } catch (Exception $e) {
@@ -547,7 +548,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         foreach ($results as $_key => $_result) {
-            $_quoteNum = $_quoteNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId];
+
+            $_quoteNum = $_quoteNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_quoteCartNumbers[$_key]]->OpportunityId];
 
             //Report Transaction
             $this->_cache['responses']['opportunityLineItems'][] = $_result;
@@ -647,7 +649,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      * @param bool $_isCron
      * @return bool
      */
-    public function massAdd($_ids = NULL, $_isCron = false)
+    public function massAdd($_ids = NULL, $_isCron = false, $orderStatusUpdateCustomer = true)
     {
         if (!$_ids) {
             Mage::helper('tnw_salesforce')->log("Abandoned Id is not specified, don't know what to synchronize!");
@@ -749,6 +751,13 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             // Salesforce lookup, find all opportunities by Magento quote number
             $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_quotes);
+
+            /**
+             * Order customers sync can be denied if we just update order status
+             */
+            //if ($orderStatusUpdateCustomer) {
+            //    $this->syncOrderCustomers($_emails, $_websites);
+            //}
 
             /**
              * Force sync of the customer

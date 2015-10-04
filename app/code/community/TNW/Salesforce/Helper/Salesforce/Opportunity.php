@@ -466,7 +466,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      *
      * @param Mage_Sales_Model_Order_Item $_item
      */
-    protected function _prepareStoreId(Mage_Sales_Model_Order_Item $_item) {
+    protected function _prepareStoreId($_item) {
         $itemId = $this->getProductIdFromCart($_item);
         $_order = $_item->getOrder();
         $_storeId = $_order->getStoreId();
