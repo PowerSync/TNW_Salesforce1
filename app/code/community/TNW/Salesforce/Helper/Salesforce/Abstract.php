@@ -1068,6 +1068,16 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     }
 
     /**
+     * remove some technical data from Id, in fact first 15 symbols important only, last 3 - it's technical data for SF
+     * @param $id
+     * @return string
+     */
+    public function prepareId($id)
+    {
+        return substr($id, 0, 15);
+    }
+
+    /**
      * Add message to output
      * @param $message
      * @return TNW_Salesforce_Helper_Salesforce_Abstract
