@@ -133,6 +133,7 @@ class TNW_Salesforce_Helper_Magento_Abstract {
                 }
             }
         }
+        $sfId = Mage::helper('tnw_salesforce')->prepareId($sfId);
         return $sfId;
     }
 

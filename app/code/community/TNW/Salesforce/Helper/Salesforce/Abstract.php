@@ -1074,7 +1074,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function prepareId($id)
     {
-        return substr($id, 0, 15);
+        return Mage::helper('tnw_salesforce')->prepareId($id);
     }
 
     /**

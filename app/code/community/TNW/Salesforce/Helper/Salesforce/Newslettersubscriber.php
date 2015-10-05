@@ -878,7 +878,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     public function prepareId($id)
     {
-        return substr($id, 0, 15);
+        return Mage::helper('tnw_salesforce')->prepareId($id);
     }
 
     /**
