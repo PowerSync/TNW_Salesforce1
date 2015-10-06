@@ -588,7 +588,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             && $this->_websiteSfIds[$_websiteId]
         ) {
             $websiteSfId = $this->_websiteSfIds[$_websiteId];
-            //$websiteSfId = $this->prepareId($websiteSfId);
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $websiteSfId;
         }
 
