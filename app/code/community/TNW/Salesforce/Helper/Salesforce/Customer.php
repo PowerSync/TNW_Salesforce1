@@ -705,10 +705,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_isPerson = true;
                 }
 
-                if (property_exists($this->_obj, 'Name')) {
-                    unset($this->_obj->Name);
-                }
-
                 if (
                     array_key_exists('Id', $this->_cache['contactsToUpsert'])
                     && array_key_exists($_id, $this->_cache['contactsToUpsert']['Id'])
@@ -774,10 +770,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_found = true;
                 if ($lookupGuestMatch) {
                     $this->_obj->Id = $lookupGuestMatch;
-                    if (property_exists($this->_obj, 'Name')) {
-                        // Remove Name since Account exists in Salesforce and we should not rename it
-                        unset($this->_obj->Name);
-                    }
                 }
             }
 
@@ -787,16 +779,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             // Skip duplicate account for one of the contacts
-            if (!$_found) {
-                // Make sure Name of the Account is taken from Salesforce, if found
-                // only if configuration tells us NOT to overwrite the Account Name
-                if (
-                    !Mage::helper('tnw_salesforce')->canRenameAccount()
-                    && property_exists($this->_obj, 'Name')
-                    && !$this->_isPerson
-                ) {
-                    $this->_obj->Name = $this->_getAccountName($this->_obj->Name, $_email, $_sfWebsite);
-                }
+             if (!$_found) {
                 $this->_cache['accountsToUpsert']['Id'][$_id] = $this->_obj;
             }
             if (property_exists($this->_obj, 'Id')) {
@@ -821,6 +804,41 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 && empty($this->_obj->Name)
             ) {
                 $this->_cache['accountsToUpsert']['Id'][$_id] = $this->_obj;
+            }
+
+            /**
+             * remove account name if renaming not allowed
+             */
+            if (
+                !Mage::helper('tnw_salesforce')->canRenameAccount()
+                && property_exists($this->_obj, 'Id')
+                && $this->_obj->Id
+                && $type == 'Account'
+            ) {
+
+                if (property_exists($this->_obj, 'Name')) {
+                    // Remove Name since Account exists in Salesforce and we should not rename it
+                    unset($this->_obj->Name);
+                }
+
+                /**
+                 * Person account has not Name, but has First and Last names
+                 */
+                if (
+                    $this->_isPerson
+                ) {
+                    if (property_exists($this->_obj, 'FirstName')) {
+                        // Remove Name since Account exists in Salesforce and we should not rename it
+                        unset($this->_obj->FirstName);
+                    }
+
+                    if (property_exists($this->_obj, 'LastName')) {
+                        // Remove Name since Account exists in Salesforce and we should not rename it
+                        unset($this->_obj->LastName);
+                    }
+
+                }
+
             }
         }
     }
