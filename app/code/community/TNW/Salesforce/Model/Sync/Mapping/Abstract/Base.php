@@ -48,12 +48,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     protected $_cache = array();
 
     /**
-     * @var null|Mage_Customer_Model_Group
-     */
-    protected $_customerGroupModel = null;
-
-
-    /**
      * @comment list of the loaded customer groups
      * @var array
      */

@@ -26,11 +26,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * @var null
      */
-    protected $_customerGroupModel = NULL;
-
-    /**
-     * @var null
-     */
     protected $_obj = NULL;
 
     /**
