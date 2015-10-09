@@ -61,7 +61,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
 
         if ($entity->getGroupId() !== NULL) {
             if (is_array($this->_customerGroups) && (!array_key_exists($entity->getGroupId(), $this->_customerGroups) || !$this->_customerGroups[$entity->getGroupId()])) {
-                $this->_customerGroups[$entity->getGroupId()] = $this->_customerGroupModel->load($entity->getGroupId());
+                $this->_customerGroups[$entity->getGroupId()] = Mage::getModel('customer/group')->load($entity->getGroupId());
             }
         }
 

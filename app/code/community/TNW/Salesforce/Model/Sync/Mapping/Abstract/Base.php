@@ -64,13 +64,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
      * @var bool
      */
     protected $_break = false;
-    /**
-     *
-     */
-    function __construct()
-    {
-        $this->_customerGroupModel = Mage::getModel('customer/group');
-    }
 
     /**
      * @comment Apply mapping rules
