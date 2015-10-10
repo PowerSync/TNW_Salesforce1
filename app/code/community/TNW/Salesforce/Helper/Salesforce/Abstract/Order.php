@@ -1255,10 +1255,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         if (!empty($_customersToSync)) {
-            Mage::helper("tnw_salesforce")->log('Syncronizing Guest/New customer...');
+            Mage::helper("tnw_salesforce")->log('Synchronizing Guest/New customer...');
 
             $helperType = 'salesforce';
-            if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+            //if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+            if (count($_customersToSync) > 1) {
                 $helperType = 'bulk';
             }
 
