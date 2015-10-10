@@ -26,11 +26,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * @var null
      */
-    protected $_customerGroupModel = NULL;
-
-    /**
-     * @var null
-     */
     protected $_obj = NULL;
 
     /**
@@ -607,8 +602,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         if (!$this->_magentoId) {
             $this->_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         }
-
-        $this->_customerGroupModel = Mage::getModel('customer/group');
 
         if (!$this->_write) {
             $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
