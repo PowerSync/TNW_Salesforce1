@@ -249,6 +249,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $_cartItemFound = false;
 
         /**
+         * @TODO: add magentoId field for SF Order/Opportunity/etc and define matching by this field
+         * other fields are not unique and can occur again for different items
+         */
+        $magentoIdField = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
+
+        /**
          * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
          */
         $parentEntityCacheKey = $this->_salesforceEntityName . 'Lookup';
@@ -271,7 +277,29 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     )
                     && $_cartItem->Quantity == (float)$qty
                 ) {
-                    $_cartItemFound = $_cartItem->Id;
+
+                    if (!property_exists($_cartItem, $magentoIdField)
+                        || empty($_cartItem->{$magentoIdField})
+                    ) {
+
+                        /**
+                         * if current SF item already assigned to some Magento item - skip it and try to find one more
+                         * sometimes items with the same parameters can be in order - we should divide it
+                         */
+                        foreach ($this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert'] as $itemToUpsert) {
+                            if (property_exists($itemToUpsert, 'Id')
+                                && !empty($itemToUpsert->Id)
+                                && $_cartItem->Id == $itemToUpsert->Id
+                            ) {
+                                continue 2;
+                            }
+                        }
+
+                        $_cartItemFound = $_cartItem->Id;
+                    } elseif ($_cartItem->{$magentoIdField} == $productIdentifier) {
+                        $_cartItemFound = $_cartItem->Id;
+                    }
+
                     break;
                 }
             }
@@ -671,7 +699,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_pricebookEntryId = $pricebookEntryId;
 
             /**
-             * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
+             * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item
              */
             $mapping = Mage::getSingleton($this->getModulePrefix() . '/sync_mapping_' . $this->getMagentoEntityName() . '_' . $this->_salesforceEntityName . '_item');
 
@@ -679,6 +707,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 ->processMapping($item, $product);
 
             $identifier = $sku;
+            /**
+             * if MagentoId field exists - the orderItemId should be identifier
+             */
+            if ($mapping->getMagentoIdField()) {
+                $identifier = $item->getId();
+            }
 
             if ($item->getBundleItemToSync()) {
                 $this->_obj->Description = $item->getBundleItemToSync();
