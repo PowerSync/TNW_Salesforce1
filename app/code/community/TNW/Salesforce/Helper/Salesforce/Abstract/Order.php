@@ -858,7 +858,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)][] = $sku;
 
-            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getId()] = $this->_obj;
+            $key = $item->getId();
+
+            /**
+             * if it's fake product for order fee, has the same id's for all products
+             */
+            if (!$product->getId()) {
+                $key .= '_' . $parentEntityNumber;
+            }
+            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $key] = $this->_obj;
         } else {
             Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted or quantity is zero!');
         }
