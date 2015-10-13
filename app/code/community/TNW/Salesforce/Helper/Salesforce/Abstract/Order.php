@@ -330,6 +330,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $_currencyCode = '';
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+
+            /**
+             * this condition used for invoice sync
+             */
+            if (!$_entity->hasData($currencyCodeField)) {
+                $currencyCodeField = 'order_currency_code';
+            }
             $_currencyCode = $_entity->getData($currencyCodeField);
         }
 
@@ -516,6 +523,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     }
 
                     $item->setData($feeData);
+
+                    /**
+                     * add data in lower case too compatibility for
+                     */
+                    foreach ($feeData as $key => $value) {
+                        $key = strtolower($key);
+                        $item->setData($key, $value);
+                    }
+
                     $item->setData($this->getItemQtyField(), $qty);
 
                     $item->setDescription($_helper->__($ucFee));
@@ -842,7 +858,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)][] = $sku;
 
-            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getItemId()] = $this->_obj;
+            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $item->getId()] = $this->_obj;
         } else {
             Mage::helper('tnw_salesforce')->log('SKIPPING: Magento product is most likely deleted or quantity is zero!');
         }
