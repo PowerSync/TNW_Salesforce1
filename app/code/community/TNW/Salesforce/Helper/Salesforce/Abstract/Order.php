@@ -244,7 +244,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      *
      * @return bool
      */
-    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default')
+    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default', $item = null)
     {
         $_cartItemFound = false;
 
@@ -837,7 +837,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $description = $this->_obj->Description;
         }
 
-        $cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier, $description);
+        $cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier, $description, $item);
         if ($cartItemFound) {
             $this->_obj->Id = $cartItemFound;
         } else {
