@@ -35,7 +35,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 if (!empty($_value)) {
 
                     $collection->getSelect()->where(
-                        "($websiteField = ? OR $websiteField = '')",
+                        "($websiteField = ?)",
                         $duplicateData->getData($websiteField));
 
                 } else {
@@ -111,6 +111,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
         $collection->getSelect()->columns('Email');
         $collection->getSelect()->columns('COUNT(Id) items_count');
+
+        /**
+         * special option, define limitation for queries with sql expression
+         */
+        $collection->useExpressionLimit(true);
 
         $collection->getSelect()->where("Email != ''");
 
