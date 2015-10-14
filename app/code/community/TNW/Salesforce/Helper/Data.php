@@ -1200,7 +1200,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function getSalesforcePackagesVersion()
     {
-        if (!$this->_sfVersions) {
+        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        $_model->tryWsdl();
+
+        if (!$this->_sfVersions && $_model->isWsdlFound()) {
             $sfClient = Mage::getSingleton('tnw_salesforce/connection');
             $wsdlFile = $sfClient->getWsdl();
 
