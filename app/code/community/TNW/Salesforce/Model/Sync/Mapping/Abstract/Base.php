@@ -226,7 +226,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     }
 
     /**
-     * @param null|TNW_Salesforce_Helper_Salesforce_Product|TNW_Salesforce_Helper_Salesforce_Customer|TNW_Salesforce_Helper_Salesforce_Order|TNW_Salesforce_Helper_Salesforce_Opportunity $sync
+     * @param null|TNW_Salesforce_Helper_Salesforce_Product|TNW_Salesforce_Helper_Salesforce_Customer|TNW_Salesforce_Helper_Salesforce_Abstract_Order $sync
      * @return $this
      */
     public function setSync($sync)
