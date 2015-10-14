@@ -93,8 +93,9 @@ if (!$helper->isWorking()) {
             $errorString = "Invalid JSON format!";
             $helper->log($errorString);
         } else {
-            if (!$helper->isEnabledCustomerSync()) {
-                $helper->log('SKIPING: Customer synchronization disabled');
+            // Check if integration is enabled in Magento
+            if (!$helper->isEnabled()) {
+                $helper->log('SKIPING: Synchronization is disabled');
             } else {
                 if (count($objects) == 1) {
                     // Process Realtime
