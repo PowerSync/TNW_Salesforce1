@@ -88,4 +88,31 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
 
         return $accounts;
     }
+
+    /**
+     * find module configuration in database
+     * @return array
+     */
+    public function getConfigDump()
+    {
+
+        /**
+         * Get the resource model
+         */
+        $resource = Mage::getSingleton('core/resource');
+
+        /**
+         * Retrieve the read connection
+         */
+        $readConnection = $resource->getConnection('core_read');
+
+        $query = 'SELECT * FROM ' . $resource->getTableName('core/config') . ' WHERE path like "%salesforce%" ';
+
+        /**
+         * Execute the query and store the results in $results
+         */
+        $results = $readConnection->fetchAll($query);
+
+        return $results;
+    }
 }
