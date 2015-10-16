@@ -1104,7 +1104,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         switch ($level) {
             case 'error':
-                $filename = 'sf-errors';
+                $fileName = 'sf-errors';
                 break;
             default:
                 break;
