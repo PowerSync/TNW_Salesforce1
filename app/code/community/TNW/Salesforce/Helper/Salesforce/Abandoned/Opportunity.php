@@ -695,6 +695,13 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     continue;
                 }
 
+                // Quote could not be loaded for some reason
+                if (count($_quote->getAllItems()) == 0) {
+                    $this->logNotice('SKIPPING: Abandoned cart #' . $_id . ' is empty!');
+                    $_skippedAbandoned[$_id] = $_id;
+                    continue;
+                }
+
                 // Get Magento customer object
                 $this->_cache['abandonedCustomers'][$_quote->getId()] = $this->_getCustomer($_quote);
 
