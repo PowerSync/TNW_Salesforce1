@@ -48,8 +48,14 @@ class TNW_Salesforce_Model_Log extends Varien_Object
      * @param string $filePath
      * @return Mage_Log_Model_Log
      */
-    public function load($fileName, $filePath)
+    public function load($fileName, $filePath = null)
     {
+        $this->setName($fileName);
+        $this->setPath($filePath);
+
+        if (!$this->exists() && !$filePath) {
+            $fileName = $this->prepareFullFilename($fileName);
+        }
 
         $date = filectime($filePath . DS . $fileName);
         $size = filesize($filePath . DS . $fileName);
@@ -204,6 +210,17 @@ class TNW_Salesforce_Model_Log extends Varien_Object
     }
 
     /**
+     * returns full filename
+     * @param $file
+     * @param $level
+     * @return string
+     */
+    public function prepareFullFilename($file, $level) {
+
+        return Mage::getBaseDir('log') . DS . $this->prepareFilename($file, $level);
+    }
+
+    /**
      * Write to log file
      *
      * @param $message
@@ -291,6 +308,31 @@ class TNW_Salesforce_Model_Log extends Varien_Object
             echo $buffer;
         }
         $ioAdapter->streamClose();
+    }
+
+    /**
+     * read content
+     */
+    public function read()
+    {
+        if (!$this->exists()) {
+            return;
+        }
+
+        $ioAdapter = new Varien_Io_File();
+        $ioAdapter->open(array('path' => $this->getPath()));
+
+        $ioAdapter->streamOpen($this->getFileName(), 'r');
+        $content = '';
+
+        while ($buffer = $ioAdapter->streamRead()) {
+            $content .= $buffer;
+        }
+        $ioAdapter->streamClose();
+
+        $this->setContent($content);
+
+        return $this;
     }
 
     /**

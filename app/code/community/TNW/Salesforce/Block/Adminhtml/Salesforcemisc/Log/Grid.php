@@ -76,6 +76,15 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid extends Mage_Adminh
             'filter' => false
         ));
 
+        $this->addColumn('view', array(
+            'header' => Mage::helper('tnw_salesforce')->__('View'),
+            'format' => '<a href="' . $this->getUrl('*/*/view', array('filename' => '$name')) . '">View</a>',
+            'index' => 'name',
+            'sortable' => false,
+            'filter' => false
+        ));
+
+
         $this->addColumn('download', array(
             'header' => Mage::helper('tnw_salesforce')->__('Download'),
             'format' => '<a href="' . $this->getUrl('*/*/download', array('filename' => '$name')) . '">$name</a>',

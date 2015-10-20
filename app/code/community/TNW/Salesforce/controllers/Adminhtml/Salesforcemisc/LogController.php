@@ -9,6 +9,35 @@
  */
 class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminhtml_Controller_Action
 {
+
+    /**
+     * load log file
+     *
+     * @return TNW_Salesforce_Model_Log
+     * @throws Exception
+     */
+    protected function _initLogFile()
+    {
+        try {
+            $filename = (int)$this->getRequest()->getParam('filename', false);
+
+            $logFile = Mage::getModel('tnw_salesforce/log')->load($filename);
+
+            if (!$logFile->exists($filename)) {
+                throw new Exception($this->__('File is not available'));
+            }
+
+            $logFile->read();
+
+            Mage::register('tnw_salesforce_log_file', $logFile);
+
+        } catch (Exception $e) {
+            throw new Exception($this->__('Cannot open this file'));
+        }
+
+        return $logFile;
+    }
+
     /**
      * Log list action
      */
@@ -26,6 +55,24 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminht
         $this->renderLayout();
     }
 
+    /**
+     * Log view action
+     */
+    public function viewAction()
+    {
+        $this->_title($this->__('Salesforce'))->_title($this->__('Logs'));
+
+        $this->loadLayout();
+        $this->_setActiveMenu('tnw_salesforce');
+        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforce'), Mage::helper('adminhtml')->__('Salesforce'));
+        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Logs'), Mage::helper('adminhtml')->__('Log'));
+
+        $this->_initLogFile();
+
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_view', 'log_view'));
+
+        $this->renderLayout();
+    }
 
     /**
      * Download log action
