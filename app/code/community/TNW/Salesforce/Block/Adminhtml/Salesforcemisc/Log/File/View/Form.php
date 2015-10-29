@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * Author: Tech-N-Web, LLC (dba PowerSync)
+ * Email: support@powersync.biz
+ * Developer: Evgeniy Ermolaev
+ *
+ * Class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_View_Form
+ */
+
+class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_View_Form extends Mage_Adminhtml_Block_Widget_Form
+{
+    /**
+     * @return Mage_Adminhtml_Block_Widget_Form
+     */
+    protected function _prepareForm()
+    {
+        $form = new Varien_Data_Form();
+
+        $logData = array();
+        if (Mage::registry('tnw_salesforce_log_file')) {
+            $logData = Mage::registry('tnw_salesforce_log_file')->getData();
+        }
+
+        $this->setForm($form);
+
+        $fieldset = $form->addFieldset('log', array('legend' => Mage::helper('tnw_salesforce')->__('Log view'), 'class' => 'fieldset-wide'));
+
+        $fieldset->addField('filename', 'link', array(
+            'label' => Mage::helper('tnw_salesforce')->__('File name'),
+            'name' => 'filename',
+            'style' => 'height:36em',
+            'href' => $this->getUrl('*/*/download', array('filename' => $logData['filename']))
+
+        ));
+
+        $fieldset->addField('content', 'textarea', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Log content'),
+            'name' => 'content',
+            'style' => 'height:36em',
+            'readonly' => 'readonly'
+        ));
+
+        if ($logData) {
+            $form->setValues($logData);
+        }
+
+        return parent::_prepareForm();
+    }
+}

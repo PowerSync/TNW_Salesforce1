@@ -141,11 +141,19 @@
                         </order_config>
                     </children>
                 </setup>
+
                 <sync_log translate="title" module="tnw_salesforce">
-                    <title>Sync Logs</title>
+                    <title>Sync Logs from DB</title>
                     <action>adminhtml/salesforcemisc_log</action>
                     <sort_order>600</sort_order>
                 </sync_log>
+
+                <sync_log_file translate="title" module="tnw_salesforce">
+                    <title>Sync Log Files</title>
+                    <action>adminhtml/salesforcemisc_log_file</action>
+                    <sort_order>700</sort_order>
+                </sync_log_file>
+
             </children>
         </tnw_salesforce>
         <catalog>

@@ -4,96 +4,94 @@
  * Author: Tech-N-Web, LLC (dba PowerSync)
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
- *
- * Class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid
+ * Date: 29.10.15
+ * Time: 17:59
  */
 class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
-
-    protected function _construct()
+    /**
+     *
+     */
+    public function __construct()
     {
+        parent::__construct();
+        $this->setId('grid_id');
+        $this->setDefaultSort('Id');
+        $this->setDefaultDir('asc');
         $this->setSaveParametersInSession(true);
-        $this->setId('logsGrid');
-        $this->setDefaultSort('time', 'desc');
     }
 
     /**
-     * Init logs collection
+     * @return Mage_Adminhtml_Block_Widget_Grid
      */
     protected function _prepareCollection()
     {
-        $collection = Mage::getSingleton('tnw_salesforce/log_collection');
+        $collection = Mage::getModel('tnw_salesforce/salesforcemisc_log')->getCollection();
         $this->setCollection($collection);
         return parent::_prepareCollection();
     }
 
     /**
-     * Prepare mass action controls
-     *
-     * @return TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid
-     */
-    protected function _prepareMassaction()
-    {
-        $this->setMassactionIdField('id');
-        $this->getMassactionBlock()->setFormFieldName('ids');
-
-        $this->getMassactionBlock()->addItem('delete', array(
-            'label' => Mage::helper('adminhtml')->__('Delete'),
-            'url' => $this->getUrl('*/*/massDelete'),
-            'confirm' => Mage::helper('tnw_salesforce')->__('Are you sure you want to delete the selected log(s)?')
-        ));
-
-        return $this;
-    }
-
-    /**
-     * Configuration of grid
-     *
-     * @return TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid
+     * @return $this
      */
     protected function _prepareColumns()
     {
-        $this->addColumn('time', array(
-            'header' => Mage::helper('tnw_salesforce')->__('Time'),
-            'index' => 'date_object',
-            'type' => 'datetime',
-            'width' => 200
-        ));
 
-        $this->addColumn('display_name', array(
-            'header' => Mage::helper('tnw_salesforce')->__('Name'),
-            'index' => 'display_name',
-            'filter' => false,
-            'sortable' => true,
-            'width' => 350
-        ));
+        $this->addColumn('entity_id',
+            array(
+                'header' => $this->__('Id'),
+                'width' => '50px',
+                'type' => 'number',
+                'index' => 'entity_id'
+            )
+        );
 
-        $this->addColumn('size', array(
-            'header' => Mage::helper('tnw_salesforce')->__('Size, Bytes'),
-            'index' => 'size',
-            'type' => 'number',
-            'sortable' => true,
-            'filter' => false
-        ));
+        $this->addColumn('level',
+            array(
+                'header' => $this->__('Log level'),
+                'index' => 'level',
+                'type' => 'options',
+                'options' => TNW_Salesforce_Model_Salesforcemisc_Log::getAllLevels(),
 
-        $this->addColumn('view', array(
-            'header' => Mage::helper('tnw_salesforce')->__('View'),
-            'format' => '<a href="' . $this->getUrl('*/*/view', array('filename' => '$name')) . '">View</a>',
-            'index' => 'name',
-            'sortable' => false,
-            'filter' => false
-        ));
+            )
+        );
 
+        $this->addColumn('message',
+            array(
+                'header' => $this->__('Message'),
+                'index' => 'message'
+            )
+        );
 
-        $this->addColumn('download', array(
-            'header' => Mage::helper('tnw_salesforce')->__('Download'),
-            'format' => '<a href="' . $this->getUrl('*/*/download', array('filename' => '$name')) . '">$name</a>',
-            'index' => 'name',
-            'sortable' => false,
-            'filter' => false
-        ));
+        $this->addColumn('created_at',
+            array(
+                'header' => $this->__('Created at'),
+                'index' => 'created_at',
+                'type' => 'datetime',
+                'filter_time' => true
+            )
+        );
 
-        return $this;
+        $this->addExportType('*/*/exportCsv', $this->__('CSV'));
+
+        $this->addExportType('*/*/exportExcel', $this->__('Excel XML'));
+
+        return parent::_prepareColumns();
     }
 
+    /**
+     * @return $this
+     */
+    protected function _prepareMassaction()
+    {
+        $modelPk = Mage::getModel('tnw_salesforce/salesforcemisc_log')->getResource()->getIdFieldName();
+        $this->setMassactionIdField($modelPk);
+        $this->getMassactionBlock()->setFormFieldName('ids');
+        // $this->getMassactionBlock()->setUseSelectAll(false);
+        $this->getMassactionBlock()->addItem('delete', array(
+            'label' => $this->__('Delete'),
+            'url' => $this->getUrl('*/*/massDelete'),
+        ));
+        return $this;
+    }
 }

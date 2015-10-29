@@ -5,164 +5,110 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Adminhtml_LogController
+ * Class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController
  */
 class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminhtml_Controller_Action
 {
 
     /**
-     * load log file
-     *
-     * @return TNW_Salesforce_Model_Log
-     * @throws Exception
-     */
-    protected function _initLogFile()
-    {
-        try {
-            $filename = (int)$this->getRequest()->getParam('filename', false);
-
-            $logFile = Mage::getModel('tnw_salesforce/log')->load($filename);
-
-            if (!$logFile->exists($filename)) {
-                throw new Exception($this->__('File is not available'));
-            }
-
-            $logFile->read();
-
-            Mage::register('tnw_salesforce_log_file', $logFile);
-
-        } catch (Exception $e) {
-            throw new Exception($this->__('Cannot open this file'));
-        }
-
-        return $logFile;
-    }
-
-    /**
-     * Log list action
+     * show grid page
      */
     public function indexAction()
     {
-        $this->_title($this->__('Salesforce'))->_title($this->__('Logs'));
-
         $this->loadLayout();
-        $this->_setActiveMenu('tnw_salesforce');
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforcecore'), Mage::helper('adminhtml')->__('Salesforcecore'));
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Logs'), Mage::helper('adminhtml')->__('Log'));
-
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log', 'log'));
-
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log'));
         $this->renderLayout();
     }
 
     /**
-     * Log view action
+     * save as Csv
      */
-    public function viewAction()
+    public function exportCsvAction()
     {
-        $this->_title($this->__('Salesforce'))->_title($this->__('Logs'));
-
-        $this->loadLayout();
-        $this->_setActiveMenu('tnw_salesforce');
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforce'), Mage::helper('adminhtml')->__('Salesforce'));
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Logs'), Mage::helper('adminhtml')->__('Log'));
-
-        $this->_initLogFile();
-
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_view', 'log_view'));
-
-        $this->renderLayout();
+        $fileName = 'DB Log_export.csv';
+        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_grid')->getCsv();
+        $this->_prepareDownloadResponse($fileName, $content);
     }
 
     /**
-     * Download log action
-     *
-     * @return Mage_Adminhtml_Controller_Action
+     * Save as Excel
      */
-    public function downloadAction()
+    public function exportExcelAction()
     {
-        $fileName = $this->getRequest()->getParam('filename');
-
-        /* @var $log TNW_Salesforce_Model_Log */
-        $log = Mage::getModel('tnw_salesforce/log')->loadByName($fileName);
-
-        if (!$log->exists()) {
-            return $this->_redirect('*/*');
-        }
-
-        $this->_prepareDownloadResponse($fileName, null, 'application/octet-stream', $log->getSize());
-
-        $this->getResponse()->sendHeaders();
-
-        $log->output();
-        exit();
+        $fileName = 'DB Log_export.xml';
+        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_grid')->getExcel();
+        $this->_prepareDownloadResponse($fileName, $content);
     }
 
     /**
-     * Delete logs mass action
-     *
-     * @return Mage_Adminhtml_Controller_Action
+     * Delete log records
      */
     public function massDeleteAction()
     {
-        $logIds = $this->getRequest()->getParam('ids', array());
-
-        if (!is_array($logIds) || !count($logIds)) {
-            return $this->_redirect('*/*/index');
-        }
-
-        /** @var $logModel TNW_Salesforce_Model_Log */
-        $logModel = Mage::getModel('tnw_salesforce/log');
-        $resultData = new Varien_Object();
-        $resultData->setIsSuccess(false);
-        $resultData->setDeleteResult(array());
-
-        $deleteFailMessage = Mage::helper('tnw_salesforce')->__('Failed to delete one or several logs.');
-
-        try {
-            $allLogsDeleted = true;
-
-            foreach ($logIds as $name) {
-
-                $logModel
-                    ->loadByName($name)
-                    ->deleteFile();
-
-                if ($logModel->exists()) {
-                    $allLogsDeleted = false;
-                    $result = Mage::helper('adminhtml')->__('failed');
-                } else {
-                    $result = Mage::helper('adminhtml')->__('successful');
+        $ids = $this->getRequest()->getParam('ids');
+        if (!is_array($ids)) {
+            $this->_getSession()->addError($this->__('Please select DB Log(s).'));
+        } else {
+            try {
+                foreach ($ids as $id) {
+                    $model = Mage::getSingleton('tnw_salesforce/salesforcemisc_log')->load($id);
+                    $model->delete();
                 }
 
-                $resultData->setDeleteResult(
-                    array_merge($resultData->getDeleteResult(), array($logModel->getFileName() . ' ' . $result))
-                );
-            }
-
-            $resultData->setIsSuccess(true);
-            if ($allLogsDeleted) {
                 $this->_getSession()->addSuccess(
-                    Mage::helper('tnw_salesforce')->__('The selected log(s) has been deleted.')
+                    $this->__('Total of %d record(s) have been deleted.', count($ids))
                 );
-            } else {
-                throw new Exception($deleteFailMessage);
+            } catch (Mage_Core_Exception $e) {
+                $this->_getSession()->addError($e->getMessage());
+            } catch (Exception $e) {
+                $this->_getSession()->addError(
+                    Mage::helper('tnw_salesforce')->__('An error occurred while mass deleting items. Please review log and try again.')
+                );
+                Mage::logException($e);
+                return;
             }
-        } catch (Exception $e) {
-            $resultData->setIsSuccess(false);
-            $this->_getSession()->addError($deleteFailMessage);
         }
-
-        return $this->_redirect('*/*/index');
+        $this->_redirect('*/*/index');
     }
 
     /**
-     * Retrive adminhtml session model
-     *
-     * @return Mage_Adminhtml_Model_Session
+     * delete record
      */
-    protected function _getSession()
+    public function deleteAction()
     {
-        return Mage::getSingleton('adminhtml/session');
+        if ($id = $this->getRequest()->getParam('id')) {
+            try {
+                // init model and delete
+                $model = Mage::getModel('tnw_salesforce/salesforcemisc_log');
+                $model->load($id);
+                if (!$model->getId()) {
+                    Mage::throwException(Mage::helper('tnw_salesforce')->__('Unable to find a DB Log to delete.'));
+                }
+                $model->delete();
+                // display success message
+                $this->_getSession()->addSuccess(
+                    Mage::helper('tnw_salesforce')->__('The DB Log has been deleted.')
+                );
+                // go to grid
+                $this->_redirect('*/*/index');
+                return;
+            } catch (Mage_Core_Exception $e) {
+                $this->_getSession()->addError($e->getMessage());
+            } catch (Exception $e) {
+                $this->_getSession()->addError(
+                    Mage::helper('tnw_salesforce')->__('An error occurred while deleting DB Log data. Please review log and try again.')
+                );
+                Mage::logException($e);
+            }
+            // redirect to edit form
+            $this->_redirect('*/*/view', array('id' => $id));
+            return;
+        }
+
+        $this->_getSession()->addError(
+            Mage::helper('tnw_salesforce')->__('Unable to find a DB Log to delete.')
+        );
+
+        $this->_redirect('*/*/index');
     }
 }

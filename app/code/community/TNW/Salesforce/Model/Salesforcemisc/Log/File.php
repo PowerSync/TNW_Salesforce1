@@ -5,20 +5,18 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Model_Log
+ * Class TNW_Salesforce_Model_Salesforcemisc_Log_File
  */
-class TNW_Salesforce_Model_Log extends Varien_Object
+class TNW_Salesforce_Model_Salesforcemisc_Log_File  extends Varien_Object
 {
-    /**
-     * experimental feature
-     */
-    const AUTOMATE_FLUSH_MESSAGE_ALLOWED = false;
-
     /**
      * @var null
      */
     protected $_logDir = null;
 
+    /**
+     * @var string
+     */
     protected $_salesforceLogDirName = 'salesforce';
 
     /**
@@ -36,9 +34,26 @@ class TNW_Salesforce_Model_Log extends Varien_Object
         return $this->_logDir;
     }
 
+    /**
+     * @return string
+     */
     public function getSalesforceLogDirName()
     {
         return $this->_salesforceLogDirName;
+    }
+
+    /**
+     * set log file name
+     * @param $name
+     * @return $this
+     */
+    public function setName($name)
+    {
+        $filename = basename($name);
+        $this->setData('filename', $filename);
+        $this->setData('name', $name);
+
+        return $this;
     }
 
     /**
@@ -77,8 +92,8 @@ class TNW_Salesforce_Model_Log extends Varien_Object
     /**
      * Delete log file
      *
-     * @throws Mage_Log_Exception
-     * @return Mage_Log_Model_Log
+     * @return $this
+     * @throws Mage_Core_Exception
      */
     public function deleteFile()
     {
@@ -97,9 +112,15 @@ class TNW_Salesforce_Model_Log extends Varien_Object
      *
      * @return boolean
      */
-    public function exists()
+    public function exists($fileName = null)
     {
-        return is_file($this->getPath() . DS . $this->getFileName());
+        if ($fileName) {
+            $exists = is_file($fileName);
+        } else {
+            $exists = is_file($this->getPath() . DS . $this->getFileName());
+        }
+
+        return $exists;
     }
 
     /**
@@ -110,68 +131,6 @@ class TNW_Salesforce_Model_Log extends Varien_Object
     public function getFileName()
     {
         return $this->getName();
-    }
-
-    /**
-     * @comment send Email with error message
-     */
-    public function send()
-    {
-        if (Mage::helper('tnw_salesforce/config')->getFailEmail()) {
-            $filename = Mage::getBaseDir('log') . DS . $this->prepareFilename(null, Zend_Log::CRIT);
-
-            if (!file_exists($filename) || filesize($filename) == 0) {
-                return false;
-            }
-
-
-            $_storeName = Mage::getStoreConfig('general/store_information/name');
-            # Cannot connect to SF, execute email
-
-
-            $mail = new Zend_Mail();
-            $body = "<p><b>Alert:</b> " . $_storeName . " experienced the following problem while trying to post data to SalesForce.com</p>";
-            $body .= "<p><b>Error:</b> Unable to push the request</p>";
-            $body .= "<p><b>Record Information:</b><br /><br />";
-
-            $body .= "</p>";
-            $body .= "<p><b>SalesForce Error:</b><br/>";
-            $body .= file_get_contents($filename);
-            $body .= "</p>";
-
-            $body .= "<p>To incorporate this information into SalesForce.com you can key in the data referenced above.</p>";
-            $body .= "<p>If you have any questions, please contact the support staff of " . $_storeName . ".</p>";
-
-            $mail->setBodyHtml($body);
-            unset($body);
-            $mail->setFrom(Mage::getStoreConfig('trans_email/ident_general/email'), Mage::getStoreConfig('trans_email/ident_general/name'));
-            $emails = explode(",", Mage::helper('tnw_salesforce/config')->getFailEmail());
-            foreach ($emails as $email) {
-                $mail->addTo($email, $email);
-            }
-            unset($emails, $email);
-            $subject = "";
-            if (Mage::helper('tnw_salesforce/config')->getFailEmailPrefix()) {
-                $subject = Mage::helper('tnw_salesforce/config')->getFailEmailPrefix() . " - ";
-            }
-            $subject .= "Unable to push update from " . $_storeName . " into SalesForce";
-            if ($mail->getSubject() !== null) {
-                $mail->clearSubject();
-            }
-            $mail->setSubject($subject);
-
-            try {
-                $mail->send();
-                $ioAdapter = new Varien_Io_File();
-                $ioAdapter->rm($filename);
-
-            } catch (Exception $e) {
-                $this->write(
-                    sprintf('Could not send an email containing the error. Error from email: %s', $e->getMessage()),
-                    Zend_Log::ERR
-                );
-            }
-        }
     }
 
     /**
@@ -202,9 +161,11 @@ class TNW_Salesforce_Model_Log extends Varien_Object
                     $file = 'sf-trace';
                     break;
             }
+
+            $file .= '-' . Mage::app()->getWebsite()->getId() . '-' . Mage::app()->getStore()->getId() . '.log';
         }
+
         $file = $this->getSalesforceLogDirName() . DS . $file;
-        $file .= '-' . Mage::app()->getWebsite()->getId() . '-' . Mage::app()->getStore()->getId() . '.log';
 
         return $file;
     }
@@ -215,9 +176,9 @@ class TNW_Salesforce_Model_Log extends Varien_Object
      * @param $level
      * @return string
      */
-    public function prepareFullFilename($file, $level) {
+    public function prepareFullFilename($file, $level = null) {
 
-        return Mage::getBaseDir('log') . DS . $this->prepareFilename($file, $level);
+        return Mage::getBaseDir('log') . DS . $this->prepareFilename($file, $level = null);
     }
 
     /**
@@ -232,37 +193,17 @@ class TNW_Salesforce_Model_Log extends Varien_Object
     {
 
         /**
-         * @comment if detailed log is not enabled - write errors only
+         * @comment if detailed log is not enabled - write errors only in default log
          */
         if (
             !Mage::helper('tnw_salesforce/config')->isLogEnabled()
-            && !in_array($level, array(Zend_Log::CRIT, Zend_Log::ERR))
+            && in_array($level, array(Zend_Log::CRIT, Zend_Log::ERR))
         ) {
+
+            Mage::log($message);
+
             return false;
         }
-
-        /**
-         * @comment add session message is we in Admin area
-         */
-        if (
-            self::AUTOMATE_FLUSH_MESSAGE_ALLOWED
-            && Mage::app()->getStore()->isAdmin()
-            && PHP_SAPI != 'cli'
-        ) {
-
-            switch ($level) {
-                case Zend_Log::ERR:
-                    Mage::getSingleton('adminhtml/session')->addError($message);
-                    break;
-                case Zend_Log::NOTICE:
-                    Mage::getSingleton('adminhtml/session')->addNotice($message);
-                    break;
-                case Zend_Log::WARN:
-                    Mage::getSingleton('adminhtml/session')->addWarning($message);
-                    break;
-            }
-        }
-
 
         if ($level == Zend_Log::ERR) {
             /**
@@ -281,6 +222,8 @@ class TNW_Salesforce_Model_Log extends Varien_Object
              * @comment save error for email send
              */
             $this->write($message, Zend_Log::CRIT);
+
+            Mage::getSingleton('tnw_salesforce/salesforcemisc_log_mail')->send();
         }
 
         $file = $this->prepareFilename($file, $level);
@@ -316,7 +259,7 @@ class TNW_Salesforce_Model_Log extends Varien_Object
     public function read()
     {
         if (!$this->exists()) {
-            return;
+            return false;
         }
 
         $ioAdapter = new Varien_Io_File();
@@ -355,12 +298,12 @@ class TNW_Salesforce_Model_Log extends Varien_Object
     /**
      * Load log by it's name
      *
-     * @param int $timestamp
-     * @return Mage_Log_Model_Log
+     * @param $name
+     * @return $this
      */
     public function loadByName($name)
     {
-        $logCollection = Mage::getSingleton('tnw_salesforce/log_collection');
+        $logCollection = Mage::getSingleton('tnw_salesforce/salesforcemisc_log_file_collection');
 
         foreach ($logCollection as $log) {
             if ($log->getName() == $name) {
