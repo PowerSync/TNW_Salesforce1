@@ -5,15 +5,15 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Adminhtml_Salesforcemisc_Log_FileController
+ * Class TNW_Salesforce_Adminhtml_Tool_Log_FileController
  */
-class TNW_Salesforce_Adminhtml_Salesforcemisc_Log_FileController extends Mage_Adminhtml_Controller_Action
+class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Controller_Action
 {
 
     /**
      * load log file
      *
-     * @return TNW_Salesforce_Model_Salesforcemisc_Log_File
+     * @return TNW_Salesforce_Model_Tool_Log_File
      * @throws Exception
      */
     protected function _initLogFile()
@@ -21,7 +21,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_Log_FileController extends Mage_Ad
         try {
             $filename = $this->getRequest()->getParam('filename', false);
 
-            $logFile = Mage::getModel('tnw_salesforce/salesforcemisc_log_file')->load($filename);
+            $logFile = Mage::getModel('tnw_salesforce/tool_log_file')->load($filename);
 
             if (!$logFile->exists()) {
                 throw new Exception($this->__('File is not available'));
@@ -60,7 +60,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_Log_FileController extends Mage_Ad
         $this->loadLayout();
         $this->_prepareAction();
 
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_file', 'log_file'));
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_file', 'log_file'));
 
         $this->renderLayout();
     }
@@ -75,7 +75,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_Log_FileController extends Mage_Ad
 
         $this->_initLogFile();
 
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_file_view', 'log_file_view'));
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_file_view', 'log_file_view'));
 
         $this->renderLayout();
     }
@@ -89,8 +89,8 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_Log_FileController extends Mage_Ad
     {
         $fileName = $this->getRequest()->getParam('filename');
 
-        /* @var $log TNW_Salesforce_Model_Salesforcemisc_Log_File */
-        $log = Mage::getModel('tnw_salesforce/salesforcemisc_log_file')->loadByName($fileName);
+        /* @var $log TNW_Salesforce_Model_Tool_Log_File */
+        $log = Mage::getModel('tnw_salesforce/tool_log_file')->loadByName($fileName);
 
         if (!$log->exists()) {
             return $this->_redirect('*/*');
@@ -117,8 +117,8 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_Log_FileController extends Mage_Ad
             return $this->_redirect('*/*/index');
         }
 
-        /** @var $logModel TNW_Salesforce_Model_Salesforcemisc_Log_File */
-        $logModel = Mage::getModel('tnw_salesforce/salesforcemisc_log_file');
+        /** @var $logModel TNW_Salesforce_Model_Tool_Log_File */
+        $logModel = Mage::getModel('tnw_salesforce/tool_log_file');
         $resultData = new Varien_Object();
         $resultData->setIsSuccess(false);
         $resultData->setDeleteResult(array());

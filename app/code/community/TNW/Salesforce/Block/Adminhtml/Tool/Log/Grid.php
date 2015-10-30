@@ -7,7 +7,7 @@
  * Date: 29.10.15
  * Time: 17:59
  */
-class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     /**
      *
@@ -26,7 +26,7 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid extends Mage_Adminh
      */
     protected function _prepareCollection()
     {
-        $collection = Mage::getModel('tnw_salesforce/salesforcemisc_log')->getCollection();
+        $collection = Mage::getModel('tnw_salesforce/tool_log')->getCollection();
         $this->setCollection($collection);
         return parent::_prepareCollection();
     }
@@ -51,7 +51,7 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid extends Mage_Adminh
                 'header' => $this->__('Log level'),
                 'index' => 'level',
                 'type' => 'options',
-                'options' => TNW_Salesforce_Model_Salesforcemisc_Log::getAllLevels(),
+                'options' => TNW_Salesforce_Model_Tool_Log::getAllLevels(),
 
             )
         );
@@ -84,7 +84,7 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_Grid extends Mage_Adminh
      */
     protected function _prepareMassaction()
     {
-        $modelPk = Mage::getModel('tnw_salesforce/salesforcemisc_log')->getResource()->getIdFieldName();
+        $modelPk = Mage::getModel('tnw_salesforce/tool_log')->getResource()->getIdFieldName();
         $this->setMassactionIdField($modelPk);
         $this->getMassactionBlock()->setFormFieldName('ids');
         // $this->getMassactionBlock()->setUseSelectAll(false);

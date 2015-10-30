@@ -7,7 +7,7 @@
  *
  * Class TNW_Salesforce_Adminhtml_LogController
  */
-class TNW_Salesforce_Adminhtml_Salesforcemisc_ConsoleController extends Mage_Adminhtml_Controller_Action
+class TNW_Salesforce_Adminhtml_Tool_ConsoleController extends Mage_Adminhtml_Controller_Action
 {
     /**
      * Log list action
@@ -27,7 +27,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_ConsoleController extends Mage_Adm
         $sql_result = Mage::getSingleton('admin/session')->getData('sql_result');
         Mage::register('sql_result', $sql_result);
 
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_console', 'console'));
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_console', 'console'));
 
         $this->renderLayout();
     }

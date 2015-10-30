@@ -148,19 +148,19 @@
                     <children>
                         <console translate="title" module="tnw_salesforce">
                             <title>SQOL Console</title>
-                            <action>adminhtml/salesforcemisc_console</action>
+                            <action>adminhtml/tool_console</action>
                             <sort_order>100</sort_order>
                         </console>
 
                         <sync_log translate="title" module="tnw_salesforce">
                             <title>Sync Logs from DB</title>
-                            <action>adminhtml/salesforcemisc_log</action>
+                            <action>adminhtml/tool_log</action>
                             <sort_order>200</sort_order>
                         </sync_log>
 
                         <sync_log_file translate="title" module="tnw_salesforce">
                             <title>Sync Log Files</title>
-                            <action>adminhtml/salesforcemisc_log_file</action>
+                            <action>adminhtml/tool_log_file</action>
                             <sort_order>300</sort_order>
                         </sync_log_file>
                     </children>

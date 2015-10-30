@@ -5,9 +5,9 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Model_Salesforcemisc_Log_File_Collection
+ * Class TNW_Salesforce_Model_Tool_Log_File_Collection
  */
-class TNW_Salesforce_Model_Salesforcemisc_Log_File_Collection extends Varien_Data_Collection_Filesystem
+class TNW_Salesforce_Model_Tool_Log_File_Collection extends Varien_Data_Collection_Filesystem
 {
     /**
      * Folder, where all logs are stored
@@ -23,7 +23,7 @@ class TNW_Salesforce_Model_Salesforcemisc_Log_File_Collection extends Varien_Dat
     {
         parent::__construct();
 
-        $this->_baseDir = Mage::getSingleton('tnw_salesforce/salesforcemisc_log_file')->getLogDir();
+        $this->_baseDir = Mage::getSingleton('tnw_salesforce/tool_log_file')->getLogDir();
 
         // check for valid base dir
         $ioProxy = new Varien_Io_File();
@@ -47,7 +47,7 @@ class TNW_Salesforce_Model_Salesforcemisc_Log_File_Collection extends Varien_Dat
     protected function _generateRow($filename)
     {
         $row = parent::_generateRow($filename);
-        foreach (Mage::getSingleton('tnw_salesforce/salesforcemisc_log_file')->load($row['basename'], $this->_baseDir)
+        foreach (Mage::getSingleton('tnw_salesforce/tool_log_file')->load($row['basename'], $this->_baseDir)
                      ->getData() as $key => $value) {
             $row[$key] = $value;
         }

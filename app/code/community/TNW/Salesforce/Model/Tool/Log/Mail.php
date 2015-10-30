@@ -6,7 +6,7 @@
  * Date: 29.10.15
  * Time: 14:16
  */
-class TNW_Salesforce_Model_Salesforcemisc_Log_Mail  extends Varien_Object
+class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
 {
     /**
      * @comment send Email with error message
@@ -14,7 +14,7 @@ class TNW_Salesforce_Model_Salesforcemisc_Log_Mail  extends Varien_Object
     public function send()
     {
         if (Mage::helper('tnw_salesforce/config')->getFailEmail()) {
-            $filename = Mage::getBaseDir('log') . DS . Mage::getModel('tnw_salesforce/salesforcemisc_log_file')->prepareFilename(null, Zend_Log::CRIT);
+            $filename = Mage::getBaseDir('log') . DS . Mage::getModel('tnw_salesforce/tool_log_file')->prepareFilename(null, Zend_Log::CRIT);
 
             if (!file_exists($filename) || filesize($filename) == 0) {
                 return false;
@@ -62,7 +62,7 @@ class TNW_Salesforce_Model_Salesforcemisc_Log_Mail  extends Varien_Object
                 $ioAdapter->rm($filename);
 
             } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/salesforcemisc_log_file')->write(
+                Mage::getModel('tnw_salesforce/tool_log_file')->write(
                     sprintf('Could not send an email containing the error. Error from email: %s', $e->getMessage()),
                     Zend_Log::ERR
                 );

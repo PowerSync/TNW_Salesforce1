@@ -5,9 +5,9 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Model_Salesforcemisc_Log_File
+ * Class TNW_Salesforce_Model_Tool_Log_File
  */
-class TNW_Salesforce_Model_Salesforcemisc_Log_File  extends Varien_Object
+class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
 {
     /**
      * @var null
@@ -223,7 +223,7 @@ class TNW_Salesforce_Model_Salesforcemisc_Log_File  extends Varien_Object
              */
             $this->write($message, Zend_Log::CRIT);
 
-            Mage::getSingleton('tnw_salesforce/salesforcemisc_log_mail')->send();
+            Mage::getSingleton('tnw_salesforce/tool_log_mail')->send();
         }
 
         $file = $this->prepareFilename($file, $level);
@@ -303,7 +303,7 @@ class TNW_Salesforce_Model_Salesforcemisc_Log_File  extends Varien_Object
      */
     public function loadByName($name)
     {
-        $logCollection = Mage::getSingleton('tnw_salesforce/salesforcemisc_log_file_collection');
+        $logCollection = Mage::getSingleton('tnw_salesforce/tool_log_file_collection');
 
         foreach ($logCollection as $log) {
             if ($log->getName() == $name) {

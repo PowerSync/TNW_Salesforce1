@@ -96,7 +96,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
 
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
                     if (!$res) {
-                        Mage::helper("tnw_salesforce")->log('ERROR: Products from the order were not added to the queue');
+                        Mage::getModel('tnw_salesforce/tool_log')->saveWarning('Products from the order were not added to the queue');
+//                        Mage::helper("tnw_salesforce")->log('ERROR: Products from the order were not added to the queue');
                     }
 
                     // pass data to local storage

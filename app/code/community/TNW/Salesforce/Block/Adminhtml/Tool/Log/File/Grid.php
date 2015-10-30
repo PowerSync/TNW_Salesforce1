@@ -5,9 +5,9 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_Grid
+ * Class TNW_Salesforce_Block_Adminhtml_Tool_Log_File_Grid
  */
-class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Tool_Log_File_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
 
     protected function _construct()
@@ -22,7 +22,7 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_Grid extends Mage_A
      */
     protected function _prepareCollection()
     {
-        $collection = Mage::getSingleton('tnw_salesforce/salesforcemisc_log_file_collection');
+        $collection = Mage::getSingleton('tnw_salesforce/tool_log_file_collection');
         $this->setCollection($collection);
         return parent::_prepareCollection();
     }
@@ -30,7 +30,7 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_Grid extends Mage_A
     /**
      * Prepare mass action controls
      *
-     * @return TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_Grid
+     * @return TNW_Salesforce_Block_Adminhtml_Tool_Log_File_Grid
      */
     protected function _prepareMassaction()
     {
@@ -49,7 +49,7 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_Grid extends Mage_A
     /**
      * Configuration of grid
      *
-     * @return TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_Grid
+     * @return TNW_Salesforce_Block_Adminhtml_Tool_Log_File_Grid
      */
     protected function _prepareColumns()
     {

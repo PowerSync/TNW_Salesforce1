@@ -192,6 +192,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      * @param $message
      * @param null $level
      * @param string $file
+     *
+     * @deprecated
+     * @use TNW_Salesforce_Model_Tool_Log and TNW_Salesforce_Model_Tool_Log_File model instead
      */
     public function log($message, $level = null, $file = 'sf-trace')
     {

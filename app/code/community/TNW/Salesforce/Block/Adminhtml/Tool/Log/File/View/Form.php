@@ -5,10 +5,10 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_View_Form
+ * Class TNW_Salesforce_Block_Adminhtml_Tool_Log_File_View_Form
  */
 
-class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Log_File_View_Form extends Mage_Adminhtml_Block_Widget_Form
+class TNW_Salesforce_Block_Adminhtml_Tool_Log_File_View_Form extends Mage_Adminhtml_Block_Widget_Form
 {
     /**
      * @return Mage_Adminhtml_Block_Widget_Form

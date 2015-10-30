@@ -7,7 +7,7 @@
  * Date: 27.05.15
  * Time: 15:22
  */
-class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Console_Form_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Tool_Console_Form_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     /**
      * Pager visibility
@@ -60,7 +60,6 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Console_Form_Grid extends Ma
                 }
             }
         }
-
 
         return parent::_prepareColumns();
     }

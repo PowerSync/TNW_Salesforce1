@@ -5,9 +5,9 @@
  * Email: support@powersync.biz
  * Developer: Evgeniy Ermolaev
  *
- * Class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController
+ * Class TNW_Salesforce_Adminhtml_Tool_LogController
  */
-class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminhtml_Controller_Action
+class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Controller_Action
 {
 
     /**
@@ -16,7 +16,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminht
     public function indexAction()
     {
         $this->loadLayout();
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log'));
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log'));
         $this->renderLayout();
     }
 
@@ -26,7 +26,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminht
     public function exportCsvAction()
     {
         $fileName = 'DB Log_export.csv';
-        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_grid')->getCsv();
+        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_grid')->getCsv();
         $this->_prepareDownloadResponse($fileName, $content);
     }
 
@@ -36,7 +36,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminht
     public function exportExcelAction()
     {
         $fileName = 'DB Log_export.xml';
-        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_log_grid')->getExcel();
+        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_grid')->getExcel();
         $this->_prepareDownloadResponse($fileName, $content);
     }
 
@@ -51,7 +51,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminht
         } else {
             try {
                 foreach ($ids as $id) {
-                    $model = Mage::getSingleton('tnw_salesforce/salesforcemisc_log')->load($id);
+                    $model = Mage::getSingleton('tnw_salesforce/tool_log')->load($id);
                     $model->delete();
                 }
 
@@ -79,7 +79,7 @@ class TNW_Salesforce_Adminhtml_Salesforcemisc_LogController extends Mage_Adminht
         if ($id = $this->getRequest()->getParam('id')) {
             try {
                 // init model and delete
-                $model = Mage::getModel('tnw_salesforce/salesforcemisc_log');
+                $model = Mage::getModel('tnw_salesforce/tool_log');
                 $model->load($id);
                 if (!$model->getId()) {
                     Mage::throwException(Mage::helper('tnw_salesforce')->__('Unable to find a DB Log to delete.'));

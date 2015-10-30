@@ -7,7 +7,7 @@
  * Date: 27.05.15
  * Time: 15:22
  */
-class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Console_Form extends Mage_Adminhtml_Block_Widget_Form
+class TNW_Salesforce_Block_Adminhtml_Tool_Console_Form extends Mage_Adminhtml_Block_Widget_Form
 {
 
     /**
@@ -17,7 +17,7 @@ class TNW_Salesforce_Block_Adminhtml_Salesforcemisc_Console_Form extends Mage_Ad
      */
     protected function _beforeToHtml()
     {
-        $this->setChild('form_after', $this->getLayout()->createBlock('tnw_salesforce/adminhtml_salesforcemisc_console_form_grid'), 'sql_result');
+        $this->setChild('form_after', $this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_console_form_grid'), 'sql_result');
 
         return parent::_beforeToHtml();
     }
