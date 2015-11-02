@@ -6,27 +6,27 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
 
     public function saveAfter($_observer) {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper("tnw_salesforce")->log('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $_invoice = $_observer->getEvent()->getInvoice();
 
-        Mage::helper("tnw_salesforce")->log('TNW EVENT: Invoice #' . $_invoice->getIncrementId() . ' Sync');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('TNW EVENT: Invoice #' . $_invoice->getIncrementId() . ' Sync');
 
         if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Invoice synchronization disabled');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Invoice synchronization disabled');
             return; // Disabled
         }
 
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
         ) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Connector is disabled');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Connector is disabled');
             return; // Disabled
         }
 
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING order sync');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
         }
 
@@ -34,7 +34,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($_invoice->getId())), 'Invoice', 'invoice');
             if (!$res) {
-                Mage::helper("tnw_salesforce")->log('ERROR: Invoice not saved to local storage');
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Invoice not saved to local storage');
                 return false;
             }
             return true;

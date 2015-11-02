@@ -120,10 +120,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
             return true;
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -1031,7 +1029,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_grid') . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_address') . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $order->getId() . ";";
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-                Mage::helper("tnw_salesforce")->log('Guest user found in Magento, updating order #' . $order->getRealOrderId() . ' attaching cusomter ID: ' . $_customer->getId());
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Guest user found in Magento, updating order #' . $order->getRealOrderId() . ' attaching cusomter ID: ' . $_customer->getId());
             }
         }
         if (

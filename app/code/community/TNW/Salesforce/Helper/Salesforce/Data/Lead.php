@@ -557,10 +557,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING:' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log($e->getMessage(), 1);
+
+            Mage::getModel('tnw_salesforce/tool_log')->saveError($e->getMessage(), 1);
 
             return false;
         }
@@ -713,10 +711,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING:' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log($e->getMessage(), 1);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError($e->getMessage(), 1);
 
             return false;
         }
@@ -924,10 +919,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING:' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log($e->getMessage(), 1);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError($e->getMessage(), 1);
 
             return false;
         }

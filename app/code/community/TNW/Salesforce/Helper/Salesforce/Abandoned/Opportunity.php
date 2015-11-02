@@ -101,10 +101,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
             return true;
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -788,7 +785,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
 
                 if (!empty($_customersToSync)) {
-                    Mage::helper("tnw_salesforce")->log('Syncronizing Guest/New customer...');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Syncronizing Guest/New customer...');
 
                     $helperType = 'salesforce';
                     if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
@@ -852,7 +849,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                         $this->_cache['abandonedCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email]->Id);
                     }
 
-                    Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer synchronization.');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SUCCESS: Automatic customer synchronization.');
 
                 } else {
                     /**
@@ -880,10 +877,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             return true;
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -1051,7 +1045,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET customer_id = " . $_customer->getId() . ", created_at = created_at WHERE entity_id = " . $quote->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote_address') . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $quote->getId() . ";";
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-                Mage::helper("tnw_salesforce")->log('Guest user found in Magento, updating abandoned cart #' . $quote->getId() . ' attaching cusomter ID: ' . $_customer->getId());
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Guest user found in Magento, updating abandoned cart #' . $quote->getId() . ' attaching cusomter ID: ' . $_customer->getId());
             }
         }
         if (

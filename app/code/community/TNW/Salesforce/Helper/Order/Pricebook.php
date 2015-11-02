@@ -359,7 +359,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
         } else {
             $sql .= "INSERT INTO `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_text') . "` VALUES (NULL,4," . $this->_attributes['salesforce_pricebook_id'] . "," . Mage::helper('tnw_salesforce')->getStoreId() . "," . $product->getId() . ",'" . $product->getSalesforcePricebookId() . "');";
         }
-        Mage::helper("tnw_salesforce")->log($sql);
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice($sql);
         $this->_write->query($sql);
 
         return $sfPricebookEntryId;

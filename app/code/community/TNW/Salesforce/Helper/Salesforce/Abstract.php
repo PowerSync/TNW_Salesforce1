@@ -1077,7 +1077,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function logNotice($message)
     {
-        return $this->logMessage($message, 'notice');
+        return Mage::getModel('tnw_salesforce/tool_log')->saveNotice($message);
     }
 
     /**
@@ -1087,8 +1087,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function logError($message)
     {
-        return $this->logMessage($message, 'error');
-
+        return Mage::getModel('tnw_salesforce/tool_log')->saveError($message);
     }
 
     /**
@@ -1115,7 +1114,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             Mage::getSingleton('adminhtml/session')->$method($message);
         }
 
-        Mage::helper("tnw_salesforce")->log($message, $fileName);
+//        Mage::helper("tnw_salesforce")->log($message, $fileName);
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice($message);
 
         return $this;
     }

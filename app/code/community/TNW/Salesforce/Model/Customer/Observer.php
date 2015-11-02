@@ -16,7 +16,7 @@ class TNW_Salesforce_Model_Customer_Observer
     {
         // Triggers TNW event that pushes to SF
         $customer = $observer->getEvent()->getCustomer();
-        Mage::helper("tnw_salesforce")->log('MAGENTO EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('MAGENTO EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
 
         // Check if AITOC is installed
         $modules = Mage::getConfig()->getNode('modules')->children();
@@ -34,7 +34,7 @@ class TNW_Salesforce_Model_Customer_Observer
         // Triggers TNW event that pushes to SF
         // Hack need to remove in May
         $customer = ($observer->getEvent()->getCustomer()) ? $observer->getEvent()->getCustomer() : $observer->getEvent()->getOrder();
-        Mage::helper("tnw_salesforce")->log('AITOC EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('AITOC EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
 
         Mage::dispatchEvent('tnw_customer_save', array('customer' => $customer));
     }
@@ -45,14 +45,14 @@ class TNW_Salesforce_Model_Customer_Observer
     public function triggerWebToLead($observer)
     {
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING order sync');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
         }
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledContactForm()
         ) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Contact form synchronization disabled');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Contact form synchronization disabled');
             return; // Disabled
         }
 
@@ -68,7 +68,7 @@ class TNW_Salesforce_Model_Customer_Observer
                     $manualSync->pushLead($formData);
                 }
             } catch (Exception $e) {
-                Mage::helper("tnw_salesforce")->log('SKIPING: Contact form synchronization, error: ' . $e->getMessage());
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('SKIPING: Contact form synchronization, error: ' . $e->getMessage());
             }
         }
     }
@@ -80,23 +80,23 @@ class TNW_Salesforce_Model_Customer_Observer
     public function salesforcePush($observer)
     {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper("tnw_salesforce")->log('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $customer = $observer->getEvent()->getCustomer();
 
-        Mage::helper("tnw_salesforce")->log('TNW EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('TNW EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
 
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledCustomerSync()
         ) {
-            Mage::helper("tnw_salesforce")->log('SKIPPING: Customer synchronization is disabled');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPPING: Customer synchronization is disabled');
             return; // Disabled
         }
 
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING customer sync');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING customer sync');
             return; // Disabled
         }
 
@@ -106,7 +106,7 @@ class TNW_Salesforce_Model_Customer_Observer
             // TODO add level up abstract class with Order as static values, now we have word 'Customer' as parameter
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($customer->getData('entity_id'))), 'Customer', 'customer');
             if (!$res) {
-                Mage::helper("tnw_salesforce")->log('error: customer not saved to local storage');
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('error: customer not saved to local storage');
                 return false;
             }
             return true;

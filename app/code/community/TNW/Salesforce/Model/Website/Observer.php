@@ -19,31 +19,31 @@ class TNW_Salesforce_Model_Website_Observer
     public function salesforcePush($observer)
     {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper("tnw_salesforce")->log('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $website = $observer->getEvent()->getWebsite();
         $_webstieId = intval($website->getData('website_id'));
 
-        Mage::helper("tnw_salesforce")->log('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
 
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             // pass data to local storage
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($_webstieId), 'Website', 'website');
             if (!$res) {
-                Mage::helper("tnw_salesforce")->log('ERROR: Website could not be added to queue');
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Website could not be added to queue');
                 return false;
             }
             return true;
         }
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: processing Saleforce trigger');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: processing Saleforce trigger');
             return; // Disabled
         }
 
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING website sync');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING website sync');
             return; // Disabled
         }
 

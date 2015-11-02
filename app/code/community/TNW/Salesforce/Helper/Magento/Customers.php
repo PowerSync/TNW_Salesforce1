@@ -601,7 +601,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_groupId = 0;
         }
         if ($this->_groupId === NULL || (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($this->_groupId))) {
-            Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for group #" . $this->_groupId . " is disabled! Customer (" . $this->_email . ")");
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for group #" . $this->_groupId . " is disabled! Customer (" . $this->_email . ")");
             $this->_addError("Sync for group #" . $this->_groupId . " is disabled! Customer (" . $this->_email . ")", 'CUSTOMER_SKIPPED');
             return false;
         }
@@ -659,14 +659,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
                 $row = $this->_write->query($sql)->fetch();
                 $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
-                Mage::helper("tnw_salesforce")->log('MID by email: ' . $this->_magentoId);
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('MID by email: ' . $this->_magentoId);
                 if ($this->_magentoId) {
                     Mage::helper('tnw_salesforce')->log("Customer #" . $this->_magentoId . " Loaded by using Email: " . $this->_email);
                     $this->_groupId = $row['group_id'];
                 } else {
                     //Brand new user
                     $this->_isNew = true;
-                    Mage::helper('tnw_salesforce')->log("New Customer. Creating!");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("New Customer. Creating!");
                 }
             }
         }

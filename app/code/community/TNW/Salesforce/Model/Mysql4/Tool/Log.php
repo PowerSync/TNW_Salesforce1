@@ -55,6 +55,11 @@ class TNW_Salesforce_Model_Mysql4_Tool_Log extends Mage_Core_Model_Resource_Db_A
             self::$checkTable = false;
         }
 
+        if (!$object->getCreatedAt()) {
+            $object->setCreatedAt($this->formatDate(time()));
+        }
+        $object->setUpdatedAt($this->formatDate(time()));
+
         return parent::_beforeSave($object);
     }
 

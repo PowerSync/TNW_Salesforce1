@@ -1175,7 +1175,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                         $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->Id);
                     }
 
-                    Mage::helper("tnw_salesforce")->log('SUCCESS: Automatic customer synchronization.');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SUCCESS: Automatic customer synchronization.');
 
                 } else {
                     /**
@@ -1318,7 +1318,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         if (!empty($_customersToSync)) {
-            Mage::helper("tnw_salesforce")->log('Synchronizing Guest/New customer...');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Synchronizing Guest/New customer...');
 
             $helperType = 'salesforce';
             //if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {

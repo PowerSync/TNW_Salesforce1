@@ -42,10 +42,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
             Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -169,10 +166,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $this->_cache['websitesLookup'] = Mage::helper('tnw_salesforce/salesforce_data_website')->websiteLookup($_websitesArray, array_keys($_websitesArray));
 
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 

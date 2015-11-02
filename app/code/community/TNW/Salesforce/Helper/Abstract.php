@@ -92,12 +92,12 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         try {
             $this->_mySforceConnection = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
             if (!$this->_mySforceConnection) {
-                Mage::helper('tnw_salesforce')->log("error: salesforce connection failed");
+                Mage::getModel('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
                 return;
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("error: could not get salesforce connection");
-            Mage::helper('tnw_salesforce')->log("error info:" . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("error: could not get salesforce connection");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("error info:" . $e->getMessage());
             return;
         }
     }
@@ -105,12 +105,12 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     protected function _processErrors($_response, $type = 'order')
     {
         if (is_array($_response->errors)) {
-            Mage::helper('tnw_salesforce')->log('Failed to upsert ' . $type . '!');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '!');
             foreach ($_response->errors as $_error) {
-                Mage::helper('tnw_salesforce')->log("ERROR: " . $_error->message);
+                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
             }
         } else {
-            Mage::helper('tnw_salesforce')->log('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
         }
     }
 
@@ -233,10 +233,10 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         foreach ($object as $key => $value) {
             if (is_object($value) || is_array($value)) {
                 $level++;
-                $this->log($indent . " " . $key . ":");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice($indent . " " . $key . ":");
                 $this->dump($value, $level);
             } else {
-                $this->log($indent . " " . $key . ": " . $value);
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice($indent . " " . $key . ": " . $value);
             }
         }
         unset($indent, $key, $value, $object, $level);
@@ -399,7 +399,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         $_table = $this->getTable($_type . $_tableName);
 
         if (!$_attributeName) {
-            Mage::helper('tnw_salesforce')->log('Could not update Magento ' . $_type . ' values: attribute name is not specified', 1, "sf-errors");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('Could not update Magento ' . $_type . ' values: attribute name is not specified');
             return false;
         }
         $sql = '';
@@ -424,7 +424,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
             }
         }
         if (!empty($sql)) {
-            Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SQL: " . $sql, 1, 'sf-cron');
             $this->getDbConnection()->query($sql . ' commit;');
         }
     }

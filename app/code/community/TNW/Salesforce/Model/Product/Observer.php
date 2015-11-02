@@ -32,7 +32,7 @@ class TNW_Salesforce_Model_Product_Observer
     {
        $_product = $observer->getEvent()->getProduct();
 
-        Mage::helper("tnw_salesforce")->log('MAGENTO EVENT: Product #' . $_product->getId() . ' Sync');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('MAGENTO EVENT: Product #' . $_product->getId() . ' Sync');
 
         Mage::dispatchEvent('tnw_catalog_product_save', array('product' => $_product));
 
@@ -46,29 +46,29 @@ class TNW_Salesforce_Model_Product_Observer
     public function salesforcePush($observer)
     {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper("tnw_salesforce")->log('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $_product = $observer->getEvent()->getProduct();
-        Mage::helper("tnw_salesforce")->log('TNW EVENT: Product #' . $_product->getId() . ' Sync');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('TNW EVENT: Product #' . $_product->getId() . ' Sync');
 
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledProductSync()
         ) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Product synchronization disabled');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Product synchronization disabled');
             return; // Disabled sync
         } else if ($_product->getIsDuplicate()) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Product duplicate process');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Product duplicate process');
             return; //
         } else if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING product sync');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING product sync');
             return; // Disabled
         } else if (
             $_product->getSuperProduct() &&
             $_product->getSuperProduct()->isConfigurable()
         ) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Configurable Product');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Configurable Product');
             return; // Only simple
         } else {
             // check if queue sync setting is on - then save to database
@@ -77,7 +77,7 @@ class TNW_Salesforce_Model_Product_Observer
                 // TODO add level up abstract class with Order as static values, now we have word 'Product' as parameter
                 $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array(intval($_product->getData('entity_id'))), 'Product', 'product');
                 if (!$res) {
-                    Mage::helper("tnw_salesforce")->log('error: product not saved to local storage');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveError('error: product not saved to local storage');
                     return false;
                 }
                 return true;

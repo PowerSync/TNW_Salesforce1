@@ -72,11 +72,10 @@ class TNW_Salesforce_Helper_Order_Notes extends TNW_Salesforce_Helper_Order
                 try {
                     $_writer = Mage::helper('tnw_salesforce/salesforce_data')->getWriter();
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable($_tableUpdate) . "` SET salesforce_id = '" . $response[0]->id . "' WHERE entity_id = '" . $comment->getId() . "';";
-                    Mage::helper("tnw_salesforce")->log($sql);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice($sql);
                     $_writer->query($sql);
                 } catch (Exception $e) {
-                    Mage::helper('tnw_salesforce')->log("Failed to update table '" . $_tableUpdate . "': " . $e->getMessage());
-                    Mage::helper('tnw_salesforce/email')->sendError($e->getMessage(), $response[0]);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveError("Failed to update table '" . $_tableUpdate . "': " . $e->getMessage());
                     unset($e);
                 }
             }

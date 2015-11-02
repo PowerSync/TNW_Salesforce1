@@ -459,10 +459,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
 
             return false;
         }
@@ -1212,10 +1209,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -1424,17 +1418,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             foreach ($_collection as $_customer) {
                 if (!$_customer->getEmail() || !$_customer->getId()) {
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Sync for customer #' . $_customer->getId() . ', customer could not be loaded!');
-                    }
-                    Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for customer #" . $_customer->getId() . ", customer could not be loaded!");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer #" . $_customer->getId() . ", customer could not be loaded!");
                     continue;
                 }
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customer->getGroupId())) {
-                    Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for customer group #" . $_customer->getGroupId() . " is disabled!");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for customer #' . $_customer->getId() . ', sync for customer group #' . $_customer->getGroupId() . ' is disabled!');
-                    }
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer group #" . $_customer->getGroupId() . " is disabled!");
                     continue;
                 }
 
@@ -1567,10 +1555,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 

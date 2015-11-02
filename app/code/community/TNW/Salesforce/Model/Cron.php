@@ -734,7 +734,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     protected function _prepareLeadConversionObject($_toConvertCustomerIds, $_accounts = array())
     {
         if (!Mage::helper("tnw_salesforce")->getLeadConvertedStatus()) {
-            Mage::helper("tnw_salesforce")->log('Converted Lead status is not set in the configuration, cannot proceed!', 1, "sf-errors");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('Converted Lead status is not set in the configuration, cannot proceed!', 1, "sf-errors");
 
             return false;
         }
@@ -764,29 +764,29 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 $leadConvert->accountId = $_accounts[$_email];
             }
 
-            Mage::helper("tnw_salesforce")->log('+++++++++++++++++++++++++++++');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('+++++++++++++++++++++++++++++');
             // logs
             foreach ($leadConvert as $key => $value) {
-                Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'", 1, 'sf-cron');
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Lead Conversion: " . $key . " = '" . $value . "'");
             }
 
             if ($leadConvert->leadId && !$this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
                 if (!array_key_exists('leadsToConvert', $this->_data)) {
                     $this->_data['leadsToConvert'] = array();
                 }
-                Mage::helper('tnw_salesforce')->log('lead conversion prepared for customer id: ' . $_id, 1, "sf-cron");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('lead conversion prepared for customer id: ' . $_id);
                 $this->_data['leadsToConvert'][$_id] = $leadConvert;
             } else {
-                Mage::helper("tnw_salesforce")->log('Customer (email: ' . $_email . ') could not be converted, Lead Id is missing in cached customer object!', 1, "sf-cron");
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('Customer (email: ' . $_email . ') could not be converted, Lead Id is missing in cached customer object!');
             }
-            Mage::helper("tnw_salesforce")->log('+++++++++++++++++++++++++++++');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('+++++++++++++++++++++++++++++');
         }
         return true;
     }
 
     protected function _pushLeadSegment($_toConvertCustomerIds) {
         if (!$this->_mySforceConnection) {
-            Mage::helper("tnw_salesforce")->log('Salesforce connection cannot be established.', 1, "sf-cron");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('Salesforce connection cannot be established.');
         }
         $results = $this->_mySforceConnection->convertLead(array_values($this->_data['leadsToConvert']));
         $_keys = array_keys($this->_data['leadsToConvert']);

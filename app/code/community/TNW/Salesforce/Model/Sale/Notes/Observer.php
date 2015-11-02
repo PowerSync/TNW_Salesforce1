@@ -11,14 +11,14 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
     public function notesPush($observer)
     {
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::helper("tnw_salesforce")->log('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
             return; // Disabled
         }
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
         ) {
-            Mage::helper("tnw_salesforce")->log('SKIPING: Order synchronization disabled');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Order synchronization disabled');
             return; // Disabled
         }
 
@@ -33,7 +33,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
             if (!$res) {
-                Mage::helper("tnw_salesforce")->log('ERROR: Order could not be added to the queue');
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Order could not be added to the queue');
             }
             return;
         }
