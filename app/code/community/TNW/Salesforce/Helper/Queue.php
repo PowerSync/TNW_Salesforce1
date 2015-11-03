@@ -195,7 +195,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         }
 
         if (count($_objectType) > 1) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Synchronization of multiple record types is not supported yet, try synchronizing one record type.");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Synchronization of multiple record types is not supported yet, try synchronizing one record type.");
             return false;
         }
 
@@ -251,11 +251,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
                     $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' started ##################################');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('################################## manual processing from queue for ' . $_type . ' started ##################################');
                     $manualSync->massAdd($_objectIdSet);
 
                     $manualSync->process();
-                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' finished ##################################');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('################################## manual processing from queue for ' . $_type . ' finished ##################################');
 
                     // Update Queue
                     $_results = $manualSync->getSyncResults();
@@ -265,8 +265,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             }
 
             if (!empty($_idSet)) {
-                Mage::helper('tnw_salesforce')->log("INFO: " . $_type . " total synced: " . count($_idSet));
-                Mage::helper('tnw_salesforce')->log("INFO: removing synced rows from mysql table...");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("INFO: " . $_type . " total synced: " . count($_idSet));
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("INFO: removing synced rows from mysql table...");
             }
         } else {
             Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");

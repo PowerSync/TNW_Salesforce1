@@ -50,9 +50,9 @@ class TNW_Salesforce_Helper_Email extends TNW_Salesforce_Helper_Abstract
             $mail->send();
             unset($mail, $subject);
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not send an email containing the error.");
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Error from email: " . $error);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Could not send an email containing the error.");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Error from email: " . $error);
             unset($mail, $subject, $e);
         }
     }

@@ -744,9 +744,9 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
                 return true;
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log('ERROR: ' . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: ' . $e->getMessage());
         }
-        Mage::helper('tnw_salesforce')->log('INFO: Extension is not working!');
+        Mage::getModel('tnw_salesforce/tool_log')->saveError('INFO: Extension is not working!');
 
         return false;
     }

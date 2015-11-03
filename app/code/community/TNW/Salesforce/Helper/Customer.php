@@ -230,7 +230,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             if (!$_customer->getSalesforceAccountId()) {
                 $_accountId = Mage::helper("tnw_salesforce")->getDefaultAccountId();
                 if (empty($_accountId)) {
-                    Mage::helper('tnw_salesforce')->log("ERROR: Please set default Account ID in System -> Config -> Salesforce -> Customer Configuration");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Please set default Account ID in System -> Config -> Salesforce -> Customer Configuration");
                     return $_customer;
                 }
                 // Set default account Id from config
@@ -257,16 +257,16 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 $sfObjectType = "_contact";
             }
 
-            Mage::helper('tnw_salesforce')->log("------------------- " . $type . " Start -------------------");
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("------------------- " . $type . " Start -------------------");
             $this->preConfigure($type);
 
             $this->checkConnection();
             $this->_contactId = $_customer->getId();
 
             $logString = ($_customer->getId()) ? "customer #" . $_customer->getId() : "new customer";
-            Mage::helper('tnw_salesforce')->log("Trying to upsert " . $logString);
-            Mage::helper('tnw_salesforce')->log("Contact ID: " . $_customer->getSalesforceId());
-            Mage::helper('tnw_salesforce')->log("Contact Account ID: " . $_customer->getSalesforceAccountId());
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Trying to upsert " . $logString);
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Contact ID: " . $_customer->getSalesforceId());
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Contact Account ID: " . $_customer->getSalesforceAccountId());
 
             // During Order see if company field for the Billing address was filled in and use that as default Account Name
             // This is only pre-set the value, if Magento mapping for this field is configured - mapping will be used
@@ -276,7 +276,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 $this->_order->getBillingAddress()->getCompany() &&
                 strlen($this->_order->getBillingAddress()->getCompany())
             ) ? $this->_order->getBillingAddress()->getCompany() : NULL;
-            Mage::helper('tnw_salesforce')->log("Company name from Billing Address: " . $_companyName);
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Company name from Billing Address: " . $_companyName);
             /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
             if (!Mage::helper("tnw_salesforce")->createPersonAccount() && !$_companyName) {
                 $_companyName = $_customer->getFirstname() . " " . $_customer->getLastname();
@@ -317,14 +317,14 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             if ($type == "Lead") {
                 $assignmentRule = Mage::helper('tnw_salesforce')->isLeadRule();
                 if (!empty($assignmentRule) && $assignmentRule != "" && $assignmentRule != 0) {
-                    Mage::helper('tnw_salesforce')->log("Assignment Rule used: " . $assignmentRule);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Assignment Rule used: " . $assignmentRule);
                     $header = new AssignmentRuleHeader($assignmentRule, false);
                     $this->_mySforceConnection->setAssignmentRuleHeader($header);
                     unset($assignmentRule, $header);
                 }
             }
             if ($doInsert) {
-                Mage::helper('tnw_salesforce')->log("Force Insert!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Force Insert!");
             }
 
             /* Push to Salesforce */
@@ -337,7 +337,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
 
             /* Process Errors, Success */
             $result = (is_array($resultContact)) ? $resultContact[0] : $resultContact;
-            Mage::helper('tnw_salesforce')->log("------------------- " . $type . " Sync End -------------------");
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("------------------- " . $type . " Sync End -------------------");
             if (!$result->success) {
                 $errors = (is_array($result->errors)) ? $result->errors : array($result->errors);
 
@@ -349,28 +349,28 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                         $this->_mySforceConnection->undelete(array($_customer->getSalesforceId()));
                         $this->_mySforceConnection->undelete(array($_customer->getSalesforceAccountId()));
                     }
-                    Mage::helper('tnw_salesforce')->log("*** " . $type . " was deleted, restoring Salesforce object ***");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("*** " . $type . " was deleted, restoring Salesforce object ***");
                     $this->pushContact($_customer, $_order, true); // also add failsafe BOOLEAN value, just incase so we dont end up in infinite loop
                     return;
                 }
-                Mage::helper('tnw_salesforce')->log("Could not upsert " . $type . "!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Could not upsert " . $type . "!");
                 foreach ($errors as $_error) {
-                    Mage::helper('tnw_salesforce')->log("Error: " . $_error->message);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Error: " . $_error->message);
                 }
                 Mage::helper('tnw_salesforce/email')->sendError($_error->message, $this->_contact);
             } else {
-                Mage::helper('tnw_salesforce')->log($type . " #" . $result->id . " upserted");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice($type . " #" . $result->id . " upserted");
                 if ($type == "Lead") {
                     $_customer->setSalesforceLeadId($result->id);
                 } else {
-                    Mage::helper('tnw_salesforce')->log("------------------- Account Sync Start -------------------");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("------------------- Account Sync Start -------------------");
                     // Process Mapping for Account
                     $this->_account = new stdClass();
                     $this->_account->Id = $_customer->getSalesforceAccountId();
                     $this->_account->Name = $_companyName;
                     $this->processMapping($_customer, '_account');
                     $this->pushAccount();
-                    Mage::helper('tnw_salesforce')->log("------------------- Account Sync End -------------------");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("------------------- Account Sync End -------------------");
                 }
 
             }
@@ -381,8 +381,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             unset($result, $errors, $_error);
             return $_customer;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Failed to upsert " . $type . ": " . $e->getMessage());
-            Mage::helper('tnw_salesforce/email')->sendError($e->getMessage(), $this->_contact);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Failed to upsert " . $type . ": " . $e->getMessage());
             unset($e);
         }
     }
@@ -403,18 +402,16 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             if (!$result->success) {
                 $errors = (is_array($result->errors)) ? $result->errors : array($result->errors);
 
-                Mage::helper('tnw_salesforce')->log("Could not upsert Account!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveError("Could not upsert Account!");
                 foreach ($errors as $_error) {
-                    Mage::helper('tnw_salesforce')->log("Error: " . $_error->message);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveError("Error: " . $_error->message);
                 }
-                Mage::helper('tnw_salesforce/email')->sendError($_error->message, $this->_account);
             } else {
                 // Don't need to update Account ID in Magento, since it's already there
-                Mage::helper('tnw_salesforce')->log("Account #" . $result->id . " upserted");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Account #" . $result->id . " upserted");
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Failed to upsert Account: " . $e->getMessage());
-            Mage::helper('tnw_salesforce/email')->sendError($e->getMessage(), $this->_account);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Failed to upsert Account: " . $e->getMessage());
             unset($e);
         }
     }
@@ -427,7 +424,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
      */
     public function syncFromSalesforce($object = NULL)
     {
-        Mage::helper('tnw_salesforce')->log('Pre Config');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Pre Config');
         $this->preConfigure();
 
         $isCustomerNew = false;
@@ -447,19 +444,19 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
         $mageId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $cid = (property_exists($object, $mageId) && $object->$mageId) ? $object->$mageId : NULL;
 
-        Mage::helper('tnw_salesforce')->log('Config Complete');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Config Complete');
 
         if (!$sfId) {
-            Mage::helper('tnw_salesforce')->log("Error upserting customer into Magento: Contact ID is missing");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Error upserting customer into Magento: Contact ID is missing");
             $this->_addError('Could not upsert Product into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
         if (!$email && !$mageId) {
-            Mage::helper('tnw_salesforce')->log("Error upserting customer into Magento: Email and Magento ID is missing");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Error upserting customer into Magento: Email and Magento ID is missing");
             $this->_addError('Error upserting customer into Magento: Email and Magento ID is missing', 'EMAIL_AND_MAGENTO_ID_MISSING');
             return false;
         }
-        Mage::helper('tnw_salesforce')->log('Locate a customer in Magento');
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Locate a customer in Magento');
 
         try {
             // Magneto ID provided
@@ -474,14 +471,14 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                     $groupId = $row['group_id'];
                 }
             }
-            Mage::helper('tnw_salesforce')->log('------------------');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('------------------');
             if ($cid && !$isCustomerNew) {
-                Mage::helper('tnw_salesforce')->log("Customer Loaded by using Magento ID: " . $cid);
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Customer Loaded by using Magento ID: " . $cid);
             } else {
-                Mage::helper('tnw_salesforce')->log('Possibly a New Customer');
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Possibly a New Customer');
                 // No Magento ID
                 if ($sfId && !$cid) {
-                    Mage::helper('tnw_salesforce')->log('Find by SF Id');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Find by SF Id');
                     // Try to find the user by SF Id
                     $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity_varchar') . "` WHERE value = '" . $sfId . "' AND attribute_id = '" . $this->_attributes['salesforce_id'] . "' AND entity_type_id = '1'";
                     $row = $this->_write->query($sql)->fetch();
@@ -489,12 +486,12 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 }
 
                 if ($cid) {
-                    Mage::helper('tnw_salesforce')->log("Customer #" . $cid . " Loaded by using Salesforce ID: " . $sfId);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Customer #" . $cid . " Loaded by using Salesforce ID: " . $sfId);
                     $sql = "SELECT entity_id,group_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $cid . "'";
                     $row = $this->_write->query($sql)->fetch();
                     $groupId = ($row) ? $row['group_id'] : NULL;
                 } else {
-                    Mage::helper('tnw_salesforce')->log('Find by email');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Find by email');
                     //Last reserve, try to find by email
                     $sql = "SELECT entity_id,group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $email . "'";
                     $row = $this->_write->query($sql)->fetch();
@@ -502,7 +499,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                     Mage::getModel('tnw_salesforce/tool_log')->saveNotice('MID by email: ' . $cid);
 //                    Mage::helper("tnw_salesforce")->log('MID by email: ' . $cid);
                     if ($cid) {
-                        Mage::helper('tnw_salesforce')->log("Customer #" . $cid . " Loaded by using Email: " . $email);
+                        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Customer #" . $cid . " Loaded by using Email: " . $email);
                         $groupId = $row['group_id'];
                     } else {
                         //Brand new user
@@ -511,7 +508,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 }
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log('ERROR: ' . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: ' . $e->getMessage());
             $this->_addError('Customer location failed: ' . $e->getMessage(), 'CUSTOMER_FINDER_FAILED');
             return false;
         }
@@ -534,7 +531,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             // Creating Customer Entity
             if ($isCustomerNew) {
                 $this->_response->created = true;
-                Mage::helper('tnw_salesforce')->log('New Customer');
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('New Customer');
                 // New
                 if ($cid) {
                     $sql = "INSERT INTO `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` VALUES (" . $cid . ",1,0,1,'" . $email . "',1,'',1,NOW(),NOW(),1,0)";
@@ -545,7 +542,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 $this->_write->query($sql);
                 $cid = $this->_write->lastInsertId();
                 $sql = "";
-                Mage::helper('tnw_salesforce')->log('Customer created');
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Customer created');
 
             } else {
                 //Existing
@@ -553,7 +550,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                 $this->_response->created = false;
             }
 
-            Mage::helper('tnw_salesforce')->log('Processing Magento Customer EAV Attributes');
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Processing Magento Customer EAV Attributes');
             // creating customer attributes
             foreach ($this->_mapContactCollection as $_map) {
                 $_attribute = Mage::getModel('eav/entity_attribute')->load($_map->attribute_id);
@@ -564,7 +561,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                     continue;
                 }
                 if (!$_map->attribute_id && $_map->backend_type) {
-                    Mage::helper('tnw_salesforce')->log("Attribute map for " . $_map->local_field . " needs to be updated!");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Attribute map for " . $_map->local_field . " needs to be updated!");
                     continue;
                 }
                 $mageGroup = explode(" : ", $_map->local_field);
@@ -591,7 +588,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
 
                     // the group code not found, skipping
                     if (intval($res['customer_group_id']) < 1) {
-                        Mage::helper('tnw_salesforce')->log("SKIPPING: the group code not found in magento db: $sqlLine");
+                        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: the group code not found in magento db: $sqlLine");
                         continue;
                     }
                     $tableCustomerEntity = Mage::getSingleton('core/resource')->getTableName('customer/entity');
@@ -694,14 +691,14 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
     {
         $queueStatus = true;
         if (!is_array($customers) || count($customers) == 0) {
-            Mage::helper('tnw_salesforce')->log("List of customers sent for update is not a valid array or is empty.");
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("List of customers sent for update is not a valid array or is empty.");
             return $queueStatus;
         }
         /* Try updated Salesforce Constacts with Magento Id's */
         try {
             $this->checkConnection();
             if (!$this->_mySforceConnection) {
-                Mage::helper('tnw_salesforce')->log("SKIPPING: Salesforce connection failed!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
                 return;
             }
             $queuedCustomers = array();
@@ -710,11 +707,11 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                     continue;
                 }
                 if (!property_exists($_customer, "sfId")) {
-                    Mage::helper('tnw_salesforce')->log("Customer #" . $_customer->id . " could not be synced with Salesforce, Contact ID missing.");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveError("Customer #" . $_customer->id . " could not be synced with Salesforce, Contact ID missing.");
                     continue;
                 }
                 if (!property_exists($_customer, "sfAccId")) {
-                    Mage::helper('tnw_salesforce')->log("Customer #" . $_customer->id . " could not be synced with Salesforce, Account ID missing.");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveError("Customer #" . $_customer->id . " could not be synced with Salesforce, Account ID missing.");
                     continue;
                 }
                 $contact = new stdClass();
@@ -744,13 +741,13 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
                     $_sfResponses[$_customerIds[$_key]] = $_result;
                     if (!$_result->success) {
                         $queueStatus = false;
-                        Mage::helper('tnw_salesforce')->log("Could not update Magento ID for contacts in Salesforce!");
+                        Mage::getModel('tnw_salesforce/tool_log')->saveError("Could not update Magento ID for contacts in Salesforce!");
                         $errors = (is_array($_result->errors)) ? $_result->errors : array($_result->errors);
                         foreach ($errors as $_error) {
-                            Mage::helper('tnw_salesforce')->log("Error: " . $_error->message);
+                            Mage::getModel('tnw_salesforce/tool_log')->saveError("Error: " . $_error->message);
                         }
                     } else {
-                        Mage::helper('tnw_salesforce')->log("Contact #" . $_result->id . " in Salesforce successfully updated w/ Magento Id");
+                        Mage::getModel('tnw_salesforce/tool_log')->saveError("Contact #" . $_result->id . " in Salesforce successfully updated w/ Magento Id");
                     }
                 }
 
@@ -762,11 +759,11 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
 
                 unset($resultContact, $queuedCustomers);
             } else {
-                Mage::helper('tnw_salesforce')->log("Could not create an array of queued customers to update Magneto ID");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Could not create an array of queued customers to update Magneto ID");
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Possibly hitting salesforce limits");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Possibly hitting salesforce limits");
             $queueStatus = false;
             unset($e);
         }
@@ -783,28 +780,28 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             !$object
             || !Mage::helper('tnw_salesforce')->isWorking()
         ) {
-            Mage::helper('tnw_salesforce')->log("No Salesforce object passed on connector is not working");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("No Salesforce object passed on connector is not working");
             return false;
         }
         $this->_response = new stdClass();
         $_type = $object->attributes->type;
         unset($object->attributes);
 
-        Mage::helper('tnw_salesforce')->log("** " . $_type . " #" . $object->Id . " **");
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("** " . $_type . " #" . $object->Id . " **");
         $customer = $this->syncFromSalesforce($object);
-        Mage::helper('tnw_salesforce')->log("** finished upserting " . $_type . " #" . $object->Id . " **");
+        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("** finished upserting " . $_type . " #" . $object->Id . " **");
 
         // Handle success and fail
         if (is_object($customer)) {
-            Mage::helper('tnw_salesforce')->log("Salesforce " . $_type . " #" . $object->Id . " upserted!");
-            Mage::helper('tnw_salesforce')->log("Magento Id: " . $customer->id);
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Salesforce " . $_type . " #" . $object->Id . " upserted!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Magento Id: " . $customer->id);
 
             $this->_assignCustomerToOrder($customer);
 
             $this->_response->success = true;
 
         } else {
-            Mage::helper('tnw_salesforce')->log("Could not upsert " . $_type . " into Magento, see Magento log for details");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Could not upsert " . $_type . " into Magento, see Magento log for details");
             $customer = false;
             $this->_response->success = false;
         }
@@ -839,7 +836,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             }
             if (!empty($sql)) {
                 Mage::getSingleton('core/resource')->getConnection('core_write')->query($sql);
-                Mage::helper('tnw_salesforce')->log("Orders: (" . join(', ', $_ordersUpdated) . ") were associated with customer (" . $_customer->email . ").");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Orders: (" . join(', ', $_ordersUpdated) . ") were associated with customer (" . $_customer->email . ").");
             }
         }
     }
@@ -932,7 +929,7 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
 
         /* Dump contact object into the log */
         foreach ($this->$type as $key => $value) {
-            Mage::helper('tnw_salesforce')->log($type . " Object: " . $key . " = '" . $value . "'");
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice($type . " Object: " . $key . " = '" . $value . "'");
         }
     }
 }
