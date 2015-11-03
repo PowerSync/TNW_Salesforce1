@@ -223,7 +223,10 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
              */
             $this->write($message, Zend_Log::CRIT);
 
-            Mage::getSingleton('tnw_salesforce/tool_log_mail')->send();
+            /**
+             * TODO move email sending to the end of synchronization process
+             */
+//            Mage::getSingleton('tnw_salesforce/tool_log_mail')->send();
         }
 
         $file = $this->prepareFilename($file, $level);
