@@ -328,7 +328,7 @@ class TNW_Salesforce_Model_Observer
         //check that order has been already exported
         foreach ($orderIds as $key => $orderId) {
             if (in_array($orderId, $this->exportedOrders)) {
-                $helper->log('Skipping export order ' . $orderId . '. Already exported.');
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Skipping export order ' . $orderId . '. Already exported.');
                 unset($orderIds[$key]);
             } else {
                 $this->exportedOrders[] = $orderId;
@@ -347,7 +347,7 @@ class TNW_Salesforce_Model_Observer
         $queueIds = $observer->getEvent()->getData('isQueue')
             ? $observer->getEvent()->getData('queueIds') : array();
 
-        Mage::helper('tnw_salesforce')->log('Pushing Order(s) ... ');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Pushing Order(s) ... ');
         $this->_processOrderPush($orderIds, $message, 'tnw_salesforce/' . $type . '_order', $queueIds);
     }
 
@@ -371,7 +371,7 @@ class TNW_Salesforce_Model_Observer
             $_type = 'salesforce';
         }
 
-        Mage::helper('tnw_salesforce')->log('Pushing Opportunities ... ');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Pushing Opportunities ... ');
 
         if ($_objectType == 'abandoned') {
             $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_abandoned_opportunity', $_queueIds);
@@ -405,7 +405,7 @@ class TNW_Salesforce_Model_Observer
                     }
 
                     if ($_message) {
-                        Mage::helper('tnw_salesforce')->log($_message);
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace($_message);
                         if (Mage::helper('tnw_salesforce')->isAdmin()) {
                             Mage::getSingleton('adminhtml/session')->addSuccess($_message);
                         }
@@ -413,7 +413,7 @@ class TNW_Salesforce_Model_Observer
                 }
             }
         } else {
-            Mage::helper('tnw_salesforce')->log("Salesforce connection could not be established!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Salesforce connection could not be established!");
             if ($_message === NULL) {
                 Mage::throwException('Salesforce connection failed');
             }
@@ -423,7 +423,7 @@ class TNW_Salesforce_Model_Observer
     public function updateOpportunity(Varien_Event_Observer $observer) {
         $_order = $observer->getEvent()->getData('order');
 
-        Mage::helper('tnw_salesforce')->log('Updating Opportunity Status ... ');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Updating Opportunity Status ... ');
         if ($_order && is_object($_order)) {
             Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($_order);
         }
@@ -432,7 +432,7 @@ class TNW_Salesforce_Model_Observer
     public function updateOrder(Varien_Event_Observer $observer) {
         $_order = $observer->getEvent()->getData('order');
 
-        Mage::helper('tnw_salesforce')->log('Updating Order Status ... ');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Updating Order Status ... ');
         if ($_order && is_object($_order)) {
             Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
         }

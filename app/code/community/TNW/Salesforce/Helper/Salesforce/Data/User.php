@@ -168,7 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
         try {
             $mergeRequest = new stdClass();
 
-            Mage::helper('tnw_salesforce')->log("INFO: $type to merge: " . print_r($objects, 1));
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: $type to merge: " . print_r($objects, 1));
 
             if (count($objects) < 2 || count($objects) > 3) {
                 throw new Exception('Incorrect objects count for merge request');
@@ -194,7 +194,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
             if (!property_exists($result, 'success') || $result->success != true) {
                 throw new Exception("$type merging error: " . print_r($result, 1));
             }
-            Mage::helper('tnw_salesforce')->log("INFO: $type merging result: " . print_r($result, 1));
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: $type merging result: " . print_r($result, 1));
 
             /**
              * replace Ids of duplicates to merge result Id
@@ -225,8 +225,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
 
 
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: $type merging error: " . $e->getMessage());
-            throw $e;
+            $objectsDump = var_export($objects, true);
+            throw new Exception("ERROR: $type merging error: " . $e->getMessage() . $objectsDump);
         }
 
         return $result;

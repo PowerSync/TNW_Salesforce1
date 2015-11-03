@@ -98,7 +98,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function getMagentoAttributes($type = NULL)
     {
         if (!$type) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Magento fields drop down failed to create, missing type");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Magento fields drop down failed to create, missing type");
             return array();
         }
         if (!array_key_exists($type, $this->_cache) || empty($this->_cache[$type])) {

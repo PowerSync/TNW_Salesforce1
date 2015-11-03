@@ -60,17 +60,17 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     {
         try {
             if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::helper('tnw_salesforce')->log("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
                 if (!$this->isFromCLI() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
                 }
 
                 return false;
             }
-            Mage::helper('tnw_salesforce')->log("================ MASS SYNC: START ================");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
 
             if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-                Mage::helper('tnw_salesforce')->log("WARNING: Sync abandoned carts, cache is empty!", 1, "sf-errors");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("WARNING: Sync abandoned carts, cache is empty!", 1, "sf-errors");
                 $this->_dumpObjectToLog($this->_cache, "Cache", true);
 
                 return false;
@@ -98,7 +98,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             $this->_onComplete();
 
-            Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
             return true;
         } catch (Exception $e) {
             Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
@@ -115,7 +115,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     protected function _prepareOpportunities()
     {
-        Mage::helper('tnw_salesforce')->log('----------Opportunity Preparation: Start----------');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: Start----------');
         $opportunitiesUpdate = array();
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
             if (!Mage::registry('quote_cached_' . $_quoteNumber)) {
@@ -134,7 +134,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 && property_exists($this->_cache['opportunityLookup'][$_quoteNumber], 'Pricebook2Id')
                 && $this->_obj->Pricebook2Id != $this->_cache['opportunityLookup'][$_quoteNumber]->Pricebook2Id
             ) {
-                Mage::helper('tnw_salesforce')->log("SKIPPED Quote: " . $_quoteNumber . " - Opportunity uses a different pricebook(" . $this->_cache['opportunityLookup'][$_quoteNumber]->Pricebook2Id . "), please change it in Salesforce.");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SKIPPED Quote: " . $_quoteNumber . " - Opportunity uses a different pricebook(" . $this->_cache['opportunityLookup'][$_quoteNumber]->Pricebook2Id . "), please change it in Salesforce.");
                 unset($this->_cache['entitiesUpdating'][$_key]);
                 unset($this->_cache['abandonedToEmail'][$_quoteNumber]);
                 $this->_allResults['opportunities_skipped']++;
@@ -164,7 +164,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         }
 
-        Mage::helper('tnw_salesforce')->log('----------Opportunity Preparation: End----------');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: End----------');
     }
 
     /**
@@ -227,15 +227,15 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             $_pushOn = $this->_magentoId;
-            Mage::helper('tnw_salesforce')->log('----------Opportunity Push: Start----------');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
             foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
                 if (array_key_exists('Id', $_opp)) {
                     $_pushOn = 'Id';
                 }
                 foreach ($_opp as $_key => $_value) {
-                    Mage::helper('tnw_salesforce')->log("Opportunity Object: " . $_key . " = '" . $_value . "'");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
                 }
-                Mage::helper('tnw_salesforce')->log("--------------------------");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("--------------------------");
             }
 
             // assign owner id to opportunity
@@ -259,7 +259,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $this->_cache['responses']['opportunities'][$_id] = $_response;
                 }
                 $results = array();
-                Mage::helper('tnw_salesforce')->log('CRITICAL: Push of an quote to Salesforce failed' . $e->getMessage());
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of an quote to Salesforce failed' . $e->getMessage());
             }
 
 
@@ -277,7 +277,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                         $_undeleteIds[] = $_quoteNum;
                     }
 
-                    Mage::helper('tnw_salesforce')->log('Opportunity Failed: (quote: ' . $_quoteNum . ')', 1, "sf-errors");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Opportunity Failed: (quote: ' . $_quoteNum . ')', 1, "sf-errors");
                     $this->_processErrors($_result, 'quote', $this->_cache['opportunitiesToUpsert'][$_quoteNum]);
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to upsert Opportunity for Quote #' . $_quoteNum);
@@ -300,7 +300,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     );
 
                     $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNum] = $_result->id;
-                    Mage::helper('tnw_salesforce')->log('Opportunity Upserted: ' . $_result->id);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_result->id);
                 }
             }
             if (!empty($_undeleteIds)) {
@@ -314,21 +314,21 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
             }
 
-            Mage::helper('tnw_salesforce')->log('----------Opportunity Push: End----------');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: End----------');
         } else {
-            Mage::helper('tnw_salesforce')->log('No Opportunities found queued for the synchronization!');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('No Opportunities found queued for the synchronization!');
         }
     }
 
     protected function _prepareOpportunityLineItems()
     {
-        Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: Start----------');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: Start----------');
 
         // only sync all products if processing real time
         if (!$this->_isCron) {
             foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
                 if (in_array($_quoteNumber, $this->_cache['failedOpportunities'])) {
-                    Mage::helper('tnw_salesforce')->log('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
                     continue;
                 }
                 if (!Mage::registry('quote_cached_' . $_quoteNumber)) {
@@ -364,14 +364,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
             if (in_array($_quoteNumber, $this->_cache['failedOpportunities'])) {
-                Mage::helper('tnw_salesforce')->log('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
                 continue;
             }
 
             $this->_prepareOrderItem($_quoteNumber);
 
         }
-        Mage::helper('tnw_salesforce')->log('----------Prepare Cart Items: End----------');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: End----------');
     }
 
     /**
@@ -440,9 +440,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function _prepareContactRoles()
     {
         $helper = Mage::helper('tnw_salesforce');
-        $helper->log('----------Prepare Opportunity Contact Role: Start----------');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
         foreach ($this->getUpsertedEntityIds() as $quoteNumber) {
-            $helper->log('******** QUOTE (' . $quoteNumber . ') ********');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $quoteNumber . ') ********');
 
             $quote = $this->_loadQuote($quoteNumber);
             $customer = $this->getQuoteCustomer($quote);
@@ -489,7 +489,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     if ($role->ContactId == $contactRole->ContactId) {
                         if ($role->Role == $defaultCustomerRole) {
                             // No update required
-                            $helper->log('Contact Role information is the same, no update required!');
+                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Contact Role information is the same, no update required!');
                             $skip = true;
                             break;
                         }
@@ -507,7 +507,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $contactRole->Role = $defaultCustomerRole;
 
                 foreach ($contactRole as $key => $value) {
-                    $helper->log(
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace(
                         sprintf('OpportunityContactRole Object: %s = \'%s\'', $key, $value));
                 }
 
@@ -523,7 +523,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
             }
         }
-        $helper->log('----------Prepare Opportunity Contact Role: End----------');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: End----------');
     }
 
     protected function _pushOpportunityLineItems($chunk = array())
@@ -541,7 +541,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $this->_cache['responses']['opportunityLineItems'][] = $_response;
             }
             $results = array();
-            Mage::helper('tnw_salesforce')->log('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($results as $_key => $_result) {
@@ -566,16 +566,16 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
                 // Reset sync status
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_key]->OpportunityId . "';";
-                Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
-                Mage::helper('tnw_salesforce')->log('ERROR: One of the Cart Item for (quote: ' . $_quoteNum . ') failed to upsert.', 1, "sf-errors");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('ERROR: One of the Cart Item for (quote: ' . $_quoteNum . ') failed to upsert.', 1, "sf-errors");
                 $this->_processErrors($_result, 'quoteCart', $chunk[$_key]);
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('Failed to upsert one of the Cart Item for Quote #' . $_quoteNum);
                 }
             } else {
-                Mage::helper('tnw_salesforce')->log('Cart Item (id: ' . $_result->id . ') for (quote: ' . $_quoteNum . ') upserted.');
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Cart Item (id: ' . $_result->id . ') for (quote: ' . $_quoteNum . ') upserted.');
             }
         }
     }
@@ -583,7 +583,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function _pushRemainingOpportunityData()
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
-            Mage::helper('tnw_salesforce')->log('----------Push Cart Items: Start----------');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
             // Push Cart
             $_ttl = count($this->_cache['opportunityLineItemsToUpsert']);
             if ($_ttl > 199) {
@@ -597,11 +597,11 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $this->_pushOpportunityLineItems($this->_cache['opportunityLineItemsToUpsert']);
             }
 
-            Mage::helper('tnw_salesforce')->log('----------Push Cart Items: End----------');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');
         }
 
         if (!empty($this->_cache['contactRolesToUpsert'])) {
-            Mage::helper('tnw_salesforce')->log('----------Push Contact Roles: Start----------');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: Start----------');
             // Push Contact Roles
             try {
                 $results = $this->_mySforceConnection->upsert("Id", $this->_cache['contactRolesToUpsert'], 'OpportunityContactRole');
@@ -611,7 +611,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $this->_cache['responses']['opportunityLineItems'][] = $_response;
                 }
                 $results = array();
-                Mage::helper('tnw_salesforce')->log('CRITICAL: Push of contact roles to SalesForce failed' . $e->getMessage());
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact roles to SalesForce failed' . $e->getMessage());
             }
 
             $_quoteNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
@@ -624,19 +624,19 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 if (!(int)$_result->success) {
                     // Reset sync status
                     $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_sync_force = 0, sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId . "';";
-                    Mage::helper('tnw_salesforce')->log('SQL: ' . $sql);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                     Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
-                    Mage::helper('tnw_salesforce')->log('ERROR: Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (quote: ' . $_quoteNum . ') failed to upsert.', 1, "sf-errors");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('ERROR: Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (quote: ' . $_quoteNum . ') failed to upsert.', 1, "sf-errors");
                     $this->_processErrors($_result, 'quoteCart', $this->_cache['contactRolesToUpsert'][$_key]);
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to upsert Contact Role (' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for Quote #' . $_quoteNum);
                     }
                 } else {
-                    Mage::helper('tnw_salesforce')->log('Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (quote: ' . $_quoteNum . ') upserted.');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Contact Role (role: ' . $this->_cache['contactRolesToUpsert'][$_key]->Role . ') for (quote: ' . $_quoteNum . ') upserted.');
                 }
             }
-            Mage::helper('tnw_salesforce')->log('----------Push Contact Roles: End----------');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: End----------');
         }
 
     }
@@ -649,7 +649,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     public function massAdd($_ids = NULL, $_isCron = false, $orderStatusUpdateCustomer = true)
     {
         if (!$_ids) {
-            Mage::helper('tnw_salesforce')->log("Abandoned Id is not specified, don't know what to synchronize!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Abandoned Id is not specified, don't know what to synchronize!");
             return false;
         }
         // test sf api connection
@@ -658,7 +658,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             || !$_client->tryToConnect()
             || !$_client->tryToLogin()
         ) {
-            Mage::helper('tnw_salesforce')->log("error on sync quotes, sf api connection failed");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR on sync quotes, sf api connection failed");
 
             return true;
         }
@@ -785,7 +785,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
 
                 if (!empty($_customersToSync)) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Syncronizing Guest/New customer...');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Guest/New customer...');
 
                     $helperType = 'salesforce';
                     if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
@@ -849,7 +849,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                         $this->_cache['abandonedCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email]->Id);
                     }
 
-                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SUCCESS: Automatic customer synchronization.');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
 
                 } else {
                     /**
@@ -1045,7 +1045,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET customer_id = " . $_customer->getId() . ", created_at = created_at WHERE entity_id = " . $quote->getId() . ";";
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote_address') . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $quote->getId() . ";";
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-                Mage::getModel('tnw_salesforce/tool_log')->saveNotice('Guest user found in Magento, updating abandoned cart #' . $quote->getId() . ' attaching cusomter ID: ' . $_customer->getId());
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Guest user found in Magento, updating abandoned cart #' . $quote->getId() . ' attaching cusomter ID: ' . $_customer->getId());
             }
         }
         if (

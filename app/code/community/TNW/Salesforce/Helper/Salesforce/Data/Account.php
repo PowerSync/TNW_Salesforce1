@@ -108,7 +108,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Account merging error: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Account merging error: " . $e->getMessage());
         }
 
         return $this;
@@ -394,7 +394,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     {
         try {
             if (empty($criteria)) {
-                Mage::helper('tnw_salesforce')->log("Account search criteria is not provided, SKIPPING lookup!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Account search criteria is not provided, SKIPPING lookup!");
 
                 return false;
             }
@@ -403,7 +403,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
             $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
 
             if (empty($result)) {
-                $this->log("Account lookup by " . var_export($criteria, true) . " returned: 0 results...");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Account lookup by " . var_export($criteria, true) . " returned: 0 results...");
                 return false;
             }
 
@@ -437,8 +437,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
             }
 
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find an account by criteria: " . var_export($criteria));
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find an account by criteria: " . var_export($criteria));
 
             return false;
         }
@@ -453,7 +453,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     {
         try {
             if (!$this->_companyName && empty($companies)) {
-                Mage::helper('tnw_salesforce')->log("Company field is not provided, SKIPPING lookup!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Company field is not provided, SKIPPING lookup!");
 
                 return false;
             }
@@ -470,8 +470,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
             return $returnArray;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find a contact by Company: " . $this->_companyName);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by Company: " . $this->_companyName);
         }
 
         return false;
@@ -483,7 +483,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
 
         if (empty($result)) {
-            $this->log("PersonAccount lookup did not return any results...");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("PersonAccount lookup did not return any results...");
             return false;
         }
 

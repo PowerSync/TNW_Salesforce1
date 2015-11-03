@@ -147,15 +147,11 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
                 case Zend_Log::ERR:
                     $file = 'sf-error';
                     break;
-                case Zend_Log::NOTICE:
-                    $file = 'sf-notice';
-                    break;
-                case Zend_Log::WARN:
-                    $file = 'sf-warning';
-                    break;
                 case Zend_Log::CRIT:
                     $file = 'sf-email';
                     break;
+                case Zend_Log::WARN:
+                case Zend_Log::NOTICE:
                 case Zend_Log::DEBUG:
                 default:
                     $file = 'sf-trace';
@@ -206,6 +202,7 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
         }
 
         if ($level == Zend_Log::ERR) {
+
             /**
              * @comment add error message to the trace file too
              */

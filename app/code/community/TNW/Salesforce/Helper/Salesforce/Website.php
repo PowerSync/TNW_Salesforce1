@@ -12,15 +12,15 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
     public function process()
     {
         if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::helper('tnw_salesforce')->log("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
             }
             return false;
         }
-        Mage::helper('tnw_salesforce')->log("================ MASS SYNC: START ================");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
         if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-            Mage::helper('tnw_salesforce')->log("WARNING: Sync websites, cache is empty!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("WARNING: Sync websites, cache is empty!");
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addError('WARNING: SKIPPING synchronization, could not locate website data to synchronize.');
             }
@@ -40,7 +40,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
             $this->_onComplete();
 
-            Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
         } catch (Exception $e) {
             Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
@@ -77,7 +77,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             }
         }
         if (!empty($sql)) {
-            Mage::helper('tnw_salesforce')->log("SQL: " . $sql);
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql);
             $this->_write->query($sql . ' commit;');
         }
     }
@@ -85,7 +85,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
     protected function _pushToSalesforce()
     {
         // Website Sync
-        Mage::helper('tnw_salesforce')->log("---------- Start: Website Sync ----------");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Website Sync ----------");
         $this->_dumpObjectToLog($this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'], 'Website');
 
         $_websiteIds = array_keys($this->_cache['entitiesUpdating']);
@@ -107,7 +107,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
                 $this->_cache['responses']['websites'][$_id] = $_response;
             }
             $_results = array();
-            Mage::helper('tnw_salesforce')->log('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($_results as $_key => $_result) {
@@ -116,14 +116,14 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
             if (property_exists($_result, 'success') && $_result->success) {
                 $this->_cache['toSaveInMagento'][$_websiteIds[$_key]]->salesforce_id = $_result->id;
-                Mage::helper('tnw_salesforce')->log("Websites: " . $_websiteIds[$_key] . " - ID: " . $_result->id);
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Websites: " . $_websiteIds[$_key] . " - ID: " . $_result->id);
             } else {
                 $this->_processErrors($_result, 'website', $this->_cache['websitesToUpsert'][$_websiteIds[$_key]]);
             }
         }
 
-        Mage::helper('tnw_salesforce')->log("Websites: " . implode(',', $_websiteIds) . " upserted!");
-        Mage::helper('tnw_salesforce')->log("---------- End: Website Sync ----------");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Websites: " . implode(',', $_websiteIds) . " upserted!");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Website Sync ----------");
     }
 
     protected function _prepareWebsites()

@@ -108,14 +108,14 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         }
 
         if (!empty($_sql)) {
-            Mage::helper('tnw_salesforce')->log("SQL: " . $_sql);
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SQL: " . $_sql);
             $this->getDbConnection()->query($_sql);
         }
 
         // Delete Successful
         $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
         Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
-        Mage::helper('tnw_salesforce')->log("Synchronized records removed from the queue ...", 1, 'sf-cron');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...", 1, 'sf-cron');
     }
 
     /**
@@ -192,7 +192,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     {
         try {
             if (empty($objectId)) {
-                Mage::helper('tnw_salesforce')->log("Deletion Objects are empty!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Deletion Objects are empty!");
                 return true;
             }
 
@@ -200,11 +200,11 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             if (!$_isForced) {
                 $sql .= " AND status = 'success'";
             }
-            Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql, 1, 'sf-cron');
             $this->getDbConnection('delete')->query($sql);
 
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR quote from queue: " . $e->getMessage(), 1, 'sf-cron');
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR quote from queue: " . $e->getMessage(), 1, 'sf-cron');
         }
 
         return true;

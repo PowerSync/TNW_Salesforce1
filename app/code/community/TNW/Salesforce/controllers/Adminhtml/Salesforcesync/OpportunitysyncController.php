@@ -91,7 +91,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
                     if (!$res) {
                         Mage::getModel('tnw_salesforce/tool_log')->saveWarning('products from the order were not saved in local storage');
-//                        Mage::helper("tnw_salesforce")->log('error: products from the order were not saved in local storage');
                     }
 
                     // pass data to local storage

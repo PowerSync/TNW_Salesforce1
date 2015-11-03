@@ -233,10 +233,10 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         foreach ($object as $key => $value) {
             if (is_object($value) || is_array($value)) {
                 $level++;
-                Mage::getModel('tnw_salesforce/tool_log')->saveNotice($indent . " " . $key . ":");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($indent . " " . $key . ":");
                 $this->dump($value, $level);
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveNotice($indent . " " . $key . ": " . $value);
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($indent . " " . $key . ": " . $value);
             }
         }
         unset($indent, $key, $value, $object, $level);
@@ -424,7 +424,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
             }
         }
         if (!empty($sql)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SQL: " . $sql, 1, 'sf-cron');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql, 1, 'sf-cron');
             $this->getDbConnection()->query($sql . ' commit;');
         }
     }

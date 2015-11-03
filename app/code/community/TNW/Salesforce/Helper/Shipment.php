@@ -15,12 +15,12 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
         try {
             $this->_mySforceConnection = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
             if (!$this->_mySforceConnection) {
-                Mage::helper('tnw_salesforce')->log("SKIPPING: Salesforce connection failed!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
                 return;
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not get Salesforce connection");
-            Mage::helper('tnw_salesforce')->log("ERROR:" . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not get Salesforce connection");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR:" . $e->getMessage());
             return;
         }
     }
@@ -28,7 +28,7 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
     public function salesforcePush($shipment = NULL, $opportunityId = NULL)
     {
         if (!$shipment || !$opportunityId) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Shipment or Opportunity ID is missing");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Shipment or Opportunity ID is missing");
             return;
         }
         $this->checkConnection();
@@ -89,7 +89,7 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
                     $this->_shippedOLI = NULL; //Reset
                     $this->_oli = NULL; // Reset
                 } else {
-                    Mage::helper('tnw_salesforce')->log("SKIPPING: failed to locate shippable item in Salesforce for product SKU: " . $_item->getSku());
+                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: failed to locate shippable item in Salesforce for product SKU: " . $_item->getSku());
                 }
             }
 
@@ -104,22 +104,22 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
                 if (!$_responseRow->success) {
                     if (is_array($_responseRow->errors)) {
                         foreach ($_responseRow->errors as $_error) {
-                            Mage::helper('tnw_salesforce')->log("Error: " . $_error->message);
+                            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
                         }
                     } else {
-                        Mage::helper('tnw_salesforce')->log($_responseRow->errors->message);
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace($_responseRow->errors->message);
                     }
                 } else {
-                    Mage::helper('tnw_salesforce')->log("OpportunityLineItem ID: " . $_responseRow->id . " upserted successfully");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem ID: " . $_responseRow->id . " upserted successfully");
                 }
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log($e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError($e->getMessage());
             if ($e->getMessage()) {
                 Mage::helper('tnw_salesforce/email')->sendError($e->getMessage());
                 unset($e);
             } else {
-                Mage::helper('tnw_salesforce')->log("Exception caught, but error is not returned!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveError("Exception caught, but error is not returned!");
             }
         }
         return;
@@ -134,7 +134,7 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
                 $_item->PricebookEntryId == $pbeId &&
                 (!$this->getDefaultServiceDate() || $_item->ServiceDate == $this->getDefaultServiceDate())
             ) {
-                Mage::helper('tnw_salesforce')->log("returning cartitem");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("returning cartitem");
                 $cartItem = $_item;
                 break;
             }

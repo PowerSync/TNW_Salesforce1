@@ -301,7 +301,7 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
                     $data = $this->_fetchAll($select);
                 } catch (Exception $e) {
                     if (strpos($e->getMessage(), 'NUMBER_OUTSIDE_VALID_RANGE') === false) {
-                        Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+                        Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
                     }
                     $data = array();
                 }

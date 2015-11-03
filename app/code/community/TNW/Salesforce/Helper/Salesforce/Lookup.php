@@ -149,7 +149,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
     public function productLookup($sku = NULL, $searchByName = false)
     {
         if (!$sku) {
-            Mage::helper('tnw_salesforce')->log("SKU is missing for product lookup");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SKU is missing for product lookup");
             return false;
         }
         try {
@@ -178,9 +178,9 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                 $_results[] = $this->_queryProducts($_magentoId, $sku, $searchByName);
                 $_resultsPBE[] = $this->_queryPricebookEntries($sku, $searchByName);
             }
-            Mage::helper('tnw_salesforce')->log("Check if the product already exist in SalesForce...");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Check if the product already exist in SalesForce...");
             if (!$_results[0] || $_results[0]->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Lookup returned: " . $_results[0]->size . " results...");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Lookup returned: " . $_results[0]->size . " results...");
                 return false;
             }
 
@@ -222,8 +222,8 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
             }
             return $returnArray;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find a product by Magento SKU #" . var_export($sku, true));
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a product by Magento SKU #" . var_export($sku, true));
             return false;
         }
     }

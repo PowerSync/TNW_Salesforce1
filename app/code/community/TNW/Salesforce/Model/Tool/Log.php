@@ -7,6 +7,7 @@
  *
  * Class TNW_Salesforce_Model_Tool_Log
  *
+ * @method saveTrace($message)
  * @method saveNotice($message)
  * @method saveWarning($message)
  * @method saveError($message)
@@ -94,6 +95,8 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                 case Zend_Log::WARN:
                     Mage::getSingleton('adminhtml/session')->addWarning($message);
                     break;
+                default:
+                    break;
             }
         }
         return parent::_afterSave();
@@ -101,7 +104,7 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
 
     /**
      * Set/Get attribute wrapper
-     * Added for saveNotice/saveWarning/saveError methods
+     * Added for saveTrace/saveWarning/saveError methods
      *
      * @param   string $method
      * @param   array $args
@@ -123,6 +126,9 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                             break;
                         case 'WARNING':
                             $level = Zend_Log::WARN;
+                            break;
+                        default:
+                            $level = Zend_Log::DEBUG;
                             break;
                     }
 

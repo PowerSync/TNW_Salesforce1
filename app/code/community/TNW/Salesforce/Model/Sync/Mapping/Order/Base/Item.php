@@ -105,7 +105,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
             if ($value) {
                 $this->getObj()->$sf_field = trim($value);
             } else {
-                Mage::helper('tnw_salesforce')->log($this->_type . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($this->_type . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
             }
         }
 

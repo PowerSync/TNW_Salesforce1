@@ -72,7 +72,7 @@ class TNW_Salesforce_Helper_Magento_Websites extends TNW_Salesforce_Helper_Magen
             return $_website;
         } catch (Exception $e) {
             $this->_addError('Error upserting website into Magento: ' . $e->getMessage(), 'MAGENTO_WEBSITE_UPSERT_FAILED');
-            Mage::helper('tnw_salesforce')->log("Error upserting website into Magento: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR upserting website into Magento: " . $e->getMessage());
             unset($e);
             return false;
         }

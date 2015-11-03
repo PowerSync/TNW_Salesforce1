@@ -8,18 +8,18 @@ class TNW_Salesforce_Helper_Order_Roles extends TNW_Salesforce_Helper_Order
     {
         $this->_mySforceConnection = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
         if (!$this->_mySforceConnection) {
-            Mage::helper('tnw_salesforce')->log("SKIPPING: Salesforce connection failed!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
             return;
         }
         if (!$opportunityId) {
-            Mage::helper('tnw_salesforce')->log("Cannot update Opportunity Contact Role - Undefined Opportunity ID");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Cannot update Opportunity Contact Role - Undefined Opportunity ID");
             return false;
         }
         if (!$contactId) {
-            Mage::helper('tnw_salesforce')->log("Cannot update Opportunity Contact Role - Undefined Contact ID");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Cannot update Opportunity Contact Role - Undefined Contact ID");
             return false;
         }
-        Mage::helper('tnw_salesforce')->log("------------------- OpportunityContactRole Start -------------------");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- OpportunityContactRole Start -------------------");
 
         $opportunityContactRoleIds = Mage::helper('tnw_salesforce/salesforce_data')->roleLookup($opportunityId, $contactId);
         $ocr_id = NULL;
@@ -38,7 +38,7 @@ class TNW_Salesforce_Helper_Order_Roles extends TNW_Salesforce_Helper_Order
         unset($opportunityId, $contactId);
         /* Dump to Logs */
         foreach ($ocr as $key => $_value) {
-            Mage::helper('tnw_salesforce')->log("OpportunityContactRole Object: " . $key . " = '" . $_value . "'");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("OpportunityContactRole Object: " . $key . " = '" . $_value . "'");
         }
 
         Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_before",array("data" => array($ocr)));
@@ -50,18 +50,18 @@ class TNW_Salesforce_Helper_Order_Roles extends TNW_Salesforce_Helper_Order
 
         unset($ocr);
         if (!$response[0]->success) {
-            Mage::helper('tnw_salesforce')->log("Failed to upsert OpportunityContactRole on Id: " . $ocr_id);
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert OpportunityContactRole on Id: " . $ocr_id);
             if (is_array($response[0]->errors)) {
                 foreach ($response[0]->errors as $_error) {
-                    Mage::helper('tnw_salesforce')->log("Error: " . $_error->message);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
                 }
             } else {
-                Mage::helper('tnw_salesforce')->log("Error: " . $response[0]->errors->message);
+                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $response[0]->errors->message);
             }
         } else {
-            Mage::helper('tnw_salesforce')->log("OpportunityContactRole #" . $response[0]->id . " upserted...");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("OpportunityContactRole #" . $response[0]->id . " upserted...");
         }
         unset($response);
-        Mage::helper('tnw_salesforce')->log("------------------- OpportunityContactRole End -------------------");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- OpportunityContactRole End -------------------");
     }
 }

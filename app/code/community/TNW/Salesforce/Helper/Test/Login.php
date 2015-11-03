@@ -31,7 +31,7 @@ class TNW_Salesforce_Helper_Test_Login extends TNW_Salesforce_Helper_Test_Abstra
             $canLogin = $_model->tryToLogin();
         } else {
             $canLogin = false;
-            Mage::helper('tnw_salesforce')->log("CRITICAL: Login attempt failed, connection is inactive!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL: Login attempt failed, connection is inactive!");
         }
         $this->_message = $_model->getLastErrorMessage();
 

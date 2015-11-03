@@ -43,25 +43,25 @@ class TNW_Salesforce_Helper_Magento_Abstract {
             !$_object
             || !Mage::helper('tnw_salesforce')->isWorking()
         ) {
-            Mage::helper('tnw_salesforce')->log("No Salesforce object passed on connector is not working");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("No Salesforce object passed on connector is not working");
 
             return false;
         }
         $this->_response = new stdClass();
         $_type = $_object->attributes->type;
         unset($_object->attributes);
-        Mage::helper('tnw_salesforce')->log("** " . $_type . " #" . $_object->Id . " **");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $_object->Id . " **");
         $_entity = $this->syncFromSalesforce($_object);
-        Mage::helper('tnw_salesforce')->log("** finished upserting " . $_type . " #" . $_object->Id . " **");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $_object->Id . " **");
 
         // Handle success and fail
         if (is_object($_entity)) {
             $this->_response->success = true;
-            Mage::helper('tnw_salesforce')->log("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
-            Mage::helper('tnw_salesforce')->log("Magento Id: " . $_entity->getId());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
         } else {
             $this->_response->success = false;
-            Mage::helper('tnw_salesforce')->log("Could not upsert " . $_type . " into Magento, see Magento log for details");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not upsert " . $_type . " into Magento, see Magento log for details");
             $_entity = false;
         }
 

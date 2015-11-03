@@ -56,25 +56,25 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             !$_object
             || !Mage::helper('tnw_salesforce')->isWorking()
         ) {
-            Mage::helper('tnw_salesforce')->log("No Salesforce object passed on connector is not working");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("No Salesforce object passed on connector is not working");
 
             return false;
         }
         $this->_response = new stdClass();
         $_type = $_object->attributes->type;
         unset($_object->attributes);
-        Mage::helper('tnw_salesforce')->log("** " . $_type . " #" . $_object->Id . " **");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $_object->Id . " **");
         $_entity = $this->syncFromSalesforce($_object);
-        Mage::helper('tnw_salesforce')->log("** finished upserting " . $_type . " #" . $_object->Id . " **");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $_object->Id . " **");
 
         // Handle success and fail
         if (is_object($_entity)) {
             $this->_response->success = true;
-            Mage::helper('tnw_salesforce')->log("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
-            Mage::helper('tnw_salesforce')->log("Magento Id: " . $_entity->getId());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
         } else {
             $this->_response->success = false;
-            Mage::helper('tnw_salesforce')->log("Could not upsert " . $_type . " into Magento, see Magento log for details");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not upsert " . $_type . " into Magento, see Magento log for details");
             $_entity = false;
         }
 
@@ -215,7 +215,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                             // the product code not found, skipping
                             if (empty($_value)) {
                                 $sfValue = $object->{$_mapping->getSfField()};
-                                Mage::helper('tnw_salesforce')->log("SKIPPING: product code $sfValue not found in magento");
+                                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: product code $sfValue not found in magento");
                                 continue;
                             }
                         } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
@@ -237,17 +237,17 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                         $_value = $_mapping->getDefaultValue();
                     }
                     if ($_value) {
-                        Mage::helper('tnw_salesforce')->log('Product: ' . $_magentoFieldName . ' = ' . $_value);
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Product: ' . $_magentoFieldName . ' = ' . $_value);
                         $_product->setData($_magentoFieldName, $_value);
                     } else {
-                        Mage::helper('tnw_salesforce')->log('SKIPPING Product: ' . $_magentoFieldName . ' - no value specified in Salesforce');
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPPING Product: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Product Inventory : ') === 0) {
                     // Inventory
                     $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
                     if (property_exists($object, $_mapping->getSfField())) {
                         $_stock[$_magentoFieldName] = $object->{$_mapping->getSfField()};
-                        Mage::helper('tnw_salesforce')->log('Product Inventory: ' . $_magentoFieldName . ' = ' . $object->{$_mapping->getSfField()});
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Product Inventory: ' . $_magentoFieldName . ' = ' . $object->{$_mapping->getSfField()});
                     }
                 }
             }
@@ -267,14 +267,14 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             $_currentTime = $this->_getTime();
             if (!$_product->getData('updated_at') || $_product->getData('updated_at') == '') {
-                Mage::helper('tnw_salesforce')->log('Product: updated_at = ' . $_currentTime);
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Product: updated_at = ' . $_currentTime);
                 $_product->setData('updated_at', $_currentTime);
             }
             if (!$_product->getData('created_at') || $_product->getData('created_at') == '') {
                 if (property_exists($object, 'CreatedDate')) {
                     $_currentTime = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($object->CreatedDate)));
                 }
-                Mage::helper('tnw_salesforce')->log('Product: created_at = ' . $_currentTime);
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Product: created_at = ' . $_currentTime);
                 $_product->setData('created_at', $_currentTime);
             }
 
@@ -290,7 +290,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             return $_product;
         } catch (Exception $e) {
             $this->_addError('Error upserting product into Magento: ' . $e->getMessage(), 'MAGENTO_PRODUCT_UPSERT_FAILED');
-            Mage::helper('tnw_salesforce')->log("Error upserting product into Magento: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: " . $e->getMessage());
             unset($e);
             return false;
         }
@@ -314,12 +314,12 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         $_magentoId = (property_exists($object, $this->_magentoIdField) && $object->{$this->_magentoIdField}) ? $object->{$this->_magentoIdField} : null;
 
         if (!$_salesforceId) {
-            Mage::helper('tnw_salesforce')->log("Error upserting product into Magento: Product2 ID is missing");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: Product2 ID is missing");
             $this->_addError('Could not upsert Product into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
         if (!$_sku && !$_magentoId) {
-            Mage::helper('tnw_salesforce')->log("Error upserting product into Magento: Email and Magento ID are missing");
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: Email and Magento ID are missing");
             $this->_addError('Error upserting product into Magento: Email and Magento ID are missing', 'SKU_AND_MAGENTO_ID_MISSING');
             return false;
         }
@@ -335,7 +335,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             }
         }
         if ($_magentoId && !$_isNew) {
-            Mage::helper('tnw_salesforce')->log("Product loaded using Magento ID: " . $_magentoId);
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product loaded using Magento ID: " . $_magentoId);
         } else {
             // No Magento ID
             if ($_salesforceId) {
@@ -346,7 +346,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             }
 
             if ($_magentoId) {
-                Mage::helper('tnw_salesforce')->log("Customer #" . $_magentoId . " Loaded by using Salesforce ID: " . $_salesforceId);
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Customer #" . $_magentoId . " Loaded by using Salesforce ID: " . $_salesforceId);
             } else {
                 //Last reserve, try to find by SKU
                 $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` WHERE value = '" . $_sku . "' AND attribute_id = '" . $this->_attributes['sku'] . "' AND entity_type_id = '" . $this->_productEntityTypeId . "'";
@@ -354,7 +354,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                 $_magentoId = ($row) ? $row['entity_id'] : null;
 
                 if ($_magentoId) {
-                    Mage::helper('tnw_salesforce')->log("Customer #" . $_magentoId . " Loaded by using SKU: " . $_sku);
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Customer #" . $_magentoId . " Loaded by using SKU: " . $_sku);
                 } else {
                     //Brand new user
                     $_isNew = true;

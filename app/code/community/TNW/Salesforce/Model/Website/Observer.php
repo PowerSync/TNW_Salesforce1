@@ -19,13 +19,13 @@ class TNW_Salesforce_Model_Website_Observer
     public function salesforcePush($observer)
     {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $website = $observer->getEvent()->getWebsite();
         $_webstieId = intval($website->getData('website_id'));
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveNotice('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
 
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
@@ -38,7 +38,7 @@ class TNW_Salesforce_Model_Website_Observer
             return true;
         }
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: processing Saleforce trigger');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: processing Saleforce trigger');
             return; // Disabled
         }
 

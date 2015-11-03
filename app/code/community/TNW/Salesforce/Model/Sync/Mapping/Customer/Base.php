@@ -187,7 +187,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
             if ($value) {
                 $this->getObj()->$sf_field = trim($value);
             } else {
-                Mage::helper('tnw_salesforce')->log(strtoupper($this->_type) . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace(strtoupper($this->_type) . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
             }
         }
         unset($collection, $_map, $group);

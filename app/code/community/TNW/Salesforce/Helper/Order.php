@@ -130,14 +130,14 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
     protected function processOrder($order)
     {
         ## Prepare Opportunity
-        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("------------------- Opportunity Start -------------------");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- Opportunity Start -------------------");
 
         $this->_setOpportunityInfo($order);
 
         // Sync Order
         $this->opportunityPush($order);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("------------------- Opportunity End -------------------");
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- Opportunity End -------------------");
     }
 
     /**
@@ -149,7 +149,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
     protected function opportunityPush($order)
     {
         $upsertOn = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
-        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Upserting on: " . $upsertOn);
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Upserting on: " . $upsertOn);
 
         if (
             !$this->_isStageUpdate && (
@@ -189,15 +189,15 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
                     $this->_cartPush($order, $result->id);
 
                 } else {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Order is not new! SKIPPING cart creation");
-                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Order SF ID: " . $order->getSalesforceId());
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Order is not new! SKIPPING cart creation");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Order SF ID: " . $order->getSalesforceId());
                 }
 
                 // Update order with Salesforce ID
                 $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET salesforce_id = '" . $result->id . "' WHERE entity_id = " . $this->_orderId . ";";
                 Mage::getSingleton('core/resource')->getConnection('core_write')->query($sql);
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Opportunity upserted: " . $order->getSalesforceId());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity upserted: " . $order->getSalesforceId());
 
             unset($order);
         }
@@ -249,7 +249,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $customer_id = ($order->getCustomerId()) ? $order->getCustomerId() : Mage::getSingleton('customer/session')->getCustomerId();
         $isGuest = false;
         if ($customer_id) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Customer logged in, loading by ID");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Customer logged in, loading by ID");
             $this->_customer = Mage::getModel("customer/customer")->load($customer_id);
             unset($customer_id);
         } else {
@@ -258,7 +258,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             $this->_customer->setWebsiteId(Mage::app()->getStore()->getWebsiteId());
             $this->_customer->loadByEmail($order->getCustomerEmail());
             if (!$this->_customer->getId()) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Guest customer, presetting customer values...");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Guest customer, presetting customer values...");
                 //Guest
                 $this->_customer->setGroupId(0); // NOT LOGGED IN
                 $this->_customer->setFirstname($order->getBillingAddress()->getFirstname());
@@ -266,7 +266,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
                 $this->_customer->setEmail($order->getCustomerEmail());
                 $isGuest = true;
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Customer loaded by email");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Customer loaded by email");
             }
         }
         $this->_customer = Mage::helper('tnw_salesforce/customer')->pushContact($this->_customer, $order, false, false, $isGuest);
@@ -444,7 +444,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             if ($value) {
                 $this->_lead->$sf_field = $value;
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice($so . " Object: " . $sf_field . " = '" . $this->_lead->$sf_field . "'");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace($so . " Object: " . $sf_field . " = '" . $this->_lead->$sf_field . "'");
         }
         unset($collection, $_map, $order, $so);
     }
@@ -454,10 +454,10 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         // Role
         if (Mage::helper("tnw_salesforce")->isEnabledCustomerRole()) {
             // Assign Cotact Role
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Updating Contact Role...");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Updating Contact Role...");
             Mage::helper('tnw_salesforce/order_roles')->assignRole($this->_sfOrderId, $this->_customer->getSalesforceId());
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Opportunity Customer Role is disabled in config, skipping ...");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity Customer Role is disabled in config, skipping ...");
         }
     }
 
@@ -472,7 +472,7 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
             Mage::helper("tnw_salesforce")->isEnabledProductSync() &&
             Mage::helper("tnw_salesforce")->isEnabledProductSync()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Build a cart in Opportunity");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Build a cart in Opportunity");
 
             /* Add new cart, nothing was shipped yet */
             Mage::helper('tnw_salesforce/order_pricebook')->buildCart(
@@ -488,19 +488,19 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
                 if (!empty($shipmentCollection)) {
                     //TODO: Need to actually scan through order Shipments and cart items
                     foreach ($shipmentCollection as $shipment) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("###################################### Shipping Start ######################################");
-                        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("----- Shipping itmes from Order #" . $order->getRealOrderId() . " : " . $salesforceId . "-----");
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Shipping Start ######################################");
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("----- Shipping itmes from Order #" . $order->getRealOrderId() . " : " . $salesforceId . "-----");
                         Mage::helper('tnw_salesforce/shipment')->salesforcePush($shipment, $salesforceId);
-                        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("###################################### Shipping End ########################################");
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Shipping End ########################################");
                     }
                 } else {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Shipments collection is empty");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Shipments collection is empty");
                 }
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Manual Shipments Sync is disabled");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Manual Shipments Sync is disabled");
             }
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Product Synchronization is disabled in config, skipping ...");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product Synchronization is disabled in config, skipping ...");
         }
     }
 
@@ -514,12 +514,12 @@ class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
         $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection();
         $collection->getSelect()
             ->where("main_table.status = ?", $order->getStatus());
-        Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Mapping status: " . $order->getStatus());
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Mapping status: " . $order->getStatus());
 
         foreach ($collection as $_item) {
             $this->_lead->StageName = ($_item->getSfOpportunityStatusCode()) ? $_item->getSfOpportunityStatusCode() : 'Committed';
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("Order status: " . $this->_lead->StageName);
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_lead->StageName);
             break;
         }
         unset($collection, $_item);

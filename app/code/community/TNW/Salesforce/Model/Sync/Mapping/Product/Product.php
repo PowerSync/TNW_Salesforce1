@@ -94,7 +94,7 @@ class TNW_Salesforce_Model_Sync_Mapping_Product_Product extends TNW_Salesforce_M
                 $this->getObj()->$sf_field = trim($value);
             } else {
                 if (!$this->isFromCLI()) {
-                    Mage::helper('tnw_salesforce')->log('PRODUCT MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('PRODUCT MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
                 }
             }
         }

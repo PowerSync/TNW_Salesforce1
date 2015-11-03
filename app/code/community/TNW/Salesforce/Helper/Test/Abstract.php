@@ -49,7 +49,7 @@ abstract class TNW_Salesforce_Helper_Test_Abstract extends TNW_Salesforce_Helper
             }
             return $this->_createResultObject($this->_title, $this->_message, $this->_errorClass, $this->_redirect);
         } catch (Exception $e) {
-            $this->log($e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
 
             return $this->_createResultObject($this->_title, $e->getMessage(), $this->_errorClass, $this->_redirect);
         }

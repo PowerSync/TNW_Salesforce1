@@ -52,7 +52,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
             unset($query);
             if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Lookup returned: no results...");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Lookup returned: no results...");
                 return false;
             }
 
@@ -115,8 +115,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             }
             return $returnArray;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find a contact by Magento Email #" . implode(",", $email));
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by Magento Email #" . implode(",", $email));
             unset($email);
             return false;
         }
@@ -138,6 +138,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             $collection->getSelect()->columns('Email');
 
             $collection->getSelect()->where("Email = ?", $duplicateData->getData('Email'));
+            $collection->getSelect()->where("IsConverted != true");
             if ($leadSource) {
                 $collection->getSelect()->where("LeadSource = ?", $leadSource);
             }
@@ -212,7 +213,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Leads merging error: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Leads merging error: " . $e->getMessage());
         }
 
         return $this;
@@ -237,6 +238,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $collection->useExpressionLimit(true);
 
         $collection->getSelect()->where("Email != ''");
+        $collection->getSelect()->where("IsConverted != true");
         if ($leadSource) {
             $collection->getSelect()->where("LeadSource = ?", $leadSource);
         }
@@ -307,11 +309,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             $query .= ' AND LeadSource = \'' . $leadSource . '\' ';
         }
 
-        Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
+        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
         try {
             $_result = $this->getClient()->query(($query));
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             $_result = array();
         }
 
@@ -338,7 +340,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                 foreach ($leadsToConvertChunk as $_key => $_object) {
                     foreach ($_object as $key => $value) {
-                        Mage::helper('tnw_salesforce')->log("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
                     }
                 }
 
@@ -547,7 +549,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                 // logs
                 foreach ($leadConvert as $key => $value) {
-                    Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Lead Conversion: " . $key . " = '" . $value . "'");
                 }
 
                 if ($leadConvert->leadId && !$this->_cache['leadLookup'][$salesforceWebsiteId][$email]->IsConverted) {
@@ -762,14 +764,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $_email . ')');
                 }
-                Mage::helper('tnw_salesforce')->log('Convert Failed: (email: ' . $_email . ')', 1);
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Convert Failed: (email: ' . $_email . ')', 1);
                 $this->_processErrors($_result, $parentEntityType, $_leadsChunkToConvert[$parentEntityId]);
 
             } else {
-                Mage::helper('tnw_salesforce')->log('Lead Converted for: (email: ' . $_email . ')');
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Lead Converted for: (email: ' . $_email . ')');
                 if ($_customerId) {
 
-                    Mage::helper('tnw_salesforce')->log('Converted customer: (magento id: ' . $_customerId . ')');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Converted customer: (magento id: ' . $_customerId . ')');
 
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
@@ -788,7 +790,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                     $this->_cache[$parentEntityType . 'Customers'][$parentEntityId] = Mage::getModel("customer/customer")->load($_customerId);
                 } else {
-                    Mage::helper('tnw_salesforce')->log('Converted customer: (guest)');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Converted customer: (guest)');
 
                     // For the guest
                     if (array_key_exists($parentEntityId, $this->_cache[$parentEntityType . 'Customers']) && !is_object($this->_cache[$parentEntityType . 'Customers'][$parentEntityId])) {
@@ -809,7 +811,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 unset($this->_cache['leadsToConvert'][$parentEntityId]); // remove from cache
                 unset($this->_cache['leadLookup'][$_websiteId][$_email]); // remove from cache
 
-                Mage::helper('tnw_salesforce')->log('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
             }
         }
     }
@@ -868,19 +870,19 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail() . ')');
                     }
-                    Mage::helper('tnw_salesforce')->log('Convert Failed: (email: ' . $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail() . ')', 1, "sf-errors");
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Convert Failed: (email: ' . $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail() . ')', 1, "sf-errors");
                     if ($_customerId) {
                         // Update Sync Status
                         Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 0, 'sf_insync', 'customer_entity_int');
                     }
                     $this->_processErrors($_result, 'convertLead', $this->_cache['leadsToConvert'][$parentEntityId]);
                 } else {
-                    Mage::helper('tnw_salesforce')->log('Lead Converted for: (email: ' . $_email . ')');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Lead Converted for: (email: ' . $_email . ')');
 
                     $_email = strtolower($this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail());
                     $_websiteId = $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getData('website_id');
                     if ($_customerId) {
-                        Mage::helper('tnw_salesforce')->log('Converted customer: (magento id: ' . $_customerId . ')');
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Converted customer: (magento id: ' . $_customerId . ')');
 
                         $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
                         $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
@@ -899,7 +901,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                         $this->_cache[$parentEntityType . 'Customers'][$parentEntityId] = Mage::getModel("customer/customer")->load($_customerId);
                     } else {
-                        Mage::helper('tnw_salesforce')->log('Converted customer: (guest)');
+                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Converted customer: (guest)');
                     }
 
                     // Update current customer values
@@ -914,7 +916,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $this->_cache['convertedLeads'][$parentEntityId]->accountId = $_result->accountId;
                     $this->_cache['convertedLeads'][$parentEntityId]->email = $_email;
 
-                    Mage::helper('tnw_salesforce')->log('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
+                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
 
                 }
             }

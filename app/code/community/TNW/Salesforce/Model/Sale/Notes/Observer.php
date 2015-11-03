@@ -18,7 +18,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice('SKIPING: Order synchronization disabled');
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
             return; // Disabled
         }
 
@@ -44,7 +44,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             if ($order->getSalesforceId()) {
                 // Process Notes
                 Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
-                Mage::helper('tnw_salesforce')->log("###################################### Order Status Update Start (Notes) ######################################");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
                 Mage::dispatchEvent(
                     'tnw_sales_status_update_' . $_syncType,
                     array(
@@ -52,7 +52,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                     )
                 );
 
-                Mage::helper('tnw_salesforce')->log("###################################### Order Status Update End (Notes) ########################################");
+                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update End (Notes) ########################################");
             } else {
                 // Never was synced, new order
                 Mage::dispatchEvent(
@@ -67,7 +67,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
             }
         } else {
-            Mage::helper('tnw_salesforce')->log("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
         }
     }
 }

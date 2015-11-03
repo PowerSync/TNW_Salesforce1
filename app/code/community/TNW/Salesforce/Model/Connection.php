@@ -108,7 +108,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
 
         if (!file_exists($this->_wsdl) || Mage::helper('tnw_salesforce')->getApiWSDL() == "") {
             $this->_wsdl = NULL;
-            Mage::helper('tnw_salesforce')->log("WSDL file not found!");
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("WSDL file not found!");
         }
 
         return $this->_wsdl;
@@ -142,7 +142,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 $this->_connection = $this->_client->createConnection($this->_wsdl);
             } catch (Exception $e) {
                 $this->_errorMessage = $e->getMessage();
-                Mage::helper('tnw_salesforce')->log('WARNING: ' . $e->getMessage());
+                Mage::getModel('tnw_salesforce/tool_log')->saveError('WARNING: ' . $e->getMessage());
                 return false;
             }
             $_SERVER['HTTP_USER_AGENT'] = $this->_userAgent;
@@ -203,7 +203,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 unset($user, $pass, $token);
             } catch (Exception $e) {
                 $this->_errorMessage = $e->getMessage();
-                Mage::helper('tnw_salesforce')->log("Login Failure: " . $e->getMessage());
+                Mage::getModel('tnw_salesforce/tool_log')->saveError("Login Failure: " . $e->getMessage());
                 unset($e);
                 return false;
             }
@@ -236,8 +236,8 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             $errorMessage = Mage::helper('tnw_salesforce')->__('Cannot find PowerSync package in you Salesforce');
 
             $this->_errorMessage = $errorMessage;
-            Mage::helper('tnw_salesforce')->log("checkPackage Failure: " . $errorMessage);
-            Mage::helper('tnw_salesforce')->log("checkPackage Failure, Error details: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("checkPackage Failure: " . $errorMessage);
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("checkPackage Failure, Error details: " . $e->getMessage());
             unset($e);
             return false;
         }
@@ -267,7 +267,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             }
         } catch (Exception $e) {
             $this->_errorMessage = $e->getMessage();
-            Mage::helper('tnw_salesforce')->log("Connection Failure: " . $e->getMessage());
+            Mage::getModel('tnw_salesforce/tool_log')->saveError("Connection Failure: " . $e->getMessage());
         }
 
         return false;

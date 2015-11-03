@@ -106,7 +106,7 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
          */
         $readConnection = $resource->getConnection('core_read');
 
-        $query = 'SELECT * FROM ' . $resource->getTableName('core/config') . ' WHERE path like "%salesforce%" ';
+        $query = 'SELECT * FROM ' . $resource->getTableName('core/config_data') . ' WHERE path like "%salesforce%" ';
 
         /**
          * Execute the query and store the results in $results

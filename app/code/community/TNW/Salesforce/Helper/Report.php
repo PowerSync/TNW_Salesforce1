@@ -62,7 +62,7 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
             $_urlArray = explode('/', Mage::app()->getStore(Mage::helper('tnw_salesforce')->getStoreId())->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
             $this->_serverName = (array_key_exists('2', $_urlArray)) ? $_urlArray[2] : NULL;
             if (!$this->_serverName) {
-                Mage::helper('tnw_salesforce')->log("ERROR: Cannot extract SERVER_NAME from PHP!");
+                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Cannot extract SERVER_NAME from PHP!");
                 return false;
             }
         }
