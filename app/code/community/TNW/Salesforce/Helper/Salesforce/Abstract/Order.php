@@ -465,7 +465,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $parentEntity = $this->getParentEntity($parentEntityNumber);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('******** ' . strtoupper($this->getMagentoEntityName()) . ' (' . $parentEntityNumber . ') ********');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** ' . strtoupper($this->getMagentoEntityName()) . ' (' . $parentEntityNumber . ') ********');
 
         /**
          * @comment prepare products for Salesforce order/opportunity
@@ -480,7 +480,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addNotice($e->getMessage());
                 }
-                Mage::getModel('tnw_salesforce/tool_log')->saveError($e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
                 continue;
             }
 
@@ -509,7 +509,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                 if (Mage::helper('tnw_salesforce')->$getProductMethod()) {
 
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
 
                     $qty = 1;
 
@@ -542,10 +542,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     $this->_prepareItemObj($parentEntity, $parentEntityNumber, $item);
 
                 } else {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL ERROR: $feeName product is not configured!", 1, "sf-errors");
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add Tax Fee product to the Order!');
-                    }
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL ERROR: $feeName product is not configured!");
                 }
             }
         }
@@ -669,7 +666,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $qty = 0;
         }
         if ($qty == 0) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("NOTE: Product w/ SKU (" . $item->getSku() . ") is not synchronized, ordered quantity is zero!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("NOTE: Product w/ SKU (" . $item->getSku() . ") is not synchronized, ordered quantity is zero!");
         }
 
         $storeId = $parentEntity->getStoreId();
@@ -853,7 +850,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         if ($this->isItemObjectValid()) {
             /* Dump OpportunityLineItem object into the log */
             foreach ($this->_obj as $key => $_item) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
             }
 
             $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)][] = $sku;
@@ -868,10 +865,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
             $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $key] = $this->_obj;
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Magento product is most likely deleted or quantity is zero!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Magento product is most likely deleted or quantity is zero!');
         }
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('-----------------');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
 
     }
 
@@ -975,8 +972,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
 
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: Could not load pricebook based on the order ID. Loading default pricebook based on current store ID.");
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: Could not load pricebook based on the order ID. Loading default pricebook based on current store ID.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             if ($this->_defaultPriceBook) {
                 $pricebook2Id = $this->_defaultPriceBook;
             }
@@ -1018,7 +1015,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     public function massAdd($_ids = NULL, $_isCron = false, $orderStatusUpdateCustomer = true)
     {
         if (!$_ids) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Order Id is not specified, don't know what to synchronize!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Id is not specified, don't know what to synchronize!");
             return false;
         }
         // test sf api connection
@@ -1027,7 +1024,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             || !$_client->tryToConnect()
             || !$_client->tryToLogin()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR on sync orders, sf api connection failed");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync orders, sf api connection failed");
 
             return true;
         }
@@ -1175,7 +1172,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                         $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->Id);
                     }
 
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
 
                 } else {
                     /**
@@ -1318,7 +1315,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         if (!empty($_customersToSync)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Synchronizing Guest/New customer...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Synchronizing Guest/New customer...');
 
             $helperType = 'salesforce';
             //if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
@@ -1380,7 +1377,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
 
     }
 

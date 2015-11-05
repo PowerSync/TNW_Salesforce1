@@ -6,27 +6,27 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
 
     public function saveAfter($_observer) {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $_invoice = $_observer->getEvent()->getInvoice();
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Invoice #' . $_invoice->getIncrementId() . ' Sync');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Invoice #' . $_invoice->getIncrementId() . ' Sync');
 
         if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: Invoice synchronization disabled');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Invoice synchronization disabled');
             return; // Disabled
         }
 
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: Connector is disabled');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Connector is disabled');
             return; // Disabled
         }
 
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
         }
 
@@ -34,7 +34,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($_invoice->getId())), 'Invoice', 'invoice');
             if (!$res) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Invoice not saved to local storage');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Invoice not saved to local storage');
                 return false;
             }
             return true;
@@ -45,7 +45,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
         if (
             $_invoice->getId()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("############################ New Invoice Start ############################");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("############################ New Invoice Start ############################");
 
             // Allow Powersync to overwite fired event for customizations
             $_object = new Varien_Object(array('object_type' => self::OBJECT_TYPE));
@@ -61,15 +61,15 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
                 )
             );
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("############################ New Invoice End ############################");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("############################ New Invoice End ############################");
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING INVOICE SYNC ----");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Invoice Status: " . $_invoice->getStateName());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Invoice Id: " . $_invoice->getIncrementId());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING INVOICE SYNC ----");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice Status: " . $_invoice->getStateName());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice Id: " . $_invoice->getIncrementId());
             if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Transaction is from Salesforce!");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Transaction is from Salesforce!");
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("--------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------");
         }
     }
 }

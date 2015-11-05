@@ -50,7 +50,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
 
             unset($query);
             if (!$result || $result->size < 1) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Order lookup returned: " . $result->size . " results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order lookup returned: " . $result->size . " results...");
                 return false;
             }
             $returnArray = array();
@@ -69,8 +69,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
 
             return $returnArray;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
             unset($email);
             return false;
         }

@@ -17,6 +17,9 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
             $filename = Mage::getBaseDir('log') . DS . Mage::getModel('tnw_salesforce/tool_log_file')->prepareFilename(null, Zend_Log::CRIT);
 
             if (!file_exists($filename) || filesize($filename) == 0) {
+                /**
+                 * if no error logs to send
+                 */
                 return false;
             }
 

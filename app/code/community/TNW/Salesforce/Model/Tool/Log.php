@@ -22,12 +22,27 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
     protected static $allLevels = array();
 
     /**
+     * identify synchronization
+     * @var
+     */
+    protected static $transactionId;
+
+    /**
      * prepare object
      */
     protected function _construct()
     {
 
         $this->_init('tnw_salesforce/tool_log');
+    }
+
+    public function getTransactionId()
+    {
+        if (is_null(self::$transactionId)) {
+            self::$transactionId = uniqid();
+        }
+
+        return self::$transactionId;
     }
 
     /**
@@ -46,6 +61,21 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
 
         return self::$allLevels;
     }
+
+    /**
+     * Processing object before save data
+     *
+     * @return Mage_Core_Model_Abstract
+     */
+    protected function _beforeSave()
+    {
+        if (!$this->getData('transaction_id')) {
+            $this->setData('transaction_id', $this->getTransactionId());
+        }
+
+        return parent::_beforeSave();
+    }
+
 
     /**
      * Save object data
@@ -105,6 +135,7 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
     /**
      * Set/Get attribute wrapper
      * Added for saveTrace/saveWarning/saveError methods
+     * create new record always
      *
      * @param   string $method
      * @param   array $args
@@ -132,6 +163,7 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                             break;
                     }
 
+                    $this->unsetData(null);
                     $this->setMessage($args[0]);
                     $this->setLevel($level);
                     $this->save();

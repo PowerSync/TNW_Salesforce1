@@ -29,7 +29,7 @@ class TNW_Salesforce_Model_Imports_Bulk
      */
     protected function log($message)
     {
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace($message);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
 
         return $this;
     }
@@ -42,7 +42,7 @@ class TNW_Salesforce_Model_Imports_Bulk
 
         $queueCount = count($collection);
         if ($queueCount > 0) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---- Start Magento Upsert ----");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- Start Magento Upsert ----");
             $count = 0;
             foreach ($collection as $_map) {
                 $count++;
@@ -63,7 +63,7 @@ class TNW_Salesforce_Model_Imports_Bulk
                     $json = unserialize($_map->getJson());
                     $objects = json_decode($json);;
                 } catch (Exception $e) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Queue unserialize Error: " . $e->getMessage());
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue unserialize Error: " . $e->getMessage());
                     $objects = NULL;
                     unset($e);
                 }
@@ -71,7 +71,7 @@ class TNW_Salesforce_Model_Imports_Bulk
                 if (!is_array($objects)) {
                     Mage::getModel('tnw_salesforce/tool_log')
                         ->saveError("Error: Failed to unserialize data from the queue (data is corrupted)");
-                    Mage::getModel('tnw_salesforce/tool_log')->saveError("Deleting queue #" . $mId);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Deleting queue #" . $mId);
                     $queue->delete();
                     continue;
                 }
@@ -81,11 +81,11 @@ class TNW_Salesforce_Model_Imports_Bulk
                     try {
                         $this->getModel()->setObject($object)->process();
                     } catch (Exception $e) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
                         $objectType = property_exists($object, "attributes")
                             && property_exists($object->attributes, "type")
                             ? (string)$object->attributes->type : '';
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert a " . $objectType
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert a " . $objectType
                             . " #" . $object->Id . ", please re-save or re-import it manually");
                         $queueStatus = false;
                     }
@@ -97,9 +97,9 @@ class TNW_Salesforce_Model_Imports_Bulk
                 set_time_limit(30); //Reset Script execution time limit
             }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---- End Magento Upsert ----");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- End Magento Upsert ----");
         } elseif ($queueCount > 1) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Too many items in the queue, need manual processing");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Too many items in the queue, need manual processing");
         }
         return true;
     }

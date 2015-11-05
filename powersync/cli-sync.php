@@ -129,10 +129,10 @@
             || !$_client->tryToConnect()
             || !$_client->tryToLogin()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: logging to salesforce api failed, sync process skipped");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: logging to salesforce api failed, sync process skipped");
             die();
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: logging to salesforce api - OK");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: logging to salesforce api - OK");
         }
     } else {
         echo "License validation has failed!\r\n";
@@ -194,7 +194,7 @@
 
                 $manualSync->massAdd($_ids);
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Starting to process the data ...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Starting to process the data ...");
                 if ($_type == 'order') {
                     $manualSync->process('full');
                 } else {

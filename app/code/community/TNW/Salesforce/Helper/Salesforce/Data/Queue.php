@@ -32,7 +32,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Queue extends TNW_Salesforce_Helper_
                 unset($query);
 
                 if ($result && is_object($result)) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Extracted queues from Salesforce!");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracted queues from Salesforce!");
                     $_data = array();
                     if (!empty($result->records)) {
                         foreach ($result->records as $_queue) {
@@ -46,7 +46,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Queue extends TNW_Salesforce_Helper_
             }
             return $_data;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             unset($e);
             return false;
         }

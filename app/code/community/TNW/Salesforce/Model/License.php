@@ -90,7 +90,7 @@ class TNW_Salesforce_Model_License
             }
         } catch (Exception $e) {
             // Do nothing
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
 
         // if status false or cache expired - we make new call to server
@@ -99,7 +99,7 @@ class TNW_Salesforce_Model_License
         }
 
         if (!$this->_status) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: Invalid license!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: Invalid license!");
         }
     }
 
@@ -114,7 +114,7 @@ class TNW_Salesforce_Model_License
             $_urlArray = explode('/', Mage::app()->getStore(Mage::helper('tnw_salesforce')->getStoreId())->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
             $this->_serverName = (array_key_exists('2', $_urlArray)) ? $_urlArray[2] : NULL;
             if (!$this->_serverName) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Cannot extract SERVER_NAME from PHP!");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Cannot extract SERVER_NAME from PHP!");
             }
         }
 
@@ -122,12 +122,12 @@ class TNW_Salesforce_Model_License
         $serverPosition = 0;
         foreach ($this->_licenseServerUrlList as $serverUrl => $timestamp) {
             $serverPosition++;
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("License validation: server " . $this->_licenseServerUrlListAlias[$serverUrl] . " iteration started");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("License validation: server " . $this->_licenseServerUrlListAlias[$serverUrl] . " iteration started");
 
             // check server freeze time, if server not answering we'll call it later
             if (intval($timestamp) > 0 && time() - $timestamp < self::FREEZE_DURATION) {
                 $_freezePeriod = self::FREEZE_DURATION - (time() - $timestamp);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("License validation: server " . $this->_licenseServerUrlListAlias[$serverUrl] . " skipped because it's frozen for the next $_freezePeriod seconds");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("License validation: server " . $this->_licenseServerUrlListAlias[$serverUrl] . " skipped because it's frozen for the next $_freezePeriod seconds");
                 continue;
             }
 
@@ -189,17 +189,17 @@ class TNW_Salesforce_Model_License
                     unset($response, $ch, $output, $url);
                 }
                 if ($this->_status) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("License validation: passed");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("License validation: passed");
                     break;
                 }
                 // if we current false and have more servers in list - try with other server
                 if (!$this->_status && $serverPosition < count($this->_licenseServerUrlList)) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("License validation issue: freezing server " . $this->_licenseServerUrlListAlias[$serverUrl]);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("License validation issue: freezing server " . $this->_licenseServerUrlListAlias[$serverUrl]);
                     // update server freeze time
                     $this->_licenseServerUrlList[$serverUrl] = time();
                 }
             } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("License validation failed. Exception: " . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("License validation failed. Exception: " . $e->getMessage());
                 // update server freeze time
                 $this->_licenseServerUrlList[$serverUrl] = time();
             }

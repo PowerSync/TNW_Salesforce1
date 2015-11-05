@@ -19,31 +19,31 @@ class TNW_Salesforce_Model_Website_Observer
     public function salesforcePush($observer)
     {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $website = $observer->getEvent()->getWebsite();
         $_webstieId = intval($website->getData('website_id'));
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
 
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             // pass data to local storage
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($_webstieId), 'Website', 'website');
             if (!$res) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Website could not be added to queue');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Website could not be added to queue');
                 return false;
             }
             return true;
         }
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: processing Saleforce trigger');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: processing Saleforce trigger');
             return; // Disabled
         }
 
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING website sync');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING website sync');
             return; // Disabled
         }
 
@@ -59,9 +59,7 @@ class TNW_Salesforce_Model_Website_Observer
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Website (code: ' . $website->getData('code') . ') is successfully synchronized'));
             }
         } else {
-            if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce connection could not be established!');
         }
     }
 

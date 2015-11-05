@@ -92,7 +92,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
 
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
                     if (!$res) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveWarning('Products from the abandoned were not added to the queue');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Products from the abandoned were not added to the queue');
                     }
 
                     // pass data to local storage

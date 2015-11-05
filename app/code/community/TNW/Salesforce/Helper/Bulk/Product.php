@@ -23,7 +23,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     protected function _updateMagento()
     {
         // Update
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
         $this->_sqlToRun = array();
         $ids = array();
 
@@ -55,7 +55,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             }
 
             if (empty($_product->pricebookEntityIds)) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not extract product (ID: " . $_magentoId . ") prices from Salesforce!");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not extract product (ID: " . $_magentoId . ") prices from Salesforce!");
             } else {
                 foreach ($_product->pricebookEntityIds as $_key => $_pbeId) {
                     $this->updateMagentoEntityValue($_magentoId, $_pbeId, 'salesforce_pricebook_id', 'catalog_product_entity_text', $_key);
@@ -88,13 +88,13 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                         Mage::register('product_cache_' . $_product->getId() . '_' . $this->getOrderStoreId(), $_product);
                     }
                 } catch (Exception $e) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveError("Exception: " . $e->getMessage());
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Exception: " . $e->getMessage());
                 }
             }
         }
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
     }
 
     protected function _onComplete()
@@ -102,17 +102,17 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
         if ($this->_cache['bulkJobs']['product']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['product']['Id']);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['product']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['product']['Id']);
         }
 
         if ($this->_cache['bulkJobs']['product'][$this->_magentoId]) {
             $this->_closeJob($this->_cache['bulkJobs']['product'][$this->_magentoId]);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['product'][$this->_magentoId]);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['product'][$this->_magentoId]);
         }
 
         if ($this->_cache['bulkJobs']['pricebookEntry']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['pricebookEntry']['Id']);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
         }
 
         // Clear Session variables
@@ -171,7 +171,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->clearMemory();
                 }
             } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('_updatePriceBookEntry error ' . $e->getMessage() . '!');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('_updatePriceBookEntry error ' . $e->getMessage() . '!');
 
                 // TODO:  Log error, quit
             }
@@ -183,7 +183,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         if (!empty($this->_cache['standardPricebooksToUpsert']) || !empty($this->_cache['pricebookEntryToSync'])) {
             if (!$this->_cache['bulkJobs']['pricebookEntry']['Id']) {
                 $this->_cache['bulkJobs']['pricebookEntry']['Id'] = $this->_createJob('PricebookEntry', 'upsert', 'Id');
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Products Pricebook Entries, created job: ' . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Products Pricebook Entries, created job: ' . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
             }
         }
         if (!empty($this->_cache['standardPricebooksToUpsert'])) {
@@ -278,7 +278,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     $this->_addPriceBookEntry($_magentoId, $this->_cache['toSaveInMagento'][$_magentoId]->productId);
                 }
             } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('_preparePriceBooks function has an error: '.$e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('_preparePriceBooks function has an error: '.$e->getMessage());
 
                 // TODO:  Log error, quit
             }
@@ -322,7 +322,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         if (!empty($this->_cache['productsToSync']['Id'])) {
             if (!$this->_cache['bulkJobs']['product']['Id']) {
                 $this->_cache['bulkJobs']['product']['Id'] = $this->_createJob('Product2', 'upsert', 'Id');
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Products (on Id), created job: ' . $this->_cache['bulkJobs']['product']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Products (on Id), created job: ' . $this->_cache['bulkJobs']['product']['Id']);
 
                 Mage::dispatchEvent("tnw_salesforce_product_send_before",array("data" => $this->_cache['productsToSync']['Id']));
                 $this->_pushChunked($this->_cache['bulkJobs']['product']['Id'], 'product', $this->_cache['productsToSync']['Id'], 'Id');
@@ -348,7 +348,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         if (!empty($this->_cache['productsToSync'][$this->_magentoId])) {
             if (!$this->_cache['bulkJobs']['product'][$this->_magentoId]) {
                 $this->_cache['bulkJobs']['product'][$this->_magentoId] = $this->_createJob('Product2', 'upsert', $this->_magentoId);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Products (on Mid), created job: ' . $this->_cache['bulkJobs']['product'][$this->_magentoId]);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Products (on Mid), created job: ' . $this->_cache['bulkJobs']['product'][$this->_magentoId]);
 
                 Mage::dispatchEvent("tnw_salesforce_product_send_before",array("data" => $this->_cache['productsToSync'][$this->_magentoId]));
                 $this->_pushChunked($this->_cache['bulkJobs']['product'][$this->_magentoId], 'product', $this->_cache['productsToSync'][$this->_magentoId], $this->_magentoId);
@@ -385,10 +385,10 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             if (!$this->isFromCLI()) {
                 // Dump products that will be synced
                 foreach ($_tmpObject as $key => $value) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Pricebook Object: " . $key . " = '" . $value . "'");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Pricebook Object: " . $key . " = '" . $value . "'");
                 }
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------------------------------------");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------------------------------------");
             }
         }
 

@@ -52,17 +52,17 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         $this->reset();
 
         if (!$helper->isEnabled()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Powersync is disabled');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Powersync is disabled');
             return false;
         }
 
         if (!$helper->getCustomerNewsletterSync() && !$skipNewsletterChecking) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Newsletter Sync is disabled');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Newsletter Sync is disabled');
             return false;
         }
 
         if ($helper->getType() != "PRO") {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("IMPORTANT: Skipping newsletter synchronization, please upgrade to Enterprise version!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("IMPORTANT: Skipping newsletter synchronization, please upgrade to Enterprise version!");
             return false;
         }
 
@@ -72,7 +72,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         $helper_sf_data = Mage::helper('tnw_salesforce/salesforce_data');
 
         if (!$helper_sf_data->isLoggedIn() || !$helper->canPush()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
             return false;
         }
 
@@ -102,7 +102,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         }
 
         foreach ($this->_obj as $key => $value) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Lead Object: " . $key . " = '" . $value . "'");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead Object: " . $key . " = '" . $value . "'");
         }
 
         $this->_cache['leadsToUpsert'][$index] = $this->_obj;
@@ -126,7 +126,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         $assignmentRule = $helper->isLeadRule();
 
         if ($assignmentRule) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
             $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
             $this->_mySforceConnection->setAssignmentRuleHeader($header);
             unset($assignmentRule, $header);
@@ -148,7 +148,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $this->_cache['responses']['leads'][$subscriberIndexes[$key]] = $result;
 
             if (property_exists($result, 'success') && $result->success) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Lead upserted (id: ' . $result->id . ')');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Lead upserted (id: ' . $result->id . ')');
                 $id = $result->id;
                 $this->_prepareCampaignMember('LeadId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
             } else {
@@ -186,7 +186,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
         // Log Contact Object
         foreach ($this->_obj as $key => $value) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Account Contact Object: " . $key . " = '" . $value . "'");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Account Contact Object: " . $key . " = '" . $value . "'");
         }
 
         if ($helper->getType() == "PRO") {
@@ -234,7 +234,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
         // Log Contact Object
         foreach ($this->_obj as $key => $value) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Contact Object: " . $key . " = '" . $value . "'");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contact Object: " . $key . " = '" . $value . "'");
         }
 
         if ($helper->getType() == "PRO") {
@@ -277,7 +277,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 $this->_cache['responses']['contacts'][$subscriberIndexes[$key]] = $result;
 
                 if (property_exists($result, 'success') && $result->success) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Contact updated (id: ' . $result->id . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Contact updated (id: ' . $result->id . ')');
                     $id = $result->id;
                     // create campaign member using campaign id form magento config and id as current contact
                     $this->_prepareCampaignMember('ContactId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
@@ -307,7 +307,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 $this->_cache['responses']['accounts'][$accountIndexes[$key]] = $result;
 
                 if (property_exists($result, 'success') && $result->success) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Account created (id: ' . $result->id . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Account created (id: ' . $result->id . ')');
                     $this->_cache['accountContactsToUpsert'][$accountIndexes[$key]]->AccountId = $result->id;
                 } else {
                     $unsetKeys[] = $key;
@@ -335,7 +335,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 $this->_cache['responses']['contacts'][$subscriberIndexes[$key]] = $result;
 
                 if (property_exists($result, 'success') && $result->success) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Contact updated (id: ' . $result->id . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Contact updated (id: ' . $result->id . ')');
                     $id = $result->id;
                     // create campaign member using campaign id form magento config and id as current contact
                     $this->_prepareCampaignMember('ContactId', $id, $subscribers[$subscriberIndexes[$key]], $subscriberIndexes[$key]);
@@ -408,7 +408,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             return false;
         }
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Subscribers Update Start ######################################");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Subscribers Update Start ######################################");
 
 
         $emailsArray = array();
@@ -527,7 +527,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
         //8. Finalization
         $this->_onComplete();
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Subscriber Update End ######################################");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Subscriber Update End ######################################");
 
         return true;
     }
@@ -575,7 +575,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                     $this->_cache['responses']['campaigns'][$key] = $result;
                 }
             } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("error add campaign member to sf failed]: " . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error add campaign member to sf failed]: " . $e->getMessage());
             }
         }
         $this->_updateCampaingsAfter();
@@ -602,7 +602,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                     || !$sfClient->tryToConnect()
                     || !$sfClient->tryToLogin()
                 ) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
                     return false;
                 }
 
@@ -612,7 +612,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 if (!$this->_cache['bulkJobs']['campaigns']['Id']) {
                     // Create Job
                     $this->_cache['bulkJobs']['campaigns']['Id'] = $this->_createJob('CampaignMember', 'upsert', 'Id');
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing campaigns, created job: ' . $this->_cache['bulkJobs']['campaigns']['Id']);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing campaigns, created job: ' . $this->_cache['bulkJobs']['campaigns']['Id']);
                 }
 
                 Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before", array("data" => $this->_cache['campaignsToUpsert']));
@@ -621,25 +621,25 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 $this->_pushChunked($this->_cache['bulkJobs']['campaigns']['Id'], 'campaigns', $this->_cache['campaignsToUpsert'], 'Id');
 
                 // Check if all campaigns got Updated
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking if campaigns were successfully synced...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if campaigns were successfully synced...');
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['campaigns']['Id']);
                 $_attempt = 1;
                 while (strval($_result) != 'exception' && !$_result) {
                     sleep(5);
                     $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['campaigns']['Id']);
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking [1] (job: ' . $this->_cache['bulkJobs']['campaigns']['Id'] . ')...');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking [1] (job: ' . $this->_cache['bulkJobs']['campaigns']['Id'] . ')...');
                     $_attempt++;
 
                     $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['campaigns']['Id']);
                 }
                 if (strval($_result) != 'exception') {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Campaigns sync is complete! Moving on...');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Campaigns sync is complete! Moving on...');
                     // Update New Account ID's
                     $this->_assignCampaignsIds();
                 }
 
             } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("error [add lead as campaign member to sf failed]: " . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error [add lead as campaign member to sf failed]: " . $e->getMessage());
             }
         }
 
@@ -725,7 +725,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         ) {
             $this->_prepareCampaignMemberItem($_type, $_id, $index);
         }
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Campaigns prepared");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Campaigns prepared");
     }
 
     public function prepareCampaignMemberItem($_type = 'LeadId', $_id, $index = null, $campaignId = null)

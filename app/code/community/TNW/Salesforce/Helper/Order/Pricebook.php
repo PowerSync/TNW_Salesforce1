@@ -42,7 +42,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
     public function checkConnection()
     {
         if (!Mage::helper('tnw_salesforce')->isEnabledProductSync()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product Integration is disabled");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product Integration is disabled");
             return false;
         }
         if (!$this->_mySforceConnection) {
@@ -83,7 +83,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             $pricebookEntryId = $this->syncProduct($product, true); // True - Skip product sync during order
 
             if ($pricebookEntryId) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Upserting product(" . $item->getProductId() . ") to opportunity (" . $opportunityId . ") with PricebookEntry ID: " . $pricebookEntryId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Upserting product(" . $item->getProductId() . ") to opportunity (" . $opportunityId . ") with PricebookEntry ID: " . $pricebookEntryId);
 
                 /* Load mapping for OpportunityLineItem */
                 $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('OpportunityLineItem');
@@ -108,17 +108,17 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
                 /* Dump OpportunityLineItem object into the log */
                 foreach ($this->_oli as $key => $_item) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Object: " . $key . " = '" . $_item . "'");
                 }
                 unset($key);
                 $this->_products[] = $this->_oli;
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Product (" . $item->getProductId() . ") sync w/ SalesForce failed, PricebookEntry Id is unavailable!");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Product (" . $item->getProductId() . ") sync w/ SalesForce failed, PricebookEntry Id is unavailable!");
             }
             $this->_oli = NULL;
         }
         unset($shippedItems, $opportunityId, $cartItems, $itemId, $item, $existingCart, $pricebookEntryId);
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Attaching updated cart to Opportunity, total " . count($this->_products) . " items...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Attaching updated cart to Opportunity, total " . count($this->_products) . " items...");
         return $this->_products;
     }
 
@@ -133,19 +133,19 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
         $this->checkConnection();
 
         if (!$this->_mySforceConnection) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
             return;
         }
         if (!$orderId) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Order ID is missing, could not push the cart into Salesforce!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order ID is missing, could not push the cart into Salesforce!");
             return false;
         }
         if (!$cartItems) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("No items in the cart!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No items in the cart!");
             return false;
         }
         if (!$opportunityId) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity ID is not available");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity ID is not available");
             return false;
         }
         //Set order ID
@@ -154,17 +154,17 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
         if (!$this->_defaultPriceBook) {
             if (!$this->_standardPricebookId) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Default Pricebook is not set in Magento config, also Standard Pricebook is not configured in Salesforce");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Default Pricebook is not set in Magento config, also Standard Pricebook is not configured in Salesforce");
                 return false;
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Default Pricebook is not set in Magento config, using Standard Pricebook from Salesforce");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Default Pricebook is not set in Magento config, using Standard Pricebook from Salesforce");
                 $this->_defaultPriceBook = $this->_standardPricebookId;
             }
         }
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- OpportunityLineItem Sync Start -------------------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------------------- OpportunityLineItem Sync Start -------------------");
         if (!$opportunityId && !$cartItems) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity or cartItems are not defined, SKIPPING preparation!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity or cartItems are not defined, SKIPPING preparation!");
             return array();
         }
 
@@ -187,10 +187,10 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 $cartUpdateFlag = false;
                 if (is_array($_responseRow->errors)) {
                     foreach ($_responseRow->errors as $_error) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
                     }
                 } else {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace($_responseRow->errors->message);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($_responseRow->errors->message);
                 }
             } else {
                 $reAddedProducts[] = $_responseRow->id;
@@ -199,13 +199,13 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
         }
         unset($response, $_responseRow, $_error);
         if (!$cartUpdateFlag) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert some products, see the errors above.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert some products, see the errors above.");
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("All products upserted into the Opportunity successfully. Product Id(s): " . join(", ", $reAddedProducts));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("All products upserted into the Opportunity successfully. Product Id(s): " . join(", ", $reAddedProducts));
             $this->orderAfterPush();
         }
         unset($reAddedProducts, $cartUpdateFlag);
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- OpportunityLineItem Sync End -------------------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------------------- OpportunityLineItem Sync End -------------------");
     }
 
     /**
@@ -224,12 +224,12 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             return false;
         }
         if (!$product) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product Syncronization failed, expected Magneto product object is not available.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product Syncronization failed, expected Magneto product object is not available.");
             return false;
         }
         $this->checkConnection();
         if (!$this->_mySforceConnection) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
             return;
         }
         /* Sync */
@@ -248,29 +248,29 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             $_doPricebookUpdate = true;
         }
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync Start -------------------");
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Magento Product: " . $_magentoProdId);
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product: " . $_sfProductId);
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("PricebookEntryId: " . $pricebookEntryId);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync Start -------------------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Product: " . $_magentoProdId);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product: " . $_sfProductId);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("PricebookEntryId: " . $pricebookEntryId);
         // Try to find the product in Salesforce by SKU
         $sfProduct = Mage::helper('tnw_salesforce/salesforce_data')->productLookup($product->getSku());
         $_sfProductId = (is_array($sfProduct) && array_key_exists($product->getSku(), $sfProduct)) ? $sfProduct[$product->getSku()]->Id : NULL;
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SF Lookup Product ID: " . $_sfProductId);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Lookup Product ID: " . $_sfProductId);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Upserting Product # " . $_magentoProdId . " - SF Id: " . $_sfProductId);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Upserting Product # " . $_magentoProdId . " - SF Id: " . $_sfProductId);
         unset($sfProduct);
         if (!$_sfProductId) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product not found in SF, creating ...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product not found in SF, creating ...");
             $responseP = $this->upsertProduct($product, $productPrice, $_sfProductId);
             if (!$responseP->success) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product: " . $_magentoProdId);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product: " . $_magentoProdId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
                 unset($responseP, $_magentoProdId, $productPrice, $_sfProductId);
                 return false;
             } else {
                 if ($_sfProductId && $_sfProductId != $responseP->id) {
                     /* This should never happen */
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product2 duplicated! Old Id: " . $_sfProductId . "  - New Id: " . $responseP->id);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product2 duplicated! Old Id: " . $_sfProductId . "  - New Id: " . $responseP->id);
                 }
                 $_sfProductId = $responseP->id;
                 $product->setSalesforceId($_sfProductId);
@@ -282,65 +282,65 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                         if (!$sfPricebookEntryId) {
                             $responsePB = $this->upsertPricebookEntry($_sfProductId, $productPrice, $this->_standardPricebookId);
                             if (!$responsePB[0]->success) {
-                                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to create Standard PricebookEntry for product: " . $_magentoProdId);
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to create Standard PricebookEntry for product: " . $_magentoProdId);
                                 unset($_magentoProdId, $productPrice, $_sfProductId, $responsePB);
                                 return false;
                             } else {
-                                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Standard PricebookEntry Id is not found in Magento...");
-                                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Standard StandardEntry Id (#" . $responsePB[0]->id . ") created...");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Standard PricebookEntry Id is not found in Magento...");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Standard StandardEntry Id (#" . $responsePB[0]->id . ") created...");
                                 $product->setSalesforcePricebookId($responsePB[0]->id);
                             }
                         } else {
                             $product->setSalesforcePricebookId($sfPricebookEntryId);
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Standard PricebookEntry Id (#" . $sfPricebookEntryId . ") found in Salesforce and Magneto");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Standard PricebookEntry Id (#" . $sfPricebookEntryId . ") found in Salesforce and Magneto");
                         }
                     }
                     $sfPricebookEntryId = Mage::helper('tnw_salesforce/salesforce_data')->pricebookEntryLookup($_sfProductId, $this->_defaultPriceBook);
                     if (!$sfPricebookEntryId) {
                         $responsePB = $this->upsertPricebookEntry($_sfProductId, $productPrice, $this->_defaultPriceBook);
                         if (!$responsePB[0]->success) {
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to create Default PricebookEntry for product: " . $_magentoProdId);
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to create Default PricebookEntry for product: " . $_magentoProdId);
                             unset($_magentoProdId, $productPrice, $_sfProductId, $responsePB);
                             return false;
                         } else {
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Default PricebookEntry Id is not found in Magento...");
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Default PricebookEntry Id (#" . $responsePB[0]->id . ") created...");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Default PricebookEntry Id is not found in Magento...");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Default PricebookEntry Id (#" . $responsePB[0]->id . ") created...");
                             $product->setSalesforcePricebookId($responsePB[0]->id);
                         }
                     } else {
                         $product->setSalesforcePricebookId($sfPricebookEntryId);
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Default PricebookEntry Id (#" . $sfPricebookEntryId . ") found in Salesforce and Magneto");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Default PricebookEntry Id (#" . $sfPricebookEntryId . ") found in Salesforce and Magneto");
                     }
                     $sfPricebookEntryId = $product->getSalesforcePricebookId();;
                 } else {
                     $sfPricebookEntryId = $pricebookEntryId;
                 }
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
             }
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product found in SF (Id: " . $_sfProductId . ") updating values.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product found in SF (Id: " . $_sfProductId . ") updating values.");
             if (!$pricebookEntryId) {
                 $sfPricebookEntryId = Mage::helper('tnw_salesforce/salesforce_data')->pricebookEntryLookup($_sfProductId, $this->_defaultPriceBook);
             } else {
                 $sfPricebookEntryId = $pricebookEntryId;
             }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product not found in SF, creating ...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product not found in SF, creating ...");
             $responseP = $this->upsertProduct($product, $productPrice, $_sfProductId);
             if (!$responseP->success) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product: " . $_magentoProdId);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product: " . $_magentoProdId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
                 unset($responseP, $_magentoProdId, $productPrice, $_sfProductId);
                 return false;
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product upserted: " . $_sfProductId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product upserted: " . $_sfProductId);
             }
             /* Update the values */
             $product->setSalesforcePricebookId($sfPricebookEntryId);
             $product->setSalesforceId($_sfProductId);
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------------------- Product2 Sync End -------------------");
         }
 
         $sql = "";
@@ -359,7 +359,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
         } else {
             $sql .= "INSERT INTO `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_text') . "` VALUES (NULL,4," . $this->_attributes['salesforce_pricebook_id'] . "," . Mage::helper('tnw_salesforce')->getStoreId() . "," . $product->getId() . ",'" . $product->getSalesforcePricebookId() . "');";
         }
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace($sql);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($sql);
         $this->_write->query($sql);
 
         return $sfPricebookEntryId;
@@ -393,7 +393,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             unset($prodId, $price, $defaultPB, $pbeId);
 
             foreach ($pb as $key => $value) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("PricebookEntry Object: " . $key . " = '" . $value . "'");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("PricebookEntry Object: " . $key . " = '" . $value . "'");
             }
 
             Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($pb)));
@@ -405,24 +405,24 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
             unset($pb, $key, $value);
             if ($upsertResponse[0]->success) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("PricebookEntry upsert successful: " . $upsertResponse[0]->id);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("PricebookEntry upsert successful: " . $upsertResponse[0]->id);
             } else {
                 if (is_array($upsertResponse[0]->errors)) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("PricebookEntry upsert failed: ");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("PricebookEntry upsert failed: ");
                     foreach ($upsertResponse[0]->errors as $_error) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
                     }
                     unset($_error);
                 } else {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $upsertResponse[0]->errors->message);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $upsertResponse[0]->errors->message);
                 }
             }
 
             return $upsertResponse;
 
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->faultstring);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not upset pricebook entry");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->faultstring);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not upset pricebook entry");
             return false;
         }
     }
@@ -437,15 +437,15 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
     protected function upsertProduct($prod = NULL, $price = NULL, $pId = NULL)
     {
         if (!$prod) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product2 cannot be created because Magento product object is not avaialble.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product2 cannot be created because Magento product object is not avaialble.");
             return false;
         }
         if (!$price) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product2 cannot be created because Magento product price is not set.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product2 cannot be created because Magento product price is not set.");
             return false;
         }
         if (!$prod->getId()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product is not created in Magento yet, SKIPPING!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product is not created in Magento yet, SKIPPING!");
             return false;
         }
         try {
@@ -471,7 +471,7 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             $this->_p->$syncParamId = $prod->getId();
 
             foreach ($this->_p as $key => $value) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product Object: " . $key . " = '" . $value . "'");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product Object: " . $key . " = '" . $value . "'");
             }
 
             unset($collection, $_map);
@@ -485,45 +485,45 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
             if (!$upsertResponse[0]->success) {
                 if (is_array($upsertResponse[0]->errors)) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product!");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product!");
                     foreach ($upsertResponse[0]->errors as $_error) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
                     }
                 } else {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product: " . $upsertResponse[0]->errors->message);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert product: " . $upsertResponse[0]->errors->message);
                 }
                 unset($upsertResponse, $_error);
                 return false;
             } else {
                 $upsertedProductId = $upsertResponse[0]->id;
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product2: " . $upsertedProductId . ", upserted successfully");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product2: " . $upsertedProductId . ", upserted successfully");
                 /* Lookup if Standard Pricebook Entry exists */
                 $sfPricebookEntry = Mage::helper('tnw_salesforce/salesforce_data')->pricebookEntryLookup($upsertedProductId, $this->_standardPricebookId);
                 // Set Standard Pricebook Id
                 $prod->setSalesforcePricebookId($sfPricebookEntry);
                 if (!$sfPricebookEntry) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Standard PriebookEntry for this product doesn't exist, creating...");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Standard PriebookEntry for this product doesn't exist, creating...");
                     $response = $this->upsertPricebookEntry($upsertedProductId, $price, $this->_standardPricebookId);
                     if (!$response[0]->success) {
                         if (is_array($response[0]->errors)) {
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert standard pricebook entity: ");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert standard pricebook entity: ");
                             foreach ($response[0]->errors as $_error) {
-                                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
                             }
                         } else {
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Failed to upsert standard pricebook entity: " . $response[0]->errors->message);
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert standard pricebook entity: " . $response[0]->errors->message);
                         }
                         return $response[0]; // Expected to have an error
                     } else {
                         $prod->setSalesforcePricebookId($response[0]->id);
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Standard PriebookEntry for this product created!");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Standard PriebookEntry for this product created!");
                     }
                 }
                 unset($upsertedProductId, $sfPricebookEntry, $response);
                 return $upsertResponse[0];
             }
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace($e->faultstring);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->faultstring);
             return false;
         }
     }

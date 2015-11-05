@@ -87,8 +87,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $_return;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by email domain #" . join(',', $_domainsArray));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by email domain #" . join(',', $_domainsArray));
             unset($company);
 
             return array();
@@ -125,8 +125,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $allRules->records;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not get a Person Record Type of the Account");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not get a Person Record Type of the Account");
             unset($e);
 
             return false;
@@ -194,8 +194,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $allRules->records;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not get a list of " . $type . " States");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not get a list of " . $type . " States");
             unset($e);
 
             return false;
@@ -232,7 +232,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $result = $this->getClient()->query(($query));
             unset($query);
             if (!$result || $result->size < 1) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity lookup returned: " . $result->size . " results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity lookup returned: " . $result->size . " results...");
                 return false;
             }
             $returnArray = array();
@@ -250,8 +250,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
             return $returnArray;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
             unset($email);
             return false;
         }
@@ -270,7 +270,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
             $pricebookId = Mage::helper('tnw_salesforce')->getDefaultPricebook();
             if (!$pricebookId) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not proceed with product lookup because Default Pricebook is not set.");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not proceed with product lookup because Default Pricebook is not set.");
                 return false;
             }
             $query = '';
@@ -307,8 +307,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $returnArray;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not lookup Product by partial Name '" . $name . "' & Procebook #" . $pricebookId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not lookup Product by partial Name '" . $name . "' & Procebook #" . $pricebookId);
             unset($prodId, $pricebookId, $e);
             return false;
         }
@@ -370,8 +370,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 return $result->records[0]->Id;
             }
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not lookup Pricebook Entry for Product #" . $prodId . " & Procebook #" . $pricebookId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not lookup Pricebook Entry for Product #" . $prodId . " & Procebook #" . $pricebookId);
             unset($prodId, $pricebookId, $e);
             return false;
         }
@@ -407,8 +407,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return $return;
 
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not lookup Pricebook Entry for Product #" . $prodId . " & Procebook #" . $pricebookId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not lookup Pricebook Entry for Product #" . $prodId . " & Procebook #" . $pricebookId);
             unset($prodId, $pricebookId, $e);
             return false;
         }
@@ -421,7 +421,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function productLookup($sku = NULL)
     {
         if (!$sku) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SKU is missing for product lookup");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SKU is missing for product lookup");
             return false;
         }
         try {
@@ -437,9 +437,9 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $result = $this->getClient()->query(($query));
 
             unset($query);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Check if the product already exist in SalesForce...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check if the product already exist in SalesForce...");
             if (!$result || $result->size < 1) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Lookup returned: " . $result->size . " results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: " . $result->size . " results...");
                 return false;
             }
             $returnArray = array();
@@ -456,8 +456,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
             return $returnArray;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a product by Magento SKU #" . $sku);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a product by Magento SKU #" . $sku);
             unset($sku);
             return false;
         }
@@ -481,13 +481,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 unset($query);
 
                 if (!$result || $result->size < 1) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: No active users found in Salesforce!", 1, "sf-errors");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: No active users found in Salesforce!");
                     $_users[] = array(
                         'label' => 'API User',
                         'value' => 0
                     );
                 } else {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Extracted users from Salesforce!");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracted users from Salesforce!");
                     foreach ($result->records as $_user) {
                         $_users[] = array(
                             'label' => $_user->Name,
@@ -498,7 +498,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
             return $_users;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             unset($e, $obj, $id);
             return false;
         }
@@ -523,7 +523,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             if ($cache->load("tnw_salesforce_" . strtolower($field) . "_fields")) {
                 $_data = unserialize($cache->load("tnw_salesforce_" . strtolower($field) . "_fields"));
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $field . " object...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $field . " object...");
                 if (!is_object($this->getClient())) {
                     return $this->_noConnectionArray;
                 }
@@ -546,8 +546,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $_data;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not get a list of all fields from " . $field . " Object", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $field . " Object");
             unset($e);
             return false;
         }
@@ -576,8 +576,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             unset($list);
             return false;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not get picklist (" . $field . ") values from " . $object . " Object", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get picklist (" . $field . ") values from " . $object . " Object");
             unset($e);
             return false;
         }
@@ -598,8 +598,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             unset($obj, $id);
             return (count($list) > 0) ? true : false;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find an " . $obj . " object #" . $id, 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not find an " . $obj . " object #" . $id);
             unset($e, $obj, $id);
             return false;
         }
@@ -614,7 +614,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         try {
             return Mage::getModel('tnw_salesforce_api_entity/account')->load($id)->getData('Name');
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             return false;
         }
     }
@@ -632,8 +632,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $lead = Mage::getModel('tnw_salesforce_api_entity/lead')->load($email, 'Email');
             return $lead->isConverted() ? $lead->getId() : false;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a Lead by email: " . $email, 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not find a Lead by email: " . $email);
             return false;
         }
     }
@@ -669,8 +669,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $return = (is_object($list) && property_exists($list, "records") && is_array($list->records)) ? $list->records[0] : NULL;
             return $return;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a " . $obj . " by email: " . $email, 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not find a " . $obj . " by email: " . $email);
             unset($e, $email);
             return false;
         }
@@ -690,8 +690,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return ($allRules && property_exists($allRules, 'records')) ? $allRules->records : array();
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not get a list of Assignment Rules", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of Assignment Rules");
 
             return false;
         }
@@ -718,8 +718,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return array_flip($sortedList);
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not execute Salesforce query on " . $obj . " Object", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not execute Salesforce query on " . $obj . " Object");
 
             return false;
         }
@@ -733,11 +733,11 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function roleLookup($oid = NULL, $cid = NULL)
     {
         if (!$oid) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Opportunity ID is missing for OpportunityContactRole lookup", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Opportunity ID is missing for OpportunityContactRole lookup");
             return false;
         }
         if (!$cid) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Contact ID is missing for OpportunityContactRole lookup", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Contact ID is missing for OpportunityContactRole lookup");
             return false;
         }
         try {
@@ -747,15 +747,15 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $query = "SELECT ID FROM OpportunityContactRole WHERE OpportunityId = '" . $oid . "' AND ContactId='" . $cid . "'";
             $result = $this->getClient()->query(($query));
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Check if the customer opportunity role already exist in SalesForce...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check if the customer opportunity role already exist in SalesForce...");
             if (!$result || $result->size < 1) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Lookup returned: " . $result->size . " results...", 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Lookup returned: " . $result->size . " results...");
                 return false;
             }
             return $result->records;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not lookup a role for Customer #" . $cid . " & Opportunity #" . $oid, 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not lookup a role for Customer #" . $cid . " & Opportunity #" . $oid);
 
             return false;
         }
@@ -779,8 +779,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $result->records[0]->Id;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not lookup standard Pricebook Id", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not lookup standard Pricebook Id");
 
             return false;
         }
@@ -804,8 +804,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return array_flip($sortedList);
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not lookup non standard Pricebook Id", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not lookup non standard Pricebook Id");
             unset($e);
 
             return false;
@@ -820,7 +820,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     {
         try {
             if (!$oid) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR, cannot extract OpportunityLineItems: No Opportunity ID was specified", 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR, cannot extract OpportunityLineItems: No Opportunity ID was specified");
 
                 return false;
             }
@@ -834,7 +834,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 $query .= " = '$oid'";
             }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Lookup Query: " . $query);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Lookup Query: " . $query);
             $result = $this->getClient()->query(($query));
             $items = array();
             if (property_exists($result, 'records')) {
@@ -846,8 +846,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             return $items;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage(), 1, "sf-errors");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not lookup Opportunity Line Items for Opportunity #" . $oid, 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not lookup Opportunity Line Items for Opportunity #" . $oid);
             $errorString = $e->getMessage();
 
             return $errorString;

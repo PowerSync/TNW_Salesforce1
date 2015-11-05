@@ -32,7 +32,7 @@ class TNW_Salesforce_Model_Product_Observer
     {
        $_product = $observer->getEvent()->getProduct();
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . $_product->getId() . ' Sync');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . $_product->getId() . ' Sync');
 
         Mage::dispatchEvent('tnw_catalog_product_save', array('product' => $_product));
 
@@ -46,29 +46,29 @@ class TNW_Salesforce_Model_Product_Observer
     public function salesforcePush($observer)
     {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
         $_product = $observer->getEvent()->getProduct();
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Product #' . $_product->getId() . ' Sync');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Product #' . $_product->getId() . ' Sync');
 
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledProductSync()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: Product synchronization disabled');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Product synchronization disabled');
             return; // Disabled sync
         } else if ($_product->getIsDuplicate()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: Product duplicate process');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Product duplicate process');
             return; //
         } else if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING product sync');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING product sync');
             return; // Disabled
         } else if (
             $_product->getSuperProduct() &&
             $_product->getSuperProduct()->isConfigurable()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: Configurable Product');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Configurable Product');
             return; // Only simple
         } else {
             // check if queue sync setting is on - then save to database
@@ -77,7 +77,7 @@ class TNW_Salesforce_Model_Product_Observer
                 // TODO add level up abstract class with Order as static values, now we have word 'Product' as parameter
                 $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array(intval($_product->getData('entity_id'))), 'Product', 'product');
                 if (!$res) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveError('error: product not saved to local storage');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('error: product not saved to local storage');
                     return false;
                 }
                 return true;
@@ -105,7 +105,7 @@ class TNW_Salesforce_Model_Product_Observer
                 $manualSync->process();
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product (sku: ' . $_product->getSku() . ') is successfully synchronized'));
             } else {
-                Mage::getSingleton('adminhtml/session')->addError('Salesforce Connection failed!');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce Connection failed!');
             }
         }
     }

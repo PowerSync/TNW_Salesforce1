@@ -272,7 +272,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     {
         if (!empty(self::$errorList)) {
             foreach (self::$errorList as $line) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($line);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($line);
             }
         }
 

@@ -30,25 +30,25 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             if (!$this->_cache['bulkJobs']['orderProducts']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['orderProducts']['Id'] = $this->_createJob('OrderItem', 'upsert', 'Id');
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Order Products, created job: ' . $this->_cache['bulkJobs']['orderProducts']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Order Products, created job: ' . $this->_cache['bulkJobs']['orderProducts']['Id']);
             }
 
             Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['orderItemsToUpsert']));
 
             $this->_pushChunked($this->_cache['bulkJobs']['orderProducts']['Id'], 'orderProducts', $this->_cache['orderItemsToUpsert']);
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking if Order Products were successfully synced...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Order Products were successfully synced...');
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderProducts']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderProducts']['Id']);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking orderItemsToUpsert (job: ' . $this->_cache['bulkJobs']['orderProducts']['Id'] . ')...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking orderItemsToUpsert (job: ' . $this->_cache['bulkJobs']['orderProducts']['Id'] . ')...');
                 $_attempt++;
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['orderProducts']['Id']);
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Order Products sync is complete! Moving on...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Order Products sync is complete! Moving on...');
 
             if (strval($_result) != 'exception') {
                 $this->_checkOrderProductData();
@@ -65,25 +65,25 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             if (!$this->_cache['bulkJobs']['notes']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['notes']['Id'] = $this->_createJob('Note', 'upsert', 'Id');
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Notes, created job: ' . $this->_cache['bulkJobs']['notes']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Notes, created job: ' . $this->_cache['bulkJobs']['notes']['Id']);
             }
 
             Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
 
             $this->_pushChunked($this->_cache['bulkJobs']['notes']['Id'], 'notes', $this->_cache['notesToUpsert']);
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking if Notes were successfully synced...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Notes were successfully synced...');
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['notes']['Id']);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking notesToUpsert (job: ' . $this->_cache['bulkJobs']['notes']['Id'] . ')...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking notesToUpsert (job: ' . $this->_cache['bulkJobs']['notes']['Id'] . ')...');
                 $_attempt++;
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['notes']['Id']);
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Notes sync is complete! Moving on...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Notes sync is complete! Moving on...');
 
             if (strval($_result) != 'exception') {
                 $this->_checkNotesData();
@@ -116,18 +116,18 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         || empty($this->_cache['orderItemsProductsToSync'][$_object->Id])
                     ) {
                         unset($this->_cache['orderToActivate'][$_orderNum]);
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');
                         if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                             Mage::getSingleton('adminhtml/session')->addNotice("SKIPPING ORDER ACTIVATION: Order (" . $_orderNum . ") could not be activated w/o any products!");
                         }
                     }
                 } else {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
                 }
             }
             if (!empty($this->_cache['orderToActivate'])) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: Start----------');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: Start----------');
                 // Push Cart
                 $_ttl = count($this->_cache['orderToActivate']);
                 if ($_ttl > 199) {
@@ -140,7 +140,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 } else {
                     $this->_activateOrders($this->_cache['orderToActivate']);
                 }
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: End----------');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: End----------');
             }
         }
     }
@@ -152,31 +152,31 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             if (!$this->_cache['bulkJobs']['order'][$this->_magentoId]) {
                 // Create Job
                 $this->_cache['bulkJobs']['order'][$this->_magentoId] = $this->_createJob('Order', 'upsert', $this->_magentoId);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Orders, created job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId]);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Orders, created job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId]);
             }
 
             Mage::dispatchEvent("tnw_salesforce_order_send_before",array("data" => $this->_cache['ordersToUpsert']));
 
             $this->_pushChunked($this->_cache['bulkJobs']['order'][$this->_magentoId], 'orders', $this->_cache['ordersToUpsert'], $this->_magentoId);
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking if Orders were successfully synced...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Orders were successfully synced...');
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking ordersToUpsert (job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId] . ')...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking ordersToUpsert (job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId] . ')...');
                 $_attempt++;
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['order'][$this->_magentoId]);
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Orders sync is complete! Moving on...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Orders sync is complete! Moving on...');
 
             if (strval($_result) != 'exception') {
                 $this->_assignOrderIds();
             }
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('No Orders were queued for synchronization!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('No Orders were queued for synchronization!');
         }
     }
 
@@ -253,12 +253,12 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                             }
                         } else {
                             $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history') . "` SET salesforce_id = '" . (string)$_item->id . "' WHERE entity_id = '" . $_noteId . "';";
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_orderId . ')');
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_orderId . ')');
                         }
                         $_i++;
                     }
                     if (!empty($sql)) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                         $this->_write->query($sql);
                     }
                 } catch (Exception $e) {
@@ -276,7 +276,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             }
         }
         if ($sql != '') {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
             $this->_write->query($sql);
         }
     }
@@ -322,7 +322,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         $_accountId = ($this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_oid]->getData('salesforce_account_id') . "'" : 'NULL';
                         $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid] . "' WHERE entity_id = " . $_entityArray[$_oid] . ";";
 
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Order Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Order Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
 
                         if (Mage::registry('order_cached_' . $_oid)) {
                             $_order = Mage::registry('order_cached_' . $_oid);
@@ -349,7 +349,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         ));
 
         if (!empty($sql)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
             Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
     }
@@ -393,10 +393,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
             }
             if (!$_success) {
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . uc_words($_batchType) . ' upsert failed!');
-                }
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('ERROR: ' . uc_words($_batchType) . ' upsert failed!');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . uc_words($_batchType) . ' upsert failed!');
 
                 return false;
             }
@@ -410,17 +407,17 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         // Close Jobs
         if ($this->_cache['bulkJobs']['order'][$this->_magentoId]) {
             $this->_closeJob($this->_cache['bulkJobs']['order'][$this->_magentoId]);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['order'][$this->_magentoId]);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['order'][$this->_magentoId]);
         }
         if ($this->_cache['bulkJobs']['orderProducts']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['orderProducts']['Id']);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['orderProducts']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['orderProducts']['Id']);
         }
         if ($this->_cache['bulkJobs']['notes']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['notes']['Id']);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['notes']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['notes']['Id']);
         }
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Clearing bulk sync cache...');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Clearing bulk sync cache...');
 
         $this->_cache['bulkJobs'] = array(
             'order' => array($this->_magentoId => NULL),

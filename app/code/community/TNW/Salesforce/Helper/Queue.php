@@ -36,7 +36,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 $this->_synchronizePreSet();
             }
         } catch (Exception $e) {
-            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
             return false;
         }
         return true;
@@ -195,7 +195,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         }
 
         if (count($_objectType) > 1) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Synchronization of multiple record types is not supported yet, try synchronizing one record type.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Synchronization of multiple record types is not supported yet, try synchronizing one record type.");
             return false;
         }
 
@@ -251,11 +251,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
                     $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
                     $manualSync->massAdd($_objectIdSet);
 
                     $manualSync->process();
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' finished ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' finished ##################################');
 
                     // Update Queue
                     $_results = $manualSync->getSyncResults();
@@ -265,11 +265,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             }
 
             if (!empty($_idSet)) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: " . $_type . " total synced: " . count($_idSet));
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: removing synced rows from mysql table...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: " . $_type . " total synced: " . count($_idSet));
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: removing synced rows from mysql table...");
             }
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed");
             return false;
         }
     }
@@ -320,11 +320,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
                     $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
                     $manualSync->massAdd($_objectIdSet);
 
                     $manualSync->process();
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' finished ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' finished ##################################');
 
                     // Update Queue
                     $_results = $manualSync->getSyncResults();
@@ -334,11 +334,11 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             }
 
             if (!empty($_idSet)) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: " . $_type . " total synced: " . count($_idSet));
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("INFO: removing synced rows from mysql table...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: " . $_type . " total synced: " . count($_idSet));
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: removing synced rows from mysql table...");
             }
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed");
             return false;
         }
     }
@@ -353,7 +353,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     public function prepareRecordsToBeAddedToQueue($itemIds = array(), $_sfObject = NULL, $_mageModel = NULL)
     {
         if (empty($itemIds) || !$_sfObject || !$_mageModel) {
-            Mage::getSingleton('adminhtml/session')->addError('Could not add records to the queue!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not add records to the queue!');
         }
 
 

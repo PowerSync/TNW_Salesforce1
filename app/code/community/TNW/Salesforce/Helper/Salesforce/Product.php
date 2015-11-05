@@ -38,7 +38,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         try {
             if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace(
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(
                     "CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
                 if ($this->canDisplayErrors()) {
                     Mage::getSingleton('adminhtml/session')->addWarning(
@@ -50,11 +50,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             if (!$this->isFromCLI()) {
                 foreach ($this->_cache['productsToSync'] as $_key => $tmpObject) {
                     foreach ($tmpObject as $_mId => $_obj) {
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("------ Product ID: " . $_mId . " ------");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("------ Product ID: " . $_mId . " ------");
                         foreach ($_obj as $key => $value) {
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Product Object: " . $key . " = '" . $value . "'");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product Object: " . $key . " = '" . $value . "'");
                         }
-                        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------------------------------------");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------------------------------------");
                     }
                 }
             }
@@ -68,13 +68,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_onComplete();
 
             // Logout
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
             return true;
         } catch (Exception $e) {
-            if ($this->canDisplayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }
     }
@@ -150,7 +147,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 // we check product type and skip synchronization if needed
                 if (intval($product->getData('salesforce_disable_sync')) == 1) {
                     $message = 'SKIPPING: Product (ID: ' . $product->getId() . ') is excluded from synchronization';
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace($message);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
                     if ($this->canDisplayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice($message);
                     }
@@ -159,7 +156,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
                 if (!$product->getSku()) {
                     $message = 'SKIPPING: Product #' . $product->getId() . ', product sku is missing!';
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace($message);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
                     if ($this->canDisplayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice($message);
                     }
@@ -187,10 +184,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
             Mage::unregister('product_sync_collection');
         } catch (Exception $e) {
-            if ($this->canDisplayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -233,14 +227,14 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     Mage::helper('tnw_salesforce')->getDbConnection()->query(implode('', $chunk));
                 }
             } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Exception: " . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Exception: " . $e->getMessage());
             }
         }
     }
 
     protected function _updateMagento()
     {
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
         $this->_sqlToRun = array();
         $ids = array();
 
@@ -287,8 +281,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         $this->processSql();
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
     }
 
     public function updateMagentoEntityValue($_entityId = NULL, $_value = 0, $_attributeName = NULL, $_tableName = 'catalog_product_entity_varchar', $_storeId = NULL)
@@ -297,7 +291,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $_storeId = ($_storeId == NULL || $_storeId == 'Standard') ? $this->getHelper()->getStoreId() : $_storeId;
         $storeIdQuery = ($_storeId !== NULL) ? " store_id = '" . $_storeId . "' AND" : NULL;
         if (!$_attributeName) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Could not update Magento product values: attribute name is not specified', 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not update Magento product values: attribute name is not specified');
             return false;
         }
         $sql = '';
@@ -323,7 +317,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
         if (!empty($sql)) {
             $this->_sqlToRun[] = $sql;
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql);
         }
     }
 
@@ -385,11 +379,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $syncId = property_exists($this->_obj, 'Id') ? 'Id' : $magentoIdField;
             $this->_cache['productsToSync'][$syncId][$product->getId()] = $this->_obj;
         } else {
-            if ($this->canDisplayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not synchronize product (sku: '
-                    . $sku . '), product ID is missing!');
-            }
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Magento product ID is undefined, skipping!", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('WARNING: Could not synchronize product (sku: '
+                . $sku . '), product ID is missing!');
         }
     }
 
@@ -440,7 +431,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $this->_cache['responses']['products'][$_id] = $_response;
             }
             $_responses = array();
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
         }
 
         $_success = false;
@@ -453,7 +444,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             if (property_exists($_response, 'success') && $_response->success) {
                 $_success = true;
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('PRODUCT: magentoID (' . $_magentoId . ') : salesforceID (' . $_response->id . ')');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('PRODUCT: magentoID (' . $_magentoId . ') : salesforceID (' . $_response->id . ')');
                 $_product = new stdClass();
                 $_product->salesforceId = $_response->id;
                 $_product->SfInSync = 1;
@@ -703,11 +694,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $_success = $this->_pushProductsSegment($_entities, $_upsertOn);
             }
             if (!$_success) {
-                if ($this->canDisplayErrors()) {
-                    Mage::getSingleton('adminhtml/session')
-                        ->addError('WARNING: Product upserts failed, skipping PriceBook synchronization');
-                }
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('ERROR: Product upsert failed, skipping PriceBook upserts', 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Product upsert failed, skipping PriceBook upserts');
                 return false;
             }
         }
@@ -723,28 +710,28 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             return; // Skip if nothing to push
         }
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------' . strtoupper($type) . ' PRODUCTS: Start----------');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------' . strtoupper($type) . ' PRODUCTS: Start----------');
 
         $this->_pushProductChunked($this->_cache['productsToSync']['Id']);
         $this->_pushProductChunked($this->_cache['productsToSync'][$this->_magentoId], $this->_magentoId);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------' . strtoupper($type) . ' PRODUCTS: End----------');
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------UPSERTING Pricebook: Start----------');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------' . strtoupper($type) . ' PRODUCTS: End----------');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------UPSERTING Pricebook: Start----------');
 
         foreach ($this->_cache['pricebookEntryToSync'] as $_key => $tmpObject) {
             // Dump products that will be synced
             if (!$this->isFromCLI()) {
                 foreach ($tmpObject as $key => $value) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Pricebook Object: " . $key . " = '" . $value . "'");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Pricebook Object: " . $key . " = '" . $value . "'");
                 }
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------------------------------------");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------------------------------------");
             }
         }
 
         $this->_pushPricebookChunked($this->_cache['pricebookEntryToSync']);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('----------UPSERTING Pricebook: End----------');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------UPSERTING Pricebook: End----------');
     }
 
     protected function _pushPriceBookSegment($chunk = array())
@@ -762,7 +749,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $this->_cache['responses']['products'][$_id] = $_response;
             }
             $_responses = array();
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
         }
 
 
@@ -777,7 +764,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_cache['responses']['pricebooks'][$_keys[$_key]] = $_response;
 
             if (property_exists($_response, 'success') && $_response->success) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('PRICEBOOK ENTRY: magentoID (' . $_magentoId
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('PRICEBOOK ENTRY: magentoID (' . $_magentoId
                     . ') : salesforceID (' . $_response->id . ')');
                 if (!property_exists($this->_cache['toSaveInMagento'][$_magentoId], 'pricebookEntryIds')) {
                     $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntryIds = array();
@@ -826,7 +813,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         parent::reset();
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
 
         // Reset cache (need to conver to magento cache
         $this->_cache = array(

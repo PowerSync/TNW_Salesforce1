@@ -313,13 +313,13 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $batchId = $this->_query($sql, $jobId);
             $maxAttempts = 50;
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking query completion...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking query completion...');
             $isComplete = $this->_checkBatchCompletion($jobId);
             $attempt = 0;
             while (strval($isComplete) != 'exception' && !$isComplete && ++$attempt <= $maxAttempts) {
                 sleep(5);
                 $isComplete = $this->_checkBatchCompletion($jobId);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking [5] (job: ' . $jobId . ')...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking [5] (job: ' . $jobId . ')...');
                 // Break infinite loop after 50 attempts.
                 if (!$isComplete && $attempt == $maxAttempts) {
                     $isComplete = 'exception';
@@ -330,7 +330,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         $result = array();
         if (!empty($jobId)) {
             $this->_closeJob($jobId);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $jobId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $jobId);
 
             if ($attempt != $maxAttempts) {
                 $resultIds = $this->getBatch($jobId, $batchId);
@@ -364,7 +364,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             || !$sfClient->tryToConnect()
             || !$sfClient->tryToLogin()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
             return false;
         }
 
@@ -373,26 +373,26 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             if (!$this->_cache['bulkJobs']['account']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['account']['Id'] = $this->_createJob('Account', 'upsert', 'Id');
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Accounts, created job: ' . $this->_cache['bulkJobs']['account']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Accounts, created job: ' . $this->_cache['bulkJobs']['account']['Id']);
             }
             Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']['Id']));
             // send to sf
             $this->_pushChunked($this->_cache['bulkJobs']['account']['Id'], 'accounts', $this->_cache['accountsToUpsert']['Id'], 'Id');
 
             // Check if all accounts got Updated
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking if Accounts were successfully synced...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Accounts were successfully synced...');
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['account']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['account']['Id']);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking [1] (job: ' . $this->_cache['bulkJobs']['account']['Id'] . ')...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking [1] (job: ' . $this->_cache['bulkJobs']['account']['Id'] . ')...');
                 $_attempt++;
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['account']['Id']);
             }
             if (strval($_result) != 'exception') {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Accounts sync is complete! Moving on...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Accounts sync is complete! Moving on...');
                 // Update New Account ID's
                 $this->_assignAccountIds();
             }
@@ -405,7 +405,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 // upsert on Id if Magento users are guests
                 $this->_cache['bulkJobs']['lead']['Id'] = $this->_createJob('Lead', 'upsert', 'Id');
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Leads, created job: ' . $this->_cache['bulkJobs']['lead']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Leads, created job: ' . $this->_cache['bulkJobs']['lead']['Id']);
             }
             Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']['Id']));
             // send to sf
@@ -436,7 +436,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     }
                 }
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Leads, created job: ' . $this->_cache['bulkJobs']['lead'][$this->_magentoId]);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Leads, created job: ' . $this->_cache['bulkJobs']['lead'][$this->_magentoId]);
             }
             Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert'][$this->_magentoId]));
             // send to sf
@@ -462,26 +462,26 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             if (!$this->_cache['bulkJobs']['contact']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['contact']['Id'] = $this->_createJob('Contact', 'upsert', 'Id');
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Syncronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact']['Id']);
             }
 
             Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']['Id']));
             // send to sf
             $this->_pushChunked($this->_cache['bulkJobs']['contact']['Id'], 'contacts', $this->_cache['contactsToUpsert']['Id'], 'Id');
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking if Contacts were successfully synced...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Contacts were successfully synced...');
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact']['Id']);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking [2] (job: ' . $this->_cache['bulkJobs']['contact']['Id'] . ')...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking [2] (job: ' . $this->_cache['bulkJobs']['contact']['Id'] . ')...');
                 $_attempt++;
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['contact']['Id']);
             }
             if (strval($_result) != 'exception') {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Contacts sync is complete! Moving on...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Contacts sync is complete! Moving on...');
                 $this->_assignContactIds('Id');
             }
         }
@@ -497,26 +497,26 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     }
                 }
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Synchronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Synchronizing Contacts, created job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
             }
 
             Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert'][$this->_magentoId]));
 
             $this->_pushChunked($this->_cache['bulkJobs']['contact'][$this->_magentoId], 'contacts', $this->_cache['contactsToUpsert'][$this->_magentoId], $this->_magentoId);
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Checking if Contacts were successfully synced...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Contacts were successfully synced...');
             $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
                 $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Still checking [4] (job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId] . ')...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking [4] (job: ' . $this->_cache['bulkJobs']['contact'][$this->_magentoId] . ')...');
                 $_attempt++;
 
                 $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
             }
             if (strval($_result) != 'exception') {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Contacts sync is complete! Moving on...');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Contacts sync is complete! Moving on...');
                 $this->_assignContactIds($this->_magentoId);
             }
         }
@@ -543,7 +543,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     }
                     $_website = Mage::app()->getWebsite($_websiteId);
                     $errorCustomerListF = implode(", ", $_emails);
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Following customers from "' . $_website->getName() . '" failed to be synchronized: ' . $errorCustomerListF);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('WARNING: Following customers from "' . $_website->getName() . '" failed to be synchronized: ' . $errorCustomerListF);
                 }
             }
         }
@@ -880,27 +880,27 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         // Close Jobs
         if ($this->_cache['bulkJobs']['lead']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['lead']['Id']);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['lead']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['lead']['Id']);
         }
         if ($this->_cache['bulkJobs']['lead'][$this->_magentoId]) {
             $this->_closeJob($this->_cache['bulkJobs']['lead'][$this->_magentoId]);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['lead'][$this->_magentoId]);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['lead'][$this->_magentoId]);
         }
         if ($this->_cache['bulkJobs']['account']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['account']['Id']);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['account']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['account']['Id']);
         }
         if ($this->_cache['bulkJobs']['contact']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['contact']['Id']);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['contact']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['contact']['Id']);
         }
         if ($this->_cache['bulkJobs']['contact'][$this->_magentoId]) {
             $this->_closeJob($this->_cache['bulkJobs']['contact'][$this->_magentoId]);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['contact'][$this->_magentoId]);
         }
 
         // Clear Session variables
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Clearing bulk sync cache...');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Clearing bulk sync cache...');
         $this->_cache['bulkJobs']['lead'] = array('Id' => NULL, $this->_magentoId => NULL);
         $this->_cache['bulkJobs']['account'] = array('Id' => NULL);
         $this->_cache['bulkJobs']['contact'] = array('Id' => NULL, $this->_magentoId => NULL);

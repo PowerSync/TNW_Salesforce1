@@ -11,14 +11,14 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
     public function notesPush($observer)
     {
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
             return; // Disabled
         }
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
         ) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
             return; // Disabled
         }
 
@@ -33,7 +33,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
             if (!$res) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('ERROR: Order could not be added to the queue');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Order could not be added to the queue');
             }
             return;
         }
@@ -44,7 +44,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             if ($order->getSalesforceId()) {
                 // Process Notes
                 Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
                 Mage::dispatchEvent(
                     'tnw_sales_status_update_' . $_syncType,
                     array(
@@ -52,7 +52,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                     )
                 );
 
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update End (Notes) ########################################");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update End (Notes) ########################################");
             } else {
                 // Never was synced, new order
                 Mage::dispatchEvent(
@@ -67,7 +67,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
             }
         } else {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
         }
     }
 }

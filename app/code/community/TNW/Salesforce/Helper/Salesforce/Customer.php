@@ -179,11 +179,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     public function pushLead($_formData)
     {
         if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("IMPORTANT: Skipping form synchronization, please upgrade to Enterprise version!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("IMPORTANT: Skipping form synchronization, please upgrade to Enterprise version!");
             return false;
         }
         if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
             return false;
         }
 
@@ -296,7 +296,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $assignmentRule = Mage::helper('tnw_salesforce')->isLeadRule();
             if (!empty($assignmentRule) && $assignmentRule != "" && $assignmentRule != 0) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
                 $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
                 $this->_mySforceConnection->setAssignmentRuleHeader($header);
                 unset($assignmentRule, $header);
@@ -312,7 +312,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($_results as $_key => $_result) {
                 $this->_cache['responses']['leads']['contactUs'] = $_result;
                 if (property_exists($_result, 'success') && $_result->success) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Lead upserted (id: ' . $_result->id . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Lead upserted (id: ' . $_result->id . ')');
                     $_id = $_result->id;
                 } else {
                     $this->_processErrors($_result, 'lead', $this->_cache['leadsToUpsert'][$_keys[$_key]]);
@@ -335,7 +335,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             foreach ($this->_obj as $key => $value) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Task Object: " . $key . " = '" . $value . "'");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Task Object: " . $key . " = '" . $value . "'");
             }
 
             Mage::dispatchEvent("tnw_salesforce_task_send_before", array("data" => array($this->_obj)));
@@ -348,7 +348,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($_results as $_key => $_result) {
                 $_sfResult['note'] = $_result;
                 if (property_exists($_result, 'success') && $_result->success) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Task created (id: ' . $_result->id . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Task created (id: ' . $_result->id . ')');
                 } else {
                     $this->_processErrors($_result, 'task', $this->_obj);
                 }
@@ -374,7 +374,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 throw new Exception('could not establish Salesforce connection.');
             }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
             if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
                 throw new Exception('Sync customers, cache is empty!');
             }
@@ -407,10 +407,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if ($this->_customerEntityTypeCode) {
                 $this->_updateMagento();
             } else {
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to update Magento with Salesforce Ids');
-                }
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("WARNING: Failed to update Magento with Salesforce Ids. Try manual synchronization.", 2);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("WARNING: Failed to update Magento with Salesforce Ids. Try manual synchronization.");
             }
 
             /**
@@ -439,10 +436,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         if ($this->_forcedCustomerId && Mage::registry('customer_cached_' . $this->_forcedCustomerId)) {
                             $currentCustomer = Mage::registry('customer_cached_' . $this->_forcedCustomerId);
                         } else {
-                            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                                Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not locate synced customer from the order, Oportunity Account may end up blank!');
-                            }
-                            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Could not locate synced customer from the order, Oportunity Account may end up blank!");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Could not locate synced customer from the order, Oportunity Account may end up blank!");
                             $currentCustomer = false;
                         }
                     }
@@ -450,7 +444,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
             $this->_onComplete();
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
             if ($_return) {
                 if ($this instanceof TNW_Salesforce_Helper_Bulk_Customer && $_return == 'bulk') {
                     return $this->_orderCustomers;
@@ -459,7 +453,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
 
             return false;
         }
@@ -530,10 +524,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
         if (!$_customer) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: Could not add customer to Lead queue, could not load customer by ID (' . $_id . ') from Magento.');
-            }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not add customer to Lead queue, could not load customer by ID (" . $_id . ") from Magento.", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not add customer to Lead queue, could not load customer by ID (" . $_id . ") from Magento.");
             return;
         }
         $this->_obj = new stdClass();
@@ -908,7 +899,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             if ($_ownerID && $this->_isUserActive($_ownerID)) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($type . " record already assigned to " . $_ownerID);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " record already assigned to " . $_ownerID);
 
             } else {
                 $_ownerID = Mage::helper('tnw_salesforce')->getDefaultOwner();
@@ -1209,7 +1200,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -1418,11 +1409,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             foreach ($_collection as $_customer) {
                 if (!$_customer->getEmail() || !$_customer->getId()) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer #" . $_customer->getId() . ", customer could not be loaded!");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer #" . $_customer->getId() . ", customer could not be loaded!");
                     continue;
                 }
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customer->getGroupId())) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer group #" . $_customer->getGroupId() . " is disabled!");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer group #" . $_customer->getGroupId() . " is disabled!");
                     continue;
                 }
 
@@ -1555,7 +1546,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -1662,7 +1653,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
     protected function _updateMagento()
     {
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
 
         $customerIds = array();
         foreach ($this->_cache['toSaveInMagento'] as $_websiteId => $_websiteCustomers) {
@@ -1703,12 +1694,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 unset($_updatedCustomer);
             }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($_websiteCustomers) . " customers!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($_websiteCustomers) . " customers!");
         }
 
         $this->_prepareCampaignMembers($customerIds);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
     }
 
     /**
@@ -1750,13 +1741,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     public function updateMagentoEntityValue($_customerId = NULL, $_value = 0, $_attributeName = NULL, $_tableName = 'customer_entity_varchar')
     {
         if (empty($_customerId)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("No magento customer id while updating from salesforce");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No magento customer id while updating from salesforce");
             return;
         }
         $_table = Mage::helper('tnw_salesforce')->getTable($_tableName);
 
         if (!$_attributeName) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Could not update Magento customer values: attribute name is not specified', 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not update Magento customer values: attribute name is not specified');
             return false;
         }
 
@@ -1767,7 +1758,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if ($_value || $_value === 0) {
             // Update Account Id
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE attribute_id = " . $this->_attributes[$_attributeName] . " AND entity_id = " . $_customerId;
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("UPDATE SQL CHECK (attr '" . $_attributeName . "'): " . $sqlCheck);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("UPDATE SQL CHECK (attr '" . $_attributeName . "'): " . $sqlCheck);
             $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
@@ -1779,7 +1770,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         } else {
             // Reset value
             $sqlCheck = "SELECT value_id FROM `" . $_table . "` WHERE attribute_id = " . $this->_attributes[$_attributeName] . " AND entity_id = " . $_customerId;
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("RESET SQL CHECK (attr '" . $_attributeName . "'): " . $sqlCheck);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("RESET SQL CHECK (attr '" . $_attributeName . "'): " . $sqlCheck);
             $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sqlCheck)->fetch();
             if ($row && array_key_exists('value_id', $row)) {
                 //Update
@@ -1787,11 +1778,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
         }
         if (!empty($sql)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql);
             Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
         if (!empty($sqlDelete)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sqlDelete);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sqlDelete);
             Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sqlDelete);
         }
     }
@@ -1802,7 +1793,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
          * Upsert Accounts
          */
         if (!empty($this->_cache['accountsToUpsert']['Id'])) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Account Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Account Sync ----------");
             $this->_dumpObjectToLog($this->_cache['accountsToUpsert']['Id'], 'Account');
             // Accounts upsert
             $_pushOn = 'Id';
@@ -1821,7 +1812,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['responses']['accounts'][$_id] = $_response;
                 }
                 $_results = array();
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of accounts to SalesForce failed' . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of accounts to SalesForce failed' . $e->getMessage());
             }
 
             $_entitites = array();
@@ -1903,8 +1894,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['contactsToUpsert'][$this->_magentoId] = array();
                 }
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Accounts: " . implode(',', $_entitites) . " upserted!");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Account Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Accounts: " . implode(',', $_entitites) . " upserted!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Account Sync ----------");
         }
 
         /**
@@ -1912,9 +1903,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
          */
         // On Id
         if (!empty($this->_cache['contactsToUpsert']['Id'])) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Contact Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Contact Sync ----------");
             $this->_dumpObjectToLog($this->_cache['contactsToUpsert']['Id'], 'Contact');
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Contacts: on Id");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contacts: on Id");
 
             $_contactIds = array_keys($this->_cache['contactsToUpsert']['Id']);
             try {
@@ -1930,7 +1921,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['responses']['contacts'][$_id] = $_response;
                 }
                 $_results = array();
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
             $_entitites = array();
 
@@ -1999,8 +1990,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Contacts: " . implode(',', $_entitites) . " upserted!");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Contact Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contacts: " . implode(',', $_entitites) . " upserted!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Contact Sync ----------");
         }
 
         /**
@@ -2008,10 +1999,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
          */
         // On Magento Id
         if (!empty($this->_cache['contactsToUpsert'][$this->_magentoId])) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Contact Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Contact Sync ----------");
             $this->_dumpObjectToLog($this->_cache['contactsToUpsert'][$this->_magentoId], 'Contact');
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Contacts: on " . $this->_magentoId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contacts: on " . $this->_magentoId);
 
             $_contactIds = array_keys($this->_cache['contactsToUpsert'][$this->_magentoId]);
             try {
@@ -2027,7 +2018,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['responses']['contacts'][$_id] = $_response;
                 }
                 $_results = array();
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
             $_entitites = array();
 
@@ -2069,8 +2060,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
             }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Contacts: " . implode(',', $_entitites) . " upserted!");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Contact Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contacts: " . implode(',', $_entitites) . " upserted!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Contact Sync ----------");
         }
 
         /**
@@ -2079,12 +2070,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         // On Magento ID
         if (!empty($this->_cache['leadsToUpsert'][$this->_magentoId])) {
             // Lead Sync
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Lead Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Lead Sync ----------");
             $this->_dumpObjectToLog($this->_cache['leadsToUpsert'][$this->_magentoId], 'Lead');
 
             $assignmentRule = Mage::helper('tnw_salesforce')->isLeadRule();
             if (!empty($assignmentRule) && $assignmentRule != "" && $assignmentRule != 0) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
                 $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
                 $this->_mySforceConnection->setAssignmentRuleHeader($header);
                 unset($assignmentRule, $header);
@@ -2104,7 +2095,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['responses']['leads'][$_id] = $_response;
                 }
                 $_results = array();
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
             $_entitites = array();
 
@@ -2137,8 +2128,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_processErrors($_result, 'lead', $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]);
                 }
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Leads: " . implode(',', $_entitites) . " upserted!");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Lead Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Leads: " . implode(',', $_entitites) . " upserted!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Lead Sync ----------");
         }
 
         /**
@@ -2147,12 +2138,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         // On Id
         if (!empty($this->_cache['leadsToUpsert']['Id'])) {
             // Lead Sync
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- Start: Lead Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Lead Sync ----------");
             $this->_dumpObjectToLog($this->_cache['leadsToUpsert']['Id'], 'Lead');
 
             $assignmentRule = Mage::helper('tnw_salesforce')->isLeadRule();
             if (!empty($assignmentRule) && $assignmentRule != "" && $assignmentRule != 0) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
                 $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
                 $this->_mySforceConnection->setAssignmentRuleHeader($header);
                 unset($assignmentRule, $header);
@@ -2171,7 +2162,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_cache['responses']['leads'][$_id] = $_response;
                 }
                 $_results = array();
-                Mage::getModel('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
 
             $_entitites = array();
@@ -2210,8 +2201,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_processErrors($_result, 'lead', $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]);
                 }
             }
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Leads: " . implode(',', $_entitites) . " upserted!");
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("---------- End: Lead Sync ----------");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Leads: " . implode(',', $_entitites) . " upserted!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Lead Sync ----------");
         }
 
         if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation()) {

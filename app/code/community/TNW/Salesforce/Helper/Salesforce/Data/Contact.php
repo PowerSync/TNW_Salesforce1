@@ -99,7 +99,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
             }
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Contact merging error: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Contact merging error: " . $e->getMessage());
         }
 
         return $this;
@@ -200,11 +200,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         }
         $query .= join(' OR ', $_lookup);
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
         try {
             $_result = $this->getClient()->query(($query));
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             $_result = array();
         }
 
@@ -273,7 +273,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
             unset($query);
             if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Contact lookup returned: no results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contact lookup returned: no results...");
                 return false;
             }
 
@@ -358,8 +358,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             }
             return $returnArray;
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by Magento Email #" . implode(",", $email));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by Magento Email #" . implode(",", $email));
             unset($email);
             return false;
         }

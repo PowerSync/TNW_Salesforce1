@@ -223,7 +223,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         $this->checkConnection();
         if (!$this->_mySforceConnection) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
             return false;
         }
 
@@ -246,14 +246,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function _createJob($_obj = NULL, $_operation = 'upsert', $_externalId = NULL)
     {
         if (!$this->getSalesforceSessionId()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
             return NULL;
         }
         if (!$this->getSalesforceServerDomain()) {
             $this->_getSalesforceDomainFromSession();
 
             if (!$this->getSalesforceServerDomain()) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API domain is not set!");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API domain is not set!");
                 return NULL;
             }
         }
@@ -333,10 +333,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 $_success = $this->_pushSegment($_jobId, $_batchType, $_entities, 0, $_on);
             }
             if (!$_success) {
-                if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . uc_words($_batchType) . ' upserts failed');
-                }
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace('ERROR: ' . uc_words($_batchType) . ' upsert failed', 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . uc_words($_batchType) . ' upsert failed');
                 return false;
             }
         }
@@ -408,14 +405,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">';
 
         foreach ($chunk as $_item) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("+++++ Start " . ucwords($_batchType) . " Object +++++");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("+++++ Start " . ucwords($_batchType) . " Object +++++");
             $_data .= '<sObject>';
             foreach ($_item as $_tag => $_value) {
                 $_data .= '<' . $_tag . '><![CDATA[' . $_value . ']]></' . $_tag . '>';
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . " - " . $_tag . " : " . $_value);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . " - " . $_tag . " : " . $_value);
             }
             $_data .= '</sObject>';
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("+++++ End " . ucwords($_batchType) . " Object +++++");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("+++++ End " . ucwords($_batchType) . " Object +++++");
         }
 
         $_data .= '</sObjects>';
@@ -426,7 +423,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $_batchInfo = simplexml_load_string($response);
 
             $_batchId = substr($_batchInfo->id, 0, -3);
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . ' batch was created, batch number: ' . $_batchId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . ' batch was created, batch number: ' . $_batchId);
             // Update Batches cache
             if (!array_key_exists($_batchType, $this->_cache['batchCache'])) {
                 $this->_cache['batchCache'][$_batchType] = array();
@@ -518,9 +515,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $response = simplexml_load_string($client->request()->getBody());
             foreach ($response as $_responseRow) {
                 if (property_exists($_responseRow, 'state')) {
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('INFO: State: ' . $_responseRow->state);
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('INFO: Batch ID: ' . $_responseRow->id);
-                    Mage::getModel('tnw_salesforce/tool_log')->saveTrace('INFO: RecordsProcessed: ' . $_responseRow->numberRecordsProcessed);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: State: ' . $_responseRow->state);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Batch ID: ' . $_responseRow->id);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: RecordsProcessed: ' . $_responseRow->numberRecordsProcessed);
                     if ('Failed' == $_responseRow->state) {
                         $completed = 'exception';
                         break;
@@ -536,7 +533,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 }
             }
         } catch (Exception $e) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('_checkBatchCompletion function has an error: ' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('_checkBatchCompletion function has an error: ' . $e->getMessage());
             $completed = 'exception';
         }
 
@@ -549,23 +546,18 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
+        $objectStr = var_export($_object);
         if (is_array($_response->errors)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('Failed to upsert ' . $type . '!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ' . $objectStr);
             foreach ($_response->errors as $_error) {
-                if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_error->message);
-                }
-                Mage::helper('tnw_salesforce/email')->sendError($_error->message, $_object, $type);
-                Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
+//                Mage::helper('tnw_salesforce/email')->sendError($_error->message, $_object, $type);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
             }
         } else {
-            if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_response->errors->message);
-            }
 
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message . '. Object dump: ' . $objectStr);
             // Send Email
-            Mage::helper('tnw_salesforce/email')->sendError($_response->errors->message, $_object, $type);
+//            Mage::helper('tnw_salesforce/email')->sendError($_response->errors->message, $_object, $type);
         }
     }
 
@@ -635,6 +627,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         );
 
         $this->_fillWebsiteSfIds();
+
+        Mage::getSingleton('tnw_salesforce/tool_log_mail')->send();
     }
 
     public function getHttpClient()
@@ -670,48 +664,48 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $array = (array)$array;
         }
         if (empty($array)) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Could not dump object: " . $type . " - it's empty", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not dump object: " . $type . " - it's empty");
             return;
         }
         if ($isError) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("~~~~~~~~~~~~ Dumping Object: ~~~~~~~~~~~~~", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("~~~~~~~~~~~~ Dumping Object: ~~~~~~~~~~~~~");
         }
         /* Dump object into the log */
         foreach ($array as $k => $_obj) {
             if ($isError) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Entity Key: " . $k, 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Entity Key: " . $k);
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("Entity Key: " . $k);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Entity Key: " . $k);
             }
             if (empty($_obj) || (!is_array($_obj) && !is_object($_obj))) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($type . " Object is empty!", 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object is empty!");
             } else {
                 foreach ($_obj as $_key => $_value) {
                     if (is_object($_value) || is_array($_value)) {
                         foreach ($_value as $k1 => $v1) {
                             if ($isError) {
-                                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $k1 . " = '" . $v1 . "'", 1, "sf-errors");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object: " . $k1 . " = '" . $v1 . "'");
                             } else {
-                                Mage::getModel('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $k1 . " = '" . $v1 . "'");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $k1 . " = '" . $v1 . "'");
                             }
                         }
                     } else {
                         if ($isError) {
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $_key . " = '" . $_value . "'", 1, "sf-errors");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object: " . $_key . " = '" . $_value . "'");
                         } else {
-                            Mage::getModel('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $_key . " = '" . $_value . "'");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $_key . " = '" . $_value . "'");
                         }
                     }
                 }
             }
             if ($isError) {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("=====================", 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("=====================");
             } else {
-                Mage::getModel('tnw_salesforce/tool_log')->saveTrace("=====================");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=====================");
             }
         }
         if ($isError) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveTrace("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         }
     }
 
@@ -723,7 +717,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function _query($_query = NULL, $jobId = NULL)
     {
         if (!$this->getSalesforceSessionId()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
             return NULL;
         }
         $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch');
@@ -751,7 +745,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function _createJobQuery($_obj = NULL)
     {
         if (!$this->getSalesforceSessionId()) {
-            Mage::getModel('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
             return NULL;
         }
         $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job');
@@ -1077,7 +1071,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function logNotice($message)
     {
-        return Mage::getModel('tnw_salesforce/tool_log')->saveTrace($message);
+        return Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
     }
 
     /**
@@ -1087,10 +1081,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function logError($message)
     {
-        return Mage::getModel('tnw_salesforce/tool_log')->saveError($message);
+        return Mage::getSingleton('tnw_salesforce/tool_log')->saveError($message);
     }
 
     /**
+     * @deprecated
      * Add message to output
      * @param $message
      * @param $level
@@ -1114,7 +1109,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             Mage::getSingleton('adminhtml/session')->$method($message);
         }
 
-        Mage::getModel('tnw_salesforce/tool_log')->saveTrace($message);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
 
         return $this;
     }

@@ -16,8 +16,8 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
     {
         parent::__construct();
         $this->setId('grid_id');
-        $this->setDefaultSort('Id');
-        $this->setDefaultDir('asc');
+        $this->setDefaultSort('entity_id');
+        $this->setDefaultDir('desc');
         $this->setSaveParametersInSession(true);
     }
 
@@ -53,6 +53,14 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
                 'type' => 'options',
                 'options' => TNW_Salesforce_Model_Tool_Log::getAllLevels(),
 
+            )
+        );
+
+        $this->addColumn('transaction_id',
+            array(
+                'header' => $this->__('Transaction ID'),
+                'index' => 'transaction_id',
+                'type' => 'text'
             )
         );
 
