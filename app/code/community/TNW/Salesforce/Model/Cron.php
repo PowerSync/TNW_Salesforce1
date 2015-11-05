@@ -83,7 +83,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 Mage::helper('tnw_salesforce')->log(intval(date("H")) == intval($configTimeHour));
                 Mage::helper('tnw_salesforce')->log(abs(intval(date("i")) - intval($configTimeMinute)) < $this->_cronRunIntervalMinute);
 
-                if ((Mage::helper('tnw_salesforce')->getTime() - $lastRunTime) >= $configFrequencySeconds
+                if ((Mage::helper('tnw_salesforce')->getTime() - $lastRunTime) >= ($configFrequencySeconds - 60)
                     && intval(date("H")) == intval($configTimeHour)
                     && abs(intval(date("i")) - intval($configTimeMinute)) <= $this->_cronRunIntervalMinute
                 ) {
