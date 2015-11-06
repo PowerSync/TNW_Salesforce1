@@ -146,8 +146,8 @@
                     <title>Tools</title>
                     <sort_order>500</sort_order>
                     <children>
-                        <console translate="title" module="tnw_salesforce">
-                            <title>SQOL Console</title>
+                        <console translate="title" module="tnw_salesforce" ifconfig="salesforce/development_and_debugging/enable_soql">
+                            <title>SOQL Console</title>
                             <action>adminhtml/tool_console</action>
                             <sort_order>100</sort_order>
                         </console>

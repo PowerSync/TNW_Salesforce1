@@ -546,18 +546,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
-        $objectStr = var_export($_object);
+        $objectStr = var_export($_object, true);
         if (is_array($_response->errors)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ' . $objectStr);
             foreach ($_response->errors as $_error) {
-//                Mage::helper('tnw_salesforce/email')->sendError($_error->message, $_object, $type);
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
             }
         } else {
-
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message . '. Object dump: ' . $objectStr);
-            // Send Email
-//            Mage::helper('tnw_salesforce/email')->sendError($_response->errors->message, $_object, $type);
         }
     }
 

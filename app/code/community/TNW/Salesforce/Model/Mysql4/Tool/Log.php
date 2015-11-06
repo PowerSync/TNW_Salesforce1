@@ -10,16 +10,6 @@
 class TNW_Salesforce_Model_Mysql4_Tool_Log extends Mage_Core_Model_Resource_Db_Abstract
 {
     /**
-     * Crear table if more that this count of records exists
-     */
-    const TOTAL_RECORD_LIMIT = 1000;
-
-    /**
-     * if we have more that TOTAL_RECORD_LIMIT records in table - remove following records count
-     */
-    const RECORD_TO_CLEAR_LIMIT = 100;
-
-    /**
      * @var array
      */
     protected static $checkTable = true;
@@ -47,9 +37,9 @@ class TNW_Salesforce_Model_Mysql4_Tool_Log extends Mage_Core_Model_Resource_Db_A
 
             $count = $this->_getReadAdapter()->fetchOne('SELECT COUNT(*) FROM `'.$this->getMainTable().'`');
 
-            if ($count > self::TOTAL_RECORD_LIMIT) {
+            if ($count > Mage::helper('tnw_salesforce/config_tool')->getDbLogLimit()) {
                 $this->_getWriteAdapter()->query(
-                    'DELETE FROM `'.$this->getMainTable().'` ORDER BY `'.$this->getIdFieldName().'` ASC LIMIT ' . self::RECORD_TO_CLEAR_LIMIT
+                    'DELETE FROM `'.$this->getMainTable().'` ORDER BY `'.$this->getIdFieldName().'` ASC LIMIT ' . Mage::helper('tnw_salesforce/config_tool')->getDbLogRemoveCount()
                 );
             }
             self::$checkTable = false;

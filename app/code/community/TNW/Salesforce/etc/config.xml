@@ -545,6 +545,11 @@
                 <order_batch_size>500</order_batch_size>
                 <abandoned_batch_size>400</abandoned_batch_size>
                 <invoice_batch_size>400</invoice_batch_size>
+
+                <db_log_limit>1000</db_log_limit>
+                <db_log_remove_count>100</db_log_remove_count>
+                <enable_soql>0</enable_soql>
+
             </development_and_debugging>
 
         </salesforce>

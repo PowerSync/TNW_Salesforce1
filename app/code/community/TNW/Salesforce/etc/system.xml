@@ -469,6 +469,56 @@
                         </invoice_batch_size>
 
                         <!-- Bulk settings end -->
+
+                        <!-- Tool settings start -->
+                        <tool_settings_label translate="label">
+                            <label>Module dev tool configuration</label>
+                            <frontend_model>adminhtml/system_config_form_field_heading</frontend_model>
+                            <sort_order>250</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </tool_settings_label>
+
+                        <db_log_limit translate="label">
+                            <label>DB log Limit</label>
+                            <sort_order>260</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </db_log_limit>
+
+                        <db_log_remove_count translate="label">
+                            <label>DB log: remove {{count}} records if limit exceeded</label>
+                            <sort_order>270</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </db_log_remove_count>
+
+                        <enable_soql translate="label">
+                            <label>Enable SOQL console</label>
+                            <frontend_type>select</frontend_type>
+                            <sort_order>280</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </enable_soql>
+
+                        <!-- Tool settings end -->
                     </fields>
                 </development_and_debugging>
             </groups>
