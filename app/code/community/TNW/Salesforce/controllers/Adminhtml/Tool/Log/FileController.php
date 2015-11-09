@@ -43,10 +43,11 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
      */
     protected function _prepareAction()
     {
-        $this->_title($this->__('Salesforce'))->_title($this->__('Logs'));
+        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Sync log files'));
+
 
         $this->_setActiveMenu('tnw_salesforce');
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforcecore'), Mage::helper('adminhtml')->__('Salesforcecore'));
+        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforce'), Mage::helper('adminhtml')->__('Salesforce'));
         $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Logs'), Mage::helper('adminhtml')->__('Log'));
 
         return $this;

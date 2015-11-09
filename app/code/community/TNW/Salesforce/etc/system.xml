@@ -494,17 +494,6 @@
                             </depends>
                         </db_log_limit>
 
-                        <db_log_remove_count translate="label">
-                            <label>DB log: remove {{count}} records if limit exceeded</label>
-                            <sort_order>270</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <depends>
-                                <developer_settings>1</developer_settings>
-                            </depends>
-                        </db_log_remove_count>
-
                         <enable_soql translate="label">
                             <label>Enable SOQL console</label>
                             <frontend_type>select</frontend_type>

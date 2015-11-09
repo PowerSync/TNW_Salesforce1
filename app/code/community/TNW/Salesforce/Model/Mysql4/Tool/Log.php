@@ -38,8 +38,11 @@ class TNW_Salesforce_Model_Mysql4_Tool_Log extends Mage_Core_Model_Resource_Db_A
             $count = $this->_getReadAdapter()->fetchOne('SELECT COUNT(*) FROM `'.$this->getMainTable().'`');
 
             if ($count > Mage::helper('tnw_salesforce/config_tool')->getDbLogLimit()) {
+
+                $limit = $count - Mage::helper('tnw_salesforce/config_tool')->getDbLogLimit();
+
                 $this->_getWriteAdapter()->query(
-                    'DELETE FROM `'.$this->getMainTable().'` ORDER BY `'.$this->getIdFieldName().'` ASC LIMIT ' . Mage::helper('tnw_salesforce/config_tool')->getDbLogRemoveCount()
+                    'DELETE FROM `'.$this->getMainTable().'` ORDER BY `'.$this->getIdFieldName().'` ASC LIMIT ' . $limit
                 );
             }
             self::$checkTable = false;

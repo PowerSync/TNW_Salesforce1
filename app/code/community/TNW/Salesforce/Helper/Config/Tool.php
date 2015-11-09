@@ -19,11 +19,6 @@ class TNW_Salesforce_Helper_Config_Tool extends TNW_Salesforce_Helper_Config
     const DB_LOG_LIMIT = 'salesforce/development_and_debugging/db_log_limit';
 
     /**
-     * remove this records count if limit exceedede
-     */
-    const DB_LOG_REMOVE_COUNT = 'salesforce/development_and_debugging/db_log_remove_count';
-
-    /**
      * enable SOQL console
      */
     const ENABLE_SOQL = 'salesforce/development_and_debugging/enable_soql';
@@ -34,14 +29,6 @@ class TNW_Salesforce_Helper_Config_Tool extends TNW_Salesforce_Helper_Config
     public function getDbLogLimit()
     {
         return $this->getStoreConfig(self::DB_LOG_LIMIT);
-    }
-
-    /**
-     * remove this records count if limit exceedede
-     */
-    public function getDbLogRemoveCount()
-    {
-        return $this->getStoreConfig(self::DB_LOG_REMOVE_COUNT);
     }
 
     /**

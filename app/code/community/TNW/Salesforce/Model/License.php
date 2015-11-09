@@ -99,7 +99,7 @@ class TNW_Salesforce_Model_License
         }
 
         if (!$this->_status) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: Invalid license!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Invalid license!");
         }
     }
 

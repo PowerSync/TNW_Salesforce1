@@ -7,22 +7,26 @@ class TNW_Salesforce_Model_Config_Products
 
     public function buildDropDown($type)
     {
-        if (Mage::helper('tnw_salesforce')->isWorking()) {
-            $this->_getProducts($type);
-        }
-        if (!$this->_product && !empty($this->_productsLookup)) {
-            $this->_product = array();
-            foreach ($this->_productsLookup as $key => $_obj) {
+        try {
+            if (Mage::helper('tnw_salesforce')->isWorking()) {
+                $this->_getProducts($type);
+            }
+            if (!$this->_product && !empty($this->_productsLookup)) {
+                $this->_product = array();
+                foreach ($this->_productsLookup as $key => $_obj) {
+                    $this->_product[] = array(
+                        'label' => $_obj,
+                        'value' => $key
+                    );
+                }
+            } else if (empty($this->_productsLookup)) {
                 $this->_product[] = array(
-                    'label' => $_obj,
-                    'value' => $key
+                    'label' => 'No products found',
+                    'value' => 0
                 );
             }
-        } else if (empty($this->_productsLookup)) {
-            $this->_product[] = array(
-                'label' => 'No products found',
-                'value' => 0
-            );
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
         }
         return $this->_product;
     }

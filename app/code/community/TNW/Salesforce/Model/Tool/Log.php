@@ -28,6 +28,12 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
     protected static $transactionId;
 
     /**
+     * identify new synchronization
+     * @var
+     */
+    protected static $newTransaction = true;
+
+    /**
      * prepare object
      */
     protected function _construct()
@@ -36,10 +42,20 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
         $this->_init('tnw_salesforce/tool_log');
     }
 
+    public function isNewTransaction()
+    {
+        return empty(self::$transactionId) || self::$newTransaction;
+    }
+
+    /**
+     * @return string
+     */
     public function getTransactionId()
     {
         if (is_null(self::$transactionId)) {
             self::$transactionId = uniqid();
+        } else {
+            self::$newTransaction = false;
         }
 
         return self::$transactionId;
@@ -73,37 +89,6 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
             $this->setData('transaction_id', $this->getTransactionId());
         }
 
-        return parent::_beforeSave();
-    }
-
-
-    /**
-     * Save object data
-     *
-     * @return Mage_Core_Model_Abstract
-     */
-    public function save($message = null, $level = null)
-    {
-        if ($message) {
-            $this->setMessage($message);
-        }
-
-        if ($level) {
-            $this->setLevel($level);
-        }
-
-        Mage::getSingleton('tnw_salesforce/tool_log_file')->write($this->getMessage(), $this->getLevel());
-        return parent::save();
-    }
-
-    /**
-     * Processing object after save data
-     *
-     * @return Mage_Core_Model_Abstract
-     */
-    protected function _afterSave()
-    {
-
         /**
          * @comment add session message is we in Admin area
          */
@@ -129,6 +114,47 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                     break;
             }
         }
+
+        /**
+         * Add config first time only
+         */
+        if ($this->isNewTransaction()) {
+            $message = "******************** New Transaction:" .$this->getTransactionId(). " ************\n" . $this->getMessage();
+            $this->setMessage($message);
+        }
+
+        return parent::_beforeSave();
+    }
+
+
+    /**
+     * Save object data
+     *
+     * @return Mage_Core_Model_Abstract
+     */
+    public function save($message = null, $level = null)
+    {
+        if ($message) {
+            $this->setMessage($message);
+        }
+
+        if ($level) {
+            $this->setLevel($level);
+        }
+
+        return parent::save();
+    }
+
+    /**
+     * Processing object after save data
+     *
+     * @return Mage_Core_Model_Abstract
+     */
+    protected function _afterSave()
+    {
+
+        Mage::getSingleton('tnw_salesforce/tool_log_file')->write($this->getMessage(), $this->getLevel());
+
         return parent::_afterSave();
     }
 

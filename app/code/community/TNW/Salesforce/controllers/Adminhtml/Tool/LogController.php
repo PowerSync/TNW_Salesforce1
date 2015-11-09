@@ -11,11 +11,27 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
 {
 
     /**
+     * @return $this
+     */
+    protected function _prepareAction()
+    {
+        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Sync logs in DB'));
+
+
+        $this->_setActiveMenu('tnw_salesforce');
+        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforce'), Mage::helper('adminhtml')->__('Salesforce'));
+        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Logs'), Mage::helper('adminhtml')->__('Log'));
+
+        return $this;
+    }
+
+    /**
      * show grid page
      */
     public function indexAction()
     {
         $this->loadLayout();
+        $this->_prepareAction();
         $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log'));
         $this->renderLayout();
     }

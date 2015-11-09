@@ -10,6 +10,12 @@
 class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
 {
     /**
+     * save config dump in log file with first error
+     * @var bool
+     */
+    protected static $saveConfig = true;
+
+    /**
      * @var null
      */
     protected $_logDir = null;
@@ -209,21 +215,26 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
             $this->write($message, Zend_Log::DEBUG);
 
             /**
-             * @comment add current configuration
-             */
-            $configDump = Mage::helper('tnw_salesforce/config')->getConfigDump();
-
-            $message .= var_export($configDump, true);
-
-            /**
              * @comment save error for email send
              */
             $this->write($message, Zend_Log::CRIT);
 
             /**
-             * TODO move email sending to the end of synchronization process
+             * Add config first time only
              */
-//            Mage::getSingleton('tnw_salesforce/tool_log_mail')->send();
+            if (self::$saveConfig) {
+
+                $message .= "\nSalesForce Config:\n";
+
+                /**
+                 * @comment add current configuration
+                 */
+                $configDump = Mage::helper('tnw_salesforce/config')->getConfigDump();
+
+                $message .= var_export($configDump, true);
+
+                self::$saveConfig = false;
+            }
         }
 
         $file = $this->prepareFilename($file, $level);

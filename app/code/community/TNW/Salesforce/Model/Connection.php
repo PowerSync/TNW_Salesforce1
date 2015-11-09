@@ -259,10 +259,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     {
         try {
             $this->_errorMessage = null;
-            if (
-                $this->isConnected()
-                && $this->tryToLogin()
-            ) {
+            if ($this->isConnected()) {
                 return $this->_client;
             }
         } catch (Exception $e) {
@@ -289,7 +286,11 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     public function isConnected()
     {
         $currentTime = time();
-        if (!$this->getPreviousTime() || $currentTime - $this->getPreviousTime() > self::CONNECTION_TIME_LIMIT) {
+        if (
+            !$this->getPreviousTime()
+            || $currentTime - $this->getPreviousTime() > self::CONNECTION_TIME_LIMIT
+            || !$this->_connection
+        ) {
             $this->setPreviousTime($currentTime);
             $this->_connection = null;
             $this->_loggedIn = null;
@@ -300,18 +301,16 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             }
         }
 
-        if (!$this->_connection && $this->tryWsdl()) {
-            $this->tryToConnect();
-        }
         return $this->_connection;
     }
 
     public function isLoggedIn()
     {
         if (!$this->_loggedIn) {
-            if ($this->isConnected()) {
-                $this->tryToLogin();
-            }
+            /**
+             * the "isConnected" already contain log-in action
+             */
+            $this->isConnected();
         }
         return $this->_loggedIn;
     }

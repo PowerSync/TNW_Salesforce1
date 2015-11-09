@@ -14,11 +14,11 @@ class TNW_Salesforce_Adminhtml_Tool_ConsoleController extends Mage_Adminhtml_Con
      */
     public function indexAction()
     {
-        $this->_title($this->__('Salesforce'))->_title($this->__('Console'));
+        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Console'));
 
         $this->loadLayout();
         $this->_setActiveMenu('tnw_salesforce');
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforcecore'), Mage::helper('adminhtml')->__('Salesforcecore'));
+        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforce'), Mage::helper('adminhtml')->__('Salesforce'));
         $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Console'), Mage::helper('adminhtml')->__('Log'));
 
         $sql = Mage::getSingleton('admin/session')->getData('sql');

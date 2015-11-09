@@ -93,7 +93,7 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
      * find module configuration in database
      * @return array
      */
-    public function getConfigDump()
+    public function getConfigDump($emulateTable = true)
     {
 
         /**
@@ -112,6 +112,18 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
          * Execute the query and store the results in $results
          */
         $results = $readConnection->fetchAll($query);
+
+        if ($emulateTable) {
+            $resultsStr = '';
+            foreach ($results as $result) {
+                if (empty($resultsStr)) {
+                    $resultsStr .= "\t|" . implode('|', array_keys($result)) . "| \n";
+                }
+                $resultsStr .= "\t|" . implode('|', $result) . "| \n";
+            }
+
+            return $resultsStr;
+        }
 
         return $results;
     }
