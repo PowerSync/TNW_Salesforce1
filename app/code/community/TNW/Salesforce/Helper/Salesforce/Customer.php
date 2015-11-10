@@ -1860,9 +1860,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         if (array_key_exists('guest_0', $this->_cache['guestsFromOrder'])) {
                             $this->_cache['contactsToUpsert']['Id']['guest_0']->AccountId = $_result->id;
                         }
-                        foreach ($this->_cache['contactsToUpsert'] as $_id => $_objects) {
+                        foreach ($this->_cache['contactsToUpsert'] as $_upsertOn => $_objects) {
                             if (array_key_exists($_contactIds[$_key], $_objects)) {
-                                $this->_cache['contactsToUpsert'][$_id][$_contactIds[$_key]]->AccountId = $_result->id;
+                                $this->_cache['contactsToUpsert'][$_upsertOn][$_contactIds[$_key]]->AccountId = $_result->id;
                             }
                         }
                     }
@@ -1903,10 +1903,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                              * Company name should be empty for convertation to PersonAccount
                              * @see https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_lead.htm#LeadCompanyField
                              */
-                            foreach ($this->_cache['leadsToUpsert'] as $_id => $_objects) {
+                            foreach ($this->_cache['leadsToUpsert'] as $_upsertOn => $_objects) {
                                 if (array_key_exists($_contactIds[$_key], $_objects)
                                 ) {
-                                    $this->_cache['leadsToUpsert'][$_id][$_contactIds[$_key]]->Company = '';
+                                    $this->_cache['leadsToUpsert'][$_upsertOn][$_contactIds[$_key]]->Company = '';
                                 }
                             }
                         }
