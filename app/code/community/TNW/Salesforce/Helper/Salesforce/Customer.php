@@ -2010,7 +2010,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         }
                     }
                 } else {
-                    $this->_processErrors($_result, 'contact', $this->_cache['contactsToUpsert'][$_contactIds[$_key]]);
+                    $this->_processErrors($_result, 'contact', $this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]);
                 }
             }
 
