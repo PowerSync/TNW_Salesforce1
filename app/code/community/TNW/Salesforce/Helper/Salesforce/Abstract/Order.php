@@ -903,8 +903,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         ) {
             $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
             foreach ($options['options'] as $_option) {
-                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $_option['print_value'] . '</td></tr>';
-                $_summary[] = $_option['print_value'];
+                $optionValue = '';
+                if(isset($_option['print_value'])) {
+                    $optionValue = $_option['print_value'];
+                } elseif (isset($_option['value'])) {
+                    $optionValue = $_option['value'];
+                }
+
+                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
+                $_summary[] = $optionValue;
             }
         }
         if (
