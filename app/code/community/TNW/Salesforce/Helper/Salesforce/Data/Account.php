@@ -117,8 +117,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     /**
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection
      */
-    public function getDuplicates($isPersonAccount = false)
+    public function getDuplicates($_emailsArray = array(), $isPersonAccount = false)
     {
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+
         $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
 
         $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
@@ -138,6 +140,15 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
             $collection->getSelect()->group('Name');
 
         } else {
+
+            if (!empty($_emailsArray)) {
+
+                $magentoId = str_replace('__c', '__pc', $_magentoId);
+
+                $whereEmail = "PersonEmail = '" . implode("' OR PersonEmail = '", $_emailsArray) . "'";
+                $whereCustomerId = "$magentoId = '" . implode("' OR $magentoId = '", array_keys($_emailsArray)) . "'";
+                $collection->getSelect()->where("($whereEmail OR  $whereCustomerId)");
+            }
             $collection->getSelect()->columns('PersonEmail');
             $collection->getSelect()->group('PersonEmail');
         }
