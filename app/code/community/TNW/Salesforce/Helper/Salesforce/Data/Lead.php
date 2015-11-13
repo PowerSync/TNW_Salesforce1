@@ -223,8 +223,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param string $leadSource
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
      */
-    public function getDuplicates($leadSource = '')
+    public function getDuplicates($_emailsArray = array(), $leadSource = '')
     {
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+
         $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
 
         $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
@@ -244,6 +246,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $collection->getSelect()->group('Email');
 
         $collection->getSelect()->having('COUNT(Id) > ?', 1);
+
+        if (!empty($_emailsArray)) {
+
+            $whereEmail = "Email = '" . implode("' OR Email = '", $_emailsArray) . "'";
+            $whereCustomerId = "$_magentoId = '" . implode("' OR $_magentoId = '", array_keys($_emailsArray)) . "'";
+            $collection->getSelect()->where("($whereEmail OR  $whereCustomerId)");
+        }
 
         if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
 
