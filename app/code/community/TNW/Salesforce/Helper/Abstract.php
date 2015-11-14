@@ -209,9 +209,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         $file = $_folder . $file . '-' . $this->getWebsiteId() . '-' . $this->getStoreId() . '.log';
 
         if ($this->isLoggingEnabled()) {
-            if ($message == trim($message)) {
-                Mage::log($message, $level, $file);
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
         }
     }
 
