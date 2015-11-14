@@ -242,7 +242,12 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     )
                 );
             } else {
-                $_module = 'tnw_salesforce/bulk_' . strtolower($_type);
+
+                $helper = strtolower($_type);
+                if ($helper == 'abandoned') {
+                    $helper .= '_' . strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+                }
+                $_module = 'tnw_salesforce/bulk_' . $helper;
                 $_getAlternativeKey = NULL;
 
                 $manualSync = Mage::helper($_module);

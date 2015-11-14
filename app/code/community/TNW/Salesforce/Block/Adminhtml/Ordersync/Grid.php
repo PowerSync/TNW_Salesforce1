@@ -79,7 +79,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'width' => '80px',
             'type' => 'action',
             'index' => 'increment_id',
-            'filter_index' => '`main_table`.`increment_id`',
+            'filter_index' => 'main_table.increment_id',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
             'actions' => array(
                 array(
@@ -97,7 +97,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
                 'type' => 'store',
                 'store_view' => true,
                 'display_deleted' => true,
-                'filter_index' => '`main_table`.`store_id`',
+                'filter_index' => 'main_table.store_id',
             ));
         }
 
@@ -116,7 +116,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'index' => 'created_at',
             'type' => 'datetime',
             'width' => '200px',
-            'filter_index' => '`main_table`.`created_at`',
+            'filter_index' => 'main_table.created_at',
         ));
         $this->addColumn('salesforce_id', array(
             'header' => Mage::helper('sales')->__(Mage::helper('tnw_salesforce')->getOrderObject() . ' ID'),
@@ -129,7 +129,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'index' => 'grand_total',
             'type' => 'currency',
             'currency' => 'order_currency_code',
-            'filter_index' => '`main_table`.`grand_total`',
+            'filter_index' => 'main_table.grand_total',
         ));
 
         $this->addColumn('status', array(
@@ -138,7 +138,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'type'  => 'options',
             'width' => '70px',
             'options' => Mage::getSingleton('sales/order_config')->getStatuses(),
-            'filter_index' => '`main_table`.`status`',
+            'filter_index' => 'main_table.status',
         ));
 
         $this->addColumn('singleAction', array(
