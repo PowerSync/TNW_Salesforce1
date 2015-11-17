@@ -27,7 +27,7 @@ class TNW_Salesforce_Model_Observer
      * @param $menu Varien_Simplexml_Element
      * @return $this
      */
-    public function checkConfigCondition(&$menu)
+    public function checkConfigCondition($menu)
     {
 
         if ($menu->hasChildren()) {
@@ -36,7 +36,9 @@ class TNW_Salesforce_Model_Observer
                 $attributes = (array)$child->attributes();
                 if (isset($attributes['@attributes']['ifconfig'])) {
                     if (!Mage::app()->getStore()->getConfig($attributes['@attributes']['ifconfig'])) {
-                        unset($menu->{$name});
+                        $dom = dom_import_simplexml($child);
+                        $dom->parentNode->removeChild($dom);
+
                         continue;
                     }
                 }
