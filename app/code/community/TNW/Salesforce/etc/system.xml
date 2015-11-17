@@ -507,6 +507,18 @@
                             </depends>
                         </enable_soql>
 
+                        <log_file_read_limit translate="label">
+                            <label>How many Kilobytes will we read from log file on view page</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>290</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </log_file_read_limit>
+
                         <!-- Tool settings end -->
                     </fields>
                 </development_and_debugging>

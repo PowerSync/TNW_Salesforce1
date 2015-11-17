@@ -9,6 +9,8 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_File_View extends Mage_Adminhtml_B
 
     public function __construct()
     {
+        $this->_headerText = $this->__('View/Download Log File');
+
         parent::__construct();
         $this->removeButton('reset');
         $this->removeButton('save');
