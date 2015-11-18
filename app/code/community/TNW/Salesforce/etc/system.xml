@@ -508,12 +508,13 @@
                         </enable_soql>
 
                         <log_file_read_limit translate="label">
-                            <label>How many Kilobytes will we read from log file on view page</label>
+                            <label>Log File Size limit</label>
                             <frontend_type>text</frontend_type>
                             <sort_order>290</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <comment>How many Kilobytes will we read from log file on view page</comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
