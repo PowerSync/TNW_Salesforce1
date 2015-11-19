@@ -49,11 +49,11 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
 
             // Allow Powersync to overwite fired event for customizations
             $_object = new Varien_Object(array('object_type' => self::OBJECT_TYPE));
-            Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+            Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $_object));
 
             // Fire event that will process the request
             Mage::dispatchEvent(
-                'tnw_sales_process_' . $_object->getObjectType(),
+                sprintf('tnw_salesforce_%s_process', $_object->getObjectType()),
                 array(
                     'invoiceIds'      => array($_invoice->getId()),
                     'message'       => "SUCCESS: Upserting Invoice #" . $_invoice->getIncrementId(),

@@ -138,7 +138,7 @@ class TNW_Salesforce_Model_Sale_Observer
 
         if (!$order->getSalesforceId() && $order->getId() && $order->getStatus()) {
             // Never was synced, new order
-            Mage::dispatchEvent('tnw_sales_order_save', array('order' => $order));
+            Mage::dispatchEvent('tnw_salesforce_order_save', array('order' => $order));
             return;
         }
 
@@ -164,7 +164,7 @@ class TNW_Salesforce_Model_Sale_Observer
                 $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start ######################################");
                 Mage::dispatchEvent(
-                    'tnw_sales_status_update_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_status_update', $_syncType),
                     array(
                         'order'  => $order
                     )
@@ -193,7 +193,7 @@ class TNW_Salesforce_Model_Sale_Observer
         $modules = Mage::getConfig()->getNode('modules')->children();
         // Only dispatch event if AITOC is not installed, otherwise we use different event
         if (!property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-            Mage::dispatchEvent('tnw_sales_order_save', array('order' => $order));
+            Mage::dispatchEvent('tnw_salesforce_order_save', array('order' => $order));
         }
     }
 
@@ -208,7 +208,7 @@ class TNW_Salesforce_Model_Sale_Observer
         $order = $observer->getEvent()->getOrder();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('AITOC EVENT: Order #' . $order->getRealOrderId() . ' Sync');
 
-        Mage::dispatchEvent('tnw_sales_order_save', array('order' => $order));
+        Mage::dispatchEvent('tnw_salesforce_order_save', array('order' => $order));
     }
 
     /* Order Sync */
@@ -279,7 +279,7 @@ class TNW_Salesforce_Model_Sale_Observer
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
             Mage::dispatchEvent(
-                'tnw_sales_process_' . $_syncType,
+                sprintf('tnw_salesforce_%s_process', $_syncType),
                 array(
                     'orderIds'      => array($order->getId()),
                     'message'       => "SUCCESS: Upserting Order #" . $order->getRealOrderId(),

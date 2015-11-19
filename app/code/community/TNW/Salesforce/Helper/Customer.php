@@ -387,7 +387,6 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
 
     protected function pushAccount()
     {
-        $this->_account;
         try {
             Mage::dispatchEvent("tnw_salesforce_account_send_before",array("data" => array($this->_account)));
             $resultContact = $this->_mySforceConnection->upsert('Id', array($this->_account), 'Account');

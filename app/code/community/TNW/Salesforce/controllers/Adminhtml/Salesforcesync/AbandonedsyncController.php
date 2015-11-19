@@ -108,9 +108,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
-                            'ids' => $itemIds,
+                            'orderIds' => $itemIds,
                             'object_type' => 'abandoned',
                             'message' => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
                             'type' => 'salesforce'
@@ -179,9 +179,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
 
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
-                            'ids' => $itemIds,
+                            'orderIds' => $itemIds,
                             'message' => Mage::helper('adminhtml')->__('Total of %d abandoned(s) were synchronized', count($itemIds)),
                             'type' => 'bulk',
                             'object_type' => 'abandoned'
