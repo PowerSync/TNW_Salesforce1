@@ -493,11 +493,17 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'label' => ucwords($addressType) . " Address",
             'value' => array()
         );
+
         foreach ($collection as $_attribute) {
-            if ($_attribute->is_visible && $_attribute->frontend_label != "" && $_attribute->frontend_input != "hidden") {
+            if ($_attribute->is_visible && $_attribute->frontend_label != "") {
+
+                $label = $_attribute->frontend_label;
+                if ($_attribute->frontend_input == "hidden") {
+                    $label = $label . ' (Id/Code)';
+                }
                 $this->_cache[$type][$addressType]['value'][] = array(
                     'value' => ucwords($addressType) . ' : ' . $_attribute->attribute_code,
-                    'label' => ucwords($addressType) . ' : ' . $_attribute->frontend_label,
+                    'label' => ucwords($addressType) . ' : ' . $label,
                 );
             }
         }
