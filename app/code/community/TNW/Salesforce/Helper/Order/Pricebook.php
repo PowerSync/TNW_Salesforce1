@@ -476,9 +476,9 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
             unset($collection, $_map);
 
-            Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($this->_p)));
+            Mage::dispatchEvent("tnw_salesforce_product_send_before",array("data" => array($this->_p)));
             $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($this->_p), 'Product2');
-            Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_product_send_after",array(
                 "data" => array($this->_p),
                 "result" => $upsertResponse
             ));

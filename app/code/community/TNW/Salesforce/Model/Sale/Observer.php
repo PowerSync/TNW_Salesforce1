@@ -4,16 +4,21 @@ class TNW_Salesforce_Model_Sale_Observer
 {
     protected $orderObject = NULL;
 
-    /* Shipment Sync Event */
+    /**
+     * Shipment Sync Event
+     * @param $observer
+     * @deprecated not used anywhere
+     */
     public function triggerSalesforceShippmentEvent($observer)
     {
         if (!Mage::helper('tnw_salesforce')->canPush()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
         }
+
         // Triggers TNW event that pushes to SF
         $shipment = $observer->getEvent()->getShipment();
-        Mage::dispatchEvent('tnw_sales_order_shipment_save', array('shipment' => $shipment));
+        Mage::dispatchEvent('tnw_salesforce_order_shipment_save', array('shipment' => $shipment));
     }
 
     /**

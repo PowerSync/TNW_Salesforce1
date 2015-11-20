@@ -269,16 +269,6 @@
                 </observers>
             </order_cancel_after>
 
-            <!-- Order Status Change Event -->
-            <tnw_sales_order_status_after>
-                <observers>
-                    <tnw_salesforce_sale_observer>
-                        <class>tnw_salesforce/sale_observer</class>
-                        <method>orderStatusUpdateTrigger</method>
-                    </tnw_salesforce_sale_observer>
-                </observers>
-            </tnw_sales_order_status_after>
-
             <!-- Notes Save Event -->
             <tnw_salesforce_order_comments_save_after>
                 <observers>
