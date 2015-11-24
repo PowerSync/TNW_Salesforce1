@@ -328,9 +328,9 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             }
 
             /* Push to Salesforce */
-            Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array($this->$sfObjectType)));
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_before', strtolower($type)), array("data" => array($this->$sfObjectType)));
             $resultContact = $this->_mySforceConnection->upsert($upsertOn, array($this->$sfObjectType), $type);
-            Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_after', strtolower($type)), array(
                 "data" => array($this->$sfObjectType),
                 "result" => $resultContact
             ));
@@ -725,9 +725,9 @@ class TNW_Salesforce_Helper_Customer extends TNW_Salesforce_Helper_Abstract
             if (!empty($queuedCustomers)) {
                 $_customerIds = array_keys($queuedCustomers);
 
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_before",array("data" => array_values($queuedCustomers)));
+                Mage::dispatchEvent(sprintf("tnw_salesforce_%s_send_before", strtolower($type)), array("data" => array_values($queuedCustomers)));
                 $resultContact = $this->_mySforceConnection->upsert('Id', array_values($queuedCustomers), $type);
-                Mage::dispatchEvent("tnw_salesforce_".strtolower($type)."_send_after",array(
+                Mage::dispatchEvent(sprintf("tnw_salesforce_%s_send_after", strtolower($type)), array(
                     "data" => array_values($queuedCustomers),
                     "result" => $resultContact
                 ));
