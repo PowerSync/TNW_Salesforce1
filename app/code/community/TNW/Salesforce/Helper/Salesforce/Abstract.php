@@ -548,7 +548,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     {
         $objectStr = var_export($_object, true);
         if (is_array($_response->errors)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ' . $objectStr);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($objectStr);
             foreach ($_response->errors as $_error) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
             }

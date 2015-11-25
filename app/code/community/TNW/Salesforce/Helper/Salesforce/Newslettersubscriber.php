@@ -597,11 +597,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 // before we send data to sf - check if connection / login / wsdl is valid
                 // related ticket https://trello.com/c/TNEu7Rk1/54-salesforce-maintenance-causes-bulk-sync-to-run-indefinately
                 $sfClient = Mage::getSingleton('tnw_salesforce/connection');
-                if (
-                    !$sfClient->tryWsdl()
-                    || !$sfClient->tryToConnect()
-                    || !$sfClient->tryToLogin()
-                ) {
+                if (!$sfClient->initConnection()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
                     return false;
                 }

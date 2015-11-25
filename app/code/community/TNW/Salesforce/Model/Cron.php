@@ -284,9 +284,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 
                     // try to connect
                     if (
-                        !$_client->tryWsdl()
-                        || !$_client->tryToConnect()
-                        || !$_client->tryToLogin()
+                        !$_client->initConnection()
                     ) {
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
                         return;

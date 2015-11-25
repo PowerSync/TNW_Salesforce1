@@ -88,14 +88,6 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
             return true;
         }
 
-        // call server 1 (only if server 1 timed out or has non valid json response, call server 2)
-        // cache result (if false, don't attempt to login into sf)
-        $licenseIsValid = Mage::getSingleton('tnw_salesforce/license')->getStatus();
-        if (!$licenseIsValid) {
-
-            return false;
-        }
-
         $connectionOk = $this->establishSfConnection();
         if (!$connectionOk) {
 

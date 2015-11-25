@@ -76,10 +76,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         $this->_userAgent = $_SERVER['HTTP_USER_AGENT'];
         # Disable SOAP cache
         ini_set('soap.wsdl_cache_enabled', 0);
-        if (
-            !$this->_client &&
-            Mage::helper('tnw_salesforce')->isWorking()
-        ) {
+        if (!$this->_client) {
             # instantiate a new Salesforce object
             $this->_client = new Salesforce_SforceEnterpriseClient();
         } else {
@@ -207,8 +204,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 unset($e);
                 return false;
             }
-
-            $success = $this->checkPackage();
         }
 
         return $success;
@@ -221,23 +216,35 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     public function checkPackage()
     {
         try {
+
+            if (!$this->_client || !$this->_loggedIn) {
+                throw new Mage_Exception('Salesforce connection could not be established!');
+            }
             /**
              * @comment try to take object from our package
              */
             $salesforceWebsiteDescr = $this
-                ->getClient()
+                ->_client
                 ->describeSObject(
                     Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
                 );
 
         } catch (Exception $e) {
+
             $this->_loggedIn = null;
+            $this->_connection = null;
 
-            $errorMessage = Mage::helper('tnw_salesforce')->__('Cannot find PowerSync package in you Salesforce');
-
+            $errorMessage = Mage::helper('tnw_salesforce')->__('Cannot find PowerSync package in you Salesforce. It can be not installed or expired.');
             $this->_errorMessage = $errorMessage;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("checkPackage Failure: " . $errorMessage);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("checkPackage Failure, Error details: " . $e->getMessage());
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($errorMessage);
+            unset($e);
+            return false;
+        } catch (Mage_Exception $e) {
+            $this->_loggedIn = null;
+            $this->_connection = null;
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
             unset($e);
             return false;
         }
@@ -289,7 +296,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         if (
             !$this->getPreviousTime()
             || $currentTime - $this->getPreviousTime() > self::CONNECTION_TIME_LIMIT
-            || !$this->_connection
         ) {
             $this->setPreviousTime($currentTime);
             $this->_connection = null;
@@ -298,6 +304,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             if ($this->tryWsdl()) {
                 $this->tryToConnect();
                 $this->tryToLogin();
+                $this->checkPackage();
             }
         }
 

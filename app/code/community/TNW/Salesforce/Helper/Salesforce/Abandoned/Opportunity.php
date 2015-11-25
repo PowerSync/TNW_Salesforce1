@@ -642,10 +642,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
         // test sf api connection
         $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->tryWsdl()
-            || !$_client->tryToConnect()
-            || !$_client->tryToLogin()
-        ) {
+        if (!$_client->initConnection()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync quotes, sf api connection failed");
 
             return true;

@@ -223,10 +223,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
                 }
             }
 
-
         } catch (Exception $e) {
-            $objectsDump = var_export($objects, true);
-            throw new Exception("ERROR: $type merging error: " . $e->getMessage() . $objectsDump);
+            throw new Exception("ERROR: $type merging error: " . $e->getMessage());
         }
 
         return $result;

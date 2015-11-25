@@ -57,13 +57,13 @@ class TNW_Salesforce_Model_License
 
     public function getStatus() {
 
-        if (!$this->_status || ($this->_getLastChecked() + self::TEST_INTERVAL) < time()) {
-            $this->_testLicense();
-        }
-        return $this->_status;
+        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        Mage::getSingleton('tnw_salesforce/connection')->initConnection();
+        return $_model->checkPackage();
     }
 
     /**
+     * @deprecated
      * @return bool
      */
     protected function _testLicense()

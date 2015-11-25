@@ -102,13 +102,13 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
 
             switch ($level) {
                 case Zend_Log::ERR:
-                    Mage::getSingleton('adminhtml/session')->addError($message);
+                    Mage::getSingleton('adminhtml/session')->addUniqueMessages(Mage::getSingleton('core/message')->error($message));
                     break;
                 case Zend_Log::NOTICE:
-                    Mage::getSingleton('adminhtml/session')->addNotice($message);
+                    Mage::getSingleton('adminhtml/session')->addUniqueMessages(Mage::getSingleton('core/message')->notice($message));
                     break;
                 case Zend_Log::WARN:
-                    Mage::getSingleton('adminhtml/session')->addWarning($message);
+                    Mage::getSingleton('adminhtml/session')->addUniqueMessages(Mage::getSingleton('core/message')->warning($message));
                     break;
                 default:
                     break;
