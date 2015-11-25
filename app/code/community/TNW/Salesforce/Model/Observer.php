@@ -448,6 +448,8 @@ class TNW_Salesforce_Model_Observer
                 }
             }
         } else {
+            Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_queueIds, 'new');
+
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce connection could not be established!");
             if ($_message === NULL) {
                 Mage::throwException('Salesforce connection failed');

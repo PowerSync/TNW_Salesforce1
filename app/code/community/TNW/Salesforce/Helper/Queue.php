@@ -266,6 +266,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     $_results = $manualSync->getSyncResults();
                     $_alternativeKeys = ($_getAlternativeKey) ? $manualSync->getAlternativeKeys() : array();
                     Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_objectIdSet, $_idSet, $_results, $_alternativeKeys);
+                } else {
+                    Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_idSet, 'new');
                 }
             }
 
