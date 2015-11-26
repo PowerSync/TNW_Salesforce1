@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.12.0000</version>
+            <version>0.01.53.13.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -55,6 +55,9 @@
                     <assignmentrule>
                         <table>tnw_salesforce_assignmentrule</table>
                     </assignmentrule>
+                    <account_matching>
+                        <table>tnw_salesforce_account_matching</table>
+                    </account_matching>
                     <log>
                         <table>tnw_salesforce_log</table>
                     </log>

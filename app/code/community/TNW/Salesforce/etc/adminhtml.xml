@@ -139,6 +139,11 @@
                             <action>adminhtml/system_config/edit/section/salesforce_order</action>
                             <sort_order>40</sort_order>
                         </order_config>
+                        <account_matching>
+                            <title>Account Matching</title>
+                            <action>adminhtml/salesforce_account_matching</action>
+                            <sort_order>50</sort_order>
+                        </account_matching>
                     </children>
                 </setup>
 

@@ -194,7 +194,7 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
              * update id: reav value - first 15 symbols
              */
             foreach ($data as $k => &$info) {
-                $info['value'] = substr($info['value'], 0, 15);
+                $info['value'] = Mage::helper('tnw_salesforce/data')->prepareId($info['value']);
             }
         }
 
@@ -227,6 +227,17 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
     {
         return $this->toOptionArray();
     }
+
+    /**
+     * @param string $valueField
+     * @param string $labelField
+     * @return array
+     */
+    public function toOptionHashCustom($valueField='Id', $labelField='Name')
+    {
+        return $this->_toOptionHash($valueField, $labelField);
+    }
+
 
     /**
      * Proces loaded collection data
