@@ -92,8 +92,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
                         ) {
                             $session->addSuccess($this->__('Product was successfully synchronized'));
                         }
-                    } else {
-                        $session->addError($this->__('Salesforce connection could not be established!'));
                     }
                 }
             } catch (Exception $e) {

@@ -167,10 +167,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 if (!$this->isFromCLI()) {
                     Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product inventory was synchronized with Salesforce'));
                 }
-            } else {
-                if (!$this->isFromCLI() && !$this->isCron()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Salesforce Connection could not be established!');
-                }
             }
         }
 

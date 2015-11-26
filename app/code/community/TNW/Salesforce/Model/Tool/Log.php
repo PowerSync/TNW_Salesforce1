@@ -100,6 +100,7 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
             $level = $this->getLevel();
             $message = $this->getMessage();
 
+            $message = 'Salesforce integration: '. $message;
             switch ($level) {
                 case Zend_Log::ERR:
                     Mage::getSingleton('adminhtml/session')->addUniqueMessages(Mage::getSingleton('core/message')->error($message));

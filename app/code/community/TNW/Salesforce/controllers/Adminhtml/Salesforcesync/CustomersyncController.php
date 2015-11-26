@@ -136,8 +136,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
                                 Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds))
                             );
                         }
-                    } else {
-                        Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
                     }
                 }
             } catch (Exception $e) {

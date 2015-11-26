@@ -58,8 +58,6 @@ class TNW_Salesforce_Model_Website_Observer
                 && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Website (code: ' . $website->getData('code') . ') is successfully synchronized'));
             }
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce connection could not be established!');
         }
     }
 

@@ -683,8 +683,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 if (!$this->isFromCLI()) {
                     Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
                 }
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('WARNING: Salesforce Connection could not be established!');
             }
         }
 

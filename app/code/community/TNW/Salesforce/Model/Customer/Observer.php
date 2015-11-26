@@ -127,8 +127,6 @@ class TNW_Salesforce_Model_Customer_Observer
                 && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Customer (email: ' . $customer->getEmail() . ') is successfully synchronized'));
             }
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce connection could not be established!');
         }
     }
 

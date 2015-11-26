@@ -164,8 +164,16 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      * @param string $status
      * @return mixed
      */
-    public function updateObjectStatusById(array $idSet = array(), $status = 'sync_running')
+    public function updateObjectStatusById($idSet = array(), $status = 'sync_running')
     {
+        if (empty($idSet)) {
+            return false;
+        }
+
+        if (!is_array($idSet)) {
+            $idSet = array($idSet);
+        }
+
         $idLine = empty($idSet) ? "" : "'" . join("', '", $idSet) . "'";
 
         $additinalUpdate = '';

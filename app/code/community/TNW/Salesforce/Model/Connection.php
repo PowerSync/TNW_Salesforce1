@@ -13,6 +13,11 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     protected $_client = NULL;
 
     /**
+     * @var
+     */
+    protected $_packageAvailable = NULL;
+
+    /**
      * @var null
      */
     protected $_wsdl = NULL;
@@ -215,41 +220,46 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function checkPackage()
     {
-        try {
+        
+        if (is_null($this->_packageAvailable)) {
 
-            if (!$this->_client || !$this->_loggedIn) {
-                throw new Mage_Exception('Salesforce connection could not be established!');
+            try {
+
+                /**
+                 * connection not exists or authorization failed
+                 */
+                if (!$this->_client || !$this->_loggedIn) {
+                    $this->_packageAvailable = false;
+                    return $this->_packageAvailable;
+                }
+
+                /**
+                 * @comment try to take object from our package
+                 */
+                $salesforceWebsiteDescr = $this
+                    ->_client
+                    ->describeSObject(
+                        Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
+                    );
+
+                $this->_packageAvailable = true;
+
+            } catch (Exception $e) {
+
+                $this->_loggedIn = null;
+                $this->_connection = null;
+
+                $errorMessage = Mage::helper('tnw_salesforce')->__('PowerSync managed package in Salesforce is either not installed or license is expired.<br />');
+                $errorMessage .= Mage::helper('tnw_salesforce')->__('Please contact <a href="https://technweb.atlassian.net/servicedesk/customer/portal/2">Powersync Support</a> for more information');
+                $this->_errorMessage = $errorMessage;
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($errorMessage);
+                unset($e);
+                $this->_packageAvailable = false;
             }
-            /**
-             * @comment try to take object from our package
-             */
-            $salesforceWebsiteDescr = $this
-                ->_client
-                ->describeSObject(
-                    Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
-                );
-
-        } catch (Exception $e) {
-
-            $this->_loggedIn = null;
-            $this->_connection = null;
-
-            $errorMessage = Mage::helper('tnw_salesforce')->__('Cannot find PowerSync package in you Salesforce. It can be not installed or expired.');
-            $this->_errorMessage = $errorMessage;
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($errorMessage);
-            unset($e);
-            return false;
-        } catch (Mage_Exception $e) {
-            $this->_loggedIn = null;
-            $this->_connection = null;
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
-            unset($e);
-            return false;
         }
 
-        return true;
+        return $this->_packageAvailable;
     }
 
     public function getLoginResponse()

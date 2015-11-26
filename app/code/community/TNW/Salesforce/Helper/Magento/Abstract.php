@@ -127,10 +127,6 @@ class TNW_Salesforce_Helper_Magento_Abstract {
                 $manualSync->process();
                 $newWebsite = Mage::getModel('core/website')->load($website->getData('website_id'));
                 $sfId = $newWebsite->getData('salesforce_id');
-            } else {
-                if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
-                }
             }
         }
         $sfId = Mage::helper('tnw_salesforce')->prepareId($sfId);

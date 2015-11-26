@@ -591,6 +591,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                                 $_results = $manualSync->getSyncResults();
                                 Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
                             } else {
+                                Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet, 'new');
                                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
                                 return;
                             }
@@ -837,6 +838,8 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Cache upadated!');
             }
         }
+
+        return true;
     }
 
     /**
@@ -846,9 +849,9 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      */
     protected function _convertLeads($_toConvertCustomerIds)
     {
-        $_entities = $this->_data['leadsToConvert'];
         //Push On ID
-        if (!empty($_entities)) {
+        if (!empty($this->_data['leadsToConvert'])) {
+            $_entities = $this->_data['leadsToConvert'];
             $_ttl = count($_entities);
             $_success = true;
             if ($_ttl > 99) {
