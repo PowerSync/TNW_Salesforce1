@@ -73,6 +73,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT,
+            'Product2',
             TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
         );
 
