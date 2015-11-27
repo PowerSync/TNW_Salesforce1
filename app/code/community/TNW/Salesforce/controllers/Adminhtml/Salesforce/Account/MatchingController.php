@@ -3,6 +3,16 @@
 class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mage_Adminhtml_Controller_Action
 {
     /**
+     * Check allow or not access to ths page
+     *
+     * @return bool - is allowed to access this menu
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/setup/account_matching');
+    }
+
+    /**
      * @return $this
      */
     protected function _initLayout()
@@ -23,7 +33,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
 
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
-            ->_addBreadcrumb($helper->__('Account Field Mapping'), $helper->__('Account Field Mapping'));
+            ->_addBreadcrumb($helper->__('Account Matching'), $helper->__('Account Matching'));
 
         return $this;
     }
@@ -74,37 +84,31 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         $session    = Mage::getSingleton('adminhtml/session');
 
         try {
+            $uploader = new Varien_File_Uploader('fileImport');
 
-            /** Upload import File */
-            if(isset($_FILES['fileImport']['name']) && !empty($_FILES['fileImport']['name']))
-            {
-                $uploader = new Varien_File_Uploader('fileImport');
+            $uploader->setAllowedExtensions(array('csv'));
+            $uploader->setAllowRenameFiles(false);
+            $uploader->setFilesDispersion(false);
 
-                $uploader->setAllowedExtensions(array('csv'));
-                $uploader->setAllowRenameFiles(false);
-                $uploader->setFilesDispersion(false);
+            $_filePath = tempnam(sys_get_temp_dir(), 'Mat');
 
-                $_filePath = tempnam(sys_get_temp_dir(), 'Mat');
+            // Upload the image
+            $uploader->save(dirname($_filePath), basename($_filePath));
 
-                // Upload the image
-                $uploader->save(dirname($_filePath), basename($_filePath));
+            /** @var TNW_Salesforce_Model_Account_Matching_Import $import */
+            $import = Mage::getModel('tnw_salesforce/account_matching_import');
+            $import->importByFilename($_filePath);
 
-                /** @var TNW_Salesforce_Model_Account_Matching_Import $import */
-                $import = Mage::getModel('tnw_salesforce/account_matching_import');
-                try {
-                    $import->importByFilename($_filePath);
-
-                    $status = $import->getStatus();
-                    if ($status['success']['count'] > 0) {
-                        //todo
-                    }
-
-                    if ($status['error']['count'] > 0) {
-                        //todo
-                    }
+            $status = $import->getStatus();
+            if ($status['success'] > 0) {
+                foreach($import->getSuccess() as $message => $line) {
+                    $session->addSuccess(sprintf('%s: %d record(s)', $message, count($line)));
                 }
-                catch(Exception $e) {
-                    //todo
+            }
+
+            if ($status['error'] > 0) {
+                foreach($import->getErrors() as $message => $line) {
+                    $session->addError(sprintf('%s: Line %s', $message, count($line), implode(', ', $line)));
                 }
             }
         }
@@ -177,12 +181,9 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
         try {
             $data['account_name'] = '';
-            $toOptionHash = $collection->toOptionHashCustom();
-            foreach ($toOptionHash as $id=>$name) {
-                if ($data['account_id'] == Mage::helper('tnw_salesforce/data')->prepareId($id)) {
-                    $data['account_name'] = $name;
-                    break;
-                }
+            $toOptionHash = $collection->setFullIdMode(true)->toOptionHashCustom();
+            if ($toOptionHash[$data['account_id']]) {
+                $data['account_name'] = $toOptionHash[$data['account_id']];
             }
 
         } catch(Exception $e) {}
@@ -196,7 +197,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
             $model->save();
 
             $session->addSuccess(
-                Mage::helper('tnw_salesforce')->__('Mapping was successfully saved'));
+                Mage::helper('tnw_salesforce')->__('Matching was successfully saved'));
             $session->setFormData(false);
 
             if ($this->getRequest()->getParam('back')) {
@@ -251,7 +252,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
                 ->delete();
 
             $session->addSuccess(
-                Mage::helper('tnw_salesforce')->__('Mapping was successfully deleted'));
+                Mage::helper('tnw_salesforce')->__('Matching was successfully deleted'));
             $this->_redirect('*/*/');
             return;
         }

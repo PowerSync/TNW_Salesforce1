@@ -2,6 +2,11 @@
 
 class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adminhtml_Block_Widget_Form
 {
+    /**
+     * Prepare form before rendering HTML
+     *
+     * @return TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form
+     */
     protected function _prepareForm()
     {
         $form = new Varien_Data_Form(array(
@@ -20,8 +25,8 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
         $fieldset->addField('account_id', 'select', array(
             'label' => $this->__('Account Name'),
             'name' => 'account_id',
-            'style' => 'width:300px',
-            'values' => $collection->getAllOptions(),
+            'style' => 'width:273px',
+            'values' => $collection->setFullIdMode(true)->getAllOptions(),
             'class' => 'chosen-select',
         ));
 

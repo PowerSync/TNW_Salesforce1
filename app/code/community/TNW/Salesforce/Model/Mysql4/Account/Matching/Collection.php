@@ -13,4 +13,14 @@ class TNW_Salesforce_Model_Mysql4_Account_Matching_Collection extends Mage_Core_
         parent::_construct();
         $this->_init('tnw_salesforce/account_matching');
     }
+
+    /**
+     * @param string $valueField
+     * @param string $labelField
+     * @return array
+     */
+    public function toOptionHashCustom($valueField='email_domain', $labelField='account_id')
+    {
+        return $this->_toOptionHash($valueField, $labelField);
+    }
 }

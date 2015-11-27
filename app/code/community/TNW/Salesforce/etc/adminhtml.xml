@@ -567,6 +567,10 @@
                                         <title>Sales Configuration</title>
                                         <sort_order>40</sort_order>
                                     </order_config>
+                                    <account_matching>
+                                        <title>Account Matching</title>
+                                        <sort_order>50</sort_order>
+                                    </account_matching>
                                 </children>
                             </setup>
                         </children>

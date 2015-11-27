@@ -27,6 +27,11 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
     protected $_useExpressionLimit = false;
 
     /**
+     * @var bool
+     */
+    protected $_fullIdMode = false;
+
+    /**
      * @return boolean
      */
     public function isUseExpressionLimit()
@@ -181,6 +186,15 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
         return $this;
     }
 
+    /**
+     * @param $mode
+     * @return $this
+     */
+    public function setFullIdMode($mode)
+    {
+        $this->_fullIdMode = $mode;
+        return $this;
+    }
 
     /**
      * Convert items array to array for select options
@@ -189,11 +203,11 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
     {
         $data = parent::_toOptionArray($valueField, $labelField, $additional);
 
-        if ($valueField == 'Id') {
+        if ($valueField == 'Id' && $this->_fullIdMode === false) {
             /**
              * update id: reav value - first 15 symbols
              */
-            foreach ($data as $k => &$info) {
+            foreach ($data as &$info) {
                 $info['value'] = Mage::helper('tnw_salesforce/data')->prepareId($info['value']);
             }
         }

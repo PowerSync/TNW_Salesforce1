@@ -23,7 +23,7 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching extends Mage_Adminhtml_Blo
         $form = new Varien_Data_Form(array(
             'use_container' => true,
             'method'        => 'post',
-            'action'        => $this->getUrl('tnw_salesforce/adminhtml_account_matching/matchingImport'),
+            'action'        => $this->getUrl('adminhtml/salesforce_account_matching/matchingImport'),
             'id'            => 'import_form',
             'enctype'       => 'multipart/form-data'
         ));

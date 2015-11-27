@@ -39,8 +39,4 @@ if (!$installer->tableExists($tableName))
     $installer->getConnection()->createTable($table);
 }
 
-$conf = Mage::getStoreConfig('salesforce_customer/account_catchall/domains');
-
-Mage::helper('tnw_salesforce/config')->getSalesforceAccounts();
-
 $installer->endSetup();

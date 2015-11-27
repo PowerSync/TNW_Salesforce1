@@ -2,6 +2,9 @@
 
 class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit extends Mage_Adminhtml_Block_Widget_Form_Container
 {
+    /**
+     * @internal
+     */
     public function __construct()
     {
         if (!Mage::helper('tnw_salesforce')->isWorking()) {
@@ -37,7 +40,7 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit extends Mage_Adminhtm
     }
 
     /**
-     * @return mixed
+     * @return TNW_Salesforce_Model_Account_Matching
      */
     protected function getMatching()
     {
@@ -52,7 +55,7 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit extends Mage_Adminhtm
     public function getHeaderText()
     {
         if ($this->getMatching()->getId()) {
-            return Mage::helper('tnw_salesforce')->__('%s Object Matching #%s', $this->htmlEscape($this->getMatching()->getAccauntId()), $this->getMatching()->getId());
+            return Mage::helper('tnw_salesforce')->__('%s Object Matching #%s', $this->htmlEscape($this->getMatching()->getAccountId()), $this->getMatching()->getId());
         } else {
             return Mage::helper('tnw_salesforce')->__('New Account Matching');
         }
