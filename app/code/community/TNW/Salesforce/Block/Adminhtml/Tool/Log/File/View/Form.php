@@ -37,7 +37,7 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_File_View_Form extends Mage_Adminh
         $fieldset->addType('raw', 'TNW_Salesforce_Block_Varien_Data_Form_Element_Raw');
 
         $fieldset->addField('content', 'raw', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Log content'),
+            'label' => Mage::helper('tnw_salesforce')->__('Content'),
             'name' => 'content',
             'nl2br' => true
         ));

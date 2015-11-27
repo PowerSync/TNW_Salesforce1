@@ -514,7 +514,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>How many Kilobytes will we read from log file on view page</comment>
+                            <comment>Kilobytes to read from the log file when viewing logs in the admin panel</comment>
                             <depends>
                                 <developer_settings>1</developer_settings>
                             </depends>
