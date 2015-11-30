@@ -157,7 +157,7 @@ class TNW_Salesforce_Model_Account_Matching_Import
         if (!empty($findId)) {
             /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
             $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
-            $collection->addFieldToFilter('Id', $findId);
+            $collection->addFieldToFilter('Id', array('in' => $findId));
 
             $this->accountIds = array_merge($this->accountIds, $collection->setFullIdMode(true)->toOptionHashCustom());
         }
