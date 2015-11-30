@@ -14,7 +14,7 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_File extends Mage_Adminhtml_Block_
     {
         $this->_blockGroup = 'tnw_salesforce';
         $this->_controller = 'adminhtml_tool_log_file';
-        $this->_headerText = $this->__('Synchronization log files');
+        $this->_headerText = $this->__('Download Log Files');
         parent::__construct();
 
         $this->removeButton('add');

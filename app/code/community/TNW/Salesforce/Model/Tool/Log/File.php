@@ -34,7 +34,7 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
         if (!$this->_logDir) {
             $this->_logDir = Mage::getBaseDir('log') . DS . $this->getSalesforceLogDirName();
             // check for valid base dir
-            $ioProxy = new Varien_Io_File();
+            $ioProxy = Mage::getModel('tnw_salesforce/varien_io_file');
             $ioProxy->mkdir($this->_baseDir);
         }
         return $this->_logDir;
@@ -107,7 +107,7 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
             Mage::throwException(Mage::helper('tnw_salesforce')->__("Log file does not exist."));
         }
 
-        $ioProxy = new Varien_Io_File();
+        $ioProxy = Mage::getModel('tnw_salesforce/varien_io_file');
         $ioProxy->open(array('path' => $this->getPath()));
         $ioProxy->rm($this->getFileName());
         return $this;
@@ -254,7 +254,7 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
             return;
         }
 
-        $ioAdapter = new Varien_Io_File();
+        $ioAdapter = Mage::getModel('tnw_salesforce/varien_io_file');
         $ioAdapter->open(array('path' => $this->getPath()));
 
         $ioAdapter->streamOpen($this->getFileName(), 'r');
@@ -266,17 +266,23 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
 
     /**
      * read content
+     * if $length is empty - try to load all file
      */
-    public function read()
+    public function read($length = null)
     {
         if (!$this->exists()) {
             return false;
         }
 
-        $ioAdapter = new Varien_Io_File();
+        if (!$length) {
+            $length = null;
+        }
+
+        $ioAdapter = Mage::getModel('tnw_salesforce/varien_io_file');
         $ioAdapter->open(array('path' => $this->getPath()));
 
         $ioAdapter->streamOpen($this->getFileName(), 'r');
+        $ioAdapter->streamFseek($length * 1024, SEEK_END);
         $content = '';
 
         while ($buffer = $ioAdapter->streamRead()) {

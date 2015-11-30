@@ -61,7 +61,7 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
 
             try {
                 $mail->send();
-                $ioAdapter = new Varien_Io_File();
+                $ioAdapter = Mage::getModel('tnw_salesforce/varien_io_file');
                 $ioAdapter->rm($filename);
 
             } catch (Exception $e) {

@@ -34,11 +34,12 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_File_View_Form extends Mage_Adminh
 
         ));
 
-        $fieldset->addField('content', 'textarea', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Log content'),
+        $fieldset->addType('raw', 'TNW_Salesforce_Block_Varien_Data_Form_Element_Raw');
+
+        $fieldset->addField('content', 'raw', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Content'),
             'name' => 'content',
-            'style' => 'height:36em',
-            'readonly' => 'readonly'
+            'nl2br' => true
         ));
 
         if ($logData) {

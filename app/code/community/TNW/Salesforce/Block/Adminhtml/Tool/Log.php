@@ -14,7 +14,7 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log extends Mage_Adminhtml_Block_Widge
     {
         $this->_blockGroup = 'tnw_salesforce';
         $this->_controller = 'adminhtml_tool_log';
-        $this->_headerText      = $this->__('Sync Logs from DB');
+        $this->_headerText      = $this->__('Transaction Logs');
 
         parent::__construct();
 
