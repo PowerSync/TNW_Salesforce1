@@ -652,6 +652,22 @@
                             <tooltip>Limitation described for this field related to the restrictions of Salesforce API query</tooltip>
                         </merge_duplicates>
 
+
+                        <use_address_picklist translate="label">
+                            <label>Use Country/State picklist data</label>
+                            <frontend_type>select</frontend_type>
+                            <backend_model>tnw_salesforce/config_customer_backend_address_picklist</backend_model>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+
+                            <comment><![CDATA[
+                                <strong style="color: red;">IMPORTANT!</strong> Only enabled if you enable Country/State picklist in Salesforce.
+                            ]]></comment>
+                        </use_address_picklist>
+
                     </fields>
                 </sync>
                 <lead_config translate="label" module="tnw_salesforce">

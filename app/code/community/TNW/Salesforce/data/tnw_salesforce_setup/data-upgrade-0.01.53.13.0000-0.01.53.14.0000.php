@@ -26,7 +26,8 @@ $_defaultMappingStatus = array(
 $picklistMapping = array();
 
 $groupCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection();
-$tableName = Mage::getSingleton('core/resource')->getTableName('tnw_salesforce_mapping');
+$tableName = $groupCollection->getMainTable();
+
 // Figure out what's already mapped
 foreach ($_defaultMappingStatus as $_key => $_value) {
     foreach ($groupCollection as $_mapping) {
@@ -42,7 +43,7 @@ foreach ($_defaultMappingStatus as $_key => $_value) {
         }
     }
 }
-$sql = "";
+
 foreach ($_defaultMappingStatus as $_key => $_value) {
     if ($_defaultMappingStatus[$_key]) {
         continue;
@@ -129,7 +130,7 @@ foreach ($_defaultMappingStatus as $_key => $_value) {
 //Execute
 
 $installer->getConnection()->insertMultiple(
-    $installer->getTable('tnw_salesforce/mapping'),
+    $tableName,
     $picklistMapping
 );
 

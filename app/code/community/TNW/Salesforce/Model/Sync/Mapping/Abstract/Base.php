@@ -104,7 +104,11 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     public function getMappingCollection()
     {
         if (empty($this->_mappingCollection)) {
-            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_type);
+            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')
+                ->getCollection()
+                ->addObjectToFilter($this->_type)
+                ->addFieldToFilter('active', 1)
+            ;
         }
 
         return $this->_mappingCollection;

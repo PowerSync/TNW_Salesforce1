@@ -132,13 +132,6 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             );
         }
 
-        foreach ($helper->getAllFields($this->getSfEntity(true)) as $key => $field) {
-            $sfFields[] = array(
-                'value' => $key,
-                'label' => $field
-            );
-        }
-
         $fieldset->addField('sf_field', 'select', array(
             'label' => $this->__('Salesforce Name'),
             'name' => 'sf_field',
