@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Model_System_Config_Source_Product_Campaign extends Mage_Eav_Model_Entity_Attribute_Source_Abstract
+class TNW_Salesforce_Model_Config_Source_Product_Campaign extends Mage_Eav_Model_Entity_Attribute_Source_Abstract
 {
     /**
      * Retrieve All options
