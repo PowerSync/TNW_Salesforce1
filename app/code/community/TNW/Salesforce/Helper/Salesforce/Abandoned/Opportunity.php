@@ -89,7 +89,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $this->_prepareOpportunityLineItems();
                 }
 
-                if (Mage::helper('tnw_salesforce/abandoned')->isEnabledCustomerRole()) {
+                if (Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabledCustomerRole()) {
                     $this->_prepareContactRoles();
                 }
                 $this->_pushRemainingOpportunityData();
@@ -474,8 +474,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             // Check if already exists
             $skip = false;
 
-            $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $quoteNumber;
-            $defaultCustomerRole = Mage::helper('tnw_salesforce/abandoned')->getDefaultCustomerRole();
+            $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $quoteNumber;
+            $defaultCustomerRole = Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole();
 
             if ($this->_cache['opportunityLookup']
                 && array_key_exists($magentoQuoteNumber, $this->_cache['opportunityLookup'])
@@ -730,7 +730,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 // Associate quote ID with quote Number
                 $this->_cache['entitiesUpdating'][$_id] = $_quoteNumber;
-                $_quotes[$_id ] = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
+                $_quotes[$_id ] = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
 
                 $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
                 $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
@@ -880,7 +880,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     {
         $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
 
-        if ($stage = Mage::helper('tnw_salesforce/abandoned')->getDefaultAbandonedCartStageName()) {
+        if ($stage = Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultAbandonedCartStageName()) {
             $this->_obj->StageName = $stage;
         }
 
@@ -917,7 +917,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
 
-        $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
+        $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
         // Magento Quote ID
         $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
 
@@ -928,7 +928,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         if ($quote->getUpdatedAt()) {
 
             $closeDate = new Zend_Date($quote->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
-            $closeDate->addDay(Mage::helper('tnw_salesforce/abandoned')->getAbandonedCloseTimeAfter($quote));
+            $closeDate->addDay(Mage::helper('tnw_salesforce/config_sales_abandoned')->getAbandonedCloseTimeAfter($quote));
 
             // Always use quote date as closing date if quote already exists
             $this->_obj->CloseDate = gmdate(DATE_ATOM, $closeDate->getTimestamp());

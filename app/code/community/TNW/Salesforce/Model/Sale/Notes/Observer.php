@@ -23,6 +23,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
         }
 
         $event = $observer->getEvent();
+        /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->load($event->getOid());
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
@@ -43,7 +44,14 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
         ) {
             if ($order->getSalesforceId()) {
                 // Process Notes
-                Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
+                /** @var Mage_Sales_Model_Order_Status_History $note */
+                $note = $event->getNote();
+                $note->setOrder($order);
+
+                /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $syncHelper */
+                $syncHelper = Mage::helper('tnw_salesforce/salesforce_'.$_syncType);
+                $syncHelper->createObjNones(array($note))->pushDataNotes();
+
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
                 Mage::dispatchEvent(
                     'tnw_sales_status_update_' . $_syncType,
@@ -63,8 +71,6 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                         'type'   => 'salesforce'
                     )
                 );
-
-                Mage::helper('tnw_salesforce/order_notes')->process($event->getNote(), $order, $event->getType());
             }
         } else {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");

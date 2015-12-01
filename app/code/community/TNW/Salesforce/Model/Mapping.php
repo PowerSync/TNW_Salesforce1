@@ -87,7 +87,6 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     {
         $attribute = $this->getLocalFieldAttributeCode();
         $type = $this->getLocalFieldType();
-        $helper = Mage::helper('tnw_salesforce/mapping');
         if (isset($objectMappings['Order'])) {
             /** @var Mage_Sales_Model_Order $order */
             $order = $objectMappings['Order'];
@@ -96,7 +95,8 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
             } elseif ($type == 'Order') {
                 switch ($attribute) {
                     case 'cart_all':
-                        return $helper->getOrderDescription($order);
+                        $class = Mage::getConfig()->getModelClassName('tnw_salesforce/sync_mapping_order_base');
+                        return $class::getOrderDescription($order);
                     case 'number':
                         return $order->getIncrementId();
                     case 'payment_method':

@@ -1,2 +1,0 @@
-config:
-  default/salesforce_order/shipment_configuration/sync_enabled: 1

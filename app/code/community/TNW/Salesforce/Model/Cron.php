@@ -178,7 +178,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
      */
     public function addAbandonedToQueue()
     {
-        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+        if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
             return false;
         }
 
@@ -673,7 +673,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
     public function syncAbandoned()
     {
 
-        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+        if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
             return false;
         }
 
