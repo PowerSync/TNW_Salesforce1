@@ -115,10 +115,7 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
             }
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
-            if ($e->getMessage()) {
-                Mage::helper('tnw_salesforce/email')->sendError($e->getMessage());
-                unset($e);
-            } else {
+            if (!$e->getMessage()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Exception caught, but error is not returned!");
             }
         }
