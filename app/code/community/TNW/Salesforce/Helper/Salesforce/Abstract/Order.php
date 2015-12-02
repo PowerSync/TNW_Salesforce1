@@ -1483,7 +1483,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
 
     /**
-     * @param $_id
+     * @param $ids
      * Reset Salesforce ID in Magento for the order
      */
     public function resetOrder($ids)
@@ -1498,6 +1498,35 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order ID and Sync Status for order (#" . join(',', $ids) . ") were reset.");
 
+    }
+
+    /**
+     * Prepare order history notes for syncronization
+     */
+    protected function _prepareNotes()
+    {
+        /** @var TNW_Salesforce_Model_Tool_Log $toolLog */
+        $toolLog =  Mage::getSingleton('tnw_salesforce/tool_log');
+        $toolLog->saveTrace('----------Prepare Notes: Start----------');
+
+        // Get all products from each order and decide if all needs to me synced prior to inserting them
+        foreach ($this->_cache['entitiesUpdating'] as $_key => $_number) {
+            if (in_array($_number, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
+                $toolLog->saveTrace(sprintf('%s (%s): Skipping, issues with upserting an %s!',
+                    strtoupper($this->getMagentoEntityName()), $_number, $this->getSalesforceEntityName()));
+
+                continue;
+            }
+
+            $registryKey = sprintf('order_cached_%s', $_number);
+            $_order = (Mage::registry($registryKey))
+                ? Mage::registry($registryKey)
+                : Mage::getModel('sales/order')->loadByIncrementId($_number);
+
+            $this->createObjNones($_order->getAllStatusHistory());
+        }
+
+        $toolLog->saveTrace('----------Prepare Notes: End----------');
     }
 
     /**
@@ -1517,13 +1546,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 continue;
             }
 
+            $comment      = utf8_encode($_note->getData('comment'));
+            $salesforceId = $_note->getOrder()->getSalesforceId();
+
             $_obj = new stdClass();
-            $_obj->ParentId = $_note->getOrder()->getSalesforceId();
-            $_obj->IsPrivate = 0;
-            $_obj->Body = utf8_encode($_note->getData('comment'));
-            $_obj->Title = (strlen($_obj->Title) > 75)
-                ? utf8_encode(substr($_note->getData('comment'), 0, 75) . '...')
-                : utf8_encode($_note->getData('comment'));
+            $_obj->ParentId   = $salesforceId;
+            $_obj->IsPrivate  = 0;
+            $_obj->Body       = $comment;
+            $_obj->Title      = (strlen($comment) > 75)
+                ? sprintf('%s...', mb_substr($comment, 0, 75))
+                : $comment;
 
             foreach ($_obj as $key => $_value) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Note Object: " . $key . " = '" . $_value . "'");

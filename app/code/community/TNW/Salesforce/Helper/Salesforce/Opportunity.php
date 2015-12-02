@@ -481,27 +481,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
     }
 
-    protected function _prepareNotes()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Notes: Start----------');
-
-        // Get all products from each order and decide if all needs to me synced prior to inserting them
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache['failedOpportunities'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an opportunity!');
-                continue;
-            }
-
-            $_order = (Mage::registry('order_cached_' . $_orderNumber))
-                ? Mage::registry('order_cached_' . $_orderNumber)
-                : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-
-            $this->createObjNones($_order->getAllStatusHistory());
-        }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Notes: End----------');
-    }
-
     protected function _prepareContactRoles()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
