@@ -41,9 +41,9 @@ class TNW_Salesforce_Helper_Order_Roles extends TNW_Salesforce_Helper_Order
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityContactRole Object: " . $key . " = '" . $_value . "'");
         }
 
-        Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_before",array("data" => array($ocr)));
+        Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before", array("data" => array($ocr)));
         $response = $this->_mySforceConnection->upsert('Id', array($ocr), 'OpportunityContactRole');
-        Mage::dispatchEvent("tnw_salesforce_opportunitycontactrole_send_after",array(
+        Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_after", array(
             "data" => array($ocr),
             "result" => $response
         ));

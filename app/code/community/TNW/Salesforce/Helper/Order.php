@@ -2,6 +2,7 @@
 
 /**
  * Class TNW_Salesforce_Helper_Order
+ * @deprecated
  */
 class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
 {

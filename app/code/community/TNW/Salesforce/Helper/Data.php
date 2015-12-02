@@ -294,7 +294,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         $object = new Varien_Object(array(
             'object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE
         ));
-        Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $object));
+        Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $object));
 
         return $object->getObjectType();
     }
