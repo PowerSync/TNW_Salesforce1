@@ -5,19 +5,6 @@
  */
 class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
 {
-    /* Moved into Magento configuration
-    const ORDER_BATCH_SIZE = 500;
-    const ABANDONED_BATCH_SIZE = 500;
-    const INVOICE_BATCH_SIZE = 500;
-    const PRODUCT_BATCH_SIZE = 500;
-    const CUSTOMER_BATCH_SIZE = 1000;
-    const WEBSITE_BATCH_SIZE = 500;
-    */
-
-    /**
-     *
-     */
-    const QUEUE_DELETE_LIMIT = 50;
     /**
      * @var array
      */
@@ -708,22 +695,6 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
         }
 
         return true;
-    }
-
-    /**
-     * @param array $_customerArray
-     */
-    protected function _prepareConvertedLeads($_customerArray = array())
-    {
-        $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-        if ($manualSync->reset()) {
-            $manualSync->setIsFromCLI(true);
-            $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-            $_foundAccounts = $manualSync->findCustomerAccounts($_customerArray);
-
-            $this->_prepareLeadConversionObject($_customerArray, $_foundAccounts);
-        }
     }
 
     /**
