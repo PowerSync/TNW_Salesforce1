@@ -536,8 +536,9 @@
                 <abandoned_batch_size>400</abandoned_batch_size>
                 <invoice_batch_size>400</invoice_batch_size>
 
-                <db_log_limit>1000</db_log_limit>
+                <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
+                <log_file_read_limit>1536</log_file_read_limit>
 
             </development_and_debugging>
 

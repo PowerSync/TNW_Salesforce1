@@ -27,7 +27,8 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
                 throw new Exception($this->__('File is not available'));
             }
 
-            $logFile->read();
+            $logFileReadLimit = Mage::helper('tnw_salesforce/config_tool')->getLogFileReadLimit();
+            $logFile->read(-$logFileReadLimit);
 
             Mage::register('tnw_salesforce_log_file', $logFile);
 
@@ -43,7 +44,7 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
      */
     protected function _prepareAction()
     {
-        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Sync log files'));
+        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Download Log Files'));
 
 
         $this->_setActiveMenu('tnw_salesforce');
