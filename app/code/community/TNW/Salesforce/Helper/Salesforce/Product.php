@@ -681,18 +681,13 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         //Push On ID
         if (!empty($_entities)) {
-            $_ttl = count($_entities);
+
             $_success = true;
-            if ($_ttl > 199) {
-                $_steps = ceil($_ttl / 199);
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * 200;
-                    $_itemsToPush = array_slice($_entities, $_start, $_start + 199);
-                    $_success = $this->_pushProductsSegment($_itemsToPush, $_upsertOn);
-                }
-            } else {
-                $_success = $this->_pushProductsSegment($_entities, $_upsertOn);
+            $_entitiesChunk = array_chunk($_entities, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            foreach ($_entitiesChunk as $_itemsToPush) {
+                $_success = $this->_pushProductsSegment($_itemsToPush, $_upsertOn);
             }
+
             if (!$_success) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Product upsert failed, skipping PriceBook upserts');
                 return false;
@@ -791,18 +786,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         //Push On ID
         if (!empty($_entities)) {
-            $_ttl = count($_entities);
-            if ($_ttl > 0) {
-                if ($_ttl > 199) {
-                    $_steps = ceil($_ttl / 199);
-                    for ($_i = 0; $_i < $_steps; $_i++) {
-                        $_start = $_i * 200;
-                        $_itemsToPush = array_slice($_entities, $_start, $_start + 199);
-                        $this->_pushPriceBookSegment($_itemsToPush);
-                    }
-                } else {
-                    $this->_pushPriceBookSegment($_entities);
-                }
+            $_entitiesChunk = array_chunk($_entities, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            foreach ($_entitiesChunk as $_itemsToPush) {
+                $this->_pushPriceBookSegment($_itemsToPush);
             }
         }
 

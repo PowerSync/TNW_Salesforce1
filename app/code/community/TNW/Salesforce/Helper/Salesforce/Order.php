@@ -744,17 +744,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
             Mage::dispatchEvent("tnw_salesforce_order_products_send_before", array("data" => $this->_cache['orderItemsToUpsert']));
 
-            // Push Cart
-            $_ttl = count($this->_cache['orderItemsToUpsert']);
-            if ($_ttl > 199) {
-                $_steps = ceil($_ttl / 199);
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * 200;
-                    $_itemsToPush = array_slice($this->_cache['orderItemsToUpsert'], $_start, $_start + 199);
-                    $this->_pushOrderItems($_itemsToPush);
-                }
-            } else {
-                $this->_pushOrderItems($this->_cache['orderItemsToUpsert']);
+            $_orderItemsChunk = array_chunk($this->_cache['orderItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            foreach ($_orderItemsChunk as $_itemsToPush) {
+                $this->_pushOrderItems($_itemsToPush);
             }
 
             Mage::dispatchEvent("tnw_salesforce_order_products_send_after", array(
@@ -771,17 +763,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
             Mage::dispatchEvent("tnw_salesforce_order_notes_send_before", array("data" => $this->_cache['notesToUpsert']));
 
-            // Push Cart
-            $_ttl = count($this->_cache['notesToUpsert']);
-            if ($_ttl > 199) {
-                $_steps = ceil($_ttl / 199);
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * 200;
-                    $_itemsToPush = array_slice($this->_cache['notesToUpsert'], $_start, $_start + 199);
-                    $this->_pushNotes($_itemsToPush);
-                }
-            } else {
-                $this->_pushNotes($this->_cache['notesToUpsert']);
+            $_notesChunk = array_chunk($this->_cache['notesToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            foreach ($_notesChunk as $_itemsToPush) {
+                $this->_pushNotes($_itemsToPush);
             }
 
             Mage::dispatchEvent("tnw_salesforce_order_notes_send_after", array(
@@ -825,18 +809,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
             if (!empty($this->_cache['orderToActivate'])) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: Start----------');
-                // Push Cart
-                $_ttl = count($this->_cache['orderToActivate']);
-                if ($_ttl > 199) {
-                    $_steps = ceil($_ttl / 199);
-                    for ($_i = 0; $_i < $_steps; $_i++) {
-                        $_start = $_i * 200;
-                        $_itemsToPush = array_slice($this->_cache['orderToActivate'], $_start, $_start + 199);
-                        $this->_activateOrders($_itemsToPush);
-                    }
-                } else {
-                    $this->_activateOrders($this->_cache['orderToActivate']);
+
+                $_orderChunk = array_chunk($this->_cache['orderToActivate'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+                foreach ($_orderChunk as $_itemsToPush) {
+                    $this->_activateOrders($_itemsToPush);
                 }
+
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: End----------');
             }
         }
