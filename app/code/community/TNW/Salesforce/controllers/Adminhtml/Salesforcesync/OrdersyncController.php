@@ -112,7 +112,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
                             'orderIds'      => $itemIds,
                             'message'       => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
@@ -180,7 +180,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
                             'orderIds'      => $itemIds,
                             'message'       => Mage::helper('adminhtml')->__('Total of %d order(s) were synchronized', count($itemIds)),

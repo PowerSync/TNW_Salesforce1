@@ -173,9 +173,9 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
             return;
         }
 
-        Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
+        Mage::dispatchEvent("tnw_salesforce_opportunity_line_item_send_before",array("data" => $products));
         $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
-        Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
+        Mage::dispatchEvent("tnw_salesforce_opportunity_line_item_send_after",array(
             "data" => $products,
             "result" => $response
         ));
@@ -396,9 +396,9 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("PricebookEntry Object: " . $key . " = '" . $value . "'");
             }
 
-            Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_before",array("data" => array($pb)));
+            Mage::dispatchEvent("tnw_salesforce_pricebook_entry_send_before",array("data" => array($pb)));
             $upsertResponse = $this->_mySforceConnection->upsert('Id', array($pb), 'PricebookEntry');
-            Mage::dispatchEvent("tnw_salesforce_pricebookentry_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_pricebook_entry_send_after",array(
                 "data" => array($pb),
                 "result" => $upsertResponse
             ));
@@ -476,9 +476,9 @@ class TNW_Salesforce_Helper_Order_Pricebook extends TNW_Salesforce_Helper_Order
 
             unset($collection, $_map);
 
-            Mage::dispatchEvent("tnw_salesforce_product2_send_before",array("data" => array($this->_p)));
+            Mage::dispatchEvent("tnw_salesforce_product_send_before",array("data" => array($this->_p)));
             $upsertResponse = $this->_mySforceConnection->upsert($syncParamId, array($this->_p), 'Product2');
-            Mage::dispatchEvent("tnw_salesforce_product2_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_product_send_after",array(
                 "data" => array($this->_p),
                 "result" => $upsertResponse
             ));

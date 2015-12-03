@@ -42,9 +42,9 @@ class TNW_Salesforce_Helper_Order_Notes extends TNW_Salesforce_Helper_Order
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Note Object: " . $key . " = '" . $_value . "'");
         }
 
-        Mage::dispatchEvent("tnw_salesforce_note_send_before",array("data" => array($note)));
+        Mage::dispatchEvent("tnw_salesforce_order_notes_send_before", array("data" => array($note)));
         $response = $this->_mySforceConnection->upsert('Id', array($note), 'Note');
-        Mage::dispatchEvent("tnw_salesforce_note_send_after",array(
+        Mage::dispatchEvent("tnw_salesforce_order_notes_send_after", array(
             "data" => array($note),
             "result" => $response
         ));

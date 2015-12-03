@@ -66,7 +66,7 @@ class TNW_Salesforce_Adminhtml_Sales_Order_StatusController extends Mage_Adminht
                 $status->save();
 
                 // TNW_Salesforce, added to save order status
-                Mage::dispatchEvent('tnw_salesforce_order_salesforce_status_save', array('status' => $statusCode, 'request' => $this->getRequest()));
+                Mage::dispatchEvent('tnw_salesforce_order_status_save', array('status' => $statusCode, 'request' => $this->getRequest()));
 
                 $this->_getSession()->addSuccess(Mage::helper('sales')->__('The order status has been saved.'));
                 $this->_redirect('*/*/');

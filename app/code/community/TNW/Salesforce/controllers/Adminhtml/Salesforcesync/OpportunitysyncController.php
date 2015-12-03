@@ -106,7 +106,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_opportunity',
+                        'tnw_salesforce_opportunity_process',
                         array(
                             'orderIds'      => array($this->getRequest()->getParam('order_id')),
                             'message'       => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
@@ -177,7 +177,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_opportunity',
+                        'tnw_salesforce_opportunity_process',
                         array(
                             'orderIds'  => $itemIds,
                             'message'   => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
