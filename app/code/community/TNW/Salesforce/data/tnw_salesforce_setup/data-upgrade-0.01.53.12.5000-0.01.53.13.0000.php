@@ -11,25 +11,8 @@ $installer = $this;
 $installer->startSetup();
 $tableName = $installer->getTable('tnw_salesforce/account_matching');
 
-do {
-    $conf = Mage::getStoreConfig('salesforce_customer/account_catchall/domains');
-    if (empty($conf)) {
-        break;
-    }
-
-    $data = @unserialize($conf);
-    if (!is_array($data)) {
-        break;
-    }
-
-    if (empty($data)) {
-        break;
-    }
-
-    if (!(array_key_exists('account', $data) && is_array($data['account']))) {
-        break;
-    }
-
+$conf = Mage::getStoreConfig('salesforce_customer/account_catchall/domains');
+if (!empty($conf) && ($data = @unserialize($conf)) && is_array($data) && array_key_exists('account', $data) && is_array($data['account'])) {
     /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
     $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
     try {
@@ -38,6 +21,8 @@ do {
         $toOptionHash = array();
     }
 
+    // Prepare Data
+    $prepareDate = array();
     foreach($data['account'] as $key => $accountId) {
         if (empty($accountId)) {
             continue;
@@ -48,15 +33,22 @@ do {
             $accountName = $toOptionHash[$accountId];
         }
 
-        try {
-            $installer->getConnection()->insert($tableName, array(
-                'account_name' => $accountName,
-                'account_id'   => $accountId,
-                'email_domain' => $data['domain'][$key],
-            ));
-        } catch(Exception $e) {}
+        $prepareDate[] = array(
+            'account_name' => $accountName,
+            'account_id'   => $accountId,
+            'email_domain' => $data['domain'][$key],
+        );
     }
 
-} while(false);
+    // Save Data
+    $chunkData = array_chunk($prepareDate, 200, true);
+    foreach ($chunkData as $chunkItem) {
+        try {
+            $installer->getConnection()->insertMultiple($tableName, $chunkItem);
+        } catch(Exception $e) {
+            Mage::logException($e);
+        }
+    }
+}
 
 $installer->endSetup();
