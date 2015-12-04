@@ -642,7 +642,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
 
             // Push Cart
-            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
             foreach ($_opportunityItemsChunk as $_itemsToPush) {
                 $this->_pushOpportunityLineItems($_itemsToPush);
             }
@@ -708,7 +708,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
 
-            $_notesChunk = array_chunk($this->_cache['notesToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            $_notesChunk = array_chunk($this->_cache['notesToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
             foreach ($_notesChunk as $_itemsToPush) {
                 $this->_pushNotes($_itemsToPush);
             }
@@ -871,52 +871,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     protected function _setOpportunityName($orderNumber, $accountName)
     {
         $this->_obj->Name = "Request #" . $orderNumber;
-    }
-
-    /**
-     * @param array $chunk
-     * push Notes chunk into Salesforce
-     */
-    protected function _pushNotes($chunk = array())
-    {
-        $_noteIds = array_keys($this->_cache['notesToUpsert']);
-
-        try {
-            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'Note');
-        } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach($chunk as $_object) {
-                $this->_cache['responses']['notes'][] = $_response;
-            }
-            $results = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Notes to SalesForce failed' . $e->getMessage());
-        }
-
-        $sql = "";
-
-        foreach ($results as $_key => $_result) {
-            $_noteId = $_noteIds[$_key];
-
-            //Report Transaction
-            $this->_cache['responses']['notes'][$_noteId] = $_result;
-
-            if (!$_result->success) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Note (id: ' . $_noteId . ') failed to upsert');
-                $this->_processErrors($_result, 'orderNote', $chunk[$_noteId]);
-
-            } else {
-                $_orderSalesforceId = $this->_cache['notesToUpsert'][$_noteId]->ParentId;
-                $_orderId = array_search($_orderSalesforceId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
-
-                $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = '" . $_noteId . "';";
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_orderId . ')');
-            }
-        }
-
-        if (!empty($sql)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-        }
     }
 
     /**

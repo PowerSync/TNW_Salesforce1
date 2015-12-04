@@ -683,7 +683,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         if (!empty($_entities)) {
 
             $_success = true;
-            $_entitiesChunk = array_chunk($_entities, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            $_entitiesChunk = array_chunk($_entities, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
             foreach ($_entitiesChunk as $_itemsToPush) {
                 $_success = $this->_pushProductsSegment($_itemsToPush, $_upsertOn);
             }

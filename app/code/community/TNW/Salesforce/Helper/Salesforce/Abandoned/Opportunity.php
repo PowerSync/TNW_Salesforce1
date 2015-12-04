@@ -576,7 +576,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
 
-            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
             foreach ($_opportunityItemsChunk as $_itemsToPush) {
                 $this->_pushOpportunityLineItems($_itemsToPush);
             }

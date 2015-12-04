@@ -171,7 +171,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $_results = $_resultsPBE = array();
-            $_skuChunk = array_chunk($sku, $_howMany);
+            $_skuChunk = array_chunk($sku, $_howMany, true);
             foreach($_skuChunk as $_skus) {
                 $_results[] = $this->_queryProducts($_magentoId, $_skus, $searchByName);
                 $_resultsPBE[] = $this->_queryPricebookEntries($_skus, $searchByName);
@@ -191,7 +191,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
 
                 foreach ($result->records as $_item) {
                     // Conditional preserves products only with Magento Id defined, otherwise last found product will be used
-                    if (array_key_exists($_item->ProductCode, $returnArray) || !(property_exists($_item, $_magentoId) && $_item->$_magentoId)) {
+                    if (!(!array_key_exists($_item->ProductCode, $returnArray) || (property_exists($_item, $_magentoId) && $_item->$_magentoId))) {
                         continue;
                     }
 
