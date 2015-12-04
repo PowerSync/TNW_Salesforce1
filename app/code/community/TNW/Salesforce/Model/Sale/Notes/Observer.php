@@ -54,7 +54,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
                 Mage::dispatchEvent(
-                    'tnw_sales_status_update_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_status_update', $_syncType),
                     array(
                         'order'  => $order
                     )
@@ -64,7 +64,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             } else {
                 // Never was synced, new order
                 Mage::dispatchEvent(
-                    'tnw_sales_process_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_process', $_syncType),
                     array(
                         'orderIds'      => array($order->getId()),
                         'message'       => NULL,

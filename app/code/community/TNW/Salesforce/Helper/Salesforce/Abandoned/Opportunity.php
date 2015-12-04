@@ -242,7 +242,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $this->_assignOwnerIdToOpp();
 
             try {
-                Mage::dispatchEvent("tnw_salesforce_quote_send_before", array("data" => $this->_cache['opportunitiesToUpsert']));
+                Mage::dispatchEvent("tnw_salesforce_opportunity_send_before", array("data" => $this->_cache['opportunitiesToUpsert']));
 
                 $_toSyncValues = array_values($this->_cache['opportunitiesToUpsert']);
                 $_keys = array_keys($this->_cache['opportunitiesToUpsert']);

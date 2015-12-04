@@ -16,7 +16,7 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
     {
         parent::__construct();
         $this->setId('grid_id');
-        $this->setDefaultSort('entity_id');
+        $this->setDefaultSort('created_at');
         $this->setDefaultDir('desc');
         $this->setSaveParametersInSession(true);
     }

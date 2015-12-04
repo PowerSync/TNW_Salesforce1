@@ -626,7 +626,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: Start----------');
 
-            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
 
             // Push Contact Roles
             try {
@@ -662,7 +662,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 }
             }
 
-            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_after",array(
                 "data" => $this->_cache['contactRolesToUpsert'],
                 "result" => $this->_cache['responses']['customerRoles']
             ));
