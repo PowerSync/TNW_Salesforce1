@@ -98,7 +98,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         unset($order);
     }
 
-    protected function _pushRemainingOpportunityData()
+    protected function _pushRemainingOrderData()
     {
         $_resultRoles = $_resultProducts = null;
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
@@ -256,7 +256,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
     }
 
-    protected function _pushOpportunitiesToSalesforce()
+    protected function _pushOrdersToSalesforce()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             // assign owner id to opportunity

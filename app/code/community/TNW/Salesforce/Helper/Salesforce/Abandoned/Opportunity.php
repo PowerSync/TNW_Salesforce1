@@ -53,55 +53,16 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
-     * @param string $type
-     * @return bool
+     * Remaining Data
      */
-    public function process($type = 'soft')
+    protected function _prepareRemaining()
     {
-        try {
-            if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
-                if (!$this->isFromCLI() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
-                }
+        if (Mage::helper('tnw_salesforce')->doPushShoppingCart()) {
+            $this->_prepareOpportunityLineItems();
+        }
 
-                return false;
-            }
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
-
-            if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("WARNING: Sync abandoned carts, cache is empty!");
-                $this->_dumpObjectToLog($this->_cache, "Cache", true);
-
-                return false;
-            }
-
-            $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
-
-            $this->_prepareOpportunities();
-            $this->_pushOpportunitiesToSalesforce();
-            $this->clearMemory();
-
-            set_time_limit(1000);
-
-            if ($type == 'full') {
-                if (Mage::helper('tnw_salesforce')->doPushShoppingCart()) {
-                    $this->_prepareOpportunityLineItems();
-                }
-
-                if (Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabledCustomerRole()) {
-                    $this->_prepareContactRoles();
-                }
-                $this->_pushRemainingOpportunityData();
-                $this->clearMemory();
-            }
-
-            $this->_onComplete();
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
-            return true;
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+        if (Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabledCustomerRole()) {
+            $this->_prepareContactRoles();
         }
     }
 
@@ -113,7 +74,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeads('abandoned');
     }
 
-    protected function _prepareOpportunities()
+    protected function _prepareOrders()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: Start----------');
         $opportunitiesUpdate = array();
@@ -223,7 +184,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         return true;
     }
 
-    protected function _pushOpportunitiesToSalesforce()
+    protected function _pushOrdersToSalesforce()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             $_pushOn = $this->_magentoId;
@@ -317,7 +278,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
     }
 
-    protected function _prepareOpportunityLineItems()
+    protected function _prepareOrderItems()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: Start----------');
 
@@ -520,7 +481,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: End----------');
     }
 
-    protected function _pushOpportunityLineItems($chunk = array())
+    protected function _pushOrderItems($chunk = array())
     {
         if (empty($this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
             return false;
@@ -571,14 +532,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
     }
 
-    protected function _pushRemainingOpportunityData()
+    protected function _pushRemainingOrderData()
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
 
             $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
             foreach ($_opportunityItemsChunk as $_itemsToPush) {
-                $this->_pushOpportunityLineItems($_itemsToPush);
+                $this->_pushOrderItems($_itemsToPush);
             }
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');

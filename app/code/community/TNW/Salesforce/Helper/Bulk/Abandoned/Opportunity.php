@@ -135,7 +135,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         unset($quote);
     }
 
-    protected function _pushRemainingOpportunityData()
+    protected function _pushRemainingOrderData()
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['opportunityProducts']['Id']) {
@@ -209,7 +209,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
     }
 
-    protected function _pushOpportunitiesToSalesforce()
+    protected function _pushOrdersToSalesforce()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             // assign owner id to opportunity

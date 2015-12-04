@@ -1596,52 +1596,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @param array $chunk
-     * push Notes chunk into Salesforce
-     */
-    protected function _pushNotes($chunk = array())
-    {
-        $_noteIds = array_keys($this->_cache['notesToUpsert']);
-
-        try {
-            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'Note');
-        } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($chunk as $_object) {
-                $this->_cache['responses']['notes'][] = $_response;
-            }
-            $results = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Notes to SalesForce failed' . $e->getMessage());
-        }
-
-        $sql = "";
-
-        foreach ($results as $_key => $_result) {
-            $_noteId = $_noteIds[$_key];
-
-            //Report Transaction
-            $this->_cache['responses']['notes'][$_noteId] = $_result;
-
-            if (!$_result->success) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Note (id: ' . $_noteId . ') failed to upsert');
-                $this->_processErrors($_result, 'orderNote', $chunk[$_noteId]);
-
-            } else {
-                $_orderSalesforceId = $this->_cache['notesToUpsert'][$_noteId]->ParentId;
-                $_orderId = array_search($_orderSalesforceId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
-
-                $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = '" . $_noteId . "';";
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_orderId . ')');
-            }
-        }
-
-        if (!empty($sql)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-        }
-    }
-
-    /**
      * @param null $_orderNumber
      * @return null
      */
@@ -1732,5 +1686,118 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
             }
         }
+    }
+
+    /**
+     * @param string $type
+     * @return bool
+     */
+    public function process($type = 'soft')
+    {
+        try {
+            if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
+                if (!$this->isFromCLI() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
+                }
+
+                return false;
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
+
+            if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("WARNING: Sync %s, cache is empty!", $this->getManyParentEntityType()));
+                $this->_dumpObjectToLog($this->_cache, "Cache", true);
+
+                return false;
+            }
+
+            $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
+
+            $this->_prepareOrders();
+            $this->_pushOrdersToSalesforce();
+
+            $this->clearMemory();
+
+            set_time_limit(1000);
+
+            if ($type == 'full') {
+                $this->_prepareRemaining();
+                $this->_pushRemainingOrderData();
+
+                $this->clearMemory();
+            }
+
+            $this->_onComplete();
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
+            return true;
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Remaining Data
+     */
+    protected function _prepareRemaining()
+    {
+        if (Mage::helper('tnw_salesforce')->doPushShoppingCart()) {
+            $this->_prepareOrderItems();
+        }
+
+        if (Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
+            $this->_prepareNotes();
+        }
+    }
+
+    abstract protected function _prepareOrders();
+    abstract protected function _pushOrdersToSalesforce();
+    abstract protected function _prepareOrderItems();
+    abstract protected function _pushOrderItems();
+    abstract protected function _pushRemainingOrderData();
+
+    /**
+     * @depricated Exists compatibility for
+     * @comment call leads convertation method
+     */
+    protected function _convertLeads()
+    {
+        return Mage::helper('tnw_salesforce/salesforce_data_lead')
+            ->setParent($this)->convertLeads($this->_magentoEntityName);
+    }
+
+    /**
+     * Mass sync products that are part of the order
+     */
+    protected function syncProducts()
+    {
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
+
+        /** @var TNW_Salesforce_Helper_Bulk_Product $manualSync */
+        $manualSync = Mage::helper('tnw_salesforce/bulk_product');
+        $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
+        $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Domain: " . $this->getSalesforceServerDomain());
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Session: " . $this->getSalesforceSessionId());
+
+        foreach ($this->_stockItems as $_storeId => $_products) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Store Id: " . $_storeId);
+            $manualSync->setOrderStoreId($_storeId);
+            if ($manualSync->reset()) {
+                $manualSync->massAdd($this->_stockItems[$_storeId]);
+                $manualSync->process();
+                if (!$this->isFromCLI()) {
+                    Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
+                }
+            } else {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('WARNING: Salesforce Connection could not be established!');
+            }
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: END ================");
     }
 }
