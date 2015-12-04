@@ -1309,7 +1309,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $chunk = array_chunk($_skippedOrders, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
 
                 foreach ($chunk as $_skippedOrdersChunk) {
-                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedOrders) . "') and mage_object_type = 'sales/order';";
+                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedOrdersChunk) . "') and mage_object_type = 'sales/order';";
                     Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
                     foreach ($_skippedOrdersChunk as $_idToRemove) {
                         unset($this->_cache['entitiesUpdating'][$_idToRemove]);

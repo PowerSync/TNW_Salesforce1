@@ -853,9 +853,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             if (!empty($_skippedAbandoned)) {
                 $chunk = array_chunk($_skippedAbandoned, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-
                 foreach ($chunk as $_skippedAbandonedChunk) {
-                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandoned) . "') and mage_object_type = 'sales/quote';";
+                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandonedChunk) . "') and mage_object_type = 'sales/quote';";
                     Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
                     foreach ($_skippedAbandonedChunk as $_idToRemove) {
                         unset($this->_cache['entitiesUpdating'][$_idToRemove]);
