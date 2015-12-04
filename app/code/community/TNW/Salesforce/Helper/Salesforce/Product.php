@@ -786,7 +786,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         //Push On ID
         if (!empty($_entities)) {
-            $_entitiesChunk = array_chunk($_entities, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            $_entitiesChunk = array_chunk($_entities, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
             foreach ($_entitiesChunk as $_itemsToPush) {
                 $this->_pushPriceBookSegment($_itemsToPush);
             }
