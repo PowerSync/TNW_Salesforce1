@@ -27,11 +27,11 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
      *
      * @param $order
      */
-    protected function _setOpportunityInfo($order)
+    protected function _setEntityInfo($order)
     {
         $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
 
-        $this->_updateOrderStageName($order);
+        $this->_updateEntityStatus($order);
         $_orderNumber = $order->getRealOrderId();
         $_email = $this->_cache['orderToEmail'][$_orderNumber];
 
@@ -98,7 +98,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         unset($order);
     }
 
-    protected function _pushRemainingOrderData()
+    protected function _pushRemainingEntityData()
     {
         $_resultRoles = $_resultProducts = null;
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
@@ -256,7 +256,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
     }
 
-    protected function _pushOrdersToSalesforce()
+    protected function _pushEntity()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             // assign owner id to opportunity
