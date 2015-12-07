@@ -1029,7 +1029,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[ Update customer information in Slaesforce each time order status in Magneto changes
+                            <comment><![CDATA[ Update customer information in Salesforce each time order status in Magneto changes
                             ]]></comment>
                         </order_status_update_customer>
                         <order_status_allow translate="label">
