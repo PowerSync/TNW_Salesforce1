@@ -815,7 +815,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     {
         if (Mage::getModel('tnw_salesforce/localstorage')->getObject($order->getId())) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Order #" . $order->getRealOrderId() . " is already queued for update.");
-            return true;
+            return;
         }
 
         $this->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
@@ -838,9 +838,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
         if ($order->getSalesforceId()) {
             $this->_cache['opportunitiesToUpsert'][$order->getRealOrderId()] = $this->_obj;
-
-            $this->_pushOpportunitiesToSalesforce();
-        } else {
+            $this->_pushOrdersToSalesforce();
+        }
+        else {
             // Need to do full sync instead
             $res = $this->process('full');
             if ($res) {

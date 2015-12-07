@@ -1137,12 +1137,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Id is not specified, don't know what to synchronize!");
             return false;
         }
+
         // test sf api connection
+        /** @var TNW_Salesforce_Model_Connection $_client */
         $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->tryWsdl()
-            || !$_client->tryToConnect()
-            || !$_client->tryToLogin()
-        ) {
+        if (!$_client->tryWsdl() || !$_client->tryToConnect() || !$_client->tryToLogin()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync orders, sf api connection failed");
 
             return true;
@@ -1713,13 +1712,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 return false;
             }
 
+            $this->_beforeProcess();
             $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
 
             $this->_prepareOrders();
             $this->_pushOrdersToSalesforce();
 
             $this->clearMemory();
-
             set_time_limit(1000);
 
             if ($type == 'full') {
@@ -1730,6 +1729,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
 
             $this->_onComplete();
+            $this->_afterProcess();
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
             return true;
@@ -1737,6 +1737,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }
+    }
+
+    protected function _beforeProcess()
+    {
+
+    }
+
+    protected function _afterProcess()
+    {
+
     }
 
     /**
