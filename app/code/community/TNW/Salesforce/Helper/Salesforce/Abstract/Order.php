@@ -1852,24 +1852,23 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _loadEntityByCache($_key, $cachePrefix = null)
     {
-        $_register_entity = null;
+        $_entity = null;
 
         // Generate cache key
         if (is_null($cachePrefix)) {
-            $_register_entity = $this->_loadEntity($_key);
-            $cachePrefix = $this->_getEntityCachePrefix($_register_entity);
+            $_entity = $this->_loadEntity($_key);
+            $cachePrefix = $this->_getEntityCachePrefix($_entity);
         }
 
         $entityRegistryKey = sprintf('%s_cached_%s', $this->_magentoEntityName, (string)$cachePrefix);
+        if (!is_null($_entity)) {
+            Mage::unregister($entityRegistryKey);
+        }
 
         // Generate cache
-        if (is_null($_register_entity) && !Mage::registry($entityRegistryKey)) {
-            $_entity = $this->_loadEntity($_key);
+        if (!Mage::registry($entityRegistryKey)) {
+            $_entity = is_null($_entity) ? $this->_loadEntity($_key) : $_entity;
             Mage::register($entityRegistryKey, $_entity);
-        }
-        else {
-            Mage::unregister($entityRegistryKey);
-            Mage::register($entityRegistryKey, $_register_entity);
         }
 
         // Get entity
