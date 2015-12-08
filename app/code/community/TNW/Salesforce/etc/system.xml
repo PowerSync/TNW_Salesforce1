@@ -1120,7 +1120,6 @@
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <order_or_opportunity>Opportunity</order_or_opportunity>
-                                <abandoned_cart_enabled>0</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
                                 Enable Opportunity Customer Role Integration
@@ -1138,7 +1137,6 @@
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <customer_opportunity_role_enable>1</customer_opportunity_role_enable>
-                                <abandoned_cart_enabled>0</abandoned_cart_enabled>
                                 <order_or_opportunity>Opportunity</order_or_opportunity>
                             </depends>
                         </customer_integration_opp>
@@ -1181,6 +1179,7 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1196,6 +1195,7 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1213,6 +1213,7 @@
                             <show_in_store>0</show_in_store>
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1230,6 +1231,7 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1250,6 +1252,7 @@
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <abandoned_customer_opportunity_role_enable>1</abandoned_customer_opportunity_role_enable>
+                                <order_or_opportunity>Order</order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                         </abandoned_customer_integration_opp>
