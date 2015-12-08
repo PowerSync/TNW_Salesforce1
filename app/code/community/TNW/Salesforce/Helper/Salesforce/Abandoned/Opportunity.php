@@ -43,13 +43,25 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     /**
      * @param $id
      * @return Mage_Sales_Model_Quote
+     * @deprecated
      */
     protected function _loadQuote($id)
+    {
+        return $this->_loadEntity($id);
+    }
+
+    /**
+     * @param $id
+     * @return Mage_Sales_Model_Quote
+     */
+    protected function _loadEntity($id)
     {
         $stores = Mage::app()->getStores(true);
         $storeIds = array_keys($stores);
 
-        return Mage::getModel('sales/quote')->setSharedStoreIds($storeIds)->load($id);
+        return $this->_modelEntity()
+            ->setSharedStoreIds($storeIds)
+            ->load($id);
     }
 
     /**
@@ -71,12 +83,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: Start----------');
         $opportunitiesUpdate = array();
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
-            if (!Mage::registry('quote_cached_' . $_quoteNumber)) {
-                $_quote = $this->_loadQuote($_key);
-                Mage::register('quote_cached_' . $_quoteNumber, $_quote);
-            } else {
-                $_quote = Mage::registry('quote_cached_' . $_quoteNumber);
-            }
+            $_quote = $this->_loadEntityByCache($_key, $_quoteNumber);
 
             $this->_obj = new stdClass();
             $this->_setEntityInfo($_quote);
@@ -268,60 +275,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         } else {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('No Opportunities found queued for the synchronization!');
         }
-    }
-
-    protected function _prepareEntityItems()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: Start----------');
-
-        // only sync all products if processing real time
-        if (!$this->_isCron) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
-                if (in_array($_quoteNumber, $this->_cache['failedOpportunities'])) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
-                    continue;
-                }
-                if (!Mage::registry('quote_cached_' . $_quoteNumber)) {
-                    $_quote = $this->_loadQuote($_key);
-                    Mage::register('quote_cached_' . $_quoteNumber, $_quote);
-                } else {
-                    $_quote = Mage::registry('quote_cached_' . $_quoteNumber);
-                }
-
-                foreach ($_quote->getAllVisibleItems() as $_item) {
-                    if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-                        if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
-                            $this->_prepareStoreId($_item);
-                            foreach ($_quote->getAllItems() as $_childItem) {
-                                if ($_childItem->getParentItemId() == $_item->getItemId()) {
-                                    $this->_prepareStoreId($_childItem);
-                                }
-                            }
-                        } else {
-                            $this->_prepareStoreId($_item);
-                        }
-                    } else {
-                        $this->_prepareStoreId($_item);
-                    }
-                }
-            }
-
-            // Sync Products
-            if (!empty($this->_stockItems)) {
-                $this->syncProducts();
-            }
-        }
-
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
-            if (in_array($_quoteNumber, $this->_cache['failedOpportunities'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
-                continue;
-            }
-
-            $this->_prepareOrderItem($_quoteNumber);
-
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: End----------');
     }
 
     /**
@@ -524,19 +477,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
     }
 
-    protected function _pushRemainingEntityData()
+    protected function _pushRemainingCustomEntityData()
     {
-        if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
-
-            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-            foreach ($_opportunityItemsChunk as $_itemsToPush) {
-                $this->_pushEntityItems($_itemsToPush);
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');
-        }
-
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: Start----------');
             // Push Contact Roles

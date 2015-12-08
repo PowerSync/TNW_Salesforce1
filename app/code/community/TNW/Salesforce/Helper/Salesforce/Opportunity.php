@@ -239,85 +239,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
     }
 
-    protected function _prepareEntityItems()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: Start----------');
-
-        // only sync all products if processing real time
-        if (!$this->_isCron) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                if (in_array($_orderNumber, $this->_cache['failedOpportunities'])) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an opportunity!');
-                    continue;
-                }
-                if (!Mage::registry('order_cached_' . $_orderNumber)) {
-                    $_order = Mage::getModel('sales/order')->load($_key);
-                    Mage::register('order_cached_' . $_orderNumber, $_order);
-                } else {
-                    $_order = Mage::registry('order_cached_' . $_orderNumber);
-                }
-
-                foreach ($_order->getAllVisibleItems() as $_item) {
-                    if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-                        if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
-                            $this->_prepareStoreId($_item);
-                            foreach ($_order->getAllItems() as $_childItem) {
-                                if ($_childItem->getParentItemId() == $_item->getItemId()) {
-                                    $this->_prepareStoreId($_childItem);
-                                }
-                            }
-                        } else {
-                            $this->_prepareStoreId($_item);
-                        }
-                    } else {
-                        $this->_prepareStoreId($_item);
-                    }
-                }
-            }
-
-            // Sync Products
-            if (!empty($this->_stockItems)) {
-                $this->syncProducts();
-            }
-        }
-
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache['failedOpportunities'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an opportunity!');
-                continue;
-            }
-
-            $this->_prepareOrderItem($_orderNumber);
-
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: End----------');
-    }
-
-    /**
-     * Prepare Store Id for upsert
-     *
-     * @param Mage_Sales_Model_Order_Item $_item
-     */
-    protected function _prepareStoreId($_item) {
-        $itemId = $this->getProductIdFromCart($_item);
-        $_order = $_item->getOrder();
-        $_storeId = $_order->getStoreId();
-
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_order->getOrderCurrencyCode() != $_order->getStoreCurrencyCode()) {
-                $_storeId = $this->_getStoreIdByCurrency($_order->getOrderCurrencyCode());
-            }
-        }
-
-        if (!array_key_exists($_storeId, $this->_stockItems)) {
-            $this->_stockItems[$_storeId] = array();
-        }
-        // Item's stock needs to be updated in Salesforce
-        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
-            $this->_stockItems[$_storeId][] = $itemId;
-        }
-    }
-
     protected function _prepareContactRoles()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
@@ -432,14 +353,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
     }
 
-    protected function _pushRemainingEntityData()
+    protected function _pushRemainingCustomEntityData()
     {
-        parent::_pushRemainingEntityData();
+        parent::_pushRemainingCustomEntityData();
 
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: Start----------');
 
-            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before", array("data" => $this->_cache['contactRolesToUpsert']));
 
             // Push Contact Roles
             try {
@@ -482,15 +403,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: End----------');
         }
-
-        // Push Notes
-        $this->pushDataNotes();
-
-        // Kick off the event to allow additional data to be pushed into salesforce
-        Mage::dispatchEvent("tnw_salesforce_order_sync_after_final",array(
-            "all" => $this->_cache['entitiesUpdating'],
-            "failed" => $this->_cache['failedOpportunities']
-        ));
     }
 
     /**
