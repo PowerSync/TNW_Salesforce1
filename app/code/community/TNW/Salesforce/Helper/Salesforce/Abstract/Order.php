@@ -2149,7 +2149,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_updateEntityStatus($order);
 
         if ($order->getSalesforceId()) {
-            $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))][$order->getRealOrderId()] = $this->_obj;
+            $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$order->getRealOrderId()] = $this->_obj;
             $this->_pushEntity();
         }
         else {
