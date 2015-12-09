@@ -1526,6 +1526,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function createObjNones($notes)
     {
+        if (empty($notes)) {
+            return $this;
+        }
+
         if (!$notes instanceof Varien_Data_Collection && !is_array($notes)) {
             $notes = array($notes);
         }

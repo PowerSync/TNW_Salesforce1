@@ -192,7 +192,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         // Reset cache (need to conver to magento cache
         $this->_cache = array(
-            'upsertedOrders' => array(),
+            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
             'upsertedOrderStatuses' => array(),
             'accountsLookup' => array(),
             'entitiesUpdating' => array(),
@@ -205,7 +205,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             'orderCustomers' => array(),
             'toSaveInMagento' => array(),
             'contactsLookup' => array(),
-            'failedOrders' => array(),
+            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
             'orderToEmail' => array(),
             'convertedLeads' => array(),
             'orderToCustomerId' => array(),
