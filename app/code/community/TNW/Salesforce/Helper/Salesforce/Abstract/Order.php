@@ -2026,7 +2026,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         // Kick off the event to allow additional data to be pushed into salesforce
         Mage::dispatchEvent(sprintf('tnw_salesforce_%s_sync_after_final', $this->_magentoEntityName),array(
             "all" => $this->_cache['entitiesUpdating'],
-            "failed" => $this->_cache[sprintf('failed%s', $this->getUcParentEntityType())]
+            "failed" => $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())]
         ));
     }
 
