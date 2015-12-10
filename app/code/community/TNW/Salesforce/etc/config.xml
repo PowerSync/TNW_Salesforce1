@@ -196,14 +196,14 @@
             </checkout_submit_all_after>
 
             <!-- Order Save Event: Status update -->
-            <order_save_after>
+            <sales_order_save_after>
                 <observers>
                     <tnw_salesforce_sale_observer>
                         <class>tnw_salesforce/sale_observer</class>
                         <method>orderStatusUpdateTrigger</method>
                     </tnw_salesforce_sale_observer>
                 </observers>
-            </order_save_after>
+            </sales_order_save_after>
 
             <tnw_salesforce_order_save_form>
                 <observers>
