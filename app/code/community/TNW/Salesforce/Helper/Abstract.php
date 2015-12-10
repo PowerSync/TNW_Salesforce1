@@ -360,6 +360,30 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         $this->_useCache = Mage::app()->useCache('tnw_salesforce');
     }
 
+    /**
+     * @return Zend_Cache_Core
+     */
+    public function getCache()
+    {
+        if (is_null($this->_mageCache)) {
+            $this->_initCache();
+        }
+
+        return $this->_mageCache;
+    }
+
+    /**
+     * @return bool
+     */
+    public function useCache()
+    {
+        if (is_null($this->_mageCache)) {
+            $this->_initCache();
+        }
+
+        return $this->_useCache;
+    }
+
     protected function _reset()
     {
         $this->_initCache();
@@ -459,7 +483,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 
     public function numberFormat($value)
     {
-        return number_format($value, $this->getStroreConfig(TNW_Salesforce_Helper_Order_Pricebook::PRICE_ACCURACY), ".", "");
+        /** @var TNW_Salesforce_Helper_Config_Product $helper */
+        $helper = $this->_helper('config_product');
+        return number_format($value, $helper->getPriceAccuracy(), ".", "");
     }
 
     /**

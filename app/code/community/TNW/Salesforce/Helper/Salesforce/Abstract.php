@@ -19,7 +19,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * reference to salesforce connection
      *
-     * @var null
+     * @var null|Salesforce_SforceEnterpriseClient
      */
     public $_mySforceConnection = NULL;
 

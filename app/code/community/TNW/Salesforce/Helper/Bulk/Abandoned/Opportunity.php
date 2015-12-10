@@ -19,7 +19,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
      */
     protected function _convertLeads()
     {
-        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('abandoned');
+        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('quote');
     }
 
     /**
@@ -30,14 +30,14 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
     {
         $_accountId = NULL;
         // Get email from the quote object in Magento
-        $_quoteEmail = $this->_cache['abandonedToEmail'][$_quoteNumber];
+        $_quoteEmail = $this->_cache['quoteToEmail'][$_quoteNumber];
         // Get email from customer object in Magento
         $_customerEmail = (
-            is_array($this->_cache['abandonedCustomers'])
-            && array_key_exists($_quoteNumber, $this->_cache['abandonedCustomers'])
-            && is_object($this->_cache['abandonedCustomers'][$_quoteNumber])
-            && $this->_cache['abandonedCustomers'][$_quoteNumber]->getData('email')
-        ) ? strtolower($this->_cache['abandonedCustomers'][$_quoteNumber]->getData('email')) : NULL;
+            is_array($this->_cache['quoteCustomers'])
+            && array_key_exists($_quoteNumber, $this->_cache['quoteCustomers'])
+            && is_object($this->_cache['quoteCustomers'][$_quoteNumber])
+            && $this->_cache['quoteCustomers'][$_quoteNumber]->getData('email')
+        ) ? strtolower($this->_cache['quoteCustomers'][$_quoteNumber]->getData('email')) : NULL;
 
         $_quote = $this->_loadQuote($_quoteNumber);;
 
@@ -55,13 +55,13 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
      *
      * @param $quote Mage_Sales_Model_Quote
      */
-    protected function _setOpportunityInfo($quote)
+    protected function _setEntityInfo($quote)
     {
         $_websiteId = Mage::getModel('core/store')->load($quote->getStoreId())->getWebsiteId();
 
         $this->_updateQuoteStageName($quote);
         $_quoteNumber = $quote->getId();
-        $_email = $this->_cache['abandonedToEmail'][$_quoteNumber];
+        $_email = $this->_cache['quoteToEmail'][$_quoteNumber];
 
         // Link to a Website
         if (
@@ -76,7 +76,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $this->_obj->CurrencyIsoCode = $quote->getData('quote_currency_code');
         }
 
-        $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
+        $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
         // Magento Quote ID
         $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
 
@@ -89,7 +89,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $closeDate = new Zend_Date();
             $closeDate->setDate($quote->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
 
-            $closeDate->addDay(Mage::helper('tnw_salesforce/abandoned')->getAbandonedCloseTimeAfter($quote));
+            $closeDate->addDay(Mage::helper('tnw_salesforce/config_sales_abandoned')->getAbandonedCloseTimeAfter($quote));
 
             // Always use quote date as closing date if quote already exists
             $this->_obj->CloseDate = gmdate(DATE_ATOM, $closeDate->getTimestamp());
@@ -135,7 +135,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         unset($quote);
     }
 
-    protected function _pushRemainingOpportunityData()
+    protected function _pushRemainingEntityData()
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['opportunityProducts']['Id']) {
@@ -209,7 +209,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         }
     }
 
-    protected function _pushOpportunitiesToSalesforce()
+    protected function _pushEntity()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             // assign owner id to opportunity
@@ -256,12 +256,12 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $response = $this->_client->request()->getBody();
                     $response = simplexml_load_string($response);
                     $_i = 0;
-                    $_batch = $this->_cache['batch']['opportunityProducts']['Id'][$_key];
+                    $_batch = array_values($this->_cache['batch']['opportunityProducts']['Id'][$_key]);
                     foreach ($response as $_item) {
                         //Report Transaction
                         $this->_cache['responses']['opportunityLineItems'][] = json_decode(json_encode($_item), TRUE);
-                        $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                         if ($_item->success == "false") {
+                            $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                             $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
@@ -347,7 +347,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                             $connection->quoteInto('salesforce_id = ?', $_item->id),
                         );
 
-                        $customer = $this->_cache  ['abandonedCustomers'][$_oid];
+                        $customer = $this->_cache  ['quoteCustomers'][$_oid];
                         $updateFields[] = $connection->quoteInto('contact_salesforce_id = ?',
                             $customer->getData('salesforce_id') ? : null);
                         $updateFields[] = $connection->quoteInto('account_salesforce_id = ?',
@@ -386,15 +386,15 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $_quoteNumber . ') ********');
             $this->_obj = new stdClass();
 
-            $_customerId = $this->_cache['abandonedToCustomerId'][$_quoteNumber];
+            $_customerId = $this->_cache['quoteToCustomerId'][$_quoteNumber];
             if (!Mage::registry('customer_cached_' . $_customerId)) {
-                $_customer = $this->_cache['abandonedCustomers'][$_quoteNumber];
+                $_customer = $this->_cache['quoteCustomers'][$_quoteNumber];
             } else {
                 $_customer = Mage::registry('customer_cached_' . $_customerId);
             }
 
             $_quote = $this->_loadQuote($_key);
-            $_email = strtolower($this->_cache['abandonedToEmail'][$_quoteNumber]);
+            $_email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
             $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
             if (
                 array_key_exists('accountsLookup', $this->_cache)
@@ -414,12 +414,12 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             // Check if already exists
             $_skip = false;
 
-            $magentoQuoteNumber = TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
+            $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
 
             if ($this->_cache['opportunityLookup'] && array_key_exists($magentoQuoteNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles) {
                 foreach ($this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles->records as $_role) {
                     if (property_exists($this->_obj, 'ContactId') && property_exists($_role, 'ContactId') && $_role->ContactId == $this->_obj->ContactId) {
-                        if ($_role->Role == Mage::helper('tnw_salesforce/abandoned')->getDefaultCustomerRole()) {
+                        if ($_role->Role == Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole()) {
                             // No update required
                             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Contact Role information is the same, no update required!');
                             $_skip = true;
@@ -436,7 +436,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 $this->_obj->IsPrimary = true;
                 $this->_obj->OpportunityId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNumber];
 
-                $this->_obj->Role = Mage::helper('tnw_salesforce/abandoned')->getDefaultCustomerRole();
+                $this->_obj->Role = Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole();
 
                 foreach ($this->_obj as $key => $_item) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityContactRole Object: " . $key . " = '" . $_item . "'");

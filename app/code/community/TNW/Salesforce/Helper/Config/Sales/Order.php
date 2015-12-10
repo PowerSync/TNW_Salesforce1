@@ -1,11 +1,16 @@
 <?php
 
-/**
- * Class TNW_Salesforce_Helper_Field
- */
-class TNW_Salesforce_Helper_Field extends TNW_Salesforce_Helper_Data
+class TNW_Salesforce_Helper_Config_Sales_Order extends TNW_Salesforce_Helper_Config_Sales
 {
-    public function getOrderLabels() {
+    const ZERO_ORDER_SYNC = 'salesforce_order/general/zero_order_sync_enable';
+
+    public function isEnabledZeroOrderSync()
+    {
+        return $this->getStroreConfig(self::ZERO_ORDER_SYNC);
+    }
+
+    public function getOrderLabels()
+    {
         $labels = array(
             'salesforce_id' =>  'Order',
             'contact_salesforce_id' =>  'Contact',

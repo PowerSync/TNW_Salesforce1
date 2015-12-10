@@ -1,9 +1,0 @@
-tables:
-  sales/order:
-    - entity_id: 2000
-      increment_id: 100002000
-  sales/order_payment:
-    - entity_id: 2000
-      parent_id: 2000
-      method: checkmo
-

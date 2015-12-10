@@ -1,32 +1,31 @@
 <?php
 
 /**
- * Class TNW_Salesforce_Helper_Abandoned
+ * Class TNW_Salesforce_Helper_Config_Sales_Abandoned
  */
-class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
+class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper_Abstract
 {
     protected $_limits = array();
     protected $_limitsHash = array();
 
     /* Abandoned Cart */
+    const ABANDONED_CLOSE_TIME_AFTER        = 'salesforce_order/customer_opportunity/abandoned_close_time_after';
+    const ABANDONED_CART_ENABLED            = 'salesforce_order/customer_opportunity/abandoned_cart_enabled';
+    const DEFAULT_STATE_ABANDONED           = 'salesforce_order/customer_opportunity/abandoned_cart_state';
+    const ABANDONED_CUSTOMER_ROLE_ENABLED   = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
+    const ABANDONED_SYNC                    = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
+    const ABANDONED_CUSTOMER_ROLE           = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
+    const ABANDONED_CUSTOMER_ROLE_FALLBACK  = 'salesforce_order/customer_opportunity/customer_integration_opp';
 
-    const ABANDONED_CLOSE_TIME_AFTER = 'salesforce_order/customer_opportunity/abandoned_close_time_after';
-    const ABANDONED_CART_ENABLED = 'salesforce_order/customer_opportunity/abandoned_cart_enabled';
-    const DEFAULT_STATE_ABANDONED = 'salesforce_order/customer_opportunity/abandoned_cart_state';
-    const ABANDONED_CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
-    const ABANDONED_SYNC = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
-    const ABANDONED_CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
-    const ABANDONED_CUSTOMER_ROLE_FALLBACK = 'salesforce_order/customer_opportunity/customer_integration_opp';
-
-    const NOW = -1;
-    const THREE_HOURS = 1;
-    const SIX_HOURS = 2;
-    const TWELVE_HOURS = 3;
-    const ONE_DAY = 4;
-    const THREE_DAYS = 5;
-    const ONE_WEEK = 6;
-    const TWO_WEEKS = 7;
-    const ONE_MONTH = 8;
+    const NOW           = -1;
+    const THREE_HOURS   = 1;
+    const SIX_HOURS     = 2;
+    const TWELVE_HOURS  = 3;
+    const ONE_DAY       = 4;
+    const THREE_DAYS    = 5;
+    const ONE_WEEK      = 6;
+    const TWO_WEEKS     = 7;
+    const ONE_MONTH     = 8;
 
     const ABANDONED_CART_ID_PREFIX = 'ac_';
 
@@ -76,7 +75,7 @@ class TNW_Salesforce_Helper_Abandoned extends TNW_Salesforce_Helper_Abstract
     {
         return
             Mage::helper('tnw_salesforce')->getType() == "PRO"
-        && $this->getStroreConfig(TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED);
+            && $this->getStroreConfig(self::ABANDONED_CART_ENABLED);
     }
 
     // is Customer Opportunity Role Enabled
