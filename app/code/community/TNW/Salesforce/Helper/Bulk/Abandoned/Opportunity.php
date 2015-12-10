@@ -256,12 +256,12 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $response = $this->_client->request()->getBody();
                     $response = simplexml_load_string($response);
                     $_i = 0;
-                    $_batch = $this->_cache['batch']['opportunityProducts']['Id'][$_key];
+                    $_batch = array_values($this->_cache['batch']['opportunityProducts']['Id'][$_key]);
                     foreach ($response as $_item) {
                         //Report Transaction
                         $this->_cache['responses']['opportunityLineItems'][] = json_decode(json_encode($_item), TRUE);
-                        $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                         if ($_item->success == "false") {
+                            $_opportunityId = (string)$_batch[$_i]->OpportunityId;
                             $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
