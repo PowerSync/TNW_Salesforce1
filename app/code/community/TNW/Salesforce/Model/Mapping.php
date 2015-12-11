@@ -14,6 +14,60 @@
  */
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {
+
+    /**
+     * @var array
+     */
+    protected $_regions = array();
+
+    /**
+     * @param null $address
+     * @return array
+     */
+    protected function _getRegions($address = NULL)
+    {
+
+        if ($address instanceof Varien_Object) {
+            $countryId = $address->getCountryId();
+        }
+
+        if (empty($countryId)) {
+            return array();
+        }
+
+        if (!$this->_regions || !isset($this->_regions[$countryId])) {
+
+            $regionCollection = Mage::getModel('directory/region')->getCollection();
+            $regionCollection->addCountryFilter($countryId);
+            $this->_regions[$countryId] = $regionCollection;
+        }
+
+        return $this->_regions[$countryId];
+    }
+
+    /**
+     * @param null $_field
+     * @param null $_value
+     * @return null
+     */
+    protected function _customizeAddressValue($_field = NULL, $_value = NULL, $address = NULL)
+    {
+        if ($_field == 'region_id') {
+            $regions = $this->_getRegions($address);
+            /**
+             * use state region code instead region_id to send data to Salesforce
+             */
+            if (!empty($regions)) {
+                foreach ($regions as $region) {
+                    if ($region->getId() == $_value) {
+                        $_value = $region->getCode();
+                    }
+                }
+            }
+        }
+        return $_value;
+    }
+
     public function getValue(array $objectMappings = array())
     {
         $value = null;
@@ -43,6 +97,10 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
                         $value = $object->getResource()->getAttribute($attributeCode)->getSource()->getOptionText($value);
                     }
                 }
+            }
+
+            if (in_array($this->getLocalFieldType(), array('Billing', 'Shipping'))) {
+                $value = $this->_customizeAddressValue($attributeCode, $value, $object);
             }
         } elseif ($this->getLocalFieldType() == 'Custom') {
             $store = isset($objectMappings['Store']) ? $objectMappings['Store'] : null;

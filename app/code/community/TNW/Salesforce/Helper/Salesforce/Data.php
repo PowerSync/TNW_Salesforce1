@@ -520,6 +520,15 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $_useCache = Mage::app()->useCache('tnw_salesforce');
             $cache = Mage::app()->getCache();
 
+            switch ($field) {
+                case 'Abandoned':
+                    $field = 'Opportunity';
+                    break;
+                case 'AbandonedItem':
+                    $field = 'OpportunityLineItem';
+                    break;
+            }
+
             if ($cache->load("tnw_salesforce_" . strtolower($field) . "_fields")) {
                 $_data = unserialize($cache->load("tnw_salesforce_" . strtolower($field) . "_fields"));
             } else {
