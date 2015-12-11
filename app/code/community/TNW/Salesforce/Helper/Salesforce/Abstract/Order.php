@@ -1774,6 +1774,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_orderNumber] = $this->_obj;
         }
 
+        $this->_prepareEntityAfter();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('----------%s Preparation: End----------', $this->getUcParentEntityType()));
     }
 
@@ -1825,6 +1826,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         return true;
+    }
+
+    protected function _prepareEntityAfter()
+    {
+        return;
     }
 
     /**
