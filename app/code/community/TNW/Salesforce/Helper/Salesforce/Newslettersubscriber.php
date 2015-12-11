@@ -292,12 +292,12 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
             $accountIndexes = array_keys($this->_cache['accountsToUpsert']);
 
-            Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']['Id']));
 
-            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']), 'Account');
+            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']['Id']), 'Account');
 
-            Mage::dispatchEvent("tnw_salesforce_account_send_before", array(
-                "data" => $this->_cache['accountsToUpsert'],
+            Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
+                "data" => $this->_cache['accountsToUpsert']['Id'],
                 "result" => $results
             ));
 
@@ -561,11 +561,11 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         if (!empty($this->_cache['campaignsToUpsert'])) {
             try {
 
-                Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before", array("data" => $this->_cache['campaignsToUpsert']));
+                Mage::dispatchEvent("tnw_salesforce_campaign_member_send_before", array("data" => $this->_cache['campaignsToUpsert']));
 
                 $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['campaignsToUpsert']), 'CampaignMember');
 
-                Mage::dispatchEvent("tnw_salesforce_campaignmember_send_after", array(
+                Mage::dispatchEvent("tnw_salesforce_campaign_member_send_after", array(
                     "data" => $this->_cache['campaignsToUpsert'],
                     "result" => $results
                 ));
@@ -615,7 +615,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing campaigns, created job: ' . $this->_cache['bulkJobs']['campaigns']['Id']);
                 }
 
-                Mage::dispatchEvent("tnw_salesforce_campaignmember_send_before", array("data" => $this->_cache['campaignsToUpsert']));
+                Mage::dispatchEvent("tnw_salesforce_campaign_member_send_before", array("data" => $this->_cache['campaignsToUpsert']));
 
                 // send to sf
                 $this->_pushChunked($this->_cache['bulkJobs']['campaigns']['Id'], 'campaigns', $this->_cache['campaignsToUpsert'], 'Id');
@@ -683,7 +683,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         }
 
 
-        Mage::dispatchEvent("tnw_salesforce_campaignmember_send_after", array(
+        Mage::dispatchEvent("tnw_salesforce_campaign_member_send_after", array(
             "data" => $this->_cache['campaignsToUpsert'],
             "result" => $this->_cache['responses']['campaigs']
         ));

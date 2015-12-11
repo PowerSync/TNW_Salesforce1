@@ -93,9 +93,9 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
                 }
             }
 
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_before",array("data" => $products));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_line_item_send_before",array("data" => $products));
             $response = $this->_mySforceConnection->upsert('Id', $products, 'OpportunityLineItem');
-            Mage::dispatchEvent("tnw_salesforce_opportunitylineitem_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_opportunity_line_item_send_after",array(
                 "data" => $products,
                 "result" => $response
             ));

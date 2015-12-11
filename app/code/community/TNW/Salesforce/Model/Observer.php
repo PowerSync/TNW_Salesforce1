@@ -27,7 +27,7 @@ class TNW_Salesforce_Model_Observer
      * @param $menu Varien_Simplexml_Element
      * @return $this
      */
-    public function checkConfigCondition(&$menu)
+    public function checkConfigCondition($menu)
     {
 
         if ($menu->hasChildren()) {
@@ -36,7 +36,9 @@ class TNW_Salesforce_Model_Observer
                 $attributes = (array)$child->attributes();
                 if (isset($attributes['@attributes']['ifconfig'])) {
                     if (!Mage::app()->getStore()->getConfig($attributes['@attributes']['ifconfig'])) {
-                        unset($menu->{$name});
+                        $dom = dom_import_simplexml($child);
+                        $dom->parentNode->removeChild($dom);
+
                         continue;
                     }
                 }
@@ -349,7 +351,7 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * Method executed by tnw_sales_process_order event
+     * Method executed by tnw_salesforce_order_process event
      *
      * @param Varien_Event_Observer $observer
      */
@@ -390,11 +392,6 @@ class TNW_Salesforce_Model_Observer
         $_objectType = strtolower($observer->getEvent()->getData('object_type'));
 
         $_orderIds = $observer->getEvent()->getData('orderIds');
-
-        if ($_objectType == 'abandoned' && empty($_orderIds)) {
-            $_orderIds = $observer->getEvent()->getData('ids');
-        }
-
         $_message = $observer->getEvent()->getMessage();
         $_type = $observer->getEvent()->getType();
         $_isQueue = $observer->getEvent()->getData('isQueue');
@@ -532,7 +529,7 @@ class TNW_Salesforce_Model_Observer
                 )
             );
 
-            Mage::dispatchEvent('tnw_salesforce_sales_order_status_prepare_form_update', array('form' => $_form, 'fieldset' => $fieldset));
+            Mage::dispatchEvent('tnw_salesforce_order_status_new_form_update', array('form' => $_form, 'fieldset' => $fieldset));
         }
     }
 
