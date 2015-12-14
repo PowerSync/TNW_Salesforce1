@@ -28,12 +28,14 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
             'style' => 'width:273px',
             'values' => $collection->setFullIdMode(true)->getAllOptions(),
             'class' => 'chosen-select',
+            'required' => true,
         ));
 
         $fieldset->addField('email_domain', 'text', array(
             'label' => $this->__('Email Domain'),
             'style' => 'width:273px',
             'name' => 'email_domain',
+            'required' => true,
         ));
 
         if (Mage::getSingleton('adminhtml/session')->getAccountData()) {

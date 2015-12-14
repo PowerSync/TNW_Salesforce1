@@ -108,7 +108,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
 
             if ($status['error'] > 0) {
                 foreach($import->getErrors() as $message => $line) {
-                    $session->addError(sprintf('%s: Line %s', $message, count($line), implode(', ', $line)));
+                    $session->addError(sprintf('%s: Line %s', $message, implode(', ', $line)));
                 }
             }
         }
@@ -174,6 +174,12 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         if (empty($data)) {
             $session->addError(Mage::helper('tnw_salesforce')->__('Unable to find matching to save'));
             $this->_redirect('*/*/');
+            return;
+        }
+
+        if (empty($data['account_id']) || empty($data['email_domain'])) {
+            $session->addError(Mage::helper('tnw_salesforce')->__('Field "Account Name" and "Email Domain" required to be filled'));
+            $this->_redirect('*/*/edit', array('matching_id' => $matchingId));
             return;
         }
 
