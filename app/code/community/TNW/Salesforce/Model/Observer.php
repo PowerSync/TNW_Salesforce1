@@ -8,9 +8,16 @@ class TNW_Salesforce_Model_Observer
     const ORDER_PREFIX = 'order';
     const OPPORTUNITY_PREFIX = 'opportunity';
 
+    /** @var null|Varien_Simplexml_Element */
     protected $_nativeMenu = NULL;
+
+    /** @var null|Varien_Simplexml_Element */
     protected $_menu = NULL;
+
+    /** @var null|Varien_Simplexml_Element */
     protected $_nativeAcl = NULL;
+
+    /** @var null|Varien_Simplexml_Element */
     protected $_acl = NULL;
 
     protected $exportedOrders = array();
@@ -29,21 +36,44 @@ class TNW_Salesforce_Model_Observer
      */
     public function checkConfigCondition($menu)
     {
-
-        if ($menu->hasChildren()) {
-            foreach ($menu->children() as $name => $child) {
-
+        /** @var Varien_Simplexml_Element[] $result */
+        $result = $menu->xpath('//*[@ifconfig]');
+        if (!empty($result)) {
+            foreach ($result as $child) {
                 $attributes = (array)$child->attributes();
-                if (isset($attributes['@attributes']['ifconfig'])) {
-                    if (!Mage::app()->getStore()->getConfig($attributes['@attributes']['ifconfig'])) {
-                        $dom = dom_import_simplexml($child);
-                        $dom->parentNode->removeChild($dom);
-
-                        continue;
-                    }
+                if (!isset($attributes['@attributes']['ifconfig'])) {
+                    continue;
                 }
 
-                $this->checkConfigCondition($child);
+                if (Mage::getStoreConfig($attributes['@attributes']['ifconfig'])) {
+                    continue;
+                }
+
+                $dom = dom_import_simplexml($child);
+                $dom->parentNode->removeChild($dom);
+            }
+        }
+
+        $result = $menu->xpath('//*[@ifhelper]');
+        if (!empty($result)) {
+            foreach ($result as $child) {
+                $attributes = (array)$child->attributes();
+                if (!isset($attributes['@attributes']['ifhelper'])) {
+                    continue;
+                }
+
+                list($helper, $method) = explode('::', $attributes['@attributes']['ifhelper'], 2);
+                $helper = Mage::helper($helper);
+                if (!method_exists($helper, $method)) {
+                    continue;
+                }
+
+                if ((int)call_user_func(array($helper, $method))) {
+                    continue;
+                }
+
+                $dom = dom_import_simplexml($child);
+                $dom->parentNode->removeChild($dom);
             }
         }
 
@@ -60,7 +90,7 @@ class TNW_Salesforce_Model_Observer
             $this->_menu = $this->_nativeMenu
                 ->descend('tnw_salesforce')->descend('children');
 
-            $this->checkConfigCondition($this->_menu);
+            $this->checkConfigCondition($this->_nativeMenu);
 
             // Update Magento ACL
             $this->_nativeAcl = Mage::getSingleton('admin/config')
@@ -68,39 +98,19 @@ class TNW_Salesforce_Model_Observer
                 ->getNode('acl')
                 ->descend('resources')
                 ->descend('admin')->descend('children');
-
             $this->_acl = $this->_nativeAcl
                 ->descend('tnw_salesforce')->descend('children');
 
-            $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
-            $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
+            $this->checkConfigCondition($this->_nativeAcl);
 
-            if (defined($_constantName)) {
-                $_itemsToRetain = constant($_constantName);
+            // Remove Order links
+            $this->_updateOrderLinks();
 
-                // Remove / update Order related mapping links per configuration
-                $this->_updateOrderLinks(
-                    $this->_menu
-                        ->descend('mappings')->descend('children')
-                        ->descend('order_mapping')->descend('children'),
-                    $_itemsToRetain
-                );
-                $this->_updateOrderLinks(
-                    $this->_nativeMenu
-                        ->descend('sales')->descend('children')
-                        ->descend('tnw_salesforce')->descend('children')
-                        ->descend('order_mappings')->descend('children'),
-                    $_itemsToRetain
-                );
+            // Remove Invoice links
+            $this->_updateInvoiceLinks();
 
-                // Remove / update Order ACL related configuration
-                $this->_updateOrderLinks(
-                    $this->_acl
-                        ->descend('mappings')->descend('children')
-                        ->descend('order_mapping')->descend('children'),
-                    $_itemsToRetain
-                );
-            }
+            // Remove Shipment links
+            $this->_updateShipmentLinks();
 
             // Remove Abandoned Cart links
             $this->_updateAbandonedCartLinks();
@@ -112,6 +122,90 @@ class TNW_Salesforce_Model_Observer
             $this->_updateCustomerLinks();
         } catch (Exception $e) {
             // SKIP: to deal with caching during the upgrade
+        }
+    }
+
+    /**
+     * Remove Order links
+     */
+    protected function _updateOrderLinks()
+    {
+        $_syncObject = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+        $_constantName = 'static::' . strtoupper($_syncObject) . '_PREFIX';
+
+        if (defined($_constantName)) {
+            $_itemsToRetain = constant($_constantName);
+
+            // Remove / update Order related mapping links per configuration
+            $this->_removeOtherLinks(
+                $this->_menu
+                    ->descend('mappings')->descend('children')
+                    ->descend('order_mapping')->descend('children'),
+                $_itemsToRetain
+            );
+            $this->_removeOtherLinks(
+                $this->_nativeMenu
+                    ->descend('sales')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->descend('order_mappings')->descend('children'),
+                $_itemsToRetain
+            );
+
+            // Remove / update Order ACL related configuration
+            $this->_removeOtherLinks(
+                $this->_acl
+                    ->descend('mappings')->descend('children')
+                    ->descend('order_mapping')->descend('children'),
+                $_itemsToRetain
+            );
+        }
+    }
+
+    /**
+     * Remove Invoice links
+     */
+    protected function _updateInvoiceLinks()
+    {
+        $_syncObject = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+
+        /** @var TNW_Salesforce_Helper_Config_Sales_Invoice $_salesInvoice */
+        $_salesInvoice = Mage::helper('tnw_salesforce/config_sales_invoice');
+        if ($_salesInvoice->syncInvoices() && self::ORDER_PREFIX == $_syncObject) {
+            $invoiceMapping = $this->_menu
+                ->descend('mappings/children/invoice_mapping/children');
+            $this->_removeOtherLinks($invoiceMapping, 'invoice');
+
+            $invoiceMapping = $this->_nativeMenu
+                ->descend('sales/children/tnw_salesforce/children/invoice_mappings/children');
+            $this->_removeOtherLinks($invoiceMapping, 'invoice');
+
+            $invoiceMapping = $this->_acl
+                ->descend('mappings/children/invoice_mapping/children');
+            $this->_removeOtherLinks($invoiceMapping, 'invoice');
+        }
+    }
+
+    /**
+     * Remove Shipment links
+     */
+    protected function _updateShipmentLinks()
+    {
+        $_syncObject = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+
+        /** @var TNW_Salesforce_Helper_Config_Sales_Shipment $_salesShipment */
+        $_salesShipment = Mage::helper('tnw_salesforce/config_sales_shipment');
+        if ($_salesShipment->syncShipments() && self::ORDER_PREFIX == $_syncObject) {
+            $invoiceMapping = $this->_menu
+                ->descend('mappings/children/invoice_mapping/children');
+            $this->_removeOtherLinks($invoiceMapping, 'invoice');
+
+            $invoiceMapping = $this->_nativeMenu
+                ->descend('sales/children/tnw_salesforce/children/invoice_mappings/children');
+            $this->_removeOtherLinks($invoiceMapping, 'invoice');
+
+            $invoiceMapping = $this->_acl
+                ->descend('mappings/children/invoice_mapping/children');
+            $this->_removeOtherLinks($invoiceMapping, 'invoice');
         }
     }
 
@@ -156,7 +250,7 @@ class TNW_Salesforce_Model_Observer
      * @param $xmlNode
      * @param $_itemsToRetain
      */
-    protected function _updateOrderLinks($xmlNode, $_itemsToRetain)
+    protected function _removeOtherLinks($xmlNode, $_itemsToRetain)
     {
         if ($xmlNode) {
             $_keysToUnset = array();
@@ -211,7 +305,7 @@ class TNW_Salesforce_Model_Observer
                     ->descend('sales')->descend('children')
                     ->descend('tnw_salesforce')->descend('children')
                     ->descend('manual_sync')->descend('children')
-                    ->sync_abandoned_carts
+                    ->abandoned_sync
             );
             unset($this->_nativeMenu
                     ->descend('sales')->descend('children')
@@ -226,7 +320,7 @@ class TNW_Salesforce_Model_Observer
                     ->descend('sales')->descend('children')
                     ->descend('tnw_salesforce')->descend('children')
                     ->descend('manual_sync')->descend('children')
-                    ->sync_abandoned_carts
+                    ->abandoned_sync
             );
             unset($this->_nativeAcl
                     ->descend('sales')->descend('children')

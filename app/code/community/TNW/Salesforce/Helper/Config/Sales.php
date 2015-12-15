@@ -2,6 +2,9 @@
 
 class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
 {
+    const SYNC_TYPE_ORDER = 'order';
+    const SYNC_TYPE_OPPORTUNITY = 'opportunity';
+
     /**
      * @comment config path
      */
