@@ -1523,14 +1523,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         if (
             is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists(0, $this->_cache['accountsLookup'])
             && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])
         ) {
             $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->Id;
         } elseif (
             $_customerEmail && $_orderEmail != $_customerEmail
             && is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists(0, $this->_cache['accountsLookup'])
             && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
         ) {
             $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->Id;
