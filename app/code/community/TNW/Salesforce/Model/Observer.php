@@ -36,43 +36,45 @@ class TNW_Salesforce_Model_Observer
      */
     public function checkConfigCondition($menu)
     {
-        /** @var Varien_Simplexml_Element[] $result */
-        $result = $menu->xpath('//*[@ifconfig]');
-        if (!empty($result)) {
-            foreach ($result as $child) {
-                $attributes = (array)$child->attributes();
-                if (!isset($attributes['@attributes']['ifconfig'])) {
-                    continue;
-                }
+        $_attributes = array_map(array($menu, 'xpath'), array(
+            'ifconfig' => '//*[@ifconfig]',
+            'ifhelper' => '//*[@ifhelper]'
+        ));
 
-                if (Mage::getStoreConfig($attributes['@attributes']['ifconfig'])) {
-                    continue;
-                }
-
-                $dom = dom_import_simplexml($child);
-                $dom->parentNode->removeChild($dom);
+        /** @var Varien_Simplexml_Element[] $_nodes */
+        foreach ($_attributes as $_attribute => $_nodes) {
+            if (empty($_nodes)) {
+                continue;
             }
-        }
 
-        $result = $menu->xpath('//*[@ifhelper]');
-        if (!empty($result)) {
-            foreach ($result as $child) {
-                $attributes = (array)$child->attributes();
-                if (!isset($attributes['@attributes']['ifhelper'])) {
+            foreach ($_nodes as $_node) {
+                $attributes = (array)$_node->attributes();
+                if (!isset($attributes['@attributes'][$_attribute])) {
                     continue;
                 }
 
-                list($helper, $method) = explode('::', $attributes['@attributes']['ifhelper'], 2);
-                $helper = Mage::helper($helper);
-                if (!method_exists($helper, $method)) {
-                    continue;
+                $_value = $attributes['@attributes'][$_attribute];
+                switch($_attribute) {
+                    case 'ifconfig':
+                        if (Mage::getStoreConfig($_value)) {
+                            continue 2;
+                        }
+                        break;
+
+                    case 'ifhelper':
+                        list($helper, $method) = explode('::', $_value, 2);
+                        $helper = Mage::helper($helper);
+                        if (!method_exists($helper, $method)) {
+                            continue 2;
+                        }
+
+                        if ((int)call_user_func(array($helper, $method))) {
+                            continue 2;
+                        }
+                        break;
                 }
 
-                if ((int)call_user_func(array($helper, $method))) {
-                    continue;
-                }
-
-                $dom = dom_import_simplexml($child);
+                $dom = dom_import_simplexml($_node);
                 $dom->parentNode->removeChild($dom);
             }
         }
@@ -166,23 +168,8 @@ class TNW_Salesforce_Model_Observer
      */
     protected function _updateInvoiceLinks()
     {
-        $_syncObject = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-
-        /** @var TNW_Salesforce_Helper_Config_Sales_Invoice $_salesInvoice */
-        $_salesInvoice = Mage::helper('tnw_salesforce/config_sales_invoice');
-        if ($_salesInvoice->syncInvoices() && self::ORDER_PREFIX == $_syncObject) {
-            $invoiceMapping = $this->_menu
-                ->descend('mappings/children/invoice_mapping/children');
-            $this->_removeOtherLinks($invoiceMapping, 'invoice');
-
-            $invoiceMapping = $this->_nativeMenu
-                ->descend('sales/children/tnw_salesforce/children/invoice_mappings/children');
-            $this->_removeOtherLinks($invoiceMapping, 'invoice');
-
-            $invoiceMapping = $this->_acl
-                ->descend('mappings/children/invoice_mapping/children');
-            $this->_removeOtherLinks($invoiceMapping, 'invoice');
-        }
+        //He was transferred to "ifhelper"
+        return;
     }
 
     /**
@@ -190,23 +177,8 @@ class TNW_Salesforce_Model_Observer
      */
     protected function _updateShipmentLinks()
     {
-        $_syncObject = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-
-        /** @var TNW_Salesforce_Helper_Config_Sales_Shipment $_salesShipment */
-        $_salesShipment = Mage::helper('tnw_salesforce/config_sales_shipment');
-        if ($_salesShipment->syncShipments() && self::ORDER_PREFIX == $_syncObject) {
-            $invoiceMapping = $this->_menu
-                ->descend('mappings/children/invoice_mapping/children');
-            $this->_removeOtherLinks($invoiceMapping, 'invoice');
-
-            $invoiceMapping = $this->_nativeMenu
-                ->descend('sales/children/tnw_salesforce/children/invoice_mappings/children');
-            $this->_removeOtherLinks($invoiceMapping, 'invoice');
-
-            $invoiceMapping = $this->_acl
-                ->descend('mappings/children/invoice_mapping/children');
-            $this->_removeOtherLinks($invoiceMapping, 'invoice');
-        }
+        //He was transferred to "ifhelper"
+        return;
     }
 
     /**

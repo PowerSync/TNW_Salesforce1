@@ -79,16 +79,20 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         $this->_acl['invoice'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
         );
         $this->_acl['invoiceItem'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT
         );
 
         $this->_acl['shipment'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
         );
         $this->_acl['shipmentItem'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::SHIPMENT_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT,
         );
     }
 

@@ -7,7 +7,7 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
     // Allow Magento to synchronize invoices with Salesforce
     public function syncInvoices()
     {
-        return $this->getStoreConfig(self::INVOICE_SYNC_ENABLE);
+        return (int)$this->getStoreConfig(self::INVOICE_SYNC_ENABLE);
     }
 
     /**

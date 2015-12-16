@@ -1,0 +1,6 @@
+<?php
+
+class TNW_Salesforce_Model_Sync_Mapping_Invoice_Orderinvoiceitem extends TNW_Salesforce_Model_Sync_Mapping_Invoice_Base
+{
+
+}
