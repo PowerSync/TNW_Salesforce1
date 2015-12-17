@@ -6,5 +6,11 @@ class TNW_Salesforce_Block_Adminhtml_Ordershipmentitem_Grid extends TNW_Salesfor
      * name of  Salesforce object in case-sensitive case
      * @var string
      */
-    protected $_sfEntity = TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT;
+    protected $_sfEntity    = TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT;
+
+    /**
+     * name of Local object in case sensitive
+     * @var string
+     */
+    protected $_localEntity = 'Order Shipment Item';
 }

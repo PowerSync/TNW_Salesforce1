@@ -1,60 +1,44 @@
 <?php
 
-abstract class TNW_Salesforce_Model_Sync_Mapping_Invoice_Base extends TNW_Salesforce_Model_Sync_Mapping_Order_Base
+abstract class TNW_Salesforce_Model_Sync_Mapping_Invoice_Base extends TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
 {
     /**
-     * @comment list of the allowed mapping types
-     * @var array
+     * @comment Gets field mapping from Magento and creates Shipment object
+     * @param Mage_Sales_Model_Order_Invoice $entity
+     * @param null $additionalObject
      */
-    protected $_allowedMappingTypes = array(
-        'Customer',
-        'Billing',
-        'Shipping',
-        'Custom',
-        'Order',
-        'Customer Group',
-        'Payment',
-        'Aitoc',
-        'Invoice'
-    );
-
-    /**
-     * @var string
-     */
-    protected $_cachePrefix = 'invoice';
-
-    /**
-     * @var string
-     */
-    protected $_cacheIdField = 'increment_id';
-
-    /**
-     * @param $entity
-     * @param $mappingType
-     * @param $attributeCode
-     * @param $value
-     * @return $this
-     */
-    protected function _fieldMappingBefore($entity, $mappingType, $attributeCode, $value)
+    protected function _processMapping($entity = null, $additionalObject = null)
     {
-        if ($mappingType == "Invoice") {
-            //Common attributes
-            $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-            $value = $entity->$attr();
+        /** @var TNW_Salesforce_Model_Mapping $_map */
+        foreach ($this->getMappingCollection() as $_map) {
+            $value         = false;
+            $mappingType   = $_map->getLocalFieldType();
+            $attributeCode = $_map->getLocalFieldAttributeCode();
+
+            if (!$this->_mappingTypeAllowed($mappingType)) {
+                continue;
+            }
+
+            $value         = $this->_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
+            if (!$this->isBreak()) {
+                switch ($mappingType) {
+                    case 'Billing':
+                        break;
+
+                    case 'Shipping':
+                        break;
+                }
+            }
+
+            $sf_field      = $_map->getSfField();
+            $value         = $this->_fieldMappingAfter($entity, $mappingType, $attributeCode, $value);
+            if (!$value) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($this->_type . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
+                continue;
+            }
+
+            $this->getObj()->$sf_field = trim($value);
+            $this->setBreak(false);
         }
-
-        return parent::_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
     }
-
-    /**
-     * @comment Apply mapping rules
-     * @param  $entity
-     */
-    protected function _processMapping($entity = null)
-    {
-        $order = $entity->getOrder();
-
-        parent::_processMapping($order);
-    }
-
 }

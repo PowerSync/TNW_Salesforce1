@@ -16,6 +16,12 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
     protected $_sfEntity = '';
 
     /**
+     * name of Local object in case sensitive
+     * @var string
+     */
+    protected $_localEntity = '';
+
+    /**
      * @param bool|false $uc should we make first letter in upper case?
      * @return string
      */
@@ -26,6 +32,23 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             $sfEntity = strtolower($sfEntity);
         }
         return $sfEntity;
+    }
+
+    /**
+     * @param bool|false $uc should we make first letter in upper case?
+     * @return string
+     */
+    public function getLocalEntity($uc = false)
+    {
+        $localEntity = $this->_localEntity;
+        if (empty($localEntity)) {
+            return $this->getSfEntity($uc);
+        }
+
+        if (!$uc) {
+            $localEntity = strtolower($localEntity);
+        }
+        return $localEntity;
     }
 
     /**
@@ -53,7 +76,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
     protected function _prepareCollection()
     {
         $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection()
-            ->addObjectToFilter($this->getSfEntity(true));
+            ->addObjectToFilter($this->getLocalEntity(true));
         $this->setCollection($collection);
         return parent::_prepareCollection();
     }

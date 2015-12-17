@@ -9,7 +9,7 @@
 abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
 {
     /**
-     * @comment Contains Salesforce object name for mapping
+     * @comment Contains Local object name for mapping
      * @var null
      */
     protected $_type = null;

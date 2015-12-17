@@ -6,11 +6,17 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderinvoiceController extends TNW_Sal
      * name of  Salesforce object in case sensitive
      * @var string
      */
-    protected $_sfEntity = TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT;
+    protected $_sfEntity    = TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT;
+
+    /**
+     * name of Local object in case sensitive
+     * @var string
+     */
+    protected $_localEntity = 'Order Invoice';
 
     /**
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'orderinvoice';
+    protected $_blockPath   = 'orderinvoice';
 }

@@ -7,7 +7,7 @@ $installer = $this;
 $installer->startSetup();
 
 $_defaultMappingStatus = array(
-    TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT => array(
+    'Order Invoice' => array(
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Street__c'      => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:street'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_City__c'        => array(
@@ -30,7 +30,7 @@ $_defaultMappingStatus = array(
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Shipping_Country__c'    => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:country_id'),
     ),
-    TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT=> array(
+    'Order Shipment' => array(
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Street__c'      => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:street'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_City__c'        => array(

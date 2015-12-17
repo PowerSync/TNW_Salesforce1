@@ -16,6 +16,12 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     protected $_sfEntity = '';
 
     /**
+     * name of Local object in case sensitive
+     * @var string
+     */
+    protected $_localEntity = '';
+
+    /**
      * path to the blocks which will be rendered by controller
      * can be usefull if Salesforce entity name and block class name are different
      * @var string
@@ -59,6 +65,23 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     }
 
     /**
+     * @param bool|false $uc should we make first letter in upper case?
+     * @return string
+     */
+    public function getLocalEntity($uc = false)
+    {
+        $localEntity = $this->_localEntity;
+        if (empty($localEntity)) {
+            return $this->getSfEntity($uc);
+        }
+
+        if (!$uc) {
+            $localEntity = strtolower($localEntity);
+        }
+        return $localEntity;
+    }
+
+    /**
      * @param string $sfEntity
      * @return $this
      */
@@ -81,7 +104,7 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
-            ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getSfEntity(true)), Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getSfEntity(true)));
+            ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)), Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)));
 
         return $this;
     }
@@ -91,7 +114,7 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
      */
     public function indexAction()
     {
-        $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('%s Field Mapping', $this->getSfEntity(true)));
+        $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('%s Field Mapping', $this->getLocalEntity(true)));
         $this->_initLayout()
             ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_' . $this->getBlockPath()));
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
@@ -141,7 +164,8 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     public function saveAction()
     {
         if ($data = $this->getRequest()->getPost()) {
-            $data['sf_object'] = $this->getSfEntity(true);
+            $data['sf_object'] = $this->getLocalEntity(true);
+
             // Inject custom logic for custom fields
             if ($data['local_field'] == "Custom : field") {
                 $locAattr = array(strstr($data['local_field'], ' : ', true));

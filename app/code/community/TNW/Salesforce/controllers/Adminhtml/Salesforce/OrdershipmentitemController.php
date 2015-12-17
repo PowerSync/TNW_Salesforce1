@@ -9,6 +9,12 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrdershipmentitemController extends TN
     protected $_sfEntity = TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT;
 
     /**
+     * name of Local object in case sensitive
+     * @var string
+     */
+    protected $_localEntity = 'Order Shipment Item';
+
+    /**
      * path to the blocks which will be rendered by
      * @var string
      */
