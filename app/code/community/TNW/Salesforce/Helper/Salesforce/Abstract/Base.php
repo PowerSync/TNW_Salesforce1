@@ -31,6 +31,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected $_itemsField = '';
 
     /**
+     * @var array
+     */
+    protected $_skippedEntity = array();
+
+    /**
      * @return string
      */
     public function getSalesforceEntityName()
@@ -133,6 +138,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
+     * @param $cachePrefix
+     */
+    protected function _unsetEntityCache($cachePrefix)
+    {
+        $entityRegistryKey = sprintf('%s_cached_%s', $this->_magentoEntityName, (string)$cachePrefix);
+        Mage::unregister($entityRegistryKey);
+    }
+
+    /**
      * @return string
      */
     public function getUcParentEntityType()
@@ -214,13 +228,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         // test sf api connection
         /** @var TNW_Salesforce_Model_Connection $_client */
         $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->tryWsdl() || !$_client->tryToConnect() || !$_client->tryToLogin()) {
+        if (!$_client->initConnection()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync orders, sf api connection failed");
 
             return true;
         }
 
-        $_skippedEntity = array();
+        $this->_skippedEntity = array();
         try {
             // Clear Order ID
             $this->resetEntity($_ids);
@@ -230,21 +244,19 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 $_entity        = $this->_loadEntityByCache($_id);
                 $_entityNumber  = $this->_getEntityNumber($_entity);
 
-                if (!$_entity->getId()) {
+                if (!$_entity->getId() || !$_entityNumber) {
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveError(sprintf('WARNING: Sync for %s #%s, %s could not be loaded!',
                             $this->_magentoEntityName, $_id, $this->_magentoEntityName));
 
-                    $_skippedEntity[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
                 if (!$this->_checkMassAddEntity($_entity)) {
-                    $_skippedEntity[$_entity->getId()] = $_entity->getId();
+                    $this->_skippedEntity[$_entity->getId()] = $_entity->getId();
                     continue;
                 }
-
-                $this->_prepareMassAddEntity($_entity);
 
                 // Associate order ID with order Number
                 $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_id] = $_entityNumber;
@@ -255,7 +267,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             /**
              * all orders fails - return false otherwise return true
              */
-            return (count($_skippedEntity) != count($_ids));
+            return (count($this->_skippedEntity) != count($_ids));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
@@ -274,15 +286,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      * @param $_entity
      * @return bool
      */
-    protected function _checkMassAddEntity($_entity)
-    {
-        return true;
-    }
-
-    /**
-     * @param $_entity
-     */
-    abstract protected function _prepareMassAddEntity($_entity);
+    abstract protected function _checkMassAddEntity($_entity);
 
     /**
      *
@@ -462,8 +466,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         }
 
         foreach ($notes as $_note) {
-            // Only sync notes for the order
-            if (!(!$_note->getData('salesforce_id') && $_note->getData('comment'))) {
+            if (!$this->_checkNotesItem($_note)){
                 continue;
             }
 
@@ -488,6 +491,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         return $this;
     }
 
+    /**
+     * @param $_note Varien_Object
+     * @return bool
+     */
+    protected function _checkNotesItem($_note)
+    {
+        return !$_note->getData('salesforce_id') && $_note->getData('comment');
+    }
+
     protected function _getNotesParentSalesforceId($notes)
     {
         throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
@@ -500,10 +512,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     abstract protected function _getEntityNumber($_entity);
 
     /**
-     * @param $order
+     * @param $_entity
      * @return mixed
      */
-    abstract protected function _setEntityInfo($order);
+    abstract protected function _setEntityInfo($_entity);
 
     /**
      * @param array $chunk
@@ -535,7 +547,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 continue;
             }
 
-            $this->_prepareEntityItem($_entityNumber);
+            $_entity = $this->_loadEntityByCache($_key, $_entityNumber);
+            foreach ($this->getItems($_entity) as $_item) {
+                try {
+                    $this->_prepareEntityItemObj($_entity, $_item);
+                } catch (Exception $e) {
+                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                        Mage::getSingleton('adminhtml/session')->addNotice($e->getMessage());
+                    }
+
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
+                    continue;
+                }
+            }
+
+            $this->_prepareEntityItemAfter($_entity);
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('----------Prepare %s items: End----------', $this->_magentoEntityName));
@@ -547,10 +573,26 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param $_entityNumber
+     * @comment return entity items
+     * @param $_entity
      * @return mixed
      */
-    abstract protected function _prepareEntityItem($_entityNumber);
+    abstract public function getItems($_entity);
+
+    /**
+     * @param $_entity
+     * @param $_entityItem
+     * @return mixed
+     */
+    abstract protected function _prepareEntityItemObj($_entity, $_entityItem);
+
+    /**
+     * @param $_entity
+     */
+    protected function _prepareEntityItemAfter($_entity)
+    {
+        return;
+    }
 
     /**
      *
@@ -646,15 +688,17 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $this->_cache['responses']['notes'][$_noteId] = $_result;
 
             if (!$_result->success) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Note (id: ' . $_noteId . ') failed to upsert');
-                $this->_processErrors($_result, 'orderNote', $chunk[$_noteId]);
-
-            } else {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Note (id: ' . $_noteId . ') failed to upsert');
+                $this->_processErrors($_result, sprintf('%sNote', $this->_magentoEntityName), $chunk[$_noteId]);
+            }
+            else {
                 $_orderSalesforceId = $this->_cache['notesToUpsert'][$_noteId]->ParentId;
-                $_orderId = array_search($_orderSalesforceId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
+                $_entityId = array_search($_orderSalesforceId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_entityId . ')');
 
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = '" . $_noteId . "';";
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_orderId . ')');
+                $sql = sprintf('UPDATE `%s` SET salesforce_id = "%s" WHERE entity_id = "%s";',
+                    $this->_notesTableName(), $_result->id, $_entityId);
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
             }
@@ -662,12 +706,38 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @depricated Exists compatibility for
-     * @comment call leads convertation method
+     * @throws Exception
+     * @return mixed
      */
-    protected function _convertLeads()
+    protected function _notesTableName()
     {
-        return Mage::helper('tnw_salesforce/salesforce_data_lead')
-            ->setParent($this)->convertLeads($this->_magentoEntityName);
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
+
+    /**
+     * @return bool|void
+     * Prepare values for the synchroization
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        if (is_array($this->_cache['entitiesUpdating'])) {
+            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+                $this->_unsetEntityCache($_orderNumber);
+            }
+        }
+
+        $this->_cache = array(
+            'accountsLookup' => array(),
+            'entitiesUpdating' => array(),
+            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
+            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
+            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
+            sprintf('%sToUpsert', strtolower($this->getManyParentEntityType())) => array(),
+        );
+
+        return $this->check();
     }
 }

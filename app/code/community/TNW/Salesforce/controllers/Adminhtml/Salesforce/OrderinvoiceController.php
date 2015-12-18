@@ -12,7 +12,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderinvoiceController extends TNW_Sal
      * name of Local object in case sensitive
      * @var string
      */
-    protected $_localEntity = 'Order Invoice';
+    protected $_localEntity = 'OrderInvoice';
 
     /**
      * path to the blocks which will be rendered by

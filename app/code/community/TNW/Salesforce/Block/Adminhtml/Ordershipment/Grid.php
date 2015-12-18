@@ -12,5 +12,5 @@ class TNW_Salesforce_Block_Adminhtml_Ordershipment_Grid extends TNW_Salesforce_B
      * name of Local object in case sensitive
      * @var string
      */
-    protected $_localEntity = 'Order Shipment';
+    protected $_localEntity = 'OrderShipment';
 }

@@ -12,5 +12,5 @@ class TNW_Salesforce_Block_Adminhtml_Orderinvoiceitem_Grid extends TNW_Salesforc
      * name of Local object in case sensitive
      * @var string
      */
-    protected $_localEntity = 'Order Invoice Item';
+    protected $_localEntity = 'OrderInvoiceItem';
 }

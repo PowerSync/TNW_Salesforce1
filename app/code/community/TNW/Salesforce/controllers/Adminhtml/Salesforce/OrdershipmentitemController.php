@@ -12,7 +12,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrdershipmentitemController extends TN
      * name of Local object in case sensitive
      * @var string
      */
-    protected $_localEntity = 'Order Shipment Item';
+    protected $_localEntity = 'OrderShipmentItem';
 
     /**
      * path to the blocks which will be rendered by
