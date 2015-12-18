@@ -202,6 +202,8 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         try {
             $model->save();
 
+            $matchingId = $model->getId();
+
             $session->addSuccess(
                 Mage::helper('tnw_salesforce')->__('Matching was successfully saved'));
             $session->setFormData(false);
