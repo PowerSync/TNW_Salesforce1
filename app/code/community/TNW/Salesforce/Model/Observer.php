@@ -266,7 +266,7 @@ class TNW_Salesforce_Model_Observer
             && !(
                 Mage::helper('tnw_salesforce')->getType() == "PRO"
                 && Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(
-                    TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED
+                    TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ENABLED
                 )
             )
         ) {
@@ -624,7 +624,7 @@ class TNW_Salesforce_Model_Observer
 
     public function prepareQuotesForSync($observer)
     {
-        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+        if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
             return false;
         }
 

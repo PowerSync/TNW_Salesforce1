@@ -69,59 +69,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         'opportunities_skipped' => 0,
     );
 
-    /**
-     * @param string $type
-     * @return bool
-     */
-    public function process($type = 'soft')
+    protected function _prepareRemaining()
     {
-        try {
-            if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
-                if (!$this->isFromCLI() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
-                }
+        parent::_prepareRemaining();
 
-                return false;
-            }
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
-
-            if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("WARNING: Sync orders, cache is empty!");
-                $this->_dumpObjectToLog($this->_cache, "Cache", true);
-
-                return false;
-            }
-
-            $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
-
-            $this->_prepareOpportunities();
-            $this->_pushOpportunitiesToSalesforce();
-            $this->clearMemory();
-
-            set_time_limit(1000);
-
-            if ($type == 'full') {
-                if (Mage::helper('tnw_salesforce')->doPushShoppingCart()) {
-                    $this->_prepareOpportunityLineItems();
-                }
-                if (Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
-                    $this->_prepareNotes();
-                }
-                if (Mage::helper('tnw_salesforce')->isEnabledCustomerRole()) {
-                    $this->_prepareContactRoles();
-                }
-                $this->_pushRemainingOpportunityData();
-                $this->clearMemory();
-            }
-
-            $this->_onComplete();
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
-            return true;
-        } catch (Exception $e) {
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+        if (Mage::helper('tnw_salesforce')->isEnabledCustomerRole()) {
+            $this->_prepareContactRoles();
         }
     }
 
@@ -144,122 +97,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         // Logout
         $this->reset();
         $this->clearMemory();
-    }
-
-    protected function syncProducts()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
-
-        $manualSync = Mage::helper('tnw_salesforce/bulk_product');
-
-        $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-        $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Domain: " . $this->getSalesforceServerDomain());
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Session: " . $this->getSalesforceSessionId());
-
-        foreach ($this->_stockItems as $_storeId => $_products) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Store Id: " . $_storeId);
-            $manualSync->setOrderStoreId($_storeId);
-            if ($manualSync->reset()) {
-                $manualSync->massAdd($this->_stockItems[$_storeId]);
-                $manualSync->process();
-                if (!$this->isFromCLI()) {
-                    Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product inventory was synchronized with Salesforce'));
-                }
-            } else {
-                if (!$this->isFromCLI() && !$this->isCron()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Salesforce Connection could not be established!');
-                }
-            }
-        }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: END ================");
-    }
-
-    protected function _updateMagento()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
-        $_websites = $_emailsArray = array();
-        foreach ($this->_cache['toSaveInMagento'] as $_websiteId => $_contacts) {
-            foreach ($_contacts as $_id => $_contact) {
-                $_emailsArray[$_id] = $_contact->Email;
-                $_websites[$_id] = $_contact->WebsiteId;
-            }
-        }
-
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailsArray, $_websites);
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailsArray, $_websites);
-        if (!$this->_cache['contactsLookup']) {
-            $this->_dumpObjectToLog($_emailsArray, "Magento Emails", true);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Failed to look up a contact after Lead was converted.");
-            return false;
-        }
-
-        foreach ($this->_cache['contactsLookup'] as $accounts) {
-            foreach ($accounts as $_customer) {
-                $_customer->IsPersonAccount = isset($_customer->IsPersonAccount) ? $_customer->IsPersonAccount : NULL;
-
-                if ($_customer->IsPersonAccount !== NULL) {
-                    Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customer->MagentoId, $_customer->IsPersonAccount, 'salesforce_is_person');
-                }
-                Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customer->MagentoId, 1, 'sf_insync', 'customer_entity_int');
-                // Reset Lead Value
-                Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customer->MagentoId, NULL, 'salesforce_lead_id');
-            }
-
-        }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($this->_cache['toSaveInMagento']) . " customers!");
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
-    }
-
-    /**
-     * @comment call leads convertation method
-     */
-    protected function _convertLeads()
-    {
-        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeads('order');
-    }
-
-    protected function _prepareOpportunities()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: Start----------');
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (array_key_exists('leadsFailedToConvert', $this->_cache) && is_array($this->_cache['leadsFailedToConvert']) && array_key_exists($_orderNumber, $this->_cache['leadsFailedToConvert'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPED: Order (' . $_orderNumber . '), lead failed to convert');
-                unset($this->_cache['entitiesUpdating'][$_key]);
-                unset($this->_cache['orderToEmail'][$_orderNumber]);
-                $this->_allResults['opportunities_skipped']++;
-                continue;
-            }
-
-            if (!Mage::registry('order_cached_' . $_orderNumber)) {
-                $_order = Mage::getModel('sales/order')->load($_key);
-                Mage::register('order_cached_' . $_orderNumber, $_order);
-            } else {
-                $_order = Mage::registry('order_cached_' . $_orderNumber);
-            }
-
-            $this->_obj = new stdClass();
-            $this->_setOpportunityInfo($_order);
-            // Check if Pricebook Id does not match
-            if (
-                is_array($this->_cache['opportunityLookup'])
-                && array_key_exists($_orderNumber, $this->_cache['opportunityLookup'])
-                && property_exists($this->_cache['opportunityLookup'][$_orderNumber], 'Pricebook2Id')
-                && $this->_obj->Pricebook2Id != $this->_cache['opportunityLookup'][$_orderNumber]->Pricebook2Id
-            ) {
-                // Delete all OpportunityProducts
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SKIPPED Order: " . $_orderNumber . " - Opportunity uses a different pricebook(" . $this->_cache['opportunityLookup'][$_orderNumber]->Pricebook2Id . "), please change it in Salesforce.");
-                unset($this->_cache['entitiesUpdating'][$_key]);
-                unset($this->_cache['orderToEmail'][$_orderNumber]);
-                $this->_allResults['opportunities_skipped']++;
-            } else {
-                $this->_cache['opportunitiesToUpsert'][$_orderNumber] = $this->_obj;
-            }
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: End----------');
     }
 
     /**
@@ -318,7 +155,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         return true;
     }
 
-    protected function _pushOpportunitiesToSalesforce()
+    protected function _pushEntity()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             $_pushOn = $this->_magentoId;
@@ -402,124 +239,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
     }
 
-    protected function _prepareOpportunityLineItems()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: Start----------');
-
-        // only sync all products if processing real time
-        if (!$this->_isCron) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                if (in_array($_orderNumber, $this->_cache['failedOpportunities'])) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an opportunity!');
-                    continue;
-                }
-                if (!Mage::registry('order_cached_' . $_orderNumber)) {
-                    $_order = Mage::getModel('sales/order')->load($_key);
-                    Mage::register('order_cached_' . $_orderNumber, $_order);
-                } else {
-                    $_order = Mage::registry('order_cached_' . $_orderNumber);
-                }
-
-                foreach ($_order->getAllVisibleItems() as $_item) {
-                    if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-                        if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
-                            $this->_prepareStoreId($_item);
-                            foreach ($_order->getAllItems() as $_childItem) {
-                                if ($_childItem->getParentItemId() == $_item->getItemId()) {
-                                    $this->_prepareStoreId($_childItem);
-                                }
-                            }
-                        } else {
-                            $this->_prepareStoreId($_item);
-                        }
-                    } else {
-                        $this->_prepareStoreId($_item);
-                    }
-                }
-            }
-
-            // Sync Products
-            if (!empty($this->_stockItems)) {
-                $this->syncProducts();
-            }
-        }
-
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache['failedOpportunities'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an opportunity!');
-                continue;
-            }
-
-            $this->_prepareOrderItem($_orderNumber);
-
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Cart Items: End----------');
-    }
-
-    /**
-     * Prepare Store Id for upsert
-     *
-     * @param Mage_Sales_Model_Order_Item $_item
-     */
-    protected function _prepareStoreId($_item) {
-        $itemId = $this->getProductIdFromCart($_item);
-        $_order = $_item->getOrder();
-        $_storeId = $_order->getStoreId();
-
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_order->getOrderCurrencyCode() != $_order->getStoreCurrencyCode()) {
-                $_storeId = $this->_getStoreIdByCurrency($_order->getOrderCurrencyCode());
-            }
-        }
-
-        if (!array_key_exists($_storeId, $this->_stockItems)) {
-            $this->_stockItems[$_storeId] = array();
-        }
-        // Item's stock needs to be updated in Salesforce
-        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
-            $this->_stockItems[$_storeId][] = $itemId;
-        }
-    }
-
-    protected function _prepareNotes()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Notes: Start----------');
-
-        // Get all products from each order and decide if all needs to me synced prior to inserting them
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache['failedOpportunities'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an opportunity!');
-                continue;
-            }
-            $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-
-            // TODO: need to add this feature
-            foreach($_order->getAllStatusHistory() as $_note) {
-                // Only sync notes for the order
-                if ($_note->getData('entity_name') == 'order' &&  !$_note->getData('salesforce_id') && $_note->getData('comment')) {
-                    $this->_obj = new stdClass();
-                    $this->_obj->ParentId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNumber];
-                    $this->_obj->IsPrivate = 0;
-                    $this->_obj->Body = utf8_encode($_note->getData('comment'));
-                    $this->_obj->Title = utf8_encode($_note->getData('comment'));
-
-                    if (strlen($this->_obj->Title) > 75) {
-                        $this->_obj->Title = utf8_encode(substr($_note->getData('comment'), 0, 75) . '...');
-                    } else {
-                        $this->_obj->Title = utf8_encode($_note->getData('comment'));
-                    }
-                    $this->_cache['notesToUpsert'][$_note->getData('entity_id')] = $this->_obj;
-
-                    foreach ($this->_obj as $key => $_value) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Note Object: " . $key . " = '" . $_value . "'");
-                    }
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('+++++++++++++++++++++++++++++');
-                }
-            }
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Notes: End----------');
-    }
-
     protected function _prepareContactRoles()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
@@ -576,7 +295,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: End----------');
     }
 
-    protected function _pushOpportunityLineItems($chunk = array())
+    protected function _pushEntityItems($chunk = array())
     {
         $_orderNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
         $_chunkKeys = array_keys($chunk);
@@ -634,31 +353,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
     }
 
-    protected function _pushRemainingOpportunityData()
+    protected function _pushRemainingCustomEntityData()
     {
-        if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
-
-            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
-
-            // Push Cart
-            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-            foreach ($_opportunityItemsChunk as $_itemsToPush) {
-                $this->_pushOpportunityLineItems($_itemsToPush);
-            }
-
-            Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
-                "data" => $this->_cache['opportunityLineItemsToUpsert'],
-                "result" => $this->_cache['responses']['opportunityLineItems']
-            ));
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');
-        }
+        parent::_pushRemainingCustomEntityData();
 
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: Start----------');
 
-            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before", array("data" => $this->_cache['contactRolesToUpsert']));
 
             // Push Contact Roles
             try {
@@ -701,31 +403,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: End----------');
         }
-
-        // Push Notes
-        if (!empty($this->_cache['notesToUpsert'])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: Start----------');
-
-            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
-
-            $_notesChunk = array_chunk($this->_cache['notesToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-            foreach ($_notesChunk as $_itemsToPush) {
-                $this->_pushNotes($_itemsToPush);
-            }
-
-            Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
-                "data" => $this->_cache['notesToUpsert'],
-                "result" => $this->_cache['responses']['notes']
-            ));
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: End----------');
-        }
-
-        // Kick off the event to allow additional data to be pushed into salesforce
-        Mage::dispatchEvent("tnw_salesforce_order_sync_after_final",array(
-            "all" => $this->_cache['entitiesUpdating'],
-            "failed" => $this->_cache['failedOpportunities']
-        ));
     }
 
     /**
@@ -752,12 +429,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      *
      * @param $order
      */
-    protected function _setOpportunityInfo($order)
+    protected function _setEntityInfo($order)
     {
         $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
 
         // Set StageName
-        $this->_updateOrderStageName($order);
+        $this->_updateEntityStatus($order);
 
         $_orderNumber = $order->getRealOrderId();
         $_email = $this->_cache['orderToEmail'][$_orderNumber];
@@ -876,7 +553,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     /**
      * @param $order
      */
-    protected function _updateOrderStageName($order)
+    protected function _updateEntityStatus($order)
     {
         ## Status integration
         ## implemented in v.1.14
@@ -982,49 +659,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
 
         return $this->check();
-    }
-
-    /**
-     * Get order object and update Order Status in Salesforce
-     *
-     * @param $order
-     */
-    public function updateStatus($order)
-    {
-        if (Mage::getModel('tnw_salesforce/localstorage')->getObject($order->getId())) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Order #" . $order->getRealOrderId() . " is already queued for update.");
-            return true;
-        }
-
-        $this->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-        $this->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-        $this->reset();
-        $this->massAdd($order->getId());
-
-        $this->_obj = new stdClass();
-        // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-        $this->_obj->$orderIdParam = $order->getRealOrderId();
-
-        // Update mapped fields
-        //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_order_opportunity')
-            ->setSync($this)
-            ->processMapping($order);
-        // Update order status
-        $this->_updateOrderStageName($order);
-
-        if ($order->getSalesforceId()) {
-            $this->_cache['opportunitiesToUpsert'][$order->getRealOrderId()] = $this->_obj;
-
-            $this->_pushOpportunitiesToSalesforce();
-        } else {
-            // Need to do full sync instead
-            $res = $this->process('full');
-            if ($res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SUCCESS: Updating Order #" . $order->getRealOrderId());
-            }
-        }
     }
 
     /**
