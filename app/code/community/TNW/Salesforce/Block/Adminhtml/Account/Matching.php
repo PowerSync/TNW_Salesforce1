@@ -28,10 +28,20 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching extends Mage_Adminhtml_Blo
             'enctype'       => 'multipart/form-data'
         ));
 
+        $form->addField('choice', 'text', array(
+            'no_span'   => true,
+            'value'     => $this->__('No file chosen'),
+            'disabled'  => 'true',
+            'style'     => 'border: 0 none'
+        ));
+
         $form->addField('fileImport', 'file', array(
             'required'  => false,
             'name'      => 'fileImport',
-            'no_span'   => true
+            'default_html' => sprintf('<span class="fileUpload">
+    <input type="button" class="form-button" value="%s" />
+    <input id="uploadBtn" type="file" class="upload" name="fileImport" />
+</span>', $this->__('Browse File...'))
         ));
 
         /** Import button */
