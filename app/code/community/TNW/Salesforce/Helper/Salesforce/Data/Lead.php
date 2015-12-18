@@ -34,23 +34,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $_results = array();
-
-            $_ttl = count($email);
-            if ($_ttl > $_howMany) {
-                $_steps = ceil($_ttl / $_howMany);
-                if ($_steps == 0) {
-                    $_steps = 1;
-                }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $_howMany;
-                    $_emails = array_slice($email, $_start, $_howMany, true);
-                    $_results[] = $this->_queryLeads($_magentoId, $_emails, $ids, $leadSource, $idPrefix);
-                }
-            } else {
-                $_results[] = $this->_queryLeads($_magentoId, $email, $ids, $leadSource, $idPrefix);
+            $_emailChunk = array_chunk($email, $_howMany, true);
+            foreach ($_emailChunk as $_emails) {
+                $_results[] = $this->_queryLeads($_magentoId, $_emails, $ids, $leadSource, $idPrefix);
             }
 
-            unset($query);
             if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: no results...");
                 return false;
@@ -696,19 +684,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
 
-            $_ttl = count($this->_cache['leadsToConvert']);
-            if ($_ttl > $_howMany) {
-                $_steps = ceil($_ttl / $_howMany);
-                if ($_steps == 0) {
-                    $_steps = 1;
-                }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $_howMany;
-                    $_itemsToPush = array_slice($this->_cache['leadsToConvert'], $_start, $_howMany, true);
-                    $this->_pushLeadSegment($_itemsToPush, $parentEntityType);
-                }
-            } else {
-                $this->_pushLeadSegment($this->_cache['leadsToConvert'], $parentEntityType);
+            $_leadsChunk = array_chunk($this->_cache['leadsToConvert'], $_howMany, true);
+            foreach ($_leadsChunk as $_itemsToPush) {
+                $this->_pushLeadSegment($_itemsToPush, $parentEntityType);
             }
 
             // Update de duped lead conversion records

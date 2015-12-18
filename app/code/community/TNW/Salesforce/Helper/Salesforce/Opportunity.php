@@ -603,16 +603,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
 
             // Push Cart
-            $_ttl = count($this->_cache['opportunityLineItemsToUpsert']);
-            if ($_ttl > 199) {
-                $_steps = ceil($_ttl / 199);
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * 200;
-                    $_itemsToPush = array_slice($this->_cache['opportunityLineItemsToUpsert'], $_start, $_start + 199);
-                    $this->_pushOpportunityLineItems($_itemsToPush);
-                }
-            } else {
-                $this->_pushOpportunityLineItems($this->_cache['opportunityLineItemsToUpsert']);
+            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($_opportunityItemsChunk as $_itemsToPush) {
+                $this->_pushOpportunityLineItems($_itemsToPush);
             }
 
             Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
@@ -671,7 +664,23 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
 
         // Push Notes
-        $this->pushDataNotes();
+        if (!empty($this->_cache['notesToUpsert'])) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+
+            $_notesChunk = array_chunk($this->_cache['notesToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($_notesChunk as $_itemsToPush) {
+                $this->_pushNotes($_itemsToPush);
+            }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                "data" => $this->_cache['notesToUpsert'],
+                "result" => $this->_cache['responses']['notes']
+            ));
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: End----------');
+        }
 
         // Kick off the event to allow additional data to be pushed into salesforce
         Mage::dispatchEvent("tnw_salesforce_order_sync_after_final",array(

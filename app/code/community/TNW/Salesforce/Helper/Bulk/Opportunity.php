@@ -432,54 +432,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
     }
 
-    /**
-     * @param null $_jobId
-     * @param $_batchType
-     * @param array $_entities
-     * @param string $_on
-     * @return bool
-     */
-    protected function _pushChunked($_jobId = NULL, $_batchType, $_entities = array(), $_on = 'Id')
-    {
-        if (!empty($_entities) && $_jobId) {
-            if (!array_key_exists($_batchType, $this->_cache['batch'])) {
-                $this->_cache['batch'][$_batchType] = array();
-            }
-            if (!array_key_exists($_on, $this->_cache['batch'][$_batchType])) {
-                $this->_cache['batch'][$_batchType][$_on] = array();
-            }
-            $_ttl = count($_entities); // 205
-            $_success = true;
-            if ($_ttl > $this->_maxBatchLimit) {
-                $_steps = ceil($_ttl / $this->_maxBatchLimit);
-                if ($_steps == 0) {
-                    $_steps = 1;
-                }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $this->_maxBatchLimit;
-                    $_itemsToPush = array_slice($_entities, $_start, $this->_maxBatchLimit, true);
-                    if (!array_key_exists($_i, $this->_cache['batch'][$_batchType][$_on])) {
-                        $this->_cache['batch'][$_batchType][$_on][$_i] = array();
-                    }
-                    $_success = $this->_pushSegment($_jobId, $_batchType, $_itemsToPush, $_i, $_on);
-                }
-            } else {
-                if (!array_key_exists(0, $this->_cache['batch'][$_batchType][$_on])) {
-                    $this->_cache['batch'][$_batchType][$_on][0] = array();
-                }
-                $_success = $this->_pushSegment($_jobId, $_batchType, $_entities, 0, $_on);
-
-            }
-            if (!$_success) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . uc_words($_batchType) . ' upsert failed!');
-
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     protected function _prepareContactRoles()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');

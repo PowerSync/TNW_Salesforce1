@@ -702,9 +702,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
             Mage::dispatchEvent("tnw_salesforce_order_products_send_before", array("data" => $this->_cache['orderItemsToUpsert']));
 
-            // Push Cart
-            $orderItemsToUpsert = array_chunk($this->_cache['orderItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-            foreach ($orderItemsToUpsert as $_itemsToPush) {
+            $_orderItemsChunk = array_chunk($this->_cache['orderItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($_orderItemsChunk as $_itemsToPush) {
                 $this->_pushOrderItems($_itemsToPush);
             }
 
@@ -717,7 +716,23 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         }
 
         // Push Notes
-        $this->pushDataNotes();
+        if (!empty($this->_cache['notesToUpsert'])) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: Start----------');
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before", array("data" => $this->_cache['notesToUpsert']));
+
+            $_notesChunk = array_chunk($this->_cache['notesToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($_notesChunk as $_itemsToPush) {
+                $this->_pushNotes($_itemsToPush);
+            }
+
+            Mage::dispatchEvent("tnw_salesforce_order_notes_send_after", array(
+                "data" => $this->_cache['notesToUpsert'],
+                "result" => $this->_cache['responses']['notes']
+            ));
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: End----------');
+        }
 
         // Kick off the event to allow additional data to be pushed into salesforce
         Mage::dispatchEvent("tnw_salesforce_order_sync_after_final", array(
@@ -754,9 +769,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             if (!empty($this->_cache['orderToActivate'])) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: Start----------');
 
-                // Push Cart
-                $orderToActivate = array_chunk($this->_cache['orderToActivate'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-                foreach ($orderToActivate as $_itemsToPush) {
+                $_orderChunk = array_chunk($this->_cache['orderToActivate'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+                foreach ($_orderChunk as $_itemsToPush) {
                     $this->_activateOrders($_itemsToPush);
                 }
 
@@ -820,7 +834,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _activateOrders($chunk = array())
     {
-        $_orderNumbers = array_keys($this->_cache['orderToActivate']);
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'Order');
         } catch (Exception $e) {
@@ -828,6 +841,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Activation of Orders in SalesForce failed!' . $e->getMessage());
         }
 
+        $_orderNumbers = array_keys($chunk);
         foreach ($results as $_key => $_result) {
             $_orderNum = $_orderNumbers[$_key];
 
