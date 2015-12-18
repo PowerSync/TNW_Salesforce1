@@ -562,7 +562,7 @@ class TNW_Salesforce_Model_Cron extends TNW_Salesforce_Helper_Abstract
                             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Processing $type: " . count($objectIdSet) . " records");
 
                             Mage::dispatchEvent(
-                                'tnw_sales_process_' . $_syncType,
+                                sprintf('tnw_salesforce_%s_process', $_syncType),
                                 array(
                                     $_prefix . 'Ids' => $objectIdSet,
                                     'message' => NULL,

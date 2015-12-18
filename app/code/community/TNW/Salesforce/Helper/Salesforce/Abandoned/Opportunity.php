@@ -242,7 +242,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $this->_assignOwnerIdToOpp();
 
             try {
-                Mage::dispatchEvent("tnw_salesforce_quote_send_before", array("data" => $this->_cache['opportunitiesToUpsert']));
+                Mage::dispatchEvent("tnw_salesforce_opportunity_send_before", array("data" => $this->_cache['opportunitiesToUpsert']));
 
                 $_toSyncValues = array_values($this->_cache['opportunitiesToUpsert']);
                 $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
@@ -575,17 +575,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
-            // Push Cart
-            $_ttl = count($this->_cache['opportunityLineItemsToUpsert']);
-            if ($_ttl > 199) {
-                $_steps = ceil($_ttl / 199);
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * 200;
-                    $_itemsToPush = array_slice($this->_cache['opportunityLineItemsToUpsert'], $_start, $_start + 199);
-                    $this->_pushOpportunityLineItems($_itemsToPush);
-                }
-            } else {
-                $this->_pushOpportunityLineItems($this->_cache['opportunityLineItemsToUpsert']);
+
+            $_opportunityItemsChunk = array_chunk($this->_cache['opportunityLineItemsToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($_opportunityItemsChunk as $_itemsToPush) {
+                $this->_pushOpportunityLineItems($_itemsToPush);
             }
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');
@@ -860,9 +853,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             if (!empty($_skippedAbandoned)) {
                 $chunk = array_chunk($_skippedAbandoned, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-
                 foreach ($chunk as $_skippedAbandonedChunk) {
-                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandoned) . "') and mage_object_type = 'sales/quote';";
+                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandonedChunk) . "') and mage_object_type = 'sales/quote';";
                     Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
                     foreach ($_skippedAbandonedChunk as $_idToRemove) {
                         unset($this->_cache['entitiesUpdating'][$_idToRemove]);

@@ -6,6 +6,12 @@
  * Developer: Evgeniy Ermolaev
  *
  * Class TNW_Salesforce_Model_Tool_Log_File
+ *
+ * @method string getPath()
+ * @method string getName()
+ * @method string setPath($path)
+ * @method string getContent()
+ * @method string setContent($content)
  */
 class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
 {
@@ -26,6 +32,14 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
     protected $_salesforceLogDirName = 'salesforce';
 
     /**
+     * @return TNW_Salesforce_Model_Varien_Io_File
+     */
+    protected static function _createIoFile()
+    {
+        return Mage::getModel('tnw_salesforce/varien_io_file');
+    }
+
+    /**
      * @comment module log dirrectory
      * @return string
      */
@@ -34,9 +48,9 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
         if (!$this->_logDir) {
             $this->_logDir = Mage::getBaseDir('log') . DS . $this->getSalesforceLogDirName();
             // check for valid base dir
-            $ioProxy = new Varien_Io_File();
-            $ioProxy->mkdir($this->_baseDir);
+            self::_createIoFile()->mkdir($this->_baseDir);
         }
+
         return $this->_logDir;
     }
 
@@ -107,7 +121,7 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
             Mage::throwException(Mage::helper('tnw_salesforce')->__("Log file does not exist."));
         }
 
-        $ioProxy = new Varien_Io_File();
+        $ioProxy = self::_createIoFile();
         $ioProxy->open(array('path' => $this->getPath()));
         $ioProxy->rm($this->getFileName());
         return $this;
@@ -246,47 +260,69 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
 
     /**
      * Print output
-     *
      */
     public function output()
     {
-        if (!$this->exists()) {
-            return;
-        }
-
-        $ioAdapter = new Varien_Io_File();
-        $ioAdapter->open(array('path' => $this->getPath()));
-
-        $ioAdapter->streamOpen($this->getFileName(), 'r');
-        while ($buffer = $ioAdapter->streamRead()) {
-            echo $buffer;
-        }
-        $ioAdapter->streamClose();
+        echo $this->read(null)->getContent();
     }
 
     /**
      * read content
+     * if $length is empty - try to load all file
+     * @param $page
+     * @param null $pageSize
+     * @param int $whence
+     * @return bool|string
+     * @throws Exception
      */
-    public function read()
+    public function read($page, $pageSize = null, $whence = SEEK_SET)
     {
         if (!$this->exists()) {
             return false;
         }
 
-        $ioAdapter = new Varien_Io_File();
+        $isFull = is_null($page) || is_null($pageSize);
+        if ($isFull) {
+            $offset   = 0;
+            $whence   = SEEK_SET;
+        }
+        else {
+            $pageSize = max(intval($pageSize), 1) * 1024;
+            $page     = max(intval($page), 1);
+            $offset   = $page * $pageSize;
+        }
+
+        if ((false === $isFull) && ($offset - $pageSize > $this->getSize()) && ($page != 1)) {
+            return $this->setContent('');
+        }
+
+        $ioAdapter = self::_createIoFile();
         $ioAdapter->open(array('path' => $this->getPath()));
-
         $ioAdapter->streamOpen($this->getFileName(), 'r');
-        $content = '';
 
+        $ftellCurrent = 0;
+        if (false === $isFull) {
+            $ioAdapter->streamFseek($whence == SEEK_END ? -$offset : $offset, $whence);
+            $ftellCurrent = $ioAdapter->streamFtell();
+
+            // The last page is fully loaded
+            if ((false === $isFull) && ($offset <= $this->getSize())) {
+                $ioAdapter->streamRead();
+            }
+        }
+
+        $content = '';
         while ($buffer = $ioAdapter->streamRead()) {
             $content .= $buffer;
+
+            $ftell = $ioAdapter->streamFtell();
+            if ($ftell > $ftellCurrent + $pageSize) {
+               break;
+            }
         }
+
         $ioAdapter->streamClose();
-
-        $this->setContent($content);
-
-        return $this;
+        return $this->setContent($content);
     }
 
     /**

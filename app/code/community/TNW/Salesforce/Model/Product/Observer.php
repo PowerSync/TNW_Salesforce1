@@ -34,7 +34,7 @@ class TNW_Salesforce_Model_Product_Observer
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . $_product->getId() . ' Sync');
 
-        Mage::dispatchEvent('tnw_catalog_product_save', array('product' => $_product));
+        Mage::dispatchEvent('tnw_salesforce_product_save', array('product' => $_product));
 
         return;
     }

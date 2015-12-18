@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.13.0000</version>
+            <version>0.01.53.14.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -253,14 +253,14 @@
                 </observers>
             </admin_session_user_login_success>
 
-            <tnw_sales_order_save>
+            <tnw_salesforce_order_save>
                 <observers>
                     <tnw_salesforce_sale_observer>
                         <class>tnw_salesforce/sale_observer</class>
                         <method>salesforcePush</method>
                     </tnw_salesforce_sale_observer>
                 </observers>
-            </tnw_sales_order_save>
+            </tnw_salesforce_order_save>
 
             <!-- Order Cancel Event -->
             <order_cancel_after>
@@ -272,25 +272,15 @@
                 </observers>
             </order_cancel_after>
 
-            <!-- Order Status Change Event -->
-            <tnw_sales_order_status_after>
-                <observers>
-                    <tnw_salesforce_sale_observer>
-                        <class>tnw_salesforce/sale_observer</class>
-                        <method>orderStatusUpdateTrigger</method>
-                    </tnw_salesforce_sale_observer>
-                </observers>
-            </tnw_sales_order_status_after>
-
             <!-- Notes Save Event -->
-            <tnw_sales_order_comments_save_before>
+            <tnw_salesforce_order_comments_save_after>
                 <observers>
                     <tnw_salesforce_notes_observer>
                         <class>tnw_salesforce/sale_notes_observer</class>
                         <method>notesPush</method>
                     </tnw_salesforce_notes_observer>
                 </observers>
-            </tnw_sales_order_comments_save_before>
+            </tnw_salesforce_order_comments_save_after>
 
             <!-- Product Save Event -->
             <catalog_product_save_after>
@@ -302,14 +292,14 @@
                 </observers>
             </catalog_product_save_after>
 
-            <tnw_catalog_product_save>
+            <tnw_salesforce_product_save>
                 <observers>
                     <tnw_salesforce_product_observer>
                         <class>tnw_salesforce/product_observer</class>
                         <method>salesforcePush</method>
                     </tnw_salesforce_product_observer>
                 </observers>
-            </tnw_catalog_product_save>
+            </tnw_salesforce_product_save>
 
             <!-- Customer Save Event -->
             <customer_save_after>
@@ -328,14 +318,14 @@
                     </tnw_salesforce_customer_observer>
                 </observers>
             </aitcfm_customer_save_after>
-            <tnw_customer_save>
+            <tnw_salesforce_customer_save>
                 <observers>
                     <tnw_salesforce_customer_observer>
                         <class>tnw_salesforce/customer_observer</class>
                         <method>salesforcePush</method>
                     </tnw_salesforce_customer_observer>
                 </observers>
-            </tnw_customer_save>
+            </tnw_salesforce_customer_save>
             <!-- Website Save Event -->
             <website_save_after>
                 <observers>
@@ -355,58 +345,58 @@
             </adminhtml_store_edit_form_prepare_form>
 
             <!-- Pushing order object into Salesforce post all validation -->
-            <tnw_sales_process_order>
+            <tnw_salesforce_order_process>
                 <observers>
                     <tnw_salesforce_push_order>
                         <class>tnw_salesforce/observer</class>
                         <method>pushOrder</method>
                     </tnw_salesforce_push_order>
                 </observers>
-            </tnw_sales_process_order>
+            </tnw_salesforce_order_process>
             <!-- Pushing opportunity object into Salesforce post all validation -->
-            <tnw_sales_process_opportunity>
+            <tnw_salesforce_opportunity_process>
                 <observers>
                     <tnw_salesforce_push_opportunity>
                         <class>tnw_salesforce/observer</class>
                         <method>pushOpportunity</method>
                     </tnw_salesforce_push_opportunity>
                 </observers>
-            </tnw_sales_process_opportunity>
+            </tnw_salesforce_opportunity_process>
             <!-- Update order status - Opportunity -->
-            <tnw_sales_status_update_opportunity>
+            <tnw_salesforce_opportunity_status_update>
                 <observers>
                     <tnw_salesforce_update_opportunity>
                         <class>tnw_salesforce/observer</class>
                         <method>updateOpportunity</method>
                     </tnw_salesforce_update_opportunity>
                 </observers>
-            </tnw_sales_status_update_opportunity>
+            </tnw_salesforce_opportunity_status_update>
             <!-- Update order status - Order -->
-            <tnw_sales_status_update_order>
+            <tnw_salesforce_order_status_update>
                 <observers>
                     <tnw_salesforce_update_order>
                         <class>tnw_salesforce/observer</class>
                         <method>updateOrder</method>
                     </tnw_salesforce_update_order>
                 </observers>
-            </tnw_sales_status_update_order>
+            </tnw_salesforce_order_status_update>
 
-            <tnw_salesforce_sales_order_status_new_status_prepare_form>
+            <tnw_salesforce_order_status_new_form>
                 <observers>
                     <tnw_salesforce_order_status_update>
                         <class>tnw_salesforce/observer</class>
                         <method>updateOrderStatusForm</method>
                     </tnw_salesforce_order_status_update>
                 </observers>
-            </tnw_salesforce_sales_order_status_new_status_prepare_form>
-            <tnw_salesforce_order_salesforce_status_save>
+            </tnw_salesforce_order_status_new_form>
+            <tnw_salesforce_order_status_save>
                 <observers>
                     <tnw_salesforce_order_status_save>
                         <class>tnw_salesforce/observer</class>
                         <method>saveSfStatus</method>
                     </tnw_salesforce_order_status_save>
                 </observers>
-            </tnw_salesforce_order_salesforce_status_save>
+            </tnw_salesforce_order_status_save>
 
             <sales_quote_save_before>
                 <observers>
@@ -549,8 +539,9 @@
                 <abandoned_batch_size>400</abandoned_batch_size>
                 <invoice_batch_size>400</invoice_batch_size>
 
-                <db_log_limit>1000</db_log_limit>
+                <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
+                <log_file_read_limit>50</log_file_read_limit>
 
             </development_and_debugging>
 

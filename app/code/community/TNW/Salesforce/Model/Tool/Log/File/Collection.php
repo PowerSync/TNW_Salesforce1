@@ -26,10 +26,9 @@ class TNW_Salesforce_Model_Tool_Log_File_Collection extends Varien_Data_Collecti
         $this->_baseDir = Mage::getSingleton('tnw_salesforce/tool_log_file')->getLogDir();
 
         // check for valid base dir
-        $ioProxy = new Varien_Io_File();
+        $ioProxy = Mage::getModel('tnw_salesforce/varien_io_file');
         $ioProxy->mkdir($this->_baseDir);
-        if (!is_file($this->_baseDir . DS . '.htaccess')) {
-            $ioProxy->open(array('path' => $this->_baseDir));
+        if (!is_file($this->_baseDir . DS . '.htaccess') && $ioProxy->open(array('path' => $this->_baseDir))) {
             $ioProxy->write('.htaccess', 'deny from all', 0644);
         }
 

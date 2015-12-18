@@ -22,7 +22,7 @@ class TNW_Salesforce_Model_Customer_Observer
         $modules = Mage::getConfig()->getNode('modules')->children();
         // Only dispatch event if AITOC is not installed, otherwise we use different event
         if (!property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-            Mage::dispatchEvent('tnw_customer_save', array('customer' => $customer));
+            Mage::dispatchEvent('tnw_salesforce_customer_save', array('customer' => $customer));
         }
     }
 
@@ -36,7 +36,7 @@ class TNW_Salesforce_Model_Customer_Observer
         $customer = ($observer->getEvent()->getCustomer()) ? $observer->getEvent()->getCustomer() : $observer->getEvent()->getOrder();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('AITOC EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
 
-        Mage::dispatchEvent('tnw_customer_save', array('customer' => $customer));
+        Mage::dispatchEvent('tnw_salesforce_customer_save', array('customer' => $customer));
     }
 
     /**

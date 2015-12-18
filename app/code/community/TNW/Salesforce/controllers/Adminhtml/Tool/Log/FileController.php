@@ -21,21 +21,35 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
         try {
             $filename = $this->getRequest()->getParam('filename', false);
 
-            $logFile = Mage::getModel('tnw_salesforce/tool_log_file')->load($filename);
-
-            if (!$logFile->exists()) {
-                throw new Exception($this->__('File is not available'));
-            }
-
-            $logFile->read();
-
+            $logFile = $this->_loadPageToolLogFile($filename);
             Mage::register('tnw_salesforce_log_file', $logFile);
-
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             throw new Exception($this->__('Cannot open this file'));
         }
 
-        return $logFile;
+        return $this;
+    }
+
+    /**
+     * @param $filename
+     * @param int $page
+     * @return TNW_Salesforce_Model_Tool_Log_File
+     * @throws Exception
+     */
+    protected function _loadPageToolLogFile($filename, $page = 1)
+    {
+        /** @var TNW_Salesforce_Model_Tool_Log_File $logFile */
+        $logFile = Mage::getModel('tnw_salesforce/tool_log_file')->load($filename);
+        if (!$logFile->exists()) {
+            throw new Exception($this->__('File is not available'));
+        }
+
+        $pageSize   = Mage::helper('tnw_salesforce/config_tool')->getLogFileReadLimit();
+        $pageSize   = max(intval($pageSize), 0);
+        $page       = max(intval($page), 1);
+
+        return $logFile->read($page, $pageSize, SEEK_END);
     }
 
     /**
@@ -43,14 +57,13 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
      */
     protected function _prepareAction()
     {
-        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Sync log files'));
+        $this->_title($this->__('Salesforce'))
+            ->_title($this->__('Tools'))
+            ->_title($this->__('Download Log Files'));
 
-
-        $this->_setActiveMenu('tnw_salesforce');
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforce'), Mage::helper('adminhtml')->__('Salesforce'));
-        $this->_addBreadcrumb(Mage::helper('adminhtml')->__('Logs'), Mage::helper('adminhtml')->__('Log'));
-
-        return $this;
+        return $this->_setActiveMenu('tnw_salesforce')
+            ->_addBreadcrumb(Mage::helper('adminhtml')->__('Salesforce'), Mage::helper('adminhtml')->__('Salesforce'))
+            ->_addBreadcrumb(Mage::helper('adminhtml')->__('Logs'), Mage::helper('adminhtml')->__('Log'));
     }
 
     /**
@@ -58,12 +71,11 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
      */
     public function indexAction()
     {
-        $this->loadLayout();
-        $this->_prepareAction();
+        $this->loadLayout()
+            ->_prepareAction();
 
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_file', 'log_file'));
-
-        $this->renderLayout();
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_file', 'log_file'))
+            ->renderLayout();
     }
 
     /**
@@ -71,20 +83,16 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
      */
     public function viewAction()
     {
-        $this->loadLayout();
-        $this->_prepareAction();
+        $this->loadLayout()
+            ->_prepareAction()
+            ->_initLogFile();
 
-        $this->_initLogFile();
-
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_file_view', 'log_file_view'));
-
-        $this->renderLayout();
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_file_view', 'log_file_view'))
+            ->renderLayout();
     }
 
     /**
      * Download log action
-     *
-     * @return Mage_Adminhtml_Controller_Action
      */
     public function downloadAction()
     {
@@ -92,17 +100,31 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
 
         /* @var $log TNW_Salesforce_Model_Tool_Log_File */
         $log = Mage::getModel('tnw_salesforce/tool_log_file')->loadByName($fileName);
-
         if (!$log->exists()) {
-            return $this->_redirect('*/*');
+            $this->_redirect('*/*');
+            return;
         }
 
-        $this->_prepareDownloadResponse($fileName, null, 'application/octet-stream', $log->getSize());
+        $this->_prepareDownloadResponse($fileName, array(
+            'type'  => 'filename',
+            'value' => $log->getPath() . DS . $log->getFileName()
+        ), 'application/octet-stream');
+    }
 
-        $this->getResponse()->sendHeaders();
+    /**
+     * Get file content
+     * @throws Exception
+     */
+    public function fileContentAction()
+    {
+        $filename = $this->getRequest()->getParam('filename', false);
+        $page     = $this->getRequest()->getParam('page', 1);
 
-        $log->output();
-        exit();
+        $logFile = $this->_loadPageToolLogFile($filename, $page);
+
+        $this->getResponse()
+            ->setHeader('Content-type', 'text/plain; charset=UTF-8')
+            ->setBody($logFile->getContent());
     }
 
     /**

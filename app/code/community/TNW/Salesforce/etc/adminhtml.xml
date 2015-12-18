@@ -158,13 +158,13 @@
                         </console>
 
                         <sync_log translate="title" module="tnw_salesforce">
-                            <title>Sync Logs in DB</title>
+                            <title>Transaction Logs</title>
                             <action>adminhtml/tool_log</action>
                             <sort_order>200</sort_order>
                         </sync_log>
 
                         <sync_log_file translate="title" module="tnw_salesforce">
-                            <title>Sync Log Files</title>
+                            <title>Download Log Files</title>
                             <action>adminhtml/tool_log_file</action>
                             <sort_order>300</sort_order>
                         </sync_log_file>
