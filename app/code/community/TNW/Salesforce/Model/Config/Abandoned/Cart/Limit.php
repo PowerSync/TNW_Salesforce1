@@ -9,7 +9,7 @@ class TNW_Salesforce_Model_Config_Abandoned_Cart_Limit
      */
     public function toOptionArray()
     {
-        return Mage::helper('tnw_salesforce/abandoned')->getLimits();
+        return Mage::helper('tnw_salesforce/config_sales_abandoned')->getLimits();
     }
 
     /**
@@ -19,7 +19,7 @@ class TNW_Salesforce_Model_Config_Abandoned_Cart_Limit
      */
     public function toArray()
     {
-        return Mage::helper('tnw_salesforce/abandoned')->getLimitsHash();;
+        return Mage::helper('tnw_salesforce/config_sales_abandoned')->getLimitsHash();
     }
 
 }

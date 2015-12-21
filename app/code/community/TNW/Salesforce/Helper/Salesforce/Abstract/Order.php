@@ -1062,7 +1062,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         // See if created from Abandoned Cart
-        if (Mage::helper('tnw_salesforce/abandoned')->isEnabled() && !empty($quotes)) {
+        if (Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled() && !empty($quotes)) {
             $sql = "SELECT entity_id, salesforce_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` WHERE entity_id IN ('" . join("','", $quotes) . "')";
             $row = Mage::helper('tnw_salesforce')->getDbConnection('read')->query($sql)->fetchAll();
             if ($row) {
@@ -1173,7 +1173,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 /**
                  * @comment check zero orders sync
                  */
-                if (!Mage::helper('tnw_salesforce/order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
+                if (!Mage::helper('tnw_salesforce/config_sales_order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
                     $this->logNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
                     $skippedOrders[$_order->getId()] = $_order->getId();
                     continue;
@@ -1483,7 +1483,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
 
     /**
-     * @param $_id
+     * @param $ids
      * Reset Salesforce ID in Magento for the order
      */
     public function resetOrder($ids)
@@ -1500,6 +1500,100 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
     }
 
+    /**
+     * Prepare order history notes for syncronization
+     */
+    protected function _prepareNotes()
+    {
+        /** @var TNW_Salesforce_Model_Tool_Log $toolLog */
+        $toolLog =  Mage::getSingleton('tnw_salesforce/tool_log');
+        $toolLog->saveTrace('----------Prepare Notes: Start----------');
+
+        // Get all products from each order and decide if all needs to me synced prior to inserting them
+        foreach ($this->_cache['entitiesUpdating'] as $_key => $_number) {
+            if (in_array($_number, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
+                $toolLog->saveTrace(sprintf('%s (%s): Skipping, issues with upserting an %s!',
+                    strtoupper($this->getMagentoEntityName()), $_number, $this->getSalesforceEntityName()));
+
+                continue;
+            }
+
+            $registryKey = sprintf('order_cached_%s', $_number);
+            $_order = (Mage::registry($registryKey))
+                ? Mage::registry($registryKey)
+                : Mage::getModel('sales/order')->loadByIncrementId($_number);
+
+            $this->createObjNones($_order->getAllStatusHistory());
+        }
+
+        $toolLog->saveTrace('----------Prepare Notes: End----------');
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order_Status_History[] $notes
+     * @return $this
+     */
+    public function createObjNones($notes)
+    {
+        if (!$notes instanceof Varien_Data_Collection && !is_array($notes)) {
+            $notes = array($notes);
+        }
+
+        /** @var Mage_Sales_Model_Order_Status_History $_note */
+        foreach ($notes as $_note) {
+            // Only sync notes for the order
+            if (!($_note->getData('entity_name') == 'order' && !$_note->getData('salesforce_id') && $_note->getData('comment'))) {
+                continue;
+            }
+
+            $comment      = utf8_encode($_note->getData('comment'));
+            $salesforceId = $_note->getOrder()->getSalesforceId();
+
+            $_obj = new stdClass();
+            $_obj->ParentId   = $salesforceId;
+            $_obj->IsPrivate  = 0;
+            $_obj->Body       = $comment;
+            $_obj->Title      = (strlen($comment) > 75)
+                ? sprintf('%s...', mb_substr($comment, 0, 75))
+                : $comment;
+
+            foreach ($_obj as $key => $_value) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Note Object: " . $key . " = '" . $_value . "'");
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('+++++++++++++++++++++++++++++');
+            $this->_cache['notesToUpsert'][$_note->getData('entity_id')] = $_obj;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function pushDataNotes()
+    {
+        if (empty($this->_cache['notesToUpsert'])) {
+            return $this;
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: Start----------');
+        Mage::dispatchEvent("tnw_salesforce_order_notes_send_before", array("data" => $this->_cache['notesToUpsert']));
+
+        // Push Cart
+        $notesToUpsert = array_chunk($this->_cache['notesToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+        foreach ($notesToUpsert as $_itemsToPush) {
+            $this->_pushNotes($_itemsToPush);
+        }
+
+        Mage::dispatchEvent("tnw_salesforce_order_notes_send_after", array(
+            "data" => $this->_cache['notesToUpsert'],
+            "result" => $this->_cache['responses']['notes']
+        ));
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Notes: End----------');
+        return $this;
+    }
 
     /**
      * @param null $_orderNumber

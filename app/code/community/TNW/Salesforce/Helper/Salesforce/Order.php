@@ -692,48 +692,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
-     * Prepare order history notes for syncronization
-     */
-    protected function _prepareNotes()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Notes: Start----------');
-
-        // Get all products from each order and decide if all needs to me synced prior to inserting them
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache['failedOrders'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an order!');
-                continue;
-            }
-            $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-
-            // TODO: need to add this feature
-            foreach ($_order->getAllStatusHistory() as $_note) {
-                // Only sync notes for the order
-                if ($_note->getData('entity_name') == 'order' && !$_note->getData('salesforce_id') && $_note->getData('comment')) {
-                    $this->_obj = new stdClass();
-                    $this->_obj->ParentId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNumber];
-                    $this->_obj->IsPrivate = 0;
-                    $this->_obj->Body = utf8_encode($_note->getData('comment'));
-                    $this->_obj->Title = ($_note->getData('comment'));
-
-                    if (strlen($this->_obj->Title) > 75) {
-                        $this->_obj->Title = utf8_encode(substr($_note->getData('comment'), 0, 75) . '...');
-                    } else {
-                        $this->_obj->Title = utf8_encode($_note->getData('comment'));
-                    }
-                    $this->_cache['notesToUpsert'][$_note->getData('entity_id')] = $this->_obj;
-
-                    foreach ($this->_obj as $key => $_value) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Note Object: " . $key . " = '" . $_value . "'");
-                    }
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('+++++++++++++++++++++++++++++');
-                }
-            }
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Notes: End----------');
-    }
-
-    /**
      * Push OrderItems and Notes into Salesforce
      */
     protected function _pushRemainingOrderData()
@@ -807,6 +765,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     }
                 }
             }
+
             if (!empty($this->_cache['orderToActivate'])) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: Start----------');
 
