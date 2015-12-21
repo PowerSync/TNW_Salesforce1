@@ -34,4 +34,16 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Quote_Base extends TNW_Salesfor
      * @var string
      */
     protected $_cacheIdField = 'id';
+
+    /**
+     * @return TNW_Salesforce_Model_Mysql4_Mapping_Collection|null
+     */
+    public function getMappingCollection()
+    {
+        if (empty($this->_mappingCollection)) {
+            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('Abandoned');
+        }
+
+        return $this->_mappingCollection;
+    }
 }

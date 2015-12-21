@@ -40,12 +40,55 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
     );
 
     /**
+     * @var array
+     */
+    protected $_regions = array();
+
+    /**
+     * @param null $address
+     * @return array
+     */
+    protected function _getRegions($address = NULL)
+    {
+
+        if ($address instanceof Varien_Object) {
+            $countryId = $address->getCountryId();
+        }
+
+        if (empty($countryId)) {
+            return array();
+        }
+
+        if (!$this->_regions || !isset($this->_regions[$countryId])) {
+
+            $regionCollection = Mage::getModel('directory/region')->getCollection();
+            $regionCollection->addCountryFilter($countryId);
+            $this->_regions[$countryId] = $regionCollection;
+        }
+
+        return $this->_regions[$countryId];
+    }
+
+    /**
      * @param null $_field
      * @param null $_value
      * @return null
      */
-    protected function _customizeAddressValue($_field = NULL, $_value = NULL)
+    protected function _customizeAddressValue($_field = NULL, $_value = NULL, $address = NULL)
     {
+        if ($_field == 'region_id') {
+            $regions = $this->_getRegions($address);
+            /**
+             * use state region code instead region_id to send data to Salesforce
+             */
+            if (!empty($regions)) {
+                foreach ($regions as $region) {
+                    if ($region->getId() == $_value) {
+                        $_value = $region->getCode();
+                    }
+                }
+            }
+        }
         return $_value;
     }
 
@@ -157,7 +200,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                                 $value = ($value && !empty($value)) ? $value : NULL;
                             }
                         }
-                        $value = $this->_customizeAddressValue($attributeCode, $value);
+                        $value = $this->_customizeAddressValue($attributeCode, $value, $address);
                         break;
                     case "Aitoc":
                         $modules = Mage::getConfig()->getNode('modules')->children();

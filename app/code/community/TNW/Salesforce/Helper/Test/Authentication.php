@@ -181,6 +181,15 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         $this->validateStorage();
         $mageCache = Mage::app()->getCache();
         $useCache = Mage::app()->useCache('tnw_salesforce');
+
+        /**
+         * The Cache feature broke our authorization and we receive
+         * the 'Salesforce connection failed, bulk API session ID is invalid' error
+         *
+         * @TODO check my comment, is the change below fix this problem
+         */
+        $useCache = false;
+
         if ($useCache) {
             $res = unserialize($mageCache->load($key));
         }
@@ -226,6 +235,15 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     {
         $mageCache = Mage::app()->getCache();
         $useCache = Mage::app()->useCache('tnw_salesforce');
+
+        /**
+         * The Cache feature broke our authorization and we receive
+         * the 'Salesforce connection failed, bulk API session ID is invalid' error
+         *
+         * @TODO check my comment, is the change below fix this problem
+         */
+        $useCache = false;
+
         if ($useCache) {
             $res = $mageCache->save(serialize($value), $key, array("TNW_SALESFORCE"));
         }
