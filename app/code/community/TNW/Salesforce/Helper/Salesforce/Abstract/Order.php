@@ -1603,19 +1603,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             && $this->_cache['orderCustomers'][$_orderNumber]->getData('email')
         ) ? strtolower($this->_cache['orderCustomers'][$_orderNumber]->getData('email')) : NULL;
 
-        $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-        $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-
         if (
             is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists(0, $this->_cache['accountsLookup'])
             && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])
         ) {
             $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->Id;
         } elseif (
             $_customerEmail && $_orderEmail != $_customerEmail
             && is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists(0, $this->_cache['accountsLookup'])
             && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
         ) {
             $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->Id;
