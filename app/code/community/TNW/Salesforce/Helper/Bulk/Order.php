@@ -24,7 +24,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     /**
      * Push cart items, notes
      */
-    protected function _pushRemainingOrderData()
+    protected function _pushRemainingEntityData()
     {
         if (!empty($this->_cache['orderItemsToUpsert'])) {
             if (!$this->_cache['bulkJobs']['orderProducts']['Id']) {
@@ -139,7 +139,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         }
     }
 
-    protected function _pushOrdersToSalesforce()
+    protected function _pushEntity()
     {
         if (!empty($this->_cache['ordersToUpsert'])) {
 

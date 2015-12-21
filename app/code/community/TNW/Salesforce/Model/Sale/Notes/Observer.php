@@ -50,6 +50,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
 
                 /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $syncHelper */
                 $syncHelper = Mage::helper('tnw_salesforce/salesforce_'.$_syncType);
+                $syncHelper->reset();
                 $syncHelper->createObjNones(array($note))->pushDataNotes();
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
