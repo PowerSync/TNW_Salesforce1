@@ -294,7 +294,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         $object = new Varien_Object(array(
             'object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE
         ));
-        Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $object));
+        Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $object));
 
         return $object->getObjectType();
     }
@@ -1123,20 +1123,23 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /**
      * @return array
+     * @deprecated
      */
     public function getCatchAllAccounts()
     {
-        $_array = unserialize($this->getStroreConfig(self::CUSTOMER_CATCHALL_ACCOUNT));
-        $newArray = array();
-        if ($_array) {
-            foreach ($_array as $_k => $_subArray) {
-                foreach ($_subArray as $_key => $_value) {
-                    if (empty($_value)) {
-                        unset($_subArray[$_key]);
-                    }
-                }
-                $newArray[$_k] = $_subArray;
-            }
+        $newArray = array(
+            'domain'  => array(),
+            'account' => array(),
+        );
+
+        /** @var TNW_Salesforce_Model_Mysql4_Account_Matching_Collection $collection */
+        $collection = Mage::getModel('tnw_salesforce/account_matching')
+            ->getCollection();
+
+        /** @var TNW_Salesforce_Model_Account_Matching $item */
+        foreach ($collection as $item) {
+            $newArray['domain'][]  = $item->getData('email_domain');
+            $newArray['account'][] = $item->getData('account_id');
         }
 
         return $newArray;

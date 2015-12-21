@@ -19,7 +19,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * reference to salesforce connection
      *
-     * @var null
+     * @var null|Salesforce_SforceEnterpriseClient
      */
     public $_mySforceConnection = NULL;
 
@@ -306,34 +306,27 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             if (!array_key_exists($_batchType, $this->_cache['batch'])) {
                 $this->_cache['batch'][$_batchType] = array();
             }
+
             if (!array_key_exists($_on, $this->_cache['batch'][$_batchType])) {
                 $this->_cache['batch'][$_batchType][$_on] = array();
             }
-            $_ttl = count($_entities); // 33
+
             $_success = true;
-            if ($_ttl > $this->_maxBatchLimit) {
-                $_steps = ceil($_ttl / $this->_maxBatchLimit);
-                if ($_steps == 0) {
-                    $_steps = 1;
+            $batchLimit = $this->_maxBatchLimit == 0
+                ? TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT
+                : $this->_maxBatchLimit;
+
+            $_entitiesChunk = array_chunk($_entities, $batchLimit, true);
+            foreach ($_entitiesChunk as $_batchNum => $_itemsToPush) {
+                if (!array_key_exists($_batchNum, $this->_cache['batch'][$_batchType][$_on])) {
+                    $this->_cache['batch'][$_batchType][$_on][$_batchNum] = array();
                 }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $this->_maxBatchLimit;
-                    $_itemsToPush = array_slice($_entities, $_start, $this->_maxBatchLimit, true);
-                    if (!array_key_exists($_i, $this->_cache['batch'][$_batchType][$_on])) {
-                        $this->_cache['batch'][$_batchType][$_on][$_i] = array();
-                    }
-                    // send data to sf
-                    $_success = $this->_pushSegment($_jobId, $_batchType, $_itemsToPush, $_i, $_on);
-                }
-            } else {
-                if (!array_key_exists(0, $this->_cache['batch'][$_batchType][$_on])) {
-                    $this->_cache['batch'][$_batchType][$_on][0] = array();
-                }
-                // send data to sf
-                $_success = $this->_pushSegment($_jobId, $_batchType, $_entities, 0, $_on);
+
+                $_success = $this->_pushSegment($_jobId, $_batchType, $_itemsToPush, $_batchNum, $_on);
             }
+
             if (!$_success) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . uc_words($_batchType) . ' upsert failed');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . uc_words($_batchType) . ' upsert failed!');
                 return false;
             }
         }

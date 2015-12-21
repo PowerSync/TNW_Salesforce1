@@ -237,26 +237,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         } else {
             $_extra = ", Account.OwnerId, Account.Name";
         }
-        if (
-            Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
-        ) {
+
+        if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
             $_extra .= ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
         }
+
         $_results = array();
-
-        $_ttl = count($email);
-        if ($_ttl > $_howMany) {
-            $_steps = ceil($_ttl / $_howMany);
-            for ($_i = 0; $_i < $_steps; $_i++) {
-                $_start = $_i * $_howMany;
-                $_emails = array_slice($email, $_start, $_howMany, true);
-                $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
-            }
-        } else {
-            $_results[] = $this->_queryContacts($_magentoId, $_extra, $email, $_websites);;
+        $_emailChunk = array_chunk($email, $_howMany, true);
+        foreach ($_emailChunk as $_emails) {
+            $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
         }
-
-        unset($query);
 
         return $_results;
     }

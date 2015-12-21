@@ -83,7 +83,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         $_type = 'Invoice';
         // Allow Powersync to overwite fired event for customizations
         $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
-        Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+        Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $_object));
 
         $_module = 'tnw_salesforce/bulk_' . $_object->getObjectType();
 
@@ -209,7 +209,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 if ($_type == 'Invoice') {
                     // Allow Powersync to overwite fired event for customizations
                     $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
-                    Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+                    Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $_object));
 
                     $_syncType = $_object->getObjectType();
                     $_idPrefix = 'invoice';
@@ -219,7 +219,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 }
 
                 Mage::dispatchEvent(
-                    'tnw_sales_process_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_process', $_syncType),
                     array(
                         $_idPrefix . 'Ids' => $_objectIdSet,
                         'message' => NULL,
@@ -232,7 +232,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
                 Mage::dispatchEvent(
-                    'tnw_sales_process_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_process', $_syncType),
                     array(
                         'orderIds' => $_objectIdSet,
                         'message' => NULL,
@@ -310,7 +310,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 }
 
                 Mage::dispatchEvent(
-                    'tnw_sales_process_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_process', $_syncType),
                     array(
                         'orderIds' => $_objectIdSet,
                         'message' => NULL,

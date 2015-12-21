@@ -15,7 +15,7 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
      */
     protected function _prepareAction()
     {
-        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Sync logs in DB'));
+        $this->_title($this->__('Salesforce'))->_title($this->__('Tools'))->_title($this->__('Transaction Logs'));
 
 
         $this->_setActiveMenu('tnw_salesforce');
@@ -52,7 +52,7 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
     public function exportExcelAction()
     {
         $fileName = 'DB Log_export.xml';
-        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_grid')->getExcel();
+        $content = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_tool_log_grid')->getExcelFile();
         $this->_prepareDownloadResponse($fileName, $content);
     }
 

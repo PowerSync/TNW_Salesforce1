@@ -27,11 +27,11 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
      *
      * @param $order
      */
-    protected function _setOpportunityInfo($order)
+    protected function _setEntityInfo($order)
     {
         $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
 
-        $this->_updateOrderStageName($order);
+        $this->_updateEntityStatus($order);
         $_orderNumber = $order->getRealOrderId();
         $_email = $this->_cache['orderToEmail'][$_orderNumber];
 
@@ -98,7 +98,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         unset($order);
     }
 
-    protected function _pushRemainingOpportunityData()
+    protected function _pushRemainingEntityData()
     {
         $_resultRoles = $_resultProducts = null;
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
@@ -133,7 +133,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Opportunity Contact Roles, created job: ' . $this->_cache['bulkJobs']['customerRoles']['Id']);
             }
 
-            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before",array("data" => $this->_cache['contactRolesToUpsert']));
 
             $this->_pushChunked($this->_cache['bulkJobs']['customerRoles']['Id'], 'opportunityContactRoles', $this->_cache['contactRolesToUpsert']);
 
@@ -165,7 +165,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
 
         if (strval($_resultRoles) != 'exception') {
-            Mage::dispatchEvent("tnw_salesforce_order_contact_roles_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_after",array(
                 "data" => $this->_cache['contactRolesToUpsert'],
                 "result" => isset($this->_cache['responses']['customerRoles'])? $this->_cache['responses']['customerRoles']: array()
             ));
@@ -256,7 +256,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
     }
 
-    protected function _pushOpportunitiesToSalesforce()
+    protected function _pushEntity()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
             // assign owner id to opportunity
@@ -430,54 +430,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
             Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         }
-    }
-
-    /**
-     * @param null $_jobId
-     * @param $_batchType
-     * @param array $_entities
-     * @param string $_on
-     * @return bool
-     */
-    protected function _pushChunked($_jobId = NULL, $_batchType, $_entities = array(), $_on = 'Id')
-    {
-        if (!empty($_entities) && $_jobId) {
-            if (!array_key_exists($_batchType, $this->_cache['batch'])) {
-                $this->_cache['batch'][$_batchType] = array();
-            }
-            if (!array_key_exists($_on, $this->_cache['batch'][$_batchType])) {
-                $this->_cache['batch'][$_batchType][$_on] = array();
-            }
-            $_ttl = count($_entities); // 205
-            $_success = true;
-            if ($_ttl > $this->_maxBatchLimit) {
-                $_steps = ceil($_ttl / $this->_maxBatchLimit);
-                if ($_steps == 0) {
-                    $_steps = 1;
-                }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $this->_maxBatchLimit;
-                    $_itemsToPush = array_slice($_entities, $_start, $this->_maxBatchLimit, true);
-                    if (!array_key_exists($_i, $this->_cache['batch'][$_batchType][$_on])) {
-                        $this->_cache['batch'][$_batchType][$_on][$_i] = array();
-                    }
-                    $_success = $this->_pushSegment($_jobId, $_batchType, $_itemsToPush, $_i, $_on);
-                }
-            } else {
-                if (!array_key_exists(0, $this->_cache['batch'][$_batchType][$_on])) {
-                    $this->_cache['batch'][$_batchType][$_on][0] = array();
-                }
-                $_success = $this->_pushSegment($_jobId, $_batchType, $_entities, 0, $_on);
-
-            }
-            if (!$_success) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . uc_words($_batchType) . ' upsert failed!');
-
-                return false;
-            }
-        }
-
-        return true;
     }
 
     protected function _prepareContactRoles()

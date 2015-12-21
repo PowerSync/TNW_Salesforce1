@@ -77,8 +77,9 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
             throw new Exception('Sync object is null! Use "setSync" method to define object.');
         }
 
+        $eventType = strtolower(str_replace(' ', '_', $this->_type));
         Mage::dispatchEvent(
-            'tnw_salesforce_sync_mapping_' . strtolower($this->_type) . '_before',
+            sprintf('tnw_salesforce_sync_mapping_%s_before', $eventType),
             array(
                 'mapping' => $this,
                 'entity' => $entity,
@@ -89,7 +90,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
         $this->_processMapping($entity, $additionalObject);
 
         Mage::dispatchEvent(
-            'tnw_salesforce_sync_mapping_' . strtolower($this->_type) . '_after',
+            sprintf('tnw_salesforce_sync_mapping_%s_after', $eventType),
             array(
                 'mapping' => $this,
                 'entity' => $entity,
@@ -104,7 +105,11 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     public function getMappingCollection()
     {
         if (empty($this->_mappingCollection)) {
-            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_type);
+            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')
+                ->getCollection()
+                ->addObjectToFilter($this->_type)
+                ->addFieldToFilter('active', 1)
+            ;
         }
 
         return $this->_mappingCollection;
