@@ -73,6 +73,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT,
+            'Product2',
             TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
         );
 
@@ -493,11 +494,17 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'label' => ucwords($addressType) . " Address",
             'value' => array()
         );
+
         foreach ($collection as $_attribute) {
-            if ($_attribute->is_visible && $_attribute->frontend_label != "" && $_attribute->frontend_input != "hidden") {
+            if ($_attribute->is_visible && $_attribute->frontend_label != "") {
+
+                $label = $_attribute->frontend_label;
+                if ($_attribute->frontend_input == "hidden") {
+                    $label = $label . ' (Id/Code)';
+                }
                 $this->_cache[$type][$addressType]['value'][] = array(
                     'value' => ucwords($addressType) . ' : ' . $_attribute->attribute_code,
-                    'label' => ucwords($addressType) . ' : ' . $_attribute->frontend_label,
+                    'label' => ucwords($addressType) . ' : ' . $label,
                 );
             }
         }

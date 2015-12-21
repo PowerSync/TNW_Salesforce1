@@ -22,4 +22,16 @@ class TNW_Salesforce_Model_Sync_Mapping_Quote_Base_Item extends TNW_Salesforce_M
     );
 
 
+    /**
+     * @return TNW_Salesforce_Model_Mysql4_Mapping_Collection|null
+     */
+    public function getMappingCollection()
+    {
+        if (empty($this->_mappingCollection)) {
+            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('Abandoneditem');
+        }
+
+        return $this->_mappingCollection;
+    }
+
 }
