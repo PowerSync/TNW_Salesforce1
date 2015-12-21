@@ -198,7 +198,9 @@
                 </observers>
             </checkout_submit_all_after>
 
-            <!-- Order Save Event: Status update -->
+            <!-- Order Save Event: Status update
+                TODO: Event "order_save_after" are there?
+            -->
             <order_save_after>
                 <observers>
                     <tnw_salesforce_sale_observer>

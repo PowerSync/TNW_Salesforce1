@@ -2136,9 +2136,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         );
 
         $this->_obj = new stdClass();
-        // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-        $this->_obj->$orderIdParam = $order->getRealOrderId();
 
         //Process mapping
         Mage::getSingleton(sprintf('tnw_salesforce/sync_mapping_order_%s', $this->_salesforceEntityName))

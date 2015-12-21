@@ -511,20 +511,22 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _updateEntityStatus($order)
     {
-        $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection();
-        $collection->getSelect()
-            ->where("main_table.status = ?", $order->getStatus());
+        // Magento Order ID
+        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+        $this->_obj->$orderIdParam = $order->getRealOrderId();
+
+        /** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $collection */
+        $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection()
+            ->addStatusToFilter($order->getStatus());
+        $orderStatus = $collection->getFirstItem()->getData('sf_order_status');
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Mapping status: " . $order->getStatus());
 
-        $this->_obj->Status = TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
-        foreach ($collection as $_item) {
-            $this->_obj->Status = ($_item->getData('sf_order_status')) ? $_item->getData('sf_order_status') : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+        $this->_obj->Status = ($orderStatus)
+            ? $orderStatus : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_obj->Status);
-            break;
-        }
-        unset($collection, $_item);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_obj->Status);
+        unset($collection);
     }
 
     /**

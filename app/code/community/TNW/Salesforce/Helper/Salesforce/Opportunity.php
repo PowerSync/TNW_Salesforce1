@@ -555,22 +555,22 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _updateEntityStatus($order)
     {
-        ## Status integration
-        ## implemented in v.1.14
-        $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection();
-        $collection->getSelect()
-            ->where("main_table.status = ?", $order->getStatus());
+        // Magento Order ID
+        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+        $this->_obj->{$orderIdParam} = $order->getRealOrderId();
+
+        /** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $collection */
+        $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection()
+            ->addStatusToFilter($order->getStatus());
+        $opportunityStatus = $collection->getFirstItem()->getSfOpportunityStatusCode();
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Mapping status: " . $order->getStatus());
 
-        $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
-        foreach ($collection as $_item) {
-            $this->_obj->StageName = ($_item->getSfOpportunityStatusCode()) ? $_item->getSfOpportunityStatusCode() : 'Committed';
+        $this->_obj->StageName = ($opportunityStatus)
+            ? $opportunityStatus : 'Committed';
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_obj->StageName);
-            break;
-        }
-        unset($collection, $_item);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_obj->StageName);
+        unset($collection);
     }
 
     protected function _updateAccountLookupData($_customersToSync)
