@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helper_Salesforce_Data
+class TNW_Salesforce_Helper_Salesforce_Data_Orderinvoice extends TNW_Salesforce_Helper_Salesforce_Data
 {
     /**
      * @param array $ids

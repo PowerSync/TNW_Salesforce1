@@ -23,6 +23,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected $_magentoEntityModel = '';
 
     /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentIdField = '';
+
+    /**
+     * @comment magento entity item qty field name
+     * @var array
+     */
+    protected $_itemQtyField = 'qty';
+
+    /**
      * @comment cache keys
      * @var string
      */
@@ -215,6 +227,60 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         return $this;
     }
 
+    /**
+     * @return string
+     */
+    public function getSalesforceParentIdField()
+    {
+        return $this->_salesforceParentIdField;
+    }
+
+    /**
+     * @param string $salesforceParentIdField
+     * @return $this
+     */
+    public function setSalesforceParentIdField($salesforceParentIdField)
+    {
+        $this->_salesforceParentIdField = $salesforceParentIdField;
+        return $this;
+    }
+
+    /**
+     * @comment assign Opportynity/Order Id
+     */
+    protected function _getParentEntityId($_entityNumber)
+    {
+        if (!$this->getSalesforceParentIdField()) {
+            $this->setSalesforceParentIdField($this->getUcParentEntityType() . 'Id');
+        }
+
+        $upsertedKey = sprintf('upserted%s', $this->getManyParentEntityType());
+        return (array_key_exists($_entityNumber, $this->_cache[$upsertedKey])) ? $this->_cache[$upsertedKey][$_entityNumber] :  NULL;
+    }
+
+    /**
+     * @return array
+     */
+    public function getItemQtyField()
+    {
+        return $this->_itemQtyField;
+    }
+
+    /**
+     * @param array $itemQtyField
+     * @return $this
+     */
+    public function setItemQtyField($itemQtyField)
+    {
+        $this->_itemQtyField = $itemQtyField;
+        return $this;
+    }
+
+    /**
+     * @param array $_ids
+     * @param bool|false $_isCron
+     * @return bool
+     */
     public function massAdd($_ids = array(), $_isCron = false)
     {
         $_ids           = !is_array($_ids) ? array($_ids) : $_ids;
@@ -592,6 +658,95 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _prepareEntityItemAfter($_entity)
     {
         return;
+    }
+
+    /**
+     * @param $_entity
+     * @return string
+     */
+    public function getCurrencyCode($_entity)
+    {
+        $currencyCodeField = $this->getMagentoEntityName() . '_currency_code';
+        $_currencyCode = '';
+
+        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+
+            /**
+             * this condition used for invoice sync
+             */
+            if (!$_entity->hasData($currencyCodeField)) {
+                $currencyCodeField = 'order_currency_code';
+            }
+            $_currencyCode = $_entity->getData($currencyCodeField);
+        }
+
+        return $_currencyCode;
+    }
+
+    /**
+     * @param $_entity
+     * @param int $qty
+     * @return float
+     */
+    protected function _prepareItemPrice($_entity, $qty = 1)
+    {
+        /** @var TNW_Salesforce_Helper_Data $_helper */
+        $_helper  = Mage::helper('tnw_salesforce');
+        $netTotal = !$_helper->useTaxFeeProduct()
+            ? $this->getEntityPrice($_entity, 'RowTotalInclTax')
+            : $this->getEntityPrice($_entity, 'RowTotal');
+
+        if (!$_helper->useDiscountFeeProduct()) {
+            $netTotal = ($netTotal - $this->getEntityPrice($_entity, 'DiscountAmount'));
+            $netTotal = $netTotal / $qty;
+        } else {
+            $netTotal = $netTotal / $qty;
+        }
+
+        /**
+         * @comment prepare formatted price
+         */
+        return $this->numberFormat($netTotal);
+    }
+
+    /**
+     * @comment returns item qty
+     * @param $item Varien_Object
+     * @return mixed
+     */
+    public function getItemQty($item)
+    {
+        return $item->getData($this->getItemQtyField());
+    }
+
+    /**
+     * @param $_item
+     * @return int
+     * Get product Id from the cart
+     */
+    public function getProductIdFromCart($_item)
+    {
+        if (
+            $_item->getData('product_type') == 'bundle'
+            || (is_array($_options = unserialize($_item->getData('product_options'))) && array_key_exists('options', $_options))
+        ) {
+            $id = $_item->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+
+        return $id;
+    }
+
+    /**
+     * @param $_entity
+     * @return null|string
+     */
+    protected function _getPricebookIdToEntity($_entity)
+    {
+        /** @var TNW_Salesforce_Helper_Data $_helper */
+        $_helper = Mage::helper('tnw_salesforce');
+        return Mage::getStoreConfig($_helper::PRODUCT_PRICEBOOK, $_entity->getStoreId());
     }
 
     /**

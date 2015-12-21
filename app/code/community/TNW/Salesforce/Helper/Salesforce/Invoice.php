@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Class TNW_Salesforce_Helper_Salesforce_Invoice
+ *
+ * @method Mage_Sales_Model_Order_Invoice _loadEntityByCache($_entityId, $_entityNumber)
+ */
 class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
@@ -12,7 +17,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
      * @comment salesforce entity alias "convert to"
      * @var string
      */
-    protected $_salesforceEntityName = 'OrderInvoice';
+    protected $_salesforceEntityName = 'orderInvoice';
 
     /**
      * @comment magento entity model alias
@@ -250,7 +255,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             ->lookup($this->_emails, $this->_websites);
 
         // Salesforce lookup, find all orders by Magento order number
-        $this->_cache[sprintf('%sLookup', $this->_magentoEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_invoice')
+        $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_orderinvoice')
             ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
     }
 
@@ -260,7 +265,64 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
      */
     protected function _setEntityInfo($_entity)
     {
-        // TODO: ??
+        $_websiteId     = Mage::getModel('core/store')->load($_entity->getStoreId())->getWebsiteId();
+        $_invoiceNumber = $this->_getEntityNumber($_entity);
+        $_customer      = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_invoiceNumber];
+
+        $this->_obj->Name = 'Invoice';
+
+        // Link to a Website
+        if (
+            $_websiteId != NULL
+            && array_key_exists($_websiteId, $this->_websiteSfIds)
+            && $this->_websiteSfIds[$_websiteId]
+        ) {
+            $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_Website__c'}
+                = $this->_websiteSfIds[$_websiteId];
+        }
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Invoice_Date__c'}
+            = $_entity->getCreatedAtDate()->toString();
+
+        // Link to Order
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order__c'}
+            = $_entity->getOrder()->getData('salesforce_id');
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_ID__c'}
+            = $_invoiceNumber;
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Status__c'}
+            = $_entity->getStateName();
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Total__c'}
+            = $_entity->getGrandTotal();
+
+        // Account ID
+        $_customerSFAccountId = (is_object($_customer) && $_customer->getSalesforceAccountId())
+            ? $_customer->getSalesforceAccountId()
+            : $_entity->getOrder()->getData('account_salesforce_id');
+
+        // For guest, extract converted Account Id
+        if (!$_customerSFAccountId) {
+            $_customerSFAccountId = (
+                isset($this->_cache['convertedLeads'])
+                && isset($this->_cache['convertedLeads'][$_invoiceNumber])
+                && property_exists($this->_cache['convertedLeads'][$_invoiceNumber], 'accountId')
+            ) ? $this->_cache['convertedLeads'][$_invoiceNumber]->accountId : NULL;
+        }
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Account__c'}
+            = $_customerSFAccountId;
+
+        $_customerSFContactId = (is_object($_customer) && $_customer->getSalesforceContactId())
+            ? $_customer->getSalesforceContactId()
+            : $_entity->getOrder()->getData('contact_salesforce_id');
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Biling_Contact__c'}
+            = $_customerSFContactId;
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Shipping_Contact__c'}
+            = $_customerSFContactId;
 
         //Process mapping
         Mage::getSingleton('tnw_salesforce/sync_mapping_invoice_orderinvoice')
@@ -269,18 +331,118 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     }
 
     /**
-     * @param $_entity
-     * @param $_entityItem
+     * @param $_entity Mage_Sales_Model_Order_Invoice
+     * @param $_entityItem Mage_Sales_Model_Order_Invoice_Item
      * @return mixed|void
      */
     protected function _prepareEntityItemObj($_entity, $_entityItem)
     {
-        // TODO: ??
+        $_entityNumber = $this->_getEntityNumber($_entity);
+        $_quantity     = $this->getItemQty($_entityItem);
+
+        // Load by product Id only if bundled OR simple with options
+        $_productId    = $this->getProductIdFromCart($_entityItem);
+        if (!$_productId) {
+            return;
+        }
+
+        /** @var $_product Mage_Catalog_Model_Product */
+        $_product = Mage::getModel('catalog/product')
+            ->setStoreId($_entity->getStoreId())
+            ->load($_productId);
+
+        $this->_obj = new stdClass();
+        $this->_obj->Name = 'Invoice Item';
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Invoice__c'}
+            = $this->_getParentEntityId($_entityNumber);
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Code__c'}
+            = $_entityItem->getSku();
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c'}
+            = $_entityItem->getOrderItem()->getData('salesforce_id');
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Quantity__c'}
+            = $_quantity;
+
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Total__c'}
+            =  $this->_prepareItemPrice($_entityItem);
 
         //Process mapping
         Mage::getSingleton('tnw_salesforce/sync_mapping_invoice_orderinvoice_item')
             ->setSync($this)
-            ->processMapping($_entityItem);
+            ->processMapping($_entityItem, $_product);
+
+        $cartItemFound = $this->_doesCartItemExist($_entity, $_entityItem, $_product);
+        if ($cartItemFound) {
+            $this->_obj->Id = $cartItemFound;
+        }
+
+        if (!$this->isItemObjectValid()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order Invoice item failed validation!');
+            return;
+        }
+
+        /* Dump BillingItem object into the log */
+        foreach ($this->_obj as $key => $_item) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Invoice Item Object: " . $key . " = '" . $_item . "'");
+        }
+
+        $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $_entityItem->getId()] = $this->_obj;
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order_Invoice
+     * @param $_entityItem Mage_Sales_Model_Order_Invoice_Item
+     * @param $_product Mage_Catalog_Model_Product
+     * @return bool
+     */
+    protected function _doesCartItemExist($_entity, $_entityItem, $_product)
+    {
+        $_quantity     = $this->getItemQty($_entityItem);
+        $_entityNumber = $this->_getEntityNumber($_entity);
+        $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
+
+        if (! ($this->_cache[$lookupKey]
+            && array_key_exists($_entityNumber, $this->_cache[$lookupKey])
+            && $this->_cache[$lookupKey][$_entityNumber]->BillingItems)
+        ){
+            return false;
+        }
+
+        foreach ($this->_cache[$lookupKey][$_entityNumber]->BillingItems->records as $_cartItem) {
+            if (
+                $_cartItem->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Code__c'} == $_product->getSku()
+                && $_cartItem->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Quantity__c'} == (float)$_quantity
+            ) {
+                /**
+                 * if current SF item already assigned to some Magento item - skip it and try to find one more
+                 * sometimes items with the same parameters can be in order - we should divide it
+                 */
+                foreach ($this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert'] as $itemToUpsert) {
+                    if (property_exists($itemToUpsert, 'Id')
+                        && !empty($itemToUpsert->Id)
+                        && $_cartItem->Id == $itemToUpsert->Id
+                    ) {
+                        continue 2;
+                    }
+                }
+
+                return $_cartItem->Id;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isItemObjectValid()
+    {
+        return (property_exists($this->_obj, /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c')
+            && $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c'});
     }
 
     /**
@@ -419,11 +581,12 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 $this->_processErrors($_result, 'invoiceCart', $chunk[$_chunkKeys[$_key]]);
             }
             else {
-                /*$_cartItemId = $_chunkKeys[$_key];
+                $_cartItemId = $_chunkKeys[$_key];
                 if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
                     $_sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . str_replace('cart_', '', $_cartItemId) . "';";
                     Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
-                }*/
+                }
+
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace(sprintf('Cart Item (id: %s) for (%s: %s) upserted.', $_result->id, $this->_magentoEntityName, $_orderNum));
             }
