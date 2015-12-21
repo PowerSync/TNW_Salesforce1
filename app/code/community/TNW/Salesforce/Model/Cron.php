@@ -24,26 +24,6 @@ class TNW_Salesforce_Model_Cron
     private $_cronRunIntervalMinute = 5;
 
     /**
-     * Log Trace
-     */
-    protected static function logTrace()
-    {
-        $args = func_get_args();
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace(vsprintf(array_shift($args), $args));
-    }
-
-    /**
-     * Log Error
-     */
-    protected static function logError()
-    {
-        $args = func_get_args();
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveError(vsprintf(array_shift($args), $args));
-    }
-
-    /**
      * we check sf sync type settings and decide if it's time to run cron
      *
      * @return bool
@@ -53,8 +33,8 @@ class TNW_Salesforce_Model_Cron
         /** @var TNW_Salesforce_Helper_Data $_helperData */
         $_helperData = Mage::helper('tnw_salesforce');
 
-        self::logTrace('========================= cron method _isTimeToRun() started =========================');
-        self::logTrace('cron time (it differs from php timezone) %s', $_helperData->getDate(NULL, false));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('========================= cron method _isTimeToRun() started =========================');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('cron time (it differs from php timezone) %s', $_helperData->getDate(NULL, false)));
 
         $lastRunTime = 0;
         if ($_helperData->useCache()) {
@@ -85,40 +65,38 @@ class TNW_Salesforce_Model_Cron
                 $configTimeMinute       = (int)$_helperData->getObjectSpectimeMinute();
 
                 // log some help info in case we have claim from customer regarding cron job
-                self::logTrace(($_helperData->getTime() - $lastRunTime) >= $configFrequencySeconds - 60);
-                self::logTrace(intval(date("H")) == intval($configTimeHour));
-                self::logTrace(abs(intval(date("i")) - intval($configTimeMinute)) < $this->_cronRunIntervalMinute);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(($_helperData->getTime() - $lastRunTime) >= $configFrequencySeconds - 60);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(intval(date("H")) == intval($configTimeHour));
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(abs(intval(date("i")) - intval($configTimeMinute)) < $this->_cronRunIntervalMinute);
 
                 if (($_helperData->getTime() - $lastRunTime) >= ($configFrequencySeconds - 60)
                     && intval(date("H")) == intval($configTimeHour)
                     && abs(intval(date("i")) - intval($configTimeMinute)) <= $this->_cronRunIntervalMinute
                 ) {
                     // it's time for cron
-                    switch(true) {
-                        case $configFrequencySeconds <= 60 * 60 * 24:
-                            // daily
-                            self::logTrace('daily cron started');
-                            return true;
+                    if ($configFrequencySeconds <= 60 * 60 * 24) {
+                        // daily
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('daily cron started');
 
-                        case $configFrequencySeconds <= 60 * 60 * 24 * 7:
-                            // weekly
-                            self::logTrace('weekly cron started');
-                            // check day of week
-                            $curWeekDay = $_helperData->getObjectSyncSpectimeFreqWeekday();
-                            $isTime = date("l", time()) == $curWeekDay ? true : false;
-                            self::logTrace("isTime = $isTime");
+                        return true;
+                    } elseif ($configFrequencySeconds <= 60 * 60 * 24 * 7) {
+                        // weekly
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('weekly cron started');
+                        // check day of week
+                        $curWeekDay = $_helperData->getObjectSyncSpectimeFreqWeekday();
+                        $isTime = date("l", time()) == $curWeekDay ? true : false;
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("isTime = $isTime");
 
-                            return $isTime;
+                        return $isTime;
+                    } else {
+                        // monthly
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('monthly cron started');
+                        // check date (we run cron on 1st day of month)
+                        $curMonthDay = $_helperData->getObjectSyncSpectimeFreqMonthday();
+                        $isTime = intval(date("j", time())) == intval($curMonthDay) ? true : false;
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("isTime = $isTime");
 
-                        default:
-                            // monthly
-                            self::logTrace('monthly cron started');
-                            // check date (we run cron on 1st day of month)
-                            $curMonthDay = $_helperData->getObjectSyncSpectimeFreqMonthday();
-                            $isTime = intval(date("j", time())) == intval($curMonthDay) ? true : false;
-                            self::logTrace("isTime = $isTime");
-
-                            return $isTime;
+                        return $isTime;
                     }
                 }
 
@@ -134,9 +112,9 @@ class TNW_Salesforce_Model_Cron
         set_time_limit(0);
         Mage::getModel('tnw_salesforce/feed')->checkUpdate();
 
-        self::logTrace("Check Salesforce to Magento queue ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ...");
         Mage::getModel('tnw_salesforce/imports_bulk')->process();
-        self::logTrace("Check Salesforce to Magento queue ... done");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ... done");
     }
 
     /**
@@ -168,8 +146,15 @@ class TNW_Salesforce_Model_Cron
     protected function _getProductIdFromCart($_item)
     {
         $_options = unserialize($_item->getData('product_options'));
-        return ($_item->getData('product_type') == 'bundle' || (is_array($_options) && array_key_exists('options', $_options)))
-            ? $_item->getData('product_id') : (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        if (
+            $_item->getData('product_type') == 'bundle'
+            || (is_array($_options) && array_key_exists('options', $_options))
+        ) {
+            $id = $_item->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+        return $id;
     }
 
     /**
@@ -230,7 +215,10 @@ class TNW_Salesforce_Model_Cron
 
         }
 
-        self::logTrace("Powersync background process for store (%s) and website id (%s): abandoned added to the queue", Mage::helper('tnw_salesforce')->getStoreId(), Mage::helper('tnw_salesforce')->getWebsiteId());
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(
+            sprintf("Powersync background process for store (%s) and website id (%s): abandoned added to the queue",
+                Mage::helper('tnw_salesforce')->getStoreId(), Mage::helper('tnw_salesforce')->getWebsiteId()));
+
         return true;
     }
 
@@ -247,12 +235,12 @@ class TNW_Salesforce_Model_Cron
         set_time_limit(0);
         define('PHP_SAPI', 'cli');
 
-        self::logTrace("PowerSync background process for store (%s) and website id (%s) ...",
-            $_helperData->getStoreId(), $_helperData->getWebsiteId());
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync background process for store (%s) and website id (%s) ...",
+            $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
-        self::logTrace("Queue updating ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updating ...");
         $this->_updateQueue();
-        self::logTrace("Queue updated!");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
 
         // check if it's time to run cron
         if ($_helperData->isEnabled() && !$this->_isTimeToRun()) {
@@ -261,7 +249,7 @@ class TNW_Salesforce_Model_Cron
 
         // cron is running now, thus save last cron run timestamp
         if ($_helperData->useCache()) {
-            self::logTrace('cron is using cache for last run timestamp');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('cron is using cache for last run timestamp');
             $_helperData->getCache()->save(serialize($_helperData->getTime()), "tnw_salesforce_cron_timestamp", array("TNW_SALESFORCE"));
         }
 
@@ -280,11 +268,11 @@ class TNW_Salesforce_Model_Cron
 
                     // try to connect
                     if (!$_client->tryWsdl() || !$_client->tryToConnect() || !$_client->tryToLogin()) {
-                        self::logError("ERROR: login to salesforce api failed, sync process skipped");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
                         return;
                     }
                     else {
-                        self::logTrace("INFO: login to salesforce api - OK");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: login to salesforce api - OK");
                     }
                 }
             }
@@ -312,7 +300,7 @@ class TNW_Salesforce_Model_Cron
 
             $this->_deleteSuccessfulRecords();
         } else {
-            self::logError("ERROR: Server Name is undefined!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
         }
     }
 
@@ -327,7 +315,7 @@ class TNW_Salesforce_Model_Cron
 
             $this->syncEntity('website');
         } catch (Exception $e) {
-            self::logError("ERROR: website not synced: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: website not synced: %s", $e->getMessage()));
             return false;
         }
 
@@ -377,7 +365,7 @@ class TNW_Salesforce_Model_Cron
     {
         $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
         Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
-        self::logTrace("Synchronized records removed from the queue ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
     }
 
     protected function _resetStuckRecords()
@@ -399,7 +387,7 @@ class TNW_Salesforce_Model_Cron
 
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < '" . Mage::helper('tnw_salesforce')->getDate($_whenToReset) . "';";
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-        self::logTrace("Trying to reset any stuck records ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");
     }
 
     /**
@@ -545,7 +533,7 @@ class TNW_Salesforce_Model_Cron
                                     $_syncType = $type;
                             }
 
-                            self::logTrace("Processing %s: %s records", $type, count($objectIdSet));
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("Processing %s: %s records", $type, count($objectIdSet)));
 
                             Mage::dispatchEvent(
                                 sprintf('tnw_salesforce_%s_process', $_syncType),
@@ -568,18 +556,18 @@ class TNW_Salesforce_Model_Cron
                                 $manualSync->setSalesforceServerDomain($testAuth->getStorage('salesforce_url'));
                                 $manualSync->setSalesforceSessionId($testAuth->getStorage('salesforce_session_id'));
 
-                                self::logTrace("################################## synchronization $type started ##################################");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type started ##################################");
                                 // sync products with sf
                                 $manualSync->massAdd($objectIdSet);
                                 $manualSync->setIsCron(true);
                                 $manualSync->process();
-                                self::logTrace("################################## synchronization $type finished ##################################");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type finished ##################################");
 
                                 // Update Queue
                                 $_results = $manualSync->getSyncResults();
                                 Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
                             } else {
-                                self::logError("error: salesforce connection failed");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
                                 return;
                             }
                         }
@@ -589,7 +577,7 @@ class TNW_Salesforce_Model_Cron
                 }
 
             } catch (Exception $e) {
-                self::logError("ERROR: %s not synced: %s", $type, $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: %s not synced: %s", $type, $e->getMessage()));
             }
         }
     }
@@ -604,7 +592,7 @@ class TNW_Salesforce_Model_Cron
         try {
             $this->syncEntity('customer');
         } catch (Exception $e) {
-            self::logError("ERROR: customer not synced: %s", $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: customer not synced: %s", $e->getMessage()));
             return false;
         }
 
@@ -620,14 +608,14 @@ class TNW_Salesforce_Model_Cron
     {
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
         if (!$_syncType) {
-            self::logTrace('SKIPPING: Integration Type is not set for the order object.');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Integration Type is not set for the order object.');
             return false;
         }
 
         try {
             $this->syncEntity('order');
         } catch (Exception $e) {
-            self::logError("ERROR: order not synced: %s", $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: order not synced: %s", $e->getMessage()));
             return false;
         }
 
@@ -644,7 +632,7 @@ class TNW_Salesforce_Model_Cron
         try {
             $this->syncEntity('invoice');
         } catch (Exception $e) {
-            self::logError("ERROR: order not synced: %s", $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: order not synced: %s", $e->getMessage()));
             return false;
         }
 
@@ -665,14 +653,14 @@ class TNW_Salesforce_Model_Cron
 
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
         if (!$_syncType) {
-            self::logTrace('SKIPPING: Integration Type is not set for the abandoned object.');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Integration Type is not set for the abandoned object.');
             return false;
         }
 
         try {
             $this->syncEntity('abandoned');
         } catch (Exception $e) {
-            self::logError("ERROR: order not synced: %s", $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: order not synced: %s", $e->getMessage()));
             return false;
         }
 
@@ -689,7 +677,7 @@ class TNW_Salesforce_Model_Cron
         try {
             $this->syncEntity('product');
         } catch (Exception $e) {
-            self::logError("ERROR: product not synced: %s", $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: product not synced: %s", $e->getMessage()));
             return false;
         }
 
