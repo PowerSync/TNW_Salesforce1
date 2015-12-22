@@ -359,6 +359,24 @@
                     </tnw_salesforce_push_opportunity>
                 </observers>
             </tnw_salesforce_opportunity_process>
+            <!-- Pushing invoice object into Salesforce post all validation -->
+            <tnw_salesforce_invoice_process>
+                <observers>
+                    <tnw_salesforce_push_invoice>
+                        <class>tnw_salesforce/observer</class>
+                        <method>pushInvoice</method>
+                    </tnw_salesforce_push_invoice>
+                </observers>
+            </tnw_salesforce_invoice_process>
+            <!-- Pushing shipment object into Salesforce post all validation -->
+            <tnw_salesforce_shipment_process>
+                <observers>
+                    <tnw_salesforce_push_shipment>
+                        <class>tnw_salesforce/observer</class>
+                        <method>pushShipment</method>
+                    </tnw_salesforce_push_shipment>
+                </observers>
+            </tnw_salesforce_shipment_process>
             <!-- Update order status - Opportunity -->
             <tnw_salesforce_opportunity_status_update>
                 <observers>

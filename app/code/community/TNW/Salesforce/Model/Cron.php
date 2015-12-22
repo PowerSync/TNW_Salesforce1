@@ -307,6 +307,9 @@ class TNW_Salesforce_Model_Cron
             // Sync invoices
             $this->syncInvoices();
 
+            // Sync shipment
+            $this->syncShipment();
+
             // Sync custom objects
             $this->_syncCustomObjects();
 
@@ -644,7 +647,24 @@ class TNW_Salesforce_Model_Cron
         try {
             $this->syncEntity('invoice');
         } catch (Exception $e) {
-            self::logError("ERROR: order not synced: %s", $e->getMessage());
+            self::logError("ERROR: invoice not synced: %s", $e->getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch shipment ids from local storage and sync with sf
+     *
+     * @return bool
+     */
+    public function syncShipment()
+    {
+        try {
+            $this->syncEntity('shipment');
+        } catch (Exception $e) {
+            self::logError("ERROR: shipment not synced: %s", $e->getMessage());
             return false;
         }
 

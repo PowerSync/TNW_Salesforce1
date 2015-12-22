@@ -477,6 +477,40 @@ class TNW_Salesforce_Model_Observer
         }
     }
 
+    public function pushInvoice(Varien_Event_Observer $observer)
+    {
+        $_invoiceIds = $observer->getEvent()->getData('invoiceIds');
+        $_message    = $observer->getEvent()->getMessage();
+        $_type       = $observer->getEvent()->getType();
+        $_isQueue    = $observer->getEvent()->getData('isQueue');
+
+        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
+
+        if (count($_invoiceIds) == 1 && $_type == 'bulk') {
+            $_type = 'salesforce';
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Invoice ... ');
+        $this->_processOrderPush($_invoiceIds, $_message, 'tnw_salesforce/' . $_type . '_invoice', $_queueIds);
+    }
+
+    public function pushShipment(Varien_Event_Observer $observer)
+    {
+        $_shipmentIds = $observer->getEvent()->getData('shipmentIds');
+        $_message     = $observer->getEvent()->getMessage();
+        $_type        = $observer->getEvent()->getType();
+        $_isQueue     = $observer->getEvent()->getData('isQueue');
+
+        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
+
+        if (count($_shipmentIds) == 1 && $_type == 'bulk') {
+            $_type = 'salesforce';
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Shipment ... ');
+        $this->_processOrderPush($_shipmentIds, $_message, 'tnw_salesforce/' . $_type . '_shipment', $_queueIds);
+    }
+
     protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds)
     {
         /**
