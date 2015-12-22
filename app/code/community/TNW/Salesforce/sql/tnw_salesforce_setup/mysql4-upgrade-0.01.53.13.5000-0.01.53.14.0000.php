@@ -7,6 +7,9 @@ $installer = $this;
 
 $installer->startSetup();
 
+$setup = new Mage_Eav_Model_Entity_Setup('core_setup');
+$setup->updateAttribute('catalog_product', 'salesforce_campaign_id', 'source_model', 'tnw_salesforce/config_source_product_campaign');
+
 $installer->getConnection()->addColumn(
     $installer->getTable('tnw_salesforce/mapping'),
     'active',

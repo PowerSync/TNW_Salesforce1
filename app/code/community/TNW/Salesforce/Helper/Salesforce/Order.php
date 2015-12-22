@@ -44,6 +44,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected $_salesforceParentIdField = 'OrderId';
 
     /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentOpportunityField = 'OpportunityId';
+
+    /**
      * create order object
      *
      * @param $order
@@ -594,5 +600,83 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
         }
         return $_customersToSync;
+    }
+
+    protected function _prepareEntityAfter()
+    {
+        $_toUpsert = &$this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))];
+        if (empty($_toUpsert)) {
+            return;
+        }
+
+        // Prepare opportunity array
+        $_opportunityIds = array();
+        foreach ($_toUpsert as $entityNumber => $entity) {
+            if (!property_exists($entity, $this->_salesforceParentOpportunityField)) {
+                continue;
+            }
+
+            if (empty($entity->{$this->_salesforceParentOpportunityField})) {
+                continue;
+            }
+
+            $_opportunityIds[$entityNumber] = $entity->{$this->_salesforceParentOpportunityField};
+        }
+
+        if (empty($_opportunityIds)) {
+            return;
+        }
+
+        foreach(array_chunk($_opportunityIds, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true) as $_chunk) {
+            try {
+                $results = $this->_mySforceConnection->retrieve('Id', 'Opportunity', array_values($_chunk));
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Check exist Opportunity to Salesforce failed' . $e->getMessage());
+                continue;
+            }
+
+            $results = is_array($results)
+                ? $results
+                : array($results);
+
+            $_opportunityExistIds = array();
+            foreach ($results as $_result) {
+                if (!$_result instanceof stdClass) {
+                    continue;
+                }
+
+                $_opportunityExistIds[] = $_result->Id;
+                $_opportunityExistIds[] = Mage::helper('tnw_salesforce')->prepareId($_result->Id);
+            }
+
+            // Undelete
+            $_opportunityIdUndelete = array_diff($_chunk, $_opportunityExistIds);
+            if (empty($_opportunityIdUndelete)) {
+                continue;
+            }
+
+            try {
+                $results = $this->_mySforceConnection->undelete(array_values($_opportunityIdUndelete));
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Check exist Opportunity to Salesforce failed' . $e->getMessage());
+                continue;
+            }
+
+            $_keys = array_keys($_opportunityIdUndelete);
+            foreach ($results as $_key => $result) {
+                if ($result->success) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Restoring objects opportunity: ' . $result->id);
+                    continue;
+                }
+
+                $_entityNumber = $_keys[$_key];
+                /** @var Mage_Sales_Model_Order $_entity */
+                $_entity = $this->_loadEntityByCache(array_search($_entityNumber, $this->_cache['entitiesUpdating']), $_entityNumber);
+                $_entity->setData('opportunity_id', '');
+                $_entity->getResource()->save($_entity);
+
+                unset($_toUpsert[$_entityNumber]->{$this->_salesforceParentOpportunityField});
+            }
+        }
     }
 }
