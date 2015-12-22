@@ -3,12 +3,61 @@
 abstract class TNW_Salesforce_Model_Sync_Mapping_Invoice_Base extends TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
 {
     /**
+     * @comment list of the allowed mapping types
+     * @var array
+     */
+    protected $_allowedMappingTypes = array(
+        'Customer',
+        'Customer Group',
+        'Custom',
+        'Order',
+        'Payment',
+        'Billing',
+        'Shipping',
+    );
+
+    /**
+     * @var string
+     */
+    protected $_cachePrefix = 'invoice';
+
+    /**
+     * @var string
+     */
+    protected $_cacheIdField = 'increment_id';
+
+    /**
      * @comment Gets field mapping from Magento and creates Shipment object
      * @param Mage_Sales_Model_Order_Invoice $entity
      * @param null $additionalObject
      */
     protected function _processMapping($entity = null, $additionalObject = null)
     {
+        $cacheId = $entity->getData($this->getCacheIdField());
+        if (isset($this->_cache[$this->getCachePrefix() . 'Customers'])
+            && is_array($this->_cache[$this->getCachePrefix() . 'Customers'])
+            && isset($this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId])
+        ) {
+            $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
+        } else {
+            $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId] = $this->_getCustomer($entity->getOrder());
+            $_customer = $this->_cache[$this->getCachePrefix() . 'Customers'][$cacheId];
+        }
+
+        $_groupId = ($entity->getOrder()->getCustomerGroupId() !== NULL)
+            ? $entity->getOrder()->getCustomerGroupId()
+            : $entity->getOrder()->getGroupId();
+
+        $objectMappings = array(
+            'Store'    => $entity->getStore(),
+            'Order'    => $entity->getOrder(),
+            'Payment'  => $entity->getOrder()->getPayment(),
+            'Customer' => $_customer,
+            'Customer Group' => Mage::getModel('customer/group')->load($_groupId),
+            'Billing'  => $entity->getBillingAddress(),
+            'Shipping' => $entity->getShippingAddress(),
+        );
+
         /** @var TNW_Salesforce_Model_Mapping $_map */
         foreach ($this->getMappingCollection() as $_map) {
             $value         = false;
@@ -20,14 +69,8 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Invoice_Base extends TNW_Salesf
             }
 
             $value         = $this->_fieldMappingBefore($entity, $mappingType, $attributeCode, $value);
-            if (!$this->isBreak()) {
-                switch ($mappingType) {
-                    case 'Billing':
-                        break;
-
-                    case 'Shipping':
-                        break;
-                }
+            if (!$value) {
+                $value = $_map->getValue($objectMappings);
             }
 
             $sf_field      = $_map->getSfField();
@@ -40,5 +83,14 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Invoice_Base extends TNW_Salesf
             $this->getObj()->$sf_field = trim($value);
             $this->setBreak(false);
         }
+    }
+
+    /**
+     * @param $_entity
+     * @return false|Mage_Core_Model_Abstract|null
+     */
+    protected function _getCustomer($_entity)
+    {
+        return $this->getSync()->getCustomer($_entity);
     }
 }

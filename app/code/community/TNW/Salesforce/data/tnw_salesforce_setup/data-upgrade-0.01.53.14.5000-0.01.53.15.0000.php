@@ -7,7 +7,7 @@ $installer = $this;
 $installer->startSetup();
 
 $_defaultMappingStatus = array(
-    'Order Invoice' => array(
+    'OrderInvoice' => array(
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Street__c'      => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:street'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_City__c'        => array(
@@ -18,6 +18,8 @@ $_defaultMappingStatus = array(
             'localField'=>'Billing', 'attribute'=>'customer_address:postcode'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Country__c'     => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:country_id'),
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Phone__c'     => array(
+            'localField'=>'Billing', 'attribute'=>'customer_address:telephone'),
 
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Shipping_Street__c'     => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:street'),
@@ -29,8 +31,10 @@ $_defaultMappingStatus = array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:postcode'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Shipping_Country__c'    => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:country_id'),
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Shipping_Phone__c'    => array(
+            'localField'=>'Shipping', 'attribute'=>'customer_address:telephone'),
     ),
-    'Order Shipment' => array(
+    'OrderShipment' => array(
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Street__c'      => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:street'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_City__c'        => array(
@@ -41,6 +45,8 @@ $_defaultMappingStatus = array(
             'localField'=>'Billing', 'attribute'=>'customer_address:postcode'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Country__c'     => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:country_id'),
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Billing_Phone__c'     => array(
+            'localField'=>'Billing', 'attribute'=>'customer_address:telephone'),
 
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Shipping_Street__c'     => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:street'),
@@ -52,6 +58,8 @@ $_defaultMappingStatus = array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:postcode'),
         TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Shipping_Country__c'    => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:country_id'),
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .'Shipping_Phone__c'    => array(
+            'localField'=>'Shipping', 'attribute'=>'customer_address:telephone'),
     ),
 );
 

@@ -44,6 +44,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
             TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
         );
 
         $this->_acl['abandoned'] = array(
@@ -62,6 +64,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ACCOUNT_OBJECT,
             TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
 
         );
         $this->_acl['cart'] = array(
@@ -75,6 +79,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT,
             'Product2',
             TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT,
         );
 
         $this->_acl['invoice'] = array(

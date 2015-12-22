@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Helper_Salesforce_Data_Orderinvoice extends TNW_Salesforce_Helper_Salesforce_Data
+class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helper_Salesforce_Data
 {
     /**
      * @param array $ids
@@ -16,16 +16,20 @@ class TNW_Salesforce_Helper_Salesforce_Data_Orderinvoice extends TNW_Salesforce_
                 return false;
             }
 
-            $oiiTable = /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'OrderInvoiceItem__r';
-            $_fields  = array(
-                'Id',
-                sprintf('(SELECT Id FROM %s)', $oiiTable),
+            $_magentoId = /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_ID__c';
+            $oiiTable   = /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'OrderInvoiceItem__r';
+            $_fields    = array(
+                'Id', $_magentoId,
+                sprintf('(SELECT Id, Name, %s, %s FROM %s)',
+                    /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Code__c',
+                    /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Quantity__c',
+                    $oiiTable
+                ),
                 '(SELECT Id, Title, Body FROM Notes)'
             );
 
-            $_magentoId = /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_ID__c';
-            $query = sprintf('SELECT %s FROM %s WHERE %s IN ("%s")',
-                implode(', ', $_fields), TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT, $_magentoId, implode('","', $ids));
+            $query = sprintf('SELECT %s FROM %s WHERE %s IN (\'%s\')',
+                implode(', ', $_fields), TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT, $_magentoId, implode('\',\'', $ids));
 
             $result = $this->getClient()->query($query);
             if (!$result || $result->size < 1) {

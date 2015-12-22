@@ -73,6 +73,16 @@
         <block type="tnw_salesforce/adminhtml_queuesync_grid" name="queuesync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_queuesync_grid>
 
+    <adminhtml_salesforcesync_invoicesync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_invoicesync_grid" name="invoicesync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_invoicesync_grid>
+
+    <adminhtml_salesforcesync_shipmentsync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_shipmentsync_grid" name="shipmentsync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_shipmentsync_grid>
+
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
         <reference name="sales_order_tabs">

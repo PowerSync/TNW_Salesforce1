@@ -77,4 +77,14 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
         }
     }
+
+    public function invoiceNotesPush($observer)
+    {
+
+    }
+
+    public function shipmentNotesPush($observer)
+    {
+
+    }
 }

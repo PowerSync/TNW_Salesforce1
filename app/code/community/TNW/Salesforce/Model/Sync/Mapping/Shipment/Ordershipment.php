@@ -6,5 +6,5 @@ class TNW_Salesforce_Model_Sync_Mapping_Shipment_Ordershipment extends TNW_Sales
      * @comment Contains Local object name for mapping
      * @var string
      */
-    protected $_type = 'Order Shipment';
+    protected $_type = 'OrderShipment';
 }

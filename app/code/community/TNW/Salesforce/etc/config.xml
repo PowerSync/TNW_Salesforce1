@@ -279,6 +279,24 @@
                 </observers>
             </tnw_salesforce_order_comments_save_after>
 
+            <tnw_salesforce_invoice_comments_save_after>
+                <observers>
+                    <tnw_salesforce_notes_observer>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>invoiceNotesPush</method>
+                    </tnw_salesforce_notes_observer>
+                </observers>
+            </tnw_salesforce_invoice_comments_save_after>
+
+            <tnw_salesforce_shipment_comments_save_after>
+                <observers>
+                    <tnw_salesforce_notes_observer>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>shipmentNotesPush</method>
+                    </tnw_salesforce_notes_observer>
+                </observers>
+            </tnw_salesforce_shipment_comments_save_after>
+
             <!-- Product Save Event -->
             <catalog_product_save_after>
                 <observers>

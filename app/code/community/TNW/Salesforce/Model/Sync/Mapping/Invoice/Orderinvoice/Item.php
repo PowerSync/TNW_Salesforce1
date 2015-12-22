@@ -6,5 +6,5 @@ class TNW_Salesforce_Model_Sync_Mapping_Invoice_Orderinvoice_Item extends TNW_Sa
      * @comment Contains Local object name for mapping
      * @var string
      */
-    protected $_type = 'Order Invoice Item';
+    protected $_type = 'OrderInvoiceItem';
 }
