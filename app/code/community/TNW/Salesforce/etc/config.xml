@@ -520,14 +520,13 @@
             <developer>
                 <log_enable>1</log_enable>
                 <email_prefix>LIVE</email_prefix>
-                <remote_log>1</remote_log>
             </developer>
             <syncronization>
                 <sync_type_realtime>sync_type_realtime</sync_type_realtime>
             </syncronization>
             <development_and_debugging>
                 <log_enable>1</log_enable>
-                <remote_log>1</remote_log>
+                <remote_log>0</remote_log>
                 <bulk>
                     <max_execution_time>0</max_execution_time>
                     <set_time_limit>0</set_time_limit>
