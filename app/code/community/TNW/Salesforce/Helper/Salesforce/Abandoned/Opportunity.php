@@ -518,11 +518,11 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
-     * @param array $ids
+     * @param array $_ids
      * @param bool $_isCron
      * @return bool
      */
-    public function massAdd($_ids = NULL, $_isCron = false, $orderStatusUpdateCustomer = true)
+    public function massAdd($_ids = NULL, $_isCron = false)
     {
         if (!$_ids) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Abandoned Id is not specified, don't know what to synchronize!");
