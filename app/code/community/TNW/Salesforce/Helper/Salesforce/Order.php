@@ -44,6 +44,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected $_salesforceParentIdField = 'OrderId';
 
     /**
+     * @comment salesforce field name to assign parent entity
+     * @var string
+     */
+    protected $_salesforceParentOpportunityField = 'OpportunityId';
+
+    /**
      * create order object
      *
      * @param $order
@@ -606,15 +612,15 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         // Prepare opportunity array
         $_opportunityIds = array();
         foreach ($_toUpsert as $entityNumber => $entity) {
-            if (!property_exists($entity, 'OpportunityId')) {
+            if (!property_exists($entity, $this->_salesforceParentOpportunityField)) {
                 continue;
             }
 
-            if (empty($entity->OpportunityId)) {
+            if (empty($entity->{$this->_salesforceParentOpportunityField})) {
                 continue;
             }
 
-            $_opportunityIds[$entityNumber] = $entity->OpportunityId;
+            $_opportunityIds[$entityNumber] = $entity->{$this->_salesforceParentOpportunityField};
         }
 
         if (empty($_opportunityIds)) {
@@ -669,7 +675,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $_entity->setData('opportunity_id', '');
                 $_entity->getResource()->save($_entity);
 
-                unset($_toUpsert[$_entityNumber]->OpportunityId);
+                unset($_toUpsert[$_entityNumber]->{$this->_salesforceParentOpportunityField});
             }
         }
     }
