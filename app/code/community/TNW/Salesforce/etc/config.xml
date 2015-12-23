@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.14.0000</version>
+            <version>0.01.53.15.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -185,6 +185,15 @@
                 </observers>
             </sales_order_invoice_save_after>
 
+            <sales_order_shipment_save_after>
+                <observers>
+                    <tnw_salesforce_order_invoice_save_after>
+                        <class>tnw_salesforce/order_shipment_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_order_invoice_save_after>
+                </observers>
+            </sales_order_shipment_save_after>
+
             <!-- Order Save Event: Checkout -->
             <checkout_submit_all_after>
                 <observers>
@@ -283,7 +292,7 @@
                 <observers>
                     <tnw_salesforce_notes_observer>
                         <class>tnw_salesforce/sale_notes_observer</class>
-                        <method>invoiceNotesPush</method>
+                        <method>baseNotesPush</method>
                     </tnw_salesforce_notes_observer>
                 </observers>
             </tnw_salesforce_invoice_comments_save_after>
@@ -292,7 +301,7 @@
                 <observers>
                     <tnw_salesforce_notes_observer>
                         <class>tnw_salesforce/sale_notes_observer</class>
-                        <method>shipmentNotesPush</method>
+                        <method>baseNotesPush</method>
                     </tnw_salesforce_notes_observer>
                 </observers>
             </tnw_salesforce_shipment_comments_save_after>

@@ -45,6 +45,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     /**
      * @var array
      */
+    protected $_availableFees = array();
+
+    /**
+     * @var array
+     */
     protected $_skippedEntity = array();
 
     /**
@@ -100,6 +105,25 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         $this->_magentoEntityModel = $magentoEntityModel;
         return $this;
     }
+
+    /**
+     * @return array
+     */
+    public function getAvailableFees()
+    {
+        return $this->_availableFees;
+    }
+
+    /**
+     * @param array $availableFees
+     * @return $this
+     */
+    public function setAvailableFees($availableFees)
+    {
+        $this->_availableFees = $availableFees;
+        return $this;
+    }
+
 
     /**
      * @return false|Mage_Core_Model_Abstract
@@ -259,7 +283,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @return array
+     * @return string
      */
     public function getItemQtyField()
     {
@@ -661,6 +685,54 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
+     * @comment add Tax/Shipping/Discount to the order as different product
+     * @param $_entity Varien_Object
+     */
+    protected function _applyAdditionalFees($_entity)
+    {
+        /** @var TNW_Salesforce_Helper_Data $_helper */
+        $_helper = Mage::helper('tnw_salesforce');
+        foreach ($this->getAvailableFees() as $feeName) {
+            $ucFee = ucfirst($feeName);
+
+            // Push Fee As Product
+            if (!call_user_func(array($_helper, sprintf('use%sFeeProduct', $ucFee))) || $_entity->getData($feeName . '_amount') == 0) {
+                continue;
+            }
+
+            if (! call_user_func(array($_helper, sprintf('get%sProduct', $ucFee)))) {
+                continue;
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
+            $feeData = Mage::getStoreConfig($_helper->getFeeProduct($feeName), $_entity->getStoreId());
+            if (!$feeData) {
+                continue;
+            }
+
+            $feeData = @unserialize($feeData);
+            $item = new Varien_Object();
+            $item->setData($feeData);
+
+            /**
+             * add data in lower case too compatibility for
+             */
+            foreach ($feeData as $key => $value) {
+                $item->setData(strtolower($key), $value);
+            }
+
+            $item->addData(array(
+                $this->getItemQtyField() => 1,
+                'description'            => $_helper->__($ucFee),
+                'row_total_incl_tax'     => $this->getEntityPrice($_entity, $ucFee . 'Amount'),
+                'row_total'              => $this->getEntityPrice($_entity, $ucFee . 'Amount')
+            ));
+
+            $this->_prepareEntityItemObj($_entity, $item);
+        }
+    }
+
+    /**
      * @param $_entity
      * @return string
      */
@@ -999,11 +1071,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             }
             else {
                 $_orderSalesforceId = $this->_cache['notesToUpsert'][$_noteId]->ParentId;
-                $_entityId = array_search($_orderSalesforceId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_entityId . ')');
+                $_entityNum = array_search($_orderSalesforceId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for '.$this->_magentoEntityName.' #' . $_entityNum . ')');
 
                 $sql = sprintf('UPDATE `%s` SET salesforce_id = "%s" WHERE entity_id = "%s";',
-                    $this->_notesTableName(), $_result->id, $_entityId);
+                    $this->_notesTableName(), $_result->id, $_noteId);
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
             }

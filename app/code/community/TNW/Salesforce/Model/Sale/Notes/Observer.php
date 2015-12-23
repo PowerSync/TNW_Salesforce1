@@ -10,15 +10,16 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
      */
     public function notesPush($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
-            return; // Disabled
-        }
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
         ) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+            return; // Disabled
+        }
+
+        if (!Mage::helper('tnw_salesforce')->canPush()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
             return; // Disabled
         }
 
@@ -51,7 +52,9 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $syncHelper */
                 $syncHelper = Mage::helper('tnw_salesforce/salesforce_'.$_syncType);
                 $syncHelper->reset();
-                $syncHelper->createObjNones(array($note))->pushDataNotes();
+                $syncHelper->createObjNones(array($note));
+                $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$order->getRealOrderId()] = $order->getSalesforceId();
+                $syncHelper->pushDataNotes();
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
                 Mage::dispatchEvent(
@@ -78,13 +81,88 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
         }
     }
 
-    public function invoiceNotesPush($observer)
+    /**
+     * @param Varien_Event_Observer $observer
+     */
+    public function baseNotesPush(Varien_Event_Observer $observer)
     {
+        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Synchronization disabled');
+            return; // Disabled
+        }
 
-    }
+        if (!Mage::helper('tnw_salesforce')->canPush()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
+            return; // Disabled
+        }
 
-    public function shipmentNotesPush($observer)
-    {
+        $event      = $observer->getEvent();
+        $entityType = $event->getType();
+        switch ($entityType) {
+            case 'invoice':
+                if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoicesForOrder()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Invoice synchronization disabled');
+                    return; // Disabled
+                }
 
+                /** @var Mage_Sales_Model_Order_Invoice $entity */
+                $entity = Mage::getModel('sales/order_invoice')
+                    ->load($event->getOid());
+
+                break;
+
+            case 'shipment':
+                if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipmentsForOrder()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Shipment synchronization disabled');
+                    return; // Disabled
+                }
+
+                /** @var Mage_Sales_Model_Order_Invoice $entity */
+                $entity = Mage::getModel('sales/order_invoice')
+                    ->load($event->getOid());
+
+                break;
+
+            default:
+                return;
+        }
+
+        // check if queue sync setting is on - then save to database
+        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($entity->getId()), ucfirst($entityType), $entityType);
+            if (!$res) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf('ERROR: %s could not be added to the queue', $entityType));
+            }
+
+            return;
+        }
+
+        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace(sprintf("---- SKIPPING %s NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----", strtoupper($entityType)));
+
+            return;
+        }
+
+        if ($entity->getSalesforceId()) {
+            // Process Notes
+            /** @var TNW_Salesforce_Model_Order_Invoice_Comment $note */
+            $note = $event->getNote();
+            call_user_func(array($note, sprintf('set%s', ucfirst($entityType))), $entity);
+
+            /** @var TNW_Salesforce_Helper_Salesforce_Invoice $syncHelper */
+            $syncHelper = Mage::helper(sprintf('tnw_salesforce/salesforce_%s', $entityType));
+            $syncHelper->reset();
+            $syncHelper->createObjNones(array($note));
+            $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$entity->getIncrementId()] = $entity->getSalesforceId();
+            $syncHelper->pushDataNotes();
+        }
+        else {
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $entityType), array(
+                sprintf('%sIds', $entityType) => array($entity->getId()),
+                'message'    => NULL,
+                'type'       => 'salesforce'
+            ));
+        }
     }
 }

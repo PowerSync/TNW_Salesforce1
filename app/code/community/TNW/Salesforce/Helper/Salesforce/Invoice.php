@@ -26,6 +26,15 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     protected $_magentoEntityModel = 'sales/order_invoice';
 
     /**
+     * @var array
+     */
+    protected $_availableFees = array(
+        'tax',
+        'shipping',
+        'discount'
+    );
+
+    /**
      * @var int
      */
     protected $_guestCount = 0;
@@ -257,6 +266,23 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_invoice')
             ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
+
+        $orders = array();
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key=>$number) {
+            $invoice = $this->_loadEntityByCache($key, $number);
+            $orders[] = $invoice->getOrder()->getRealOrderId();
+        }
+
+        $this->_cache['orderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')
+            ->lookup($orders);
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order_Invoice
+     */
+    protected function _prepareEntityItemAfter($_entity)
+    {
+        $this->_applyAdditionalFees($_entity);
     }
 
     /**
@@ -326,7 +352,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             ? $_customer->getSalesforceContactId()
             : $_entity->getOrder()->getData('contact_salesforce_id');
 
-        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Biling_Contact__c'}
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Billing_Contact__c'}
             = $_customerSFContactId;
 
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Shipping_Contact__c'}
@@ -348,18 +374,58 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         $_entityNumber = $this->_getEntityNumber($_entity);
         $_quantity     = $this->getItemQty($_entityItem);
 
+        $this->_obj = new stdClass();
+
         // Load by product Id only if bundled OR simple with options
         $_productId    = $this->getProductIdFromCart($_entityItem);
-        if (!$_productId) {
-            return;
+        if ($_productId) {
+            /** @var $_product Mage_Catalog_Model_Product */
+            $_product = Mage::getModel('catalog/product')
+                ->setStoreId($_entity->getStoreId())
+                ->load($_productId);
+
+            $this->_getDescriptionByEntityItem($_entity, $_entityItem->getOrderItem(), $_description, $_productOptions);
+            $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Description__c'}
+                = $_description;
+
+            $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Options__c'}
+                = $_productOptions;
+
+            $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c'}
+                = $_entityItem->getOrderItem()->getData('salesforce_id');
+
+            //Process mapping
+            Mage::getSingleton('tnw_salesforce/sync_mapping_invoice_orderinvoice_item')
+                ->setSync($this)
+                ->processMapping($_entityItem, $_product);
         }
+        else {
+            // Fees item
+            $_product = new Varien_Object();
+            $_product->addData(array(
+                'name'  => $_entityItem->getData('Name'),
+                'sku'   => $_entityItem->getData('ProductCode'),
+            ));
 
-        /** @var $_product Mage_Catalog_Model_Product */
-        $_product = Mage::getModel('catalog/product')
-            ->setStoreId($_entity->getStoreId())
-            ->load($_productId);
+            $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Description__c'}
+                = $_entityItem->getDescription();
 
-        $this->_obj = new stdClass();
+            $orderLookup = @$this->_cache['orderLookup'][$_entity->getOrder()->getRealOrderId()];
+            if (! ($orderLookup && property_exists($orderLookup, 'OrderItems') && $orderLookup->OrderItems)) {
+                return;
+            }
+
+            foreach ($orderLookup->OrderItems->records as $record) {
+                if ($record->PricebookEntry->ProductCode != $_product->getSku()) {
+                    continue;
+                }
+
+                $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c'}
+                    = $record->Id;
+
+                break;
+            }
+        }
 
         $cartItemFound = $this->_doesCartItemExist($_entity, $_entityItem, $_product);
         if ($cartItemFound) {
@@ -372,28 +438,13 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             = $this->_getParentEntityId($_entityNumber);
 
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Code__c'}
-            = $_entityItem->getSku();
-
-        $this->_getDescriptionByEntityItem($_entity, $_entityItem->getOrderItem(), $_description, $_productOptions);
-        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Description__c'}
-            = $_description;
-
-        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Options__c'}
-            = $_productOptions;
-
-        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c'}
-            = $_entityItem->getOrderItem()->getData('salesforce_id');
+            = $_product->getSku();
 
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Quantity__c'}
             = $_quantity;
 
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Total__c'}
             =  $this->_prepareItemPrice($_entityItem);
-
-        //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_invoice_orderinvoice_item')
-            ->setSync($this)
-            ->processMapping($_entityItem, $_product);
 
         if (!$this->isItemObjectValid()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order Invoice item failed validation!');

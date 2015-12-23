@@ -84,25 +84,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         return $this;
     }
 
-
-    /**
-     * @return array
-     */
-    public function getAvailableFees()
-    {
-        return $this->_availableFees;
-    }
-
-    /**
-     * @param array $availableFees
-     * @return $this
-     */
-    public function setAvailableFees($availableFees)
-    {
-        $this->_availableFees = $availableFees;
-        return $this;
-    }
-
     /**
      * @return string
      */
@@ -259,64 +240,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected function _prepareEntityItemAfter($_entity)
     {
         $this->_applyAdditionalFees($_entity);
-    }
-
-    /**
-     * @comment add Tax/Shipping/Discount to the order as different product
-     * @param $parentEntity
-     */
-    protected function _applyAdditionalFees($parentEntity)
-    {
-        $_helper = Mage::helper('tnw_salesforce');
-
-        foreach ($this->getAvailableFees() as $feeName) {
-            $ucFee = ucfirst($feeName);
-
-            $configMethod = 'use' . $ucFee . 'FeeProduct';
-            // Push Fee As Product
-            if (Mage::helper('tnw_salesforce')->$configMethod() && $parentEntity->getData($feeName . '_amount') != 0) {
-
-                $getProductMethod = 'get' . $ucFee . 'Product';
-
-                if (Mage::helper('tnw_salesforce')->$getProductMethod()) {
-
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
-
-                    $qty = 1;
-
-                    $item = new Varien_Object();
-
-                    $feeData = Mage::app()->getStore($parentEntity->getStoreId())->getConfig($_helper->getFeeProduct($feeName));
-                    if ($feeData) {
-                        $feeData = unserialize($feeData);
-                    } else {
-                        continue;
-                    }
-
-                    $item->setData($feeData);
-
-                    /**
-                     * add data in lower case too compatibility for
-                     */
-                    foreach ($feeData as $key => $value) {
-                        $key = strtolower($key);
-                        $item->setData($key, $value);
-                    }
-
-                    $item->setData($this->getItemQtyField(), $qty);
-
-                    $item->setDescription($_helper->__($ucFee));
-
-                    $item->setRowTotalInclTax($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
-                    $item->setRowTotal($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
-
-                    $this->_prepareEntityItemObj($parentEntity, $item);
-
-                } else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL ERROR: $feeName product is not configured!");
-                }
-            }
-        }
     }
 
     /**

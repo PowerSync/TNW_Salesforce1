@@ -93,7 +93,7 @@ foreach ($_defaultMappingStatus as $_objectName => $_field) {
             'attribute_id' => $_attributeId,
             'backend_type' => $_backendType,
             'sf_object' => $_objectName,
-            'active' => 0
+            'active' => 1
         );
     }
 }

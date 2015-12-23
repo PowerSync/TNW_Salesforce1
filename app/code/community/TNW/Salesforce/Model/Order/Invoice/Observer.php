@@ -40,8 +40,6 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
             return true;
         }
 
-        $_invoice = Mage::getModel('sales/order_invoice')->load($_invoice->getId());
-
         if (
             $_invoice->getId()
         ) {
