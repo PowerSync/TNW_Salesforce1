@@ -27,12 +27,13 @@ class TNW_Salesforce_Helper_Test_Login extends TNW_Salesforce_Helper_Test_Abstra
     {
         $_model = Mage::getSingleton('tnw_salesforce/connection');
 
-        if ($_model->isConnected()) {
+        try {
             $canLogin = $_model->tryToLogin();
-        } else {
+        } catch (Exception $e) {
             $canLogin = false;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Login attempt failed, connection is inactive!");
         }
+
         $this->_message = $_model->getLastErrorMessage();
 
         // set current sf state

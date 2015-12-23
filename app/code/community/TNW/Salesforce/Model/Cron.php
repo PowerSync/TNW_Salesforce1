@@ -267,7 +267,9 @@ class TNW_Salesforce_Model_Cron
                     $_client = Mage::getSingleton('tnw_salesforce/connection');
 
                     // try to connect
-                    if (!$_client->tryWsdl() || !$_client->tryToConnect() || !$_client->tryToLogin()) {
+                    if (
+                        !$_client->initConnection()
+                    ) {
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
                         return;
                     }
@@ -567,6 +569,7 @@ class TNW_Salesforce_Model_Cron
                                 $_results = $manualSync->getSyncResults();
                                 Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
                             } else {
+                                Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet, 'new');
                                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
                                 return;
                             }

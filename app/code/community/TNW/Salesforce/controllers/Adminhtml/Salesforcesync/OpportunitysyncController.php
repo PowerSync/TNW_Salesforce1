@@ -210,10 +210,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                 Mage::getSingleton('adminhtml/session')->addSuccess(
                     Mage::helper('adminhtml')->__('%d Magento website entities were successfully synchronized', count($_ids))
                 );
-            } else {
-                if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
-                }
             }
         } catch (Exception $e) {
             Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
