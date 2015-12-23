@@ -187,12 +187,21 @@
 
             <sales_order_shipment_save_after>
                 <observers>
-                    <tnw_salesforce_order_invoice_save_after>
+                    <tnw_salesforce_order_shipment_save_after>
                         <class>tnw_salesforce/order_shipment_observer</class>
                         <method>saveAfter</method>
-                    </tnw_salesforce_order_invoice_save_after>
+                    </tnw_salesforce_order_shipment_save_after>
                 </observers>
             </sales_order_shipment_save_after>
+
+            <sales_order_shipment_track_save_after>
+                <observers>
+                    <tnw_salesforce_order_shipment_track_save_after>
+                        <class>tnw_salesforce/order_shipment_observer</class>
+                        <method>saveTrackAfter</method>
+                    </tnw_salesforce_order_shipment_track_save_after>
+                </observers>
+            </sales_order_shipment_track_save_after>
 
             <!-- Order Save Event: Checkout -->
             <checkout_submit_all_after>

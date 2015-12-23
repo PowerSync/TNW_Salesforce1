@@ -117,8 +117,8 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                     return; // Disabled
                 }
 
-                /** @var Mage_Sales_Model_Order_Invoice $entity */
-                $entity = Mage::getModel('sales/order_invoice')
+                /** @var Mage_Sales_Model_Order_Shipment $entity */
+                $entity = Mage::getModel('sales/order_shipment')
                     ->load($event->getOid());
 
                 break;

@@ -816,8 +816,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param $_entity Mage_Sales_Model_Order_Invoice
-     * @param $_entityItem Mage_Sales_Model_Order_Item
+     * @param $_entity
+     * @param $_entityItem
      * @param $text
      * @param null $html
      * @return string

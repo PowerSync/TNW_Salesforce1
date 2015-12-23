@@ -20,7 +20,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
             return; // Disabled
         }
 
-        if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipment()) {
+        if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Shipment synchronization disabled');
             return; // Disabled
         }
@@ -67,6 +67,66 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Transaction is from Salesforce!");
             }
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------");
+        }
+    }
+
+    /**
+     * @param Varien_Event_Observer $_observer
+     */
+    public function saveTrackAfter(Varien_Event_Observer $_observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Connector is disabled');
+            return; // Disabled
+        }
+
+        if (!Mage::helper('tnw_salesforce')->canPush()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
+            return; // Disabled
+        }
+
+        if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Shipment synchronization disabled');
+            return; // Disabled
+        }
+
+        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            return; // Disabled
+        }
+
+        /** @var Mage_Sales_Model_Order_Shipment_Track $_track */
+        $_track = $_observer->getEvent()->getTrack();
+        $entity = $_track->getShipment();
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Shipment #' . $entity->getIncrementId() . ' Sync');
+
+        // check if queue sync setting is on - then save to database
+        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($entity->getId()), 'Shipment', 'shipment');
+            if (!$res) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Invoice not saved to local storage');
+            }
+
+            return;
+        }
+
+        if ($entity->getSalesforceId()) {
+            // Process Notes
+            /** @var TNW_Salesforce_Helper_Salesforce_Shipment $syncHelper */
+            $syncHelper = Mage::helper('tnw_salesforce/salesforce_shipment');
+            $syncHelper->reset();
+            $syncHelper->_cache['orderShipmentLookup'] = Mage::helper('tnw_salesforce/salesforce_data_shipment')
+                ->lookup(array($entity->getIncrementId()));
+            $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$entity->getIncrementId()] = $entity->getSalesforceId();
+            $syncHelper->createObjTrack(array($_track));
+            $syncHelper->pushDataTrack();
+        }
+        else {
+            Mage::dispatchEvent('tnw_salesforce_shipment_process', array(
+                'shipmentIds' => array($entity->getId()),
+                'message'     => NULL,
+                'type'        => 'salesforce'
+            ));
         }
     }
 }

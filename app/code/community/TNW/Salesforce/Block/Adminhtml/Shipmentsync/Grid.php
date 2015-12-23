@@ -10,7 +10,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
     protected function _construct()
     {
         parent::_construct();
-        $this->setId('tnw_salesforce_invoicesync_grid');
+        $this->setId('tnw_salesforce_shipmentsync_grid');
         $this->setDefaultSort('created_at');
         $this->setDefaultDir('DESC');
         $this->setSaveParametersInSession(true);
@@ -25,7 +25,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
 
     protected function _prepareCollection()
     {
-        /** @var Mage_Sales_Model_Resource_Order_Invoice_Grid_Collection $collection */
+        /** @var Mage_Sales_Model_Resource_Order_Shipment_Grid_Collection $collection */
         $collection = Mage::getResourceModel($this->_getCollectionClass());
         $collection->getSelect()->join(
             array('flat_shipment' => Mage::helper('tnw_salesforce')->getTable('sales_flat_shipment')),
@@ -57,7 +57,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
                 1 => 'Yes',
             ),
             'index' => 'sf_insync',
-            'filter_index' => 'flat_invoice.sf_insync',
+            'filter_index' => 'flat_shipment.sf_insync',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status()
         ));
 
@@ -69,8 +69,8 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
             'actions' => array(
                 array(
-                    'url' => array('base' => '*/sales_invoice/view'),
-                    'field' => 'invoice_id',
+                    'url' => array('base' => '*/sales_shipment/view'),
+                    'field' => 'shipment_id',
                     'getter' => 'getId',
                 )
             ),
@@ -81,7 +81,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
             'index' => 'salesforce_id',
             'type' => 'text',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
-            'filter_index' => 'flat_invoice.salesforce_id',
+            'filter_index' => 'flat_shipment.salesforce_id',
         ));
 
         $this->addColumn('created_at', array(

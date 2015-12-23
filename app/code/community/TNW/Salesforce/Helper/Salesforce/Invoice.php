@@ -292,15 +292,15 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     protected function _setEntityInfo($_entity)
     {
         $_websiteId     = Mage::getModel('core/store')->load($_entity->getStoreId())->getWebsiteId();
-        $_invoiceNumber = $this->_getEntityNumber($_entity);
-        $_customer      = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_invoiceNumber];
+        $_entityNumber  = $this->_getEntityNumber($_entity);
+        $_customer      = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
         $_lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
 
-        if (isset($this->_cache[$_lookupKey][$_invoiceNumber])) {
-            $this->_obj->Id = $this->_cache[$_lookupKey][$_invoiceNumber]->Id;
+        if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
+            $this->_obj->Id = $this->_cache[$_lookupKey][$_entityNumber]->Id;
         }
 
-        $this->_obj->Name = $_invoiceNumber;
+        $this->_obj->Name = $_entityNumber;
 
         // Link to a Website
         if (
@@ -320,7 +320,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             = $_entity->getOrder()->getData('salesforce_id');
 
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_ID__c'}
-            = $_invoiceNumber;
+            = $_entityNumber;
 
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Status__c'}
             = $_entity->getStateName();
@@ -337,9 +337,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         if (!$_customerSFAccountId) {
             $_customerSFAccountId = (
                 isset($this->_cache['convertedLeads'])
-                && isset($this->_cache['convertedLeads'][$_invoiceNumber])
-                && property_exists($this->_cache['convertedLeads'][$_invoiceNumber], 'accountId')
-            ) ? $this->_cache['convertedLeads'][$_invoiceNumber]->accountId : NULL;
+                && isset($this->_cache['convertedLeads'][$_entityNumber])
+                && property_exists($this->_cache['convertedLeads'][$_entityNumber], 'accountId')
+            ) ? $this->_cache['convertedLeads'][$_entityNumber]->accountId : NULL;
         }
 
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Account__c'}
@@ -519,11 +519,11 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     {
         $entityToUpsertKey = sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()));
         if (empty($this->_cache[$entityToUpsertKey])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('No Orders found queued for the synchronization!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('No Invoice found queued for the synchronization!');
             return;
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Order Push: Start----------');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Invoice Push: Start----------');
         foreach ($this->_cache[$entityToUpsertKey] as $_opp) {
             foreach ($_opp as $_key => $_value) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
@@ -558,7 +558,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 ->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
         }
 
-        $_entityArray = array_flip($this->_cache['entitiesUpdating']);
+        $_entityArray = array_flip($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         $_undeleteIds = array();
         if (!$results) {
             $results = array();
@@ -628,29 +628,30 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 $this->_cache['responses'][lcfirst($this->getItemsField())][] = $_response;
             }
             $results = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Order Items to SalesForce failed' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('CRITICAL: Push of Order Invoice Items to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($results as $_key => $_result) {
-            $_invoiceId = $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))][$_chunkKeys[$_key]]
+            $_cartItemId = $_chunkKeys[$_key];
+            $_invoiceId  = $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))][$_cartItemId]
                 ->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Invoice__c'};
-            $_orderNum = $_orderNumbers[$_invoiceId];
+            $_orderNum   = $_orderNumbers[$_invoiceId];
 
             //Report Transaction
             $this->_cache['responses'][lcfirst($this->getItemsField())][] = $_result;
             if (!$_result->success) {
                 // Reset sync status
                 $sql = sprintf('UPDATE `%s` SET sf_insync = 0 WHERE salesforce_id = "%s";',
-                    $this->_modelEntity()->getResource()->getMainTable(), $this->_cache[sprintf('%sToUpsert', $this->getItemsField())][$_chunkKeys[$_key]]->InvoiceId);
+                    $this->_modelEntity()->getResource()->getMainTable(), $_invoiceId);
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError(sprintf('ERROR: One of the Cart Item for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_orderNum));
-                $this->_processErrors($_result, 'invoiceCart', $chunk[$_chunkKeys[$_key]]);
+                $this->_processErrors($_result, 'invoiceCart', $chunk[$_cartItemId]);
             }
             else {
-                $_cartItemId = $_chunkKeys[$_key];
                 if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
                     $_sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = '" . str_replace('cart_', '', $_cartItemId) . "';";
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $_sql);
