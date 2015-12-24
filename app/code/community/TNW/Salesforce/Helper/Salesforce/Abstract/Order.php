@@ -11,11 +11,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected $_stockItems = array();
 
     /**
-     * @var array
-     */
-    protected $_alternativeKeys = array();
-
-    /**
      * @comment magento entity model alias
      * @var array
      */
@@ -184,14 +179,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
         }
         return $_cartItemFound;
-    }
-
-    /**
-     * @return array
-     */
-    public function getAlternativeKeys()
-    {
-        return $this->_alternativeKeys;
     }
 
     /**
@@ -1127,16 +1114,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     protected function _updatePreparedObjectInfo($item) {}
-
-    protected function _beforeProcess()
-    {
-        $this->_alternativeKeys = $this->_cache['entitiesUpdating'];
-    }
-
-    protected function _afterProcess()
-    {
-        return;
-    }
 
     protected function _checkPrepareEntityBefore($_key)
     {

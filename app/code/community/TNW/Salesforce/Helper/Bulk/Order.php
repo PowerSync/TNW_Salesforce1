@@ -198,7 +198,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                             $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'orderProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
-                                $this->_cache['failedOrders'][] = $_oid;
+                                $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
                             }
                         } else {
                             $_cartItemId = $_batchKeys[$_i];
@@ -265,7 +265,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     protected function _updateOrders() {
         $sql = '';
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (!in_array($_orderNumber, $this->_cache['failedOrders'])) {
+            if (!in_array($_orderNumber, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
                 $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 1 WHERE entity_id = " . $_key . ";";
             }
         }
@@ -327,7 +327,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                             unset($_order);
                         }
                     } else {
-                        $this->_cache['failedOrders'][] = $_oid;
+                        $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
                         $this->_processErrors($_item, 'order', $this->_cache['batch']['orders'][$this->_magentoId][$_key][$_oid]);
                     }
                     $_i++;

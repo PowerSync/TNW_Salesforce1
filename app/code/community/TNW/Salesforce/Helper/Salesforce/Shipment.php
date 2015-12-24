@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Class TNW_Salesforce_Helper_Salesforce_Invoice
+ * Class TNW_Salesforce_Helper_Salesforce_Shipment
  *
  * @method Mage_Sales_Model_Order_Shipment _loadEntityByCache($_entityId, $_entityNumber)
  */
@@ -65,11 +65,11 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         if (!$_order->getSalesforceId() || !$_order->getData('sf_insync')) {
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')
-                    ->addError('WARNING: Sync for invoice #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
+                    ->addError('WARNING: Sync for shipment #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
             }
 
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice('SKIPPING: Sync for invoice #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
+                ->saveNotice('SKIPPING: Sync for shipment #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
             return false;
         }
 
@@ -114,7 +114,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for invoice #' . $_recordNumber . ', sync for customer group #' . $_customerGroup . ' is disabled!');
+                Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for shipment #' . $_recordNumber . ', sync for customer group #' . $_customerGroup . ' is disabled!');
             }
 
             return false;
@@ -416,6 +416,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Options__c'}
             = $_productOptions;
 
+        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_ID__c'}
+            = $_entityItem->getId();
+
         $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c'}
             = $_entityItem->getOrderItem()->getData('salesforce_id');
 
@@ -434,13 +437,13 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             ->processMapping($_entityItem, $_product);
 
         if (!$this->isItemObjectValid()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order Invoice item failed validation!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order Shipment item failed validation!');
             return;
         }
 
         /* Dump BillingItem object into the log */
         foreach ($this->_obj as $key => $_item) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Invoice Item Object: " . $key . " = '" . $_item . "'");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Shipment Item Object: " . $key . " = '" . $_item . "'");
         }
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $_entityItem->getId()] = $this->_obj;
@@ -604,50 +607,51 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
 
     public function pushDataTrack()
     {
-        // Push Order Products
-        if (!empty($this->_cache['orderShipmentTrackToUpsert'])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items Track: Start----------');
+        if (empty($this->_cache['orderShipmentTrackToUpsert'])) {
+            return;
+        }
 
-            $orderItemsToUpsert = array_chunk($this->_cache['orderShipmentTrackToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-            foreach ($orderItemsToUpsert as $_itemsToPush) {
-                $_orderNumbers = array_flip($this->_cache['upserted'.$this->getManyParentEntityType()]);
-                $_chunkKeys    = array_keys($_itemsToPush);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items Track: Start----------');
 
-                try {
-                    $results = $this->_mySforceConnection->upsert(
-                        'Id', array_values($_itemsToPush), /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'OrderShipmentTracking__c');
-                } catch (Exception $e) {
-                    $_response = $this->_buildErrorResponse($e->getMessage());
-                    foreach ($_itemsToPush as $_object) {
-                        $this->_cache['responses']['orderShipmentTrack'][] = $_response;
-                    }
-                    $results = array();
-                    Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
+        $orderItemsToUpsert = array_chunk($this->_cache['orderShipmentTrackToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+        foreach ($orderItemsToUpsert as $_itemsToPush) {
+            $_orderNumbers = array_flip($this->_cache['upserted'.$this->getManyParentEntityType()]);
+            $_chunkKeys    = array_keys($_itemsToPush);
+
+            try {
+                $results = $this->_mySforceConnection->upsert(
+                    'Id', array_values($_itemsToPush), /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'OrderShipmentTracking__c');
+            } catch (Exception $e) {
+                $_response = $this->_buildErrorResponse($e->getMessage());
+                foreach ($_itemsToPush as $_object) {
+                    $this->_cache['responses']['orderShipmentTrack'][] = $_response;
                 }
-
-                foreach ($results as $_key => $_result) {
-                    $_cartItemId = $_chunkKeys[$_key];
-                    $_shipmentId = $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))][$_cartItemId]
-                        ->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Shipment__c'};
-                    $_orderNum = $_orderNumbers[$_shipmentId];
-
-                    //Report Transaction
-                    $this->_cache['responses']['orderShipmentTrack'][] = $_result;
-                    if (!$_result->success) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveError(sprintf('ERROR: One of the Cart Item Track for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_orderNum));
-                        $this->_processErrors($_result, 'shipmentCartTrack', $_itemsToPush[$_cartItemId]);
-                    }
-                    else {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveTrace(sprintf('Cart Item Track (id: %s) for (%s: %s) upserted.', $_result->id, $this->_magentoEntityName, $_orderNum));
-                    }
-                }
+                $results = array();
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
             }
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items Track: End----------');
+            foreach ($results as $_key => $_result) {
+                $_cartItemId = $_chunkKeys[$_key];
+                $_shipmentId = $this->_cache['orderShipmentTrackToUpsert'][$_cartItemId]
+                    ->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Shipment__c'};
+                $_orderNum = $_orderNumbers[$_shipmentId];
+
+                //Report Transaction
+                $this->_cache['responses']['orderShipmentTrack'][] = $_result;
+                if (!$_result->success) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError(sprintf('ERROR: One of the Cart Item Track for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_orderNum));
+                    $this->_processErrors($_result, 'shipmentCartTrack', $_itemsToPush[$_cartItemId]);
+                }
+                else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace(sprintf('Cart Item Track (id: %s) for (%s: %s) upserted.', $_result->id, $this->_magentoEntityName, $_orderNum));
+                }
+            }
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items Track: End----------');
     }
 
     /**
@@ -804,6 +808,12 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $logger->add('Salesforce', ucwords($this->_magentoEntityName) . 'Item',
                 $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))],
                 $this->_cache['responses'][lcfirst($this->getItemsField())]);
+
+            if (!empty($this->_cache['responses']['orderShipmentTrack'])) {
+                $logger->add('Salesforce', 'OrderShipmentTrack',
+                    $this->_cache['orderShipmentTrackToUpsert'],
+                    $this->_cache['responses']['orderShipmentTrack']);
+            }
 
             if (!empty($this->_cache['responses']['notes'])) {
                 $logger->add('Salesforce', 'Note', $this->_cache['notesToUpsert'], $this->_cache['responses']['notes']);

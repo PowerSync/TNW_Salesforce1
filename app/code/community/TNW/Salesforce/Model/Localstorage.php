@@ -18,6 +18,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             $this->_mageModels['product'] = 'catalog/product';
             $this->_mageModels['website'] = 'core/website';
             $this->_mageModels['invoice'] = 'sales/order_invoice';
+            $this->_mageModels['shipment'] = 'sales/order_shipment';
         }
     }
 

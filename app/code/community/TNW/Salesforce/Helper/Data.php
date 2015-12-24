@@ -299,6 +299,22 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $object->getObjectType();
     }
 
+    /**
+     * Get Shipment Object
+     *
+     * @return string
+     */
+    public function getShipmentObject()
+    {
+        // Allow Powersync to overwite fired event for customizations
+        $object = new Varien_Object(array(
+            'object_type' => TNW_Salesforce_Model_Order_Shipment_Observer::OBJECT_TYPE
+        ));
+
+        Mage::dispatchEvent('tnw_salesforce_shipment_set_object', array('sf_object' => $object));
+        return $object->getData('object_type');
+    }
+
     public function isLogEnabled()
     {
         return $this->getStroreConfig(self::API_LOG);

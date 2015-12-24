@@ -53,6 +53,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected $_skippedEntity = array();
 
     /**
+     * @var array
+     */
+    protected $_alternativeKeys = array();
+
+    /**
      * @return string
      */
     public function getSalesforceEntityName()
@@ -124,6 +129,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         return $this;
     }
 
+    /**
+     * @return array
+     */
+    public function getAlternativeKeys()
+    {
+        return $this->_alternativeKeys;
+    }
 
     /**
      * @return false|Mage_Core_Model_Abstract
@@ -153,7 +165,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         $_entity = null;
 
         // Generate cache key
-        if (is_null($cachePrefix)) {
+        if (is_null($cachePrefix) && !empty($_key)) {
             $_entity = $this->_loadEntity($_key);
             $cachePrefix = $this->_getEntityNumber($_entity);
         }
@@ -164,7 +176,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         }
 
         // Generate cache
-        if (!Mage::registry($entityRegistryKey)) {
+        if (!Mage::registry($entityRegistryKey) && !empty($_key)) {
             $_entity = is_null($_entity) ? $this->_loadEntity($_key) : $_entity;
             Mage::register($entityRegistryKey, $_entity);
         }
@@ -427,6 +439,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 return false;
             }
 
+            $this->_alternativeKeys = $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING];
             $this->_beforeProcess();
 
             $this->_prepareEntity();

@@ -8,6 +8,7 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     const BULK_ORDER_PATH = 'salesforce/development_and_debugging/order_batch_size';
     const BULK_ABANDONED_PATH = 'salesforce/development_and_debugging/abandoned_batch_size';
     const BULK_INVOICE_PATH = 'salesforce/development_and_debugging/invoice_batch_size';
+    const BULK_SHIPMENT_PATH = 'salesforce/development_and_debugging/shipment_batch_size';
 
     // Get Product batch size
     public function getProductBatchSize()
@@ -43,5 +44,11 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     public function getInvoiceBatchSize()
     {
         return $this->getStoreConfig(self::BULK_INVOICE_PATH);
+    }
+
+    // Get Invoice batch size
+    public function getShipmentBatchSize()
+    {
+        return $this->getStoreConfig(self::BULK_SHIPMENT_PATH);
     }
 }

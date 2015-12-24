@@ -468,6 +468,18 @@
                             </depends>
                         </invoice_batch_size>
 
+                        <shipment_batch_size translate="label">
+                            <label>Shipment Limit</label>
+                            <sort_order>160</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Shipment batch size limit]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </shipment_batch_size>
+
                         <!-- Bulk settings end -->
 
                         <!-- Tool settings start -->

@@ -365,6 +365,9 @@ class TNW_Salesforce_Model_Cron
             case 'invoice':
                 $batchSize = $_configHelper->getInvoiceBatchSize();
                 break;
+            case 'shipment':
+                $batchSize = $_configHelper->getShipmentBatchSize();
+                break;
             default:
                 throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
         }
@@ -523,6 +526,7 @@ class TNW_Salesforce_Model_Cron
                             'order',
                             'abandoned',
                             'invoice',
+                            'shipment',
                         );
 
                         if (in_array($type, $eventTypes)) {
@@ -537,12 +541,11 @@ class TNW_Salesforce_Model_Cron
                                     break;
                                 case 'invoice':
                                     $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
-                                    if (TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE == $_syncType) {
-                                        // Skip native, only allow customization at the moment
-                                        return;
-                                    }
-
                                     $_prefix = 'invoice';
+                                    break;
+                                case 'shipment':
+                                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
+                                    $_prefix = 'shipment';
                                     break;
                                 default:
                                     $_syncType = $type;

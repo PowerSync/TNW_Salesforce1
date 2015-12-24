@@ -391,6 +391,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Options__c'}
                 = $_productOptions;
 
+            $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_ID__c'}
+                = $_entityItem->getId();
+
             $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Order_Item__c'}
                 = $_entityItem->getOrderItem()->getData('salesforce_id');
 
