@@ -1098,7 +1098,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 if (
                     (
                         Mage::helper('tnw_salesforce')->isCustomerAsLead()
-                        && !$this->getCustomerAccount($_email)
+                        && !$this->getCustomerAccount($_id)
                         && !isset($this->_cache['leadLookup'][$this->_cache['customerToWebsite'][$_id]][$_email])
                     )
                 ) {
