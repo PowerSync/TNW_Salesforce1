@@ -596,7 +596,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 ) {
                     $this->_obj->AccountId = Mage::getStoreConfig('salesforce_customer/sync/single_account_select');
                 } else {
-                    $this->_obj->AccountId = $this->getCustomerAccount($_email);
+                    $this->_obj->AccountId = $this->getCustomerAccount($_id);
                 }
 
                 if (!$this->_obj->AccountId && !empty($this->_cache['accountLookup'])) {
