@@ -482,6 +482,14 @@
 
                 </observers>
             </sales_order_place_after>
+            <customer_address_save_after>
+                <observers>
+                    <tnw_salesforce_customer_address_save_after_observer>
+                        <class>tnw_salesforce/customer_observer</class>
+                        <method>afterAddressSave</method>
+                    </tnw_salesforce_customer_address_save_after_observer>
+                </observers>
+            </customer_address_save_after>
         </events>
     </frontend>
     <admin>
