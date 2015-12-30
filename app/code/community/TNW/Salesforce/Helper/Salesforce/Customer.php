@@ -972,6 +972,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $object->BillingState = $object->OtherState;
             unset($object->OtherState);
         }
+        // Rename Billing State API field name
+        if (property_exists($object, 'OtherStateCode')) {
+            $object->BillingStateCode = $object->OtherStateCode;
+            unset($object->OtherStateCode);
+        }
         // Rename Billing Postal Code API field name
         if (property_exists($object, 'OtherPostalCode')) {
             $object->BillingPostalCode = $object->OtherPostalCode;
@@ -981,6 +986,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (property_exists($object, 'OtherCountry')) {
             $object->BillingCountry = $object->OtherCountry;
             unset($object->OtherCountry);
+        }
+        // Rename Billing Country API field name
+        if (property_exists($object, 'OtherCountryCode')) {
+            $object->BillingCountryCode = $object->OtherCountryCode;
+            unset($object->OtherCountryCode);
         }
         // Rename Shipping Street API field name
         if (property_exists($object, 'MailingStreet')) {
@@ -997,6 +1007,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $object->ShippingState = $object->MailingState;
             unset($object->MailingState);
         }
+        // Rename Shipping State API field name
+        if (property_exists($object, 'MailingStateCode')) {
+            $object->ShippingStateCode = $object->MailingStateCode;
+            unset($object->MailingStateCode);
+        }
         // Rename Shipping Postal Code API field name
         if (property_exists($object, 'MailingPostalCode')) {
             $object->ShippingPostalCode = $object->MailingPostalCode;
@@ -1006,6 +1021,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (property_exists($object, 'MailingCountry')) {
             $object->ShippingCountry = $object->MailingCountry;
             unset($object->MailingCountry);
+        }
+        // Rename Shipping Country API field name
+        if (property_exists($object, 'MailingCountryCode')) {
+            $object->ShippingCountryCode = $object->MailingCountryCode;
+            unset($object->MailingCountryCode);
         }
 
         // Rename Phone API field name
