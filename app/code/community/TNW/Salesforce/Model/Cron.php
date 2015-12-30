@@ -5,6 +5,8 @@
  */
 class TNW_Salesforce_Model_Cron
 {
+    const CRON_LAST_RUN_TIMESTAMP_PATH = 'salesforce/syncronization/cron_last_run_timestamp';
+
     /**
      * @var array
      */
@@ -36,15 +38,7 @@ class TNW_Salesforce_Model_Cron
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('========================= cron method _isTimeToRun() started =========================');
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('cron time (it differs from php timezone) %s', $_helperData->getDate(NULL, false)));
 
-        $lastRunTime = 0;
-        if ($_helperData->useCache()) {
-            $cache = $_helperData->getCache()->load('tnw_salesforce_cron_timestamp');
-            $cache = @unserialize($cache);
-
-            if ($cache) {
-                $lastRunTime = (int)$cache;
-            }
-        }
+        $lastRunTime = (int)Mage::getStoreConfig(self::CRON_LAST_RUN_TIMESTAMP_PATH);
 
         $syncType = $_helperData->getObjectSyncType();
         switch ($syncType) {
@@ -103,7 +97,7 @@ class TNW_Salesforce_Model_Cron
                 return false;
 
             default:
-                return true;
+                return false;
         }
     }
 
@@ -243,15 +237,16 @@ class TNW_Salesforce_Model_Cron
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
 
         // check if it's time to run cron
-        if ($_helperData->isEnabled() && !$this->_isTimeToRun()) {
+        if (!$_helperData->isEnabled() || !$this->_isTimeToRun()) {
             return;
         }
 
         // cron is running now, thus save last cron run timestamp
-        if ($_helperData->useCache()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('cron is using cache for last run timestamp');
-            $_helperData->getCache()->save(serialize($_helperData->getTime()), "tnw_salesforce_cron_timestamp", array("TNW_SALESFORCE"));
-        }
+        Mage::getModel('core/config_data')
+            ->load(self::CRON_LAST_RUN_TIMESTAMP_PATH, 'path')
+            ->setValue((int)$_helperData->getTime())
+            ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
+            ->save();
 
         // Force SF connection if session is expired or not found
         $_urlArray = explode('/', Mage::app()->getStore($_helperData->getStoreId())->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
