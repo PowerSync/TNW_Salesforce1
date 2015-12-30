@@ -931,6 +931,20 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
         }
 
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'configurable'
+            && array_key_exists('attributes_info', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr><tbody>';
+            foreach ($options['attributes_info'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                $_string .= '<td align="left">' . $_option['value'] . '</td>';
+                $_summary[] = $_option['value'];
+                $opt[] = '<tr>' . $_string . '</tr>';
+            }
+        }
+
         if (count($opt) > 0) {
             $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
             $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
