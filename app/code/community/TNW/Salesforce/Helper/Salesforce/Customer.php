@@ -1255,6 +1255,26 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                             || !$this->_cache['contactsLookup'][$_websiteId][$_email]->IsPersonAccount)
                     ) {
                         $leadConvert->contactId = $this->_cache['contactsLookup'][$_websiteId][$_email]->Id;
+
+                    } elseif (isset($this->_cache['contactsLookup'][$_websiteId][$_email])
+                        && property_exists($this->_cache['contactsLookup'][$_websiteId][$_email], 'IsPersonAccount')
+                        && $this->_cache['contactsLookup'][$_websiteId][$_email]->IsPersonAccount
+                        ) {
+
+                        /**
+                         * We cannot convert Lead with company name to Person Account
+                         */
+                        if (property_exists($_lead, 'Company') && !empty($_lead->Company)) {
+
+                            $noticeMessage = "Notice: PowerSync has tried converting a Lead for customer ($_email).
+                            Company name field on the Lead has value suggesting a B2B Account,
+                            however Salesforce has an existing PersonAccount for this customer.
+                            Either delete a duplicate Lead and try again, or make sure the Company Name field is empty on the Lead.
+                            Other option is to remove the PersonAccount and try again";
+
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice(Mage::helper('tnw_salesforce')->__($noticeMessage));
+                            return $this;
+                        }
                     }
 
                     $leadConvert = $this->_prepareLeadConversionObject($_lead, $leadConvert);
@@ -1863,6 +1883,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                                 $this->_cache['contactsToUpsert'][$_upsertOn][$_contactIds[$_key]]->AccountId = $_result->id;
                             }
                         }
+
+                        /**
+                         * If lead hasn't Company name - set Account name for correct convertation
+                         */
+                        if (array_key_exists($_contactIds[$_key], $this->_cache['leadsToUpsert']['Id'])) {
+                            if (!property_exists($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]], 'Company')) {
+                                $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->Company = $this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]]->Name;
+                            }
+                        }
                     }
                     if (
                         array_key_exists($_contactIds[$_key], $this->_cache['accountsToUpsert']['Id'])
@@ -2138,7 +2167,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     if (array_key_exists($_contactIds[$_key], $this->_cache['leadsToUpsert'][$this->_magentoId])
                     ) {
                         $this->_cache['leadsToUpsert'][$this->_magentoId][$_contactIds[$_key]]->Id = $_result->id;
-                        $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['leadsToUpsert'][$this->_magentoId][$_contactIds[$_key]];
+
+                        foreach ($this->_cache['leadsToUpsert'][$this->_magentoId][$_contactIds[$_key]] as $field => $value) {
+                            if (!property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $field)
+                                || empty($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field)
+                            ) {
+                                $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field = $value;
+                            }
+                        }
+
                         if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
                             $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
                         } else {
@@ -2211,7 +2248,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     if (array_key_exists($_contactIds[$_key], $this->_cache['leadsToUpsert']['Id'])
                     ) {
                         $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->Id = $_result->id;
-                        $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]];
+
+                        foreach ($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]] as $field => $value) {
+                            if (!property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $field)
+                                || empty($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field)
+                            ) {
+                                $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field = $value;
+                            }
+                        }
                         if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
                             $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
                         } else {
