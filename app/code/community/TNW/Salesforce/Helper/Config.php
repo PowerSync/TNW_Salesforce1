@@ -72,8 +72,18 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
         } elseif (Mage::helper('tnw_salesforce')->isWorking()) {
             $client = Mage::getSingleton('tnw_salesforce/connection')->getClient();
             if ($client) {
-                $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
-                $manualSync->reset();
+                $helperName = 'tnw_salesforce/bulk_customer';
+
+                $resetHelper = !Mage::registry('_helper/' . $helperName);
+
+                $manualSync = Mage::helper($helperName);
+                /**
+                 * Call reset method if it's new instance only. Fix: PCMI-471
+                 */
+                if ($resetHelper) {
+                    $manualSync->reset();
+                }
+
                 $manualSync->setSalesforceServerDomain(
                     Mage::getSingleton('core/session')->getSalesforceServerDomain());
                 $manualSync->setSalesforceSessionId(

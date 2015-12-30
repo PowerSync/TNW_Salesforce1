@@ -917,10 +917,20 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $_salesforceIds = array();
                 foreach ($this->_cache[$_collection]['Id'] as $_magentoId => $_object) {
                     if ($_collection == 'accountsToUpsert') {
-                        if (array_key_exists($_magentoId, $this->_cache['contactsToUpsert']['Id'])) {
-                            $contact = $this->_cache['contactsToUpsert']['Id'][$_magentoId];
-                        } else {
-                            $contact = $this->_cache['contactsToUpsertBackup']['Id'][$_magentoId];
+
+                        $contact = null;
+
+                        foreach (array('Id', $this->_magentoId) as $cacheUpsertKey) {
+
+                            if (array_key_exists($_magentoId, $this->_cache['contactsToUpsert'][$cacheUpsertKey])) {
+                                $contact = $this->_cache['contactsToUpsert'][$cacheUpsertKey][$_magentoId];
+                            } else {
+                                $contact = $this->_cache['contactsToUpsertBackup'][$cacheUpsertKey][$_magentoId];
+                            }
+
+                            if (!empty($contact)) {
+                                break;
+                            }
                         }
 
                         /**
