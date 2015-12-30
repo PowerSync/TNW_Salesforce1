@@ -245,12 +245,7 @@ class TNW_Salesforce_Model_Sale_Observer
             // pass data to local storage
 
             // Extract all purchased products and add to local storage for sync
-            $_productIds = array();
-            foreach ($order->getAllVisibleItems() as $_item) {
-                $_productIds[] = (int)Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart($_item);
-            }
-
-            //$res = Mage::getModel('tnw_salesforce/localstorage')->addObject($_productIds, 'Product', 'product');
+            $_productIds = Mage::helper('tnw_salesforce/salesforce_order')->getProductIdsFromEntity($order);
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
             if (!$res) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: products from the order were not saved in local storage');

@@ -363,6 +363,51 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return array
+     */
+    public function getProductIdsFromEntity($_entity)
+    {
+        $_productIds = array();
+        /** @var Mage_Sales_Model_Order_Item $_item */
+        foreach ($_entity->getAllVisibleItems() as $_item) {
+            if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE
+                && Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)
+            ) {
+                $_productIds = array_merge(
+                    $_productIds,
+                    $this->_getChildProductIdsFromCart($_item)
+                );
+
+                continue;
+            }
+
+            $_productIds[] = (int) $this->getProductIdFromCart($_item);
+        }
+
+        return $_productIds;
+    }
+
+    /**
+     * Get child product ids
+     *
+     * @param Mage_Sales_Model_Order_Item $_item
+     * @return array
+     */
+    protected function _getChildProductIdsFromCart(Mage_Sales_Model_Order_Item $_item) {
+        $Ids = array();
+        $productId = $_item->getItemId();
+        $Ids[] = (int) $_item->getProductId();
+
+        foreach ($_item->getOrder()->getAllItems() as $_itemProduct) {
+            if ($_itemProduct->getParentItemId() == $productId) {
+                $Ids[] = (int) $_itemProduct->getProductId();
+            }
+        }
+        return $Ids;
+    }
+
+    /**
      * @param $parentEntityNumber
      * @return Mage_Core_Model_Abstract|mixed
      */
