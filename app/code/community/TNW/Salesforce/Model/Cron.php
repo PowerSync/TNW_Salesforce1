@@ -245,6 +245,7 @@ class TNW_Salesforce_Model_Cron
         Mage::getModel('core/config_data')
             ->load(self::CRON_LAST_RUN_TIMESTAMP_PATH, 'path')
             ->setValue((int)$_helperData->getTime())
+            ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
             ->save();
 
         // Force SF connection if session is expired or not found
