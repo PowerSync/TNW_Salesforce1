@@ -141,7 +141,22 @@ class TNW_Salesforce_Model_Customer_Observer
     {
         /** @var $customerAddress Mage_Customer_Model_Address */
         $customerAddress = $observer->getCustomerAddress();
-        $customer = $customerAddress->getCustomer();
+        $customer        = $customerAddress->getCustomer();
+
+        if ($customer->getOrigData('default_billing') != $customer->getData('default_billing')) {
+            return;
+        }
+
+        if ($customer->getOrigData('default_shipping') != $customer->getData('default_shipping')) {
+            return;
+        }
+
+        if (!in_array($customerAddress->getId(), array(
+            $customer->getData('default_billing'),
+            $customer->getData('default_shipping')))
+        ) {
+            return;
+        }
 
         Mage::dispatchEvent('tnw_salesforce_customer_save', array('customer' => $customer));
     }
