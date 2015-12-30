@@ -931,4 +931,24 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
     }
 
+    /**
+     * Get child product ids
+     *
+     * @param Mage_Sales_Model_Quote_Item $_item
+     * @return array
+     */
+    protected function _getChildProductIdsFromCart($_item)
+    {
+        $Ids = array();
+        $productId = $_item->getItemId();
+        $Ids[] = (int) $_item->getProductId();
+
+        foreach ($_item->getQuote()->getAllItems() as $_itemProduct) {
+            if ($_itemProduct->getParentItemId() == $productId) {
+                $Ids[] = (int) $_itemProduct->getProductId();
+            }
+        }
+
+        return $Ids;
+    }
 }

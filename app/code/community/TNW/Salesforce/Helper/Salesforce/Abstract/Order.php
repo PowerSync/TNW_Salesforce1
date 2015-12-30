@@ -394,7 +394,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @param Mage_Sales_Model_Order_Item $_item
      * @return array
      */
-    protected function _getChildProductIdsFromCart(Mage_Sales_Model_Order_Item $_item) {
+    protected function _getChildProductIdsFromCart($_item) {
         $Ids = array();
         $productId = $_item->getItemId();
         $Ids[] = (int) $_item->getProductId();
