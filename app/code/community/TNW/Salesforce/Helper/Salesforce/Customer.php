@@ -1128,7 +1128,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 /**
                  * Sync as Account/Contact if leads disabled or lead convertation ebabled
                  */
-                if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation()) {
+                if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation() || $this->getCustomerAccount($_id)) {
                     // Changed order so that we can capture account owner: Account then Contact
                     $this->_addToQueue($_id, "Account");
                     $this->_addToQueue($_id, "Contact");
