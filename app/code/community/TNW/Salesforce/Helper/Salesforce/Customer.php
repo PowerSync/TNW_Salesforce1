@@ -586,7 +586,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $_issetCompeny = property_exists($this->_obj, 'Company');
-            if (!$_issetCompeny || ($_issetCompeny && empty($this->_obj->Company))) {
+            if (!Mage::helper('tnw_salesforce')->usePersonAccount()
+                && (!$_issetCompeny || ($_issetCompeny && empty($this->_obj->Company)))
+            ) {
                 $this->_obj->Company = $_email;
             }
 
