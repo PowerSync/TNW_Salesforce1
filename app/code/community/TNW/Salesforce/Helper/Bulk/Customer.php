@@ -181,7 +181,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 ->lookup(
                     $this->_cache['entitiesUpdating'],
                     $_websites,
-                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
 
                 );
             $this->_customerAccountId = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
@@ -227,7 +227,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 ->lookup(
                     $this->_cache['entitiesUpdating'],
                     $_websites,
-                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
                 );
 
             if (!empty($this->_cache['leadLookup'])) {
@@ -642,8 +642,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 /**
                  * If sync PersonAccount - set empty Lead's Company name for correct converting
                  */
-                if (array_key_exists($_cid, $this->_cache['leadsToUpsert']['Id'])) {
-                    $this->_cache['leadsToUpsert']['Id'][$_cid]->Company = ' ';
+                foreach ($this->_cache['leadsToUpsert'] as $_upsertOn => $_objects) {
+                    if (array_key_exists($_cid, $_objects)) {
+                        $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = ' ';
+                    }
                 }
             } elseif (array_key_exists($_cid, $this->_cache['accountsToUpsert']['Id'])
                 && !property_exists($this->_cache['accountsToUpsert']['Id'][$_cid], 'PersonEmail')
@@ -651,9 +653,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 /**
                  * If lead has not Company name - set Account name for correct converting
                  */
-                if (array_key_exists($_cid, $this->_cache['leadsToUpsert']['Id'])) {
-                    if (!property_exists($this->_cache['leadsToUpsert']['Id'][$_cid], 'Company')) {
-                        $this->_cache['leadsToUpsert']['Id'][$_cid]->Company = $this->_cache['accountsToUpsert']['Id'][$_cid]->Name;
+                foreach ($this->_cache['leadsToUpsert'] as $_upsertOn => $_objects) {
+                    if (array_key_exists($_cid, $_objects)) {
+                        if (!property_exists($_objects, 'Company')) {
+                            $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = $this->_cache['accountsToUpsert']['Id'][$_cid]->Name;
+                        }
                     }
                 }
             }
@@ -709,16 +713,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id = (string)$_item->id;
                     $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsPersonAccount = true;
 
-                    /**
-                     * Company name should be empty for convertation to PersonAccount
-                     * @see https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_lead.htm#LeadCompanyField
-                     */
-                    foreach ($this->_cache['leadsToUpsert'] as $_id => $_objects) {
-                        if (array_key_exists($_cid, $_objects)
-                        ) {
-                            $this->_cache['leadsToUpsert'][$_id][$_cid]->Company = '';
-                        }
-                    }
                 }
             }
         }
@@ -778,7 +772,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     if (isset($this->_cache['leadsToUpsert'][$_on][$_cid])) {
 
                         $this->_cache['leadsToUpsert'][$_on][$_cid]->Id = (string)$_item->id;
-                        $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['leadsToUpsert'][$_on][$_cid];
+
+                        foreach ($this->_cache['leadsToUpsert'][$_on][$_cid] as $field => $value) {
+                            $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field = $value;
+                        }
+
                         if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
                             $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
                         } else {
