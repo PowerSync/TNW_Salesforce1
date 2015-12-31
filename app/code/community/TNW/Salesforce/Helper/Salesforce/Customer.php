@@ -585,6 +585,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_upsertOn = 'Id';
             }
 
+            $_issetCompeny = property_exists($this->_obj, 'Company');
+            if (!Mage::helper('tnw_salesforce')->usePersonAccount()
+                && (!$_issetCompeny || ($_issetCompeny && empty($this->_obj->Company)))
+            ) {
+                $this->_obj->Company = $_email;
+            }
+
             $this->_cache['leadsToUpsert'][$_upsertOn][$_id] = $this->_obj;
         } else if ($type == "Contact") {
             // Set Contact AccountId as suggested by Advanced Lookup
@@ -2182,7 +2189,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     }
 
                 } else {
-                    $this->_processErrors($_result, 'lead', $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]);
+                    $this->_processErrors($_result, 'lead', $this->_cache['leadsToUpsert'][$this->_magentoId][$_contactIds[$_key]]);
                 }
             }
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Leads: " . implode(',', $_entitites) . " upserted!");
