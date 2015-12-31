@@ -1885,7 +1885,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         }
 
                         /**
-                         * If lead hasn't Company name - set Account name for correct convertation
+                         * If lead has not Company name - set Account name for correct converting
                          */
                         if (array_key_exists($_contactIds[$_key], $this->_cache['leadsToUpsert']['Id'])) {
                             if (!property_exists($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]], 'Company')) {
@@ -1903,6 +1903,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $_result->id;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount = 1;
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+
+                        /**
+                         * If sync PersonAccount - set empty Lead's Company name for correct converting
+                         */
+                        if (array_key_exists($_contactIds[$_key], $this->_cache['leadsToUpsert']['Id'])) {
+                                $this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->Company = ' ';
+                        }
                     }
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $_result->id;
 
