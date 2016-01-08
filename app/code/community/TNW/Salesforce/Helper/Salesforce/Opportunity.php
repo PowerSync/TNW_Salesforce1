@@ -250,8 +250,23 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** ORDER (' . $_orderNumber . ') ********');
 
             $this->_obj = new stdClass();
-            $_order = Mage::getModel('sales/order')->load($_key);
-            $_customer = $this->_getCustomer($_order);
+
+            /** @var Mage_Sales_Model_Order $_order */
+            $_order      = $this->_loadEntityByCache($_key, $_orderNumber);
+
+            /** @var Mage_Customer_Model_Customer $_customer */
+            $_customer   = $this->_getCustomer($_order);
+
+            $websiteId   = $_customer->getWebsiteId()
+                ? $_customer->getWebsiteId()
+                : $_order->getStore()->getWebsiteId();
+
+            $websiteSfId = $this->_websiteSfIds[$websiteId];
+            if (isset($this->_cache['contactsLookup'][$websiteSfId])
+                && isset($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()])
+            ){
+                $this->_obj->ContactId = $this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()]->Id;
+            }
 
             if ($_customer->getData('salesforce_id')) {
                 $this->_obj->ContactId = $_customer->getData('salesforce_id');
