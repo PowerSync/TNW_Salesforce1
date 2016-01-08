@@ -220,6 +220,16 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
                     $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum] = $_result->id;
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_result->id);
+
+                    $_order = $this->_loadEntityByCache($_entityArray[$_orderNum], $_orderNum);
+                    if ($_order) {
+                        $_order->addData(array(
+                            'contact_salesforce_id' => $_contactId,
+                            'account_salesforce_id' => $_accountId,
+                            'salesforce_id' => $_result->id,
+                            'sf_insync' => 1
+                        ));
+                    }
                 }
             }
             if (!empty($_undeleteIds)) {
