@@ -539,7 +539,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         try {
             $this->_isCron = $_isCron;
             $_guestCount = 0;
-            $_quotes = $_emails = $_websites = array();
+            $_skippedAbandoned = $_quotes = $_emails = $_websites = array();
 
             if (!is_array($_ids)) {
                 $_ids = array($_ids);
@@ -754,7 +754,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
             }
 
-            return true;
+            return (count($_skippedAbandoned) != count($_ids));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
