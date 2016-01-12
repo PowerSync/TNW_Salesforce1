@@ -84,6 +84,19 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected $_allowedOrderStatuses = array();
 
     /**
+     * @var array
+     */
+    protected $_skippedEntity = array();
+
+    /**
+     * @return array
+     */
+    public function getSkippedEntity()
+    {
+        return $this->_skippedEntity;
+    }
+
+    /**
      * @return string
      */
     public function getSalesforceEntityName()
@@ -1208,7 +1221,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         try {
             $_guestCount = 0;
-            $_skippedOrders = $_quotes = $_emails = $_websites = array();
+            $this->_skippedEntity = $_quotes = $_emails = $_websites = array();
 
             // Clear Order ID
             $this->resetEntity($_ids);
@@ -1221,7 +1234,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 // Order could not be loaded for some reason
                 if (!$_order->getId() || !$_order->getRealOrderId()) {
                     $this->logError('WARNING: Sync for order #' . $_id . ', order could not be loaded!');
-                    $_skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1230,7 +1243,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                  */
                 if (!Mage::helper('tnw_salesforce/config_sales_order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
                     $this->logNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
-                    $_skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1238,7 +1251,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     && !in_array($_order->getStatus(), $this->_allowedOrderStatuses)
                 ) {
                     $this->logNotice('SKIPPED: Sync for order #' . $_order->getId() . ', sync for order status "' . $_order->getStatus() . '" is disabled!');
-                    $_skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1264,7 +1277,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
 
                     $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-                    $_skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1280,7 +1293,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                 if (empty($_orderEmail)) {
                     $this->logError('SKIPPED: Sync for order #' . $_orderNumber . ' failed, order is missing an email address!');
-                    $_skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1294,7 +1307,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             }
 
-            if (count($_skippedOrders) == count($_ids)) {
+            if (count($this->_skippedEntity) == count($_ids)) {
                 return false;
             }
 
@@ -1348,14 +1361,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                      */
                     // Something is wrong, could not create / find Magento customer in SalesForce
                     $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $_orderEmail . ') could not be created / found!');
-                    $_skippedOrders[$id] = $id;
+                    $this->_skippedEntity[$id] = $id;
 
                     continue;
                 }
             }
 
-            if (!empty($_skippedOrders)) {
-                $chunk = array_chunk($_skippedOrders, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            if (!empty($this->_skippedEntity)) {
+                $chunk = array_chunk($this->_skippedEntity, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
 
                 foreach ($chunk as $_skippedOrdersChunk) {
                     $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedOrdersChunk) . "') and mage_object_type = 'sales/order';";
@@ -1384,7 +1397,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             /**
              * all orders fails - return false otherwise return true
              */
-            return (count($_skippedOrders) != count($_ids));
+            return (count($this->_skippedEntity) != count($_ids));
         } catch (Exception $e) {
             $this->logError("CRITICAL: " . $e->getMessage());
         }

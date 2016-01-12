@@ -539,7 +539,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         try {
             $this->_isCron = $_isCron;
             $_guestCount = 0;
-            $_skippedAbandoned = $_quotes = $_emails = $_websites = array();
+            $this->_skippedEntity = $_quotes = $_emails = $_websites = array();
 
             if (!is_array($_ids)) {
                 $_ids = array($_ids);
@@ -561,14 +561,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 // Quote could not be loaded for some reason
                 if (!$_quote->getId()) {
                     $this->logError('WARNING: Sync for abandoned cart #' . $_id . ', quote could not be loaded!');
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
                 // Quote could not be loaded for some reason
                 if (count($_quote->getAllItems()) == 0) {
                     $this->logNotice('SKIPPING: Abandoned cart #' . $_id . ' is empty!');
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
@@ -594,7 +594,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
                     $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
@@ -609,7 +609,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (empty($_quoteEmail)) {
                     $this->logNotice('SKIPPED: Sync for quote #' . $_quoteNumber . ' failed, quote is missing an email address!');
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
@@ -737,14 +737,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                      */
                     // Something is wrong, could not create / find Magento customer in SalesForce
                     $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $email . ') could not be created / found!');
-                    $_skippedAbandoned[$id] = $id;
+                    $this->_skippedEntity[$id] = $id;
 
                     continue;
                 }
             }
 
-            if (!empty($_skippedAbandoned)) {
-                $chunk = array_chunk($_skippedAbandoned, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            if (!empty($this->_skippedEntity)) {
+                $chunk = array_chunk($this->_skippedEntity, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
                 foreach ($chunk as $_skippedAbandonedChunk) {
                     $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandonedChunk) . "') and mage_object_type = 'sales/quote';";
                     Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
@@ -754,7 +754,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
             }
 
-            return (count($_skippedAbandoned) != count($_ids));
+            return (count($this->_skippedEntity) != count($_ids));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
