@@ -533,7 +533,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
 
         } else {
-            $currencyCodes = array($store->getDefaultCurrencyCode());
+            $currencyCodes = array($store->getBaseCurrencyCode());
         }
 
         foreach ($currencyCodes as $currencyCode) {
