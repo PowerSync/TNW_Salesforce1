@@ -432,62 +432,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
     }
 
-    protected function _prepareContactRoles()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache['failedOpportunities'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, issues with upserting an opportunity!');
-                continue;
-            }
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** ORDER (' . $_orderNumber . ') ********');
-            $this->_obj = new stdClass();
-
-            $_order = Mage::getModel('sales/order')->load($_key);
-
-            $contactId = $this->_cache['orderCustomers'][$_orderNumber]->getData('salesforce_id');
-            if ($_order->getData('contact_salesforce_id')) {
-                $this->_obj->ContactId = $contactId;
-            }
-
-            // Check if already exists
-            $_skip = false;
-            if ($this->_cache['opportunityLookup'] && array_key_exists($_orderNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles) {
-                foreach ($this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles->records as $_role) {
-                    if (property_exists($this->_obj, 'ContactId') && property_exists($_role, 'ContactId') && $_role->ContactId == $this->_obj->ContactId) {
-                        if ($_role->Role == Mage::helper('tnw_salesforce')->getDefaultCustomerRole()) {
-                            // No update required
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Contact Role information is the same, no update required!');
-                            $_skip = true;
-                            break;
-                        }
-                        $this->_obj->Id = $_role->Id;
-                        $this->_obj->ContactId = $_role->ContactId;
-                        break;
-                    }
-                }
-            }
-
-            if (!$_skip) {
-                $this->_obj->IsPrimary = true;
-                $this->_obj->OpportunityId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNumber];
-
-                $this->_obj->Role = Mage::helper('tnw_salesforce')->getDefaultCustomerRole();
-
-                foreach ($this->_obj as $key => $_item) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityContactRole Object: " . $key . " = '" . $_item . "'");
-                }
-
-                if (property_exists($this->_obj, 'ContactId') && $this->_obj->ContactId) {
-                    $this->_cache['contactRolesToUpsert'][] = $this->_obj;
-                } else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Was not able to convert customer Lead, skipping Opportunity Contact Role assignment. Please synchronize customer (contactId: ' . $contactId . ')');
-                }
-            }
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: End----------');
-    }
-
     protected function _onComplete()
     {
         // Close Jobs

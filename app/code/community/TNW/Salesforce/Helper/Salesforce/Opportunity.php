@@ -255,7 +255,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_order      = $this->_loadEntityByCache($_key, $_orderNumber);
 
             /** @var Mage_Customer_Model_Customer $_customer */
-            $_customer   = $this->_getCustomer($_order);
+            $_customer   = $this->_cache['orderCustomers'][$_orderNumber];
 
             $websiteId   = $_customer->getWebsiteId()
                 ? $_customer->getWebsiteId()
@@ -276,7 +276,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_skip = false;
             if ($this->_cache['opportunityLookup'] && array_key_exists($_orderNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles) {
                 foreach ($this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles->records as $_role) {
-                    if ($_role->ContactId == $this->_obj->ContactId) {
+                    if (property_exists($this->_obj, 'ContactId') && property_exists($_role, 'ContactId') && $_role->ContactId == $this->_obj->ContactId) {
                         if ($_role->Role == Mage::helper('tnw_salesforce')->getDefaultCustomerRole()) {
                             // No update required
                             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Contact Role information is the same, no update required!');
