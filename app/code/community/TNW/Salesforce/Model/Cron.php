@@ -555,9 +555,25 @@ class TNW_Salesforce_Model_Cron
 
                                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type started ##################################");
                                 // sync products with sf
-                                $manualSync->massAdd($objectIdSet);
-                                $manualSync->setIsCron(true);
-                                $manualSync->process();
+                                $checkAdd = $manualSync->massAdd($objectIdSet);
+
+                                // Delete Skipped Entity
+                                $skipped  = $manualSync->getSkippedEntity();
+                                if (!empty($skipped)) {
+                                    $objectId = array();
+                                    foreach ($skipped as $entity_id) {
+                                        $objectId[] = @$idSet[array_search($entity_id, $objectIdSet)];
+                                    }
+
+                                    Mage::getModel('tnw_salesforce/localstorage')
+                                        ->deleteObject($objectId, true);
+                                }
+
+                                if ($checkAdd) {
+                                    $manualSync->setIsCron(true);
+                                    $manualSync->process();
+                                }
+
                                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type finished ##################################");
 
                                 // Update Queue

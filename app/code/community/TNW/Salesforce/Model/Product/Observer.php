@@ -84,6 +84,7 @@ class TNW_Salesforce_Model_Product_Observer
             }
 
             if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
+                /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
                 $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
                 $manualSync->reset();
                 $manualSync->updateMagentoEntityValue($_product->getId(), NULL, 'sf_insync', 'catalog_product_entity_int', 0);
@@ -100,8 +101,7 @@ class TNW_Salesforce_Model_Product_Observer
             $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
             $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-            if ($manualSync->reset()) {
-                $manualSync->massAdd(array($_product->getId()));
+            if ($manualSync->reset() && $manualSync->massAdd(array($_product->getId()))) {
                 $manualSync->process();
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product (sku: ' . $_product->getSku() . ') is successfully synchronized'));
             } else {

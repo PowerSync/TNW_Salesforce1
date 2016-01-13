@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Customer
  */
-class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Salesforce_Abstract
+class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
      * @var null
@@ -1437,11 +1437,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         try {
             // Lookup existing Contacts & Accounts
+            $this->_skippedEntity = array();
             $_emailsArray = array();
             $_companies = array();
 
             $this->_updateCustomerStatistic($ids);
 
+            /** @var Mage_Customer_Model_Resource_Customer_Collection $_collection */
             $_collection = Mage::getModel('customer/customer')
                 ->getCollection()
                 ->addAttributeToSelect('*')
@@ -1453,10 +1455,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($_collection as $_customer) {
                 if (!$_customer->getEmail() || !$_customer->getId()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer #" . $_customer->getId() . ", customer could not be loaded!");
+                    $this->_skippedEntity[] = $_customer->getId();
                     continue;
                 }
+
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customer->getGroupId())) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer group #" . $_customer->getGroupId() . " is disabled!");
+                    $this->_skippedEntity[] = $_customer->getId();
                     continue;
                 }
 
@@ -1481,9 +1486,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_cache['toSaveInMagento'][$_customer->getData('website_id')][$_email] = $tmp;
             }
             $this->_cache['entitiesUpdating'] = $_emailsArray;
-            $this->findCustomerAccounts($_emailsArray);
 
-            $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
+            if (empty($this->_cache['entitiesUpdating'])) {
+                return false;
+            }
+
+            $this->findCustomerAccounts($_emailsArray);
 
             $foundCustomers = array();
 
@@ -1595,8 +1603,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
-        } catch (Exception $e) {
+            return true;
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 

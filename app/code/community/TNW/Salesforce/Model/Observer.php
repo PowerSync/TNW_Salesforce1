@@ -424,11 +424,13 @@ class TNW_Salesforce_Model_Observer
 
         if ($manualSync->reset()) {
             $checkAdd = $manualSync->massAdd($_ids);
+
             // Delete Skipped Entity
-            if (!empty($_queueIds)) {
+            $skipped = $manualSync->getSkippedEntity();
+            if (!empty($skipped)) {
                 $objectId = array();
                 foreach ($manualSync->getSkippedEntity() as $entity_id) {
-                    $objectId[] = $_queueIds[array_search($entity_id, $_orderIds)];
+                    $objectId[] = @$_queueIds[array_search($entity_id, $_orderIds)];
                 }
 
                 Mage::getModel('tnw_salesforce/localstorage')

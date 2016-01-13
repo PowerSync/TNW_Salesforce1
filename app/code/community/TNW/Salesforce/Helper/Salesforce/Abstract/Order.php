@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Abstract
  */
-abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract
+abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
      * @var array
@@ -82,19 +82,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @var array
      */
     protected $_allowedOrderStatuses = array();
-
-    /**
-     * @var array
-     */
-    protected $_skippedEntity = array();
-
-    /**
-     * @return array
-     */
-    public function getSkippedEntity()
-    {
-        return $this->_skippedEntity;
-    }
 
     /**
      * @return string
@@ -1307,7 +1294,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             }
 
-            if (count($this->_skippedEntity) == count($_ids)) {
+            if (empty($this->_cache['entitiesUpdating'])) {
                 return false;
             }
 
@@ -1394,12 +1381,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $manualSync->validateSync(true);
             }
 
-            /**
-             * all orders fails - return false otherwise return true
-             */
-            return (count($this->_skippedEntity) != count($_ids));
-        } catch (Exception $e) {
+            return true;
+        }
+        catch (Exception $e) {
             $this->logError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 
