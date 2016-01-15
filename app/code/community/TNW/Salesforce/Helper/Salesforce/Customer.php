@@ -1921,7 +1921,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         foreach ($this->_cache['leadsToUpsert'] as $upsertOn => $leadsToUpsert) {
 
                             if (array_key_exists($_contactIds[$_key], $leadsToUpsert)) {
-//                                $this->_cache['leadsToUpsert'][$upsertOn][$_contactIds[$_key]]->Company = ' ';
+                                $this->_cache['leadsToUpsert'][$upsertOn][$_contactIds[$_key]]->Company = ' ';
                             }
                         }
                     }
