@@ -1277,9 +1277,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                             $noticeMessage = "Notice: PowerSync has tried converting a Lead for customer ($_email).
                             Company name field on the Lead has value suggesting a B2B Account,
                             however Salesforce has an existing PersonAccount for this customer.
-                            Either delete a duplicate Lead and try again, or make sure Company field on a Lead is empty." .
-                            (property_exists($leadConvert, 'accountId')? " Account is: " . Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($leadConvert->accountId): "")  . "
-                            Other option is to remove the PersonAccount and try again";
+                            Either delete a duplicate Lead and try again, or make sure Company field on a Lead is empty.
+                            Other option is to remove the PersonAccount and try again" .
+                            (property_exists($leadConvert, 'accountId') ? " Account is: " . Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($leadConvert->accountId) : "") .
+                            (property_exists($_lead, 'Id') ? " Lead is: " . Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($_lead->Id) : "")
+                            ;
 
                             Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice(Mage::helper('tnw_salesforce')->__($noticeMessage));
                             return $this;
