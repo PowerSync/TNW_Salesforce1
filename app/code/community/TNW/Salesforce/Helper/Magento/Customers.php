@@ -572,6 +572,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
                         try {
                             $_address->save();
+
+                            if (!$_addressesIsDifferent) {
+                                $_addressShippingId = $_addressBillingId = $_address->getId();
+                            }
+
                             $_entity->getAddressesCollection()->resetData();
 
                             if ($_address->getIsDefaultBilling()) {
