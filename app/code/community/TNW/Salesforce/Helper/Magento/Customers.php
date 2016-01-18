@@ -479,13 +479,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             if (!$_addressesIsDifferent) {
-                $_addresses = array_filter(array_map(function($address) {
-                    if (!$address) {
-                        return false;
-                    }
-
-                    return $address->getId();
-                }, array_map(array($this, '_addressLookup'), array($_additional['shipping'], $_additional['billing']))));
+                $_addresses = array_filter(array_map(array($this, '_addressLookup'), array(
+                    $_additional['shipping'],
+                    $_additional['billing']
+                )));
 
                 $_addresses = array_intersect($_addresses, array(
                     $_entity->getData('default_shipping'),
@@ -780,7 +777,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 && $_address->getPostcode() == $_data['postcode']
                 && trim($_street) == $_data['street']
             ) {
-                return $_address;
+                return $_address->getId();
             }
         }
 
