@@ -479,9 +479,22 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             if (!$_addressesIsDifferent) {
-                $_addressShippingId = $_addressBillingId = ($_entity->getData('default_shipping'))
-                    ? $_entity->getData('default_shipping')
-                    : $_entity->getData('default_billing');
+                $_addresses = array_filter(array_map(function($address) {
+                    if (!$address) {
+                        return false;
+                    }
+
+                    return $address->getId();
+                }, array_map(array($this, '_addressLookup'), array($_additional['shipping'], $_additional['billing']))));
+
+                $_addresses = array_intersect($_addresses, array(
+                    $_entity->getData('default_shipping'),
+                    $_entity->getData('default_billing')
+                ));
+
+                $_addressShippingId = $_addressBillingId = (!empty($_addresses))
+                    ? reset($_addresses)
+                    : null;
             }
             else {
                 $_addressShippingId = $_entity->getData('default_shipping');
@@ -752,6 +765,12 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      */
     protected function _addressLookup($_data = array(), $_entity = NULL)
     {
+        $this->_countryCode = $this->_getCountryId($_data['country_id']);
+        $this->_regionCode  = null;
+        if ($this->_countryCode) {
+            $this->_regionCode = $this->_getRegionId($_data['region'], $this->_countryCode);
+        }
+
         foreach($_entity->getAddresses() as $_address) {
             $_street = trim(join(' ', $_address->getStreet()));
             if (
