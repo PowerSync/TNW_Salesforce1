@@ -260,6 +260,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             // Creating Customer Entity
             if ($this->_isNew) {
+                /** @var Mage_Customer_Model_Customer $_entity */
                 $_entity = Mage::getModel('customer/customer');
                 if ($this->_magentoId) {
                     $_entity->setId($this->_magentoId);
@@ -475,12 +476,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     $this->_countryCode = NULL;
                     $this->_regionCode = NULL;
 
-                    $_addressId = $this->_addressLookup($_data, $_entity);
+                    $_address = ($_key == 'shipping')
+                        ? $_entity->getDefaultShippingAddress()
+                        : $_entity->getDefaultBillingAddress();
 
-                    $_address = Mage::getModel('customer/address');
-                    if ($_addressId) {
-                        $_address->load($_addressId);
+                    if (!$_address) {
+                        $_address = Mage::getModel('customer/address');
                     }
+
                     if (array_key_exists('street', $_additional[$_key])) {
                         $_fromSalesforce = $_data['street'];
                         $_data['street'] = array(
@@ -520,10 +523,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
                     // Set Data
                     $_address->setData($_data);
-
-                    if($_addressId) {
-                        $_address->setId($_addressId);
-                    }
 
                     // Save in address book
                     $_address->setSaveInAddressBook('1');
