@@ -478,24 +478,29 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 }
             }
 
-            if (!$_addressesIsDifferent) {
-                $_addresses = array_filter(array(
-                    $this->_addressLookup($_additional['shipping'], $_entity),
-                    $this->_addressLookup($_additional['billing'], $_entity)
-                ));
+            $_addressesLookup = array_filter(array(
+                'shipping' => $this->_addressLookup($_additional['shipping'], $_entity),
+                'billing'  => $this->_addressLookup($_additional['billing'], $_entity)
+            ));
 
-                $_addresses = array_intersect($_addresses, array(
+            if (!$_addressesIsDifferent) {
+                $_addressesDefault = array_intersect($_addressesLookup, array(
                     $_entity->getData('default_shipping'),
                     $_entity->getData('default_billing')
                 ));
 
-                $_addressShippingId = $_addressBillingId = (!empty($_addresses))
-                    ? reset($_addresses)
-                    : null;
+                $_addressShippingId = $_addressBillingId = (!empty($_addressesDefault))
+                    ? reset($_addressesDefault)
+                    : reset($_addressesLookup);
             }
             else {
-                $_addressShippingId = $_entity->getData('default_shipping');
-                $_addressBillingId  = $_entity->getData('default_billing');
+                $_addressShippingId = ($_entity->getData('default_shipping'))
+                    ? $_entity->getData('default_shipping')
+                    : @$_addressesLookup['shipping'];
+
+                $_addressBillingId  = ($_entity->getData('default_billing'))
+                    ? $_entity->getData('default_billing')
+                    : @$_addressesLookup['billing'];
 
                 if ($_addressShippingId == $_addressBillingId) {
                     $_addressBillingId = null;
