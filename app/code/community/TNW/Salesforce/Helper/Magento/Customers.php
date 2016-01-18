@@ -483,6 +483,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         ? $_entity->getData('default_shipping')
                         : $_entity->getData('default_billing');
 
+                    if (!$_addressId) {
+                        $_addressId = $this->_addressLookup($_data, $_entity);
+                    }
+
                     if ($_addressId) {
                         $_address->load($_addressId);
                     }
@@ -540,6 +544,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
                     try {
                         $_address->save();
+                        $_entity->getAddressesCollection()->resetData();
+
+                        if ($_address->getIsDefaultBilling()) {
+                            $_entity->setDefaultBilling($_address->getId());
+                        }
+                        if ($_address->getIsDefaultShipping()) {
+                            $_entity->setDefaultShipping($_address->getId());
+                        }
                     } catch (Exception $e) {
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting customer address into Magento: " . $e->getMessage());
                     }
@@ -698,6 +710,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         return NULL;
     }
 
+    /**
+     * @param array $_data
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return bool
+     */
     protected function _addressLookup($_data = array(), $_entity = NULL) {
         $this->_countryCode = $this->_getCountryId($_data['country_id']);
         if ($this->_countryCode) {
