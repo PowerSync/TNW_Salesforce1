@@ -476,12 +476,15 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     $this->_countryCode = NULL;
                     $this->_regionCode = NULL;
 
-                    $_address = ($_key == 'shipping')
-                        ? $_entity->getDefaultShippingAddress()
-                        : $_entity->getDefaultBillingAddress();
+                    /** @var Mage_Customer_Model_Address $_address */
+                    $_address = Mage::getModel('customer/address');
 
-                    if (!$_address) {
-                        $_address = Mage::getModel('customer/address');
+                    $_addressId = ($_key == 'shipping')
+                        ? $_entity->getData('default_shipping')
+                        : $_entity->getData('default_billing');
+
+                    if ($_addressId) {
+                        $_address->load($_addressId);
                     }
 
                     if (array_key_exists('street', $_additional[$_key])) {
@@ -522,7 +525,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     $_data['country_id'] = $this->_countryCode;
 
                     // Set Data
-                    $_address->setData($_data);
+                    $_address->addData($_data);
 
                     // Save in address book
                     $_address->setSaveInAddressBook('1');
