@@ -494,13 +494,13 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     : reset($_addressesLookup);
             }
             else {
-                $_addressShippingId = ($_entity->getData('default_shipping'))
-                    ? $_entity->getData('default_shipping')
-                    : @$_addressesLookup['shipping'];
+                $_addressShippingId = isset($_addressesLookup['shipping'])
+                    ? $_addressesLookup['shipping']
+                    : $_entity->getData('default_shipping');
 
-                $_addressBillingId  = ($_entity->getData('default_billing'))
-                    ? $_entity->getData('default_billing')
-                    : @$_addressesLookup['billing'];
+                $_addressBillingId  = isset($_addressesLookup['billing'])
+                    ? $_addressesLookup['billing']
+                    : $_entity->getData('default_billing');
 
                 if ($_addressShippingId == $_addressBillingId) {
                     $_addressBillingId = null;
