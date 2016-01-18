@@ -479,10 +479,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             if (!$_addressesIsDifferent) {
-                $_addresses = array_filter(array_map(array($this, '_addressLookup'), array(
-                    $_additional['shipping'],
-                    $_additional['billing']
-                )));
+                $_addresses = array_filter(array(
+                    $this->_addressLookup($_additional['shipping'], $_entity),
+                    $this->_addressLookup($_additional['billing'], $_entity)
+                ));
 
                 $_addresses = array_intersect($_addresses, array(
                     $_entity->getData('default_shipping'),
