@@ -473,8 +473,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             // Do Additional Stuff
             foreach($_additional as $_key => $_data) {
                 if (!empty($_data) && ($_key == 'shipping' || $_key == 'billing')) {
-                    $this->_countryCode = NULL;
-                    $this->_regionCode = NULL;
+                    $this->_countryCode = $this->_getCountryId($_data['country_id']);
+                    if ($this->_countryCode) {
+                        $this->_regionCode = $this->_getRegionId($_data['region'], $this->_countryCode);
+                    }
 
                     /** @var Mage_Customer_Model_Address $_address */
                     $_address = Mage::getModel('customer/address');
@@ -716,9 +718,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      * @return bool
      */
     protected function _addressLookup($_data = array(), $_entity = NULL) {
-        $this->_countryCode = $this->_getCountryId($_data['country_id']);
-        if ($this->_countryCode) {
-            $this->_regionCode = $this->_getRegionId($_data['region'], $this->_countryCode);
+        if (is_null($this->_countryCode)) {
+            $this->_countryCode = $this->_getCountryId($_data['country_id']);
+            if ($this->_countryCode && is_null($this->_regionCode)) {
+                $this->_regionCode = $this->_getRegionId($_data['region'], $this->_countryCode);
+            }
         }
 
         foreach($_entity->getAddresses() as $_address) {
