@@ -1223,9 +1223,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $_guestCount = 0;
             $this->_skippedEntity = $_quotes = $_emails = $_websites = array();
 
-            // Clear Order ID
-            $this->resetEntity($_ids);
-
             foreach ($_ids as $_id) {
                 // Load order by ID
                 /** @var Mage_Sales_Model_Order $_order */
@@ -1310,6 +1307,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             if (count($this->_skippedEntity) == count($_ids)) {
                 return false;
             }
+
+            // Clear Order ID
+            $this->resetEntity(array_diff($_ids, $_skippedOrders));
 
             $this->_findAbandonedCart($_quotes);
 
