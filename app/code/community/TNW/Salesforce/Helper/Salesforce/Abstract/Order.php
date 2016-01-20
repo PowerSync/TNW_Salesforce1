@@ -1296,7 +1296,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
 
             // Clear Order ID
-            $this->resetEntity(array_diff($_ids, $_skippedOrders));
+            $this->resetEntity(array_diff($_ids, $this->_skippedEntity));
 
             $this->_findAbandonedCart($_quotes);
 
@@ -1546,6 +1546,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function resetEntity($ids)
     {
+        if (empty($ids)) {
+            return;
+        }
+
         $ids = !is_array($ids)
             ? array($ids) : $ids;
 
