@@ -408,7 +408,15 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
 
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_oid]);
 
-                        //unset($this->_cache['opportunitiesToUpsert'][$_oid]);
+                        $_order = $this->_loadEntityByCache($_entityArray[$_oid], $_oid);
+                        if ($_order) {
+                            $_order->addData(array(
+                                'contact_salesforce_id' => $_contactId,
+                                'account_salesforce_id' => $_accountId,
+                                'salesforce_id' => $this->_cache['upserted'.$this->getManyParentEntityType()][$_oid],
+                                'sf_insync' => 1
+                            ));
+                        }
                     } else {
                         $this->_cache['failedOpportunities'][] = $_oid;
                         $this->_processErrors($_item, 'opportunity', $this->_cache['batch']['opportunities'][$this->_magentoId][$_key][$_oid]);
