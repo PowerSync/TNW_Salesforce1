@@ -220,7 +220,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $firstName = ($_lastName) ? $_fullName[0] : '';
         $lastName = ($_lastName) ? $_lastName : $_fullName[0];
-        $company = (array_key_exists('company', $_data)) ? strip_tags($_data['company']) : NULL;
+        $company = (array_key_exists('company', $_data))
+            ? strip_tags($_data['company'])
+            : implode(' ', $_fullName);
 
         $fakeCustomer->setFirstname($firstName);
         $fakeCustomer->setLastname($lastName);
@@ -589,7 +591,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if (!Mage::helper('tnw_salesforce')->usePersonAccount()
                 && (!$_issetCompeny || ($_issetCompeny && empty($this->_obj->Company)))
             ) {
-                $this->_obj->Company = $_email;
+                $this->_obj->Company = $_customer->getName();
             }
 
             $this->_cache['leadsToUpsert'][$_upsertOn][$_id] = $this->_obj;
