@@ -180,11 +180,12 @@ class TNW_Salesforce_Model_Cron
             array(array($this, 'cartItemsCallback'))
         );
 
+        /** @var TNW_Salesforce_Model_Localstorage $localstorage */
         $localstorage = Mage::getModel('tnw_salesforce/localstorage');
 
         $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
         foreach ($_productChunks as $_chunk) {
-            $localstorage->addObject($_chunk, 'Product', 'product');
+            $localstorage->addObjectProduct($_chunk, 'Product', 'product');
         }
 
         $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
