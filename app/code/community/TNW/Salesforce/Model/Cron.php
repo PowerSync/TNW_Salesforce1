@@ -200,7 +200,7 @@ class TNW_Salesforce_Model_Cron
                 'entity_id IN (?)' => $_chunk
             );
 
-            $this->getDbConnection('write')
+            Mage::helper('tnw_salesforce')->getDbConnection('write')
                 ->update(Mage::getResourceModel('sales/quote')->getMainTable(), $bind, $where);
 
         }
