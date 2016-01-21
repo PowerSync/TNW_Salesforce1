@@ -492,6 +492,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _prepareItemPrice($item, $qty = 1)
     {
+        $netTotal = $this->_calculateItemPrice($item, $qty);
+
+        /**
+         * @comment prepare formatted price
+         */
+        return $this->numberFormat($netTotal);
+    }
+
+    /**
+     * @param $item
+     * @param int $qty
+     * @return float
+     */
+    protected function _calculateItemPrice($item, $qty = 1)
+    {
         if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
             $netTotal = $this->getEntityPrice($item, 'RowTotalInclTax');
         } else {
@@ -505,10 +520,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $netTotal = $netTotal / $qty;
         }
 
-        /**
-         * @comment prepare formatted price
-         */
-        return $this->numberFormat($netTotal);
+        return $netTotal;
     }
 
     /**
