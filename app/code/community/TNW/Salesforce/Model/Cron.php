@@ -237,7 +237,12 @@ class TNW_Salesforce_Model_Cron
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
 
         // check if it's time to run cron
-        if (!$_helperData->isEnabled() || !$this->_isTimeToRun()) {
+        if (!$_helperData->isEnabled()) {
+            return;
+        }
+
+        $isRealtime = ($_helperData->getObjectSyncType() == 'sync_type_realtime');
+        if (!$isRealtime && !$this->_isTimeToRun()) {
             return;
         }
 
@@ -274,31 +279,47 @@ class TNW_Salesforce_Model_Cron
                 }
             }
 
-            // Sync Products
-            $this->syncProduct();
-
-            // Sync Customers
-            $this->syncCustomer();
-
-            // Synchronize Websites
-            $this->_syncWebsites();
-
-            // Sync abandoned
-            $this->syncAbandoned();
-
-            // Sync orders
-            $this->syncOrder();
-
-            // Sync invoices
-            $this->syncInvoices();
-
-            // Sync custom objects
-            $this->_syncCustomObjects();
+            if ($isRealtime) {
+                $this->_syncObjectForRealTimeMode();
+            }
+            else {
+                $this->_syncObjectForBulkMode();
+            }
 
             $this->_deleteSuccessfulRecords();
         } else {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
         }
+    }
+
+    protected function _syncObjectForBulkMode()
+    {
+        // Sync Products
+        $this->syncProduct();
+
+        // Sync Customers
+        $this->syncCustomer();
+
+        // Synchronize Websites
+        $this->_syncWebsites();
+
+        // Sync abandoned
+        $this->syncAbandoned();
+
+        // Sync orders
+        $this->syncOrder();
+
+        // Sync invoices
+        $this->syncInvoices();
+
+        // Sync custom objects
+        $this->_syncCustomObjects();
+    }
+
+    protected function _syncObjectForRealTimeMode()
+    {
+        // Sync abandoned
+        $this->syncAbandoned();
     }
 
     public function _syncCustomObjects()
