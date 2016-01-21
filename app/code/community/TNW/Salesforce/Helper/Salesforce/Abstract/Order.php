@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Abstract
  */
-abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract
+abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
      * @var array
@@ -82,19 +82,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @var array
      */
     protected $_allowedOrderStatuses = array();
-
-    /**
-     * @var array
-     */
-    protected $_skippedEntity = array();
-
-    /**
-     * @return array
-     */
-    public function getSkippedEntity()
-    {
-        return $this->_skippedEntity;
-    }
 
     /**
      * @return string
@@ -1316,12 +1303,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             }
 
-            if (count($this->_skippedEntity) == count($_ids)) {
+            if (empty($this->_cache['entitiesUpdating'])) {
                 return false;
             }
 
             // Clear Order ID
-            $this->resetEntity(array_diff($_ids, $_skippedOrders));
+            $this->resetEntity(array_diff($_ids, $this->_skippedEntity));
 
             $this->_findAbandonedCart($_quotes);
 
@@ -1406,12 +1393,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $manualSync->validateSync(true);
             }
 
-            /**
-             * all orders fails - return false otherwise return true
-             */
-            return (count($this->_skippedEntity) != count($_ids));
-        } catch (Exception $e) {
+            return true;
+        }
+        catch (Exception $e) {
             $this->logError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -1572,6 +1558,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function resetEntity($ids)
     {
+        if (empty($ids)) {
+            return;
+        }
+
         $ids = !is_array($ids)
             ? array($ids) : $ids;
 

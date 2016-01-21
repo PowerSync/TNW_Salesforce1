@@ -121,8 +121,9 @@ class TNW_Salesforce_Model_Customer_Observer
             $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
             $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-            $manualSync->massAdd(array($customer->getId()));
-            $manualSync->process();
+            if ($manualSync->massAdd(array($customer->getId()))){
+                $manualSync->process();
+            }
 
             if (Mage::helper('tnw_salesforce')->displayErrors()
                 && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
