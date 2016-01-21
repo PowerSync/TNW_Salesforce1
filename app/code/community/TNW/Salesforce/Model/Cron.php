@@ -164,9 +164,8 @@ class TNW_Salesforce_Model_Cron
         $collection = Mage::getModel('tnw_salesforce/abandoned')->getAbandonedCollection();
         $collection->addFieldToFilter('sf_sync_force', 1);
         $collection->addFieldToFilter('customer_id', array('neq' => 'NULL' ));
-        $collection->addFieldToSelect('sf_insync');
-        $itemIds = $collection->getAllIds();
 
+        $itemIds = $collection->getAllIds();
         if (empty($itemIds)) {
             return false;
         }
@@ -176,20 +175,16 @@ class TNW_Salesforce_Model_Cron
             ->columns(array('sku', 'quote_id', 'product_id', 'product_type'))
             ->where(new Zend_Db_Expr('quote_id IN (' . join(',', $itemIds) . ')'));
 
-        /**
-         * @var $controller TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController
-         */
-
         Mage::getSingleton('core/resource_iterator')->walk(
             $_collection->getSelect(),
             array(array($this, 'cartItemsCallback'))
         );
 
-        $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
         $localstorage = Mage::getModel('tnw_salesforce/localstorage');
 
+        $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
         foreach ($_productChunks as $_chunk) {
-            $localstorage->addObject($itemIds, 'Product', 'product');
+            $localstorage->addObject($_chunk, 'Product', 'product');
         }
 
         $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
@@ -318,6 +313,9 @@ class TNW_Salesforce_Model_Cron
 
     protected function _syncObjectForRealTimeMode()
     {
+        // Sync Products
+        $this->syncProduct();
+
         // Sync abandoned
         $this->syncAbandoned();
     }
