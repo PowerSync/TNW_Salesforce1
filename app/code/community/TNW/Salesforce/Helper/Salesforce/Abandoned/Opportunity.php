@@ -78,6 +78,63 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
     }
 
+    /**
+     * @param $item Mage_Sales_Model_Quote_Item
+     */
+    protected function _getItemDescription($item)
+    {
+        $opt = array();
+        $_summary = array();
+
+        $typeId = $item->getProduct()->getTypeId();
+        switch($typeId) {
+            case 'bundle':
+                /** @var Mage_Bundle_Helper_Catalog_Product_configuration $configuration */
+                $configuration = Mage::helper('bundle/catalog_product_configuration');
+                $options = $configuration->getOptions($item);
+                break;
+
+            case 'downloadable':
+                /** @var Mage_Downloadable_Helper_Catalog_Product_Configuration $configuration */
+                $configuration = Mage::helper('downloadable/catalog_product_configuration');
+                $options = $configuration->getOptions($item);
+                break;
+
+            default:
+                /** @var Mage_Catalog_Helper_Product_Configuration $configuration */
+                $configuration = Mage::helper('catalog/product_configuration');
+                $options = $configuration->getOptions($item);
+                break;
+        }
+
+        $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
+        foreach ($options as $_option) {
+            $optionValue = '';
+            if(isset($_option['print_value'])) {
+                $optionValue = $_option['print_value'];
+            } elseif (isset($_option['value'])) {
+                $optionValue = $_option['value'];
+            }
+
+            if (is_array($optionValue)) {
+                $optionValue = implode(', ', $optionValue);
+            }
+
+            $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
+            $_summary[] = strip_tags($optionValue);
+        }
+
+        if (count($opt) > 0) {
+            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
+            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
+
+            $this->_obj->Description = join(", ", $_summary);
+            if (strlen($this->_obj->Description) > 200) {
+                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
+            }
+        }
+    }
+
     protected function _prepareEntity()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: Start----------');
