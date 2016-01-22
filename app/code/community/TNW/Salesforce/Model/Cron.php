@@ -164,9 +164,8 @@ class TNW_Salesforce_Model_Cron
         $collection = Mage::getModel('tnw_salesforce/abandoned')->getAbandonedCollection();
         $collection->addFieldToFilter('sf_sync_force', 1);
         $collection->addFieldToFilter('customer_id', array('neq' => 'NULL' ));
-        $collection->addFieldToSelect('sf_insync');
-        $itemIds = $collection->getAllIds();
 
+        $itemIds = $collection->getAllIds();
         if (empty($itemIds)) {
             return false;
         }
@@ -176,20 +175,17 @@ class TNW_Salesforce_Model_Cron
             ->columns(array('sku', 'quote_id', 'product_id', 'product_type'))
             ->where(new Zend_Db_Expr('quote_id IN (' . join(',', $itemIds) . ')'));
 
-        /**
-         * @var $controller TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController
-         */
-
         Mage::getSingleton('core/resource_iterator')->walk(
             $_collection->getSelect(),
             array(array($this, 'cartItemsCallback'))
         );
 
-        $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+        /** @var TNW_Salesforce_Model_Localstorage $localstorage */
         $localstorage = Mage::getModel('tnw_salesforce/localstorage');
 
+        $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
         foreach ($_productChunks as $_chunk) {
-            $localstorage->addObject($itemIds, 'Product', 'product');
+            $localstorage->addObjectProduct($_chunk, 'Product', 'product');
         }
 
         $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
@@ -204,7 +200,7 @@ class TNW_Salesforce_Model_Cron
                 'entity_id IN (?)' => $_chunk
             );
 
-            $this->getDbConnection('write')
+            Mage::helper('tnw_salesforce')->getDbConnection('write')
                 ->update(Mage::getResourceModel('sales/quote')->getMainTable(), $bind, $where);
 
         }
@@ -237,7 +233,12 @@ class TNW_Salesforce_Model_Cron
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
 
         // check if it's time to run cron
-        if (!$_helperData->isEnabled() || !$this->_isTimeToRun()) {
+        if (!$_helperData->isEnabled()) {
+            return;
+        }
+
+        $isRealtime = ($_helperData->getObjectSyncType() == 'sync_type_realtime');
+        if (!$isRealtime && !$this->_isTimeToRun()) {
             return;
         }
 
@@ -274,31 +275,50 @@ class TNW_Salesforce_Model_Cron
                 }
             }
 
-            // Sync Products
-            $this->syncProduct();
-
-            // Sync Customers
-            $this->syncCustomer();
-
-            // Synchronize Websites
-            $this->_syncWebsites();
-
-            // Sync abandoned
-            $this->syncAbandoned();
-
-            // Sync orders
-            $this->syncOrder();
-
-            // Sync invoices
-            $this->syncInvoices();
-
-            // Sync custom objects
-            $this->_syncCustomObjects();
+            if ($isRealtime) {
+                $this->_syncObjectForRealTimeMode();
+            }
+            else {
+                $this->_syncObjectForBulkMode();
+            }
 
             $this->_deleteSuccessfulRecords();
         } else {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
         }
+    }
+
+    protected function _syncObjectForBulkMode()
+    {
+        // Sync Products
+        $this->syncProduct();
+
+        // Sync Customers
+        $this->syncCustomer();
+
+        // Synchronize Websites
+        $this->_syncWebsites();
+
+        // Sync abandoned
+        $this->syncAbandoned();
+
+        // Sync orders
+        $this->syncOrder();
+
+        // Sync invoices
+        $this->syncInvoices();
+
+        // Sync custom objects
+        $this->_syncCustomObjects();
+    }
+
+    protected function _syncObjectForRealTimeMode()
+    {
+        // Sync Products
+        $this->syncProduct();
+
+        // Sync abandoned
+        $this->syncAbandoned();
     }
 
     public function _syncCustomObjects()
