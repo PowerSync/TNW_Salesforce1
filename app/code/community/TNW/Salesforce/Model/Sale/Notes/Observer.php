@@ -27,6 +27,14 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
         $order = Mage::getModel('sales/order')->load($event->getOid());
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
+        /** @var Mage_Sales_Model_Order_Status_History $note */
+        $note = $event->getNote();
+        $note->setOrder($order);
+
+        if ($note->getData('salesforce_id') || !$note->getData('comment')) {
+            return;
+        }
+
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             // pass data to local storage
@@ -44,10 +52,6 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
         ) {
             if ($order->getSalesforceId()) {
                 // Process Notes
-                /** @var Mage_Sales_Model_Order_Status_History $note */
-                $note = $event->getNote();
-                $note->setOrder($order);
-
                 /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $syncHelper */
                 $syncHelper = Mage::helper('tnw_salesforce/salesforce_'.$_syncType);
                 $syncHelper->reset();
