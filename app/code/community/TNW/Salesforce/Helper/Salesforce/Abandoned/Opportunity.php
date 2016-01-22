@@ -303,6 +303,29 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
+     * @param $_item Mage_Sales_Model_Quote_Item
+     * @return int
+     * Get product Id from the cart
+     */
+    public function getProductIdFromCart($_item)
+    {
+        /** @var Mage_Catalog_Helper_Product_Configuration $configuration */
+        $configuration = Mage::helper('catalog/product_configuration');
+        $custom = $configuration->getCustomOptions($_item);
+
+        if (
+            $_item->getData('product_type') == 'bundle'
+            || (is_array($custom) && count($custom) > 0)
+        ) {
+            $id = $_item->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+
+        return $id;
+    }
+
+    /**
      * @return array
      */
     protected function getUpsertedEntityIds()
