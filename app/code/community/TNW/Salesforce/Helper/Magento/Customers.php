@@ -260,6 +260,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             // Creating Customer Entity
             if ($this->_isNew) {
+                /** @var Mage_Customer_Model_Customer $_entity */
                 $_entity = Mage::getModel('customer/customer');
                 if ($this->_magentoId) {
                     $_entity->setId($this->_magentoId);
@@ -469,78 +470,141 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 }
             }
 
+            $_addressesIsDifferent = false;
+            foreach (array('street', ' city', 'region', 'postcode', 'country_id') as $_field) {
+                if (strcasecmp(@$_additional['shipping'][$_field], @$_additional['billing'][$_field]) != 0) {
+                    $_addressesIsDifferent = true;
+                    break;
+                }
+            }
+
+            $_addressesLookup = array_filter(array(
+                'shipping' => $this->_addressLookup($_additional['shipping'], $_entity),
+                'billing'  => $this->_addressLookup($_additional['billing'], $_entity)
+            ));
+
+            if (!$_addressesIsDifferent) {
+                $_addressesDefault = array_intersect($_addressesLookup, array(
+                    $_entity->getData('default_shipping'),
+                    $_entity->getData('default_billing')
+                ));
+
+                $_addressShippingId = $_addressBillingId = (!empty($_addressesDefault))
+                    ? reset($_addressesDefault)
+                    : reset($_addressesLookup);
+            }
+            else {
+                $_addressShippingId = isset($_addressesLookup['shipping'])
+                    ? $_addressesLookup['shipping']
+                    : $_entity->getData('default_shipping');
+
+                $_addressBillingId  = isset($_addressesLookup['billing'])
+                    ? $_addressesLookup['billing']
+                    : $_entity->getData('default_billing');
+
+                if ($_addressShippingId == $_addressBillingId) {
+                    $_addressBillingId = null;
+                }
+            }
+
             // Do Additional Stuff
             foreach($_additional as $_key => $_data) {
-                if (!empty($_data) && ($_key == 'shipping' || $_key == 'billing')) {
-                    $this->_countryCode = NULL;
-                    $this->_regionCode = NULL;
+                if (empty($_data)) {
+                    continue;
+                }
 
-                    $_addressId = $this->_addressLookup($_data, $_entity);
+                switch ($_key) {
+                    case 'shipping':
+                    case 'billing':
 
-                    $_address = Mage::getModel('customer/address');
-                    if ($_addressId) {
-                        $_address->load($_addressId);
-                    }
-                    if (array_key_exists('street', $_additional[$_key])) {
-                        $_fromSalesforce = $_data['street'];
-                        $_data['street'] = array(
-                            '0' => $_fromSalesforce,
-                            '1' => ''
-                        );
-                    }
+                        $_countryCode = $this->_getCountryId($_data['country_id']);
+                        $_regionCode  = null;
+                        if ($_countryCode) {
+                            $_regionCode = $this->_getRegionId($_data['region'], $_countryCode);
+                        }
 
-                    // Set Telephone
-                    if (
-                        !array_key_exists('telephone', $_additional[$_key])
-                        && property_exists($this->_salesforceObject, 'Phone')
-                    ) {
-                        $_data['telephone'] = $this->_salesforceObject->Phone;
-                    }
+                        /** @var Mage_Customer_Model_Address $_address */
+                        $_address = Mage::getModel('customer/address');
 
-                    // Set First Name
-                    if (
-                        !array_key_exists('firstname', $_additional[$_key])
-                        && property_exists($this->_salesforceObject, 'FirstName')
-                    ) {
-                        $_data['firstname'] = $this->_salesforceObject->FirstName;
-                    }
+                        $_addressId = ($_key == 'shipping')
+                            ? $_addressShippingId
+                            : $_addressBillingId;
 
-                    // Set Last Name
-                    if (
-                        !array_key_exists('lastname', $_additional[$_key])
-                        && property_exists($this->_salesforceObject, 'LastName')
-                    ) {
-                        $_data['lastname'] = $this->_salesforceObject->LastName;
-                    }
+                        if ($_addressId) {
+                            $_address->load($_addressId);
+                        }
 
-                    // Make sure core data is correct
-                    $_data['parent_id'] = $this->_magentoId;
-                    $_data['region_id'] = $this->_regionCode;
-                    $_data['country_id'] = $this->_countryCode;
+                        if (array_key_exists('street', $_additional[$_key])) {
+                            $_fromSalesforce = $_data['street'];
+                            $_data['street'] = array(
+                                '0' => $_fromSalesforce,
+                                '1' => ''
+                            );
+                        }
 
-                    // Set Data
-                    $_address->setData($_data);
+                        // Set Telephone
+                        if (
+                            !array_key_exists('telephone', $_additional[$_key])
+                            && property_exists($this->_salesforceObject, 'Phone')
+                        ) {
+                            $_data['telephone'] = $this->_salesforceObject->Phone;
+                        }
 
-                    if($_addressId) {
-                        $_address->setId($_addressId);
-                    }
+                        // Set First Name
+                        if (
+                            !array_key_exists('firstname', $_additional[$_key])
+                            && property_exists($this->_salesforceObject, 'FirstName')
+                        ) {
+                            $_data['firstname'] = $this->_salesforceObject->FirstName;
+                        }
 
-                    // Save in address book
-                    $_address->setSaveInAddressBook('1');
+                        // Set Last Name
+                        if (
+                            !array_key_exists('lastname', $_additional[$_key])
+                            && property_exists($this->_salesforceObject, 'LastName')
+                        ) {
+                            $_data['lastname'] = $this->_salesforceObject->LastName;
+                        }
 
-                    // Set IsDefault
-                    if ($_key == 'billing') {
-                        $_address->setIsDefaultBilling('1');
-                    }
-                    if ($_key == 'shipping') {
-                        $_address->setIsDefaultShipping('1');
-                    }
+                        // Make sure core data is correct
+                        $_data['parent_id'] = $this->_magentoId;
+                        $_data['region_id'] = $_regionCode;
+                        $_data['country_id'] = $_countryCode;
 
-                    try {
-                        $_address->save();
-                    } catch (Exception $e) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting customer address into Magento: " . $e->getMessage());
-                    }
+                        // Set Data
+                        $_address->addData($_data);
+
+                        // Save in address book
+                        $_address->setSaveInAddressBook('1');
+
+                        // Set IsDefault
+                        if ($_key == 'billing') {
+                            $_address->setIsDefaultBilling('1');
+                        }
+                        if ($_key == 'shipping') {
+                            $_address->setIsDefaultShipping('1');
+                        }
+
+                        try {
+                            $_address->save();
+
+                            if (!$_addressesIsDifferent) {
+                                $_addressShippingId = $_addressBillingId = $_address->getId();
+                            }
+
+                            $_entity->getAddressesCollection()->resetData();
+
+                            if ($_address->getIsDefaultBilling()) {
+                                $_entity->setDefaultBilling($_address->getId());
+                            }
+                            if ($_address->getIsDefaultShipping()) {
+                                $_entity->setDefaultShipping($_address->getId());
+                            }
+                        } catch (Exception $e) {
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting customer address into Magento: " . $e->getMessage());
+                        }
+
+                        break;
                 }
             }
 
@@ -696,8 +760,15 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         return NULL;
     }
 
-    protected function _addressLookup($_data = array(), $_entity = NULL) {
+    /**
+     * @param array $_data
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return bool
+     */
+    protected function _addressLookup($_data = array(), $_entity = NULL)
+    {
         $this->_countryCode = $this->_getCountryId($_data['country_id']);
+        $this->_regionCode  = null;
         if ($this->_countryCode) {
             $this->_regionCode = $this->_getRegionId($_data['region'], $this->_countryCode);
         }
@@ -714,6 +785,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 return $_address->getId();
             }
         }
+
         return false;
     }
 

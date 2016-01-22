@@ -423,7 +423,21 @@ class TNW_Salesforce_Model_Observer
         $_ids = (count($_orderIds) == 1) ? $_orderIds[0] : $_orderIds;
 
         if ($manualSync->reset()) {
-            if ($manualSync->massAdd($_ids)) {
+            $checkAdd = $manualSync->massAdd($_ids);
+
+            // Delete Skipped Entity
+            $skipped = $manualSync->getSkippedEntity();
+            if (!empty($skipped)) {
+                $objectId = array();
+                foreach ($manualSync->getSkippedEntity() as $entity_id) {
+                    $objectId[] = @$_queueIds[array_search($entity_id, $_orderIds)];
+                }
+
+                Mage::getModel('tnw_salesforce/localstorage')
+                    ->deleteObject($objectId, true);
+            }
+
+            if ($checkAdd) {
                 if ($_message === NULL && Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     $manualSync->setIsCron(true);
                 }

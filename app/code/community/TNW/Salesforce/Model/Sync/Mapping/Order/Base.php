@@ -159,12 +159,13 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Order_Base extends TNW_Salesfor
         $subtotal = $baseCurrency ? $order->getBaseSubtotal() : $order->getSubtotal();
         $tax = $baseCurrency ? $order->getBaseTaxAmount() : $order->getTaxAmount();
         $shipping = $baseCurrency ? $order->getBaseShippingAmount() : $order->getShippingAmount();
+        $discount = $baseCurrency ? $order->getBaseDiscountAmount() : $order->getDiscountAmount();
         $grandTotal = $baseCurrency ? $order->getBaseGrandTotal() : $order->getGrandTotal();
         foreach (array(
                      'Sub Total' => $subtotal,
                      'Tax' => $tax,
                      'Shipping (' . $order->getShippingDescription() . ')' => $shipping,
-                     'Discount Amount' => $grandTotal - ($shipping + $tax + $subtotal),
+                     'Discount Amount' => $discount,
                      'Total' => $grandTotal,
                  ) as $label => $totalValue) {
             $lines[] = sprintf('%s: %s%s', $label, $currency, $helper->numberFormat($totalValue));

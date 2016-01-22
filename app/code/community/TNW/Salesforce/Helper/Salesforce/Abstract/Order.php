@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Abstract
  */
-abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract
+abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
      * @var array
@@ -479,6 +479,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _prepareItemPrice($item, $qty = 1)
     {
+        $netTotal = $this->_calculateItemPrice($item, $qty);
+
+        /**
+         * @comment prepare formatted price
+         */
+        return $this->numberFormat($netTotal);
+    }
+
+    /**
+     * @param $item
+     * @param int $qty
+     * @return float
+     */
+    protected function _calculateItemPrice($item, $qty = 1)
+    {
         if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
             $netTotal = $this->getEntityPrice($item, 'RowTotalInclTax');
         } else {
@@ -492,10 +507,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $netTotal = $netTotal / $qty;
         }
 
-        /**
-         * @comment prepare formatted price
-         */
-        return $this->numberFormat($netTotal);
+        return $netTotal;
     }
 
     /**
@@ -932,73 +944,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_obj->UnitPrice = $this->_prepareItemPrice($item, $qty);
 
-        $opt = array();
-        $options = (is_array($item->getData('product_options'))) ? $item->getData('product_options') : @unserialize($item->getData('product_options'));
-
-        $_summary = array();
-        if (
-            is_array($options)
-            && array_key_exists('options', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
-            foreach ($options['options'] as $_option) {
-                $optionValue = '';
-                if(isset($_option['print_value'])) {
-                    $optionValue = $_option['print_value'];
-                } elseif (isset($_option['value'])) {
-                    $optionValue = $_option['value'];
-                }
-
-                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
-                $_summary[] = $optionValue;
-            }
-        }
-        if (
-            is_array($options)
-            && $item->getData('product_type') == 'bundle'
-            && array_key_exists('bundle_options', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
-            foreach ($options['bundle_options'] as $_option) {
-                $_string = '<td align="left">' . $_option['label'] . '</td>';
-                if (is_array($_option['value'])) {
-                    $_tmp = array();
-                    foreach ($_option['value'] as $_value) {
-                        $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
-                        $_summary[] = $_value['title'];
-                    }
-                    if (count($_tmp) > 0) {
-                        $_string .= join(", ", $_tmp);
-                    }
-                }
-
-                $opt[] = '<tr>' . $_string . '</tr>';
-            }
-        }
-
-        if (
-            is_array($options)
-            && $item->getData('product_type') == 'configurable'
-            && array_key_exists('attributes_info', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr><tbody>';
-            foreach ($options['attributes_info'] as $_option) {
-                $_string = '<td align="left">' . $_option['label'] . '</td>';
-                $_string .= '<td align="left">' . $_option['value'] . '</td>';
-                $_summary[] = $_option['value'];
-                $opt[] = '<tr>' . $_string . '</tr>';
-            }
-        }
-
-        if (count($opt) > 0) {
-            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
-            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
-
-            $this->_obj->Description = join(", ", $_summary);
-            if (strlen($this->_obj->Description) > 200) {
-                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
-            }
-        }
+        // Description Item
+        $this->_getItemDescription($item);
 
         /**
          * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
@@ -1045,6 +992,83 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
 
+    }
+
+    /**
+     * @param $item Mage_Sales_Model_Order_Item
+     */
+    protected function _getItemDescription($item)
+    {
+        $opt = array();
+        $options = (is_array($item->getData('product_options')))
+            ? $item->getData('product_options')
+            : @unserialize($item->getData('product_options'));
+
+        $_summary = array();
+        if (
+            is_array($options)
+            && array_key_exists('options', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
+            foreach ($options['options'] as $_option) {
+                $optionValue = '';
+                if(isset($_option['print_value'])) {
+                    $optionValue = $_option['print_value'];
+                } elseif (isset($_option['value'])) {
+                    $optionValue = $_option['value'];
+                }
+
+                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
+                $_summary[] = $optionValue;
+            }
+        }
+
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'bundle'
+            && array_key_exists('bundle_options', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
+            foreach ($options['bundle_options'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                if (is_array($_option['value'])) {
+                    $_tmp = array();
+                    foreach ($_option['value'] as $_value) {
+                        $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
+                        $_summary[] = $_value['title'];
+                    }
+                    if (count($_tmp) > 0) {
+                        $_string .= join(", ", $_tmp);
+                    }
+                }
+
+                $opt[] = '<tr>' . $_string . '</tr>';
+            }
+        }
+
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'configurable'
+            && array_key_exists('attributes_info', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr><tbody>';
+            foreach ($options['attributes_info'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                $_string .= '<td align="left">' . $_option['value'] . '</td>';
+                $_summary[] = $_option['value'];
+                $opt[] = '<tr>' . $_string . '</tr>';
+            }
+        }
+
+        if (count($opt) > 0) {
+            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
+            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
+
+            $this->_obj->Description = join(", ", $_summary);
+            if (strlen($this->_obj->Description) > 200) {
+                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
+            }
+        }
     }
 
     /*
@@ -1208,10 +1232,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         try {
             $_guestCount = 0;
-            $_skippedOrders = $_quotes = $_emails = $_websites = array();
-
-            // Clear Order ID
-            $this->resetEntity($_ids);
+            $this->_skippedEntity = $_quotes = $_emails = $_websites = array();
 
             foreach ($_ids as $_id) {
                 // Load order by ID
@@ -1221,7 +1242,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 // Order could not be loaded for some reason
                 if (!$_order->getId() || !$_order->getRealOrderId()) {
                     $this->logError('WARNING: Sync for order #' . $_id . ', order could not be loaded!');
-                    $skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1230,7 +1251,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                  */
                 if (!Mage::helper('tnw_salesforce/config_sales_order')->isEnabledZeroOrderSync() && $_order->getGrandTotal() == 0) {
                     $this->logNotice('SKIPPED: Sync for order #' . $_order->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
-                    $skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1238,7 +1259,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     && !in_array($_order->getStatus(), $this->_allowedOrderStatuses)
                 ) {
                     $this->logNotice('SKIPPED: Sync for order #' . $_order->getId() . ', sync for order status "' . $_order->getStatus() . '" is disabled!');
-                    $skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1264,7 +1285,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
 
                     $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-                    $skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1280,7 +1301,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                 if (empty($_orderEmail)) {
                     $this->logError('SKIPPED: Sync for order #' . $_orderNumber . ' failed, order is missing an email address!');
-                    $skippedOrders[$_order->getId()] = $_order->getId();
+                    $this->_skippedEntity[$_order->getId()] = $_order->getId();
                     continue;
                 }
 
@@ -1293,6 +1314,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $this->_cache['entitiesUpdating'][$_id] = $_orderNumber;
 
             }
+
+            if (empty($this->_cache['entitiesUpdating'])) {
+                return false;
+            }
+
+            // Clear Order ID
+            $this->resetEntity(array_diff($_ids, $this->_skippedEntity));
 
             $this->_findAbandonedCart($_quotes);
 
@@ -1344,14 +1372,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                      */
                     // Something is wrong, could not create / find Magento customer in SalesForce
                     $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $_orderEmail . ') could not be created / found!');
-                    $skippedOrders[$id] = $id;
+                    $this->_skippedEntity[$id] = $id;
 
                     continue;
                 }
             }
 
-            if (!empty($_skippedOrders)) {
-                $chunk = array_chunk($_skippedOrders, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            if (!empty($this->_skippedEntity)) {
+                $chunk = array_chunk($this->_skippedEntity, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
 
                 foreach ($chunk as $_skippedOrdersChunk) {
                     $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedOrdersChunk) . "') and mage_object_type = 'sales/order';";
@@ -1377,12 +1405,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 $manualSync->validateSync(true);
             }
 
-            /**
-             * all orders fails - return false otherwise return true
-             */
-            return (count($_skippedOrders) != count($_ids));
-        } catch (Exception $e) {
+            return true;
+        }
+        catch (Exception $e) {
             $this->logError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -1543,6 +1570,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function resetEntity($ids)
     {
+        if (empty($ids)) {
+            return;
+        }
+
         $ids = !is_array($ids)
             ? array($ids) : $ids;
 

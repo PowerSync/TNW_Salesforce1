@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Customer
  */
-class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Salesforce_Abstract
+class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
      * @var null
@@ -220,7 +220,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $firstName = ($_lastName) ? $_fullName[0] : '';
         $lastName = ($_lastName) ? $_lastName : $_fullName[0];
-        $company = (array_key_exists('company', $_data)) ? strip_tags($_data['company']) : NULL;
+        $company = (array_key_exists('company', $_data))
+            ? strip_tags($_data['company'])
+            : implode(' ', $_fullName);
 
         $fakeCustomer->setFirstname($firstName);
         $fakeCustomer->setLastname($lastName);
@@ -589,7 +591,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if (!Mage::helper('tnw_salesforce')->usePersonAccount()
                 && (!$_issetCompeny || ($_issetCompeny && empty($this->_obj->Company)))
             ) {
-                $this->_obj->Company = $_email;
+                $this->_obj->Company = $_customer->getName();
             }
 
             $this->_cache['leadsToUpsert'][$_upsertOn][$_id] = $this->_obj;
@@ -1277,8 +1279,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                             $noticeMessage = "Notice: PowerSync has tried converting a Lead for customer ($_email).
                             Company name field on the Lead has value suggesting a B2B Account,
                             however Salesforce has an existing PersonAccount for this customer.
-                            Either delete a duplicate Lead and try again, or make sure the Company Name field is empty on the Lead.
-                            Other option is to remove the PersonAccount and try again";
+                            Either delete a duplicate Lead and try again, or make sure Company field on a Lead is empty.
+                            Other option is to remove the PersonAccount and try again" .
+                            (property_exists($leadConvert, 'accountId') ? " Account is: " . Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($leadConvert->accountId) : "") .
+                            (property_exists($_lead, 'Id') ? " Lead is: " . Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($_lead->Id) : "")
+                            ;
 
                             Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice(Mage::helper('tnw_salesforce')->__($noticeMessage));
                             return $this;
@@ -1437,11 +1442,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         try {
             // Lookup existing Contacts & Accounts
+            $this->_skippedEntity = array();
             $_emailsArray = array();
             $_companies = array();
 
             $this->_updateCustomerStatistic($ids);
 
+            /** @var Mage_Customer_Model_Resource_Customer_Collection $_collection */
             $_collection = Mage::getModel('customer/customer')
                 ->getCollection()
                 ->addAttributeToSelect('*')
@@ -1453,10 +1460,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($_collection as $_customer) {
                 if (!$_customer->getEmail() || !$_customer->getId()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer #" . $_customer->getId() . ", customer could not be loaded!");
+                    $this->_skippedEntity[] = $_customer->getId();
                     continue;
                 }
+
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customer->getGroupId())) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for customer group #" . $_customer->getGroupId() . " is disabled!");
+                    $this->_skippedEntity[] = $_customer->getId();
                     continue;
                 }
 
@@ -1481,9 +1491,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_cache['toSaveInMagento'][$_customer->getData('website_id')][$_email] = $tmp;
             }
             $this->_cache['entitiesUpdating'] = $_emailsArray;
-            $this->findCustomerAccounts($_emailsArray);
 
-            $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
+            if (empty($this->_cache['entitiesUpdating'])) {
+                return false;
+            }
+
+            $this->findCustomerAccounts($_emailsArray);
 
             $foundCustomers = array();
 
@@ -1595,8 +1608,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $this->_cache['notFoundCustomers'] = $_emailsArray;
-        } catch (Exception $e) {
+            return true;
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 

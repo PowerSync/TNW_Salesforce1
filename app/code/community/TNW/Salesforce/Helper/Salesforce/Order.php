@@ -106,6 +106,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $_toActivate = new stdClass();
             $_toActivate->Status = $_currentStatus;
             $_toActivate->Id = NULL;
+
+            if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+                $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+                $_toActivate->$disableSyncField = true;
+            }
+
             $this->_cache['orderToActivate'][$_orderNumber] = $_toActivate;
         }
 

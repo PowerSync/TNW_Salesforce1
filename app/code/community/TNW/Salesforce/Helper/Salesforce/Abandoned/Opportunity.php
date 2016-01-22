@@ -78,6 +78,63 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
     }
 
+    /**
+     * @param $item Mage_Sales_Model_Quote_Item
+     */
+    protected function _getItemDescription($item)
+    {
+        $opt = array();
+        $_summary = array();
+
+        $typeId = $item->getProduct()->getTypeId();
+        switch($typeId) {
+            case 'bundle':
+                /** @var Mage_Bundle_Helper_Catalog_Product_configuration $configuration */
+                $configuration = Mage::helper('bundle/catalog_product_configuration');
+                $options = $configuration->getOptions($item);
+                break;
+
+            case 'downloadable':
+                /** @var Mage_Downloadable_Helper_Catalog_Product_Configuration $configuration */
+                $configuration = Mage::helper('downloadable/catalog_product_configuration');
+                $options = $configuration->getOptions($item);
+                break;
+
+            default:
+                /** @var Mage_Catalog_Helper_Product_Configuration $configuration */
+                $configuration = Mage::helper('catalog/product_configuration');
+                $options = $configuration->getOptions($item);
+                break;
+        }
+
+        $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
+        foreach ($options as $_option) {
+            $optionValue = '';
+            if(isset($_option['print_value'])) {
+                $optionValue = $_option['print_value'];
+            } elseif (isset($_option['value'])) {
+                $optionValue = $_option['value'];
+            }
+
+            if (is_array($optionValue)) {
+                $optionValue = implode(', ', $optionValue);
+            }
+
+            $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
+            $_summary[] = strip_tags($optionValue);
+        }
+
+        if (count($opt) > 0) {
+            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
+            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
+
+            $this->_obj->Description = join(", ", $_summary);
+            if (strlen($this->_obj->Description) > 200) {
+                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
+            }
+        }
+    }
+
     protected function _prepareEntity()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: Start----------');
@@ -300,6 +357,29 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         if (!in_array($itemId, $this->_stockItems[$_storeId])) {
             $this->_stockItems[$_storeId][] = $itemId;
         }
+    }
+
+    /**
+     * @param $_item Mage_Sales_Model_Quote_Item
+     * @return int
+     * Get product Id from the cart
+     */
+    public function getProductIdFromCart($_item)
+    {
+        /** @var Mage_Catalog_Helper_Product_Configuration $configuration */
+        $configuration = Mage::helper('catalog/product_configuration');
+        $custom = $configuration->getCustomOptions($_item);
+
+        if (
+            $_item->getData('product_type') == 'bundle'
+            || (is_array($custom) && count($custom) > 0)
+        ) {
+            $id = $_item->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+
+        return $id;
     }
 
     /**
@@ -539,7 +619,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         try {
             $this->_isCron = $_isCron;
             $_guestCount = 0;
-            $_quotes = $_emails = $_websites = array();
+            $this->_skippedEntity = $_quotes = $_emails = $_websites = array();
 
             if (!is_array($_ids)) {
                 $_ids = array($_ids);
@@ -561,14 +641,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 // Quote could not be loaded for some reason
                 if (!$_quote->getId()) {
                     $this->logError('WARNING: Sync for abandoned cart #' . $_id . ', quote could not be loaded!');
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
                 // Quote could not be loaded for some reason
                 if (count($_quote->getAllItems()) == 0) {
                     $this->logNotice('SKIPPING: Abandoned cart #' . $_id . ' is empty!');
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
@@ -594,7 +674,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
                     $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
@@ -609,7 +689,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 if (empty($_quoteEmail)) {
                     $this->logNotice('SKIPPED: Sync for quote #' . $_quoteNumber . ' failed, quote is missing an email address!');
-                    $_skippedAbandoned[$_id] = $_id;
+                    $this->_skippedEntity[$_id] = $_id;
                     continue;
                 }
 
@@ -737,14 +817,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                      */
                     // Something is wrong, could not create / find Magento customer in SalesForce
                     $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $email . ') could not be created / found!');
-                    $_skippedAbandoned[$id] = $id;
+                    $this->_skippedEntity[$id] = $id;
 
                     continue;
                 }
             }
 
-            if (!empty($_skippedAbandoned)) {
-                $chunk = array_chunk($_skippedAbandoned, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            if (!empty($this->_skippedEntity)) {
+                $chunk = array_chunk($this->_skippedEntity, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
                 foreach ($chunk as $_skippedAbandonedChunk) {
                     $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandonedChunk) . "') and mage_object_type = 'sales/quote';";
                     Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
@@ -754,7 +834,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
             }
 
-            return true;
+            return (count($this->_skippedEntity) != count($_ids));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
