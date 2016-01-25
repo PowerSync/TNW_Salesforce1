@@ -422,40 +422,17 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     protected function _prepareContactRoles()
     {
-        $helper = Mage::helper('tnw_salesforce');
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
         foreach ($this->getUpsertedEntityIds() as $quoteNumber) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $quoteNumber . ') ********');
 
-            $quote = $this->_loadQuote($quoteNumber);
+            $quote = $this->_loadEntity($quoteNumber);
             $customer = $this->getQuoteCustomer($quote);
 
             $contactRole = new stdClass();
             $email = strtolower($customer->getEmail());
-            $websiteId = $customer->getWebsiteId() ? $customer->getWebsiteId() : $quote->getStore()->getWebsiteId();
 
-            /**
-             * we use SF websiteId in lookup arrays in this class
-             */
-            $websiteSfId = $this->_websiteSfIds[$websiteId];
-
-            /**
-             * try to use data from lookup array for person accounts or get data from customer directly
-             */
-            if (
-                 isset($this->_cache['accountsLookup'])
-                    && isset($this->_cache['accountsLookup'][$websiteSfId])
-                    && isset($this->_cache['accountsLookup'][$websiteSfId][$email])
-                    && is_object($this->_cache['accountsLookup'][$websiteSfId][$email])
-                    && (property_exists($this->_cache['accountsLookup'][$websiteSfId][$email], 'IsPersonAccount')
-                        || (bool)$customer->getSalesforceIsPerson()
-                    )
-
-            ) {
-                $contactRole->ContactId = $this->_cache['accountsLookup'][$websiteSfId][$email]->Id;
-            } else {
-                $contactRole->ContactId = $customer->getSalesforceId();
-            }
+            $contactRole->ContactId = $customer->getSalesforceId();
 
             // Check if already exists
             $skip = false;
