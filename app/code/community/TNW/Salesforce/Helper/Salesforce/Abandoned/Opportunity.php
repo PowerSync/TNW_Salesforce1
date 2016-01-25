@@ -413,7 +413,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $customerId = $this->_cache['quoteToCustomerId'][$quote->getId()];
 
         //always update cache array if customer ids are the same
-        if ($customerId == $quote->getCustomerId() || !$this->_cache['quoteCustomers'][$quote->getId()]) {
+        if ($customerId == $quote->getCustomerId() && !$this->_cache['quoteCustomers'][$quote->getId()]) {
             $this->_cache['quoteCustomers'][$quote->getId()] = $quote->getCustomer();
         }
 
