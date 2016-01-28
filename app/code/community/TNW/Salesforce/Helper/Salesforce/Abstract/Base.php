@@ -78,6 +78,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     /**
      * @return array
      */
+    public function getSkippedEntity()
+    {
+        return $this->_skippedEntity;
+    }
+
+    //public function
+
     public function getMagentoEntityName()
     {
         return $this->_magentoEntityName;

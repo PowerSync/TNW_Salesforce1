@@ -58,41 +58,37 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      * @param array $emails
      * @return array
      */
-    public function accountLookupByEmailDomain($emails = array(), $_hashKey = 'email')
+    public function accountLookupByEmailDomain($emails = array())
     {
+        $_domains = array_map(function($_email) {
+            return strtolower(substr(stristr($_email, '@'), 1));
+        }, $emails);
+
         try {
-            $_domainsArray = array();
-            foreach ($emails as $key => $_email) {
-                if ($_hashKey == 'email') {
-                    $_hashKey = $key;
-                } else {
-                    $_hashKey = $key;
-                }
-                $_domainsArray[$_hashKey] = strtolower(substr(stristr($_email, '@'), 1));
-            }
+            /** @var TNW_Salesforce_Model_Mysql4_Account_Matching_Collection $collection */
+            $collection = Mage::getModel('tnw_salesforce/account_matching')
+                ->getCollection();
+            $collection->addFieldToFilter('email_domain', $_domains);
 
-            $_return = array();
-            //Check if domain is a catch all.
-            $_catchAllDomains = Mage::helper('tnw_salesforce')->getCatchAllAccounts();
-
-            $_accountId = NULL;
-            if (array_key_exists('domain', $_catchAllDomains) && !empty($_catchAllDomains['domain'])) {
-                foreach ($_domainsArray as $_hashKey => $_domain) {
-                    if (in_array($_domain, $_catchAllDomains['domain'])) {
-                        $_key = array_search($_domain, $_catchAllDomains['domain']);
-                        $_return[$_hashKey] = $_catchAllDomains['account'][$_key];
-                    }
-                }
-            }
-
-            return $_return;
-        } catch (Exception $e) {
+            $toOptionHash = $collection->toOptionHashCustom();
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by email domain #" . join(',', $_domainsArray));
-            unset($company);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by email domain #" . join(',', $_domains));
 
             return array();
         }
+
+        $_return = array();
+        foreach($_domains as $_hashKey => $_domain) {
+            if (!isset($toOptionHash[$_domain])) {
+                continue;
+            }
+
+            $_return[$_hashKey] = $toOptionHash[$_domain];
+        }
+
+        return $_return;
     }
 
     /**

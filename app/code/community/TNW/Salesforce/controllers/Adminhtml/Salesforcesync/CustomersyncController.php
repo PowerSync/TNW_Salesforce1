@@ -75,8 +75,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
                         $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
                         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                        $manualSync->massAdd(array($this->getRequest()->getParam('customer_id')));
-                        $manualSync->process();
+                        if ($manualSync->massAdd(array($this->getRequest()->getParam('customer_id')))){
+                            $manualSync->process();
+                        }
                         if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
                             Mage::getSingleton('adminhtml/session')->addSuccess(
                                 Mage::helper('adminhtml')->__('Record was syncronized successfully!')
@@ -128,16 +129,15 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
                         $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
                         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                        $manualSync->massAdd($itemIds);
-                        $manualSync->process();
+                        if ($manualSync->massAdd($itemIds)){
+                            $manualSync->process();
+                        }
                         if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()
                             && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
                             Mage::getSingleton('adminhtml/session')->addSuccess(
                                 Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds))
                             );
                         }
-                    } else {
-                        Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
                     }
                 }
             } catch (Exception $e) {

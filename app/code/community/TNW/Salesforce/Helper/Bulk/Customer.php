@@ -181,7 +181,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 ->lookup(
                     $this->_cache['entitiesUpdating'],
                     $_websites,
-                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
 
                 );
             $this->_customerAccountId = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
@@ -227,7 +227,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 ->lookup(
                     $this->_cache['entitiesUpdating'],
                     $_websites,
-                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())? Mage::helper('tnw_salesforce/data')->getLeadSource(): null
+                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
                 );
 
             if (!empty($this->_cache['leadLookup'])) {
@@ -359,11 +359,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         // before we send data to sf - check if connection / login / wsdl is valid
         // related ticket https://trello.com/c/TNEu7Rk1/54-salesforce-maintenance-causes-bulk-sync-to-run-indefinately
         $sfClient = Mage::getSingleton('tnw_salesforce/connection');
-        if (
-            !$sfClient->tryWsdl()
-            || !$sfClient->tryToConnect()
-            || !$sfClient->tryToLogin()
-        ) {
+        if (!$sfClient->initConnection()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
             return false;
         }
@@ -642,7 +638,30 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = (string)$_item->id;
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount = 1;
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+
+                /**
+                 * If sync PersonAccount - set empty Lead's Company name for correct converting
+                 */
+                foreach ($this->_cache['leadsToUpsert'] as $_upsertOn => $_objects) {
+                    if (array_key_exists($_cid, $_objects)) {
+                        $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = ' ';
+                    }
+                }
+            } elseif (array_key_exists($_cid, $this->_cache['accountsToUpsert']['Id'])
+                && !property_exists($this->_cache['accountsToUpsert']['Id'][$_cid], 'PersonEmail')
+            ) {
+                /**
+                 * If lead has not Company name - set Account name for correct converting
+                 */
+                foreach ($this->_cache['leadsToUpsert'] as $_upsertOn => $_objects) {
+                    if (array_key_exists($_cid, $_objects)) {
+                        if (!property_exists($_objects, 'Company')) {
+                            $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = $this->_cache['accountsToUpsert']['Id'][$_cid]->Name;
+                        }
+                    }
+                }
             }
+
             if (
                 array_key_exists('Id', $this->_cache['contactsToUpsert'])
                 && array_key_exists($_cid, $this->_cache['contactsToUpsert']['Id'])
@@ -694,16 +713,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id = (string)$_item->id;
                     $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsPersonAccount = true;
 
-                    /**
-                     * Company name should be empty for convertation to PersonAccount
-                     * @see https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_lead.htm#LeadCompanyField
-                     */
-                    foreach ($this->_cache['leadsToUpsert'] as $_id => $_objects) {
-                        if (array_key_exists($_cid, $_objects)
-                        ) {
-                            $this->_cache['leadsToUpsert'][$_id][$_cid]->Company = '';
-                        }
-                    }
                 }
             }
         }
@@ -763,7 +772,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     if (isset($this->_cache['leadsToUpsert'][$_on][$_cid])) {
 
                         $this->_cache['leadsToUpsert'][$_on][$_cid]->Id = (string)$_item->id;
-                        $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = $this->_cache['leadsToUpsert'][$_on][$_cid];
+
+                        foreach ($this->_cache['leadsToUpsert'][$_on][$_cid] as $field => $value) {
+                            $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field = $value;
+                        }
+
                         if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
                             $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
                         } else {
@@ -921,10 +934,20 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 $_salesforceIds = array();
                 foreach ($this->_cache[$_collection]['Id'] as $_magentoId => $_object) {
                     if ($_collection == 'accountsToUpsert') {
-                        if (array_key_exists($_magentoId, $this->_cache['contactsToUpsert']['Id'])) {
-                            $contact = $this->_cache['contactsToUpsert']['Id'][$_magentoId];
-                        } else {
-                            $contact = $this->_cache['contactsToUpsertBackup']['Id'][$_magentoId];
+
+                        $contact = null;
+
+                        foreach (array('Id', $this->_magentoId) as $cacheUpsertKey) {
+
+                            if (array_key_exists($_magentoId, $this->_cache['contactsToUpsert'][$cacheUpsertKey])) {
+                                $contact = $this->_cache['contactsToUpsert'][$cacheUpsertKey][$_magentoId];
+                            } else {
+                                $contact = $this->_cache['contactsToUpsertBackup'][$cacheUpsertKey][$_magentoId];
+                            }
+
+                            if (!empty($contact)) {
+                                break;
+                            }
                         }
 
                         /**

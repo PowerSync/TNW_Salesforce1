@@ -5,12 +5,8 @@
  */
 class TNW_Salesforce_Model_Customer_Observer
 {
-    public function __construct()
-    {
-    }
-
     /**
-     * @param $observer
+     * @param Varien_Event_Observer $observer
      */
     public function salesforceTriggerEvent($observer)
     {
@@ -27,7 +23,7 @@ class TNW_Salesforce_Model_Customer_Observer
     }
 
     /**
-     * @param $observer
+     * @param Varien_Event_Observer $observer
      */
     public function salesforceAitocTriggerEvent($observer)
     {
@@ -40,19 +36,20 @@ class TNW_Salesforce_Model_Customer_Observer
     }
 
     /**
-     * @param $observer
+     * @param Varien_Event_Observer $observer
      */
     public function triggerWebToLead($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
-            return; // Disabled
-        }
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledContactForm()
         ) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Contact form synchronization disabled');
+            return; // Disabled
+        }
+
+        if (!Mage::helper('tnw_salesforce')->canPush()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
         }
 
@@ -74,18 +71,13 @@ class TNW_Salesforce_Model_Customer_Observer
     }
 
     /**
-     * @param $observer
+     * @param Varien_Event_Observer $observer
      * @return bool
      */
     public function salesforcePush($observer)
     {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
+        /** @var Mage_Customer_Model_Customer $customer */
         $customer = $observer->getEvent()->getCustomer();
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
 
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
@@ -100,6 +92,14 @@ class TNW_Salesforce_Model_Customer_Observer
             return; // Disabled
         }
 
+        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            return; // Disabled
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace('TNW EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
+
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             // pass data to local storage
@@ -107,29 +107,59 @@ class TNW_Salesforce_Model_Customer_Observer
             $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($customer->getData('entity_id'))), 'Customer', 'customer');
             if (!$res) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('error: customer not saved to local storage');
-                return false;
+                return;
             }
-            return true;
+
+            return;
         }
 
-        $_customerSync = Mage::helper('tnw_salesforce/salesforce_customer');
-        $_customerSync->reset();
-        $_customerSync->updateMagentoEntityValue($customer->getId(), NULL, 'sf_insync', 'customer_entity_int');
-
+        /** @var tnw_salesforce_helper_salesforce_customer $manualSync */
         $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-        $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-        $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
         if ($manualSync->reset()) {
-            $manualSync->massAdd(array($customer->getId()));
-            $manualSync->process();
+            $manualSync->updateMagentoEntityValue($customer->getId(), NULL, 'sf_insync', 'customer_entity_int');
+
+            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
+            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
+
+            if ($manualSync->massAdd(array($customer->getId()))){
+                $manualSync->process();
+            }
+
             if (Mage::helper('tnw_salesforce')->displayErrors()
                 && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Customer (email: ' . $customer->getEmail() . ') is successfully synchronized'));
+                Mage::getSingleton('adminhtml/session')
+                    ->addSuccess(Mage::helper('adminhtml')->__('Customer (email: ' . $customer->getEmail() . ') is successfully synchronized'));
             }
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce connection could not be established!');
         }
+    }
+
+    /**
+     * Address after save event handler
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function afterAddressSave($observer)
+    {
+        /** @var $customerAddress Mage_Customer_Model_Address */
+        $customerAddress = $observer->getCustomerAddress();
+        $customer        = $customerAddress->getCustomer();
+
+        if ($customer->getOrigData('default_billing') != $customer->getData('default_billing')) {
+            return;
+        }
+
+        if ($customer->getOrigData('default_shipping') != $customer->getData('default_shipping')) {
+            return;
+        }
+
+        if (!in_array($customerAddress->getId(), array(
+            $customer->getData('default_billing'),
+            $customer->getData('default_shipping')))
+        ) {
+            return;
+        }
+
+        Mage::dispatchEvent('tnw_salesforce_customer_save', array('customer' => $customer));
     }
 
     public function beforeImport()

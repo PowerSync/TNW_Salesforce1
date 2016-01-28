@@ -20,6 +20,11 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Order extends TNW_Salesforce_Model
     {
         parent::_processMapping($order);
 
+        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $this->getObj()->$disableSyncField = true;
+        }
+
         $this->getObj()->Description   = self::getOrderDescription($order);
         $this->getObj()->OpportunityId = $order->getOpportunityId();
     }

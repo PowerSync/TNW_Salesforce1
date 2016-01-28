@@ -230,6 +230,174 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @comment assign Opportynity/Order Id
+     */
+    protected function _getParentEntityId($parentEntityNumber)
+    {
+        if (!$this->getSalesforceParentIdField()) {
+            $this->setSalesforceParentIdField($this->getUcParentEntityType() . 'Id');
+        }
+        $upsertedEntity = $this->_cache['upserted' . $this->getManyParentEntityType()];
+        //return $this->_cache['upserted' . $this->getManyParentEntityType()][$parentEntityNumber];
+        return (array_key_exists($parentEntityNumber, $upsertedEntity)) ? $upsertedEntity[$parentEntityNumber] :  NULL;
+    }
+
+    /**
+     * @param $item
+     * @param int $qty
+     * @return float
+     */
+    protected function _prepareItemPrice($item, $qty = 1)
+    {
+        $netTotal = $this->_calculateItemPrice($item, $qty);
+
+        /**
+         * @comment prepare formatted price
+         */
+        return $this->numberFormat($netTotal);
+    }
+
+    /**
+     * @param $item
+     * @param int $qty
+     * @return float
+     */
+    protected function _calculateItemPrice($item, $qty = 1)
+    {
+        if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+            $netTotal = $this->getEntityPrice($item, 'RowTotalInclTax');
+        } else {
+            $netTotal = $this->getEntityPrice($item, 'RowTotal');
+        }
+
+        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+            $netTotal = ($netTotal - $this->getEntityPrice($item, 'DiscountAmount'));
+            $netTotal = $netTotal / $qty;
+        } else {
+            $netTotal = $netTotal / $qty;
+        }
+
+        return $netTotal;
+    }
+
+    /**
+     * @comment Prepare order items for Salesforce
+     * @throws Exception
+     */
+    protected function _prepareOrderItem($parentEntityNumber)
+    {
+
+        $parentEntity = $this->getParentEntity($parentEntityNumber);
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** ' . strtoupper($this->getMagentoEntityName()) . ' (' . $parentEntityNumber . ') ********');
+
+        /**
+         * @comment prepare products for Salesforce order/opportunity
+         * @var $_item Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item
+         */
+        foreach ($this->getItems($parentEntity) as $_item) {
+
+            try {
+                $this->_prepareItemObj($parentEntity, $parentEntityNumber, $_item);
+            } catch (Exception $e) {
+
+                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addNotice($e->getMessage());
+                }
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
+                continue;
+            }
+
+        }
+
+        $this->_applyAdditionalFees($parentEntity, $parentEntityNumber);
+    }
+
+    /**
+     * @comment add Tax/Shipping/Discount to the order as different product
+     * @param $parentEntity
+     * @param $parentEntityNumber
+     */
+    protected function _applyAdditionalFees($parentEntity, $parentEntityNumber)
+    {
+        $_helper = Mage::helper('tnw_salesforce');
+
+        foreach ($this->getAvailableFees() as $feeName) {
+            $ucFee = ucfirst($feeName);
+
+            $configMethod = 'use' . $ucFee . 'FeeProduct';
+            // Push Fee As Product
+            if (Mage::helper('tnw_salesforce')->$configMethod() && $parentEntity->getData($feeName . '_amount') != 0) {
+
+                $getProductMethod = 'get' . $ucFee . 'Product';
+
+                if (Mage::helper('tnw_salesforce')->$getProductMethod()) {
+
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
+
+                    $qty = 1;
+
+                    $item = new Varien_Object();
+
+                    $feeData = Mage::app()->getStore($parentEntity->getStoreId())->getConfig($_helper->getFeeProduct($feeName));
+                    if ($feeData) {
+                        $feeData = unserialize($feeData);
+                    } else {
+                        continue;
+                    }
+
+                    $item->setData($feeData);
+
+                    /**
+                     * add data in lower case too compatibility for
+                     */
+                    foreach ($feeData as $key => $value) {
+                        $key = strtolower($key);
+                        $item->setData($key, $value);
+                    }
+
+                    $item->setData($this->getItemQtyField(), $qty);
+
+                    $item->setDescription($_helper->__($ucFee));
+
+                    $item->setRowTotalInclTax($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
+                    $item->setRowTotal($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
+
+                    $this->_prepareItemObj($parentEntity, $parentEntityNumber, $item);
+
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL ERROR: $feeName product is not configured!");
+                }
+            }
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function getUcParentEntityType()
+    {
+        if (!$this->_ucParentEntityType) {
+            /**
+             * @comment first letter in upper case
+             */
+            $this->_ucParentEntityType = ucfirst($this->_salesforceEntityName);
+        }
+
+        return $this->_ucParentEntityType;
+    }
+
+    /**
+     * @param string $ucParentEntityType
+     * @return $this
+     */
+    public function setUcParentEntityType($ucParentEntityType)
+    {
+        $this->_ucParentEntityType = $ucParentEntityType;
+        return $this;
+    }
+
+    /**
      * @return string
      */
     public function getManyParentEntityType()
@@ -527,13 +695,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_obj->UnitPrice = $this->_prepareItemPrice($item, $qty);
 
-        $this->_getDescriptionByEntityItem($parentEntity, $item, $_description, $_productOptions);
-        $this->_obj->{$this->_getSalesforcePrefix() . 'Product_Options__c'} = $_productOptions;
-        $this->_obj->Description = $_description;
-        if (strlen($_description) > 200) {
-            $this->_obj->Description = substr($_description, 0, 200) . '...';
-        }
-
+        // Description Item
+        $this->_getItemDescription($item);
 
         /**
          * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
@@ -580,6 +743,83 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
 
+    }
+
+    /**
+     * @param $item Mage_Sales_Model_Order_Item
+     */
+    protected function _getItemDescription($item)
+    {
+        $opt = array();
+        $options = (is_array($item->getData('product_options')))
+            ? $item->getData('product_options')
+            : @unserialize($item->getData('product_options'));
+
+        $_summary = array();
+        if (
+            is_array($options)
+            && array_key_exists('options', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
+            foreach ($options['options'] as $_option) {
+                $optionValue = '';
+                if(isset($_option['print_value'])) {
+                    $optionValue = $_option['print_value'];
+                } elseif (isset($_option['value'])) {
+                    $optionValue = $_option['value'];
+                }
+
+                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
+                $_summary[] = $optionValue;
+            }
+        }
+
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'bundle'
+            && array_key_exists('bundle_options', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
+            foreach ($options['bundle_options'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                if (is_array($_option['value'])) {
+                    $_tmp = array();
+                    foreach ($_option['value'] as $_value) {
+                        $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
+                        $_summary[] = $_value['title'];
+                    }
+                    if (count($_tmp) > 0) {
+                        $_string .= join(", ", $_tmp);
+                    }
+                }
+
+                $opt[] = '<tr>' . $_string . '</tr>';
+            }
+        }
+
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'configurable'
+            && array_key_exists('attributes_info', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr><tbody>';
+            foreach ($options['attributes_info'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                $_string .= '<td align="left">' . $_option['value'] . '</td>';
+                $_summary[] = $_option['value'];
+                $opt[] = '<tr>' . $_string . '</tr>';
+            }
+        }
+
+        if (count($opt) > 0) {
+            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
+            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
+
+            $this->_obj->Description = join(", ", $_summary);
+            if (strlen($this->_obj->Description) > 200) {
+                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
+            }
+        }
     }
 
     /*
@@ -843,7 +1083,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                  */
                 // Something is wrong, could not create / find Magento customer in SalesForce
                 $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $_orderEmail . ') could not be created / found!');
-                $skippedOrders[$id] = $id;
+                $this->_skippedEntity[$id] = $id;
 
                 continue;
             }
@@ -1027,6 +1267,27 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @param $ids
+     * Reset Salesforce ID in Magento for the order
+     */
+    public function resetEntity($ids)
+    {
+        if (empty($ids)) {
+            return;
+        }
+
+        $ids = !is_array($ids)
+            ? array($ids) : $ids;
+
+        $mainTable = $this->_modelEntity()->getResource()->getMainTable();
+        $sql = "UPDATE `" . $mainTable . "` SET salesforce_id = NULL, sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
+        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("%s ID and Sync Status for %s (#%s) were reset.", 'Order', 'order', join(',', $ids)));
+    }
+
+    /**
      * @param $_entity Mage_Sales_Model_Order
      * @throws Exception
      * @return array
@@ -1079,19 +1340,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             && $this->_cache['orderCustomers'][$_orderNumber]->getData('email')
         ) ? strtolower($this->_cache['orderCustomers'][$_orderNumber]->getData('email')) : NULL;
 
-        $_order = (Mage::registry('order_cached_' . $_orderNumber)) ? Mage::registry('order_cached_' . $_orderNumber) : Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-        $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-
         if (
             is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists(0, $this->_cache['accountsLookup'])
             && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])
         ) {
             $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->Id;
         } elseif (
             $_customerEmail && $_orderEmail != $_customerEmail
             && is_array($this->_cache['accountsLookup'])
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
+            && array_key_exists(0, $this->_cache['accountsLookup'])
             && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
         ) {
             $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->Id;
@@ -1359,9 +1617,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         );
 
         $this->_obj = new stdClass();
-        // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-        $this->_obj->$orderIdParam = $order->getRealOrderId();
 
         //Process mapping
         Mage::getSingleton(sprintf('tnw_salesforce/sync_mapping_order_%s', $this->_salesforceEntityName))

@@ -55,6 +55,9 @@
                     <assignmentrule>
                         <table>tnw_salesforce_assignmentrule</table>
                     </assignmentrule>
+                    <account_matching>
+                        <table>tnw_salesforce_account_matching</table>
+                    </account_matching>
                     <log>
                         <table>tnw_salesforce_log</table>
                     </log>
@@ -213,7 +216,9 @@
                 </observers>
             </checkout_submit_all_after>
 
-            <!-- Order Save Event: Status update -->
+            <!-- Order Save Event: Status update
+                TODO: Event "order_save_after" are there?
+            -->
             <order_save_after>
                 <observers>
                     <tnw_salesforce_sale_observer>
@@ -531,6 +536,14 @@
 
                 </observers>
             </sales_order_place_after>
+            <customer_address_save_after>
+                <observers>
+                    <tnw_salesforce_customer_address_save_after_observer>
+                        <class>tnw_salesforce/customer_observer</class>
+                        <method>afterAddressSave</method>
+                    </tnw_salesforce_customer_address_save_after_observer>
+                </observers>
+            </customer_address_save_after>
         </events>
     </frontend>
     <admin>
@@ -569,14 +582,13 @@
             <developer>
                 <log_enable>1</log_enable>
                 <email_prefix>LIVE</email_prefix>
-                <remote_log>1</remote_log>
             </developer>
             <syncronization>
                 <sync_type_realtime>sync_type_realtime</sync_type_realtime>
             </syncronization>
             <development_and_debugging>
                 <log_enable>1</log_enable>
-                <remote_log>1</remote_log>
+                <remote_log>0</remote_log>
                 <bulk>
                     <max_execution_time>0</max_execution_time>
                     <set_time_limit>0</set_time_limit>

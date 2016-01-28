@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Product
  */
-class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Salesforce_Abstract
+class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /* Salesforce ID for default Pricebook set in Magento */
     protected $_defaultPriceBook = NULL;
@@ -136,13 +136,14 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         try {
             //get product collection
+            /** @var Mage_Catalog_Model_Product[] $productsCollection */
             $productsCollection = Mage::getModel('catalog/product')
                 ->getCollection()
                 ->addIdFilter($ids)
                 ->addAttributeToSelect('salesforce_disable_sync');
             Mage::register('product_sync_collection', $productsCollection);
 
-            $skuArray = array();
+            $this->_skippedEntity = $skuArray = array();
             foreach ($productsCollection as $product) {
                 // we check product type and skip synchronization if needed
                 if (intval($product->getData('salesforce_disable_sync')) == 1) {
@@ -151,6 +152,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     if ($this->canDisplayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice($message);
                     }
+
+                    $this->_skippedEntity[] = $product->getId();
                     continue;
                 }
 
@@ -160,12 +163,18 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     if ($this->canDisplayErrors()) {
                         Mage::getSingleton('adminhtml/session')->addNotice($message);
                     }
+
+                    $this->_skippedEntity[] = $product->getId();
                     continue;
                 }
 
                 $sku = trim($product->getSku());
                 $this->_cache['productIdToSku'][$product->getId()] = $sku;
                 $skuArray[$product->getId()] = $sku;
+            }
+
+            if (empty($skuArray)) {
+                return false;
             }
 
             // Look up products in Salesforce
@@ -183,8 +192,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $this->_syncStoreProducts($this->getHelper()->getStoreId());
             }
             Mage::unregister('product_sync_collection');
-        } catch (Exception $e) {
+
+            return true;
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -533,7 +546,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
 
         } else {
-            $currencyCodes = array($store->getDefaultCurrencyCode());
+            $currencyCodes = array($store->getBaseCurrencyCode());
         }
 
         foreach ($currencyCodes as $currencyCode) {

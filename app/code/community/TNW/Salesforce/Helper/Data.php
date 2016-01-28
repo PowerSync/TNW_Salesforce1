@@ -762,7 +762,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . $e->getMessage());
         }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveError('INFO: Extension is not working!');
 
         return false;
     }
@@ -1140,20 +1139,23 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /**
      * @return array
+     * @deprecated
      */
     public function getCatchAllAccounts()
     {
-        $_array = unserialize($this->getStroreConfig(self::CUSTOMER_CATCHALL_ACCOUNT));
-        $newArray = array();
-        if ($_array) {
-            foreach ($_array as $_k => $_subArray) {
-                foreach ($_subArray as $_key => $_value) {
-                    if (empty($_value)) {
-                        unset($_subArray[$_key]);
-                    }
-                }
-                $newArray[$_k] = $_subArray;
-            }
+        $newArray = array(
+            'domain'  => array(),
+            'account' => array(),
+        );
+
+        /** @var TNW_Salesforce_Model_Mysql4_Account_Matching_Collection $collection */
+        $collection = Mage::getModel('tnw_salesforce/account_matching')
+            ->getCollection();
+
+        /** @var TNW_Salesforce_Model_Account_Matching $item */
+        foreach ($collection as $item) {
+            $newArray['domain'][]  = $item->getData('email_domain');
+            $newArray['account'][] = $item->getData('account_id');
         }
 
         return $newArray;

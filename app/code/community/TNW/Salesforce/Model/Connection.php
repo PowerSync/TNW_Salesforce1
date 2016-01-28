@@ -13,6 +13,11 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     protected $_client = NULL;
 
     /**
+     * @var
+     */
+    protected $_packageAvailable = NULL;
+
+    /**
      * @var null
      */
     protected $_wsdl = NULL;
@@ -76,10 +81,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         $this->_userAgent = $_SERVER['HTTP_USER_AGENT'];
         # Disable SOAP cache
         ini_set('soap.wsdl_cache_enabled', 0);
-        if (
-            !$this->_client &&
-            Mage::helper('tnw_salesforce')->isWorking()
-        ) {
+        if (!$this->_client) {
             # instantiate a new Salesforce object
             $this->_client = new Salesforce_SforceEnterpriseClient();
         } else {
@@ -207,8 +209,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 unset($e);
                 return false;
             }
-
-            $success = $this->checkPackage();
         }
 
         return $success;
@@ -220,29 +220,46 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function checkPackage()
     {
-        try {
-            /**
-             * @comment try to take object from our package
-             */
-            $salesforceWebsiteDescr = $this
-                ->getClient()
-                ->describeSObject(
-                    Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
-                );
+        
+        if (is_null($this->_packageAvailable)) {
 
-        } catch (Exception $e) {
-            $this->_loggedIn = null;
+            try {
 
-            $errorMessage = Mage::helper('tnw_salesforce')->__('Cannot find PowerSync package in you Salesforce');
+                /**
+                 * connection not exists or authorization failed
+                 */
+                if (!$this->_client || !$this->_loggedIn) {
+                    $this->_packageAvailable = false;
+                    return $this->_packageAvailable;
+                }
 
-            $this->_errorMessage = $errorMessage;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("checkPackage Failure: " . $errorMessage);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("checkPackage Failure, Error details: " . $e->getMessage());
-            unset($e);
-            return false;
+                /**
+                 * @comment try to take object from our package
+                 */
+                $salesforceWebsiteDescr = $this
+                    ->_client
+                    ->describeSObject(
+                        Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
+                    );
+
+                $this->_packageAvailable = true;
+
+            } catch (Exception $e) {
+
+                $this->_loggedIn = null;
+                $this->_connection = null;
+
+                $errorMessage = Mage::helper('tnw_salesforce')->__('PowerSync managed package in Salesforce is either not installed or license is expired.<br />');
+                $errorMessage .= Mage::helper('tnw_salesforce')->__('Please contact <a href="https://technweb.atlassian.net/servicedesk/customer/portal/2">Powersync Support</a> for more information');
+                $this->_errorMessage = $errorMessage;
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($errorMessage);
+                unset($e);
+                $this->_packageAvailable = false;
+            }
         }
 
-        return true;
+        return $this->_packageAvailable;
     }
 
     public function getLoginResponse()
@@ -289,7 +306,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         if (
             !$this->getPreviousTime()
             || $currentTime - $this->getPreviousTime() > self::CONNECTION_TIME_LIMIT
-            || !$this->_connection
         ) {
             $this->setPreviousTime($currentTime);
             $this->_connection = null;
@@ -298,6 +314,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             if ($this->tryWsdl()) {
                 $this->tryToConnect();
                 $this->tryToLogin();
+                $this->checkPackage();
             }
         }
 

@@ -690,6 +690,7 @@
 
                             <comment><![CDATA[
                                 <strong style="color: red;">IMPORTANT!</strong> Only enabled if you enable Country/State picklist in Salesforce.
+                                Make sure that county/state codes in Salesforce and Magento are the same.
                             ]]></comment>
                         </use_address_picklist>
 

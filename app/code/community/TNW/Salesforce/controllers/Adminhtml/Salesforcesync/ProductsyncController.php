@@ -85,15 +85,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
                         $sync->setSalesforceSessionId(
                             Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                        $sync->massAdd(array($this->getRequest()->getParam('product_id')));
-                        $sync->process();
+                        if ($sync->massAdd(array($this->getRequest()->getParam('product_id')))){
+                            $sync->process();
+                        }
                         if (!$session->getMessages()->getErrors()
                             && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()
                         ) {
                             $session->addSuccess($this->__('Product was successfully synchronized'));
                         }
-                    } else {
-                        $session->addError($this->__('Salesforce connection could not be established!'));
                     }
                 }
             } catch (Exception $e) {
@@ -139,8 +138,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
                         $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
                         $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                        $manualSync->massAdd($itemIds);
-                        $manualSync->process();
+                        if ($manualSync->massAdd($itemIds)){
+                            $manualSync->process();
+                        }
                         if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()
                             && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
                             Mage::getSingleton('adminhtml/session')->addSuccess(

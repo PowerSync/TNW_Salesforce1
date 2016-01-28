@@ -88,14 +88,6 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
             return true;
         }
 
-        // call server 1 (only if server 1 timed out or has non valid json response, call server 2)
-        // cache result (if false, don't attempt to login into sf)
-        $licenseIsValid = Mage::getSingleton('tnw_salesforce/license')->getStatus();
-        if (!$licenseIsValid) {
-
-            return false;
-        }
-
         $connectionOk = $this->establishSfConnection();
         if (!$connectionOk) {
 
@@ -181,6 +173,15 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         $this->validateStorage();
         $mageCache = Mage::app()->getCache();
         $useCache = Mage::app()->useCache('tnw_salesforce');
+
+        /**
+         * The Cache feature broke our authorization and we receive
+         * the 'Salesforce connection failed, bulk API session ID is invalid' error
+         *
+         * @TODO check my comment, is the change below fix this problem
+         */
+        $useCache = false;
+
         if ($useCache) {
             $res = unserialize($mageCache->load($key));
         }
@@ -226,6 +227,15 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     {
         $mageCache = Mage::app()->getCache();
         $useCache = Mage::app()->useCache('tnw_salesforce');
+
+        /**
+         * The Cache feature broke our authorization and we receive
+         * the 'Salesforce connection failed, bulk API session ID is invalid' error
+         *
+         * @TODO check my comment, is the change below fix this problem
+         */
+        $useCache = false;
+
         if ($useCache) {
             $res = $mageCache->save(serialize($value), $key, array("TNW_SALESFORCE"));
         }
