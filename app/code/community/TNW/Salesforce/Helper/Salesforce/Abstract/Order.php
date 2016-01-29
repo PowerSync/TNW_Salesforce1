@@ -203,22 +203,48 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @param $parentEntityNumber
-     * @return Mage_Core_Model_Abstract|mixed
-     */
-    public function getSalesforceParentEntity($parentEntityNumber)
-    {
-        return $this->_cache[strtolower($this->getManyParentEntityType()) . 'ToUpsert'][$parentEntityNumber];
-    }
-
-    /**
-     * @comment return parent entity items
-     * @param $parentEntity Mage_Sales_Model_Quote|Mage_Sales_Model_Order
+     * Return parent entity items and bundle items
+     *
+     * @param $parentEntity Mage_Sales_Model_Order
      * @return mixed
      */
     public function getItems($parentEntity)
     {
-        return $parentEntity->getAllVisibleItems();
+        $_items = array();
+
+        /** @var Mage_Sales_Model_Order_Item $_item */
+        foreach ($parentEntity->getAllVisibleItems() as $_item) {
+            $_items[] = $_item;
+
+            if ($_item->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                continue;
+            }
+
+            if (!Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                continue;
+            }
+
+            foreach ($_item->getChildrenItems() as $_childItem) {
+                $_childItem->setRowTotalInclTax(null)
+                    ->setRowTotal(null)
+                    ->setDiscountAmount(null)
+                    ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                        . $_item->getSku());
+
+                $_items[] = $_childItem;
+            }
+        }
+
+        return $_items;
+    }
+
+    /**
+     * @param $_item Mage_Sales_Model_Order_Item
+     * @return Mage_Sales_Model_Order
+     */
+    public function getEntityByItem($_item)
+    {
+        return $_item->getOrder();
     }
 
     /**
@@ -278,123 +304,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         return $netTotal;
-    }
-
-    /**
-     * @comment Prepare order items for Salesforce
-     * @throws Exception
-     */
-    protected function _prepareOrderItem($parentEntityNumber)
-    {
-
-        $parentEntity = $this->getParentEntity($parentEntityNumber);
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** ' . strtoupper($this->getMagentoEntityName()) . ' (' . $parentEntityNumber . ') ********');
-
-        /**
-         * @comment prepare products for Salesforce order/opportunity
-         * @var $_item Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item
-         */
-        foreach ($this->getItems($parentEntity) as $_item) {
-
-            try {
-                $this->_prepareItemObj($parentEntity, $parentEntityNumber, $_item);
-            } catch (Exception $e) {
-
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addNotice($e->getMessage());
-                }
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
-                continue;
-            }
-
-        }
-
-        $this->_applyAdditionalFees($parentEntity, $parentEntityNumber);
-    }
-
-    /**
-     * @comment add Tax/Shipping/Discount to the order as different product
-     * @param $parentEntity
-     * @param $parentEntityNumber
-     */
-    protected function _applyAdditionalFees($parentEntity, $parentEntityNumber)
-    {
-        $_helper = Mage::helper('tnw_salesforce');
-
-        foreach ($this->getAvailableFees() as $feeName) {
-            $ucFee = ucfirst($feeName);
-
-            $configMethod = 'use' . $ucFee . 'FeeProduct';
-            // Push Fee As Product
-            if (Mage::helper('tnw_salesforce')->$configMethod() && $parentEntity->getData($feeName . '_amount') != 0) {
-
-                $getProductMethod = 'get' . $ucFee . 'Product';
-
-                if (Mage::helper('tnw_salesforce')->$getProductMethod()) {
-
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
-
-                    $qty = 1;
-
-                    $item = new Varien_Object();
-
-                    $feeData = Mage::app()->getStore($parentEntity->getStoreId())->getConfig($_helper->getFeeProduct($feeName));
-                    if ($feeData) {
-                        $feeData = unserialize($feeData);
-                    } else {
-                        continue;
-                    }
-
-                    $item->setData($feeData);
-
-                    /**
-                     * add data in lower case too compatibility for
-                     */
-                    foreach ($feeData as $key => $value) {
-                        $key = strtolower($key);
-                        $item->setData($key, $value);
-                    }
-
-                    $item->setData($this->getItemQtyField(), $qty);
-
-                    $item->setDescription($_helper->__($ucFee));
-
-                    $item->setRowTotalInclTax($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
-                    $item->setRowTotal($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
-
-                    $this->_prepareItemObj($parentEntity, $parentEntityNumber, $item);
-
-                } else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL ERROR: $feeName product is not configured!");
-                }
-            }
-        }
-    }
-
-    /**
-     * @return string
-     */
-    public function getUcParentEntityType()
-    {
-        if (!$this->_ucParentEntityType) {
-            /**
-             * @comment first letter in upper case
-             */
-            $this->_ucParentEntityType = ucfirst($this->_salesforceEntityName);
-        }
-
-        return $this->_ucParentEntityType;
-    }
-
-    /**
-     * @param string $ucParentEntityType
-     * @return $this
-     */
-    public function setUcParentEntityType($ucParentEntityType)
-    {
-        $this->_ucParentEntityType = $ucParentEntityType;
-        return $this;
     }
 
     /**
@@ -779,6 +688,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             && $item->getData('product_type') == 'bundle'
             && array_key_exists('bundle_options', $options)
         ) {
+            $_entity       = $this->getEntityByItem($item);
+            $_currencyCode = $this->getCurrencyCode($_entity);
+
             $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
             foreach ($options['bundle_options'] as $_option) {
                 $_string = '<td align="left">' . $_option['label'] . '</td>';
@@ -1004,7 +916,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
-
             $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
             return false;
         }
@@ -1267,27 +1178,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @param $ids
-     * Reset Salesforce ID in Magento for the order
-     */
-    public function resetEntity($ids)
-    {
-        if (empty($ids)) {
-            return;
-        }
-
-        $ids = !is_array($ids)
-            ? array($ids) : $ids;
-
-        $mainTable = $this->_modelEntity()->getResource()->getMainTable();
-        $sql = "UPDATE `" . $mainTable . "` SET salesforce_id = NULL, sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
-        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace(sprintf("%s ID and Sync Status for %s (#%s) were reset.", 'Order', 'order', join(',', $ids)));
-    }
-
-    /**
      * @param $_entity Mage_Sales_Model_Order
      * @throws Exception
      * @return array
@@ -1462,21 +1352,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             /** @var Mage_Sales_Model_Order $_order */
             $_order = $this->_loadEntityByCache($_key, $_orderNumber);
-            foreach ($_order->getAllVisibleItems() as $_item) {
-                if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-                    if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
-                        $this->_prepareStoreId($_item);
-                        foreach ($_order->getAllItems() as $_childItem) {
-                            if ($_childItem->getParentItemId() == $_item->getItemId()) {
-                                $this->_prepareStoreId($_childItem);
-                            }
-                        }
-                    } else {
-                        $this->_prepareStoreId($_item);
-                    }
-                } else {
-                    $this->_prepareStoreId($_item);
-                }
+            foreach ($this->getItems($_order) as $item) {
+                $this->_prepareStoreId($item);
             }
         }
 
@@ -1642,5 +1519,32 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected function _updateEntityStatus($order)
     {
         return;
+    }
+
+    /**
+     * @return bool|void
+     * Prepare values for the synchroization
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        if (is_array($this->_cache['entitiesUpdating'])) {
+            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+                $this->_unsetEntityCache($_orderNumber);
+            }
+        }
+
+        $this->_cache = array(
+            'accountsLookup' => array(),
+            'entitiesUpdating' => array(),
+            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
+            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
+            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
+            sprintf('%sToUpsert', strtolower($this->getManyParentEntityType())) => array(),
+        );
+
+        return $this->check();
     }
 }

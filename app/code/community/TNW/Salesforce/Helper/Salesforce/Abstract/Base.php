@@ -177,7 +177,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $cachePrefix = $this->_getEntityNumber($_entity);
         }
 
-        $entityRegistryKey = sprintf('%s_cached_%s', $this->_magentoEntityName, (string)$cachePrefix);
+        $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
         if (!is_null($_entity)) {
             Mage::unregister($entityRegistryKey);
         }
@@ -192,12 +192,17 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         return Mage::registry($entityRegistryKey);
     }
 
+    protected function _generateKeyEntityCache($cachePrefix)
+    {
+        return sprintf('%s_cached_%s', $this->_magentoEntityName, (string)$cachePrefix);
+    }
+
     /**
      * @param $cachePrefix
      */
     protected function _unsetEntityCache($cachePrefix)
     {
-        $entityRegistryKey = sprintf('%s_cached_%s', $this->_magentoEntityName, (string)$cachePrefix);
+        $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
         Mage::unregister($entityRegistryKey);
     }
 
@@ -330,7 +335,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         $this->_isCron  = $_isCron;
 
         if (!$_ids) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Id is not specified, don't know what to synchronize!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Entity Id is not specified, don't know what to synchronize!");
             return false;
         }
 
@@ -338,15 +343,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         /** @var TNW_Salesforce_Model_Connection $_client */
         $_client = Mage::getSingleton('tnw_salesforce/connection');
         if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync orders, sf api connection failed");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
 
             return true;
         }
 
         $this->_skippedEntity = array();
         try {
-            // Clear Order ID
-            $this->resetEntity($_ids);
             $this->_massAddBefore();
 
             foreach ($_ids as $_id) {
@@ -371,12 +374,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_id] = $_entityNumber;
             }
 
+            if (empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
+                return false;
+            }
+
+            $this->resetEntity(array_diff($_ids, $this->_skippedEntity));
             $this->_massAddAfter();
 
-            /**
-             * all orders fails - return false otherwise return true
-             */
-            return (count($this->_skippedEntity) != count($_ids));
+            return true;
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
@@ -394,8 +399,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     /**
      * @param $_entity
      * @return bool
+     * @throws Exception
      */
-    abstract protected function _checkMassAddEntity($_entity);
+    protected function _checkMassAddEntity($_entity)
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
 
     /**
      *
@@ -411,6 +420,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     public function resetEntity($ids)
     {
+        if (empty($ids)) {
+            return;
+        }
+
         $ids = !is_array($ids)
             ? array($ids) : $ids;
 
@@ -438,9 +451,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 return false;
             }
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
+            $_syncType = stripos(get_class($this), '_bulk_') !== false ? 'MASS' : 'REALTIME';
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("================ %s SYNC: START ================", $_syncType));
 
-            if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
+            if (!is_array($this->_cache) || empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("WARNING: Sync %s, cache is empty!", $this->getManyParentEntityType()));
                 $this->_dumpObjectToLog($this->_cache, "Cache", true);
                 return false;
@@ -465,7 +479,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $this->_onComplete();
             $this->_afterProcess();
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("================= %s SYNC: END =================", $_syncType));
             return true;
         }
         catch (Exception $e) {
@@ -618,25 +632,41 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     /**
      * @param $_entity
      * @return mixed
+     * @throws Exception
      */
-    abstract protected function _getEntityNumber($_entity);
+    protected function _getEntityNumber($_entity)
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
 
     /**
      * @param $_entity
      * @return mixed
+     * @throws Exception
      */
-    abstract protected function _setEntityInfo($_entity);
+    protected function _setEntityInfo($_entity)
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
 
     /**
      * @param array $chunk
      * @return mixed
+     * @throws Exception
      */
-    abstract protected function _pushEntityItems($chunk = array());
+    protected function _pushEntityItems($chunk = array())
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
 
     /**
      * @return mixed
+     * @throws Exception
      */
-    abstract protected function _pushEntity();
+    protected function _pushEntity()
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
 
     /**
      * Prepare Order items object(s) for upsert
@@ -686,15 +716,32 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      * @comment return entity items
      * @param $_entity
      * @return mixed
+     * @throws Exception
      */
-    abstract public function getItems($_entity);
+    public function getItems($_entity)
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
+
+    /**
+     * @param $_item
+     * @throws Exception
+     */
+    public function getEntityByItem($_item)
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
 
     /**
      * @param $_entity
      * @param $_entityItem
      * @return mixed
+     * @throws Exception
      */
-    abstract protected function _prepareEntityItemObj($_entity, $_entityItem);
+    protected function _prepareEntityItemObj($_entity, $_entityItem)
+    {
+        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
 
     /**
      * @param $_entity
@@ -1109,32 +1156,5 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _notesTableName()
     {
         throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
-    }
-
-    /**
-     * @return bool|void
-     * Prepare values for the synchroization
-     */
-    public function reset()
-    {
-        parent::reset();
-
-        // Clean order cache
-        if (is_array($this->_cache['entitiesUpdating'])) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                $this->_unsetEntityCache($_orderNumber);
-            }
-        }
-
-        $this->_cache = array(
-            'accountsLookup' => array(),
-            'entitiesUpdating' => array(),
-            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
-            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
-            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
-            sprintf('%sToUpsert', strtolower($this->getManyParentEntityType())) => array(),
-        );
-
-        return $this->check();
     }
 }

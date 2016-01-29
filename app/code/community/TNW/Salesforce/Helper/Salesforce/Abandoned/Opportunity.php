@@ -597,249 +597,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     }
 
-    /**
-     * @param array $_ids
-     * @param bool $_isCron
-     * @return bool
-     */
-    public function massAdd($_ids = NULL, $_isCron = false)
-    {
-        if (!$_ids) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Abandoned Id is not specified, don't know what to synchronize!");
-            return false;
-        }
-        // test sf api connection
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync quotes, sf api connection failed");
-
-            return true;
-        }
-
-        try {
-            $this->_isCron = $_isCron;
-            $_guestCount = 0;
-            $this->_skippedEntity = $_quotes = $_emails = $_websites = array();
-
-            if (!is_array($_ids)) {
-                $_ids = array($_ids);
-            }
-
-            foreach ($_ids as $_id) {
-
-                // Clear Opportunity ID
-                $this->resetAbandoned($_id);
-
-                // Load quote by ID
-                $_quote = $this->_loadQuote($_id);
-                // Add to cache
-                if (Mage::registry('quote_cached_' . $_quote->getId())) {
-                    Mage::unregister('quote_cached_' . $_quote->getId());
-                }
-                Mage::register('quote_cached_' . $_quote->getId(), $_quote);
-
-                // Quote could not be loaded for some reason
-                if (!$_quote->getId()) {
-                    $this->logError('WARNING: Sync for abandoned cart #' . $_id . ', quote could not be loaded!');
-                    $this->_skippedEntity[$_id] = $_id;
-                    continue;
-                }
-
-                // Quote could not be loaded for some reason
-                if (count($_quote->getAllItems()) == 0) {
-                    $this->logNotice('SKIPPING: Abandoned cart #' . $_id . ' is empty!');
-                    $this->_skippedEntity[$_id] = $_id;
-                    continue;
-                }
-
-                // Get Magento customer object
-                $this->_cache['quoteCustomers'][$_quote->getId()] = $this->_getCustomer($_quote);
-
-                // Associate quote Number with a customer ID
-                $_customerId = ($this->_cache['quoteCustomers'][$_quote->getId()]->getId()) ? $this->_cache['quoteCustomers'][$_quote->getId()]->getId() : $_guestCount;
-                $this->_cache['quoteToCustomerId'][$_quote->getId()] = $_customerId;
-
-                if (!$this->_cache['quoteCustomers'][$_quote->getId()]->getId()) {
-                    $_guestCount++;
-                }
-
-                // Check if customer from this group is allowed to be synchronized
-                $_customerGroup = $_quote->getData('customer_group_id');
-                if ($_customerGroup === NULL) {
-                    $_customerGroup = $this->_cache['quoteCustomers'][$_quote->getId()]->getGroupId();
-                }
-                if ($_customerGroup === NULL && !$this->isFromCLI()) {
-                    $_customerGroup = Mage::getSingleton('customer/session')->getCustomerGroupId();
-                }
-
-                if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
-                    $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-                    $this->_skippedEntity[$_id] = $_id;
-                    continue;
-                }
-
-                $_emails[$_customerId] = strtolower($_quote->getCustomerEmail());
-
-                // Associate quote Number with a customer Email
-                $this->_cache['quoteToEmail'][$_quote->getId()] = $this->_cache['quoteCustomers'][$_quote->getId()]->getEmail();
-
-                // Store quote number and customer Email into a variable for future use
-                $_quoteEmail = strtolower($this->_cache['quoteCustomers'][$_quote->getId()]->getEmail());
-                $_quoteNumber = $_quote->getId();
-
-                if (empty($_quoteEmail)) {
-                    $this->logNotice('SKIPPED: Sync for quote #' . $_quoteNumber . ' failed, quote is missing an email address!');
-                    $this->_skippedEntity[$_id] = $_id;
-                    continue;
-                }
-
-                // Associate quote ID with quote Number
-                $this->_cache['entitiesUpdating'][$_id] = $_quoteNumber;
-                $_quotes[$_id ] = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
-
-                $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
-                $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
-            }
-
-            // Salesforce lookup, find all contacts/accounts by email address
-            $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($_emails, $_websites);
-
-            // Salesforce lookup, find all opportunities by Magento quote number
-            $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_quotes);
-
-            /**
-             * Order customers sync can be denied if we just update order status
-             */
-            //if ($orderStatusUpdateCustomer) {
-            //    $this->syncOrderCustomers($_emails, $_websites);
-            //}
-
-            /**
-             * Force sync of the customer
-             * Or if it's guest checkout: customer->getId() is empty
-             * Or customer was not synchronized before: no account/contact ids ot lead not converted
-             */
-
-                $_customersToSync = array();
-
-                foreach ($this->_cache['quoteCustomers'] as $_quoteNumber => $customer) {
-                    $customerId = $this->_cache['quoteToCustomerId'][$_quoteNumber];
-                    $websiteSfId = $_websites[$customerId];
-
-                    $email = $this->_cache['quoteToEmail'][$_quoteNumber];
-
-                    /**
-                     * synchronize customer if no account/contact exists or lead not converted
-                     */
-                    if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-                        || !isset($this->_cache['accountsLookup'][0][$email])
-                        || (
-                            isset($this->_cache['leadsLookup'][$websiteSfId][$email])
-                            && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
-                        )
-                    ) {
-                        $_customersToSync[$_quoteNumber] = $customer;
-                    }
-                }
-
-                if (!empty($_customersToSync)) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Guest/New customer...');
-
-                    $helperType = 'salesforce';
-                    if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                        $helperType = 'bulk';
-                    }
-
-                    /**
-                     * @var $manualSync TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Salesforce_Customer
-                     */
-                    $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
-                    if ($manualSync->reset()) {
-                        $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-                        $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
-
-                        $manualSync->forceAdd($_customersToSync, $this->_cache['quoteCustomers']);
-                        set_time_limit(30);
-                        $abandonedCustomers = $manualSync->process(true);
-
-                        if (!empty($abandonedCustomers)) {
-                            if (!is_array($abandonedCustomers)) {
-                                $_quoteNumbers = array_keys($_customersToSync);
-                                $abandonedCustomersArray[array_shift($_quoteNumbers)] = $abandonedCustomers;
-                            } else {
-                                $abandonedCustomersArray = $abandonedCustomers;
-                            }
-
-                            $this->_cache['quoteCustomers'] = $abandonedCustomersArray + $this->_cache['quoteCustomers'];
-                            set_time_limit(30);
-
-                            $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-                            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
-                        }
-                    }
-                }
-
-
-            /**
-             * define Salesforce data for order customers
-             */
-            foreach ($this->_cache['entitiesUpdating'] as $id => $_quoteNumber) {
-
-                $email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
-
-                if (isset($this->_cache['quoteCustomers'][$_quoteNumber])
-                    && $this->_cache['quoteCustomers'][$_quoteNumber] instanceof Varien_Object
-                    && !empty($this->_cache['accountsLookup'][0][$email])
-                ) {
-
-                    $_websiteId = $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id');
-
-                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->Id);
-                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$email]->Id);
-
-                    // Overwrite Contact Id for Person Account
-                    if (property_exists($this->_cache['accountsLookup'][0][$email], 'PersonContactId')) {
-                        $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->PersonContactId);
-                    }
-
-                    // Overwrite from Contact Lookup if value exists there
-                    if (isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email])) {
-                        $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email]->Id);
-                    }
-
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
-
-                } else {
-                    /**
-                     * No customers for this order in salesforce - error
-                     */
-                    // Something is wrong, could not create / find Magento customer in SalesForce
-                    $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $email . ') could not be created / found!');
-                    $this->_skippedEntity[$id] = $id;
-
-                    continue;
-                }
-            }
-
-            if (!empty($this->_skippedEntity)) {
-                $chunk = array_chunk($this->_skippedEntity, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-                foreach ($chunk as $_skippedAbandonedChunk) {
-                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandonedChunk) . "') and mage_object_type = 'sales/quote';";
-                    Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
-                    foreach ($_skippedAbandonedChunk as $_idToRemove) {
-                        unset($this->_cache['entitiesUpdating'][$_idToRemove]);
-                    }
-                }
-            }
-
-            return (count($this->_skippedEntity) != count($_ids));
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
-        }
-    }
-
     protected function _updateQuoteStageName()
     {
         $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
@@ -950,15 +707,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     {
         parent::reset();
 
-        // Clean abandoned cache
-        if (is_array($this->_cache['entitiesUpdating'])) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_abandonedNumber) {
-                if (Mage::registry('quote_cached_' . $_abandonedNumber)) {
-                    Mage::unregister('quote_cached_' . $_abandonedNumber);
-                }
-            }
-        }
-
         $this->_standardPricebookId = Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
         $this->_defaultPriceBook = (Mage::helper('tnw_salesforce')->getDefaultPricebook()) ? Mage::helper('tnw_salesforce')->getDefaultPricebook() : $this->_standardPricebookId;
 
@@ -1003,14 +751,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         return $this->check();
     }
 
-    public function resetAbandoned($_id)
-    {
-        $quoteTable = Mage::getResourceSingleton('sales/quote')->getMainTable();
-
-        $sql = "UPDATE `" . $quoteTable . "` SET sf_insync = 0, created_at = created_at WHERE entity_id = " . $_id . ";";
-        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-    }
-
     /**
      * Get child product ids
      *
@@ -1030,5 +770,214 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         return $Ids;
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Quote
+     * @return bool
+     * @throws Exception
+     */
+    protected function _checkMassAddEntity($_entity)
+    {
+        $_entityNumber = $this->_getEntityNumber($_entity);
+
+        // Quote could not be loaded for some reason
+        if (count($_entity->getAllItems()) == 0) {
+            $this->logNotice('SKIPPING: Abandoned cart #' . $_entityNumber . ' is empty!');
+            return false;
+        }
+
+        // Get Magento customer object
+        $this->_cache['quoteCustomers'][$_entity->getId()] = $this->_getCustomer($_entity);
+
+        // Associate quote Number with a customer ID
+        $_customerId = ($this->_cache['quoteCustomers'][$_entity->getId()]->getId())
+            ? $this->_cache['quoteCustomers'][$_entity->getId()]->getId()
+            : $this->_guestCount++;
+        $this->_cache['quoteToCustomerId'][$_entity->getId()] = $_customerId;
+
+        // Check if customer from this group is allowed to be synchronized
+        $_customerGroup = $_entity->getData('customer_group_id');
+        if ($_customerGroup === NULL) {
+            $_customerGroup = $this->_cache['quoteCustomers'][$_entity->getId()]->getGroupId();
+        }
+
+        if ($_customerGroup === NULL && !$this->isFromCLI()) {
+            $_customerGroup = Mage::getSingleton('customer/session')->getCustomerGroupId();
+        }
+
+        if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
+            $this->logNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
+            return false;
+        }
+
+        $this->_emails[$_customerId] = strtolower($_entity->getCustomerEmail());
+
+        // Associate quote Number with a customer Email
+        $this->_cache['quoteToEmail'][$_entity->getId()] = $this->_cache['quoteCustomers'][$_entity->getId()]->getEmail();
+
+        // Store quote number and customer Email into a variable for future use
+        $_quoteEmail = strtolower($this->_cache['quoteCustomers'][$_entity->getId()]->getEmail());
+        if (empty($_quoteEmail)) {
+            $this->logNotice('SKIPPED: Sync for quote #' . $_entityNumber . ' failed, quote is missing an email address!');
+            return false;
+        }
+
+        // Associate quote ID with quote Number
+        $this->_cache['entitiesUpdating'][$_entity->getId()] = $_entityNumber;
+        $this->_quotes[$_entity->getId()] = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_entityNumber;
+
+        $_websiteId = Mage::getModel('core/store')->load($_entity->getData('store_id'))->getWebsiteId();
+        $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
+
+        return true;
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Quote
+     * @return mixed
+     */
+    protected function _getEntityNumber($_entity)
+    {
+        return $_entity->getId();
+    }
+
+    /**
+     *
+     */
+    protected function _massAddAfter()
+    {
+        // Salesforce lookup, find all contacts/accounts by email address
+        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_emails, $this->_websites);
+        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_emails, $this->_websites);
+        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_emails, $this->_websites);
+
+        // Salesforce lookup, find all opportunities by Magento quote number
+        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($this->_quotes);
+
+        /**
+         * Order customers sync can be denied if we just update order status
+         */
+        //if ($orderStatusUpdateCustomer) {
+        //    $this->syncOrderCustomers($_emails, $_websites);
+        //}
+
+        /**
+         * Force sync of the customer
+         * Or if it's guest checkout: customer->getId() is empty
+         * Or customer was not synchronized before: no account/contact ids ot lead not converted
+         */
+
+        $_customersToSync = array();
+
+        foreach ($this->_cache['quoteCustomers'] as $_quoteNumber => $customer) {
+            $customerId = $this->_cache['quoteToCustomerId'][$_quoteNumber];
+            $websiteSfId = $this->_websites[$customerId];
+
+            $email = $this->_cache['quoteToEmail'][$_quoteNumber];
+
+            /**
+             * synchronize customer if no account/contact exists or lead not converted
+             */
+            if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
+                || !isset($this->_cache['accountsLookup'][0][$email])
+                || (
+                    isset($this->_cache['leadsLookup'][$websiteSfId][$email])
+                    && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
+                )
+            ) {
+                $_customersToSync[$_quoteNumber] = $customer;
+            }
+        }
+
+        if (!empty($_customersToSync)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Guest/New customer...');
+
+            $helperType = 'salesforce';
+            if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+                $helperType = 'bulk';
+            }
+
+            /**
+             * @var $manualSync TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Salesforce_Customer
+             */
+            $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
+            if ($manualSync->reset()) {
+                $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
+                $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
+
+                $manualSync->forceAdd($_customersToSync, $this->_cache['quoteCustomers']);
+                set_time_limit(30);
+                $abandonedCustomers = $manualSync->process(true);
+
+                if (!empty($abandonedCustomers)) {
+                    if (!is_array($abandonedCustomers)) {
+                        $_quoteNumbers = array_keys($_customersToSync);
+                        $abandonedCustomersArray[array_shift($_quoteNumbers)] = $abandonedCustomers;
+                    } else {
+                        $abandonedCustomersArray = $abandonedCustomers;
+                    }
+
+                    $this->_cache['quoteCustomers'] = $abandonedCustomersArray + $this->_cache['quoteCustomers'];
+                    set_time_limit(30);
+
+                    $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_emails, $this->_websites);
+                    $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_emails, $this->_websites);
+                }
+            }
+        }
+
+
+        /**
+         * define Salesforce data for order customers
+         */
+        foreach ($this->_cache['entitiesUpdating'] as $id => $_quoteNumber) {
+
+            $email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
+
+            if (isset($this->_cache['quoteCustomers'][$_quoteNumber])
+                && $this->_cache['quoteCustomers'][$_quoteNumber] instanceof Varien_Object
+                && !empty($this->_cache['accountsLookup'][0][$email])
+            ) {
+
+                $_websiteId = $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id');
+
+                $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->Id);
+                $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$email]->Id);
+
+                // Overwrite Contact Id for Person Account
+                if (property_exists($this->_cache['accountsLookup'][0][$email], 'PersonContactId')) {
+                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->PersonContactId);
+                }
+
+                // Overwrite from Contact Lookup if value exists there
+                if (isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email])) {
+                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email]->Id);
+                }
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
+
+            } else {
+                /**
+                 * No customers for this order in salesforce - error
+                 */
+                // Something is wrong, could not create / find Magento customer in SalesForce
+                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $email . ') could not be created / found!');
+                $this->_skippedEntity[$id] = $id;
+
+                continue;
+            }
+        }
+
+        if (!empty($this->_skippedEntity)) {
+            $chunk = array_chunk($this->_skippedEntity, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+            foreach ($chunk as $_skippedAbandonedChunk) {
+                $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandonedChunk) . "') and mage_object_type = 'sales/quote';";
+                Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
+                foreach ($_skippedAbandonedChunk as $_idToRemove) {
+                    unset($this->_cache['entitiesUpdating'][$_idToRemove]);
+                }
+            }
+        }
     }
 }

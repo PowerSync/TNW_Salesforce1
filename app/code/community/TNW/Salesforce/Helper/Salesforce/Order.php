@@ -187,15 +187,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     {
         parent::reset();
 
-        // Clean order cache
-        if (is_array($this->_cache['entitiesUpdating'])) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                if (Mage::registry('order_cached_' . $_orderNumber)) {
-                    Mage::unregister('order_cached_' . $_orderNumber);
-                }
-            }
-        }
-
         $this->_standardPricebookId = Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
         $this->_defaultPriceBook = (Mage::helper('tnw_salesforce')->getDefaultPricebook()) ? Mage::helper('tnw_salesforce')->getDefaultPricebook() : $this->_standardPricebookId;
 
@@ -539,39 +530,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_obj->Status);
         unset($collection);
-    }
-
-    /**
-     * Return parent entity items and bundle items
-     *
-     * @param $parentEntity Mage_Sales_Model_Quote|Mage_Sales_Model_Order
-     * @return mixed
-     */
-    public function getItems($parentEntity)
-    {
-        if (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-            $_items = array();
-            foreach ($parentEntity->getAllVisibleItems() as $_item) {
-                if ($_item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
-                    $_items[] = $_item;
-                    foreach ($parentEntity->getAllItems() as $_childItem) {
-                        if ($_childItem->getParentItemId() == $_item->getItemId()) {
-                            $_childItem->setRowTotalInclTax(null)
-                                ->setRowTotal(null)
-                                ->setDiscountAmount(null)
-                                ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
-                                    . $_item->getSku());
-                            $_items[] = $_childItem;
-                        }
-                    }
-                } else {
-                    $_items[] = $_item;
-                }
-            }
-        } else {
-            $_items = $parentEntity->getAllVisibleItems();
-        }
-        return $_items;
     }
 
     /**
