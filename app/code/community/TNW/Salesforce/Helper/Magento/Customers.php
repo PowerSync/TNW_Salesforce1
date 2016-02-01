@@ -77,12 +77,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      */
     protected $_websiteId = NULL;
 
-    public function __construct()
-    {
-        parent::__construct();
-        //$this->prepare();
-    }
-
     /**
      * @param null $_object
      * @return bool|false|Mage_Core_Model_Abstract
@@ -107,7 +101,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         unset($this->_salesforceObject->attributes);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
-        $_entity = $this->syncFromSalesforce();
+        $_entity = $this->syncFromSalesforce($this->_salesforceObject);
 
         if (!$this->_skip) {
             // Update history orders and assigne to customer we just created
@@ -629,7 +623,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      * @param null $object
      * @return bool|false|Mage_Core_Model_Abstract
      */
-    public function syncFromSalesforce()
+    public function syncFromSalesforce($object = null)
     {
         // Pre config, settings, etc
         parent::_prepare();

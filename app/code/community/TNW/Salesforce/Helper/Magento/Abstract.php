@@ -3,8 +3,8 @@
 /**
  * Class TNW_Salesforce_Helper_Magento_Abstract
  */
-class TNW_Salesforce_Helper_Magento_Abstract {
-
+abstract class TNW_Salesforce_Helper_Magento_Abstract
+{
     /**
      * @var null
      */
@@ -77,10 +77,11 @@ class TNW_Salesforce_Helper_Magento_Abstract {
         return $_entity;
     }
 
-    public function __destruct()
-    {
-        foreach ($this as $index => $value) unset($this->$index);
-    }
+    /**
+     * @param null $object
+     * @return mixed
+     */
+    abstract public function syncFromSalesforce($object = null);
 
     protected function _addError($_message, $_code) {
         if (!property_exists($this->_response, 'errors')) {

@@ -46,49 +46,6 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         $this->prepare();
     }
 
-    /**
-     * @param null $_object
-     * @return bool|false|Mage_Core_Model_Abstract
-     */
-    public function process($_object = null)
-    {
-        if (
-            !$_object
-            || !Mage::helper('tnw_salesforce')->isWorking()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No Salesforce object passed on connector is not working");
-
-            return false;
-        }
-        $this->_response = new stdClass();
-        $_type = $_object->attributes->type;
-        unset($_object->attributes);
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $_object->Id . " **");
-        $_entity = $this->syncFromSalesforce($_object);
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $_object->Id . " **");
-
-        // Handle success and fail
-        if (is_object($_entity)) {
-            $this->_response->success = true;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
-        } else {
-            $this->_response->success = false;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not upsert " . $_type . " into Magento, see Magento log for details");
-            $_entity = false;
-        }
-
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
-            $logger->add('Magento', 'Product', array($_object->Id => $_object), array($_object->Id => $this->_response));
-
-            $logger->send();
-        }
-        return $_entity;
-    }
-
     protected function prepare()
     {
         if (empty($this->_attributes)) {
