@@ -312,7 +312,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 = $this->_websiteSfIds[$_websiteId];
         }
 
-        $this->_obj->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .*/ 'Invoice_Date__c'}
+        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Invoice_Date__c'}
             = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($_entity->getCreatedAtDate())));
 
         // Link to Order
@@ -732,5 +732,32 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         // Logout
         $this->reset();
         $this->clearMemory();
+    }
+
+    /**
+     * @return bool|void
+     * Prepare values for the synchroization
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        if (is_array($this->_cache['entitiesUpdating'])) {
+            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+                $this->_unsetEntityCache($_orderNumber);
+            }
+        }
+
+        $this->_cache = array(
+            'accountsLookup' => array(),
+            'entitiesUpdating' => array(),
+            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
+            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
+            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
+            sprintf('%sToUpsert', strtolower($this->getManyParentEntityType())) => array(),
+        );
+
+        return $this->check();
     }
 }
