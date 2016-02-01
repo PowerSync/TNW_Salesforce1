@@ -223,7 +223,7 @@ class TNW_Salesforce_Helper_Bulk_Invoice extends TNW_Salesforce_Helper_Salesforc
                     //Report Transaction
                     $this->_cache['responses'][$itemKey][] = json_decode(json_encode($_item), TRUE);
                     $_orderId = (string)$_batch[$_recordItemId]
-                        ->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Invoice__c'};
+                        ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Invoice__c'};
 
                     if ($_item->success == "false") {
                         $_oid = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);

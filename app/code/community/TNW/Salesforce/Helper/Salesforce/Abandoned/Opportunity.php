@@ -80,6 +80,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     /**
      * @param $item Mage_Sales_Model_Quote_Item
+     * @return array
      */
     protected function _getItemDescription($item)
     {
@@ -125,14 +126,15 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         if (count($opt) > 0) {
-            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
-            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
-
-            $this->_obj->Description = join(", ", $_summary);
-            if (strlen($this->_obj->Description) > 200) {
-                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
+            $_description = join(", ", $_summary);
+            if (strlen($_description) > 200) {
+                $_description = substr($_description, 0, 200) . '...';
             }
+
+            return array($_prefix . join("", $opt) . '</tbody></table>', $_description);
         }
+
+        return array('', '');
     }
 
     protected function _prepareEntity()

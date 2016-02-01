@@ -16,19 +16,19 @@ class TNW_Salesforce_Helper_Salesforce_Data_Shipment extends TNW_Salesforce_Help
                 return false;
             }
 
-            $_magentoId = /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Magento_ID__c';
-            $osiTable   = /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'OrderShipmentItem__r';
-            $ostTable   = /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'OrderShipmentTracking__r';
+            $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c';
+            $osiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentItem__r';
+            $ostTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__r';
             $_fields    = array(
                 'Id', $_magentoId,
                 sprintf('(SELECT Id, Name, %s, %s FROM %s)',
-                    /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Product_Code__c',
-                    /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Quantity__c',
+                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Code__c',
+                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c',
                     $osiTable
                 ),
                 sprintf('(SELECT Id, Name, %s, %s FROM %s)',
-                    /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Carrier__c',
-                    /*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Number__c',
+                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Carrier__c',
+                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Number__c',
                     $ostTable
                 ),
                 '(SELECT Id, Title, Body FROM Notes)'

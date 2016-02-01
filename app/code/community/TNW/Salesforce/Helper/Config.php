@@ -8,6 +8,7 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     // Global configuration
     const SALESFORCE_PREFIX_PROFESSIONAL = 'tnw_mage_basic__';
     const SALESFORCE_PREFIX_ENTERPRISE = 'tnw_mage_enterp__';
+    const SALESFORCE_PREFIX_FULFILMENT = 'tnw_fulfilment__';
 
     /**
      * Get Salesforce managed package prefix

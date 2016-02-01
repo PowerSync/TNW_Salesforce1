@@ -199,7 +199,7 @@ class TNW_Salesforce_Helper_Bulk_Shipment extends TNW_Salesforce_Helper_Salesfor
             if (!$this->_cache['bulkJobs']['orderShipmentTrack']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['orderShipmentTrack']['Id']
-                    = $this->_createJob(/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'OrderShipmentTracking__c', 'upsert', 'Id');
+                    = $this->_createJob(TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__c', 'upsert', 'Id');
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('Syncronizing Shipment Track, created job: ' . $this->_cache['bulkJobs']['orderShipmentTrack']['Id']);
@@ -259,7 +259,7 @@ class TNW_Salesforce_Helper_Bulk_Shipment extends TNW_Salesforce_Helper_Salesfor
                     //Report Transaction
                     $this->_cache['responses'][$itemKey][] = json_decode(json_encode($_item), TRUE);
                     $_orderId = (string)$_batch[$_recordItemId]
-                        ->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Shipment__c'};
+                        ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
 
                     if ($_item->success == "false") {
                         $_oid = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
@@ -366,7 +366,7 @@ class TNW_Salesforce_Helper_Bulk_Shipment extends TNW_Salesforce_Helper_Salesfor
                     //Report Transaction
                     $this->_cache['responses']['orderShipmentTrack'][$_noteId] = json_decode(json_encode($_item), TRUE);
                     $_orderId = (string)$_batch[$_noteId]
-                        ->{/*TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL .*/ 'Shipment__c'};
+                        ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
 
                     if ($_item->success == "false") {
                         $_oid = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);

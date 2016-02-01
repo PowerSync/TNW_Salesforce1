@@ -381,7 +381,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $this->resetEntity(array_diff($_ids, $this->_skippedEntity));
             $this->_massAddAfter();
 
-            return true;
+            return !empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
@@ -970,6 +970,88 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $html = $_prefix . join("", $opt) . '</tbody></table>';
             $text = join(", ", $_summary);
         }
+    }
+
+    /**
+     * @param $item Mage_Sales_Model_Order_Item
+     * @return array
+     */
+    protected function _getItemDescription($item)
+    {
+        $opt = array();
+        $options = (is_array($item->getData('product_options')))
+            ? $item->getData('product_options')
+            : @unserialize($item->getData('product_options'));
+
+        $_summary = array();
+        if (
+            is_array($options)
+            && array_key_exists('options', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
+            foreach ($options['options'] as $_option) {
+                $optionValue = '';
+                if(isset($_option['print_value'])) {
+                    $optionValue = $_option['print_value'];
+                } elseif (isset($_option['value'])) {
+                    $optionValue = $_option['value'];
+                }
+
+                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
+                $_summary[] = $optionValue;
+            }
+        }
+
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'bundle'
+            && array_key_exists('bundle_options', $options)
+        ) {
+            $_entity       = $this->getEntityByItem($item);
+            $_currencyCode = $this->getCurrencyCode($_entity);
+
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
+            foreach ($options['bundle_options'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                if (is_array($_option['value'])) {
+                    $_tmp = array();
+                    foreach ($_option['value'] as $_value) {
+                        $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
+                        $_summary[] = $_value['title'];
+                    }
+                    if (count($_tmp) > 0) {
+                        $_string .= join(", ", $_tmp);
+                    }
+                }
+
+                $opt[] = '<tr>' . $_string . '</tr>';
+            }
+        }
+
+        if (
+            is_array($options)
+            && $item->getData('product_type') == 'configurable'
+            && array_key_exists('attributes_info', $options)
+        ) {
+            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr><tbody>';
+            foreach ($options['attributes_info'] as $_option) {
+                $_string = '<td align="left">' . $_option['label'] . '</td>';
+                $_string .= '<td align="left">' . $_option['value'] . '</td>';
+                $_summary[] = $_option['value'];
+                $opt[] = '<tr>' . $_string . '</tr>';
+            }
+        }
+
+        if (count($opt) > 0) {
+            $_description = join(", ", $_summary);
+            if (strlen($_description) > 200) {
+                $_description = substr($_description, 0, 200) . '...';
+            }
+
+            return array($_prefix . join("", $opt) . '</tbody></table>', $_description);
+        }
+
+        return array('', '');
     }
 
     /**
