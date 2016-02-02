@@ -64,7 +64,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
                 return Mage::helper('tnw_salesforce/magento_products');
             case 'Order':
                 return Mage::getModel('tnw_salesforce/import_order');
-            case TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT:
+            case TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT:
                 return Mage::helper('tnw_salesforce/magento_invoice');
         }
 
@@ -76,15 +76,27 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
      */
     public function process()
     {
+        $_association = array();
         $importProcessor = $this->getProcessor();
         if ($importProcessor) {
             Mage::getSingleton('core/session')->setFromSalesForce(true);
             if ($importProcessor instanceof TNW_Salesforce_Helper_Magento_Abstract) {
                 $importProcessor->process($this->getObject());
+                $_association = $importProcessor->getSalesforceAssociationAndClean();
             } else {
                 $importProcessor->setObject($this->getObject())->process();
             }
             Mage::getSingleton('core/session')->setFromSalesForce(false);
+        }
+
+        return $_association;
+    }
+
+    public function sendMagentoIdToSalesforce($_association)
+    {
+        $importProcessor = $this->getProcessor();
+        if ($importProcessor instanceof TNW_Salesforce_Helper_Magento_Abstract) {
+            $importProcessor::sendMagentoIdToSalesforce($_association);
         }
     }
 }

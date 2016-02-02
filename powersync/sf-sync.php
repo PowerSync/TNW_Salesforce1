@@ -101,9 +101,12 @@ if (!$helper->isWorking()) {
                     // Process Realtime
                     $object = $objects[0];
                     try {
-                        Mage::getModel('tnw_salesforce/import')
-                            ->setObject($object)
+                        /** @var TNW_Salesforce_Model_Import $import */
+                        $import = Mage::getModel('tnw_salesforce/import');
+                        $_association = $import->setObject($object)
                             ->process();
+
+                        $import->sendMagentoIdToSalesforce($_association);
                     } catch (Exception $e) {
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");

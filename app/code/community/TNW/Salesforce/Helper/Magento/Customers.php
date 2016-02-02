@@ -111,6 +111,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             // Handle success and fail
             if (is_object($_entity)) {
+                $this->_salesforceAssociation[$_type][] = array(
+                    'salesforce_id' => $_entity->getData('salesforce_id'),
+                    'magento_id'    => $_entity->getId()
+                );
+
                 $this->_response->success = true;
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());

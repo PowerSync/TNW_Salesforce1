@@ -77,9 +77,18 @@ class TNW_Salesforce_Model_Imports_Bulk
                 }
                 $queueStatus = true;
 
+                $association = array();
                 foreach ($objects as $object) {
                     try {
-                        $this->getModel()->setObject($object)->process();
+                        $_association = $this->getModel()->setObject($object)->process();
+                        foreach($_association as $type=>$item) {
+                            if (!isset($association[$type])) {
+                                $association[$type] = array();
+                            }
+
+                            $association[$type] = array_merge($association[$type], $item);
+                        }
+
                     } catch (Exception $e) {
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
                         $objectType = property_exists($object, "attributes")
@@ -90,6 +99,13 @@ class TNW_Salesforce_Model_Imports_Bulk
                         $queueStatus = false;
                     }
                 }
+
+                foreach (array_keys($association) as $type) {
+                    $this->getModel()
+                        ->setObject($type)
+                        ->sendMagentoIdToSalesforce(array_intersect_key($association, array_flip(array($type))));
+                }
+
                 if ($queueStatus) {
                     $queue->delete();
                 }

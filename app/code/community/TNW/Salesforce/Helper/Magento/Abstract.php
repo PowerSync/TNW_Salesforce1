@@ -8,6 +8,11 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     /**
      * @var null
      */
+    protected $_salesforceAssociation = array();
+
+    /**
+     * @var null
+     */
     protected $_write = null;
 
     /**
@@ -34,19 +39,28 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     protected $_time = NULL;
 
     /**
+     * @return null
+     */
+    public function getSalesforceAssociationAndClean()
+    {
+        $_association = $this->_salesforceAssociation;
+        $this->_salesforceAssociation = array();
+
+        return $_association;
+    }
+
+    /**
      * @param null $_object
      * @return bool|false|Mage_Core_Model_Abstract
      */
     public function process($_object = null)
     {
-        if (
-            !$_object
-            || !Mage::helper('tnw_salesforce')->isWorking()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No Salesforce object passed on connector is not working");
-
+        if (!$_object || !Mage::helper('tnw_salesforce')->isWorking()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("No Salesforce object passed on connector is not working");
             return false;
         }
+
         $this->_response = new stdClass();
         $_type = $_object->attributes->type;
         unset($_object->attributes);
@@ -56,6 +70,11 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
 
         // Handle success and fail
         if (is_object($_entity)) {
+            $this->_salesforceAssociation[$_type][] = array(
+                'salesforce_id' => $_entity->getData('salesforce_id'),
+                'magento_id'    => $_entity->getId()
+            );
+
             $this->_response->success = true;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
@@ -66,11 +85,10 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         }
 
         if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
+            /** @var TNW_Salesforce_Helper_Report $logger */
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();
-
-            $logger->add('Magento', 'Product', array($_object->Id => $_object), array($_object->Id => $this->_response));
-
+            $logger->add('Magento', $_type, array($_object->Id => $_object), array($_object->Id => $this->_response));
             $logger->send();
         }
 
@@ -83,6 +101,49 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
      */
     abstract public function syncFromSalesforce($object = null);
 
+    public static function sendMagentoIdToSalesforce($_association)
+    {
+        /** @var TNW_Salesforce_Model_Connection $_client */
+        $_client = Mage::getSingleton('tnw_salesforce/connection');
+        if (!$_client->initConnection()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
+
+            return;
+        }
+
+        foreach ($_association as $type => $item) {
+            $sendData = array();
+
+            $itemsToUpsert = array_chunk($item, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($itemsToUpsert as $_itemsToPush) {
+                foreach ($_itemsToPush as $_item) {
+                    if (empty($_item['salesforce_id'])) {
+                        continue;
+                    }
+
+                    $prefix = ($type == TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT)
+                        ? TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT
+                        : TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE;
+
+                    $_obj = new stdClass();
+                    $_obj->Id = $_item['salesforce_id'];
+                    $_obj->{$prefix . 'Magento_ID__c'} = $_item['magento_id'];
+                    $_obj->{$prefix . 'disableMagentoSync__c'} = true;
+
+                    $sendData[] = $_obj;
+                }
+
+                try {
+                    $_client->getClient()->upsert('Id', $sendData, $type);
+                } catch (Exception $e) {}
+            }
+        }
+    }
+
+    /**
+     * @param $_message
+     * @param $_code
+     */
     protected function _addError($_message, $_code) {
         if (!property_exists($this->_response, 'errors')) {
             $this->_response->errors = array();
