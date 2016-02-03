@@ -179,6 +179,10 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
                     $method = sprintf('get%sAddress', $entityName);
                     $entity = $invoice->$method();
                     break;
+
+                case 'Invoice':
+                    $entity = $invoice;
+                    break;
             }
 
             if (!$entity) {
