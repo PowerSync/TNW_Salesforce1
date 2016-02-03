@@ -10,8 +10,6 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
     {
         $this->_prepare();
 
-        $_isNew = false;
-
         $_sInvoiceId = (property_exists($object, "Id") && $object->Id)
             ? $object->Id : null;
 
@@ -29,28 +27,21 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             //Test if user exists
             $sql = "SELECT entity_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice') . "` WHERE entity_id = '" . $_mInvoiceId . "'";
             $row = $this->_write->query($sql)->fetch();
-            if (!$row) {
-                // Magento ID exists in Salesforce, user must have been deleted. Will re-create with the same ID
-                $_isNew = true;
+            $_mInvoiceId = ($row) ? $row['entity_id'] : null;
+
+            if ($_mInvoiceId) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice loaded using Magento ID: " . $_mInvoiceId);
             }
         }
 
-        if ($_mInvoiceId && !$_isNew) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product loaded using Magento ID: " . $_mInvoiceId);
-        } else {
-            // No Magento ID
-            if ($_sInvoiceId) {
-                // Try to find the user by SF Id
-                $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice') . "` WHERE salesforce_id = '" . $_sInvoiceId . "'";
-                $row = $this->_write->query($sql)->fetch();
-                $_mInvoiceId = ($row) ? $row['entity_id'] : null;
-            }
+        if (!$_mInvoiceId && $_sInvoiceId) {
+            // Try to find the user by SF Id
+            $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice') . "` WHERE salesforce_id = '" . $_sInvoiceId . "'";
+            $row = $this->_write->query($sql)->fetch();
+            $_mInvoiceId = ($row) ? $row['entity_id'] : null;
 
             if ($_mInvoiceId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice #" . $_mInvoiceId . " Loaded by using Salesforce ID: " . $_mInvoiceId);
-            } else {
-                //Brand new invoice
-                $_isNew = true;
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice #" . $_mInvoiceId . " Loaded by using Salesforce ID: " . $_sInvoiceId);
             }
         }
 
@@ -71,10 +62,10 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             return false;
         }
 
-        return $this->_updateMagento($object, $_mInvoiceId, $_sInvoiceId, $row['entity_id'], $_isNew);
+        return $this->_updateMagento($object, $_mInvoiceId, $_sInvoiceId, $row['entity_id']);
     }
 
-    protected function _updateMagento($object, $_mInvoiceId, $_sInvoiceId, $_mOrderId, $_isNew)
+    protected function _updateMagento($object, $_mInvoiceId, $_sInvoiceId, $_mOrderId)
     {
         if ($_mInvoiceId) {
             /** @var Mage_Sales_Model_Order_Invoice $invoice */
