@@ -3,11 +3,6 @@
 class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magento_Abstract
 {
     /**
-     * @var array
-     */
-    protected $_entitiesToSave = array();
-
-    /**
      * @param null $object
      * @return mixed
      */
@@ -156,6 +151,20 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             'sf_insync'     => 1
         ));
 
+        $this->_updateMappedEntityFields($object, $invoice)
+            ->_updateMappedEntityItemFields($object, $invoice)
+            ->saveEntities();
+
+        return $invoice;
+    }
+
+    /**
+     * @param $object
+     * @param $invoice
+     * @return $this
+     */
+    protected function _updateMappedEntityFields($object, $invoice)
+    {
         $mappings = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter('OrderInvoice');
@@ -207,31 +216,65 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             );
         }
 
-        $this->saveEntities();
-        return $invoice;
+        return $this;
     }
 
     /**
-     * @param string $key
-     * @param Mage_Core_Model_Abstract $entity
-     */
-    protected function addEntityToSave($key, $entity)
-    {
-        $this->_entitiesToSave[$key] = $entity;
-    }
-
-    /**
+     * @param $object
+     * @param $invoice Mage_Sales_Model_Order_Invoice
      * @return $this
-     * @throws Exception
      */
-    protected function saveEntities()
+    protected function _updateMappedEntityItemFields($object, $invoice)
     {
-        if (!empty($this->_entitiesToSave)) {
-            $transaction = Mage::getSingleton('core/resource_transaction');
-            foreach ($this->_entitiesToSave as $key => $entityToSave) {
-                $transaction->addObject($entityToSave);
+        $hasSalesforceId = $invoice->getOrder()->getItemsCollection()
+            ->walk('getSalesforceId');
+
+        /** @var Mage_Sales_Model_Resource_Order_Invoice_Item_Collection $_invoiceItemCollection */
+        $_invoiceItemCollection = $invoice->getItemsCollection();
+        $hasOrderId = $_invoiceItemCollection
+            ->walk('getOrderItemId');
+
+        $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderInvoiceItem__r';
+        $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
+        foreach ($object->$_invoiceItemKey->records as $record) {
+            $orderItemId = array_search($record->$_iItemOrderItemKey, $hasSalesforceId);
+            if (false === $orderItemId) {
+                continue;
             }
-            $transaction->save();
+
+            $invoiceItemId = array_search($orderItemId, $hasOrderId);
+            if (false === $invoiceItemId) {
+                continue;
+            }
+
+            /** @var Mage_Sales_Model_Order_Invoice_Item $entity */
+            $entity = $_invoiceItemCollection->getItemById($invoiceItemId);
+
+            $mappings = Mage::getModel('tnw_salesforce/mapping')
+                ->getCollection()
+                ->addObjectToFilter('OrderInvoiceItem');
+
+            /** @var $mapping TNW_Salesforce_Model_Mapping */
+            foreach ($mappings as $mapping) {
+                $entityName = $mapping->getLocalFieldType();
+                if ($entityName != 'Billing Item') {
+                    continue;
+                }
+
+                //skip if cannot find field in object
+                if (!isset($record->{$mapping->getSfField()})) {
+                    continue;
+                }
+
+                $newValue   = $record->{$mapping->getSfField()};
+                $field      = $mapping->getLocalFieldAttributeCode();
+
+                if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
+                    $entity->setData($field, $newValue);
+                    $this->addEntityToSave(sprintf('Billing Item %s', $entity->getId()), $entity);
+                }
+            }
+
         }
 
         return $this;

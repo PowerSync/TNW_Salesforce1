@@ -6,6 +6,11 @@
 abstract class TNW_Salesforce_Helper_Magento_Abstract
 {
     /**
+     * @var array
+     */
+    protected $_entitiesToSave = array();
+
+    /**
      * @var null
      */
     protected $_salesforceAssociation = array();
@@ -203,5 +208,31 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
 
     protected function _setTime() {
         $this->_time = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
+    }
+
+    /**
+     * @param string $key
+     * @param Mage_Core_Model_Abstract $entity
+     */
+    protected function addEntityToSave($key, $entity)
+    {
+        $this->_entitiesToSave[$key] = $entity;
+    }
+
+    /**
+     * @return $this
+     * @throws Exception
+     */
+    protected function saveEntities()
+    {
+        if (!empty($this->_entitiesToSave)) {
+            $transaction = Mage::getSingleton('core/resource_transaction');
+            foreach ($this->_entitiesToSave as $key => $entityToSave) {
+                $transaction->addObject($entityToSave);
+            }
+            $transaction->save();
+        }
+
+        return $this;
     }
 }
