@@ -450,6 +450,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Total__c'}
             =  $this->_prepareItemPrice($_entityItem);
 
+        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'}
+            = true;
+
         if (!$this->isItemObjectValid()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order Invoice item failed validation!');
             return;

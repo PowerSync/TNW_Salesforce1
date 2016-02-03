@@ -66,6 +66,8 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
                 return Mage::getModel('tnw_salesforce/import_order');
             case TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT:
                 return Mage::helper('tnw_salesforce/magento_invoice');
+            case TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT:
+                return Mage::helper('tnw_salesforce/magento_shipment');
         }
 
         return false;

@@ -434,6 +434,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c'}
             = $_quantity;
 
+        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'}
+            = true;
+
         //Process mapping
         Mage::getSingleton('tnw_salesforce/sync_mapping_shipment_ordershipment_item')
             ->setSync($this)

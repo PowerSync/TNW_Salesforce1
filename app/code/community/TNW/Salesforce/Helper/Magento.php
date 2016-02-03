@@ -656,6 +656,39 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         }
     }
 
+    public function _populateShipmentItemAttributes($type)
+    {
+        try {
+            $collection = $this->getTableColumnList('sales_flat_shipment_item');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+        }
+        if ($collection) {
+            $this->_cache[$type]['shipment_items'] = array(
+                'label' => 'Shipment item attributes',
+                'value' => array()
+            );
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['Field'];
+                if (
+                    $key == 'entity_id'
+                    || $key == 'parent_id'
+                    || $key == 'product_id'
+                    || $key == 'order_item_id'
+                    || $key == 'salesforce_id'
+                ) {
+                    continue;
+                }
+
+                $this->_cache[$type]['shipment_items']['value'][] = array(
+                    'value' => 'Shipment Item : ' . $key,
+                    'label' => 'Shipment Item : ' . ucwords(str_replace("_", " ", $key)),
+                );
+            }
+        }
+    }
+
     /**
      * @param $type
      * @return bool

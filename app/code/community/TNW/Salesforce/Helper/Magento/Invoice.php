@@ -225,6 +225,10 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         $hasOrderId = $_invoiceItemCollection
             ->walk('getOrderItemId');
 
+        $mappings = Mage::getModel('tnw_salesforce/mapping')
+            ->getCollection()
+            ->addObjectToFilter('OrderInvoiceItem');
+
         $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderInvoiceItem__r';
         $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
         foreach ($object->$_invoiceItemKey->records as $record) {
@@ -240,10 +244,6 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
 
             /** @var Mage_Sales_Model_Order_Invoice_Item $entity */
             $entity = $_invoiceItemCollection->getItemById($invoiceItemId);
-
-            $mappings = Mage::getModel('tnw_salesforce/mapping')
-                ->getCollection()
-                ->addObjectToFilter('OrderInvoiceItem');
 
             /** @var $mapping TNW_Salesforce_Model_Mapping */
             foreach ($mappings as $mapping) {
