@@ -98,7 +98,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_prepare();
 
         $_type = $this->_salesforceObject->attributes->type;
-        unset($this->_salesforceObject->attributes);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
         $_entity = $this->syncFromSalesforce($this->_salesforceObject);

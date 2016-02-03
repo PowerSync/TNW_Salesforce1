@@ -3,6 +3,11 @@
 class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magento_Abstract
 {
     /**
+     * @var array
+     */
+    protected $_entitiesToSave = array();
+
+    /**
      * @param null $object
      * @return mixed
      */
@@ -142,19 +147,89 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             $invoice->register();
 
             $invoice->getOrder()->setIsInProcess(true);
-
-            $transactionSave = Mage::getModel('core/resource_transaction')
-                ->addObject($invoice)
-                ->addObject($invoice->getOrder());
-
-            $transactionSave->save();
+            $this->addEntityToSave('Order', $invoice->getOrder());
         }
+
+        $this->addEntityToSave('Invoice', $invoice);
+        $invoice->addData(array(
+            'salesforce_id' => $_sInvoiceId,
+            'sf_insync'     => 1
+        ));
 
         $mappings = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter('OrderInvoice');
+
+        $updateFieldsLog = array();
+        /** @var $mapping TNW_Salesforce_Model_Mapping */
         foreach ($mappings as $mapping) {
-            //TODO
+            //skip if cannot find field in object
+            if (!isset($object->{$mapping->getSfField()})) {
+                continue;
+            }
+
+            $newValue   = $object->{$mapping->getSfField()};
+            $entityName = $mapping->getLocalFieldType();
+            $field      = $mapping->getLocalFieldAttributeCode();
+
+            $entity = false;
+            switch ($entityName) {
+                case 'Shipping':
+                case 'Billing':
+                    $method = sprintf('get%sAddress', $entityName);
+                    $entity = $invoice->$method();
+                    break;
+            }
+
+            if (!$entity) {
+                continue;
+            }
+
+            if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
+                $entity->setData($field, $newValue);
+                $this->addEntityToSave($entityName, $entity);
+
+                //add info about updated field to order comment
+                $updateFieldsLog[] = sprintf('%s - from "%s" to "%s"',
+                    $mapping->getLocalField(), $entity->getOrigData($field), $newValue);
+            }
         }
+
+        //add comment about all updated fields
+        if (!empty($updateFieldsLog)) {
+            $invoice->addComment(
+                "Fields are updated by salesforce:\n"
+                . implode("\n", $updateFieldsLog)
+            );
+        }
+
+        $this->saveEntities();
+        return $invoice;
+    }
+
+    /**
+     * @param string $key
+     * @param Mage_Core_Model_Abstract $entity
+     */
+    protected function addEntityToSave($key, $entity)
+    {
+        $this->_entitiesToSave[$key] = $entity;
+    }
+
+    /**
+     * @return $this
+     * @throws Exception
+     */
+    protected function saveEntities()
+    {
+        if (!empty($this->_entitiesToSave)) {
+            $transaction = Mage::getSingleton('core/resource_transaction');
+            foreach ($this->_entitiesToSave as $key => $entityToSave) {
+                $transaction->addObject($entityToSave);
+            }
+            $transaction->save();
+        }
+
+        return $this;
     }
 }

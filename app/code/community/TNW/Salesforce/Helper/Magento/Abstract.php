@@ -63,7 +63,6 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
 
         $this->_response = new stdClass();
         $_type = $_object->attributes->type;
-        unset($_object->attributes);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $_object->Id . " **");
         $_entity = $this->syncFromSalesforce($_object);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $_object->Id . " **");
