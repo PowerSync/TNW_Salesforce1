@@ -497,6 +497,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'}
                 = $this->_getParentEntityId($_entityNumber);
 
+            $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'}
+                = true;
+
             $this->_cache['orderShipmentTrackToUpsert'][$_track->getId()] = $this->_obj;
 
         }
