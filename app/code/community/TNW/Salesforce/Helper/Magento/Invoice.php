@@ -180,6 +180,19 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
                 case 'Billing':
                     $method = sprintf('get%sAddress', $entityName);
                     $entity = $invoice->$method();
+
+                    $keyState = sprintf('tnw_fulfilment__%s_Country__c', $entityName);
+                    if (($field == 'region') && property_exists($object, $keyState)) {
+                        foreach(Mage::getModel('directory/region_api')->items($object->$keyState) as $_region) {
+                            if (!in_array($newValue, $_region)) {
+                                continue;
+                            }
+
+                            $field    = 'region_id';
+                            $newValue = $_region['region_id'];
+                            break;
+                        }
+                    }
                     break;
 
                 case 'Invoice':
