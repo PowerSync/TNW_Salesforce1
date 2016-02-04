@@ -19,30 +19,29 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             return false;
         }
 
-        $_mInvoiceIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c";
-        $_mInvoiceId    = (property_exists($object, $_mInvoiceIdKey) && $object->$_mInvoiceIdKey)
-            ? $object->$_mInvoiceIdKey : null;
+        $_miIncrementIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c";
+        $_miIncrementId    = (property_exists($object, $_miIncrementIdKey) && $object->$_miIncrementIdKey)
+            ? $object->$_miIncrementIdKey : null;
 
-        // Lookup product by Magento Id
-        if ($_mInvoiceId) {
+        if ($_miIncrementId) {
             //Test if user exists
-            $sql = "SELECT entity_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice') . "` WHERE entity_id = '" . $_mInvoiceId . "'";
+            $sql = "SELECT increment_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice') . "` WHERE increment_id = '" . $_miIncrementId . "'";
             $row = $this->_write->query($sql)->fetch();
-            $_mInvoiceId = ($row) ? $row['entity_id'] : null;
+            $_miIncrementId = ($row) ? $row['increment_id'] : null;
 
-            if ($_mInvoiceId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice loaded using Magento ID: " . $_mInvoiceId);
+            if ($_miIncrementId) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice loaded using Magento ID: " . $_miIncrementId);
             }
         }
 
-        if (!$_mInvoiceId && $_sInvoiceId) {
+        if (!$_miIncrementId && $_sInvoiceId) {
             // Try to find the user by SF Id
-            $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice') . "` WHERE salesforce_id = '" . $_sInvoiceId . "'";
+            $sql = "SELECT increment_id FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice') . "` WHERE salesforce_id = '" . $_sInvoiceId . "'";
             $row = $this->_write->query($sql)->fetch();
-            $_mInvoiceId = ($row) ? $row['entity_id'] : null;
+            $_miIncrementId = ($row) ? $row['increment_id'] : null;
 
-            if ($_mInvoiceId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice #" . $_mInvoiceId . " Loaded by using Salesforce ID: " . $_sInvoiceId);
+            if ($_miIncrementId) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice #" . $_miIncrementId . " Loaded by using Salesforce ID: " . $_sInvoiceId);
             }
         }
 
@@ -64,14 +63,15 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             return false;
         }
 
-        return $this->_updateMagento($object, $_mInvoiceId, $_sInvoiceId, $row['entity_id']);
+        return $this->_updateMagento($object, $_miIncrementId, $_sInvoiceId, $row['entity_id']);
     }
 
-    protected function _updateMagento($object, $_mInvoiceId, $_sInvoiceId, $_mOrderId)
+    protected function _updateMagento($object, $_miIncrementId, $_sInvoiceId, $_mOrderId)
     {
-        if ($_mInvoiceId) {
+        if ($_miIncrementId) {
             /** @var Mage_Sales_Model_Order_Invoice $invoice */
-            $invoice = Mage::getModel('sales/order_invoice')->load($_mInvoiceId);
+            $invoice = Mage::getModel('sales/order_invoice')
+                ->loadByIncrementId($_miIncrementId);
         } elseif ($_mOrderId) {
             /** @var Mage_Sales_Model_Order $order */
             $order = Mage::getModel('sales/order')->load($_mOrderId);
