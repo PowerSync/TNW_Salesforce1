@@ -76,7 +76,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         if (is_object($_entity)) {
             $this->_salesforceAssociation[$_type][] = array(
                 'salesforce_id' => $_entity->getData('salesforce_id'),
-                'magento_id'    => $_entity->getId()
+                'magento_id'    => $this->_getEntityNumber($_entity)
             );
 
             $this->_response->success = true;
@@ -97,6 +97,15 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         }
 
         return $_entity;
+    }
+
+    /**
+     * @param $_entity
+     * @return mixed
+     */
+    protected function _getEntityNumber($_entity)
+    {
+        return $_entity->getId();
     }
 
     /**
@@ -125,16 +134,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
                         continue;
                     }
 
-                    $prefix = ($type == TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT)
-                        ? TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT
-                        : TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE;
-
-                    $_obj = new stdClass();
-                    $_obj->Id = $_item['salesforce_id'];
-                    $_obj->{$prefix . 'Magento_ID__c'} = $_item['magento_id'];
-                    $_obj->{$prefix . 'disableMagentoSync__c'} = true;
-
-                    $sendData[] = $_obj;
+                    $sendData[] = static::_prepareEntityUpdate($_item);
                 }
 
                 try {
@@ -142,6 +142,23 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
                 } catch (Exception $e) {}
             }
         }
+    }
+
+    /**
+     * @param $_data
+     * @return stdClass
+     */
+    protected static function _prepareEntityUpdate($_data)
+    {
+        $_obj = new stdClass();
+        $_obj->Id = $_data['salesforce_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = $_data['magento_id'];
+
+        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+            $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'} = true;
+        }
+
+        return $_obj;
     }
 
     /**

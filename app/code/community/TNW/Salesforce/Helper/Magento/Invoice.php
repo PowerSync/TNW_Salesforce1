@@ -19,8 +19,9 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             return false;
         }
 
-        $_mInvoiceId = (property_exists($object, TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c") && $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'})
-            ? $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'} : null;
+        $_mInvoiceIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c";
+        $_mInvoiceId    = (property_exists($object, $_mInvoiceIdKey) && $object->$_mInvoiceIdKey)
+            ? $object->$_mInvoiceIdKey : null;
 
         // Lookup product by Magento Id
         if ($_mInvoiceId) {
@@ -45,8 +46,9 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             }
         }
 
-        $_sOrderId = (property_exists($object, TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Order__c") && $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order__c'})
-            ? $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order__c'} : null;
+        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Order__c";
+        $_sOrderId    = (property_exists($object, $_sOrderIdKey) && $object->$_sOrderIdKey)
+            ? $object->$_sOrderIdKey : null;
 
         if (!$_sOrderId) {
             Mage::getSingleton('tnw_salesforce/tool_log')
@@ -269,5 +271,28 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         }
 
         return $this;
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order_Invoice
+     * @return mixed
+     */
+    protected function _getEntityNumber($_entity)
+    {
+        return $_entity->getIncrementId();
+    }
+
+    /**
+     * @param $_data
+     * @return stdClass
+     */
+    protected static function _prepareEntityUpdate($_data)
+    {
+        $_obj = new stdClass();
+        $_obj->Id = $_data['salesforce_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'} = $_data['magento_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'} = true;
+
+        return $_obj;
     }
 }

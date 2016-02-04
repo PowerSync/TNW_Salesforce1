@@ -21,7 +21,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Shipment extends TNW_Salesforce_Help
             $ostTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__r';
             $_fields    = array(
                 'Id', $_magentoId,
-                sprintf('(SELECT Id, Name, %s, %s FROM %s)',
+                sprintf('(SELECT Id, Name, %s, %s, %s FROM %s)',
+                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c',
                     TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Code__c',
                     TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c',
                     $osiTable

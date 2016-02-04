@@ -20,8 +20,9 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             return false;
         }
 
-        $_mShipmentId = (property_exists($object, TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c") && $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'})
-            ? $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'} : null;
+        $_mShipmentIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c";
+        $_mShipmentId    = (property_exists($object, $_mShipmentIdKey) && $object->$_mShipmentIdKey)
+            ? $object->$_mShipmentIdKey : null;
 
         // Lookup product by Magento Id
         if ($_mShipmentId) {
@@ -46,8 +47,9 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             }
         }
 
-        $_sOrderId = (property_exists($object, TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Order__c") && $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order__c'})
-            ? $object->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order__c'} : null;
+        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Order__c";
+        $_sOrderId    = (property_exists($object, $_sOrderIdKey) && $object->$_sOrderIdKey)
+            ? $object->$_sOrderIdKey : null;
 
         if (!$_sOrderId) {
             Mage::getSingleton('tnw_salesforce/tool_log')
@@ -137,6 +139,8 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             $this->addEntityToSave('Order', $shipment->getOrder());
         }
 
+        $shipment->setData('salesforce_id', $_sShipmentId)
+            ->setData('sf_insync', 1);
         $this->addEntityToSave('Shipment', $shipment);
 
         $_shipmentTrackingKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__r';
@@ -145,9 +149,9 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
                 ->walk('getNumber');
 
             $_sTrackingCarrierKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Carrier__c';
-            $_sTrackingNumberKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Number__c';
+            $_sTrackingNumberKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Number__c';
             foreach ($object->$_shipmentTrackingKey->records as $record) {
-                if (false === array_search($record->$_sTrackingNumberKey, $hasNumber)) {
+                if (false !== array_search($record->$_sTrackingNumberKey, $hasNumber)) {
                     continue;
                 }
 
@@ -292,5 +296,28 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
         }
 
         return $this;
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order_Shipment
+     * @return mixed
+     */
+    protected function _getEntityNumber($_entity)
+    {
+        return $_entity->getIncrementId();
+    }
+
+    /**
+     * @param $_data
+     * @return stdClass
+     */
+    protected static function _prepareEntityUpdate($_data)
+    {
+        $_obj = new stdClass();
+        $_obj->Id = $_data['salesforce_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'} = $_data['magento_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'} = true;
+
+        return $_obj;
     }
 }

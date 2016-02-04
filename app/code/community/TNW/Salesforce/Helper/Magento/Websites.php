@@ -77,4 +77,21 @@ class TNW_Salesforce_Helper_Magento_Websites extends TNW_Salesforce_Helper_Magen
             return false;
         }
     }
+
+    /**
+     * @param $_data
+     * @return stdClass
+     */
+    protected static function _prepareEntityUpdate($_data)
+    {
+        $_obj = new stdClass();
+        $_obj->Id = $_data['salesforce_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Website_ID__c'} = $_data['magento_id'];
+
+        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+            $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'} = true;
+        }
+
+        return $_obj;
+    }
 }

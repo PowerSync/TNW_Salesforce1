@@ -512,7 +512,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
      */
     protected function _doesCartItemExist($_entity, $_entityItem, $_product)
     {
-        $_quantity     = $this->getItemQty($_entityItem);
+        $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
         $_entityNumber = $this->_getEntityNumber($_entity);
         $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
 
@@ -524,25 +524,11 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         }
 
         foreach ($this->_cache[$lookupKey][$_entityNumber]->Items->records as $_cartItem) {
-            if (
-                $_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Code__c'} == $_product->getSku()
-                && $_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c'} == (float)$_quantity
-            ) {
-                /**
-                 * if current SF item already assigned to some Magento item - skip it and try to find one more
-                 * sometimes items with the same parameters can be in order - we should divide it
-                 */
-                foreach ($this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert'] as $itemToUpsert) {
-                    if (property_exists($itemToUpsert, 'Id')
-                        && !empty($itemToUpsert->Id)
-                        && $_cartItem->Id == $itemToUpsert->Id
-                    ) {
-                        continue 2;
-                    }
-                }
-
-                return $_cartItem->Id;
+            if ($_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c'} != $_sOrderItemId) {
+                continue;
             }
+
+            return $_cartItem->Id;
         }
 
         return false;
@@ -736,6 +722,11 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_entityNum] = $_result->id;
+                if ($entity = $this->_loadEntityByCache($_entityArray[$_entityNum], $_entityNum)) {
+                    $entity->setData('salesforce_id', (string)$_result->id);
+                    $entity->setData('sf_insync', 1);
+                }
+
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace(sprintf('%s Upserted: %s' , $this->_salesforceEntityName, $_result->id));
             }
