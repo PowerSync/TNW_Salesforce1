@@ -386,14 +386,9 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $_quoteNumber . ') ********');
             $this->_obj = new stdClass();
 
-            $_customerId = $this->_cache['quoteToCustomerId'][$_quoteNumber];
-            if (!Mage::registry('customer_cached_' . $_customerId)) {
-                $_customer = $this->_cache['quoteCustomers'][$_quoteNumber];
-            } else {
-                $_customer = Mage::registry('customer_cached_' . $_customerId);
-            }
+            $_quote = $this->_loadEntityByCache($_key, $_quoteNumber);
+            $_customer = $this->getQuoteCustomer($_quote);
 
-            $_quote = $this->_loadQuote($_key);
             $_email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
             $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
             if (
