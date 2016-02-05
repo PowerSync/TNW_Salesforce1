@@ -156,6 +156,22 @@
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_catalog_product_edit>
 
+    <adminhtml_salesforce_orderinvoice_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_orderinvoice_edit>
+
+    <adminhtml_salesforce_orderinvoiceitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_orderinvoiceitem_edit>
+
+    <adminhtml_salesforce_ordershipment_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_ordershipment_edit>
+
+    <adminhtml_salesforce_ordershipmentitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_ordershipmentitem_edit>
+
     <adminhtml_tool_log_file_view>
         <reference name="head">
             <action method="addJs">

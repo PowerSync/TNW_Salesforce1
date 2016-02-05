@@ -32,7 +32,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             $_msIncrementId = ($row) ? $row['increment_id'] : null;
 
             if ($_msIncrementId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice loaded using Magento ID: " . $_msIncrementId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Shipment loaded using Magento ID: " . $_msIncrementId);
             }
         }
 
@@ -43,7 +43,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             $_msIncrementId = ($row) ? $row['increment_id'] : null;
 
             if ($_msIncrementId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice #" . $_msIncrementId . " Loaded by using Salesforce ID: " . $_sShipmentId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Shipment #" . $_msIncrementId . " Loaded by using Salesforce ID: " . $_sShipmentId);
             }
         }
 
