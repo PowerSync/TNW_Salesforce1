@@ -388,9 +388,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function getUpsertedEntityIds()
     {
         $entityIds = array();
-        foreach ($this->_cache['entitiesUpdating'] as $quoteId) {
+        foreach ($this->_cache['entitiesUpdating'] as $key => $quoteId) {
             if (!in_array($quoteId, $this->_cache['failedOpportunities'])) {
-                $entityIds[] = $quoteId;
+                $entityIds[$key] = $quoteId;
             }
         }
 
@@ -423,10 +423,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function _prepareContactRoles()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
-        foreach ($this->getUpsertedEntityIds() as $quoteNumber) {
+        foreach ($this->getUpsertedEntityIds() as $key => $quoteNumber) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $quoteNumber . ') ********');
 
-            $quote = $this->_loadEntity($quoteNumber);
+            $quote = $this->_loadEntityByCache($key, $quoteNumber);
             $customer = $this->getQuoteCustomer($quote);
 
             $contactRole = new stdClass();

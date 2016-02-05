@@ -386,7 +386,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $_quoteNumber . ') ********');
             $this->_obj = new stdClass();
 
-            $_quote = $this->_loadEntity($_key);
+            $_quote = $this->_loadEntityByCache($_key, $_quoteNumber);
             $_customer = $this->getQuoteCustomer($_quote);
 
             $_email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
