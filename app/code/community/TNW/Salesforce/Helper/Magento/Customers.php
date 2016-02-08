@@ -471,7 +471,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             $_addressesIsDifferent = false;
-            foreach (array('street', ' city', 'region', 'postcode', 'country_id') as $_field) {
+            foreach (array('street', 'city', 'region', 'region_id', 'postcode', 'country_id') as $_field) {
                 if (strcasecmp(@$_additional['shipping'][$_field], @$_additional['billing'][$_field]) != 0) {
                     $_addressesIsDifferent = true;
                     break;
@@ -520,7 +520,13 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         $_countryCode = $this->_getCountryId($_data['country_id']);
                         $_regionCode  = null;
                         if ($_countryCode) {
-                            $_regionCode = $this->_getRegionId($_data['region'], $_countryCode);
+                            $_region = array_filter(array_intersect_key($_data, array_flip(array('region_id', 'region'))));
+                            foreach ($_region as $_regionFind) {
+                                $_regionCode = $this->_getRegionId($_regionFind, $_countryCode);
+                                if (!empty($_regionCode)) {
+                                    break;
+                                }
+                            }
                         }
 
                         /** @var Mage_Customer_Model_Address $_address */
@@ -770,7 +776,13 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_countryCode = $this->_getCountryId($_data['country_id']);
         $this->_regionCode  = null;
         if ($this->_countryCode) {
-            $this->_regionCode = $this->_getRegionId($_data['region'], $this->_countryCode);
+            $_region = array_filter(array_intersect_key($_data, array_flip(array('region_id', 'region'))));
+            foreach ($_region as $_regionFind) {
+                $this->_regionCode = $this->_getRegionId($_regionFind, $this->_countryCode);
+                if (!empty($this->_regionCode)) {
+                    break;
+                }
+            }
         }
 
         foreach($_entity->getAddresses() as $_address) {
