@@ -685,4 +685,54 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
         }
     }
+
+    /**
+     * @param $_entityNumber
+     * @param $_websites
+     * @return bool
+     */
+    protected function _checkSyncCustomer($_entityNumber, $_websites)
+    {
+        $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
+        $websiteSfId = $_websites[$customerId];
+        /** @var $customer Mage_Customer_Model_Customer */
+        $customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+
+        $syncCustomer = false;
+        /**
+         * If customer has not default billing/shipping addresses - we can use data from order if it's allowed
+         */
+        if (Mage::helper('tnw_salesforce')->canUseOrderAddress()) {
+
+            if (!$customer->getDefaultBillingAddress()) {
+                $order = $this->getOrderByIncrementId($_entityNumber);
+
+                $customerAddress = Mage::getModel('customer/address');
+
+                $orderAddress = $order->getBillingAddress();
+                $customerAddress->setData($orderAddress->getData());
+
+                $customerAddress->setIsDefaultBilling(true);
+                $customer->setData('default_billing', $customerAddress->getId());
+                $customer->addAddress($customerAddress);
+                $syncCustomer = true;
+            }
+
+            if (!$customer->getDefaultShippingAddress()) {
+                $order = $this->getOrderByIncrementId($_entityNumber);
+
+                $customerAddress = Mage::getModel('customer/address');
+
+                $orderAddress = $order->getShippingAddress();
+                $customerAddress->setData($orderAddress->getData());
+
+                $customerAddress->setIsDefaultShipping(true);
+                $customer->setData('default_shipping', $customerAddress->getId());
+                $customer->addAddress($customerAddress);
+                $syncCustomer = true;
+            }
+        }
+
+        return parent::_checkSyncCustomer($_entityNumber, $websiteSfId) || $syncCustomer;
+    }
 }
