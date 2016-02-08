@@ -693,10 +693,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _checkSyncCustomer($_entityNumber, $_websites)
     {
-        $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
-        $websiteSfId = $_websites[$customerId];
         /** @var $customer Mage_Customer_Model_Customer */
-        $customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+        $customer = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
 
         $syncCustomer = false;
         /**
@@ -733,6 +731,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
         }
 
-        return parent::_checkSyncCustomer($_entityNumber, $websiteSfId) || $syncCustomer;
+        return parent::_checkSyncCustomer($_entityNumber, $_websites) || $syncCustomer;
     }
 }
