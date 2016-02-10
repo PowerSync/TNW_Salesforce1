@@ -107,6 +107,8 @@ class TNW_Salesforce_Model_Import_Order
         //clear log fields before update
         $updateFieldsLog = array();
 
+        $additional = array();
+
         $mappings = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_objectType);
         foreach ($mappings as $mapping) {
             //skip if cannot find field in object
@@ -121,6 +123,11 @@ class TNW_Salesforce_Model_Import_Order
             if (!$entity) {
                 continue;
             }
+
+            if ($entity instanceof Mage_Sales_Model_Order_Address) {
+                $additional[$entityName][$field] = $newValue;
+            }
+
             if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
                 $entity->setData($field, $newValue);
                 $this->addEntityToSave($entityName, $entity);
@@ -129,6 +136,39 @@ class TNW_Salesforce_Model_Import_Order
                 $updateFieldsLog[] = sprintf('%s - from "%s" to "%s"',
                     $mapping->getLocalField(), $entity->getOrigData($field), $newValue);
             }
+        }
+
+        foreach ($additional as $entityName => $address) {
+            $entity = $this->getEntity($entityName);
+            if (!$entity) {
+                continue;
+            }
+
+            if (!$entity instanceof Mage_Sales_Model_Order_Address) {
+                continue;
+            }
+
+            $_countryCode = $this->_getCountryId($address['country_id']);
+            $_regionCode  = null;
+            if ($_countryCode) {
+                foreach (array('region_id', 'region') as $_regionField) {
+                    if (!isset($address[$_regionField])) {
+                        continue;
+                    }
+
+                    $_regionCode = $this->_getRegionId($address[$_regionField], $_countryCode);
+                    if (!empty($_regionCode)) {
+                        break;
+                    }
+                }
+            }
+
+            $entity->addData(array(
+                'country_id' => $_countryCode,
+                'region_id'  => $_regionCode,
+            ));
+
+            $this->addEntityToSave($entityName, $entity);
         }
 
         //add comment about all updated fields
@@ -140,6 +180,28 @@ class TNW_Salesforce_Model_Import_Order
         }
 
         return $this;
+    }
+
+    protected function _getCountryId($_name  = NULL)
+    {
+        foreach(Mage::getModel('directory/country_api')->items() as $_country) {
+            if (in_array($_name, $_country)) {
+                return $_country['country_id'];
+            }
+        }
+
+        return NULL;
+    }
+
+    protected function _getRegionId($_name  = NULL, $_countryCode = NULL)
+    {
+        foreach(Mage::getModel('directory/region_api')->items($_countryCode) as $_region) {
+            if (in_array($_name, $_region)) {
+                return $_region['region_id'];
+            }
+        }
+
+        return NULL;
     }
 
     /**
