@@ -524,9 +524,12 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         $_countryCode = $this->_getCountryId($_data['country_id']);
                         $_regionCode  = null;
                         if ($_countryCode) {
-                            $_region = array_filter(array_intersect_key($_data, array_flip(array('region_id', 'region'))));
-                            foreach ($_region as $_regionFind) {
-                                $_regionCode = $this->_getRegionId($_regionFind, $_countryCode);
+                            foreach (array('region_id', 'region') as $_regionField) {
+                                if (!isset($_data[$_regionField])) {
+                                    continue;
+                                }
+
+                                $_regionCode = $this->_getRegionId($_data[$_regionField], $_countryCode);
                                 if (!empty($_regionCode)) {
                                     break;
                                 }
@@ -780,9 +783,12 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_countryCode = $this->_getCountryId($_data['country_id']);
         $this->_regionCode  = null;
         if ($this->_countryCode) {
-            $_region = array_filter(array_intersect_key($_data, array_flip(array('region_id', 'region'))));
-            foreach ($_region as $_regionFind) {
-                $this->_regionCode = $this->_getRegionId($_regionFind, $this->_countryCode);
+            foreach (array('region_id', 'region') as $_regionField) {
+                if (!isset($_data[$_regionField])) {
+                    continue;
+                }
+
+                $this->_regionCode = $this->_getRegionId($_data[$_regionField], $this->_countryCode);
                 if (!empty($this->_regionCode)) {
                     break;
                 }
