@@ -1506,6 +1506,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     /** @var Mage_Customer_Model_Address $customerAddress */
                     $customerAddress = Mage::getModel('customer/address');
                     $customerAddress->setData($entityAddress->getData());
+                    $customerAddress->setId($entityAddress->getId());
                     $customerAddress->setIsDefaultBilling(true);
 
                     $customer->setData('default_billing', $customerAddress->getId());
@@ -1522,6 +1523,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     /** @var Mage_Customer_Model_Address $customerAddress */
                     $customerAddress = Mage::getModel('customer/address');
                     $customerAddress->setData($entityAddress->getData());
+                    $customerAddress->setId($entityAddress->getId());
                     $customerAddress->setIsDefaultShipping(true);
 
                     $customer->setData('default_shipping', $customerAddress->getId());
