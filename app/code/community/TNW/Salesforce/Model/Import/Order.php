@@ -151,9 +151,12 @@ class TNW_Salesforce_Model_Import_Order
             $_countryCode = $this->_getCountryId($address['country_id']);
             $_regionCode  = null;
             if ($_countryCode) {
-                $_region = array_filter(array_intersect_key($address, array_flip(array('region_id', 'region'))));
-                foreach ($_region as $_regionFind) {
-                    $_regionCode = $this->_getRegionId($_regionFind, $_countryCode);
+                foreach (array('region_id', 'region') as $_regionField) {
+                    if (!isset($address[$_regionField])) {
+                        continue;
+                    }
+
+                    $_regionCode = $this->_getRegionId($address[$_regionField], $_countryCode);
                     if (!empty($_regionCode)) {
                         break;
                     }
