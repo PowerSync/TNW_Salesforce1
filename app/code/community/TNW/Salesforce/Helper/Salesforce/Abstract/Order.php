@@ -1480,16 +1480,68 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _checkSyncCustomer($_entityNumber, $_websites)
     {
+        $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
+        if (false === $_entityId) {
+            return false;
+        }
+
         $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
         $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
         $websiteSfId = $_websites[$customerId];
 
-        return !isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-        || !isset($this->_cache['accountsLookup'][0][$email])
-        || (
-            isset($this->_cache['leadsLookup'][$websiteSfId][$email])
-            && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
-        );
+        /** @var $customer Mage_Customer_Model_Customer */
+        $customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+
+        $syncCustomer = false;
+        /**
+         * If customer has not default billing/shipping addresses - we can use data from order if it's allowed
+         */
+        if (Mage::helper('tnw_salesforce')->canUseOrderAddress()) {
+
+            if (!$customer->getDefaultBillingAddress()) {
+                /** @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote $entity */
+                $entity = $this->_loadEntityByCache($_entityId, $_entityNumber);
+                $entityAddress = $entity->getBillingAddress();
+                if ($entityAddress instanceof Mage_Customer_Model_Address_Abstract) {
+                    /** @var Mage_Customer_Model_Address $customerAddress */
+                    $customerAddress = Mage::getModel('customer/address');
+                    $customerAddress->setData($entityAddress->getData());
+                    $customerAddress->setIsDefaultBilling(true);
+
+                    $customer->setData('default_billing', $customerAddress->getId());
+                    $customer->addAddress($customerAddress);
+                    $syncCustomer = true;
+                }
+            }
+
+            if (!$customer->getDefaultShippingAddress()) {
+                /** @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote $entity */
+                $entity = $this->_loadEntityByCache($_entityId, $_entityNumber);
+                $entityAddress = $entity->getShippingAddress();
+                if ($entityAddress instanceof Mage_Customer_Model_Address_Abstract) {
+                    /** @var Mage_Customer_Model_Address $customerAddress */
+                    $customerAddress = Mage::getModel('customer/address');
+                    $customerAddress->setData($entityAddress->getData());
+                    $customerAddress->setIsDefaultShipping(true);
+
+                    $customer->setData('default_shipping', $customerAddress->getId());
+                    $customer->addAddress($customerAddress);
+                    $syncCustomer = true;
+                }
+            }
+        }
+
+        if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
+            || !isset($this->_cache['accountsLookup'][0][$email])
+            || (
+                isset($this->_cache['leadsLookup'][$websiteSfId][$email])
+                && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
+            )
+        ) {
+            $syncCustomer = true;
+        }
+
+        return $syncCustomer;
     }
 
     /**
