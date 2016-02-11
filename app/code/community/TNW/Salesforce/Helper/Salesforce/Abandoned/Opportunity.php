@@ -388,9 +388,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function getUpsertedEntityIds()
     {
         $entityIds = array();
-        foreach ($this->_cache['entitiesUpdating'] as $quoteId) {
+        foreach ($this->_cache['entitiesUpdating'] as $key => $quoteId) {
             if (!in_array($quoteId, $this->_cache['failedOpportunities'])) {
-                $entityIds[] = $quoteId;
+                $entityIds[$key] = $quoteId;
             }
         }
 
@@ -413,7 +413,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $customerId = $this->_cache['quoteToCustomerId'][$quote->getId()];
 
         //always update cache array if customer ids are the same
-        if ($customerId == $quote->getCustomerId() || !$this->_cache['quoteCustomers'][$quote->getId()]) {
+        if ($customerId == $quote->getCustomerId() && !$this->_cache['quoteCustomers'][$quote->getId()]) {
             $this->_cache['quoteCustomers'][$quote->getId()] = $quote->getCustomer();
         }
 
@@ -422,40 +422,17 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     protected function _prepareContactRoles()
     {
-        $helper = Mage::helper('tnw_salesforce');
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
-        foreach ($this->getUpsertedEntityIds() as $quoteNumber) {
+        foreach ($this->getUpsertedEntityIds() as $key => $quoteNumber) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $quoteNumber . ') ********');
 
-            $quote = $this->_loadQuote($quoteNumber);
+            $quote = $this->_loadEntityByCache($key, $quoteNumber);
             $customer = $this->getQuoteCustomer($quote);
 
             $contactRole = new stdClass();
             $email = strtolower($customer->getEmail());
-            $websiteId = $customer->getWebsiteId() ? $customer->getWebsiteId() : $quote->getStore()->getWebsiteId();
 
-            /**
-             * we use SF websiteId in lookup arrays in this class
-             */
-            $websiteSfId = $this->_websiteSfIds[$websiteId];
-
-            /**
-             * try to use data from lookup array for person accounts or get data from customer directly
-             */
-            if (
-                 isset($this->_cache['accountsLookup'])
-                    && isset($this->_cache['accountsLookup'][$websiteSfId])
-                    && isset($this->_cache['accountsLookup'][$websiteSfId][$email])
-                    && is_object($this->_cache['accountsLookup'][$websiteSfId][$email])
-                    && (property_exists($this->_cache['accountsLookup'][$websiteSfId][$email], 'IsPersonAccount')
-                        || (bool)$customer->getSalesforceIsPerson()
-                    )
-
-            ) {
-                $contactRole->ContactId = $this->_cache['accountsLookup'][$websiteSfId][$email]->Id;
-            } else {
-                $contactRole->ContactId = $customer->getSalesforceId();
-            }
+            $contactRole->ContactId = $customer->getSalesforceId();
 
             // Check if already exists
             $skip = false;
