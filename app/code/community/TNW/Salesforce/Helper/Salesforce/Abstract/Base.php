@@ -688,14 +688,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             }
 
             $_entity = $this->_loadEntityByCache($_key, $_entityNumber);
-            foreach ($this->getItems($_entity) as $_item) {
+            foreach ($this->getItems($_entity) as $_entityItem) {
                 try {
-                    $this->_prepareEntityItemObj($_entity, $_item);
+                    $this->_prepareEntityItemObj($_entity, $_entityItem);
                 } catch (Exception $e) {
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addNotice($e->getMessage());
-                    }
-
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
                     continue;
                 }

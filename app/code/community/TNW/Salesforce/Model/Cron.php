@@ -5,6 +5,8 @@
  */
 class TNW_Salesforce_Model_Cron
 {
+    const CRON_LAST_RUN_TIMESTAMP_PATH = 'salesforce/syncronization/cron_last_run_timestamp';
+
     /**
      * @var array
      */
@@ -305,6 +307,9 @@ class TNW_Salesforce_Model_Cron
 
         // Sync invoices
         $this->syncInvoices();
+
+        // Sync shipment
+        $this->syncShipment();
 
         // Sync custom objects
         $this->_syncCustomObjects();

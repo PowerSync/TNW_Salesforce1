@@ -15,13 +15,13 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
             return; // Disabled
         }
 
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
+        if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Shipment synchronization disabled');
             return; // Disabled
         }
 
-        if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Shipment synchronization disabled');
+        if (!Mage::helper('tnw_salesforce')->canPush()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
         }
 
@@ -47,12 +47,9 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
         if ($_shipment->getId()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("############################ New Shipment Start ############################");
 
-            // Allow Powersync to overwite fired event for customizations
-            $_object = new Varien_Object(array('object_type' => self::OBJECT_TYPE));
-            Mage::dispatchEvent('tnw_salesforce_shipment_set_object', array('sf_object' => $_object));
-
             // Fire event that will process the request
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_object->getObjectType()), array(
+            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                 'shipmentIds' => array($_shipment->getId()),
                 'message'     => "SUCCESS: Upserting Shipment #" . $_shipment->getIncrementId(),
                 'type'        => 'salesforce'
@@ -122,9 +119,11 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
             $syncHelper->pushDataTrack();
         }
         else {
-            Mage::dispatchEvent('tnw_salesforce_shipment_process', array(
+            // Fire event that will process the request
+            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                 'shipmentIds' => array($entity->getId()),
-                'message'     => NULL,
+                'message'     => "SUCCESS: Upserting Shipment #" . $entity->getIncrementId(),
                 'type'        => 'salesforce'
             ));
         }

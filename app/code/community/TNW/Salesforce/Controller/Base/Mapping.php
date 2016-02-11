@@ -22,6 +22,11 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     protected $_localEntity = '';
 
     /**
+     * @var string
+     */
+    protected $_blockGroup = 'tnw_salesforce';
+
+    /**
      * path to the blocks which will be rendered by controller
      * can be usefull if Salesforce entity name and block class name are different
      * @var string
@@ -106,6 +111,7 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
             ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)), Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)));
 
+        Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
         return $this;
     }
 
@@ -116,8 +122,7 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     {
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('%s Field Mapping', $this->getLocalEntity(true)));
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_' . $this->getBlockPath()));
-        Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
+            ->_addContent($this->getLayout()->createBlock($this->_blockGroup. '/adminhtml_' . $this->getBlockPath()));
         $this->renderLayout();
     }
 
@@ -144,13 +149,12 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
             Mage::register(sprintf('salesforce_%s_data', $this->getSfEntity()), $model);
 
-            $this->loadLayout();
-            $this->_setActiveMenu('system/salesforce');
+            $this->_initLayout()
+                ->getLayout()
+                ->getBlock('head')
+                ->setCanLoadExtJs(true);
 
-            $this->getLayout()->getBlock('head')->setCanLoadExtJs(true);
-
-            $this->_addContent($this->getLayout()->createBlock(sprintf('tnw_salesforce/adminhtml_%s_edit', $this->getBlockPath())));
-            Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
+            $this->_addContent($this->getLayout()->createBlock(sprintf($this->_blockGroup. '/adminhtml_%s_edit', $this->getBlockPath())));
             $this->renderLayout();
         } else {
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Item does not exist'));

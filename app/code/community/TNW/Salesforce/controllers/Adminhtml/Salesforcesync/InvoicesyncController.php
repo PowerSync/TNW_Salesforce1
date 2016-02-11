@@ -77,7 +77,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
                         }
                     }
                 } else {
-                    Mage::dispatchEvent('tnw_salesforce_invoice_process', array(
+                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
+                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'invoiceIds' => $itemIds,
                         'message'    => $this->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
                         'type'       => 'salesforce'
@@ -121,7 +122,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
                         );
                     }
                 } else {
-                    Mage::dispatchEvent('tnw_salesforce_invoice_process', array(
+                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
+                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'invoiceIds' => $itemIds,
                         'message'    => Mage::helper('adminhtml')->__('Total of %d records(s) were synchronized', count($itemIds)),
                         'type'       => 'bulk'
