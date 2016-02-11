@@ -299,8 +299,6 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
      */
     public function massAdd($ids = array())
     {
-        parent::massAdd($ids);
-
         $defaultObject = new stdClass();
         $defaultObject->productId = null;
         $defaultObject->pricebookEntityIds = null;
@@ -311,6 +309,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $object->magentoId = $id;
             $this->_cache['toSaveInMagento'][$id] = $object;
         }
+        return parent::massAdd($ids);
     }
 
     /**
