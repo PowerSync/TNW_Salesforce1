@@ -191,11 +191,12 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $_batch = $this->_cache['batch']['orderProducts']['Id'][$_key];
                     $_batchKeys = array_keys($_batch);
                     foreach ($response as $_item) {
-                        //Report Transaction
-                        $this->_cache['responses']['orderProducts'][] = json_decode(json_encode($_item), TRUE);
                         $_orderId = (string)$_batch[$_batchKeys[$_i]]->OrderId;
+                        $_oid = array_search($_orderId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+
+                        //Report Transaction
+                        $this->_cache['responses']['orderProducts'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'orderProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
@@ -235,12 +236,13 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                     $_batch = $this->_cache['batch']['notes']['Id'][$_key];
                     $_batchKeys = array_keys($_batch);
                     foreach ($response as $_item) {
-                        $_noteId = $_batchKeys[$_i];
-                        //Report Transaction
-                        $this->_cache['responses']['notes'][$_noteId] = json_decode(json_encode($_item), TRUE);
+                        $_noteId  = $_batchKeys[$_i];
                         $_orderId = (string)$_batch[$_noteId]->ParentId;
+                        $_oid     = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
+
+                        //Report Transaction
+                        $this->_cache['responses']['notes'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'notes', $_batch[$_noteId]);
                             if (!in_array($_oid, $this->_cache['failedOrders'])) {
                                 $this->_cache['failedOrders'][] = $_oid;

@@ -229,12 +229,13 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     $_batch = $this->_cache['batch']['notes']['Id'][$_key];
                     $_batchKeys = array_keys($_batch);
                     foreach ($response as $_item) {
-                        $_noteId = $_batchKeys[$_i];
-                        //Report Transaction
-                        $this->_cache['responses']['notes'][$_noteId] = json_decode(json_encode($_item), TRUE);
+                        $_noteId  = $_batchKeys[$_i];
                         $_orderId = (string)$_batch[$_noteId]->ParentId;
+                        $_oid     = array_search($_orderId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+
+                        //Report Transaction
+                        $this->_cache['responses']['notes'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                         if ($_item->success == "false") {
-                            $_oid = array_search($_orderId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'notes', $_batch[$_noteId]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -310,11 +311,11 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     $_batch = $this->_cache['batch']['opportunityProducts']['Id'][$_key];
                     $_batchKeys = array_keys($_batch);
                     foreach ($response as $_item) {
-                        //Report Transaction
-                        $this->_cache['responses']['opportunityLineItems'][] = json_decode(json_encode($_item), TRUE);
                         $_opportunityId = (string)$_batch[$_batchKeys[$_i]]->OpportunityId;
+                        $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
+                        //Report Transaction
+                        $this->_cache['responses']['opportunityLineItems'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_batchKeys[$_i]]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -345,18 +346,18 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     $_i = 0;
                     $_batch = $this->_cache['batch']['opportunityContactRoles']['Id'][$_key];
                     foreach ($response as $_rKey => $_item) {
-                        //Report Transaction
-                        $this->_cache['responses']['opportunityCustomerRoles'][] = json_decode(json_encode($_item), TRUE);
-
                         $_opportunityId = (string)$_batch[$_i]->OpportunityId;
-                        $_i++;
+                        $_oid = array_search($_opportunityId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+
+                        //Report Transaction
+                        $this->_cache['responses']['opportunityCustomerRoles'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
                             }
                         }
+                        $_i++;
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit

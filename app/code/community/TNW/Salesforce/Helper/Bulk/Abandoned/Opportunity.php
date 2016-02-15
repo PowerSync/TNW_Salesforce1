@@ -39,8 +39,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             && $this->_cache['quoteCustomers'][$_quoteNumber]->getData('email')
         ) ? strtolower($this->_cache['quoteCustomers'][$_quoteNumber]->getData('email')) : NULL;
 
-        $_quote = $this->_loadQuote($_quoteNumber);;
-
         if (is_array($this->_cache['accountsLookup']) && array_key_exists($_quoteEmail, $this->_cache['accountsLookup'][0])) {
             $_accountId = $this->_cache['accountsLookup'][0][$_quoteEmail]->Id;
         } elseif ($_customerEmail && $_quoteEmail != $_customerEmail && is_array($this->_cache['accountsLookup']) && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])) {
@@ -258,11 +256,11 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $_i = 0;
                     $_batch = array_values($this->_cache['batch']['opportunityProducts']['Id'][$_key]);
                     foreach ($response as $_item) {
+                        $_opportunityId = (string)$_batch[$_i]->OpportunityId;
+                        $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                         //Report Transaction
-                        $this->_cache['responses']['opportunityLineItems'][] = json_decode(json_encode($_item), TRUE);
+                        $this->_cache['responses']['opportunityLineItems'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                         if ($_item->success == "false") {
-                            $_opportunityId = (string)$_batch[$_i]->OpportunityId;
-                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
@@ -285,18 +283,18 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $_i = 0;
                     $_batch = $this->_cache['batch']['opportunityContactRoles']['Id'][$_key];
                     foreach ($response as $_rKey => $_item) {
-                        //Report Transaction
-                        $this->_cache['responses']['opportunityCustomerRoles'][] = json_decode(json_encode($_item), TRUE);
-
                         $_opportunityId = (string)$_batch[$_i]->OpportunityId;
-                        $_i++;
+                        $_oid = array_search($_opportunityId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+
+                        //Report Transaction
+                        $this->_cache['responses']['opportunityCustomerRoles'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                         if ($_item->success == "false") {
-                            $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
                             $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
                             if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
                                 $this->_cache['failedOpportunities'][] = $_oid;
                             }
                         }
+                        $_i++;
                     }
                 } catch (Exception $e) {
                     // TODO:  Log error, quit
@@ -339,7 +337,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
 
                     //Report Transaction
                     $this->_cache['responses']['opportunities'][$_oid] = json_decode(json_encode($_item), TRUE);
-
                     if ($_item->success == "true") {
                         $this->_cache['upserted' . $this->getManyParentEntityType()][$_oid] = (string)$_item->id;
                         $updateFields = array(

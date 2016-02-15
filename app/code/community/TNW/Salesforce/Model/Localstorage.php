@@ -56,39 +56,44 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         $_successSet = array();
 
         foreach ($_results as $_object => $_responses) {
-            foreach ($_responses as $_entityKey => $_response) {
-                $_key = (!empty($_alternativeKeyes)) ? $_queueIds[array_search(array_search($_entityKey, $_alternativeKeyes), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
+            foreach ($_responses as $_entityKey => $_tmpResponse) {
+                $__response = key_exists('subObj', $_tmpResponse)
+                    ? $_tmpResponse['subObj'] : array($_tmpResponse);
 
-                /**
-                 * @comment change variable type to avoid problems with stdClass
-                 */
-                $_response = (array)$_response;
+                foreach ($__response as $_response) {
+                    $_key = (!empty($_alternativeKeyes)) ? $_queueIds[array_search(array_search($_entityKey, $_alternativeKeyes), $_orderIds)] : $_queueIds[array_search($_entityKey, $_orderIds)];
 
-                if (
-                    array_key_exists('success', $_response)
-                    && (string)$_response['success'] == "false"
-                    && array_key_exists('errors', $_response)
-                ) {
-                    if (!array_key_exists($_key, $_errorsSet)) {
-                        $_errorsSet[$_key] = array();
-                    }
+                    /**
+                     * @comment change variable type to avoid problems with stdClass
+                     */
+                    $_response = (array)$_response;
 
-                    $errorMessage = '';
-                    if (is_array($_response['errors']) && isset($_response['errors']['message'])) {
-                        $errorMessage = $_response['errors']['message'];
-                    } elseif (is_array($_response['errors'])) {
-                        foreach ($_response['errors'] as $errorStdClass) {
-                            if (is_object($errorStdClass)) {
-                                $errorMessage .= $errorStdClass->message;
+                    if (
+                        array_key_exists('success', $_response)
+                        && (string)$_response['success'] == "false"
+                        && array_key_exists('errors', $_response)
+                    ) {
+                        if (!array_key_exists($_key, $_errorsSet)) {
+                            $_errorsSet[$_key] = array();
+                        }
+
+                        $errorMessage = '';
+                        if (is_array($_response['errors']) && isset($_response['errors']['message'])) {
+                            $errorMessage = $_response['errors']['message'];
+                        } elseif (is_array($_response['errors'])) {
+                            foreach ($_response['errors'] as $errorStdClass) {
+                                if (is_object($errorStdClass)) {
+                                    $errorMessage .= $errorStdClass->message;
+                                }
                             }
                         }
-                    }
 
-                    $_errorsSet[$_key][] = '(' . $_object . ') ' . $errorMessage;
-                } else {
-                    // Reset the status from error back to running so we can delete
-                    if (!in_array($_key, $_successSet)) {
-                        $_successSet[] = $_key;
+                        $_errorsSet[$_key][] = '(' . $_object . ') ' . $errorMessage;
+                    } else {
+                        // Reset the status from error back to running so we can delete
+                        if (!in_array($_key, $_successSet)) {
+                            $_successSet[] = $_key;
+                        }
                     }
                 }
             }
