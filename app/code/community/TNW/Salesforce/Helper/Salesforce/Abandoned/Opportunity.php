@@ -497,8 +497,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach ($chunk as $_object) {
-                $this->_cache['responses']['opportunityLineItems'][] = $_response;
+                $_quoteNum = $_quoteNumbers[$_object->OpportunityId];
+                $this->_cache['responses']['opportunityLineItems'][$_quoteNum]['subObj'][] = $_response;
             }
+
             $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
         }
@@ -508,7 +510,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $_quoteNum = $_quoteNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_quoteCartNumbers[$_key]]->OpportunityId];
 
             //Report Transaction
-            $this->_cache['responses']['opportunityLineItems'][] = $_result;
+            $this->_cache['responses']['opportunityLineItems'][]['subObj'][] = $_result;
 
             if (!$_result->success) {
                 foreach ($_result->errors as $_error) {
@@ -540,24 +542,26 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     {
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: Start----------');
+            $_quoteNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
             // Push Contact Roles
             try {
                 $results = $this->_mySforceConnection->upsert("Id", $this->_cache['contactRolesToUpsert'], 'OpportunityContactRole');
             } catch (Exception $e) {
                 $_response = $this->_buildErrorResponse($e->getMessage());
                 foreach ($this->_cache['contactRolesToUpsert'] as $_object) {
-                    $this->_cache['responses']['opportunityLineItems'][] = $_response;
+                    $_quoteNum = $_quoteNumbers[$_object->OpportunityId];
+                    $this->_cache['responses']['opportunityLineItems'][$_quoteNum]['subObj'][] = $_response;
                 }
+
                 $results = array();
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact roles to SalesForce failed' . $e->getMessage());
             }
 
-            $_quoteNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
             foreach ($results as $_key => $_result) {
                 $_quoteNum = $_quoteNumbers[$this->_cache['contactRolesToUpsert'][$_key]->OpportunityId];
 
                 //Report Transaction
-                $this->_cache['responses']['opportunityCustomerRoles'][] = $_result;
+                $this->_cache['responses']['opportunityCustomerRoles'][$_quoteNum]['subObj'][] = $_result;
 
                 if (!(int)$_result->success) {
                     // Reset sync status

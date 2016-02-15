@@ -1051,29 +1051,41 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param $_entity
+     * @param $item
      * @param int $qty
      * @return float
      */
-    protected function _prepareItemPrice($_entity, $qty = 1)
+    protected function _prepareItemPrice($item, $qty = 1)
     {
-        /** @var TNW_Salesforce_Helper_Data $_helper */
-        $_helper  = Mage::helper('tnw_salesforce');
-        $netTotal = !$_helper->useTaxFeeProduct()
-            ? $this->getEntityPrice($_entity, 'RowTotalInclTax')
-            : $this->getEntityPrice($_entity, 'RowTotal');
-
-        if (!$_helper->useDiscountFeeProduct()) {
-            $netTotal = ($netTotal - $this->getEntityPrice($_entity, 'DiscountAmount'));
-            $netTotal = $netTotal / $qty;
-        } else {
-            $netTotal = $netTotal / $qty;
-        }
+        $netTotal = $this->_calculateItemPrice($item, $qty);
 
         /**
          * @comment prepare formatted price
          */
         return $this->numberFormat($netTotal);
+    }
+
+    /**
+     * @param $item
+     * @param int $qty
+     * @return float
+     */
+    protected function _calculateItemPrice($item, $qty = 1)
+    {
+        if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+            $netTotal = $this->getEntityPrice($item, 'RowTotalInclTax');
+        } else {
+            $netTotal = $this->getEntityPrice($item, 'RowTotal');
+        }
+
+        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+            $netTotal = ($netTotal - $this->getEntityPrice($item, 'DiscountAmount'));
+            $netTotal = $netTotal / $qty;
+        } else {
+            $netTotal = $netTotal / $qty;
+        }
+
+        return $netTotal;
     }
 
     /**
@@ -1196,8 +1208,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach($chunk as $_object) {
-                $this->_cache['responses']['notes'][] = $_response;
+                $_orderSalesforceId = $_object->ParentId;
+                $_entityNum = array_search($_orderSalesforceId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+
+                $this->_cache['responses']['notes'][$_entityNum]['subObj'][] = $_response;
             }
+
             $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Notes to SalesForce failed' . $e->getMessage());
         }
@@ -1205,9 +1221,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         $_noteIds = array_keys($chunk);
         foreach ($results as $_key => $_result) {
             $_noteId = $_noteIds[$_key];
+            $_orderSalesforceId = $this->_cache['notesToUpsert'][$_noteId]->ParentId;
+            $_entityNum = array_search($_orderSalesforceId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
 
             //Report Transaction
-            $this->_cache['responses']['notes'][$_noteId] = $_result;
+            $this->_cache['responses']['notes'][$_entityNum]['subObj'][] = $_result;
 
             if (!$_result->success) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
@@ -1215,8 +1233,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 $this->_processErrors($_result, sprintf('%sNote', $this->_magentoEntityName), $chunk[$_noteId]);
             }
             else {
-                $_orderSalesforceId = $this->_cache['notesToUpsert'][$_noteId]->ParentId;
-                $_entityNum = array_search($_orderSalesforceId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for '.$this->_magentoEntityName.' #' . $_entityNum . ')');
 
                 $sql = sprintf('UPDATE `%s` SET salesforce_id = "%s" WHERE entity_id = "%s";',

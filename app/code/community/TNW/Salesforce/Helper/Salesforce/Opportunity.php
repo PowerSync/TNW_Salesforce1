@@ -329,18 +329,22 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach($chunk as $_object) {
-                $this->_cache['responses']['opportunityLineItems'][] = $_response;
+                $_orderNum = $_orderNumbers[$_object->OpportunityId];
+                $this->_cache['responses']['opportunityLineItems'][$_orderNum]['subObj'][] = $_response;
             }
+
             $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
         }
 
         $_sql = "";
         foreach ($results as $_key => $_result) {
-            $_orderNum = $_orderNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId];
+            $_cartItemId = $_chunkKeys[$_key];
+            $_sOpportunityId = $this->_cache['opportunityLineItemsToUpsert'][$_cartItemId]->OpportunityId;
+            $_orderNum = $_orderNumbers[$_sOpportunityId];
 
             //Report Transaction
-            $this->_cache['responses']['opportunityLineItems'][] = $_result;
+            $this->_cache['responses']['opportunityLineItems'][$_orderNum]['subObj'][] = $_result;
 
             if (!$_result->success) {
                 // Hide errors when product has been archived
@@ -357,14 +361,13 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                     }
                 }
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_chunkKeys[$_key]]->OpportunityId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $_sOpportunityId . "';";
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.');
-                $this->_processErrors($_result, 'orderCart', $chunk[$_chunkKeys[$_key]]);
+                $this->_processErrors($_result, 'orderCart', $chunk[$_cartItemId]);
             } else {
-                $_cartItemId = $_chunkKeys[$_key];
                 if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
                     $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . str_replace('cart_','',$_cartItemId) . "';";
                 }
@@ -383,6 +386,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         if (!empty($this->_cache['contactRolesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: Start----------');
 
+            $_orderNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
+
             Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_before", array("data" => $this->_cache['contactRolesToUpsert']));
 
             // Push Contact Roles
@@ -391,24 +396,23 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             } catch (Exception $e) {
                 $_response = $this->_buildErrorResponse($e->getMessage());
                 foreach($this->_cache['contactRolesToUpsert'] as $_object) {
-                    $this->_cache['responses']['customerRoles'][] = $_response;
+                    $_orderNum = $_orderNumbers[$_object->OpportunityId];
+                    $this->_cache['responses']['opportunityCustomerRoles'][$_orderNum]['subObj'][] = $_response;
                 }
                 $results = array();
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact roles to SalesForce failed' . $e->getMessage());
             }
 
-            $this->_cache['responses']['customerRoles'] = $results;
-
-            $_orderNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
             foreach ($results as $_key => $_result) {
-                $_orderNum = $_orderNumbers[$this->_cache['contactRolesToUpsert'][$_key]->OpportunityId];
+                $_sOpportunityId = $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId;
+                $_orderNum = $_orderNumbers[$_sOpportunityId];
 
                 //Report Transaction
-                $this->_cache['responses']['opportunityCustomerRoles'][] = $_result;
+                $this->_cache['responses']['opportunityCustomerRoles'][$_orderNum]['subObj'][] = $_result;
 
                 if (!$_result->success) {
                     // Reset sync status
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['contactRolesToUpsert'][$_key]->OpportunityId . "';";
+                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $_sOpportunityId . "';";
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                     Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
@@ -421,7 +425,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_after",array(
                 "data" => $this->_cache['contactRolesToUpsert'],
-                "result" => $this->_cache['responses']['customerRoles']
+                "result" => $this->_cache['responses']['opportunityCustomerRoles']
             ));
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Contact Roles: End----------');

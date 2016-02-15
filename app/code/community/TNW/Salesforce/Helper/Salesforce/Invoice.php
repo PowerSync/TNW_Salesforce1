@@ -506,6 +506,58 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     }
 
     /**
+     * @param $_item Mage_Sales_Model_Order_Invoice_Item
+     * @return int
+     * Get product Id from the cart
+     */
+    public function getProductIdFromCart($_item)
+    {
+        $_options = unserialize($_item->getOrderItem()->getData('product_options'));
+        if (
+            $_item->getOrderItem()->getData('product_type') == 'bundle'
+            || (is_array($_options) && array_key_exists('options', $_options))
+        ) {
+            $id = $_item->getOrderItem()->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+
+        return $id;
+    }
+
+    /**
+     * @param $item Mage_Sales_Model_Order_Invoice_Item
+     * @param int $qty
+     * @return float
+     */
+    protected function _prepareItemPrice($item, $qty = 1)
+    {
+        if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE ||
+            Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)
+        ) {
+            return parent::_prepareItemPrice($item, $qty);
+        }
+
+        $_orderItems = array();
+        /** @var Mage_Sales_Model_Order_Item $_item */
+        foreach ($item->getOrderItem()->getChildrenItems() as $_item) {
+            $_orderItems[] = $_item->getId();
+        }
+
+        $sum = 0;
+        /** @var Mage_Sales_Model_Order_Invoice_Item $_item */
+        foreach ($item->getInvoice()->getItemsCollection() as $_item) {
+            if (!in_array($_item->getOrderItemId(), $_orderItems)) {
+                continue;
+            }
+
+            $sum += $this->_calculateItemPrice($_item, $_item->getQty());
+        }
+
+        return $this->numberFormat($sum);
+    }
+
+    /**
      * @return mixed
      */
     protected function _pushEntity()

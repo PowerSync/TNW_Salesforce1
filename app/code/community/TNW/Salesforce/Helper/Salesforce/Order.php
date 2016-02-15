@@ -435,36 +435,40 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _pushEntityItems($chunk = array())
     {
-        $_orderNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
+        $_orderNumbers = array_flip($this->_cache['upserted'.$this->getManyParentEntityType()]);
         $_chunkKeys = array_keys($chunk);
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OrderItem');
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach ($chunk as $_object) {
-                $this->_cache['responses']['orderItems'][] = $_response;
+                $_sOrderId   = $_object->OrderId;
+                $_orderNum   = $_orderNumbers[$_sOrderId];
+
+                $this->_cache['responses']['orderItems'][$_orderNum]['subObj'][] = $_response;
             }
+
             $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Order Items to SalesForce failed' . $e->getMessage());
         }
 
         $_sql = "";
         foreach ($results as $_key => $_result) {
-            $_orderNum = $_orderNumbers[$this->_cache['orderItemsToUpsert'][$_chunkKeys[$_key]]->OrderId];
+            $_cartItemId = $_chunkKeys[$_key];
+            $_sOrderId   = $this->_cache['orderItemsToUpsert'][$_cartItemId]->OrderId;
+            $_orderNum   = $_orderNumbers[$_sOrderId];
 
             //Report Transaction
-            $this->_cache['responses']['orderItems'][] = $_result;
-
+            $this->_cache['responses']['orderItems'][$_orderNum]['subObj'][] = $_result;
             if (!$_result->success) {
                 // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $this->_cache['orderItemsToUpsert'][$_chunkKeys[$_key]]->OrderId . "';";
+                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $_sOrderId . "';";
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: One of the Cart Item for (order: ' . $_orderNum . ') failed to upsert.');
-                $this->_processErrors($_result, 'orderCart', $chunk[$_chunkKeys[$_key]]);
+                $this->_processErrors($_result, 'orderCart', $chunk[$_cartItemId]);
             } else {
-                $_cartItemId = $_chunkKeys[$_key];
                 if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
                     $_sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE item_id = '" . str_replace('cart_', '', $_cartItemId) . "';";
                 }

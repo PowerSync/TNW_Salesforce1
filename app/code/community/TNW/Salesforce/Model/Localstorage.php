@@ -70,7 +70,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                     if (
                         array_key_exists('success', $_response)
-                        && (string)$_response['success'] == "false"
+                        && ((string)$_response['success'] == "false" || $_response['success'] === false)
                         && array_key_exists('errors', $_response)
                     ) {
                         if (!array_key_exists($_key, $_errorsSet)) {

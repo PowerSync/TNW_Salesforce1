@@ -167,7 +167,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         if (strval($_resultRoles) != 'exception') {
             Mage::dispatchEvent("tnw_salesforce_opportunity_contact_roles_send_after",array(
                 "data" => $this->_cache['contactRolesToUpsert'],
-                "result" => isset($this->_cache['responses']['customerRoles'])? $this->_cache['responses']['customerRoles']: array()
+                "result" => isset($this->_cache['responses']['opportunityCustomerRoles'])? $this->_cache['responses']['opportunityCustomerRoles']: array()
             ));
         }
 

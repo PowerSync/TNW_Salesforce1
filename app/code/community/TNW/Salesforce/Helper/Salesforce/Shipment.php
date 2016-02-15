@@ -547,6 +547,58 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
     }
 
     /**
+     * @param $_item Mage_Sales_Model_Order_Shipment_Item
+     * @return int
+     * Get product Id from the cart
+     */
+    public function getProductIdFromCart($_item)
+    {
+        $_options = unserialize($_item->getOrderItem()->getData('product_options'));
+        if (
+            $_item->getOrderItem()->getData('product_type') == 'bundle'
+            || (is_array($_options) && array_key_exists('options', $_options))
+        ) {
+            $id = $_item->getOrderItem()->getData('product_id');
+        } else {
+            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        }
+
+        return $id;
+    }
+
+    /**
+     * @param $item Mage_Sales_Model_Order_Invoice_Item
+     * @param int $qty
+     * @return float
+     */
+    protected function _prepareItemPrice($item, $qty = 1)
+    {
+        if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE ||
+            Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)
+        ) {
+            return parent::_prepareItemPrice($item, $qty);
+        }
+
+        $_orderItems = array();
+        /** @var Mage_Sales_Model_Order_Item $_item */
+        foreach ($item->getOrderItem()->getChildrenItems() as $_item) {
+            $_orderItems[] = $_item->getId();
+        }
+
+        $sum = 0;
+        /** @var Mage_Sales_Model_Order_Invoice_Item $_item */
+        foreach ($item->getInvoice()->getItemsCollection() as $_item) {
+            if (!in_array($_item->getOrderItemId(), $_orderItems)) {
+                continue;
+            }
+
+            $sum += $this->_calculateItemPrice($_item, $_item->getQty());
+        }
+
+        return $this->numberFormat($sum);
+    }
+
+    /**
      * @param array $chunk
      * @return mixed
      */
@@ -561,8 +613,13 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         } catch (Exception $e) {
             $_response = $this->_buildErrorResponse($e->getMessage());
             foreach ($chunk as $_object) {
-                $this->_cache['responses'][lcfirst($this->getItemsField())][] = $_response;
+                $_shipmentId = $_object
+                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
+                $_orderNum = $_orderNumbers[$_shipmentId];
+
+                $this->_cache['responses'][lcfirst($this->getItemsField())][$_orderNum]['subObj'][] = $_response;
             }
+
             $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
@@ -575,7 +632,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $_orderNum = $_orderNumbers[$_shipmentId];
 
             //Report Transaction
-            $this->_cache['responses'][lcfirst($this->getItemsField())][] = $_result;
+            $this->_cache['responses'][lcfirst($this->getItemsField())][$_orderNum]['subObj'][] = $_result;
             if (!$_result->success) {
                 // Reset sync status
                 $sql = sprintf('UPDATE `%s` SET sf_insync = 0 WHERE salesforce_id = "%s";',
@@ -619,8 +676,13 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             } catch (Exception $e) {
                 $_response = $this->_buildErrorResponse($e->getMessage());
                 foreach ($_itemsToPush as $_object) {
-                    $this->_cache['responses']['orderShipmentTrack'][] = $_response;
+                    $_shipmentId = $_object
+                        ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
+                    $_orderNum = $_orderNumbers[$_shipmentId];
+
+                    $this->_cache['responses']['orderShipmentTrack'][$_orderNum]['subObj'][] = $_response;
                 }
+
                 $results = array();
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
@@ -633,7 +695,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
                 $_orderNum = $_orderNumbers[$_shipmentId];
 
                 //Report Transaction
-                $this->_cache['responses']['orderShipmentTrack'][] = $_result;
+                $this->_cache['responses']['orderShipmentTrack'][$_orderNum]['subObj'][] = $_result;
                 if (!$_result->success) {
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveError(sprintf('ERROR: One of the Cart Item Track for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_orderNum));
