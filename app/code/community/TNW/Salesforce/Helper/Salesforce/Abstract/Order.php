@@ -250,6 +250,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return array
+     */
+    public function getProductIdsFromEntity($_entity)
+    {
+        $_productIds = array();
+        /** @var Mage_Sales_Model_Order_Item $_item */
+        foreach ($this->getItems($_entity) as $_item) {
+            $_productIds[] = (int) $this->getProductIdFromCart($_item);
+        }
+
+        return $_productIds;
+    }
+
+    /**
      * @param $parentEntityNumber
      * @return Mage_Core_Model_Abstract|mixed
      */
