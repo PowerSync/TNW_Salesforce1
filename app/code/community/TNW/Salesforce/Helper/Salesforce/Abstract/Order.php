@@ -1038,7 +1038,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * Order customers sync can be denied if we just update order status
          */
         if ($this->_updateCustomer) {
-            $this->syncOrderCustomers($this->_emails, $this->_websites);
+            $this->syncEntityCustomers($this->_emails, $this->_websites);
         }
 
         /**
