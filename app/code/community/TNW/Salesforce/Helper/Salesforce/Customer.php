@@ -601,28 +601,22 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             !$this->_isPerson
             ) {
                 // Set Conjoint AccountId
-                if (Mage::getStoreConfig('salesforce_customer/sync/single_account_sync_customer')
-                    && Mage::getStoreConfig('salesforce_customer/sync/single_account_select') !== 'null'
-                ) {
-                    $this->_obj->AccountId = Mage::getStoreConfig('salesforce_customer/sync/single_account_select');
+                /** @var TNW_Salesforce_Helper_Config_Customer $_hCustomer */
+                $_hCustomer = Mage::helper('tnw_salesforce/config_customer');
+                if ($_hCustomer->useAccountSyncCustomer()) {
+                    $this->_obj->AccountId = $_hCustomer->getAccountSelect();
                 } else {
                     $this->_obj->AccountId = $this->getCustomerAccount($_id);
                 }
 
-                if (!$this->_obj->AccountId && !empty($this->_cache['accountLookup'])) {
-                    $accountKeys = array_keys($this->_cache['accountLookup']);
-
-                    if (array_key_exists($_email, $this->_cache['accountLookup'][$accountKeys[0]])) {
-                        $this->_obj->AccountId = $this->_cache['accountLookup'][$accountKeys[0]][$_email]->Id;
-                    }
+                if (!$this->_obj->AccountId && isset($this->_cache['accountLookup'][0][$_email])) {
+                    $this->_obj->AccountId = $this->_cache['accountLookup'][0][$_email]->Id;
                 }
 
-                if (!is_array($this->_cache['toSaveInMagento'][$_websiteId])) {
-                    $this->_cache['toSaveInMagento'][$_websiteId] = array();
-                }
                 if (!array_key_exists($_email, $this->_cache['toSaveInMagento'][$_websiteId])) {
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email] = new stdClass();
                 }
+
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_obj->AccountId;
             } else {
                 if ($this->_isPerson && property_exists($this->_obj, 'AccountId')) {
@@ -1254,8 +1248,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
                     $leadConvert = new stdClass();
 
-                    if (isset($this->_cache['accountLookup'][0][$_email])) {
+                    /** @var TNW_Salesforce_Helper_Config_Customer $_hCustomer */
+                    $_hCustomer = Mage::helper('tnw_salesforce/config_customer');
+                    if ($_hCustomer->useAccountSyncCustomer()) {
+                        $leadConvert->accountId = $_hCustomer->getAccountSelect();
+                    } else {
+                        $leadConvert->accountId = $this->getCustomerAccount(array_search($_email, $this->_cache['entitiesUpdating']));
+                    }
 
+                    if (!$leadConvert->accountId && isset($this->_cache['accountLookup'][0][$_email])) {
                         $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
                     }
 
