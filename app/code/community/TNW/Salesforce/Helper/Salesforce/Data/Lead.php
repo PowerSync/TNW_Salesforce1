@@ -51,7 +51,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $tmp->Id = $_item->Id;
                     $tmp->Email = strtolower($_item->Email);
                     $tmp->IsConverted = $_item->IsConverted;
-                    $tmp->Company = $_item->Company;
+                    $tmp->Company = (property_exists($_item, 'Company')) ? $_item->Company : NULL;
                     $tmp->ConvertedAccountId = (property_exists($_item, 'ConvertedAccountId')) ? $_item->ConvertedAccountId : NULL;
                     $tmp->ConvertedContactId = (property_exists($_item, 'ConvertedContactId')) ? $_item->ConvertedContactId : NULL;
                     $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->{$_magentoId} : NULL;
