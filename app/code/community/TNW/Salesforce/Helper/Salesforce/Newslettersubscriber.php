@@ -292,12 +292,12 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
             $accountIndexes = array_keys($this->_cache['accountsToUpsert']);
 
-            Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']['Id']));
+            Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']));
 
-            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']['Id']), 'Account');
+            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']), 'Account');
 
             Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
-                "data" => $this->_cache['accountsToUpsert']['Id'],
+                "data" => $this->_cache['accountsToUpsert'],
                 "result" => $results
             ));
 
