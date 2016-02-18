@@ -1038,6 +1038,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             && $item->getData('product_type') == 'bundle'
             && array_key_exists('bundle_options', $options)
         ) {
+            $_currencyCode = $this->getCurrencyCode($item->getOrder());
             $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
             foreach ($options['bundle_options'] as $_option) {
                 $_string = '<td align="left">' . $_option['label'] . '</td>';
