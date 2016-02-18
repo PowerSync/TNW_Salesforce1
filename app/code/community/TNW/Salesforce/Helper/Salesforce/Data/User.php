@@ -128,7 +128,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
             $helper = Mage::helper('tnw_salesforce/salesforce_data_' . $sfEntityType);
             switch ($sfEntityType) {
                 case 'lead':
-                    $duplicates = $helper->getDuplicates($_emailsArray, Mage::helper('tnw_salesforce/data')->getLeadSource());
+                    $_useLeadSourceFilter = Mage::helper('tnw_salesforce/data')->useLeadSourceFilter();
+                    $duplicates = $helper->getDuplicates($_emailsArray,
+                        $_useLeadSourceFilter ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null);
                     break;
                 case 'account':
                     /**
@@ -148,7 +150,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
 
             foreach ($duplicates as $duplicate) {
                 if ($sfEntityType == 'lead') {
-                    $helper->mergeDuplicates($duplicate, Mage::helper('tnw_salesforce/data')->getLeadSource());
+                    $_useLeadSourceFilter = Mage::helper('tnw_salesforce/data')->useLeadSourceFilter();
+                    $helper->mergeDuplicates($duplicate,
+                        $_useLeadSourceFilter ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null);
                 } else {
                     $helper->mergeDuplicates($duplicate);
                 }
