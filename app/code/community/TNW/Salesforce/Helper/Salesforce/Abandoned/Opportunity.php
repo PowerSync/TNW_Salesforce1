@@ -575,8 +575,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
-     * @param array $ids
+     * @param array $_ids
      * @param bool $_isCron
+     * @param bool $orderStatusUpdateCustomer
      * @return bool
      */
     public function massAdd($_ids = NULL, $_isCron = false, $orderStatusUpdateCustomer = true)
@@ -689,75 +690,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             /**
              * Order customers sync can be denied if we just update order status
              */
-            //if ($orderStatusUpdateCustomer) {
-            //    $this->syncOrderCustomers($_emails, $_websites);
-            //}
-
-            /**
-             * Force sync of the customer
-             * Or if it's guest checkout: customer->getId() is empty
-             * Or customer was not synchronized before: no account/contact ids ot lead not converted
-             */
-
-                $_customersToSync = array();
-
-                foreach ($this->_cache['quoteCustomers'] as $_quoteNumber => $customer) {
-                    $customerId = $this->_cache['quoteToCustomerId'][$_quoteNumber];
-                    $websiteSfId = $_websites[$customerId];
-
-                    $email = $this->_cache['quoteToEmail'][$_quoteNumber];
-
-                    /**
-                     * synchronize customer if no account/contact exists or lead not converted
-                     */
-                    if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-                        || !isset($this->_cache['accountsLookup'][0][$email])
-                        || (
-                            isset($this->_cache['leadsLookup'][$websiteSfId][$email])
-                            && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
-                        )
-                    ) {
-                        $_customersToSync[$_quoteNumber] = $customer;
-                    }
-                }
-
-                if (!empty($_customersToSync)) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Guest/New customer...');
-
-                    $helperType = 'salesforce';
-                    if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                        $helperType = 'bulk';
-                    }
-
-                    /**
-                     * @var $manualSync TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Salesforce_Customer
-                     */
-                    $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
-                    if ($manualSync->reset()) {
-                        $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-                        $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
-
-                        $manualSync->forceAdd($_customersToSync, $this->_cache['quoteCustomers']);
-                        set_time_limit(30);
-                        $abandonedCustomers = $manualSync->process(true);
-
-                        if (!empty($abandonedCustomers)) {
-                            if (!is_array($abandonedCustomers)) {
-                                $_quoteNumbers = array_keys($_customersToSync);
-                                $abandonedCustomersArray[array_shift($_quoteNumbers)] = $abandonedCustomers;
-                            } else {
-                                $abandonedCustomersArray = $abandonedCustomers;
-                            }
-
-                            $this->_cache['quoteCustomers'] = $abandonedCustomersArray + $this->_cache['quoteCustomers'];
-                            set_time_limit(30);
-
-                            $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-                            $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
-                        }
-                    }
-                }
-
+            if ($orderStatusUpdateCustomer) {
+                $this->syncEntityCustomers($_emails, $_websites);
+            }
 
             /**
              * define Salesforce data for order customers
@@ -801,13 +736,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
 
             if (!empty($this->_skippedEntity)) {
-                $chunk = array_chunk($this->_skippedEntity, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-                foreach ($chunk as $_skippedAbandonedChunk) {
-                    $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE object_id IN ('" . join("','", $_skippedAbandonedChunk) . "') and mage_object_type = 'sales/quote';";
-                    Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
-                    foreach ($_skippedAbandonedChunk as $_idToRemove) {
-                        unset($this->_cache['entitiesUpdating'][$_idToRemove]);
-                    }
+                foreach ($this->_skippedEntity as $_idToRemove) {
+                    unset($this->_cache['entitiesUpdating'][$_idToRemove]);
                 }
             }
 
@@ -815,6 +745,37 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
+    }
+
+    /**
+     * @param $_entityNumber
+     * @param $_websites
+     * @return bool
+     */
+    protected function _checkSyncCustomer($_entityNumber, $_websites)
+    {
+        $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
+        if (false === $_entityId) {
+            return false;
+        }
+
+        $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
+        $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
+        $websiteSfId = $_websites[$customerId];
+
+        $syncCustomer = false;
+
+        if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
+            || !isset($this->_cache['accountsLookup'][0][$email])
+            || (
+                isset($this->_cache['leadsLookup'][$websiteSfId][$email])
+                && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
+            )
+        ) {
+            $syncCustomer = true;
+        }
+
+        return $syncCustomer;
     }
 
     protected function _updateQuoteStageName()
