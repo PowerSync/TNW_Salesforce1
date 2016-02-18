@@ -817,17 +817,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         return Mage::helper('tnw_salesforce/salesforce_data_user')->isUserActive($_sfUserId);
     }
 
-    protected function _getStoreIdByCurrency($_currenctCurrencyCode)
-    {
-        foreach (Mage::app()->getStores() as $_store) {
-            $_currency = Mage::app()->getStore($_store->getId())->getDefaultCurrencyCode();
-            if ($_currenctCurrencyCode == $_currency) {
-                return $_store->getId();
-            }
-        }
-        return false;
-    }
-
     /**
      * input paremeter: salesforceId or string type1:salesforceId1;type2:salesforceId2;
      * @param $_field
