@@ -366,6 +366,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     public function getProductIdFromCart($_item)
     {
+        if (!$_item instanceof Mage_Sales_Model_Quote_Item) {
+            return false;
+        }
+
         /** @var Mage_Catalog_Helper_Product_Configuration $configuration */
         $configuration = Mage::helper('catalog/product_configuration');
         $custom = $configuration->getCustomOptions($_item);
