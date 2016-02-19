@@ -1248,6 +1248,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
                     $leadConvert = new stdClass();
 
+                    $force = isset($this->_cache['accountLookup'][0][$_email]) || $this->isForceLeadConvertation();
+                    if (!$force
+                        && Mage::helper('tnw_salesforce')->isCustomerAsLead()
+                    ) {
+                        continue;
+                    }
+
                     /** @var TNW_Salesforce_Helper_Config_Customer $_hCustomer */
                     $_hCustomer = Mage::helper('tnw_salesforce/config_customer');
                     if ($_hCustomer->useAccountSyncCustomer()) {
@@ -2291,10 +2298,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Lead Sync ----------");
         }
 
-        if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation()) {
-            $this->findLeadsForConversion();
-        }
-
+        $this->findLeadsForConversion();
         $this->_convertLeads();
     }
 
