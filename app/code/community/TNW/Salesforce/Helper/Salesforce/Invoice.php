@@ -381,7 +381,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
 
         // Load by product Id only if bundled OR simple with options
         $_productId    = $_entityItem->getOrderItem()
-            ? $this->getProductIdFromCart($_entityItem) : false;
+            ? $this->getProductIdFromCart($_entityItem->getOrderItem()) : false;
         if ($_productId) {
             /** @var $_product Mage_Catalog_Model_Product */
             $_product = Mage::getModel('catalog/product')
@@ -433,6 +433,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
 
                 $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c'}
                     = $record->Id;
+
+                //FIX: $_entityItem->getOrderItem()->getData('salesforce_id')
+                $_entityItem->setData('order_item', new Varien_Object(array('salesforce_id' => $record->Id)));
 
                 break;
             }
