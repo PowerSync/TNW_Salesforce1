@@ -593,6 +593,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     $item->setRowTotalInclTax($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
                     $item->setRowTotal($this->getEntityPrice($parentEntity, $ucFee . 'Amount'));
 
+                    $this->_prepareAdditionalFees($parentEntity, $item);
                     $this->_prepareItemObj($parentEntity, $parentEntityNumber, $item);
 
                 } else {
@@ -600,6 +601,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 }
             }
         }
+    }
+
+    /**
+     * @param $parentEntity
+     * @param $item Varien_Object
+     */
+    protected function _prepareAdditionalFees($parentEntity, $item)
+    {
+        $item->setData($this->_magentoEntityName, $parentEntity);
     }
 
     /**
