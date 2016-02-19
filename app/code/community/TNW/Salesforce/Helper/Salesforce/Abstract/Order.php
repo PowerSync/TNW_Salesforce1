@@ -605,11 +605,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
     /**
      * @param $parentEntity
-     * @param $item
+     * @param $item Varien_Object
      */
     protected function _prepareAdditionalFees($parentEntity, $item)
     {
-        //Prepare Item
+        $item->setData($this->_magentoEntityName, $parentEntity);
     }
 
     /**
