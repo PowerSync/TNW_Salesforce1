@@ -109,7 +109,11 @@ class TNW_Salesforce_Model_Import_Order
 
         $additional = array();
 
-        $mappings = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_objectType);
+        $mappings = Mage::getModel('tnw_salesforce/mapping')
+            ->getCollection()
+            ->addObjectToFilter($this->_objectType)
+            ->addFieldToFilter('active', 1);
+
         foreach ($mappings as $mapping) {
             //skip if cannot find field in object
             if (!isset($this->getObject()->{$mapping->getSfField()})) {

@@ -544,10 +544,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
 
-        if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation()) {
-            $this->findLeadsForConversion();
-        }
-
+        $this->findLeadsForConversion();
         $this->_convertLeads();
     }
 
@@ -770,17 +767,18 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                      * Update lookup for lead convertation
                      */
                     if (isset($this->_cache['leadsToUpsert'][$_on][$_cid])) {
-
                         $this->_cache['leadsToUpsert'][$_on][$_cid]->Id = (string)$_item->id;
 
-                        foreach ($this->_cache['leadsToUpsert'][$_on][$_cid] as $field => $value) {
-                            $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field = $value;
-                        }
+                        if (isset($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email])) {
+                            foreach ($this->_cache['leadsToUpsert'][$_on][$_cid] as $field => $value) {
+                                $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->$field = $value;
+                            }
 
-                        if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
-                            $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
-                        } else {
-                            $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $_cid;
+                            if (property_exists($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email], $this->_magentoId)) {
+                                $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->{$this->_magentoId};
+                            } else {
+                                $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->MagentoId = $_cid;
+                            }
                         }
                     }
                 }
