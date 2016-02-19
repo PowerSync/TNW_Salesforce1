@@ -125,6 +125,14 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function orderStatusUpdateTrigger($observer)
     {
+        if (
+            !Mage::helper('tnw_salesforce')->isEnabled()
+            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
+        ) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+            return; // Disabled
+        }
+
         /* My no longer be used, need to test
          * */
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
@@ -132,12 +140,14 @@ class TNW_Salesforce_Model_Sale_Observer
             return; // Disabled
         }
 
+        if (!Mage::helper('tnw_salesforce')->canPush()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
+            return; // Disabled
+        }
+
+        /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+        if ($order->getData('status') == $order->getOrigData('status')) {
             return; // Disabled
         }
 
@@ -147,35 +157,20 @@ class TNW_Salesforce_Model_Sale_Observer
             return;
         }
 
-        if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper('tnw_salesforce/salesforce_opportunity')->resetOrder($order->getId());
-        }
-
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
-            return; // Disabled
-        }
-
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
             // pass data to local storage
 
             // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
+            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($order->getId()), 'Order', 'order');
             if (!$res) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: order status update not saved to local storage');
             }
         } else {
-            if ($order->getId() && $order->getStatus()) {
-                $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start ######################################");
-                Mage::dispatchEvent(
-                    sprintf('tnw_salesforce_%s_status_update', $_syncType),
-                    array(
-                        'order'  => $order
-                    )
-                );
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update End ########################################");
-            }
+            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start ######################################");
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_status_update', $_syncType),
+                array('order' => $order));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update End ########################################");
         }
     }
 
