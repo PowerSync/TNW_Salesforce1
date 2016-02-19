@@ -344,12 +344,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $_quote = $_item->getQuote();
         $_storeId = $_quote->getStoreId();
 
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_quote->getOrderCurrencyCode() != $_quote->getStoreCurrencyCode()) {
-                $_storeId = $this->_getStoreIdByCurrency($_quote->getQuoteCurrencyCode());
-            }
-        }
-
         if (!array_key_exists($_storeId, $this->_stockItems)) {
             $this->_stockItems[$_storeId] = array();
         }

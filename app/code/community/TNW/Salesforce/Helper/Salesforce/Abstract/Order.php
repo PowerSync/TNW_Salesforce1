@@ -2067,12 +2067,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $_order = $_item->getOrder();
         $_storeId = $_order->getStoreId();
 
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_order->getOrderCurrencyCode() != $_order->getStoreCurrencyCode()) {
-                $_storeId = $this->_getStoreIdByCurrency($_order->getOrderCurrencyCode());
-            }
-        }
-
         if (!array_key_exists($_storeId, $this->_stockItems)) {
             $this->_stockItems[$_storeId] = array();
         }
