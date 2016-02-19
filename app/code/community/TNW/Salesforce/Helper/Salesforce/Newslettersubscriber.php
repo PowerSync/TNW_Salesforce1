@@ -174,7 +174,15 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     protected function addAccountContactForSubscription($id, $subscriber, $websiteId, $customer, $isPerson, $index)
     {
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
+
         $this->_obj = $this->getTransferObject($id, $subscriber, $websiteId, $customer);
+
+        if ($helper->getType() == "PRO") {
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+            $this->_obj->$syncParam = true;
+        }
 
         if ($isPerson) {
             $this->_obj->RecordTypeId
@@ -380,9 +388,6 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     protected function getTransferObject($id, $subscriber, $websiteId, $customer)
     {
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
         $this->_obj = new stdClass();
         $this->_obj->Id = $id;
 
@@ -410,11 +415,6 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             && $this->_websiteSfIds[$websiteId]
         ) {
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField()} = $this->_websiteSfIds[$websiteId];
-        }
-
-        if ($helper->getType() == "PRO") {
-            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-            $this->_obj->$syncParam = true;
         }
 
         return $this->_obj;
