@@ -380,7 +380,8 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         $this->_obj = new stdClass();
 
         // Load by product Id only if bundled OR simple with options
-        $_productId    = $this->getProductIdFromCart($_entityItem);
+        $_productId    = $_entityItem->getOrderItem()
+            ? $this->getProductIdFromCart($_entityItem) : false;
         if ($_productId) {
             /** @var $_product Mage_Catalog_Model_Product */
             $_product = Mage::getModel('catalog/product')
@@ -509,58 +510,6 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     {
         return (property_exists($this->_obj, TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c')
             && $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c'});
-    }
-
-    /**
-     * @param $_item Mage_Sales_Model_Order_Invoice_Item
-     * @return int
-     * Get product Id from the cart
-     */
-    public function getProductIdFromCart($_item)
-    {
-        $_options = unserialize($_item->getOrderItem()->getData('product_options'));
-        if (
-            $_item->getOrderItem()->getData('product_type') == 'bundle'
-            || (is_array($_options) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getOrderItem()->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
-        }
-
-        return $id;
-    }
-
-    /**
-     * @param $item Mage_Sales_Model_Order_Invoice_Item
-     * @param int $qty
-     * @return float
-     */
-    protected function _prepareItemPrice($item, $qty = 1)
-    {
-        if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE ||
-            Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)
-        ) {
-            return parent::_prepareItemPrice($item, $qty);
-        }
-
-        $_orderItems = array();
-        /** @var Mage_Sales_Model_Order_Item $_item */
-        foreach ($item->getOrderItem()->getChildrenItems() as $_item) {
-            $_orderItems[] = $_item->getId();
-        }
-
-        $sum = 0;
-        /** @var Mage_Sales_Model_Order_Invoice_Item $_item */
-        foreach ($item->getInvoice()->getItemsCollection() as $_item) {
-            if (!in_array($_item->getOrderItemId(), $_orderItems)) {
-                continue;
-            }
-
-            $sum += $this->_calculateItemPrice($_item, $_item->getQty());
-        }
-
-        return $this->numberFormat($sum);
     }
 
     /**
@@ -754,7 +703,50 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
      */
     public function getItems($_entity)
     {
-        return $_entity->getAllItems();
+        $_itemCollection = $_entity->getItemsCollection();
+        $_hasOrderItemId = $_itemCollection->walk('getOrderItemId');
+
+        $items = array();
+        /** @var Mage_Sales_Model_Order_Invoice_Item $item */
+        foreach ($_itemCollection as $item) {
+            if ($item->isDeleted() || $item->getOrderItem()->getParentItem()) {
+                continue;
+            }
+
+            $items[] =  $item;
+
+            if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                continue;
+            }
+
+            /** @var Mage_Sales_Model_Order_Item $_orderItem */
+            foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
+                $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+
+                $_item   = $_itemCollection->getItemById($_itemId);
+                if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
+                    continue;
+                }
+
+                $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                    ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
+                    ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+
+                if (!Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                    continue;
+                }
+
+                $_item->setRowTotalInclTax(null)
+                    ->setRowTotal(null)
+                    ->setDiscountAmount(null)
+                    ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                        . $item->getSku());
+
+                $items[] = $_item;
+            }
+        }
+
+        return $items;
     }
 
     /**
