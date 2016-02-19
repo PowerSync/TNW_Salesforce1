@@ -387,10 +387,16 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 ->setStoreId($_entity->getStoreId())
                 ->load($_productId);
 
-            list(
-                $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Options__c'},
-                $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Description__c'}
-            ) = $this->_getItemDescription($_entityItem->getOrderItem());
+            $this->_getItemDescription($_entityItem->getOrderItem());
+
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
+            $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Options__c'}
+                = $this->_obj->$syncParam;
+
+            $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Description__c'}
+                = $this->_obj->Description;
+
+            unset($this->_obj->$syncParam, $this->_obj->Description);
 
             $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'}
                 = $_entityItem->getId();

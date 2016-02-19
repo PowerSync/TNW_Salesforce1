@@ -725,7 +725,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     public function getEntityByItem($_item)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        return $_item->getData($this->_magentoEntityName);
     }
 
     /**
@@ -879,96 +879,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param $_entity
-     * @param $_entityItem
-     * @param $text
-     * @param null $html
-     * @return string
-     */
-    protected function _getDescriptionByEntityItem($_entity, $_entityItem, &$text, &$html = null)
-    {
-        $html = $text = '';
-
-        $baseCurrency = Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency();
-        $_currencyCode = $baseCurrency ? $_entity->getBaseCurrencyCode() : $_entity->getOrderCurrencyCode();
-
-        /**
-         * use custome currency if Multicurrency enabled
-         */
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $_currencyCode = $_entity->getOrderCurrencyCode();
-        }
-
-        $opt = array();
-        $options = (is_array($_entityItem->getData('product_options')))
-            ? $_entityItem->getData('product_options')
-            : @unserialize($_entityItem->getData('product_options'));
-
-        $_summary = array();
-
-        if (
-            is_array($options)
-            && array_key_exists('options', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
-            foreach ($options['options'] as $_option) {
-                $optionValue = '';
-                if(isset($_option['print_value'])) {
-                    $optionValue = $_option['print_value'];
-                } elseif (isset($_option['value'])) {
-                    $optionValue = $_option['value'];
-                }
-
-                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
-                $_summary[] = $optionValue;
-            }
-        }
-
-        if (
-            is_array($options)
-            && $_entityItem->getData('product_type') == 'bundle'
-            && array_key_exists('bundle_options', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
-            foreach ($options['bundle_options'] as $_option) {
-                $_string = '<td align="left">' . $_option['label'] . '</td>';
-                if (is_array($_option['value'])) {
-                    $_tmp = array();
-                    foreach ($_option['value'] as $_value) {
-                        $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
-                        $_summary[] = $_value['title'];
-                    }
-                    if (count($_tmp) > 0) {
-                        $_string .= join(", ", $_tmp);
-                    }
-                }
-
-                $opt[] = '<tr>' . $_string . '</tr>';
-            }
-        }
-
-        if (
-            is_array($options)
-            && $_entityItem->getData('product_type') == 'configurable'
-            && array_key_exists('attributes_info', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr><tbody>';
-            foreach ($options['attributes_info'] as $_option) {
-                $_string = '<td align="left">' . $_option['label'] . '</td>';
-                $_string .= '<td align="left">' . $_option['value'] . '</td>';
-                $_summary[] = $_option['value'];
-
-                $opt[] = '<tr>' . $_string . '</tr>';
-            }
-        }
-
-        if (count($opt) > 0) {
-            $html = $_prefix . join("", $opt) . '</tbody></table>';
-            $text = join(", ", $_summary);
-        }
-    }
-
-    /**
      * @param $item Mage_Sales_Model_Order_Item
      * @return array
      */
@@ -1039,15 +949,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         }
 
         if (count($opt) > 0) {
-            $_description = join(", ", $_summary);
-            if (strlen($_description) > 200) {
-                $_description = substr($_description, 0, 200) . '...';
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
+            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
+
+            $this->_obj->Description = join(", ", $_summary);
+            if (strlen($this->_obj->Description) > 200) {
+                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
             }
-
-            return array($_prefix . join("", $opt) . '</tbody></table>', $_description);
         }
-
-        return array('', '');
     }
 
     /**

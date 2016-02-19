@@ -322,15 +322,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @param $_item Mage_Sales_Model_Order_Item
-     * @return Mage_Sales_Model_Order
-     */
-    public function getEntityByItem($_item)
-    {
-        return $_item->getOrder();
-    }
-
-    /**
      * @param $_entity Mage_Sales_Model_Order
      */
     protected function _prepareEntityItemAfter($_entity)
@@ -737,83 +728,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
     }
 
-    /**
-     * @param $item Mage_Sales_Model_Order_Item
-     */
-    protected function _getItemDescription($item)
-    {
-        $opt = array();
-        $options = (is_array($item->getData('product_options')))
-            ? $item->getData('product_options')
-            : @unserialize($item->getData('product_options'));
-
-        $_summary = array();
-        if (
-            is_array($options)
-            && array_key_exists('options', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
-            foreach ($options['options'] as $_option) {
-                $optionValue = '';
-                if(isset($_option['print_value'])) {
-                    $optionValue = $_option['print_value'];
-                } elseif (isset($_option['value'])) {
-                    $optionValue = $_option['value'];
-                }
-
-                $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
-                $_summary[] = $optionValue;
-            }
-        }
-
-        if (
-            is_array($options)
-            && $item->getData('product_type') == 'bundle'
-            && array_key_exists('bundle_options', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th><th>Qty</th><th align="left">Fee<th></tr><tbody>';
-            foreach ($options['bundle_options'] as $_option) {
-                $_string = '<td align="left">' . $_option['label'] . '</td>';
-                if (is_array($_option['value'])) {
-                    $_tmp = array();
-                    foreach ($_option['value'] as $_value) {
-                        $_tmp[] = '<td align="left">' . $_value['title'] . '</td><td align="center">' . $_value['qty'] . '</td><td align="left">' . $_currencyCode . ' ' . $this->numberFormat($_value['price']) . '</td>';
-                        $_summary[] = $_value['title'];
-                    }
-                    if (count($_tmp) > 0) {
-                        $_string .= join(", ", $_tmp);
-                    }
-                }
-
-                $opt[] = '<tr>' . $_string . '</tr>';
-            }
-        }
-
-        if (
-            is_array($options)
-            && $item->getData('product_type') == 'configurable'
-            && array_key_exists('attributes_info', $options)
-        ) {
-            $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr><tbody>';
-            foreach ($options['attributes_info'] as $_option) {
-                $_string = '<td align="left">' . $_option['label'] . '</td>';
-                $_string .= '<td align="left">' . $_option['value'] . '</td>';
-                $_summary[] = $_option['value'];
-                $opt[] = '<tr>' . $_string . '</tr>';
-            }
-        }
-
-        if (count($opt) > 0) {
-            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
-            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
-
-            $this->_obj->Description = join(", ", $_summary);
-            if (strlen($this->_obj->Description) > 200) {
-                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
-            }
-        }
-    }
-
     /*
      * Should Item object be added to SF
      * aka validation to prevent errors
@@ -828,15 +742,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             ($this->_obj->Quantity != 0)
         )
             ;
-    }
-
-    /**
-     * @comment returns prefix for some fields
-     * @return mixed|null
-     */
-    protected function _getSalesforcePrefix()
-    {
-        return Mage::helper('tnw_salesforce/config')->getSalesforcePrefix();
     }
 
     /**

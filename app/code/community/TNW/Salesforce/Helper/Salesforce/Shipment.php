@@ -412,12 +412,16 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
 
         $this->_obj->Name = $_product->getName();
 
-        $this->_getDescriptionByEntityItem($_entity, $_entityItem->getOrderItem(), $_description, $_productOptions);
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Description__c'}
-            = $_description;
+        $this->_getItemDescription($_entityItem->getOrderItem());
 
+        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Description__c'}
+            = $this->_obj->Description;
+
+        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Options__c'}
-            = $_productOptions;
+            = $this->_obj->$syncParam;
+
+        unset($this->_obj->$syncParam, $this->_obj->Description);
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'}
             = $_entityItem->getId();
