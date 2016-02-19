@@ -544,10 +544,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             }
         }
 
-        if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation()) {
-            $this->findLeadsForConversion();
-        }
-
+        $this->findLeadsForConversion();
         $this->_convertLeads();
     }
 
