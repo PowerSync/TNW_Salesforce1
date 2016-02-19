@@ -521,7 +521,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: One of the Cart Item for (quote: ' . $_quoteNum . ') failed to upsert.');
-                $this->_processErrors($_result, 'quoteCart', $chunk[$_key]);
+                $this->_processErrors($_result, 'quoteCart', $chunk[$_quoteCartNumbers[$_key]]);
             } else {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Cart Item (id: ' . $_result->id . ') for (quote: ' . $_quoteNum . ') upserted.');
             }
