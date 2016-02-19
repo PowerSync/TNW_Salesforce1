@@ -98,7 +98,11 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $this->_attributes['sku'] = $resource->getIdByCode('catalog_product', 'sku');
             $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
         }
-        $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('Product2');
+
+        $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
+            ->getCollection()
+            ->addObjectToFilter('Product2')
+            ->addFieldToFilter('active', 1);
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');
@@ -230,6 +234,14 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                             // status hack
                             $_value = $object->{$_mapping->getSfField()};
                             $_value = $this->getProductTypeId($_value);
+                        } elseif ($_magentoFieldName == 'attribute_set_id') {
+                            // attribute set hack
+                            $_value = $object->{$_mapping->getSfField()};
+                            $_value = Mage::getSingleton('catalog/config')
+                                ->getAttributeSetId(Mage_Catalog_Model_Product::ENTITY, $_value);
+                            if (!$_value) {
+                                $_value = $_product->getDefaultAttributeSetId();
+                            }
                         } else {
                             $_value = $object->{$_mapping->getSfField()};
                         }
