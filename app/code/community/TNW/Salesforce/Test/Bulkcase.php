@@ -1,11 +1,9 @@
 <?php
-
 /**
- * Author: Evgeniy Ermolaev
- * Email: eermolaev@yandex.ru
- *
- * Class TNW_Salesforce_Test_Bulkcase
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 abstract class TNW_Salesforce_Test_Bulkcase extends TNW_Salesforce_Test_Case
 {
     /**

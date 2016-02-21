@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Class TNW_Salesforce_Helper_Field
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Helper_Field extends TNW_Salesforce_Helper_Data
 {
     public function getOrderLabels() {

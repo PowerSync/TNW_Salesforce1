@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Class TNW_Salesforce_Block_Adminhtml_Check
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Block_Adminhtml_Check extends Mage_Adminhtml_Block_Widget_Grid_Container
 {
     public function __construct()

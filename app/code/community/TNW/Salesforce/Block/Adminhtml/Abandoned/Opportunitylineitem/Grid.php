@@ -1,4 +1,8 @@
 <?php
+/**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
 
 class TNW_Salesforce_Block_Adminhtml_Abandoned_Opportunitylineitem_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {

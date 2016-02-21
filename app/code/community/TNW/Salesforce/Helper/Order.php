@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Class TNW_Salesforce_Helper_Order
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Helper_Order extends TNW_Salesforce_Helper_Abstract
 {
     const ZERO_ORDER_SYNC = 'salesforce_order/general/zero_order_sync_enable';

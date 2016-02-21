@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mage_Adminhtml_Controller_Action
 {
     /**

@@ -1,4 +1,8 @@
 <?php
+/**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL);

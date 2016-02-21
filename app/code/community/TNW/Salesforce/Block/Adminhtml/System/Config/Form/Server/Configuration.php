@@ -1,9 +1,7 @@
 <?php
 /**
- * Author: Evgeniy Ermolaev
- * Email: eermolaev@yandex.ru
- * Date: 21.03.15
- * Time: 17:52
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
 class TNW_Salesforce_Block_Adminhtml_System_Config_Form_Server_Configuration extends Mage_Adminhtml_Block_System_Config_Form_Field

@@ -1,4 +1,9 @@
 <?php
+/**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
+
 class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
     extends Mage_Adminhtml_Block_Sales_Order_Abstract
     implements Mage_Adminhtml_Block_Widget_Tab_Interface
