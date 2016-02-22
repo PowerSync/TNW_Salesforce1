@@ -868,7 +868,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         /**
          * Order customers sync can be denied if we just update order status
          */
-        if ($this->_orderStatusUpdateCustomer) {
+        if ($this->_updateCustomer) {
             $this->syncEntityCustomers($this->_emails, $this->_websites);
         }
 

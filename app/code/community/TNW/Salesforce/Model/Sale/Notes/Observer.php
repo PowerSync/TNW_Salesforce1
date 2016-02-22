@@ -56,7 +56,9 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $syncHelper */
                 $syncHelper = Mage::helper('tnw_salesforce/salesforce_'.$_syncType);
                 $syncHelper->reset();
-                $syncHelper->createObjNones(array($note))->pushDataNotes();
+                $syncHelper->createObjNones(array($note));
+                $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$order->getRealOrderId()] = $order->getSalesforceId();
+                $syncHelper->pushDataNotes();
             } else {
                 // Never was synced, new order
                 Mage::dispatchEvent(
