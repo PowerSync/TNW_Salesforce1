@@ -1267,7 +1267,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             unset($this->_cache['entitiesUpdating'][$_key]);
             unset($this->_cache[$toEmailKey][$_orderNumber]);
-            $this->_allResults[$skippedKey]++;
+            $this->_allResults[$skippedKey] = array_key_exists($skippedKey, $this->_allResults)
+                ? $this->_allResults[$skippedKey]++ : 1;
 
             return false;
         }
@@ -1294,7 +1295,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             unset($this->_cache['entitiesUpdating'][$_key]);
             unset($this->_cache[$toEmailKey][$_orderNumber]);
-            $this->_allResults[$skippedKey]++;
+            $this->_allResults[$skippedKey] = array_key_exists($skippedKey, $this->_allResults)
+                ? $this->_allResults[$skippedKey]++ : 1;
 
             return false;
         }
@@ -1367,12 +1369,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $itemId = $this->getProductIdFromCart($_item);
         $_order = $_item->getOrder();
         $_storeId = $_order->getStoreId();
-
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            if ($_order->getOrderCurrencyCode() != $_order->getStoreCurrencyCode()) {
-                $_storeId = $this->_getStoreIdByCurrency($_order->getOrderCurrencyCode());
-            }
-        }
 
         if (!array_key_exists($_storeId, $this->_stockItems)) {
             $this->_stockItems[$_storeId] = array();

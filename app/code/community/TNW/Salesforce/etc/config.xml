@@ -216,17 +216,15 @@
                 </observers>
             </checkout_submit_all_after>
 
-            <!-- Order Save Event: Status update
-                TODO: Event "order_save_after" are there?
-            -->
-            <order_save_after>
+            <!-- Order Save Event: Status update-->
+            <sales_order_save_after>
                 <observers>
                     <tnw_salesforce_sale_observer>
                         <class>tnw_salesforce/sale_observer</class>
                         <method>orderStatusUpdateTrigger</method>
                     </tnw_salesforce_sale_observer>
                 </observers>
-            </order_save_after>
+            </sales_order_save_after>
 
             <tnw_salesforce_order_save_form>
                 <observers>
@@ -235,7 +233,6 @@
                         <method>triggerSalesforceEvent</method>
                     </tnw_salesforce_order_observer>
                 </observers>
-
             </tnw_salesforce_order_save_form>
 
             <aitcfm_order_save_after>

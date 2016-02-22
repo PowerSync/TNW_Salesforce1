@@ -56,19 +56,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $syncHelper */
                 $syncHelper = Mage::helper('tnw_salesforce/salesforce_'.$_syncType);
                 $syncHelper->reset();
-                $syncHelper->createObjNones(array($note));
-                $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$order->getRealOrderId()] = $order->getSalesforceId();
-                $syncHelper->pushDataNotes();
-
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start (Notes) ######################################");
-                Mage::dispatchEvent(
-                    sprintf('tnw_salesforce_%s_status_update', $_syncType),
-                    array(
-                        'order'  => $order
-                    )
-                );
-
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update End (Notes) ########################################");
+                $syncHelper->createObjNones(array($note))->pushDataNotes();
             } else {
                 // Never was synced, new order
                 Mage::dispatchEvent(
