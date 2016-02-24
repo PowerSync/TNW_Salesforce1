@@ -64,13 +64,10 @@ $_defaultMappingStatus = array(
 );
 
 $picklistMapping = array();
-/** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */
-$groupCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection');
-$tableName       = $groupCollection->getMainTable();
-
 foreach ($_defaultMappingStatus as $_objectName => $_field) {
-    $groupCollection->resetData();
-    $groupCollection->addObjectToFilter($_objectName);
+    /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */
+    $groupCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+        ->addObjectToFilter($_objectName);
 
     $allValues = $groupCollection->getAllValues();
     foreach ($_field as $_fieldName => $_param) {
@@ -99,5 +96,7 @@ foreach ($_defaultMappingStatus as $_objectName => $_field) {
 }
 
 //Execute
-$installer->getConnection()->insertMultiple($tableName, $picklistMapping);
+/** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */
+$groupCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection');
+$installer->getConnection()->insertMultiple($groupCollection->getMainTable(), $picklistMapping);
 $installer->endSetup();
