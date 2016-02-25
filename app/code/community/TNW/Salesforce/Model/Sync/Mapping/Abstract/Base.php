@@ -108,8 +108,17 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
             $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')
                 ->getCollection()
                 ->addObjectToFilter($this->_type)
-                ->addFieldToFilter('active', 1)
+                ->addFieldToFilter('magento_sf_enable', 1)
             ;
+
+            if (property_exists($this->getObj(), 'Id') && !empty($this->getObj()->Id)) {
+                $this->_mappingCollection->addFieldToFilter('magento_sf_type',
+                    array(TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT, TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE));
+            }
+            else {
+                $this->_mappingCollection->addFieldToFilter('magento_sf_type',
+                    array(TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT, TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT));
+            }
         }
 
         return $this->_mappingCollection;

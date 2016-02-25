@@ -143,26 +143,26 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     {
         if (!empty($this->_cache['ordersToUpsert'])) {
 
-            if (!$this->_cache['bulkJobs']['order'][$this->_magentoId]) {
+            if (!$this->_cache['bulkJobs']['order']['Id']) {
                 // Create Job
-                $this->_cache['bulkJobs']['order'][$this->_magentoId] = $this->_createJob('Order', 'upsert', $this->_magentoId);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Orders, created job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId]);
+                $this->_cache['bulkJobs']['order']['Id'] = $this->_createJob('Order', 'upsert', 'Id');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Orders, created job: ' . $this->_cache['bulkJobs']['order']['Id']);
             }
 
             Mage::dispatchEvent("tnw_salesforce_order_send_before",array("data" => $this->_cache['ordersToUpsert']));
 
-            $this->_pushChunked($this->_cache['bulkJobs']['order'][$this->_magentoId], 'orders', $this->_cache['ordersToUpsert'], $this->_magentoId);
+            $this->_pushChunked($this->_cache['bulkJobs']['order']['Id'], 'orders', $this->_cache['ordersToUpsert']);
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Orders were successfully synced...');
-            $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
+            $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
-                $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order'][$this->_magentoId]);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking ordersToUpsert (job: ' . $this->_cache['bulkJobs']['order'][$this->_magentoId] . ')...');
+                $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['order']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking ordersToUpsert (job: ' . $this->_cache['bulkJobs']['order']['Id'] . ')...');
                 $_attempt++;
 
-                $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['order'][$this->_magentoId]);
+                $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['order']['Id']);
             }
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Orders sync is complete! Moving on...');
 
@@ -285,13 +285,13 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         $_entityArray = array_flip($this->_cache['entitiesUpdating']);
         $sql = '';
 
-        foreach ($this->_cache['batchCache']['orders'][$this->_magentoId] as $_key => $_batchId) {
-            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['order'][$this->_magentoId] . '/batch/' . $_batchId . '/result');
+        foreach ($this->_cache['batchCache']['orders']['Id'] as $_key => $_batchId) {
+            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['order']['Id'] . '/batch/' . $_batchId . '/result');
             try {
                 $response = $this->_client->request()->getBody();
                 $response = simplexml_load_string($response);
                 $_i = 0;
-                $_batch = array_keys($this->_cache['batch']['orders'][$this->_magentoId][$_key]);
+                $_batch = array_keys($this->_cache['batch']['orders']['Id'][$_key]);
                 foreach ($response as $_item) {
                     $_oid = $_batch[$_i];
 
@@ -330,7 +330,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         }
                     } else {
                         $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
-                        $this->_processErrors($_item, 'order', $this->_cache['batch']['orders'][$this->_magentoId][$_key][$_oid]);
+                        $this->_processErrors($_item, 'order', $this->_cache['batch']['orders']['Id'][$_key][$_oid]);
                     }
                     $_i++;
                 }
@@ -353,9 +353,9 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     protected function _onComplete()
     {
         // Close Jobs
-        if ($this->_cache['bulkJobs']['order'][$this->_magentoId]) {
-            $this->_closeJob($this->_cache['bulkJobs']['order'][$this->_magentoId]);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['order'][$this->_magentoId]);
+        if ($this->_cache['bulkJobs']['order']['Id']) {
+            $this->_closeJob($this->_cache['bulkJobs']['order']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['order']['Id']);
         }
         if ($this->_cache['bulkJobs']['orderProducts']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['orderProducts']['Id']);
@@ -368,7 +368,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Clearing bulk sync cache...');
 
         $this->_cache['bulkJobs'] = array(
-            'order' => array($this->_magentoId => NULL),
+            'order' => array('Id' => NULL),
             'orderProducts' => array('Id' => NULL),
             'notes' => array('Id' => NULL),
         );
@@ -384,7 +384,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
         parent::reset();
 
         $this->_cache['bulkJobs'] = array(
-            'order' => array($this->_magentoId => NULL),
+            'order' => array('Id' => NULL),
             'orderProducts' => array('Id' => NULL),
             'notes' => array('Id' => NULL),
         );

@@ -1313,11 +1313,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         return $_entity->getRealOrderId();
     }
 
-    protected function _setEntityInfo($order)
-    {
-        return;
-    }
-
     protected function _prepareEntityItemsBefore()
     {
         $failedKey    = sprintf('failed%s', $this->getManyParentEntityType());

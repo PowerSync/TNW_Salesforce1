@@ -17,6 +17,12 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
     protected $_sfEntity = '';
 
     /**
+     * type Magento attributes
+     * @var string
+     */
+    protected $_tmAttributes = '';
+
+    /**
      * array of fields which should be hidden
      * @var array
      */
@@ -67,6 +73,18 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             $sfEntity = strtolower($sfEntity);
         }
         return $sfEntity;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTypeAttribute()
+    {
+        if (empty($this->_tmAttributes)) {
+            return $this->getSfEntity(true);
+        }
+
+        return $this->_tmAttributes;
     }
 
     /**
@@ -147,7 +165,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'note' => $this->__('Choose Magento field you wish to map to Salesforce API.'),
             'style' => 'width:400px',
             'name' => 'local_field',
-            'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getSfEntity(true)),
+            'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getTypeAttribute()),
         ));
 
         /* Magento > SF */

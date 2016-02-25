@@ -233,7 +233,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_mapCollection = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter('Contact')
-            ->addFieldToFilter('active', 1);
+            ->addFieldToFilter('sf_magento_enable', 1);
 
         if (!$this->_customer) {
             $this->_customer = Mage::getModel('customer/customer');
@@ -268,14 +268,9 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             if ($this->_isNew) {
                 /** @var Mage_Customer_Model_Customer $_entity */
                 $_entity = Mage::getModel('customer/customer');
-                if ($this->_magentoId) {
-                    $_entity->setId($this->_magentoId);
-                }
-
                 $this->_response->created = true;
             } else {
                 $_entity = Mage::getModel('customer/customer')->load($this->_magentoId);
-
                 $this->_response->created = false;
             }
 

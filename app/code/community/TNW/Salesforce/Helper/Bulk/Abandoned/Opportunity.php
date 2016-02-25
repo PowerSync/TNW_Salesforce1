@@ -48,91 +48,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         return $_accountId;
     }
 
-    /**
-     * create opportunity object
-     *
-     * @param $quote Mage_Sales_Model_Quote
-     */
-    protected function _setEntityInfo($quote)
-    {
-        $_websiteId = Mage::getModel('core/store')->load($quote->getStoreId())->getWebsiteId();
-
-        $this->_updateQuoteStageName($quote);
-        $_quoteNumber = $quote->getId();
-        $_email = $this->_cache['quoteToEmail'][$_quoteNumber];
-
-        // Link to a Website
-        if (
-            $_websiteId != NULL
-            && array_key_exists($_websiteId, $this->_websiteSfIds)
-            && $this->_websiteSfIds[$_websiteId]
-        ) {
-            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
-        }
-
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $this->_obj->CurrencyIsoCode = $quote->getData('quote_currency_code');
-        }
-
-        $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
-        // Magento Quote ID
-        $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
-
-        // Force configured pricebook
-        $this->_assignPricebookToOrder($quote);
-
-        // Close Date
-        if ($quote->getUpdatedAt()) {
-
-            $closeDate = new Zend_Date();
-            $closeDate->setDate($quote->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
-
-            $closeDate->addDay(Mage::helper('tnw_salesforce/config_sales_abandoned')->getAbandonedCloseTimeAfter($quote));
-
-            // Always use quote date as closing date if quote already exists
-            $this->_obj->CloseDate = gmdate(DATE_ATOM, $closeDate->getTimestamp());
-
-        } else {
-            // this should never happen
-            $this->_obj->CloseDate = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-        }
-
-        // Account ID
-        $this->_obj->AccountId = $this->_getCustomerAccountId($_quoteNumber);
-        // For guest, extract converted Account Id
-        if (!$this->_obj->AccountId) {
-            $this->_obj->AccountId = (
-                array_key_exists($_quoteNumber, $this->_cache['convertedLeads'])
-                && property_exists($this->_cache['convertedLeads'][$_quoteNumber], 'accountId')
-            ) ? $this->_cache['convertedLeads'][$_quoteNumber]->accountId : NULL;
-        }
-
-        //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_quote_opportunity')
-            ->setSync($this)
-            ->processMapping($quote);
-
-        //Get Account Name from Salesforce
-        $_accountName = (
-            $this->_cache['accountsLookup']
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_email, $this->_cache['accountsLookup'][0])
-            && $this->_cache['accountsLookup'][0][$_email]->AccountName
-        ) ? $this->_cache['accountsLookup'][0][$_email]->AccountName : NULL;
-        if (!$_accountName) {
-            $_accountName = ($quote->getBillingAddress()->getCompany()) ? $quote->getBillingAddress()->getCompany() : NULL;
-            if (!$_accountName) {
-                $_accountName = ($_accountName && !$quote->getShippingAddress()->getCompany()) ? $_accountName && !$quote->getShippingAddress()->getCompany() : NULL;
-                if (!$_accountName) {
-                    $_accountName = $quote->getCustomerFirstname() . " " . $quote->getCustomerLastname();
-                }
-            }
-        }
-
-        $this->_setOpportunityName($_quoteNumber, $_accountName);
-        unset($quote);
-    }
-
     protected function _pushRemainingEntityData()
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
@@ -213,23 +128,23 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             // assign owner id to opportunity
             $this->_assignOwnerIdToOpp();
 
-            if (!$this->_cache['bulkJobs']['opportunity'][$this->_magentoId]) {
+            if (!$this->_cache['bulkJobs']['opportunity']['Id']) {
                 // Create Job
-                $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] = $this->_createJob('Opportunity', 'upsert', $this->_magentoId);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Opportunities, created job: ' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
+                $this->_cache['bulkJobs']['opportunity']['Id'] = $this->_createJob('Opportunity', 'upsert', 'Id');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Opportunities, created job: ' . $this->_cache['bulkJobs']['opportunity']['Id']);
             }
-            $this->_pushChunked($this->_cache['bulkJobs']['opportunity'][$this->_magentoId], 'opportunities', $this->_cache['opportunitiesToUpsert'], $this->_magentoId);
+            $this->_pushChunked($this->_cache['bulkJobs']['opportunity']['Id'], 'opportunities', $this->_cache['opportunitiesToUpsert'], 'Id');
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking if Opportunities were successfully synced...');
-            $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
+            $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity']['Id']);
             $_attempt = 1;
             while (strval($_result) != 'exception' && !$_result) {
                 sleep(5);
-                $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking opportunitiesToUpsert (job: ' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] . ')...');
+                $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['opportunity']['Id']);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking opportunitiesToUpsert (job: ' . $this->_cache['bulkJobs']['opportunity']['Id'] . ')...');
                 $_attempt++;
 
-                $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
+                $_result = $this->_whenToStopWaiting($_result, $_attempt, $this->_cache['bulkJobs']['opportunity']['Id']);
             }
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunities sync is complete! Moving on...');
 
@@ -325,13 +240,13 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $quoteTable = Mage::getResourceSingleton('sales/quote')->getMainTable();
         $connection = $helper->getDbConnection();
 
-        foreach ($this->_cache['batchCache']['opportunities'][$this->_magentoId] as $_key => $_batchId) {
-            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId] . '/batch/' . $_batchId . '/result');
+        foreach ($this->_cache['batchCache']['opportunities']['Id'] as $_key => $_batchId) {
+            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['opportunity']['Id'] . '/batch/' . $_batchId . '/result');
             try {
                 $response = $this->_client->request()->getBody();
                 $response = simplexml_load_string($response);
                 $_i = 0;
-                $_batch = array_keys($this->_cache['batch']['opportunities'][$this->_magentoId][$_key]);
+                $_batch = array_keys($this->_cache['batch']['opportunities']['Id'][$_key]);
                 foreach ($response as $_item) {
                     $_oid = $_batch[$_i];
 
@@ -357,7 +272,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     } else {
                         $this->_cache['failedOpportunities'][] = $_oid;
                         $this->_processErrors($_item, 'opportunity',
-                            $this->_cache['batch']['opportunities'][$this->_magentoId][$_key][$_oid]);
+                            $this->_cache['batch']['opportunities']['Id'][$_key][$_oid]);
                     }
                     ++$_i;
                 }
@@ -447,9 +362,9 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
     protected function _onComplete()
     {
         // Close Jobs
-        if ($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]) {
-            $this->_closeJob($this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['opportunity'][$this->_magentoId]);
+        if ($this->_cache['bulkJobs']['opportunity']['Id']) {
+            $this->_closeJob($this->_cache['bulkJobs']['opportunity']['Id']);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['opportunity']['Id']);
         }
         if ($this->_cache['bulkJobs']['opportunityProducts']['Id']) {
             $this->_closeJob($this->_cache['bulkJobs']['opportunityProducts']['Id']);
@@ -467,7 +382,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Clearing bulk sync cache...');
 
         $this->_cache['bulkJobs'] = array(
-            'opportunity' => array($this->_magentoId => NULL),
+            'opportunity' => array('Id' => NULL),
             'opportunityProducts' => array('Id' => NULL),
             'customerRoles' => array('Id' => NULL),
             'notes' => array('Id' => NULL),
@@ -484,7 +399,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         parent::reset();
 
         $this->_cache['bulkJobs'] = array(
-            'opportunity' => array($this->_magentoId => NULL),
+            'opportunity' => array('Id' => NULL),
             'opportunityProducts' => array('Id' => NULL),
             'customerRoles' => array('Id' => NULL),
             'notes' => array('Id' => NULL),

@@ -59,7 +59,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter('Product2')
-            ->addFieldToFilter('active', 1);
+            ->addFieldToFilter('sf_magento_enable', 1);
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');

@@ -2,6 +2,8 @@
 
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Opportunity
+ *
+ * @method Mage_Sales_Model_Quote _loadEntityByCache($_key, $cachePrefix = null)
  */
 class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
 {
@@ -242,96 +244,88 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     protected function _pushEntity()
     {
-        if (!empty($this->_cache['opportunitiesToUpsert'])) {
-            $_pushOn = $this->_magentoId;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
-            foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
-                if (array_key_exists('Id', $_opp)) {
-                    $_pushOn = 'Id';
-                }
-                foreach ($_opp as $_key => $_value) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
-                }
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-            }
-
-            // assign owner id to opportunity
-            $this->_assignOwnerIdToOpp();
-
-            try {
-                Mage::dispatchEvent("tnw_salesforce_opportunity_send_before", array("data" => $this->_cache['opportunitiesToUpsert']));
-
-                $_toSyncValues = array_values($this->_cache['opportunitiesToUpsert']);
-                $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
-
-                $results = $this->_mySforceConnection->upsert($_pushOn, $_toSyncValues, 'Opportunity');
-
-                Mage::dispatchEvent("tnw_salesforce_opportunity_send_after", array(
-                    "data" => $this->_cache['opportunitiesToUpsert'],
-                    "result" => $results
-                ));
-            } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_keys as $_id) {
-                    $this->_cache['responses']['opportunities'][$_id] = $_response;
-                }
-                $results = array();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of an quote to Salesforce failed' . $e->getMessage());
-            }
-
-
-            $_entityArray = array_flip($this->_cache['entitiesUpdating']);
-
-            $_undeleteIds = array();
-            foreach ($results as $_key => $_result) {
-                $_quoteNum = $_keys[$_key];
-
-                //Report Transaction
-                $this->_cache['responses']['opportunities'][$_quoteNum] = $_result;
-
-                if (!$_result->success) {
-                    if ($_result->errors[0]->statusCode == "ENTITY_IS_DELETED") {
-                        $_undeleteIds[] = $_quoteNum;
-                    }
-
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Opportunity Failed: (quote: ' . $_quoteNum . ')');
-                    $this->_processErrors($_result, 'quote', $this->_cache['opportunitiesToUpsert'][$_quoteNum]);
-                    $this->_cache['failedOpportunities'][] = $_quoteNum;
-                } else {
-                    $quoteBind = array(
-                        'sf_sync_force' => 0,
-                        'sf_insync' => 1,
-                        'salesforce_id' => $_result->id,
-                    );
-                    $abandonedCustomer = $this->_cache['quoteCustomers'][$_quoteNum];
-                    $quoteBind['contact_salesforce_id'] = $abandonedCustomer->getSalesforceId() ? :  null;
-                    $quoteBind['account_salesforce_id'] = $abandonedCustomer->getSalesforceAccountId() ? : null;
-                    $connection = Mage::helper('tnw_salesforce')->getDbConnection();
-                    $connection->update(
-                        Mage::helper('tnw_salesforce')->getTable('sales_flat_quote'),
-                        $quoteBind,
-                        $connection->quoteInto('entity_id = ?', $_entityArray[$_quoteNum])
-                    );
-
-                    $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNum] = $_result->id;
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_result->id);
-                }
-            }
-            if (!empty($_undeleteIds)) {
-                $_deleted = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_undeleteIds);
-                $_toUndelete = array();
-                foreach ($_deleted as $_object) {
-                    $_toUndelete[] = $_object->Id;
-                }
-                if (!empty($_toUndelete)) {
-                    $this->_mySforceConnection->undelete($_toUndelete);
-                }
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: End----------');
-        } else {
+        if (empty($this->_cache['opportunitiesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('No Opportunities found queued for the synchronization!');
+            return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
+        foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
+            foreach ($_opp as $_key => $_value) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
+        }
+
+        // assign owner id to opportunity
+        $this->_assignOwnerIdToOpp();
+
+        $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
+        try {
+            Mage::dispatchEvent("tnw_salesforce_opportunity_send_before", array(
+                "data" => $this->_cache['opportunitiesToUpsert']
+            ));
+
+            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['opportunitiesToUpsert']), 'Opportunity');
+            Mage::dispatchEvent("tnw_salesforce_opportunity_send_after", array(
+                "data" => $this->_cache['opportunitiesToUpsert'],
+                "result" => $results
+            ));
+        } catch (Exception $e) {
+            $_response = $this->_buildErrorResponse($e->getMessage());
+            foreach ($_keys as $_id) {
+                $this->_cache['responses']['opportunities'][$_id] = $_response;
+            }
+
+            $results = array();
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of an quote to Salesforce failed' . $e->getMessage());
+        }
+
+        $_undeleteIds = array();
+        foreach ($results as $_key => $_result) {
+            $_quoteNum = $_keys[$_key];
+
+            //Report Transaction
+            $this->_cache['responses']['opportunities'][$_quoteNum] = $_result;
+
+            if (!$_result->success) {
+                if ($_result->errors[0]->statusCode == "ENTITY_IS_DELETED") {
+                    $_undeleteIds[] = $_quoteNum;
+                }
+
+                $this->_processErrors($_result, 'quote', $this->_cache['opportunitiesToUpsert'][$_quoteNum]);
+                $this->_cache['failedOpportunities'][] = $_quoteNum;
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Opportunity Failed: (quote: ' . $_quoteNum . ')');
+            } else {
+                $_entity = $this->_loadEntityByCache(array_search($_quoteNum, $this->_cache['entitiesUpdating']), $_quoteNum);
+                $_entity->addData(array(
+                    'sf_sync_force'         => 0,
+                    'sf_insync'             => 1,
+                    'salesforce_id'         => $_result->id,
+                    'contact_salesforce_id' => $this->_cache['quoteCustomers'][$_quoteNum]->getSalesforceId(),
+                    'account_salesforce_id' => $this->_cache['quoteCustomers'][$_quoteNum]->getSalesforceAccountId()
+                ));
+                $_entity->getResource()->save($_entity);
+
+                $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_quoteNum] = $_result->id;
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_result->id);
+            }
+        }
+
+        if (!empty($_undeleteIds)) {
+            $_deleted = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_undeleteIds);
+            $_toUndelete = array();
+            foreach ($_deleted as $_object) {
+                $_toUndelete[] = $_object->Id;
+            }
+            if (!empty($_toUndelete)) {
+                $this->_mySforceConnection->undelete($_toUndelete);
+            }
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: End----------');
     }
 
     /**
@@ -607,7 +601,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         return $syncCustomer;
     }
 
-    protected function _updateQuoteStageName()
+    protected function _updateQuoteStageName($quote)
     {
         $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
 
@@ -622,18 +616,24 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      * create opportunity object
      *
      * @param $quote Mage_Sales_Model_Quote
+     * @return mixed|void
      */
     protected function _setEntityInfo($quote)
     {
-        $_websiteId = $quote->getStoreId();
+        $_websiteId   = $quote->getStoreId();
+        $_quoteNumber = $this->_getEntityNumber($quote);
+        $_customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_quoteNumber];
+        $_lookupKey   = sprintf('%sLookup', $this->_salesforceEntityName);
+
+        // Magento Order ID
+        if (isset($this->_cache[$_lookupKey][$_quoteNumber])) {
+            $this->_obj->Id = $this->_cache[$_lookupKey][$_quoteNumber]->Id;
+        }
+
+        $this->_obj->{$this->_magentoId}
+            = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
 
         $this->_updateQuoteStageName($quote);
-        $_quoteNumber = $quote->getId();
-
-        if (!$this->_cache['quoteCustomers'][$quote->getId()]) {
-            $this->_cache['quoteCustomers'][$quote->getId()] = $this->_getCustomer($quote);
-        }
-        $_customer = $this->_cache['quoteCustomers'][$quote->getId()];
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $quote->getData('quote_currency_code');
@@ -647,10 +647,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         ) {
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
-
-        $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
-        // Magento Quote ID
-        $this->_obj->{$this->_magentoId} = $magentoQuoteNumber;
 
         // Force configured pricebook
         $this->_assignPricebookToOrder($quote);
@@ -684,31 +680,13 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             ->setSync($this)
             ->processMapping($quote);
 
-        // Get Account Name from Salesforce
-        $_accountName = (
-            $this->_cache['accountsLookup']
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customer->getEmail(), $this->_cache['accountsLookup'][0])
-            && $this->_cache['accountsLookup'][0][$_customer->getEmail()]->AccountName
-        ) ? $this->_cache['accountsLookup'][0][$_customer->getEmail()]->AccountName : NULL;
-        if (!$_accountName) {
-            $_accountName = ($quote->getBillingAddress()->getCompany()) ? $quote->getBillingAddress()->getCompany() : NULL;
-            if (!$_accountName) {
-                $_accountName = ($_accountName && !$quote->getShippingAddress()->getCompany()) ? $_accountName && !$quote->getShippingAddress()->getCompany() : NULL;
-                if (!$_accountName) {
-                    $_accountName = $_customer->getFirstname() . " " . $_customer->getLastname();
-                }
-            }
-        }
-
-        $this->_setOpportunityName($_quoteNumber, $_accountName);
+        $this->_setOpportunityName($_quoteNumber);
     }
 
     /**
      * @param $orderNumber
-     * @param $accountName
      */
-    protected function _setOpportunityName($orderNumber, $accountName)
+    protected function _setOpportunityName($orderNumber)
     {
         $this->_obj->Name = "Abandoned Cart #" . $orderNumber;
     }

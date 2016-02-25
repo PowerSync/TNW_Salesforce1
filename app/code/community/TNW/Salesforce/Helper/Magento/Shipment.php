@@ -187,7 +187,8 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
     {
         $mappings = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
-            ->addObjectToFilter('OrderShipment');
+            ->addObjectToFilter('OrderShipment')
+            ->addFieldToFilter('sf_magento_enable', 1);
 
         $updateFieldsLog = array();
         /** @var $mapping TNW_Salesforce_Model_Mapping */
