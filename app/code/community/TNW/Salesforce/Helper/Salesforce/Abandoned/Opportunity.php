@@ -127,7 +127,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         if (count($opt) > 0) {
-            $syncParam = $this->_getSalesforcePrefix() . "Product_Options__c";
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
             $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
 
             $this->_obj->Description = join(", ", $_summary);
@@ -194,21 +194,29 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function _assignOwnerIdToOpp()
     {
         $_websites = $_emailArray = array();
-        foreach ($this->_cache['quoteToEmail'] as $_oid => $_email) {
-            $_customerId = $this->_cache['quoteToCustomerId'][$_oid];
+        foreach ($this->_cache['quoteToEmail'] as $_quoteNumber => $_email) {
+            $_customerId = $this->_cache['quoteToCustomerId'][$_quoteNumber];
             $_emailArray[$_customerId] = $_email;
-            $_quote = Mage::registry('quote_cached_' . $_oid);
-            $_websiteId = (array_key_exists($_oid, $this->_cache['quoteCustomers']) && $this->_cache['quoteCustomers'][$_oid]->getData('website_id')) ? $this->_cache['quoteCustomers'][$_oid]->getData('website_id') : Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
+            $_quote = $this->_loadEntityByCache(array_search($_quoteNumber, $this->_cache['entitiesUpdating']), $_quoteNumber);
+            $_websiteId = (array_key_exists($_quoteNumber, $this->_cache['quoteCustomers']) && $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id'))
+                ? $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id')
+                : Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
+
             $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
         }
+
         // update contact lookup data
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailArray, $_websites);
         $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailArray, $_websites);
+
         // assign owner id to opp
         foreach ($this->_cache['opportunitiesToUpsert'] as $_quoteNumber => $_opportunityData) {
             $_email = $this->_cache['quoteToEmail'][$_quoteNumber];
-            $_quote = $this->_loadQuote($_quoteNumber);
-            $_websiteId = ($this->_cache['quoteCustomers'][$_quote->getId()]->getData('website_id')) ? $this->_cache['quoteCustomers'][$_quote->getId()]->getData('website_id') : Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
+            $_quote = $this->_loadEntityByCache(array_search($_quoteNumber, $this->_cache['entitiesUpdating']), $_quoteNumber);
+            $_websiteId = ($this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id'))
+                ? $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id')
+                : Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
+
             $websiteSfId = $this->_websiteSfIds[$_websiteId];
 
             // Default Owner ID as configured in Magento
@@ -396,20 +404,22 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     protected function getQuoteCustomer($quote)
     {
-        if (!isset($this->_cache['quoteToCustomerId'][$quote->getId()])
-            || !$this->_cache['quoteToCustomerId'][$quote->getId()]
+        $_entityNumber = $this->_getEntityNumber($quote);
+
+        if (!isset($this->_cache['quoteToCustomerId'][$_entityNumber])
+            || !$this->_cache['quoteToCustomerId'][$_entityNumber]
         ) {
-            $this->_cache['quoteToCustomerId'][$quote->getId()] = $quote->getCustomerId();
+            $this->_cache['quoteToCustomerId'][$_entityNumber] = $quote->getCustomerId();
         }
 
-        $customerId = $this->_cache['quoteToCustomerId'][$quote->getId()];
+        $customerId = $this->_cache['quoteToCustomerId'][$_entityNumber];
 
         //always update cache array if customer ids are the same
-        if ($customerId == $quote->getCustomerId() && !$this->_cache['quoteCustomers'][$quote->getId()]) {
-            $this->_cache['quoteCustomers'][$quote->getId()] = $quote->getCustomer();
+        if ($customerId == $quote->getCustomerId() && !$this->_cache['quoteCustomers'][$_entityNumber]) {
+            $this->_cache['quoteCustomers'][$_entityNumber] = $quote->getCustomer();
         }
 
-        return $this->_cache['quoteCustomers'][$quote->getId()];
+        return $this->_cache['quoteCustomers'][$_entityNumber];
     }
 
     protected function _prepareContactRoles()
@@ -428,15 +438,13 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
             // Check if already exists
             $skip = false;
-
-            $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $quoteNumber;
             $defaultCustomerRole = Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole();
 
             if ($this->_cache['opportunityLookup']
-                && array_key_exists($magentoQuoteNumber, $this->_cache['opportunityLookup'])
-                && $this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles
+                && array_key_exists($quoteNumber, $this->_cache['opportunityLookup'])
+                && $this->_cache['opportunityLookup'][$quoteNumber]->OpportunityContactRoles
             ) {
-                $opportunity = $this->_cache['opportunityLookup'][$magentoQuoteNumber];
+                $opportunity = $this->_cache['opportunityLookup'][$quoteNumber];
                 foreach ($opportunity->OpportunityContactRoles->records as $role) {
                     if ($role->ContactId == $contactRole->ContactId) {
                         if ($role->Role == $defaultCustomerRole) {
@@ -631,7 +639,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         $this->_obj->{$this->_magentoId}
-            = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
+            = $_quoteNumber;
 
         $this->_updateQuoteStageName($quote);
 
@@ -776,18 +784,18 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         // Get Magento customer object
-        $this->_cache['quoteCustomers'][$_entity->getId()] = $this->_getCustomer($_entity);
+        $this->_cache['quoteCustomers'][$_entityNumber] = $this->_getCustomer($_entity);
 
         // Associate quote Number with a customer ID
-        $_customerId = ($this->_cache['quoteCustomers'][$_entity->getId()]->getId())
-            ? $this->_cache['quoteCustomers'][$_entity->getId()]->getId()
+        $_customerId = ($this->_cache['quoteCustomers'][$_entityNumber]->getId())
+            ? $this->_cache['quoteCustomers'][$_entityNumber]->getId()
             : $this->_guestCount++;
-        $this->_cache['quoteToCustomerId'][$_entity->getId()] = $_customerId;
+        $this->_cache['quoteToCustomerId'][$_entityNumber] = $_customerId;
 
         // Check if customer from this group is allowed to be synchronized
         $_customerGroup = $_entity->getData('customer_group_id');
         if ($_customerGroup === NULL) {
-            $_customerGroup = $this->_cache['quoteCustomers'][$_entity->getId()]->getGroupId();
+            $_customerGroup = $this->_cache['quoteCustomers'][$_entityNumber]->getGroupId();
         }
 
         if ($_customerGroup === NULL && !$this->isFromCLI()) {
@@ -802,10 +810,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $this->_emails[$_customerId] = strtolower($_entity->getCustomerEmail());
 
         // Associate quote Number with a customer Email
-        $this->_cache['quoteToEmail'][$_entity->getId()] = $this->_cache['quoteCustomers'][$_entity->getId()]->getEmail();
+        $this->_cache['quoteToEmail'][$_entityNumber] = $this->_cache['quoteCustomers'][$_entityNumber]->getEmail();
 
         // Store quote number and customer Email into a variable for future use
-        $_quoteEmail = strtolower($this->_cache['quoteCustomers'][$_entity->getId()]->getEmail());
+        $_quoteEmail = strtolower($this->_cache['quoteCustomers'][$_entityNumber]->getEmail());
         if (empty($_quoteEmail)) {
             $this->logNotice('SKIPPED: Sync for quote #' . $_entityNumber . ' failed, quote is missing an email address!');
             return false;
@@ -813,7 +821,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         // Associate quote ID with quote Number
         $this->_cache['entitiesUpdating'][$_entity->getId()] = $_entityNumber;
-        $this->_quotes[$_entity->getId()] = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_entityNumber;
+        $this->_quotes[$_entity->getId()] = $_entityNumber;
 
         $_websiteId = Mage::getModel('core/store')->load($_entity->getData('store_id'))->getWebsiteId();
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
@@ -827,7 +835,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     protected function _getEntityNumber($_entity)
     {
-        return $_entity->getId();
+        return TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_entity->getId();
     }
 
     /**
@@ -841,7 +849,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_emails, $this->_websites);
 
         // Salesforce lookup, find all opportunities by Magento quote number
-        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($this->_quotes);
+        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($this->_cache['entitiesUpdating']);
 
         /**
          * Order customers sync can be denied if we just update order status
