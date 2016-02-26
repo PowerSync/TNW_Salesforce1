@@ -302,12 +302,8 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             $_customer = $this->getQuoteCustomer($_quote);
 
             $_email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
-            $_websiteId = Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
             if (
-                array_key_exists('accountsLookup', $this->_cache)
-                && is_array($this->_cache['accountsLookup'])
-                && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-                && array_key_exists($_email, $this->_cache['accountsLookup'][0])
+                isset($this->_cache['accountsLookup'][0][$_email])
                 && is_object($this->_cache['accountsLookup'][0][$_email])
                 && property_exists($this->_cache['accountsLookup'][0][$_email], 'Id')
             ) {
@@ -321,10 +317,8 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             // Check if already exists
             $_skip = false;
 
-            $magentoQuoteNumber = TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_quoteNumber;
-
-            if ($this->_cache['opportunityLookup'] && array_key_exists($magentoQuoteNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles) {
-                foreach ($this->_cache['opportunityLookup'][$magentoQuoteNumber]->OpportunityContactRoles->records as $_role) {
+            if (isset($this->_cache['opportunityLookup'][$_quoteNumber]) && $this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityContactRoles) {
+                foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityContactRoles->records as $_role) {
                     if (property_exists($this->_obj, 'ContactId') && property_exists($_role, 'ContactId') && $_role->ContactId == $this->_obj->ContactId) {
                         if ($_role->Role == Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole()) {
                             // No update required
@@ -332,6 +326,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                             $_skip = true;
                             break;
                         }
+
                         $this->_obj->Id = $_role->Id;
                         $this->_obj->ContactId = $_role->ContactId;
                         break;
