@@ -113,7 +113,7 @@ class TNW_Salesforce_Model_Import_Order
             ->getCollection()
             ->addObjectToFilter($this->_objectType)
             ->addFieldToFilter('sf_magento_enable', 1)
-            ->addFieldToFilter('magento_sf_type',
+            ->addFieldToFilter('sf_magento_type',
                 array(TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT, TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE));
 
         foreach ($mappings as $mapping) {
