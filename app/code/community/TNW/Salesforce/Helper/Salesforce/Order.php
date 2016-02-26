@@ -476,10 +476,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _updateEntityStatus($order)
     {
-        // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-        $this->_obj->$orderIdParam = $order->getRealOrderId();
-
         /** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $collection */
         $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection()
             ->addStatusToFilter($order->getStatus());

@@ -1485,17 +1485,23 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return;
         }
 
-        $this->_obj = new stdClass();
+        $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $_entityNumber = $this->_getEntityNumber($order);
+        if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
 
-        //Process mapping
-        Mage::getSingleton(sprintf('tnw_salesforce/sync_mapping_order_%s', $this->_salesforceEntityName))
-            ->setSync($this)
-            ->processMapping($order);
+            $this->_obj = new stdClass();
 
-        // Update order status
-        $this->_updateEntityStatus($order);
+            // Magento Order ID
+            $this->_obj->Id = $this->_cache[$_lookupKey][$_entityNumber]->Id;
 
-        if ($order->getSalesforceId()) {
+            //Process mapping
+            Mage::getSingleton(sprintf('tnw_salesforce/sync_mapping_order_%s', $this->_salesforceEntityName))
+                ->setSync($this)
+                ->processMapping($order);
+
+            // Update order status
+            $this->_updateEntityStatus($order);
+
             $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$order->getRealOrderId()] = $this->_obj;
             $this->_pushEntity();
         }
