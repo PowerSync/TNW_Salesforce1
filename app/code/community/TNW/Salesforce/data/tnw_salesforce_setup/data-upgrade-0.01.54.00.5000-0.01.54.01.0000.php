@@ -77,7 +77,7 @@ foreach ($_defaultMappingStatus as $_objectName => $_field) {
         list($magentoSfEnable, $magentoSfType) = $_param['magento_sf'];
         list($sfMagentoEnable, $sfMagentoType) = $_param['sf_magento'];
 
-        $_connection->update($groupCollection->getMainTable(), array(
+        $installer->getConnection()->update($groupCollection->getMainTable(), array(
             'magento_sf_enable' => $magentoSfEnable,
             'magento_sf_type' => $magentoSfType,
             'sf_magento_enable' => $sfMagentoEnable,
