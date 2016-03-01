@@ -92,6 +92,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @var int
+     */
+    protected $_guestCount = 0;
+
+    /**
      * @var array
      */
     protected $_quotes = array();
@@ -644,7 +649,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 && $parentEntity instanceof Mage_Sales_Model_Order
                 && $product->getSalesforceCampaignId()
             ) {
-                $contactId = $this->_cache['orderCustomers'][$parentEntity->getRealOrderId()]->getSalesforceId();
+                $contactId = $this->_cache['orderCustomers'][$parentEntityNumber]->getSalesforceId();
 
                 Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
                     ->prepareCampaignMemberItem('ContactId', $contactId, null, $product->getSalesforceCampaignId());
@@ -868,9 +873,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _checkMassAddEntity($_entity)
     {
+        $_entityNumber = $this->_getEntityNumber($_entity);
+
         /** @comment check zero orders sync */
         if (!Mage::helper('tnw_salesforce/config_sales_order')->isEnabledZeroOrderSync() && $_entity->getGrandTotal() == 0) {
-            $this->logNotice('SKIPPED: Sync for order #' . $_entity->getRealOrderId() . ', grand total is zero and synchronization for these order is disabled in configuration!');
+            $this->logNotice('SKIPPED: Sync for order #' . $_entityNumber . ', grand total is zero and synchronization for these order is disabled in configuration!');
             return false;
         }
 
@@ -882,18 +889,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         // Get Magento customer object
-        $this->_cache['orderCustomers'][$_entity->getRealOrderId()] = $this->_getCustomer($_entity);
+        $this->_cache['orderCustomers'][$_entityNumber] = $this->_getCustomer($_entity);
 
         // Associate order Number with a customer ID
-        $_customerId = ($this->_cache['orderCustomers'][$_entity->getRealOrderId()]->getId())
-            ? $this->_cache['orderCustomers'][$_entity->getRealOrderId()]->getId() : sprintf('guest-%d', $this->_guestCount++);
-        $this->_cache['orderToCustomerId'][$_entity->getRealOrderId()] = $_customerId;
+        $_customerId = ($this->_cache['orderCustomers'][$_entityNumber]->getId())
+            ? $this->_cache['orderCustomers'][$_entityNumber]->getId() : sprintf('guest-%d', $this->_guestCount++);
+        $this->_cache['orderToCustomerId'][$_entityNumber] = $_customerId;
 
         // Check if customer from this group is allowed to be synchronized
         $_customerGroup = $_entity->getData('customer_group_id');
 
         if ($_customerGroup === NULL) {
-            $_customerGroup = $this->_cache['orderCustomers'][$_entity->getRealOrderId()]->getGroupId();
+            $_customerGroup = $this->_cache['orderCustomers'][$_entityNumber]->getGroupId();
         }
 
         if ($_customerGroup === NULL && !$this->isFromCLI()) {
@@ -905,15 +912,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return false;
         }
 
-        $this->_emails[$_customerId] = $this->_cache['orderCustomers'][$_entity->getRealOrderId()]->getEmail();
+        $this->_emails[$_customerId] = $this->_cache['orderCustomers'][$_entityNumber]->getEmail();
 
         // Associate order Number with a customer Email
-        $this->_cache['orderToEmail'][$_entity->getRealOrderId()] = $this->_emails[$_customerId];
+        $this->_cache['orderToEmail'][$_entityNumber] = $this->_emails[$_customerId];
 
         // Store order number and customer Email into a variable for future use
-        $_orderEmail = $this->_cache['orderToEmail'][$_entity->getRealOrderId()];
+        $_orderEmail = $this->_cache['orderToEmail'][$_entityNumber];
         if (empty($_orderEmail)) {
-            $this->logError('SKIPPED: Sync for order #' . $_entity->getRealOrderId() . ' failed, order is missing an email address!');
+            $this->logError('SKIPPED: Sync for order #' . $_entityNumber . ' failed, order is missing an email address!');
             return false;
         }
 
@@ -1464,8 +1471,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function updateStatus($order)
     {
+        $_entityNumber = $this->_getEntityNumber($order);
         if (Mage::getModel('tnw_salesforce/localstorage')->getObject($order->getId())) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Order #" . $order->getRealOrderId() . " is already queued for update.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Order #$_entityNumber is already queued for update.");
             return;
         }
 
@@ -1486,7 +1494,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
-        $_entityNumber = $this->_getEntityNumber($order);
         if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
 
             $this->_obj = new stdClass();
@@ -1502,14 +1509,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             // Update order status
             $this->_updateEntityStatus($order);
 
-            $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$order->getRealOrderId()] = $this->_obj;
+            $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_entityNumber] = $this->_obj;
             $this->_pushEntity();
         }
         else {
             // Need to do full sync instead
             $res = $this->process('full');
             if ($res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SUCCESS: Updating Order #" . $order->getRealOrderId());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SUCCESS: Updating Order #" . $_entityNumber);
             }
         }
     }

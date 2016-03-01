@@ -537,7 +537,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 if ($list) {
                     foreach ($list->fields as $_field) {
                         if ($_field->createable && $_field->updateable && !$_field->deprecatedAndHidden) {
-                            $sortedList[$_field->name] = $field . ' : ' . $_field->label;
+                            $sortedList[$_field->name] = $list->label . ' : ' . $_field->label;
                         }
                     }
                 }
