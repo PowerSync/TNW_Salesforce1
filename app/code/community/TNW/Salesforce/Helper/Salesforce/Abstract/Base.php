@@ -17,6 +17,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected $_salesforceEntityName = '';
 
     /**
+     * @var string
+     */
+    protected $_mappingObjectName = '';
+
+    /**
      * @comment magento entity model alias
      * @var array
      */
@@ -646,7 +651,46 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _setEntityInfo($_entity)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        $_entityNumber = $this->_getEntityNumber($_entity);
+        $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+
+        if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
+            $this->_obj->Id = $this->_cache[$_lookupKey][$_entityNumber]->Id;
+        }
+
+        /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
+        $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter($this->_mappingObjectName)
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+
+        $_objectMappings = array();
+        foreach ($_mappingCollection->walk('getLocalFieldType') as $_type) {
+            $_objectMappings[$_type] = $this->_getObjectByEntityType($_entity, $_type);
+        }
+
+        /** @var tnw_salesforce_model_mapping $_mapping */
+        foreach ($_mappingCollection as $_mapping) {
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+        }
+
+        // unset null field
+        foreach($this->_obj as $key => $value) {
+            if (!is_null($value)) {
+                continue;
+            }
+
+            unset($this->_obj->{$key});
+        }
+    }
+
+    /**
+     * @param $_entity
+     * @param array $types
+     * @return array
+     */
+    protected function _getObjectByEntityType($_entity, array $types)
+    {
+        return null;
     }
 
     /**

@@ -203,10 +203,13 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateOrderAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_order');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_order');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
 
         if ($collection) {
@@ -215,33 +218,24 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array()
             );
 
-            $this->_cache[$type]['order']['value'] = array(
-                array(
-                    'value' => 'Order : number',
-                    'label' => 'Order : Number',
-                ),
-                array(
-                    'value' => 'Order : cart_all',
-                    'label' => 'Order : All Cart Items',
-                ),
-                array(
-                    'value' => 'Order : payment_method',
-                    'label' => 'Order : Payment Method Label',
-                ),
-                array(
-                    'value' => 'Order : notes',
-                    'label' => 'Order : Status Notes (Admin)',
-                )
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items',
+                'payment_method'    => 'Payment Method Label',
+                'notes'             => 'Status Notes (Admin)',
+                'website'           => 'Associate to Website',
             );
 
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['order']['value'][] = array(
+                    'value' => 'Order : '.$value,
+                    'label' => 'Order : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'increment_id'
-                    || $key == 'sf_insync'
-                    || $key == 'salesforce_id'
-                    || $key == 'status'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('increment_id', 'sf_insync', 'salesforce_id', 'status'))) {
                     continue;
                 }
 
