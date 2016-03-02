@@ -9,6 +9,5 @@ FormElementDependenceController.prototype.oldTrackChange
 
 FormElementDependenceController.prototype.trackChange = function(e, idTo, valuesFrom){
     this.oldTrackChange(e, idTo, valuesFrom);
-
-    //TODO: Fix bug disabled
+    $(idTo).fire("chosen:updated");
 };
