@@ -12,12 +12,12 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching extends Mage_Adminhtml_Blo
 
         $this->_blockGroup = 'tnw_salesforce';
         $this->_controller = 'adminhtml_account_matching';
-        $this->_headerText = $helper->__('Account Matching');
+        $this->_headerText = $helper->__('Account Matching Rules');
 
         parent::__construct();
 
         /** Add button */
-        $this->_updateButton('add', 'label', $helper->__('Add New Matching'));
+        $this->_updateButton('add', 'label', $helper->__('Add New Rule'));
 
         /** Upload form */
         $form = new Varien_Data_Form(array(
