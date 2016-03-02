@@ -23,8 +23,8 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit extends Mage_Adminhtm
         $this->_blockGroup = 'tnw_salesforce';
         $this->_controller = 'adminhtml_account_matching';
 
-        $this->_updateButton('save', 'label', Mage::helper('tnw_salesforce')->__('Save Matching'));
-        $this->_updateButton('delete', 'label', Mage::helper('tnw_salesforce')->__('Delete Matching'));
+        $this->_updateButton('save', 'label', Mage::helper('tnw_salesforce')->__('Save Rule'));
+        $this->_updateButton('delete', 'label', Mage::helper('tnw_salesforce')->__('Delete Rule'));
 
         $this->_addButton('saveandcontinue', array(
             'label' => Mage::helper('adminhtml')->__('Save And Continue Edit'),
@@ -55,9 +55,9 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit extends Mage_Adminhtm
     public function getHeaderText()
     {
         if ($this->getMatching()->getId()) {
-            return Mage::helper('tnw_salesforce')->__('%s Object Matching #%s', $this->htmlEscape($this->getMatching()->getAccountId()), $this->getMatching()->getId());
+            return Mage::helper('tnw_salesforce')->__('Rule #%s', $this->getMatching()->getId());
         } else {
-            return Mage::helper('tnw_salesforce')->__('New Account Matching');
+            return Mage::helper('tnw_salesforce')->__('New Rule');
         }
     }
 }

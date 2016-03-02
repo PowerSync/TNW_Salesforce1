@@ -33,7 +33,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
 
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
-            ->_addBreadcrumb($helper->__('Account Matching'), $helper->__('Account Matching'));
+            ->_addBreadcrumb($helper->__('Account Matching Rules'), $helper->__('Account Matching Rules'));
 
         return $this;
     }
@@ -172,13 +172,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         $matchingId = $this->getRequest()->getParam('matching_id');
 
         if (empty($data)) {
-            $session->addError(Mage::helper('tnw_salesforce')->__('Unable to find matching to save'));
+            $session->addError(Mage::helper('tnw_salesforce')->__('Unable to save record'));
             $this->_redirect('*/*/');
             return;
         }
 
         if (empty($data['account_id']) || empty($data['email_domain'])) {
-            $session->addError(Mage::helper('tnw_salesforce')->__('Field "Account Name" and "Email Domain" required to be filled'));
+            $session->addError(Mage::helper('tnw_salesforce')->__('Field "Account Name" and "Email Domain" are required'));
             $this->_redirect('*/*/edit', array('matching_id' => $matchingId));
             return;
         }
@@ -205,7 +205,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
             $matchingId = $model->getId();
 
             $session->addSuccess(
-                Mage::helper('tnw_salesforce')->__('Matching was successfully saved'));
+                Mage::helper('tnw_salesforce')->__('Record was saved successfully'));
             $session->setFormData(false);
 
             if ($this->getRequest()->getParam('back')) {
@@ -260,7 +260,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
                 ->delete();
 
             $session->addSuccess(
-                Mage::helper('tnw_salesforce')->__('Matching was successfully deleted'));
+                Mage::helper('tnw_salesforce')->__('Record was deleted successfully'));
             $this->_redirect('*/*/');
             return;
         }

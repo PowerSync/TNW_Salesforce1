@@ -34,7 +34,7 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Grid extends Mage_Adminhtm
     protected function _prepareColumns()
     {
         $this->addColumn('matching_id', array(
-            'header' => Mage::helper('tnw_salesforce')->__('Matching ID'),
+            'header' => Mage::helper('tnw_salesforce')->__('Rule ID'),
             'width' => '1',
             'index' => 'matching_id',
         ));

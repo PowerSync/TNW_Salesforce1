@@ -103,6 +103,7 @@
                         </api_wsdl>
                     </fields>
                 </api_config>
+                <!--
                 <api_license translate="label" module="tnw_salesforce">
                     <label>License</label>
                     <sort_order>200</sort_order>
@@ -129,6 +130,7 @@
                         </api_invoice>
                     </fields>
                 </api_license>
+                -->
                 <developer translate="label" module="tnw_salesforce">
                     <label>Notification</label>
                     <sort_order>300</sort_order>
@@ -873,7 +875,7 @@
                     <show_in_store>0</show_in_store>
                     <fields>
                         <domains translate="label">
-                            <label>Advanced Account matching</label>
+                            <label>Account Matching Rules</label>
                             <frontend_type>select</frontend_type>
                             <frontend_model>tnw_salesforce/adminhtml_domains</frontend_model>
                             <backend_model>adminhtml/system_config_backend_serialized</backend_model>

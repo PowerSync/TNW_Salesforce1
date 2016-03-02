@@ -18,14 +18,16 @@ $configFile = Mage::getConfig()->getModuleDir('etc', 'TNW_Salesforce') . DS . 'c
 $string = file_get_contents($configFile);
 $xmlModuleConfig = simplexml_load_string($string, 'Varien_Simplexml_Element');
 
-$xmlDefaultModuleConfig = array_pop($xmlModuleConfig->xpath('default'));
+$tmpArray = $xmlModuleConfig->xpath('default');
+$xmlDefaultModuleConfig = array_pop($tmpArray);
 
 foreach ($configFromDb as $config) {
 
     /**
      * @var $xmlValue SimpleXMLElement
      */
-    $xmlValue = array_pop($xmlDefaultModuleConfig->xpath($config->getPath()));
+    $tmpArray = $xmlDefaultModuleConfig->xpath($config->getPath());
+    $xmlValue = array_pop($tmpArray);
     $defaultValue = (string)$xmlValue;
     $config->setValue($defaultValue);
 }
