@@ -23,11 +23,78 @@ $data = array(
         'local_field'       => 'Order : cart_all',
         'sf_field'          => 'Description',
         'sf_object'         => 'Order',
+    ),
+    array(
+        'local_field'       => 'Order : created_at',
+        'sf_field'          => 'EffectiveDate',
+        'sf_object'         => 'Order',
+        'backend_type'      => 'datetime'
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_account_id',
+        'sf_field'          => 'AccountId',
+        'sf_object'         => 'Order',
+        '@attribute'        => 'customer:salesforce_account_id'
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_id',
+        'sf_field'          => 'tnw_mage_basic__BillingCustomer__c',
+        'sf_object'         => 'Order',
+        '@attribute'        => 'customer:salesforce_id'
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_id',
+        'sf_field'          => 'BillToContactId',
+        'sf_object'         => 'Order',
+        '@attribute'        => 'customer:salesforce_id'
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_id',
+        'sf_field'          => 'ShipToContactId',
+        'sf_object'         => 'Order',
+        '@attribute'        => 'customer:salesforce_id'
+    ),
+    array(
+        'local_field'       => 'Order : opportunity_id',
+        'sf_field'          => 'OpportunityId',
+        'sf_object'         => 'Order'
+    ),
+    array(
+        'local_field'       => 'Order : sf_status',
+        'sf_field'          => 'Status',
+        'sf_object'         => 'Order'
+    ),
+    array(
+        'local_field'       => 'Order : sf_name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'Order'
+    ),
+    array(
+        'local_field'       => 'Order : price_book',
+        'sf_field'          => 'Pricebook2Id',
+        'sf_object'         => 'Order'
     )
 );
 
 $data = array_map(function($value){
+    $_attributeId = $_backendType = null;
+
+    if (array_key_exists('@attribute', $value)) {
+        list($_type, $_attributeCode) = explode(':', $value['@attribute'], 2);
+        $attrId = Mage::getResourceModel('eav/entity_attribute')
+            ->getIdByCode($_type, $_attributeCode);
+
+        /** @var Mage_Catalog_Model_Resource_Eav_Attribute $attr */
+        $attr = Mage::getModel('catalog/resource_eav_attribute')->load($attrId);
+        $_attributeId = $attr->getId();
+        $_backendType = $attr->getBackendType();
+
+        unset($value['@attribute']);
+    }
+
     return array_merge(array(
+        'attribute_id'      => $_attributeId,
+        'backend_type'      => $_backendType,
         'default_value'     => null,
         'is_system'         => '1',
         'magento_sf_enable' => '1',

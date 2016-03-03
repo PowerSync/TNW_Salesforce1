@@ -673,24 +673,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
         }
 
-        // unset null field
-        foreach($this->_obj as $key => $value) {
-            if (!is_null($value)) {
-                continue;
-            }
-
-            unset($this->_obj->{$key});
-        }
-
-        $this->_prepareCustomEntityObj($_entity);
+        $this->_prepareEntityObjCustom($_entity);
     }
 
     /**
      * @param $_entity
      */
-    protected function _prepareCustomEntityObj($_entity)
+    protected function _prepareEntityObjCustom($_entity)
     {
-
+        return;
     }
 
     /**

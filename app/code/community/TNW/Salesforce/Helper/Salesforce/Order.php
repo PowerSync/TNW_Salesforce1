@@ -56,45 +56,31 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected $_salesforceParentOpportunityField = 'OpportunityId';
 
     /**
-     * create order object
-     *
-     * @param $order Mage_Sales_Model_Order
-     * @return mixed|void
+     * @param $_entity Mage_Sales_Model_Order
      */
-    protected function _setEntityInfo($order)
+    protected function _prepareEntityObjCustom($_entity)
     {
-        $_websiteId   = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
-        $_orderNumber = $this->_getEntityNumber($order);
-        $_customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_orderNumber];
-        $_lookupKey   = sprintf('%sLookup', $this->_salesforceEntityName);
-
-        // Magento Order ID
-        if (isset($this->_cache[$_lookupKey][$_orderNumber])) {
-            $this->_obj->Id = $this->_cache[$_lookupKey][$_orderNumber]->Id;
-        }
-
-        $this->_obj->{$this->_magentoId} = $_orderNumber;
-
-        if ($_customer->getData('salesforce_id')) {
-            $this->_obj->BillToContactId = $_customer->getData('salesforce_id');
-            $this->_obj->ShipToContactId = $_customer->getData('salesforce_id');
-            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'BillingCustomer__c'}
-                = $_customer->getData('salesforce_id');
+        $_entityNumber = $this->_getEntityNumber($_entity);
+        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $this->_obj->$disableSyncField = true;
         }
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $this->_obj->CurrencyIsoCode = $order->getData('order_currency_code');
+            $this->_obj->CurrencyIsoCode = $_entity->getData('order_currency_code');
         }
 
-        if (
-            !empty($this->_cache['abandonedCart'])
-            && array_key_exists($order->getQuoteId(), $this->_cache['abandonedCart'])
+        $_oppExists = property_exists($this->_obj, 'OpportunityId');
+        if ((!$_oppExists || ($_oppExists && empty($this->_obj->OpportunityId)))
+            && !empty($this->_cache['abandonedCart'])
+            && array_key_exists($_entity->getQuoteId(), $this->_cache['abandonedCart'])
         ) {
-            $this->_obj->OpportunityId = $this->_cache['abandonedCart'][$order->getQuoteId()];
+            $this->_obj->OpportunityId = $this->_cache['abandonedCart'][$_entity->getQuoteId()];
         }
 
-        // Set proper Status
-        $this->_updateEntityStatus($order);
+        if (property_exists($this->_obj, 'OpportunityId') && empty($this->_obj->OpportunityId)) {
+            unset($this->_obj->OpportunityId);
+        }
 
         /**
          * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
@@ -111,64 +97,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $_toActivate->$disableSyncField = true;
             }
 
-            $this->_cache['orderToActivate'][$_orderNumber] = $_toActivate;
+            $this->_cache['orderToActivate'][$_entityNumber] = $_toActivate;
         }
-
-        // Link to a Website
-        if (
-            $_websiteId != NULL
-            && array_key_exists($_websiteId, $this->_websiteSfIds)
-            && $this->_websiteSfIds[$_websiteId]
-        ) {
-            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
-        }
-
-        // Force configured pricebook
-        $this->_assignPricebookToOrder($order);
-
-        // Close Date
-        if ($order->getCreatedAt()) {
-            // Always use order date as closing date if order already exists
-            $this->_obj->EffectiveDate = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($order->getCreatedAt())));
-        } else {
-            // this should never happen
-            $this->_obj->EffectiveDate = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-        }
-
-        // Account ID
-        $this->_obj->AccountId = ($_customer->getSalesforceAccountId()) ? $_customer->getSalesforceAccountId() : NULL;
-        // For guest, extract converted Account Id
-        if (!$this->_obj->AccountId) {
-            $this->_obj->AccountId = (
-                array_key_exists($_orderNumber, $this->_cache['convertedLeads'])
-                && property_exists($this->_cache['convertedLeads'][$_orderNumber], 'accountId')
-            ) ? $this->_cache['convertedLeads'][$_orderNumber]->accountId : NULL;
-        }
-
-        //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_order_order')
-            ->setSync($this)
-            ->processMapping($order);
-
-        if (property_exists($this->_obj, 'OpportunityId') && empty($this->_obj->OpportunityId)) {
-            unset($this->_obj->OpportunityId);
-        }
-
-        $this->_setOrderName($_orderNumber);
-    }
-
-    /**
-     * @param $_entity
-     */
-    protected function _prepareCustomEntityObj($_entity)
-    {
-        $_entityNumber = $this->_getEntityNumber($_entity);
-        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
-            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
-            $this->_obj->$disableSyncField = true;
-        }
-
-        $this->_setOrderName($_entityNumber);
     }
 
     /**
@@ -185,6 +115,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
             case 'Order':
                 return $_entity;
+
+            case 'Payment':
+                return $_entity->getPayment();
 
             case 'Customer':
                 $_entityNumber = $this->_getEntityNumber($_entity);

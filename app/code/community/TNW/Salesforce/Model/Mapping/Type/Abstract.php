@@ -21,7 +21,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         if (is_array($value)) {
             $value = implode(' ', $value);
         } elseif ($this->_mapping->getBackendType() == 'datetime' || $this->_mapping->getBackendType() == 'timestamp' || $attributeCode == 'created_at') {
-            $value = gmdate(DATE_ATOM, strtotime($value));
+            $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($value)));
         } else {
             //check if get option text required
             if (is_object($_entity->getResource()) && method_exists($_entity->getResource(), 'getAttribute')

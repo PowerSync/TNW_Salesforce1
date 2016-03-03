@@ -224,6 +224,9 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'payment_method'    => 'Payment Method Label',
                 'notes'             => 'Status Notes (Admin)',
                 'website'           => 'Associate to Website',
+                'sf_status'         => 'Salesforce Status',
+                'sf_name'           => 'Salesforce Name',
+                'price_book'        => 'Price Book'
             );
 
             foreach ($_additionalAttributes as $value => $label) {
@@ -235,7 +238,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
             foreach ($collection as $_attribute) {
                 $key = $_attribute['COLUMN_NAME'];
-                if (in_array($key, array('increment_id', 'sf_insync', 'salesforce_id', 'status'))) {
+                if (in_array($key, array('increment_id', 'sf_insync', 'salesforce_id'))) {
                     continue;
                 }
 
