@@ -73,7 +73,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     /**
      * sf connection entity
      *
-     * @var bool
+     * @var Salesforce_SforceEnterpriseClient
      */
     protected $_mySforceConnection = false;
 
