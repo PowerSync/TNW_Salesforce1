@@ -158,6 +158,72 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
+     * @param $_entity
+     */
+    protected function _prepareCustomEntityObj($_entity)
+    {
+        $_entityNumber = $this->_getEntityNumber($_entity);
+        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $this->_obj->$disableSyncField = true;
+        }
+
+        $this->_setOrderName($_entityNumber);
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order
+     * @param $types string
+     * @return mixed
+     */
+    protected function _getObjectByEntityType($_entity, $types)
+    {
+        switch($types)
+        {
+            case 'Store':
+                return $_entity->getStore();
+
+            case 'Order':
+                return $_entity;
+
+            case 'Customer':
+                $_entityNumber = $this->_getEntityNumber($_entity);
+                return $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+
+            case 'Customer Group':
+                $_entityNumber = $this->_getEntityNumber($_entity);
+                $_customer     = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+
+                $_groupId = ($_entity->getCustomerGroupId() !== NULL)
+                    ? $_entity->getCustomerGroupId() : $_customer->getGroupId();
+
+                return Mage::getModel('customer/group')->load($_groupId);
+
+            case 'Billing':
+                return $_entity->getBillingAddress();
+
+            case 'Shipping':
+                return $_entity->getShippingAddress();
+
+            case 'Aitoc':
+                $_entityNumber = $this->_getEntityNumber($_entity);
+                $_customer     = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+                $aitocValues   = array('order' => NULL, 'customer' => NULL);
+
+                $modules       = Mage::getConfig()->getNode('modules')->children();
+                if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
+                    $aitocValues['customer'] = Mage::getModel('aitcheckoutfields/transport')->loadByCustomerId($_customer->getId());
+                    $aitocValues['order'] = Mage::getModel('aitcheckoutfields/transport')->loadByOrderId($_entity->getId());
+                }
+
+                return $aitocValues;
+
+            default:
+                return null;
+        }
+    }
+
+    /**
      * @return bool|void
      * Prepare values for the synchroization
      */

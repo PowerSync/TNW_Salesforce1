@@ -681,14 +681,24 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
             unset($this->_obj->{$key});
         }
+
+        $this->_prepareCustomEntityObj($_entity);
     }
 
     /**
      * @param $_entity
-     * @param array $types
-     * @return array
      */
-    protected function _getObjectByEntityType($_entity, array $types)
+    protected function _prepareCustomEntityObj($_entity)
+    {
+
+    }
+
+    /**
+     * @param $_entity
+     * @param $types string
+     * @return mixed
+     */
+    protected function _getObjectByEntityType($_entity, $types)
     {
         return null;
     }
