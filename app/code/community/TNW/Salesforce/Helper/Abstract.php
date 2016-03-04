@@ -73,7 +73,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     /**
      * sf connection entity
      *
-     * @var bool
+     * @var Salesforce_SforceEnterpriseClient
      */
     protected $_mySforceConnection = false;
 
@@ -325,6 +325,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     {
         $store = null;
         if ($storeId = Mage::app()->getRequest()->getParam('store')) {
+            if ($storeId == 'undefined') {
+                $storeId = 0;
+            }
             if (!is_array($storeId)) {
                 $store = Mage::app()->getStore($storeId);
             }
