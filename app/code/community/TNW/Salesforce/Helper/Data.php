@@ -36,7 +36,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
     const PRODUCT_PRICEBOOK = 'salesforce_product/general/default_pricebook';
-    const PRODUCT_ATTRIBUTES_SYNC = 'salesforce_product/general/product_attributes_sync';
 
     // newsletter related
     const CUSTOMER_NEWSLETTER_SYNC = 'salesforce_customer/newsletter_config/customer_newsletter_enable_sync';
@@ -436,11 +435,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     }
 
     // Salesforce default Pricebook used to store Product prices from Magento
-
-    public function getProductAttributesSync()
-    {
-        return $this->getStroreConfig(self::PRODUCT_ATTRIBUTES_SYNC);
-    }
 
     public function getCustomerNewsletterSync()
     {

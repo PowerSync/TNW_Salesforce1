@@ -358,11 +358,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             ->setSync($this)
             ->processMapping($product);
 
-        // if "Synchronize product attributes" is set to "yes" we replace sf description with product attributes
-        if (intval($this->getHelper()->getProductAttributesSync()) == 1) {
-            $this->_obj->Description = $this->_formatProductAttributesForSalesforce($product, false);
-        }
-
         if (property_exists($this->_obj, 'IsActive')) {
             $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
         }
