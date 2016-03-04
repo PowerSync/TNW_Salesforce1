@@ -90,7 +90,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             ->addCustomerData($data);
 
         if (is_array($this->_storeIds) && !empty($this->_storeIds)) {
-            $this->addFieldToFilter('store_id', array('in' => $this->_storeIds));
+            $collection->addFieldToFilter('store_id', array('in' => $this->_storeIds));
         }
 
         $this->setCollection($collection);

@@ -74,7 +74,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     /**
      * sf connection entity
      *
-     * @var bool
+     * @var Salesforce_SforceEnterpriseClient
      */
     protected $_mySforceConnection = false;
 
@@ -93,25 +93,25 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         try {
             $this->_mySforceConnection = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
             if (!$this->_mySforceConnection) {
-                Mage::helper('tnw_salesforce')->log("error: salesforce connection failed");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
                 return;
             }
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("error: could not get salesforce connection");
-            Mage::helper('tnw_salesforce')->log("error info:" . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: could not get salesforce connection");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error info:" . $e->getMessage());
             return;
         }
     }
 
-    protected function _processErrors($_response, $type = 'order')
+    protected function _processErrors($_response, $type = 'order', $_object = null)
     {
         if (is_array($_response->errors)) {
-            Mage::helper('tnw_salesforce')->log('Failed to upsert ' . $type . '!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '!');
             foreach ($_response->errors as $_error) {
-                Mage::helper('tnw_salesforce')->log("ERROR: " . $_error->message);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
             }
         } else {
-            Mage::helper('tnw_salesforce')->log('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
         }
     }
 
@@ -193,6 +193,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      * @param $message
      * @param null $level
      * @param string $file
+     *
+     * @deprecated
+     * @use TNW_Salesforce_Model_Tool_Log and TNW_Salesforce_Model_Tool_Log_File model instead
      */
     public function log($message, $level = null, $file = 'sf-trace')
     {
@@ -207,9 +210,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         $file = $_folder . $file . '-' . $this->getWebsiteId() . '-' . $this->getStoreId() . '.log';
 
         if ($this->isLoggingEnabled()) {
-            if ($message == trim($message)) {
-                Mage::log($message, $level, $file);
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
         }
     }
 
@@ -231,10 +232,10 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         foreach ($object as $key => $value) {
             if (is_object($value) || is_array($value)) {
                 $level++;
-                $this->log($indent . " " . $key . ":");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($indent . " " . $key . ":");
                 $this->dump($value, $level);
             } else {
-                $this->log($indent . " " . $key . ": " . $value);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($indent . " " . $key . ": " . $value);
             }
         }
         unset($indent, $key, $value, $object, $level);
@@ -325,6 +326,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     {
         $store = null;
         if ($storeId = Mage::app()->getRequest()->getParam('store')) {
+            if ($storeId == 'undefined') {
+                $storeId = 0;
+            }
             if (!is_array($storeId)) {
                 $store = Mage::app()->getStore($storeId);
             }
@@ -358,6 +362,30 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     {
         $this->_mageCache = Mage::app()->getCache();
         $this->_useCache = Mage::app()->useCache('tnw_salesforce');
+    }
+
+    /**
+     * @return Zend_Cache_Core
+     */
+    public function getCache()
+    {
+        if (is_null($this->_mageCache)) {
+            $this->_initCache();
+        }
+
+        return $this->_mageCache;
+    }
+
+    /**
+     * @return bool
+     */
+    public function useCache()
+    {
+        if (is_null($this->_mageCache)) {
+            $this->_initCache();
+        }
+
+        return $this->_useCache;
     }
 
     protected function _reset()
@@ -397,7 +425,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         $_table = $this->getTable($_type . $_tableName);
 
         if (!$_attributeName) {
-            Mage::helper('tnw_salesforce')->log('Could not update Magento ' . $_type . ' values: attribute name is not specified', 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not update Magento ' . $_type . ' values: attribute name is not specified');
             return false;
         }
         $sql = '';
@@ -422,7 +450,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
             }
         }
         if (!empty($sql)) {
-            Mage::helper('tnw_salesforce')->log("SQL: " . $sql, 1, 'sf-cron');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql);
             $this->getDbConnection()->query($sql . ' commit;');
         }
     }
@@ -459,6 +487,18 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 
     public function numberFormat($value)
     {
-        return number_format($value, $this->getStroreConfig(TNW_Salesforce_Helper_Order_Pricebook::PRICE_ACCURACY), ".", "");
+        /** @var TNW_Salesforce_Helper_Config_Product $helper */
+        $helper = $this->_helper('config_product');
+        return number_format($value, $helper->getPriceAccuracy(), ".", "");
+    }
+
+    /**
+     * remove some technical data from Id, in fact first 15 symbols important only, last 3 - it's technical data for SF
+     * @param $id
+     * @return string
+     */
+    public function prepareId($id)
+    {
+        return substr($id, 0, 15);
     }
 }

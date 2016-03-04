@@ -8,6 +8,22 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
 {
 
     /**
+     * contains fields of SF object: OrderItem, OpportunityItem, etc
+     * @var
+     */
+    protected $_sfFields;
+
+    /**
+     * contains magentoIdField name for SF order item object
+     * null - field not checked, we should check is it available first
+     * false - field not available
+     * string - field name, it meant that field is available and we can use it
+     *
+     * @var null|false|string
+     */
+    protected $_magentoIdField = null;
+
+    /**
      * @comment list of the allowed mapping types
      * @var array
      */
@@ -87,9 +103,52 @@ class TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item extends TNW_Salesforce_M
             if ($value) {
                 $this->getObj()->$sf_field = trim($value);
             } else {
-                Mage::helper('tnw_salesforce')->log($this->_type . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($this->_type . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
             }
         }
+
+        /**
+         * if magentoId field available for this SF object - fill it
+         */
+        if ($magentoIdField = $this->getMagentoIdField()) {
+            $this->getObj()->{$magentoIdField} = $entity->getId();
+        }
+    }
+
+    /**
+     * find all SF fields for SF order item object
+     * @return array
+     */
+    public function getSfFields()
+    {
+        if (!$this->_sfFields) {
+            $resource = Mage::getSingleton('tnw_salesforce/api_entity_adapter');
+            $this->_sfFields = $resource->describeTable($this->_type);
+        }
+
+        return $this->_sfFields;
+    }
+
+    /**
+     * check is the MagentoId field available for order items
+     * @return bool|false|null|string
+     */
+    public function getMagentoIdField()
+    {
+        if (is_null($this->_magentoIdField)) {
+            $this->_magentoIdField = false;
+
+            $magentoIdField = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
+
+            foreach ($this->getSfFields() as $field) {
+                if ($field->name == $magentoIdField) {
+                    $this->_magentoIdField = $magentoIdField;
+                    break;
+                }
+            }
+        }
+
+        return $this->_magentoIdField;
     }
 
 }

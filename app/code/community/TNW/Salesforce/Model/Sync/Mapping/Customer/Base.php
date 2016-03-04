@@ -38,12 +38,55 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
     );
 
     /**
+     * @var array
+     */
+    protected $_regions = array();
+
+    /**
+     * @param null $address
+     * @return array
+     */
+    protected function _getRegions($address = NULL)
+    {
+
+        if ($address instanceof Varien_Object) {
+            $countryId = $address->getCountryId();
+        }
+
+        if (empty($countryId)) {
+            return array();
+        }
+
+        if (!$this->_regions || !isset($this->_regions[$countryId])) {
+
+            $regionCollection = Mage::getModel('directory/region')->getCollection();
+            $regionCollection->addCountryFilter($countryId);
+            $this->_regions[$countryId] = $regionCollection;
+        }
+
+        return $this->_regions[$countryId];
+    }
+
+    /**
      * @param null $_field
      * @param null $_value
      * @return null
      */
-    protected function _customizeAddressValue($_field = NULL, $_value = NULL)
+    protected function _customizeAddressValue($_field = NULL, $_value = NULL, $address = NULL)
     {
+        if ($_field == 'region_id') {
+            $regions = $this->_getRegions($address);
+            /**
+             * use state region code instead region_id to send data to Salesforce
+             */
+            if (!empty($regions)) {
+                foreach ($regions as $region) {
+                    if ($region->getId() == $_value) {
+                        $_value = $region->getCode();
+                    }
+                }
+            }
+        }
         return $_value;
     }
 
@@ -59,7 +102,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
 
         if ($entity->getGroupId() !== NULL) {
             if (is_array($this->_customerGroups) && (!array_key_exists($entity->getGroupId(), $this->_customerGroups) || !$this->_customerGroups[$entity->getGroupId()])) {
-                $this->_customerGroups[$entity->getGroupId()] = $this->_customerGroupModel->load($entity->getGroupId());
+                $this->_customerGroups[$entity->getGroupId()] = Mage::getModel('customer/group')->load($entity->getGroupId());
             }
         }
 
@@ -84,6 +127,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                     case "Customer":
                         $attr = "get" . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
                         $_attr = $entity->getAttribute($attributeCode);
+
                         if (
                             is_object($_attr) && $_attr->getFrontendInput() == "select"
                         ) {
@@ -99,10 +143,19 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                             $newAttribute = $entity->$attr();
                         }
                         // Reformat date fields
-                        if ($_map->getBackendType() == "datetime" || $attributeCode == 'created_at' || $_map->getBackendType() == "date") {
+                        if (
+                            is_object($_attr) &&
+                            (
+                                $_map->getBackendType() == "datetime"
+                                || $attributeCode == 'created_at'
+                                || $_map->getBackendType() == "date"
+                                || $_attr->getFrontendInput() == "date"
+                                || $_attr->getFrontendInput() == "datetime"
+                            )
+                        ) {
                             if ($entity->$attr()) {
                                 $timestamp = Mage::getModel('core/date')->timestamp(strtotime($entity->$attr()));
-                                if ($attributeCode == 'created_at') {
+                                if ($attributeCode == 'created_at' || $_attr->getFrontendInput() == "datetime") {
                                     $newAttribute = gmdate(DATE_ATOM, $timestamp);
                                 } else {
                                     $newAttribute = date("Y-m-d", $timestamp);
@@ -145,7 +198,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
                                 $value = ($value && !empty($value)) ? $value : NULL;
                             }
                         }
-                        $value = $this->_customizeAddressValue($attributeCode, $value);
+                        $value = $this->_customizeAddressValue($attributeCode, $value, $address);
                         break;
                     case "Aitoc":
                         $modules = Mage::getConfig()->getNode('modules')->children();
@@ -175,7 +228,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Customer_Base extends TNW_Sales
             if ($value) {
                 $this->getObj()->$sf_field = trim($value);
             } else {
-                Mage::helper('tnw_salesforce')->log(strtoupper($this->_type) . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(strtoupper($this->_type) . ' MAPPING: attribute ' . $sf_field . ' does not have a value in Magento, SKIPPING!');
             }
         }
         unset($collection, $_map, $group);

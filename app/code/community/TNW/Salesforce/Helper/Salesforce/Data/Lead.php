@@ -7,6 +7,12 @@
 class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_Salesforce_Data
 {
     /**
+     * @comment Contains parent object for access to _cache and _websiteSfIds
+     * @var null|TNW_Salesforce_Helper_Salesforce_Abstract
+     */
+    protected $_parent = null;
+
+    /**
      * @comment connect to Salesforce
      */
     public function __construct()
@@ -14,71 +20,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $this->checkConnection();
     }
 
-
-    /**
-     * @comment Contains parent object for access to _cache and _websiteSfIds
-     * @var null|TNW_Salesforce_Helper_Salesforce_Abstract
-     */
-    protected $_parent = null;
-
-    /**
-     * @param $_magentoId
-     * @param $emails
-     * @param $_websites
-     * @return mixed
-     */
-    protected function _queryLeads($_magentoId, $emails, $_websites)
-    {
-        if (empty($emails)) {
-            return array();
-        }
-
-        $query = "SELECT ID, OwnerId, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " FROM Lead WHERE ";
-        $_lookup = array();
-        foreach ($emails as $_id => $_email) {
-            if (empty($_email)) {
-                continue;
-            }
-            $tmp = "((Email='" . addslashes($_email) . "'";
-
-            if (
-                !empty($_id)
-                && $_id != 0
-            ) {
-                $tmp .= " OR " . $_magentoId . "='" . $_id . "'";
-            }
-            $tmp .= ")";
-            if (
-                Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
-                && array_key_exists($_id, $_websites)
-            ) {
-                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_websites[$_id] . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
-            }
-            $tmp .= ")";
-            $_lookup[] = $tmp;
-        }
-        if (empty($_lookup)) {
-            return array();
-        }
-        $query .= join(' OR ', $_lookup);
-
-        Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
-        try {
-            $_result = $this->getClient()->query(($query));
-        } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
-            $_result = array();
-        }
-
-        return $_result;
-    }
-
     /**
      * @param null $email
      * @param array $ids
      * @return array|bool
      */
-    public function lookup($email = NULL, $ids = array())
+    public function lookup($email = NULL, $ids = array(), $leadSource = '', $idPrefix = '')
     {
         $_howMany = 35;
         try {
@@ -88,25 +35,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $_results = array();
-
-            $_ttl = count($email);
-            if ($_ttl > $_howMany) {
-                $_steps = ceil($_ttl / $_howMany);
-                if ($_steps == 0) {
-                    $_steps = 1;
-                }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $_howMany;
-                    $_emails = array_slice($email, $_start, $_howMany, true);
-                    $_results[] = $this->_queryLeads($_magentoId, $_emails, $ids);
-                }
-            } else {
-                $_results[] = $this->_queryLeads($_magentoId, $email, $ids);
+            $_emailChunk = array_chunk($email, $_howMany, true);
+            foreach ($_emailChunk as $_emails) {
+                $_results[] = $this->_queryLeads($_magentoId, $_emails, $ids, $leadSource, $idPrefix);
             }
 
-            unset($query);
             if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Lookup returned: no results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: no results...");
                 return false;
             }
 
@@ -117,6 +52,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $tmp->Id = $_item->Id;
                     $tmp->Email = strtolower($_item->Email);
                     $tmp->IsConverted = $_item->IsConverted;
+                    $tmp->Company = (property_exists($_item, 'Company')) ? $_item->Company : NULL;
                     $tmp->ConvertedAccountId = (property_exists($_item, 'ConvertedAccountId')) ? $_item->ConvertedAccountId : NULL;
                     $tmp->ConvertedContactId = (property_exists($_item, 'ConvertedContactId')) ? $_item->ConvertedContactId : NULL;
                     $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->{$_magentoId} : NULL;
@@ -143,74 +79,330 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                             }
                         }
                     }
+
+                    /**
+                     * check converted condition
+                     */
                     if (
                         !$tmp->IsConverted
                         || (
                             $tmp->ConvertedAccountId
                             && $tmp->ConvertedContactId
                         )
-                    )
-                        $returnArray[$_websiteKey][$tmp->Email] = $tmp;
+                    ) {
+                        /**
+                         * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
+                         */
+                        if (
+                            !isset($returnArray[$_websiteKey][$tmp->Email])
+                            || ($tmp->MagentoId && isset($email[$tmp->MagentoId]) && $email[$tmp->MagentoId] == $tmp->Email)
+                        ) {
+                            $_websiteKey = $this->prepareId($_websiteKey);
+                            $returnArray[$_websiteKey][$tmp->Email] = $tmp;
+                        }
+                    }
                 }
             }
             return $returnArray;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find a contact by Magento Email #" . implode(",", $email));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by Magento Email #" . implode(",", $email));
             unset($email);
             return false;
         }
     }
 
     /**
-     * @param $id
-     * @param string $type
-     * @return mixed
-     * @throws Exception
+     * prepare duplicates for merge request and call request at the end
+     * @param $duplicateData
+     * @param string $leadSource
+     * @return $this
      */
-    protected function _loadEntity($id, $type = 'order')
+    public function mergeDuplicates($duplicateData, $leadSource = '')
     {
-        /**
-         * @comment 'Abandoned' type is related to the Quote magento object
-         */
-        if ($type == 'abandoned') {
-            $type = 'quote';
+        try {
+            $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
+            $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+
+            $collection->getSelect()->columns('Id');
+            $collection->getSelect()->columns('Email');
+
+            $collection->getSelect()->where("Email = ?", $duplicateData->getData('Email'));
+            $collection->getSelect()->where("IsConverted != true");
+            if ($leadSource) {
+                $collection->getSelect()->where("LeadSource = ?", $leadSource);
+            }
+
+            if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+                /**
+                 * try to find records with the same websiteId or with empty websiteId
+                 */
+                $_value = $duplicateData->getData($websiteField);
+                if (!empty($_value)) {
+
+                    $collection->getSelect()->where(
+                        "($websiteField = ?)",
+                        $duplicateData->getData($websiteField));
+
+                } else {
+                    /**
+                     * if websiteId is empty - try to find one more record with websiteId for merging
+                     */
+                    $itemsCount = $duplicateData->getData('items_count');
+                    $collection->getSelect()->limit($itemsCount + 1);
+                }
+
+                /**
+                 * sorting reason: first record used as master object.
+                 * So, records without websiteId will be merged to record with websiteId
+                 */
+                $order = new Zend_Db_Expr($websiteField . ' DESC NULLS FIRST');
+                $collection->getSelect()->order($order);
+            }
+
+            $allDuplicates = $collection->getItems();
+            $allDuplicatesCount = count($allDuplicates);
+
+            $counter = 0;
+            $duplicatesToMergeCount = 0;
+
+            $duplicateToMerge = array();
+            foreach ($allDuplicates as $k => $duplicate) {
+                $counter++;
+                $duplicatesToMergeCount++;
+                $duplicateInfo = (object)array('Id' => $duplicate->getData('Id'));
+
+                /**
+                 * add next item to the beginning of array, so, record with websiteId will be last
+                 */
+                $duplicateToMerge[] = $duplicateInfo;
+
+                /**
+                 * try to merge piece-by-piece
+                 */
+                if (
+                    $duplicatesToMergeCount == TNW_Salesforce_Helper_Salesforce_Data_User::MERGE_LIMIT
+                    || ($allDuplicatesCount == $counter && $duplicatesToMergeCount > 1)
+                ) {
+                    $masterObject = Mage::helper('tnw_salesforce/salesforce_data_user')->sendMergeRequest($duplicateToMerge, 'Lead');
+
+                    /**
+                     * remove technical information
+                     */
+                    unset($masterObject->success);
+                    unset($masterObject->mergedRecordIds);
+                    unset($masterObject->updatedRelatedIds);
+
+                    $duplicateToMerge = array();
+                    $duplicateToMerge[] = $masterObject;
+
+                    $duplicatesToMergeCount = 1;
+                }
+
+            }
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Leads merging error: " . $e->getMessage());
         }
-        /**
-         * @comment according with code 'qquoteadv/qqadvcustomer' model loading is not necessary
-         */
 
-        $loadMethod = 'load';
-
-        switch ($type) {
-            case 'order':
-                $object = Mage::getModel('sales/' . $type);
-                $loadMethod = 'loadByIncrementId';
-                break;
-            case 'quote':
-                $object = Mage::getModel('sales/' . $type);
-                $stores = Mage::app()->getStores(true);
-                $storeIds = array_keys($stores);
-                $object->setSharedStoreIds($storeIds);
-                break;
-            default:
-                throw new Exception('Incorrect entity defined!');
-                break;
-        }
-
-
-        return $object->$loadMethod($id);
+        return $this;
     }
 
     /**
-     * @param null $key
-     * @return string
+     * get duplicates minimal data
+     * @param string $leadSource
+     * @return TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
      */
-    public function getWebsiteSfIds($key = null)
+    public function getDuplicates($_emailsArray = array(), $leadSource = '')
     {
-        return $this->getParent()->getWebsiteSfIds($key);
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+
+        $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
+
+        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+        $collection->getSelect()->columns('Email');
+        $collection->getSelect()->columns('COUNT(Id) items_count');
+
+        /**
+         * special option, define limitation for queries with sql expression
+         */
+        $collection->useExpressionLimit(true);
+
+        $collection->getSelect()->where("Email != ''");
+        $collection->getSelect()->where("IsConverted != true");
+        if ($leadSource) {
+            $collection->getSelect()->where("LeadSource = ?", $leadSource);
+        }
+
+        $collection->getSelect()->group('Email');
+
+        $collection->getSelect()->having('COUNT(Id) > ?', 1);
+
+        if (!empty($_emailsArray)) {
+
+            $whereEmail = "Email = '" . implode("' OR Email = '", $_emailsArray) . "'";
+            $whereCustomerId = "$_magentoId = '" . implode("' OR $_magentoId = '", array_keys($_emailsArray)) . "'";
+            $collection->getSelect()->where("($whereEmail OR  $whereCustomerId)");
+        }
+
+        if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+
+            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+            $collection->getSelect()->columns($websiteField);
+            $collection->getSelect()->group($websiteField);
+
+            /**
+             * records with empty websiteId - are duplicates potentially
+             */
+            $collection->getSelect()->orHaving("$websiteField = '' ");
+        }
+
+        return $collection;
     }
 
+    /**
+     * @param $_magentoId
+     * @param $emails
+     * @param $_websites
+     * @return mixed
+     */
+    protected function _queryLeads($_magentoId, $emails, $_websites, $leadSource = '', $idPrefix = '')
+    {
+        if (empty($emails)) {
+            return array();
+        }
+
+        $query = "SELECT ID, OwnerId, Company, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " FROM Lead WHERE ";
+
+        $_lookup = array();
+        foreach ($emails as $_id => $_email) {
+            if (empty($_email)) {
+                continue;
+            }
+            $tmp = "((Email='" . addslashes($_email) . "'";
+
+            if (
+                !empty($_id)
+                && $_id != 0
+            ) {
+                $tmp .= " OR " . $_magentoId . "='" . $idPrefix . $_id . "'";
+            }
+            $tmp .= ")";
+            if (
+                Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
+                && array_key_exists($_id, $_websites)
+            ) {
+                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_websites[$_id] . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
+            }
+            $tmp .= ")";
+            $_lookup[] = $tmp;
+        }
+        if (empty($_lookup)) {
+            return array();
+        }
+        $query .= '(' . join(' OR ', $_lookup) . ')';
+
+        if ($leadSource) {
+            $query .= ' AND LeadSource = \'' . $leadSource . '\' ';
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
+        try {
+            $_result = $this->getClient()->query(($query));
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            $_result = array();
+        }
+
+        return $_result;
+    }
+
+    /**
+     * @comment convertation method for Customer Sync
+     */
+    public function convertLeadsSimple()
+    {
+        return $this->_convertLeadsSimple();
+    }
+
+    /**
+     * @comment convertation method for Customer Sync
+     */
+    protected function _convertLeadsSimple()
+    {
+        if (!empty($this->_cache['leadsToConvert'])) {
+            $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT, true);
+
+            foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
+
+                foreach ($leadsToConvertChunk as $_key => $_object) {
+                    foreach ($_object as $key => $value) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
+                    }
+                }
+
+                $_customerKeys = array_keys($leadsToConvertChunk);
+
+                $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
+                foreach ($_results as $_resultsArray) {
+                    foreach ($_resultsArray as $_key => $_result) {
+                        if (!property_exists($_result, 'success') || !(int)$_result->success) {
+                            $this->_processErrors($_result, 'lead');
+                        } else {
+                            $_customerId = $_customerKeys[$_key];
+                            $_customerEmail = $this->_cache['entitiesUpdating'][$_customerId];
+
+                            $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
+
+                            if (!isset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail])) {
+                                $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail] = new stdClass();
+                            }
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->Email = $_customerEmail;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->ContactId = $_result->contactId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->SalesforceId = $_result->contactId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->AccountId = $_result->accountId;
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->WebsiteId = $this->getWebsiteSfIds($_websiteId);
+                            $this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]->LeadId = null;
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param $_customerId
+     * @return mixed
+     * Extract Website ID from customer by customer ID (including guest)
+     */
+    protected function _getWebsiteIdByCustomerId($_customerId)
+    {
+        $_isGuest = (strpos($_customerId, 'guest_') === 0) ? true : false;
+        if ($_isGuest) {
+            $_websiteId = $this->_cache['guestsFromOrder'][$_customerId]->getWebsiteId();
+        } else {
+            $customer = Mage::registry('customer_cached_' . $_customerId);
+            if (!$customer) {
+                $customer = Mage::getModel('customer/customer')->load($_customerId);
+            }
+            $_websiteId = $customer->getWebsiteId();
+        }
+        return $_websiteId;
+    }
+
+    /**
+     * @param null $lead
+     * @param null $leadConvert
+     * @return mixed
+     */
+    public function prepareLeadConversionObjectSimple($lead = NULL, $leadConvert = NULL)
+    {
+
+        return $this->_prepareLeadConversionObjectSimple($lead, $leadConvert);
+    }
 
     /**
      * @param null $lead
@@ -267,91 +459,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         return $leadConvert;
     }
 
-
-    /**
-     * @param $_customerId
-     * @return mixed
-     * Extract Website ID from customer by customer ID (including guest)
-     */
-    protected function _getWebsiteIdByCustomerId($_customerId)
+    public function prepareLeadConversionObject($parentEntityId, $accounts = array(), $parentEntityType = 'order')
     {
-        $_isGuest = (strpos($_customerId, 'guest_') === 0) ? true : false;
-        if ($_isGuest) {
-            $_websiteId = $this->_cache['guestsFromOrder'][$_customerId]->getWebsiteId();
-        } else {
-            $customer = Mage::registry('customer_cached_' . $_customerId);
-            if (!$customer) {
-                $customer = Mage::getModel('customer/customer')->load($_customerId);
-            }
-            $_websiteId = $customer->getWebsiteId();
-        }
-        return $_websiteId;
-    }
-
-    /**
-     * @comment convertation method for Customer Sync
-     */
-    protected function _convertLeadsSimple()
-    {
-        if (!empty($this->_cache['leadsToConvert'])) {
-            $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT, true);
-
-            foreach ($leadsToConvertChunks as $leadsToConvertChunk) {
-
-                foreach ($leadsToConvertChunk as $_key => $_object) {
-                    foreach ($_object as $key => $value) {
-                        Mage::helper('tnw_salesforce')->log("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
-                    }
-                }
-
-                $_customerKeys = array_keys($leadsToConvertChunk);
-
-                $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
-                foreach ($_results as $_resultsArray) {
-                    foreach ($_resultsArray as $_key => $_result) {
-                        if (!property_exists($_result, 'success') || !(int)$_result->success) {
-                            $this->_processErrors($_result, 'lead');
-                        } else {
-                            $_customerId = $_customerKeys[$_key];
-                            $_customerEmail = $this->_cache['entitiesUpdating'][$_customerId];
-
-                            $_websiteId = $this->_getWebsiteIdByCustomerId($_customerId);
-
-                            unset($this->_cache['toSaveInMagento'][$_websiteId][$_customerEmail]);
-
-                            // Update Salesforce Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->contactId, 'salesforce_id');
-                            // Update Account Id
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, $_result->accountId, 'salesforce_account_id');
-                            // Update Lead
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, NULL, 'salesforce_lead_id');
-                            // Update Sync Status
-                            Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 1, 'sf_insync', 'customer_entity_int');
-
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @comment convertation method for Customer Sync
-     */
-    public function convertLeadsSimple()
-    {
-        return $this->_convertLeadsSimple();
-    }
-
-    /**
-     * @param null $lead
-     * @param null $leadConvert
-     * @return mixed
-     */
-    public function prepareLeadConversionObjectSimple($lead = NULL, $leadConvert = NULL)
-    {
-
-        return $this->_prepareLeadConversionObjectSimple($lead, $leadConvert);
+        return $this->_prepareLeadConversionObject($parentEntityId, $accounts, $parentEntityType);
     }
 
     /**
@@ -438,7 +548,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                 // logs
                 foreach ($leadConvert as $key => $value) {
-                    Mage::helper('tnw_salesforce')->log("Lead Conversion: " . $key . " = '" . $value . "'");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead Conversion: " . $key . " = '" . $value . "'");
                 }
 
                 if ($leadConvert->leadId && !$this->_cache['leadLookup'][$salesforceWebsiteId][$email]->IsConverted) {
@@ -448,22 +558,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING:' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log($e->getMessage(), 1);
-
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
             return false;
         }
 
         $result = isset($this->_cache['leadsToConvert'][$parentEntityId]) ? $this->_cache['leadsToConvert'][$parentEntityId] : null;
 
         return $result;
-    }
-
-    public function prepareLeadConversionObject($parentEntityId, $accounts = array(), $parentEntityType = 'order')
-    {
-        return $this->_prepareLeadConversionObject($parentEntityId, $accounts, $parentEntityType);
     }
 
     /**
@@ -491,6 +592,55 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
+     * @param $id
+     * @param string $type
+     * @return mixed
+     * @throws Exception
+     */
+    protected function _loadEntity($id, $type = 'order')
+    {
+        /**
+         * @comment 'Abandoned' type is related to the Quote magento object
+         */
+        if ($type == 'abandoned') {
+            $type = 'quote';
+        }
+        /**
+         * @comment according with code 'qquoteadv/qqadvcustomer' model loading is not necessary
+         */
+
+        $loadMethod = 'load';
+
+        switch ($type) {
+            case 'order':
+                $object = Mage::getModel('sales/' . $type);
+                $loadMethod = 'loadByIncrementId';
+                break;
+            case 'quote':
+                $object = Mage::getModel('sales/' . $type);
+                $stores = Mage::app()->getStores(true);
+                $storeIds = array_keys($stores);
+                $object->setSharedStoreIds($storeIds);
+                break;
+            default:
+                throw new Exception('Incorrect entity defined!');
+                break;
+        }
+
+
+        return $object->$loadMethod($id);
+    }
+
+    /**
+     * @param null $key
+     * @return string
+     */
+    public function getWebsiteSfIds($key = null)
+    {
+        return $this->getParent()->getWebsiteSfIds($key);
+    }
+
+    /**
      * @return mixed
      */
     public function isFromCLI()
@@ -504,6 +654,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     public function isCron()
     {
         return $this->getParent()->isCron();
+    }
+
+    /**
+     * @return bool
+     */
+    public function convertLeadsBulk($parentEntityType)
+    {
+        return $this->_convertLeadsBulk($parentEntityType);
     }
 
     protected function _convertLeadsBulk($parentEntityType)
@@ -528,19 +686,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
 
-            $_ttl = count($this->_cache['leadsToConvert']);
-            if ($_ttl > $_howMany) {
-                $_steps = ceil($_ttl / $_howMany);
-                if ($_steps == 0) {
-                    $_steps = 1;
-                }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $_howMany;
-                    $_itemsToPush = array_slice($this->_cache['leadsToConvert'], $_start, $_howMany, true);
-                    $this->_pushLeadSegment($_itemsToPush, $parentEntityType);
-                }
-            } else {
-                $this->_pushLeadSegment($this->_cache['leadsToConvert'], $parentEntityType);
+            $_leadsChunk = array_chunk($this->_cache['leadsToConvert'], $_howMany, true);
+            foreach ($_leadsChunk as $_itemsToPush) {
+                $this->_pushLeadSegment($_itemsToPush, $parentEntityType);
             }
 
             // Update de duped lead conversion records
@@ -552,10 +700,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING:' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log($e->getMessage(), 1);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
 
             return false;
         }
@@ -603,17 +748,15 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 if ($keyToRemove) {
                     unset($this->_cache['entitiesUpdating'][$keyToRemove]);
                 }
-                if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $_email . ')');
-                }
-                Mage::helper('tnw_salesforce')->log('Convert Failed: (email: ' . $_email . ')', 1);
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Convert Failed: (email: ' . $_email . ')');
                 $this->_processErrors($_result, $parentEntityType, $_leadsChunkToConvert[$parentEntityId]);
 
             } else {
-                Mage::helper('tnw_salesforce')->log('Lead Converted for: (email: ' . $_email . ')');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Lead Converted for: (email: ' . $_email . ')');
                 if ($_customerId) {
 
-                    Mage::helper('tnw_salesforce')->log('Converted customer: (magento id: ' . $_customerId . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Converted customer: (magento id: ' . $_customerId . ')');
 
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
                     $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
@@ -632,7 +775,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                     $this->_cache[$parentEntityType . 'Customers'][$parentEntityId] = Mage::getModel("customer/customer")->load($_customerId);
                 } else {
-                    Mage::helper('tnw_salesforce')->log('Converted customer: (guest)');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Converted customer: (guest)');
 
                     // For the guest
                     if (array_key_exists($parentEntityId, $this->_cache[$parentEntityType . 'Customers']) && !is_object($this->_cache[$parentEntityType . 'Customers'][$parentEntityId])) {
@@ -653,17 +796,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 unset($this->_cache['leadsToConvert'][$parentEntityId]); // remove from cache
                 unset($this->_cache['leadLookup'][$_websiteId][$_email]); // remove from cache
 
-                Mage::helper('tnw_salesforce')->log('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
             }
         }
     }
 
-    /**
-     * @return bool
-     */
-    public function convertLeadsBulk($parentEntityType)
+    public function convertLeads($parentEntityType)
     {
-        return $this->_convertLeadsBulk($parentEntityType);
+        return $this->_convertLeads($parentEntityType);
     }
 
     /**
@@ -712,22 +852,19 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
 
                 if (!$_result->success) {
-                    if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addError('WARNING: Failed to convert Lead for Customer Email (' . $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail() . ')');
-                    }
-                    Mage::helper('tnw_salesforce')->log('Convert Failed: (email: ' . $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail() . ')', 1, "sf-errors");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Convert Failed: (email: ' . $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail() . ')');
                     if ($_customerId) {
                         // Update Sync Status
                         Mage::helper('tnw_salesforce/salesforce_customer')->updateMagentoEntityValue($_customerId, 0, 'sf_insync', 'customer_entity_int');
                     }
                     $this->_processErrors($_result, 'convertLead', $this->_cache['leadsToConvert'][$parentEntityId]);
                 } else {
-                    Mage::helper('tnw_salesforce')->log('Lead Converted for: (email: ' . $_email . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Lead Converted for: (email: ' . $_email . ')');
 
                     $_email = strtolower($this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getEmail());
                     $_websiteId = $this->_cache[$parentEntityType . 'Customers'][$parentEntityId]->getData('website_id');
                     if ($_customerId) {
-                        Mage::helper('tnw_salesforce')->log('Converted customer: (magento id: ' . $_customerId . ')');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Converted customer: (magento id: ' . $_customerId . ')');
 
                         $this->_cache['toSaveInMagento'][$_websiteId][$_customerId] = new stdClass();
                         $this->_cache['toSaveInMagento'][$_websiteId][$_customerId]->Email = $_email;
@@ -746,7 +883,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                         $this->_cache[$parentEntityType . 'Customers'][$parentEntityId] = Mage::getModel("customer/customer")->load($_customerId);
                     } else {
-                        Mage::helper('tnw_salesforce')->log('Converted customer: (guest)');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Converted customer: (guest)');
                     }
 
                     // Update current customer values
@@ -761,23 +898,15 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $this->_cache['convertedLeads'][$parentEntityId]->accountId = $_result->accountId;
                     $this->_cache['convertedLeads'][$parentEntityId]->email = $_email;
 
-                    Mage::helper('tnw_salesforce')->log('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Converted: (account: ' . $this->_cache['convertedLeads'][$parentEntityId]->accountId . ') and (contact: ' . $this->_cache['convertedLeads'][$parentEntityId]->contactId . ')');
 
                 }
             }
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING:' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log($e->getMessage(), 1);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
 
             return false;
         }
-    }
-
-    public function convertLeads($parentEntityType)
-    {
-        return $this->_convertLeads($parentEntityType);
     }
 
     /**

@@ -19,8 +19,8 @@ $app->getTranslator()->setLocale($locale)->init('frontend', true);
 
 /* Look for passed name/value pair */
 $fromSf = ($_REQUEST['sf']) ? strip_tags($_REQUEST['sf'], true) : NULL;
-$helper->log("========== Sync from Salesforce Start ==========");
-//$helper->log("JSON: ". urlencode($fromSf));
+Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("========== Sync from Salesforce Start ==========");
+Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("JSON: ". urlencode($fromSf));
 
 if (!function_exists('apache_request_headers')) {
     function apache_request_headers()
@@ -71,16 +71,16 @@ if (!$helper->isWorking()) {
         $myAuth = base64_decode($auth[1], true);
         $credentials = explode(":", $myAuth);
         if (count($auth) != 2 || $auth[0] !== "BASIC" || !$myAuth || !is_array($credentials) || count($credentials) != 2) {
-            $helper->log('ERROR: Trying to hack, eh?');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Trying to hack, eh?');
             throw new Exception("Authorization invalid, possible attack!");
         }
         // Final check to see if all is good
         if ($helper->getLicenseInvoice() != $credentials[0] || $helper->getLicenseEmail() != $credentials[1]) {
-            $helper->log('ERROR: Authentication fialed!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Authentication fialed!');
             throw new Exception("Authorization invalid, possible attack!");
         }
     } catch (Exception $e) {
-        $helper->log('ERROR: ' . $e->getMessage());
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . $e->getMessage());
         exit;
     }
 
@@ -96,10 +96,11 @@ if (!$helper->isWorking()) {
         if (!$objects || !is_array($objects)) {
             /* JSON is invalid, hack? */
             $errorString = "Invalid JSON format!";
-            $helper->log($errorString);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($errorString);
         } else {
-            if (!$helper->isEnabledCustomerSync()) {
-                $helper->log('SKIPING: Customer synchronization disabled');
+            // Check if integration is enabled in Magento
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Synchronization is disabled');
             } else {
                 if (count($objects) == 1) {
                     // Process Realtime
@@ -109,8 +110,8 @@ if (!$helper->isWorking()) {
                             ->setObject($object)
                             ->process();
                     } catch (Exception $e) {
-                        $helper->log("Error: " . $e->getMessage());
-                        $helper->log("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert a " . $object->attributes->type . " #" . $object->Id . ", please re-save or re-import it manually");
                     }
                 } else {
                     // Add to Queue
@@ -119,10 +120,10 @@ if (!$helper->isWorking()) {
                         Mage::getModel('tnw_salesforce/import')
                             ->setObject($fromSf)
                             ->save();
-                        $helper->log("Import JSON accepted, pending Import");
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Import JSON accepted, pending Import");
                     } catch (Exception $e) {
                         $errorString = "Could not process JSON, Error: " . $e->getMessage();
-                        $helper->log($errorString);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($errorString);
                     }
                 }
             }
@@ -135,5 +136,5 @@ $response->error = $errorString;
 $return = json_encode($response);
 print($return);
 
-$helper->log("Return JSON to Salesforce: " . $return);
-$helper->log("========== Sync from Salesforce End ==========");
+Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Return JSON to Salesforce: " . $return);
+Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("========== Sync from Salesforce End ==========");

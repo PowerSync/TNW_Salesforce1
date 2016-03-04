@@ -6,7 +6,7 @@
 
 class TNW_Salesforce_Helper_Salesforce_Abstract
 {
-    protected $_salesforceApiVersion = '32.0';
+    protected $_salesforceApiVersion = '34.0';
     /**
      * @var null
      */
@@ -20,14 +20,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * reference to salesforce connection
      *
-     * @var null
+     * @var null|Salesforce_SforceEnterpriseClient
      */
     public $_mySforceConnection = NULL;
-
-    /**
-     * @var null
-     */
-    protected $_customerGroupModel = NULL;
 
     /**
      * @var null
@@ -229,11 +224,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         $this->checkConnection();
         if (!$this->_mySforceConnection) {
-            Mage::helper('tnw_salesforce')->log("SKIPPING: Salesforce connection failed!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
             return false;
         }
 
-        if ($this->_stopFurtherProcessing){
+        if ($this->_stopFurtherProcessing) {
             return false;
         }
 
@@ -252,14 +247,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function _createJob($_obj = NULL, $_operation = 'upsert', $_externalId = NULL)
     {
         if (!$this->getSalesforceSessionId()) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
             return NULL;
         }
         if (!$this->getSalesforceServerDomain()) {
             $this->_getSalesforceDomainFromSession();
 
             if (!$this->getSalesforceServerDomain()) {
-                Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed, bulk API domain is not set!");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API domain is not set!");
                 return NULL;
             }
         }
@@ -312,37 +307,27 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             if (!array_key_exists($_batchType, $this->_cache['batch'])) {
                 $this->_cache['batch'][$_batchType] = array();
             }
+
             if (!array_key_exists($_on, $this->_cache['batch'][$_batchType])) {
                 $this->_cache['batch'][$_batchType][$_on] = array();
             }
-            $_ttl = count($_entities); // 33
+
             $_success = true;
-            if ($_ttl > $this->_maxBatchLimit) {
-                $_steps = ceil($_ttl / $this->_maxBatchLimit);
-                if ($_steps == 0) {
-                    $_steps = 1;
+            $batchLimit = $this->_maxBatchLimit == 0
+                ? TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT
+                : $this->_maxBatchLimit;
+
+            $_entitiesChunk = array_chunk($_entities, $batchLimit, true);
+            foreach ($_entitiesChunk as $_batchNum => $_itemsToPush) {
+                if (!array_key_exists($_batchNum, $this->_cache['batch'][$_batchType][$_on])) {
+                    $this->_cache['batch'][$_batchType][$_on][$_batchNum] = array();
                 }
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $this->_maxBatchLimit;
-                    $_itemsToPush = array_slice($_entities, $_start, $this->_maxBatchLimit, true);
-                    if (!array_key_exists($_i, $this->_cache['batch'][$_batchType][$_on])) {
-                        $this->_cache['batch'][$_batchType][$_on][$_i] = array();
-                    }
-                    // send data to sf
-                    $_success = $this->_pushSegment($_jobId, $_batchType, $_itemsToPush, $_i, $_on);
-                }
-            } else {
-                if (!array_key_exists(0, $this->_cache['batch'][$_batchType][$_on])) {
-                    $this->_cache['batch'][$_batchType][$_on][0] = array();
-                }
-                // send data to sf
-                $_success = $this->_pushSegment($_jobId, $_batchType, $_entities, 0, $_on);
+
+                $_success = $this->_pushSegment($_jobId, $_batchType, $_itemsToPush, $_batchNum, $_on);
             }
+
             if (!$_success) {
-                if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . uc_words($_batchType) . ' upserts failed');
-                }
-                Mage::helper('tnw_salesforce')->log('ERROR: ' . uc_words($_batchType) . ' upsert failed', 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . uc_words($_batchType) . ' upsert failed!');
                 return false;
             }
         }
@@ -414,14 +399,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">';
 
         foreach ($chunk as $_item) {
-            Mage::helper('tnw_salesforce')->log("+++++ Start " . ucwords($_batchType) . " Object +++++");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("+++++ Start " . ucwords($_batchType) . " Object +++++");
             $_data .= '<sObject>';
             foreach ($_item as $_tag => $_value) {
                 $_data .= '<' . $_tag . '><![CDATA[' . $_value . ']]></' . $_tag . '>';
-                Mage::helper('tnw_salesforce')->log(ucwords($_batchType) . " - " . $_tag . " : " . $_value);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . " - " . $_tag . " : " . $_value);
             }
             $_data .= '</sObject>';
-            Mage::helper('tnw_salesforce')->log("+++++ End " . ucwords($_batchType) . " Object +++++");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("+++++ End " . ucwords($_batchType) . " Object +++++");
         }
 
         $_data .= '</sObjects>';
@@ -432,7 +417,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $_batchInfo = simplexml_load_string($response);
 
             $_batchId = substr($_batchInfo->id, 0, -3);
-            Mage::helper('tnw_salesforce')->log(ucwords($_batchType) . ' batch was created, batch number: ' . $_batchId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . ' batch was created, batch number: ' . $_batchId);
             // Update Batches cache
             if (!array_key_exists($_batchType, $this->_cache['batchCache'])) {
                 $this->_cache['batchCache'][$_batchType] = array();
@@ -524,10 +509,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $response = simplexml_load_string($client->request()->getBody());
             foreach ($response as $_responseRow) {
                 if (property_exists($_responseRow, 'state')) {
-                    $logHelper->log('INFO: State: ' . $_responseRow->state);
-                    $logHelper->log('INFO: Batch ID: ' . $_responseRow->id);
-                    $logHelper->log('INFO: RecordsProcessed: ' . $_responseRow->numberRecordsProcessed);
-                    if ('Completed' != $_responseRow->state) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: State: ' . $_responseRow->state);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Batch ID: ' . $_responseRow->id);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: RecordsProcessed: ' . $_responseRow->numberRecordsProcessed);
+                    if ('Failed' == $_responseRow->state) {
+                        $completed = 'exception';
+                        break;
+                        // completed but failed
+                    } elseif ('Completed' != $_responseRow->state) {
                         $completed = false;
                         break;
                         // try later
@@ -538,7 +527,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 }
             }
         } catch (Exception $e) {
-            $logHelper->log('_checkBatchCompletion function has an error: '.$e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('_checkBatchCompletion function has an error: ' . $e->getMessage());
             $completed = 'exception';
         }
 
@@ -551,23 +540,15 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
+        $objectStr = var_export($_object, true);
         if (is_array($_response->errors)) {
-            Mage::helper('tnw_salesforce')->log('Failed to upsert ' . $type . '!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($objectStr);
             foreach ($_response->errors as $_error) {
-                if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_error->message);
-                }
-                Mage::helper('tnw_salesforce/email')->sendError($_error->message, $_object, $type);
-                Mage::helper('tnw_salesforce')->log("ERROR: " . $_error->message);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
             }
         } else {
-            if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('CRITICAL: Failed to upsert ' . $type . ': ' . $_response->errors->message);
-            }
-
-            Mage::helper('tnw_salesforce')->log('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message);
-            // Send Email
-            Mage::helper('tnw_salesforce/email')->sendError($_response->errors->message, $_object, $type);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message . '. Object dump: ' . $objectStr);
         }
     }
 
@@ -605,8 +586,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $this->_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         }
 
-        $this->_customerGroupModel = Mage::getModel('customer/group');
-
         if (!$this->_write) {
             $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
         }
@@ -639,6 +618,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         );
 
         $this->_fillWebsiteSfIds();
+
+        Mage::getSingleton('tnw_salesforce/tool_log_mail')->send();
     }
 
     public function getHttpClient()
@@ -648,7 +629,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     }
 
-    protected function _fillWebsiteSfIds(){
+    protected function _fillWebsiteSfIds()
+    {
         $websiteHelper = Mage::helper('tnw_salesforce/magento_websites');
         $website = Mage::getModel('core/website')->load(0);
         $this->_websiteSfIds[0] = $websiteHelper->getWebsiteSfId($website);
@@ -656,7 +638,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             Mage::helper('tnw_salesforce/salesforce_website');
             $websiteSfId = $websiteHelper->getWebsiteSfId($website);
             $this->_websiteSfIds[$website->getData('website_id')] = $websiteSfId;
-            if (empty($websiteSfId)){
+            if (empty($websiteSfId)) {
                 $this->_stopFurtherProcessing = true;
             }
         }
@@ -673,48 +655,48 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $array = (array)$array;
         }
         if (empty($array)) {
-            Mage::helper('tnw_salesforce')->log("Could not dump object: " . $type . " - it's empty", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not dump object: " . $type . " - it's empty");
             return;
         }
         if ($isError) {
-            Mage::helper('tnw_salesforce')->log("~~~~~~~~~~~~ Dumping Object: ~~~~~~~~~~~~~", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("~~~~~~~~~~~~ Dumping Object: ~~~~~~~~~~~~~");
         }
         /* Dump object into the log */
         foreach ($array as $k => $_obj) {
             if ($isError) {
-                Mage::helper('tnw_salesforce')->log("Entity Key: " . $k, 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Entity Key: " . $k);
             } else {
-                Mage::helper('tnw_salesforce')->log("Entity Key: " . $k);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Entity Key: " . $k);
             }
             if (empty($_obj) || (!is_array($_obj) && !is_object($_obj))) {
-                Mage::helper('tnw_salesforce')->log($type . " Object is empty!", 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object is empty!");
             } else {
                 foreach ($_obj as $_key => $_value) {
-                    if (is_object($_value) || is_array($_value)){
-                        foreach($_value as $k1 => $v1) {
+                    if (is_object($_value) || is_array($_value)) {
+                        foreach ($_value as $k1 => $v1) {
                             if ($isError) {
-                                Mage::helper('tnw_salesforce')->log($type . " Object: " . $k1 . " = '" . $v1 . "'", 1, "sf-errors");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object: " . $k1 . " = '" . $v1 . "'");
                             } else {
-                                Mage::helper('tnw_salesforce')->log($type . " Object: " . $k1 . " = '" . $v1 . "'");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $k1 . " = '" . $v1 . "'");
                             }
                         }
                     } else {
                         if ($isError) {
-                            Mage::helper('tnw_salesforce')->log($type . " Object: " . $_key . " = '" . $_value . "'", 1, "sf-errors");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object: " . $_key . " = '" . $_value . "'");
                         } else {
-                            Mage::helper('tnw_salesforce')->log($type . " Object: " . $_key . " = '" . $_value . "'");
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $_key . " = '" . $_value . "'");
                         }
                     }
                 }
             }
             if ($isError) {
-                Mage::helper('tnw_salesforce')->log("=====================", 1, "sf-errors");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("=====================");
             } else {
-                Mage::helper('tnw_salesforce')->log("=====================");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=====================");
             }
         }
         if ($isError) {
-            Mage::helper('tnw_salesforce')->log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 1, "sf-errors");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         }
     }
 
@@ -726,7 +708,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function _query($_query = NULL, $jobId = NULL)
     {
         if (!$this->getSalesforceSessionId()) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
             return NULL;
         }
         $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch');
@@ -754,7 +736,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function _createJobQuery($_obj = NULL)
     {
         if (!$this->getSalesforceSessionId()) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
             return NULL;
         }
         $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job');
@@ -787,7 +769,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @param string $_statusCode
      * @return stdClass
      */
-    protected function _buildErrorResponse($_text = NULL, $_statusCode = 'POWERSYNC_EXCEPTION') {
+    protected function _buildErrorResponse($_text = NULL, $_statusCode = 'POWERSYNC_EXCEPTION')
+    {
         if ($this->_mageCache === NULL) {
             $this->_initCache();
         }
@@ -818,7 +801,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @param null $_sfUserId
      * @return bool
      */
-    public function isUserActive($_sfUserId = NULL) {
+    public function isUserActive($_sfUserId = NULL)
+    {
         return $this->_isUserActive($_sfUserId);
     }
 
@@ -828,38 +812,57 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * @param null $_sfUserId
      * @return bool
      */
-    protected function _isUserActive($_sfUserId = NULL) {
+    protected function _isUserActive($_sfUserId = NULL)
+    {
 
         return Mage::helper('tnw_salesforce/salesforce_data_user')->isUserActive($_sfUserId);
     }
 
-    protected function _getStoreIdByCurrency($_currenctCurrencyCode) {
-        foreach(Mage::app()->getStores() as $_store) {
-            $_currency = Mage::app()->getStore($_store->getId())->getDefaultCurrencyCode();
-            if ($_currenctCurrencyCode == $_currency) {
-                return $_store->getId();
-            }
-        }
-        return false;
-    }
-
-    public function generateLinkToSalesforce($_field) {
-        $_data = 'N/A';
+    /**
+     * input paremeter: salesforceId or string type1:salesforceId1;type2:salesforceId2;
+     * @param $_field
+     * @return string
+     */
+    public function generateLinkToSalesforce($_field)
+    {
+        $_data = null;
 
         if ($_field) {
-            $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') .'/' . $_field;
-            if (Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url')) {
-                $_data = '<strong><a target="_blank" href="' . $_url . '">' . $_field . "</a></strong>";
-            } else {
-                $_data = '<strong>' . $_field . "</strong>";
+            $valuesArray = explode("\n", $_field);
+
+            foreach ($valuesArray as $value) {
+                $currency = '';
+                if (strpos($value, ':') !== false) {
+                    $tmp = explode(':', $value);
+                    $currency = $tmp[0] . ': ';
+                    $_field = $tmp[1];
+                    $value = $tmp[1];
+                }
+
+                if (empty($value)) {
+                    continue;
+                }
+
+                $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') . '/' . $value;
+                if (Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url')) {
+                    $_data .=  '<strong>' . $currency . '<a target="_blank" href="' . $_url . '">' . $_field . "</a></strong><br />";
+                } else {
+                    $_data .= '<strong>' . $value . "</strong><br />";
+                }
             }
         }
+
+        if (!$_data) {
+            $_data = 'N/A';
+        }
+
         return $_data;
     }
 
-    protected function _whenToStopWaiting($_result = NULL, $_attempt = 50, $_jobRecords = NULL) {
+    protected function _whenToStopWaiting($_result = NULL, $_attempt = 50, $_jobRecords = NULL)
+    {
         // Break infinite loop after 50 attempts.
-        if(
+        if (
             (
                 !$_result
                 && $_attempt == 50
@@ -878,7 +881,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * Get results from SF sync for all objects
      * @return array
      */
-    public function getSyncResults() {
+    public function getSyncResults()
+    {
         return $this->_syncedResults;
     }
 
@@ -888,7 +892,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected function _onComplete()
     {
         // Store results
-        if (
+        if ($this->_cache &&
             array_key_exists('responses', $this->_cache)
             && is_array($this->_cache['responses'])
         ) {
@@ -1006,16 +1010,19 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function getEntityPrice($entity, $priceField)
     {
         $origPriceField = $priceField;
-        if (Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency()) {
+        /**
+         * use base price if it's selected in config and multicurrency disabled
+         */
+        if (Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency() && !Mage::helper('tnw_salesforce/config_sales')->isMultiCurrency()) {
             $priceField = 'Base' . $priceField;
         }
 
-        $priceGetter = 'get' .$priceField;
+        $priceGetter = 'get' . $priceField;
 
         $result = $entity->$priceGetter();
 
         if (!$result) {
-            $origPriceGetter = 'get' .$origPriceField;
+            $origPriceGetter = 'get' . $origPriceField;
             $result = $entity->$origPriceGetter();
         }
 
@@ -1025,6 +1032,66 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function numberFormat($value)
     {
         return Mage::helper('tnw_salesforce/salesforce_data')->numberFormat($value);
+    }
+
+    /**
+     * remove some technical data from Id, in fact first 15 symbols important only, last 3 - it's technical data for SF
+     * @param $id
+     * @return string
+     */
+    public function prepareId($id)
+    {
+        return Mage::helper('tnw_salesforce')->prepareId($id);
+    }
+
+    /**
+     * Add message to output
+     * @param $message
+     * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     */
+    public function logNotice($message)
+    {
+        return Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
+    }
+
+    /**
+     * Add message to output
+     * @param $message
+     * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     */
+    public function logError($message)
+    {
+        return Mage::getSingleton('tnw_salesforce/tool_log')->saveError($message);
+    }
+
+    /**
+     * @deprecated
+     * Add message to output
+     * @param $message
+     * @param $level
+     * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     */
+    public function logMessage($message, $level)
+    {
+
+        $fileName = null;
+
+        switch ($level) {
+            case 'error':
+                $fileName = 'sf-errors';
+                break;
+            default:
+                break;
+        }
+
+        if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
+            $method = 'add' . uc_words($level);
+            Mage::getSingleton('adminhtml/session')->$method($message);
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
+
+        return $this;
     }
 
 }

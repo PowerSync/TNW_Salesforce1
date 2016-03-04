@@ -28,6 +28,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
                 return false;
             }
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+
+            $orderItemFieldsToSelect = 'Id, Quantity, UnitPrice, PricebookEntry.ProductCode, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name';
+
+            if (!Mage::helper('tnw_salesforce/data')->isProfessionalSalesforceVersionType()) {
+                $orderItemFieldsToSelect .=   ' , AvailableQuantity';
+            }
+
             $_selectFields = array(
                 "ID",
                 "AccountId",
@@ -35,7 +42,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
                 "StatusCode",
                 "Status",
                 $_magentoId,
-                "(SELECT Id, Quantity, AvailableQuantity, UnitPrice, PricebookEntry.ProductCode, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OrderItems)",
+                "(SELECT $orderItemFieldsToSelect FROM OrderItems)",
                 "(SELECT Id, Title, Body FROM Notes)"
             );
             if (is_array($ids)) {
@@ -48,7 +55,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
 
             unset($query);
             if (!$result || $result->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Order lookup returned: " . $result->size . " results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order lookup returned: " . $result->size . " results...");
                 return false;
             }
             $returnArray = array();
@@ -67,8 +74,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
 
             return $returnArray;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
             unset($email);
             return false;
         }

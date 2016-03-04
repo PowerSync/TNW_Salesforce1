@@ -15,8 +15,9 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
     protected function _addAccountRequiredFields($_customer)
     {
         $this->getObj()->PersonEmail = strtolower($_customer->getEmail());
-        $this->getObj()->FirstName = strtolower($_customer->getFirstname());
-        $this->getObj()->LastName = strtolower($_customer->getLastname());
+        $this->getObj()->FirstName = $_customer->getFirstname();
+        $this->getObj()->LastName = $_customer->getLastname();
+
         if (property_exists($this->getObj(), 'Name')) {
             unset($this->getObj()->Name);
         }
@@ -75,29 +76,6 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
         ) {
             // This is a potential B2B Account
             if (!property_exists($this->getObj(), 'Name')) {
-                if (
-                    !Mage::helper('tnw_salesforce')->canRenameAccount()
-                    && $this->_cache['contactsLookup']
-                    && array_key_exists($sfWebsite, $this->_cache['contactsLookup'])
-                    && array_key_exists($_customer->getEmail(), $this->_cache['contactsLookup'][$sfWebsite])
-                    && property_exists($this->_cache['contactsLookup'][$sfWebsite][$_customer->getEmail()], 'AccountName')
-                    && $this->_cache['contactsLookup'][$sfWebsite][$_customer->getEmail()]->AccountName
-                ) {
-                    $_accountName = $this->_cache['contactsLookup'][$sfWebsite][$_customer->getEmail()]->AccountName;
-                }
-
-                /**
-                 * @comment Use improved lookup feature
-                 */
-                if (
-                    !Mage::helper('tnw_salesforce')->canRenameAccount()
-                    && isset($this->_cache['accountLookup'][0][$_customer->getEmail()])
-                ) {
-                    /**
-                     * @comment Don't change name of existing account
-                     */
-                    $_accountName = '';
-                }
 
                 if (!empty($_accountName)) {
                     $this->getObj()->Name = $_accountName;
@@ -120,12 +98,6 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                     $this->getObj()->RecordTypeId = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
                     $this->_addAccountRequiredFields($_customer);
                 } else {
-                    // This is a potential B2B Account
-                    $_accountName = (
-                        property_exists($this->_cache['contactsLookup'][$sfWebsite][$this->_email], 'AccountName')
-                        && $this->_cache['contactsLookup'][$sfWebsite][$this->_email]->AccountName
-                        && !Mage::helper('tnw_salesforce')->canRenameAccount()
-                    ) ? $this->_cache['contactsLookup'][$sfWebsite][$this->_email]->AccountName : $_accountName;
 
                     if (!empty($_accountName)) {
                         $this->getObj()->Name = $_accountName;
@@ -135,9 +107,6 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
                 !property_exists($this->getObj(), 'Name')
                 || Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE) == TNW_Salesforce_Model_Config_Account_Recordtypes::B2C_ACCOUNT
             ) {
-                if (property_exists($this->getObj(), 'Name')) {
-                    unset($this->getObj()->Name);
-                }
                 /* New customer, where account Name is not set */
                 // This is a potential B2C Account
                 $this->getObj()->RecordTypeId = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
@@ -201,9 +170,6 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
 
                 if (!empty($_accountId)) {
                     $this->getObj()->Id = $this->_getCustomerAccountId($this->_email);
-                    if (!Mage::helper('tnw_salesforce')->canRenameAccount()) {
-                        unset($this->getObj()->Name);
-                    }
                     unset($this->getObj()->RecordTypeId);
                 }
             }
@@ -211,9 +177,6 @@ class TNW_Salesforce_Model_Sync_Mapping_Customer_Account extends TNW_Salesforce_
             if (!empty($_accountId)) {
 
                 $this->getObj()->Id = !empty($_accountId);
-                if (!Mage::helper('tnw_salesforce')->canRenameAccount()) {
-                    unset($this->getObj()->Name);
-                }
                 unset($this->getObj()->RecordTypeId);
             }
         }

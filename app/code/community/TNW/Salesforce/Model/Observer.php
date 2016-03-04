@@ -24,15 +24,44 @@ class TNW_Salesforce_Model_Observer
         return $this->exportedOrders;
     }
 
-    public function adjustMenu() {
+    /**
+     * @param $menu Varien_Simplexml_Element
+     * @return $this
+     */
+    public function checkConfigCondition($menu)
+    {
+
+        if ($menu->hasChildren()) {
+            foreach ($menu->children() as $name => $child) {
+
+                $attributes = (array)$child->attributes();
+                if (isset($attributes['@attributes']['ifconfig'])) {
+                    if (!Mage::app()->getStore()->getConfig($attributes['@attributes']['ifconfig'])) {
+                        $dom = dom_import_simplexml($child);
+                        $dom->parentNode->removeChild($dom);
+
+                        continue;
+                    }
+                }
+
+                $this->checkConfigCondition($child);
+            }
+        }
+
+        return $this;
+    }
+
+    public function adjustMenu()
+    {
         try {
             // Update Magento admin menu
             $this->_nativeMenu = Mage::getSingleton('admin/config')
                 ->getAdminhtmlConfig()
-                ->getNode('menu')
-            ;
+                ->getNode('menu');
             $this->_menu = $this->_nativeMenu
                 ->descend('tnw_salesforce')->descend('children');
+
+            $this->checkConfigCondition($this->_menu);
 
             // Update Magento ACL
             $this->_nativeAcl = Mage::getSingleton('admin/config')
@@ -90,7 +119,8 @@ class TNW_Salesforce_Model_Observer
     /**
      * Remove Lead Mapping links
      */
-    protected function _updateCustomerLinks() {
+    protected function _updateCustomerLinks()
+    {
         $leverageLeads = Mage::getStoreConfigFlag(TNW_Salesforce_Helper_Data::CUSTOMER_CREATE_AS_LEAD);
 
         if (!$leverageLeads) {
@@ -127,22 +157,23 @@ class TNW_Salesforce_Model_Observer
      * @param $xmlNode
      * @param $_itemsToRetain
      */
-    protected function _updateOrderLinks($xmlNode, $_itemsToRetain) {
+    protected function _updateOrderLinks($xmlNode, $_itemsToRetain)
+    {
         if ($xmlNode) {
             $_keysToUnset = array();
-            foreach($xmlNode as $_items) {
-                foreach($_items as $_key => $_item) {
+            foreach ($xmlNode as $_items) {
+                foreach ($_items as $_key => $_item) {
                     if (
                         $_key != $_itemsToRetain . '_mapping'
                         && $_key != $_itemsToRetain . '_cart_mapping'
                         && $_key != 'status_mapping'
                     ) {
-                        $_keysToUnset[] =  $_key;
+                        $_keysToUnset[] = $_key;
                     }
                 }
             }
             if (!empty($_keysToUnset)) {
-                foreach($_keysToUnset as $_key) {
+                foreach ($_keysToUnset as $_key) {
                     unset($xmlNode->{$_key});
                 }
             }
@@ -152,7 +183,8 @@ class TNW_Salesforce_Model_Observer
     /**
      * Remove Sync Queue menu item
      */
-    protected function _updateQueueLinks() {
+    protected function _updateQueueLinks()
+    {
         if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
             unset($this->_menu->queue_sync);
             unset($this->_acl->queue_sync);
@@ -162,13 +194,14 @@ class TNW_Salesforce_Model_Observer
     /**
      * Remove Abandoned Cart Links
      */
-    protected function _updateAbandonedCartLinks() {
+    protected function _updateAbandonedCartLinks()
+    {
         if (
             $this->_menu->descend('manual_sync')->descend('children')
             && !(
                 Mage::helper('tnw_salesforce')->getType() == "PRO"
                 && Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(
-                    TNW_Salesforce_Helper_Abandoned::ABANDONED_CART_ENABLED
+                    TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ENABLED
                 )
             )
         ) {
@@ -176,30 +209,30 @@ class TNW_Salesforce_Model_Observer
             unset($this->_menu->descend('manual_sync')->descend('children')->abandoned_sync);
             unset($this->_menu->descend('mappings')->descend('children')->abandoned_mapping);
             unset($this->_nativeMenu
-                ->descend('sales')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->descend('manual_sync')->descend('children')
-                ->sync_abandoned_carts
+                    ->descend('sales')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->descend('manual_sync')->descend('children')
+                    ->sync_abandoned_carts
             );
             unset($this->_nativeMenu
-                ->descend('sales')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->abandoned_mapping
+                    ->descend('sales')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->abandoned_mapping
             );
 
             // Removing ACL configuration
             unset($this->_acl->descend('manual_sync')->descend('children')->abandoned_sync);
             unset($this->_acl->descend('mappings')->descend('children')->abandoned_mapping);
             unset($this->_nativeAcl
-                ->descend('sales')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->descend('manual_sync')->descend('children')
-                ->sync_abandoned_carts
+                    ->descend('sales')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->descend('manual_sync')->descend('children')
+                    ->sync_abandoned_carts
             );
             unset($this->_nativeAcl
-                ->descend('sales')->descend('children')
-                ->descend('tnw_salesforce')->descend('children')
-                ->abandoned_mapping
+                    ->descend('sales')->descend('children')
+                    ->descend('tnw_salesforce')->descend('children')
+                    ->abandoned_mapping
             );
         }
     }
@@ -249,14 +282,16 @@ class TNW_Salesforce_Model_Observer
 
         //allow order configuration page - if not allowed in system
         if ($session->isAllowed('sales/tnw_salesforce/configuration')
-            || $session->isAllowed('tnw_salesforce/setup/order_config')) {
+            || $session->isAllowed('tnw_salesforce/setup/order_config')
+        ) {
             $acl->allow($aclRole, 'admin/system/config');
             $acl->allow($aclRole, 'admin/system/config/salesforce_order');
         }
 
         //allow product configuration page - if not allowed in system
         if ($session->isAllowed('catalog/tnw_salesforce/configuration')
-            || $session->isAllowed('tnw_salesforce/setup/order_product')) {
+            || $session->isAllowed('tnw_salesforce/setup/order_product')
+        ) {
             $acl->allow($aclRole, 'admin/system/config');
             $acl->allow($aclRole, 'admin/system/config/salesforce_product');
         }
@@ -317,7 +352,7 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * Method executed by tnw_sales_process_order event
+     * Method executed by tnw_salesforce_order_process event
      *
      * @param Varien_Event_Observer $observer
      */
@@ -329,7 +364,7 @@ class TNW_Salesforce_Model_Observer
         //check that order has been already exported
         foreach ($orderIds as $key => $orderId) {
             if (in_array($orderId, $this->exportedOrders)) {
-                $helper->log('Skipping export order ' . $orderId . '. Already exported.');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Skipping export order ' . $orderId . '. Already exported.');
                 unset($orderIds[$key]);
             } else {
                 $this->exportedOrders[] = $orderId;
@@ -348,20 +383,16 @@ class TNW_Salesforce_Model_Observer
         $queueIds = $observer->getEvent()->getData('isQueue')
             ? $observer->getEvent()->getData('queueIds') : array();
 
-        Mage::helper('tnw_salesforce')->log('Pushing Order(s) ... ');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Order(s) ... ');
         $this->_processOrderPush($orderIds, $message, 'tnw_salesforce/' . $type . '_order', $queueIds);
     }
 
-    public function pushOpportunity(Varien_Event_Observer $observer) {
+    public function pushOpportunity(Varien_Event_Observer $observer)
+    {
 
         $_objectType = strtolower($observer->getEvent()->getData('object_type'));
 
         $_orderIds = $observer->getEvent()->getData('orderIds');
-
-        if ($_objectType == 'abandoned' && empty($_orderIds)) {
-            $_orderIds = $observer->getEvent()->getData('ids');
-        }
-
         $_message = $observer->getEvent()->getMessage();
         $_type = $observer->getEvent()->getType();
         $_isQueue = $observer->getEvent()->getData('isQueue');
@@ -372,7 +403,7 @@ class TNW_Salesforce_Model_Observer
             $_type = 'salesforce';
         }
 
-        Mage::helper('tnw_salesforce')->log('Pushing Opportunities ... ');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Opportunities ... ');
 
         if ($_objectType == 'abandoned') {
             $this->_processOrderPush($_orderIds, $_message, 'tnw_salesforce/' . $_type . '_abandoned_opportunity', $_queueIds);
@@ -381,7 +412,8 @@ class TNW_Salesforce_Model_Observer
         }
     }
 
-    protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds) {
+    protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds)
+    {
         /**
          * @var $manualSync TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity|TNW_Salesforce_Helper_Salesforce_Opportunity|TNW_Salesforce_Helper_Salesforce_Order
          */
@@ -392,8 +424,22 @@ class TNW_Salesforce_Model_Observer
         $_ids = (count($_orderIds) == 1) ? $_orderIds[0] : $_orderIds;
 
         if ($manualSync->reset()) {
-            if ($manualSync->massAdd($_ids)) {
-                if ($_message === NULL) {
+            $checkAdd = $manualSync->massAdd($_ids);
+
+            // Delete Skipped Entity
+            $skipped = $manualSync->getSkippedEntity();
+            if (!empty($skipped)) {
+                $objectId = array();
+                foreach ($manualSync->getSkippedEntity() as $entity_id) {
+                    $objectId[] = @$_queueIds[array_search($entity_id, $_orderIds)];
+                }
+
+                Mage::getModel('tnw_salesforce/localstorage')
+                    ->deleteObject($objectId, true);
+            }
+
+            if ($checkAdd) {
+                if ($_message === NULL && Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     $manualSync->setIsCron(true);
                 }
                 $res = $manualSync->process('full');
@@ -406,7 +452,7 @@ class TNW_Salesforce_Model_Observer
                     }
 
                     if ($_message) {
-                        Mage::helper('tnw_salesforce')->log($_message);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($_message);
                         if (Mage::helper('tnw_salesforce')->isAdmin()) {
                             Mage::getSingleton('adminhtml/session')->addSuccess($_message);
                         }
@@ -414,32 +460,37 @@ class TNW_Salesforce_Model_Observer
                 }
             }
         } else {
-            Mage::helper('tnw_salesforce')->log("Salesforce connection could not be established!");
+            Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_queueIds, 'new');
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce connection could not be established!");
             if ($_message === NULL) {
                 Mage::throwException('Salesforce connection failed');
             }
         }
     }
 
-    public function updateOpportunity(Varien_Event_Observer $observer) {
+    public function updateOpportunity(Varien_Event_Observer $observer)
+    {
         $_order = $observer->getEvent()->getData('order');
 
-        Mage::helper('tnw_salesforce')->log('Updating Opportunity Status ... ');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Updating Opportunity Status ... ');
         if ($_order && is_object($_order)) {
             Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($_order);
         }
     }
 
-    public function updateOrder(Varien_Event_Observer $observer) {
+    public function updateOrder(Varien_Event_Observer $observer)
+    {
         $_order = $observer->getEvent()->getData('order');
 
-        Mage::helper('tnw_salesforce')->log('Updating Order Status ... ');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Updating Order Status ... ');
         if ($_order && is_object($_order)) {
             Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
         }
     }
 
-    public function updateOrderStatusForm($observer) {
+    public function updateOrderStatusForm($observer)
+    {
         $_form = $observer->getForm();
 
         if (Mage::helper('tnw_salesforce')->isWorking()) {
@@ -495,11 +546,12 @@ class TNW_Salesforce_Model_Observer
                 )
             );
 
-            Mage::dispatchEvent('tnw_salesforce_sales_order_status_prepare_form_update', array('form' => $_form, 'fieldset' => $fieldset));
+            Mage::dispatchEvent('tnw_salesforce_order_status_new_form_update', array('form' => $_form, 'fieldset' => $fieldset));
         }
     }
 
-    public function saveSfStatus($observer) {
+    public function saveSfStatus($observer)
+    {
         $statusCode = $observer->getStatus();
         $_request = $observer->getRequest();
 
@@ -523,7 +575,7 @@ class TNW_Salesforce_Model_Observer
 
     public function prepareQuotesForSync($observer)
     {
-        if (!Mage::helper('tnw_salesforce/abandoned')->isEnabled()) {
+        if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
             return false;
         }
 

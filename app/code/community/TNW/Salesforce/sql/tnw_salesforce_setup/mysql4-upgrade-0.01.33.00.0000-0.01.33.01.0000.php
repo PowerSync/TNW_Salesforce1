@@ -110,7 +110,8 @@ foreach ($_defaultMappingStatus as $_key => $_value) {
         }
         $_localField .= ' : ' . $_attributeCode;
         // Add
-        $sql = "INSERT INTO `" . $tableName . "` VALUES (NULL, '" . $_localField . "', '" . $_fieldName . "', " . $_attributeId . ", " . $_backendType . ", '" . $_objectName . "', NULL);";
+        $sql = "INSERT INTO `{$tableName}`(mapping_id, local_field, sf_field, attribute_id, backend_type, sf_object, default_value) ".
+            "VALUES (NULL, '{$_localField}', '{$_fieldName}', {$_attributeId}, {$_backendType}, '{$_objectName}', NULL);";
         //Execute
         $db = Mage::getSingleton('core/resource')->getConnection('core_write');
         $db->query($sql);

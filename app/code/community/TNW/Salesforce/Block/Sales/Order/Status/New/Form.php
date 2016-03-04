@@ -21,7 +21,7 @@ class TNW_Salesforce_Block_Sales_Order_Status_New_Form extends Mage_Adminhtml_Bl
         $_form = $this->getForm();
         $_data = Mage::registry('current_status');
 
-        Mage::dispatchEvent('tnw_salesforce_sales_order_status_new_status_prepare_form', array('form' => $_form));
+        Mage::dispatchEvent('tnw_salesforce_order_status_new_form', array('form' => $_form));
 
         if (is_object($_data)) {
             $_form->addValues($_data->getData());

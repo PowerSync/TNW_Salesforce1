@@ -74,6 +74,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ABANDONED_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT,
+            'Product2',
             TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
         );
 
@@ -99,7 +100,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function getMagentoAttributes($type = NULL)
     {
         if (!$type) {
-            Mage::helper('tnw_salesforce')->log("Magento fields drop down failed to create, missing type");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento fields drop down failed to create, missing type");
             return array();
         }
         if (!array_key_exists($type, $this->_cache) || empty($this->_cache[$type])) {
@@ -195,8 +196,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         try {
             $collection = $this->getTableColumnList('sales_flat_order');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
 
         if ($collection) {
@@ -248,8 +249,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         try {
             $collection = $this->getTableColumnList('sales_flat_invoice');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
 
         if ($collection) {
@@ -287,8 +288,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $collection = $this->getTableColumnList(
                 Mage::getModel('sales/order_shipment')->getResource()->getMainTable());
         } catch (Exception $e) {
-            $this->log("Could not load Magento shipment schema...");
-            $this->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento shipment schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
 
         if ($collection) {
@@ -325,8 +326,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         try {
             $collection = $this->getTableColumnList('sales_flat_quote');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not load Magento order schema...");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
 
         if ($collection) {
@@ -370,8 +371,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         try {
             $collection = $this->getTableColumnList('sales_flat_order_payment');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not load Magento payment schema...");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento payment schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
         if ($collection) {
             $this->_cache[$type]['payment'] = array(
@@ -494,11 +495,17 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'label' => ucwords($addressType) . " Address",
             'value' => array()
         );
+
         foreach ($collection as $_attribute) {
-            if ($_attribute->is_visible && $_attribute->frontend_label != "" && $_attribute->frontend_input != "hidden") {
+            if ($_attribute->is_visible && $_attribute->frontend_label != "") {
+
+                $label = $_attribute->frontend_label;
+                if ($_attribute->frontend_input == "hidden") {
+                    $label = $label . ' (Id/Code)';
+                }
                 $this->_cache[$type][$addressType]['value'][] = array(
                     'value' => ucwords($addressType) . ' : ' . $_attribute->attribute_code,
-                    'label' => ucwords($addressType) . ' : ' . $_attribute->frontend_label,
+                    'label' => ucwords($addressType) . ' : ' . $label,
                 );
             }
         }
@@ -548,8 +555,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         try {
             $collection = $this->getTableColumnList('sales_flat_order_item');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not load Magento cart items schema...");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento cart items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
         if ($collection) {
             $this->_cache[$type]['shopping'] = array(
@@ -580,8 +587,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         try {
             $collection = $this->getTableColumnList('sales_flat_quote_item');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not load Magento quote items schema...");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
         if ($collection) {
             $this->_cache[$type]['shopping'] = array(
@@ -612,8 +619,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         try {
             $collection = $this->getTableColumnList('sales_flat_invoice_item');
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Could not load Magento quote items schema...");
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
         }
         if ($collection) {
             $this->_cache[$type]['invoice_items'] = array(
@@ -677,6 +684,12 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         $this->_cache[$type]['product']['value'][] = array(
             'value' => 'Product : attribute_set_id', // do not use type_Id cause error happens
             'label' => 'Product : Attribute Set',
+        );
+
+        // add product type
+        $this->_cache[$type]['product']['value'][] = array(
+            'value' => 'Product : product_url', // do not use type_Id cause error happens
+            'label' => 'Product : Url of the product page',
         );
 
         // add inventory field list

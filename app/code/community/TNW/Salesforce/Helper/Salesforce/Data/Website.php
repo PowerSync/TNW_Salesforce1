@@ -38,12 +38,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helpe
             $query .= " OR " . $this->_fields['code'] . " IN ('" . implode("','", $_codes) . "')";
         }
 
-        Mage::helper('tnw_salesforce')->log("QUERY: " . $query);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
 
         try {
             $_result = $this->getClient()->query(($query));
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             $_result = array();
         }
 
@@ -58,21 +58,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helpe
             }
             $_results = array();
 
-            $_ttl = count($_ids);
-            if ($_ttl > $_howMany) {
-                $_steps = ceil($_ttl / $_howMany);
-                for ($_i = 0; $_i < $_steps; $_i++) {
-                    $_start = $_i * $_howMany;
-                    $_websites = array_slice($_codes, $_start, $_howMany, true);
-                    $_chunkedIds = array_slice($_ids, $_start, $_howMany, true);
-                    $_results[] = $this->_queryWebsites($_chunkedIds, $_websites);
-                }
-            } else {
-                $_results[] = $this->_queryWebsites($_ids, $_codes);
+            $_idsChunk   = array_chunk($_ids, $_howMany, true);
+            $_codesChunk = array_chunk($_codes, $_howMany, true);
+            foreach ($_idsChunk as $key => $_chunkedIds) {
+                $_websites = isset($_codesChunk[$key])
+                    ? $_codesChunk[$key] : array();
+                $_results[] = $this->_queryWebsites($_chunkedIds, $_websites);
             }
-            unset($query);
+
             if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
-                Mage::helper('tnw_salesforce')->log("Website lookup returned: " . $_results[0]->size . " results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Website lookup returned: " . $_results[0]->size . " results...");
                 return false;
             }
             $returnArray = array();
@@ -95,8 +90,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helpe
             }
             return $returnArray;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not find a website by Magento ID's #: " . implode(",", $_ids));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a website by Magento ID's #: " . implode(",", $_ids));
             unset($email);
             return false;
         }

@@ -32,8 +32,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order_Status extends TNW_Salesforce_
 
             return $allRules->records;
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log("Error: " . $e->getMessage());
-            Mage::helper('tnw_salesforce')->log("Could not extract order statuses from Salesforce");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not extract order statuses from Salesforce");
             unset($email);
             return false;
         }

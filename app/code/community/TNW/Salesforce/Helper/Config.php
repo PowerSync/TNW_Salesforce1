@@ -73,8 +73,18 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
         } elseif (Mage::helper('tnw_salesforce')->isWorking()) {
             $client = Mage::getSingleton('tnw_salesforce/connection')->getClient();
             if ($client) {
-                $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
-                $manualSync->reset();
+                $helperName = 'tnw_salesforce/bulk_customer';
+
+                $resetHelper = !Mage::registry('_helper/' . $helperName);
+
+                $manualSync = Mage::helper($helperName);
+                /**
+                 * Call reset method if it's new instance only. Fix: PCMI-471
+                 */
+                if ($resetHelper) {
+                    $manualSync->reset();
+                }
+
                 $manualSync->setSalesforceServerDomain(
                     Mage::getSingleton('core/session')->getSalesforceServerDomain());
                 $manualSync->setSalesforceSessionId(
@@ -88,5 +98,44 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
         }
 
         return $accounts;
+    }
+
+    /**
+     * find module configuration in database
+     * @return array
+     */
+    public function getConfigDump($emulateTable = true)
+    {
+
+        /**
+         * Get the resource model
+         */
+        $resource = Mage::getSingleton('core/resource');
+
+        /**
+         * Retrieve the read connection
+         */
+        $readConnection = $resource->getConnection('core_read');
+
+        $query = 'SELECT * FROM ' . $resource->getTableName('core/config_data') . ' WHERE path like "%salesforce%" ';
+
+        /**
+         * Execute the query and store the results in $results
+         */
+        $results = $readConnection->fetchAll($query);
+
+        if ($emulateTable) {
+            $resultsStr = '';
+            foreach ($results as $result) {
+                if (empty($resultsStr)) {
+                    $resultsStr .= "\t|" . implode('|', array_keys($result)) . "| \n";
+                }
+                $resultsStr .= "\t|" . implode('|', $result) . "| \n";
+            }
+
+            return $resultsStr;
+        }
+
+        return $results;
     }
 }

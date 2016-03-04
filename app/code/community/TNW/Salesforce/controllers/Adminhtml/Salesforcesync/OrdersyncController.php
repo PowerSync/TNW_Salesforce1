@@ -82,14 +82,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
 
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     $order = Mage::getModel('sales/order')->load($this->getRequest()->getParam('order_id'));
-                    $_productIds = array();
-                    foreach ($order->getAllVisibleItems() as $_item) {
-                        $_productIds[] = (int) $this->_getProductIdFromCart($_item);
-                    }
-
+                    $_productIds = Mage::helper('tnw_salesforce/salesforce_order')->getProductIdsFromEntity($order);
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
                     if (!$res) {
-                        Mage::helper("tnw_salesforce")->log('ERROR: Products from the order were not added to the queue');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Products from the order were not added to the queue');
                     }
 
                     // pass data to local storage
@@ -105,7 +101,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
                             'orderIds'      => $itemIds,
                             'message'       => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
@@ -173,7 +169,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
                             'orderIds'      => $itemIds,
                             'message'       => Mage::helper('adminhtml')->__('Total of %d order(s) were synchronized', count($itemIds)),

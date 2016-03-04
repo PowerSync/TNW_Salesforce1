@@ -131,8 +131,15 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     {
 
         if (!isset($this->_tablesDescription[$tableName])) {
-            $data = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject($tableName);
-            $this->_tablesDescription[$tableName] = $data->fields;
+            try {
+                $data = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject($tableName);
+                $this->_tablesDescription[$tableName] = $data->fields;
+            } catch (Exception $e) {
+                /**
+                 * some tables can be not available for our module, so, return empty array in this case
+                 */
+                $this->_tablesDescription[$tableName] = array();
+            }
         }
 
         return $this->_tablesDescription[$tableName];
@@ -242,7 +249,31 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      */
     public function limit($sql, $count, $offset = 0)
     {
-        return '';
+        $count = intval($count);
+        if ($count <= 0) {
+            /**
+             * @see Zend_Db_Adapter_Mysqli_Exception
+             */
+            #require_once 'Zend/Db/Adapter/Mysqli/Exception.php';
+            throw new Zend_Db_Adapter_Mysqli_Exception("LIMIT argument count=$count is not valid");
+        }
+
+        $offset = intval($offset);
+        if ($offset < 0) {
+            /**
+             * @see Zend_Db_Adapter_Mysqli_Exception
+             */
+            #require_once 'Zend/Db/Adapter/Mysqli/Exception.php';
+            throw new Zend_Db_Adapter_Mysqli_Exception("LIMIT argument offset=$offset is not valid");
+        }
+
+        $sql .= " LIMIT $count";
+        if ($offset > 0) {
+            $sql .= " OFFSET $offset";
+        }
+
+        return $sql;
+
     }
 
     /**

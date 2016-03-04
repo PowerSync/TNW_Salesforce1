@@ -6,81 +6,58 @@
 
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {
-    protected function _construct()
+
+    /**
+     * @var array
+     */
+    protected $_regions = array();
+
+    /**
+     * @param null $address
+     * @return array
+     */
+    protected function _getRegions($address = NULL)
     {
-        parent::_construct();
 
-        $this->_init('tnw_salesforce/mapping');
-    }
-
-    protected function _afterLoad()
-    {
-        parent::_afterLoad();
-
-        $cutLocalField = explode(" : ", $this->getLocalField());
-        if (count($cutLocalField) > 1) {
-            $this->setLocalFieldType($cutLocalField[0]);
-            $this->setLocalFieldAttributeCode($cutLocalField[1]);
+        if ($address instanceof Varien_Object) {
+            $countryId = $address->getCountryId();
         }
 
-        return $this;
+        if (empty($countryId)) {
+            return array();
+        }
+
+        if (!$this->_regions || !isset($this->_regions[$countryId])) {
+
+            $regionCollection = Mage::getModel('directory/region')->getCollection();
+            $regionCollection->addCountryFilter($countryId);
+            $this->_regions[$countryId] = $regionCollection;
+        }
+
+        return $this->_regions[$countryId];
     }
 
     /**
-     * @return bool|null|string
-     * @throws Mage_Core_Exception
+     * @param null $_field
+     * @param null $_value
+     * @return null
      */
-    public function getProcessedDefaultValue()
+    protected function _customizeAddressValue($_field = NULL, $_value = NULL, $address = NULL)
     {
-        $value = $this->getDefaultValue();
-        switch ($this->getDefaultValue()) {
-            case '{{url}}':
-                return Mage::helper('core/url')->getCurrentUrl();
-            case '{{today}}':
-                return gmdate('Y-m-d');
-            case '{{end of month}}':
-                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
-            case '{{contact id}}':
-                /**
-                 * @deprecated
-                 */
-                return null;
-            case '{{store view name}}':
-                return Mage::app()->getStore()->getName();
-            case '{{store group name}}':
-                return Mage::app()->getStore()->getGroup()->getName();
-            case '{{website name}}':
-                return Mage::app()->getWebsite()->getName();
-            default:
-                return $value;
+        if ($_field == 'region_id') {
+            $regions = $this->_getRegions($address);
+            /**
+             * use state region code instead region_id to send data to Salesforce
+             */
+            if (!empty($regions)) {
+                foreach ($regions as $region) {
+                    if ($region->getId() == $_value) {
+                        $_value = $region->getCode();
+                    }
+                }
+            }
         }
-    }
-
-    /**
-     * @param null|int|Mage_Core_Model_Store $store
-     * @return bool|null|string
-     */
-    public function getCustomValue($store = null)
-    {
-        $store = Mage::app()->getStore($store);
-        switch ($this->getLocalFieldAttributeCode()) {
-            case 'current_url':
-                return Mage::helper('core/url')->getCurrentUrl();
-            case 'todays_date':
-                return gmdate('Y-m-d');
-            case 'todays_timestamp':
-                return gmdate(DATE_ATOM);
-            case 'end_of_month':
-                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
-            case 'store_view_name':
-                return $store->getName();
-            case 'store_group_name':
-                return is_object($store->getGroup()) ? $store->getGroup()->getName() : null;
-            case 'website_name':
-                return $store->getWebsite()->getName();
-            default:
-                return $this->getProcessedDefaultValue();
-        }
+        return $_value;
     }
 
     public function getValue(array $objectMappings = array())
@@ -90,7 +67,10 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         /** @var Mage_Catalog_Model_Product $object */
         $object = isset($objectMappings[$this->getLocalFieldType()])
             ? $objectMappings[$this->getLocalFieldType()] : null;
-        if ($object) {
+        if ($this->getLocalFieldType() == 'Aitoc') {
+            $collection = isset($objectMappings['Aitoc']) ? $objectMappings['Aitoc'] : null;
+            $value = $this->getAitocValues($collection, $attributeCode);
+        } elseif ($object) {
             $value = $this->getSpecialValues($objectMappings);
             if (!$value) {
                 $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
@@ -98,10 +78,8 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
                 if (is_array($value)) {
                     $value = implode(' ', $value);
-                } elseif ($this->getBackendType() == 'datetime') {
+                } elseif ($this->getBackendType() == 'datetime' || $this->getBackendType() == 'timestamp' || $attributeCode == 'created_at') {
                     $value = gmdate(DATE_ATOM, strtotime($value));
-                } elseif ($attributeCode == 'created_at') {
-                    $value = date('Y-m-d', strtotime($value));
                 } else {
                     //check if get option text required
                     if (is_object($object->getResource()) && method_exists($object->getResource(), 'getAttribute')
@@ -112,9 +90,44 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
                     }
                 }
             }
+
+            if (in_array($this->getLocalFieldType(), array('Billing', 'Shipping'))) {
+                $value = $this->_customizeAddressValue($attributeCode, $value, $object);
+            }
         } elseif ($this->getLocalFieldType() == 'Custom') {
             $store = isset($objectMappings['Store']) ? $objectMappings['Store'] : null;
             $value = $this->getCustomValue($store);
+        }
+
+        return $value;
+    }
+
+    public function getAitocValues($aCustomAtrrList, $attributeCode)
+    {
+        $value = NULL;
+        foreach ($aCustomAtrrList as $_type => $_object) {
+            if (is_object($aCustomAtrrList[$_type]) && is_array($aCustomAtrrList[$_type]->getData())) {
+                $value = $this->getAitocValue($aCustomAtrrList[$_type], $attributeCode);
+                if ($value) {
+                    break;
+                }
+            }
+        }
+
+        return $value;
+    }
+
+    protected function getAitocValue($aitocValueCollection, $attributeCode)
+    {
+        $value = NULL;
+        foreach ($aitocValueCollection->getData() as $_key => $_data) {
+            if ($_data['code'] == $attributeCode) {
+                $value = $_data['value'];
+                if ($_data['type'] == "date") {
+                    $value = date("Y-m-d", strtotime($value));
+                }
+                break;
+            }
         }
 
         return $value;
@@ -124,7 +137,6 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     {
         $attribute = $this->getLocalFieldAttributeCode();
         $type = $this->getLocalFieldType();
-        $helper = Mage::helper('tnw_salesforce/mapping');
         if (isset($objectMappings['Order'])) {
             /** @var Mage_Sales_Model_Order $order */
             $order = $objectMappings['Order'];
@@ -133,7 +145,8 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
             } elseif ($type == 'Order') {
                 switch ($attribute) {
                     case 'cart_all':
-                        return $helper->getOrderDescription($order);
+                        $class = Mage::getConfig()->getModelClassName('tnw_salesforce/sync_mapping_order_base');
+                        return $class::getOrderDescription($order);
                     case 'number':
                         return $order->getIncrementId();
                     case 'payment_method':
@@ -181,5 +194,89 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         }
 
         return null;
+    }
+
+    /**
+     * @param null|int|Mage_Core_Model_Store $store
+     * @return bool|null|string
+     */
+    public function getCustomValue($store = null)
+    {
+        $store = Mage::app()->getStore($store);
+        switch ($this->getLocalFieldAttributeCode()) {
+            case 'current_url':
+                return Mage::helper('core/url')->getCurrentUrl();
+            case 'todays_date':
+                return gmdate('Y-m-d');
+            case 'todays_timestamp':
+                return gmdate(DATE_ATOM);
+            case 'end_of_month':
+                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
+            case 'store_view_name':
+                return $store->getName();
+            case 'store_group_name':
+                return is_object($store->getGroup()) ? $store->getGroup()->getName() : null;
+            case 'website_name':
+                return $store->getWebsite()->getName();
+            default:
+                return $this->getProcessedDefaultValue();
+        }
+    }
+
+    /**
+     * @return bool|null|string
+     * @throws Mage_Core_Exception
+     */
+    public function getProcessedDefaultValue()
+    {
+        $value = $this->getDefaultValue();
+        switch ($this->getDefaultValue()) {
+            case '{{url}}':
+                return Mage::helper('core/url')->getCurrentUrl();
+            case '{{today}}':
+                return gmdate('Y-m-d');
+            case '{{end of month}}':
+                return gmdate('Y-m-d', mktime(0, 0, 0, date('n') + 1, 0, date('Y')));
+            case '{{contact id}}':
+                /**
+                 * @deprecated
+                 */
+                return null;
+            case '{{store view name}}':
+                return Mage::app()->getStore()->getName();
+            case '{{store group name}}':
+                return Mage::app()->getStore()->getGroup()->getName();
+            case '{{website name}}':
+                return Mage::app()->getWebsite()->getName();
+            default:
+                /**
+                 * Is it config path
+                 */
+                if (substr_count($value, '/') > 1) {
+                    $value = Mage::getStoreConfig($value);
+                }
+
+                return $value;
+        }
+    }
+
+    protected function _construct()
+    {
+        parent::_construct();
+
+        $this->_init('tnw_salesforce/mapping');
+    }
+
+    protected function _afterLoad()
+    {
+        parent::_afterLoad();
+
+        $cutLocalField = explode(" : ", $this->getLocalField());
+        if (count($cutLocalField) > 1) {
+            $this->setLocalFieldType($cutLocalField[0]);
+            $this->setLocalFieldAttributeCode($cutLocalField[1]);
+        }
+
+        return $this;
     }
 }

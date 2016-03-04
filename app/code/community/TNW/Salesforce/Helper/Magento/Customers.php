@@ -94,7 +94,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             !$_object
             || !Mage::helper('tnw_salesforce')->isWorking()
         ) {
-            Mage::helper('tnw_salesforce')->log("No Salesforce object passed on connector is not working");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No Salesforce object passed on connector is not working");
             return false;
         }
         $this->_response = new stdClass();
@@ -106,7 +106,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
         $_type = $this->_salesforceObject->attributes->type;
         unset($this->_salesforceObject->attributes);
-        Mage::helper('tnw_salesforce')->log("** " . $_type . " #" . $this->_salesforceObject->Id . " **");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
         $_entity = $this->syncFromSalesforce();
 
@@ -114,16 +114,16 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             // Update history orders and assigne to customer we just created
             $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
 
-            Mage::helper('tnw_salesforce')->log("** finished upserting " . $_type . " #" . $this->_salesforceObject->Id . " **");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
             // Handle success and fail
             if (is_object($_entity)) {
                 $this->_response->success = true;
-                Mage::helper('tnw_salesforce')->log("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
-                Mage::helper('tnw_salesforce')->log("Magento Id: " . $_entity->getId());
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
             } else {
                 $this->_response->success = false;
-                Mage::helper('tnw_salesforce')->log("Could not upsert " . $_type . " into Magento, see Magento log for details");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not upsert " . $_type . " into Magento, see Magento log for details");
                 $_entity = false;
             }
 
@@ -140,6 +140,85 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         return $_entity;
     }
 
+    /**
+     * @param $_field
+     * Replace standard field with Person Account equivalent
+     */
+    protected function _replacePersonField($contactField, $personAccountField = null, &$object)
+    {
+        if (!$personAccountField || is_numeric($personAccountField)) {
+            $personAccountField = 'Person' . $contactField;
+        }
+
+        if (property_exists($object, $personAccountField)) {
+
+            $object->{$contactField} = $object->{$personAccountField};
+            unset($object->{$personAccountField});
+        }
+    }
+
+    /**
+     * rename PersonAccount fields for Contact mapping compatibility
+     * @param $object
+     */
+    protected function _fixPersonAccountFields(&$object)
+    {
+        $_standardFields = array(
+            /**
+             * Contact fields
+             */
+            'Birthdate',
+            'AssistantPhone',
+            'AssistantName',
+            'Department',
+            'DoNotCall',
+            'Email',
+            'HasOptedOutOfEmail',
+            'HasOptedOutOfFax',
+            'LastCURequestDate',
+            'LastCUUpdateDate',
+            'LeadSource',
+            'MobilePhone',
+            'OtherPhone',
+            'Title',
+
+            /**
+             *  PersonAccount field => Contact field
+             */
+            'BillingStreet' => 'OtherStreet',
+            'BillingCity' => 'OtherCity',
+            'BillingState' => 'OtherState',
+            'BillingStateCode' => 'OtherStateCode',
+            'BillingPostalCode' => 'OtherPostalCode',
+            'BillingCountry' => 'OtherCountry',
+            'BillingCountryCode' => 'OtherCountryCode',
+            'ShippingStreet' => 'MailingStreet',
+            'ShippingCity' => 'MailingCity',
+            'ShippingState' => 'MailingState',
+            'ShippingStateCode' => 'MailingStateCode',
+            'ShippingPostalCode' => 'MailingPostalCode',
+            'ShippingCountry' => 'MailingCountry',
+            'ShippingCountryCode' => 'MailingCountryCode',
+            'PersonHomePhone' => 'Phone',
+        );
+
+        foreach ($_standardFields as  $personAccountField => $contactField) {
+            $this->_replacePersonField($contactField, $personAccountField, $object);
+        }
+
+        /**
+         * the PersonAccount field names have "__pc" postfix, but Contact field names have the "__c" postfix
+         */
+        foreach ($object as $personAccountField => $value) {
+            if (preg_match('/^.*__pc$/', $personAccountField)) {
+                unset($object->$personAccountField);
+                $personAccountField = preg_replace('/__pc$/', '__c', $personAccountField);
+                $object->$personAccountField = $value;
+            }
+        }
+
+    }
+
     protected function _prepare()
     {
         parent::_prepare();
@@ -153,7 +232,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_attributes['salesforce_is_person'] = $resource->getIdByCode('customer', 'salesforce_is_person');
             $this->_attributes['password_hash'] = $resource->getIdByCode('customer', 'password_hash');
         }
-        $this->_mapCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('Contact');
+
+        $this->_mapCollection = Mage::getModel('tnw_salesforce/mapping')
+            ->getCollection()
+            ->addObjectToFilter('Contact')
+            ->addFieldToFilter('active', 1);
 
         if (!$this->_customer) {
             $this->_customer = Mage::getModel('customer/customer');
@@ -167,6 +250,8 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_salesforceObject->Email = (property_exists($this->_salesforceObject, "PersonEmail") && $this->_salesforceObject->PersonEmail) ? $this->_salesforceObject->PersonEmail : NULL;
             $this->_salesforceObject->AccountId = (property_exists($this->_salesforceObject, "Id") && $this->_salesforceObject->Id) ? $this->_salesforceObject->Id : NULL;
             $this->_isPersonAccount = true;
+
+            $this->_fixPersonAccountFields($this->_salesforceObject);
         }
 
         $this->_email = (is_object($this->_salesforceObject) && property_exists($this->_salesforceObject, "Email") && $this->_salesforceObject->Email) ? strtolower($this->_salesforceObject->Email) : NULL;
@@ -174,7 +259,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_salesforceId = (is_object($this->_salesforceObject) && property_exists($this->_salesforceObject, "Id") && $this->_salesforceObject->Id) ? $this->_salesforceObject->Id : NULL;
         $this->_magentoId = (is_object($this->_salesforceObject) && property_exists($this->_salesforceObject, $this->_magentoIdField) && $this->_salesforceObject->{$this->_magentoIdField}) ? $this->_salesforceObject->{$this->_magentoIdField} : NULL;
 
-        Mage::helper('tnw_salesforce')->log("Preparation Complete ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Preparation Complete ...");
     }
 
     protected function _updateMagento()
@@ -184,6 +269,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             // Creating Customer Entity
             if ($this->_isNew) {
+                /** @var Mage_Customer_Model_Customer $_entity */
                 $_entity = Mage::getModel('customer/customer');
                 if ($this->_magentoId) {
                     $_entity->setId($this->_magentoId);
@@ -197,7 +283,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             if ($this->_skip) {
-                Mage::helper('tnw_salesforce')->log("SKIPPING: Brand new customer or guest, see connector configuration ...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Brand new customer or guest, see connector configuration ...");
                 return $_entity;
             }
 
@@ -238,11 +324,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                             // the product code not found, skipping
                             if (empty($_value)) {
                                 $sfValue = $this->_salesforceObject->{$_mapping->getSfField()};
-                                Mage::helper('tnw_salesforce')->log("SKIPPING: customer code $sfValue not found in magento");
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: customer code $sfValue not found in magento");
                                 continue;
                             }
                         } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
-                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
+                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->gmtTimestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
                         } elseif ($_magentoFieldName == 'website_ids') {
                             // website ids hack
                             $_value = explode(',', $this->_salesforceObject->{$_mapping->getSfField()});
@@ -253,10 +339,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         $_value = $_mapping->getDefaultValue();
                     }
                     if ($_value) {
-                        Mage::helper('tnw_salesforce')->log('Customer: ' . $_magentoFieldName . ' = ' . $_value);
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer: ' . $_magentoFieldName . ' = ' . $_value);
                         $_entity->setData($_magentoFieldName, $_value);
                     } else {
-                        Mage::helper('tnw_salesforce')->log('SKIPPING Customer: ' . $_magentoFieldName . ' - no value specified in Salesforce');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Shipping : ') === 0) {
                     // Shipping Address
@@ -264,10 +350,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
                         $_value = $this->_salesforceObject->{$_mapping->getSfField()};
                         if ($_value) {
-                            Mage::helper('tnw_salesforce')->log('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $_value);
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $_value);
                             $_additional['shipping'][$_magentoFieldName] = $_value;
                         } else {
-                            Mage::helper('tnw_salesforce')->log('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                         }
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Billing : ') === 0) {
@@ -276,14 +362,23 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
                         $_value = $this->_salesforceObject->{$_mapping->getSfField()};
                         if ($_value) {
-                            Mage::helper('tnw_salesforce')->log('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $_value);
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $_value);
                             $_additional['billing'][$_magentoFieldName] = $_value;
                         } else {
-                            Mage::helper('tnw_salesforce')->log('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                         }
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Customer Group : ') === 0) {
                     // Do we need to sync this?
+                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
+                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
+                        $targetGroup = Mage::getModel('customer/group');
+                        $targetGroup->load($_value, 'customer_group_code');
+                        if (is_object($targetGroup) && $targetGroup->getId()) {
+                            $_entity->setData('group_id', $targetGroup->getId());
+                        }
+                    }
+
                 }
             }
 
@@ -308,14 +403,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             $_currentTime = $this->_getTime();
             if (!$_entity->getData('updated_at') || $_entity->getData('updated_at') == '') {
-                Mage::helper('tnw_salesforce')->log('Customer: updated_at = ' . $_currentTime);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer: updated_at = ' . $_currentTime);
                 $_entity->setData('updated_at', $_currentTime);
             }
             if (!$_entity->getData('created_at') || $_entity->getData('created_at') == '') {
                 if (property_exists($this->_salesforceObject, 'CreatedDate')) {
                     $_currentTime = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($this->_salesforceObject->CreatedDate)));
                 }
-                Mage::helper('tnw_salesforce')->log('Customer: created_at = ' . $_currentTime);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer: created_at = ' . $_currentTime);
                 $_entity->setData('created_at', $_currentTime);
             }
 
@@ -330,11 +425,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     $this->_salesforceObject->Id = $this->_salesforceObject->PersonContactId;
                 }
 
-                Mage::helper('tnw_salesforce')->log('Customer: salesforce_id = ' . $this->_salesforceObject->Id);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer: salesforce_id = ' . $this->_salesforceObject->Id);
                 $_entity->setData('salesforce_id', $this->_salesforceObject->Id);
             }
             if (property_exists($this->_salesforceObject, 'AccountId')) {
-                Mage::helper('tnw_salesforce')->log('Customer: salesforce_account_id = ' . $this->_salesforceObject->AccountId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer: salesforce_account_id = ' . $this->_salesforceObject->AccountId);
                 $_entity->setData('salesforce_account_id', $this->_salesforceObject->AccountId);
             }
             if (property_exists($this->_salesforceObject, 'IsPersonAccount') && $this->_salesforceObject->IsPersonAccount) {
@@ -362,7 +457,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 $subscriber = Mage::getModel('newsletter/subscriber')->loadByCustomer($_entity);
                 if (!$this->_salesforceObject->{$_field} && !$subscriber->isSubscribed()) {
                     if ($_entity->getData('email')) {
-                        Mage::helper('tnw_salesforce')->log('Subscribing: ' . $_entity->getData('email'));
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Subscribing: ' . $_entity->getData('email'));
                         $subscriber->setStatus(Mage_Newsletter_Model_Subscriber::STATUS_SUBSCRIBED);
                         $storeId = $_entity->getStoreId();
                         if ($_entity->getStoreId() == 0) {
@@ -374,88 +469,160 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                             ->setCustomerId($_entity->getId())
                         ;
                         $subscriber->save();
-                        Mage::helper('tnw_salesforce')->log('Subscribed!');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Subscribed!');
                     } else {
-                        Mage::helper('tnw_salesforce')->log('SKIPPING Customer Subscription: Customer (' . $_entity->getData('firstname') . ' ' . $_entity->getData('lastname') . ') does not have an email in Salesforce!');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Subscription: Customer (' . $_entity->getData('firstname') . ' ' . $_entity->getData('lastname') . ') does not have an email in Salesforce!');
                     }
                 } elseif ($this->_salesforceObject->{$_field} && $subscriber->isSubscribed()) {
                     $subscriber->unsubscribe();
-                    Mage::helper('tnw_salesforce')->log($_entity->getData('email') . ' un-subscribed!');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($_entity->getData('email') . ' un-subscribed!');
+                }
+            }
+
+            $_addressesIsDifferent = false;
+            foreach (array('street', 'city', 'region', 'region_id', 'postcode', 'country_id') as $_field) {
+                if (strcasecmp(@$_additional['shipping'][$_field], @$_additional['billing'][$_field]) != 0) {
+                    $_addressesIsDifferent = true;
+                    break;
+                }
+            }
+
+            $_addressesLookup = array_filter(array(
+                'shipping' => $this->_addressLookup($_additional['shipping'], $_entity),
+                'billing'  => $this->_addressLookup($_additional['billing'], $_entity)
+            ));
+
+            if (!$_addressesIsDifferent) {
+                $_addressesDefault = array_intersect($_addressesLookup, array(
+                    $_entity->getData('default_shipping'),
+                    $_entity->getData('default_billing')
+                ));
+
+                $_addressShippingId = $_addressBillingId = (!empty($_addressesDefault))
+                    ? reset($_addressesDefault)
+                    : reset($_addressesLookup);
+            }
+            else {
+                $_addressShippingId = isset($_addressesLookup['shipping'])
+                    ? $_addressesLookup['shipping']
+                    : $_entity->getData('default_shipping');
+
+                $_addressBillingId  = isset($_addressesLookup['billing'])
+                    ? $_addressesLookup['billing']
+                    : $_entity->getData('default_billing');
+
+                if ($_addressShippingId == $_addressBillingId) {
+                    $_addressBillingId = null;
                 }
             }
 
             // Do Additional Stuff
             foreach($_additional as $_key => $_data) {
-                if (!empty($_data) && ($_key == 'shipping' || $_key == 'billing')) {
-                    $this->_countryCode = NULL;
-                    $this->_regionCode = NULL;
+                if (empty($_data)) {
+                    continue;
+                }
 
-                    $_addressId = $this->_addressLookup($_data, $_entity);
+                switch ($_key) {
+                    case 'shipping':
+                    case 'billing':
 
-                    $_address = Mage::getModel('customer/address');
-                    if ($_addressId) {
-                        $_address->load($_addressId);
-                    }
-                    if (array_key_exists('street', $_additional[$_key])) {
-                        $_fromSalesforce = $_data['street'];
-                        $_data['street'] = array(
-                            '0' => $_fromSalesforce,
-                            '1' => ''
-                        );
-                    }
+                        $_countryCode = $this->_getCountryId($_data['country_id']);
+                        $_regionCode  = null;
+                        if ($_countryCode) {
+                            foreach (array('region_id', 'region') as $_regionField) {
+                                if (!isset($_data[$_regionField])) {
+                                    continue;
+                                }
 
-                    // Set Telephone
-                    if (
-                        !array_key_exists('telephone', $_additional[$_key])
-                        && property_exists($this->_salesforceObject, 'Phone')
-                    ) {
-                        $_data['telephone'] = $this->_salesforceObject->Phone;
-                    }
+                                $_regionCode = $this->_getRegionId($_data[$_regionField], $_countryCode);
+                                if (!empty($_regionCode)) {
+                                    break;
+                                }
+                            }
+                        }
 
-                    // Set First Name
-                    if (
-                        !array_key_exists('firstname', $_additional[$_key])
-                        && property_exists($this->_salesforceObject, 'FirstName')
-                    ) {
-                        $_data['firstname'] = $this->_salesforceObject->FirstName;
-                    }
+                        /** @var Mage_Customer_Model_Address $_address */
+                        $_address = Mage::getModel('customer/address');
 
-                    // Set Last Name
-                    if (
-                        !array_key_exists('lastname', $_additional[$_key])
-                        && property_exists($this->_salesforceObject, 'LastName')
-                    ) {
-                        $_data['lastname'] = $this->_salesforceObject->LastName;
-                    }
+                        $_addressId = ($_key == 'shipping')
+                            ? $_addressShippingId
+                            : $_addressBillingId;
 
-                    // Make sure core data is correct
-                    $_data['parent_id'] = $this->_magentoId;
-                    $_data['region_id'] = $this->_regionCode;
-                    $_data['country_id'] = $this->_countryCode;
+                        if ($_addressId) {
+                            $_address->load($_addressId);
+                        }
 
-                    // Set Data
-                    $_address->setData($_data);
+                        if (array_key_exists('street', $_additional[$_key])) {
+                            $_fromSalesforce = $_data['street'];
+                            $_data['street'] = array(
+                                '0' => $_fromSalesforce,
+                                '1' => ''
+                            );
+                        }
 
-                    if($_addressId) {
-                        $_address->setId($_addressId);
-                    }
+                        // Set Telephone
+                        if (
+                            !array_key_exists('telephone', $_additional[$_key])
+                            && property_exists($this->_salesforceObject, 'Phone')
+                        ) {
+                            $_data['telephone'] = $this->_salesforceObject->Phone;
+                        }
 
-                    // Save in address book
-                    $_address->setSaveInAddressBook('1');
+                        // Set First Name
+                        if (
+                            !array_key_exists('firstname', $_additional[$_key])
+                            && property_exists($this->_salesforceObject, 'FirstName')
+                        ) {
+                            $_data['firstname'] = $this->_salesforceObject->FirstName;
+                        }
 
-                    // Set IsDefault
-                    if ($_key == 'billing') {
-                        $_address->setIsDefaultBilling('1');
-                    }
-                    if ($_key == 'shipping') {
-                        $_address->setIsDefaultShipping('1');
-                    }
+                        // Set Last Name
+                        if (
+                            !array_key_exists('lastname', $_additional[$_key])
+                            && property_exists($this->_salesforceObject, 'LastName')
+                        ) {
+                            $_data['lastname'] = $this->_salesforceObject->LastName;
+                        }
 
-                    try {
-                        $_address->save();
-                    } catch (Exception $e) {
-                        Mage::helper('tnw_salesforce')->log("Error upserting customer address into Magento: " . $e->getMessage());
-                    }
+                        // Make sure core data is correct
+                        $_data['parent_id'] = $this->_magentoId;
+                        $_data['region_id'] = $_regionCode;
+                        $_data['country_id'] = $_countryCode;
+
+                        // Set Data
+                        $_address->addData($_data);
+
+                        // Save in address book
+                        $_address->setSaveInAddressBook('1');
+
+                        // Set IsDefault
+                        if ($_key == 'billing') {
+                            $_address->setIsDefaultBilling('1');
+                        }
+                        if ($_key == 'shipping') {
+                            $_address->setIsDefaultShipping('1');
+                        }
+
+                        try {
+                            $_address->save();
+
+                            if (!$_addressesIsDifferent) {
+                                $_addressShippingId = $_addressBillingId = $_address->getId();
+                            }
+
+                            $_entity->getAddressesCollection()->resetData();
+
+                            if ($_address->getIsDefaultBilling()) {
+                                $_entity->setDefaultBilling($_address->getId());
+                            }
+                            if ($_address->getIsDefaultShipping()) {
+                                $_entity->setDefaultShipping($_address->getId());
+                            }
+                        } catch (Exception $e) {
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting customer address into Magento: " . $e->getMessage());
+                        }
+
+                        break;
                 }
             }
 
@@ -468,7 +635,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             return $_entity;
         } catch (Exception $e) {
             $this->_addError('Error upserting customer into Magento: ' . $e->getMessage(), 'MAGENTO_CUSTOMER_UPSERT_FAILED');
-            Mage::helper('tnw_salesforce')->log("Error upserting customer into Magento: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting customer into Magento: " . $e->getMessage());
             unset($e);
             return false;
         }
@@ -486,24 +653,24 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         parent::_prepare();
 
         if (!$this->_salesforceId) {
-            Mage::helper('tnw_salesforce')->log("Error upserting customer into Magento: Contact ID is missing");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting customer into Magento: Contact ID is missing");
             $this->_addError('Could not upsert Product into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
         if (!$this->_email && !$this->_magentoId) {
-            Mage::helper('tnw_salesforce')->log("Error upserting customer into Magento: Email and Magento ID are missing");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting customer into Magento: Email and Magento ID are missing");
             $this->_addError('Error upserting customer into Magento: Email and Magento ID are missing', 'EMAIL_AND_MAGENTO_ID_MISSING');
             return false;
         }
 
         try {
 
-            Mage::helper('tnw_salesforce')->log('Trying to find customer in Magento');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Trying to find customer in Magento');
             $this->_skip = false;   // Reset the flag
             $this->_findMagentoCustomer();
 
         } catch (Exception $e) {
-            Mage::helper('tnw_salesforce')->log('ERROR: ' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . $e->getMessage());
             $this->_addError('Customer location failed: ' . $e->getMessage(), 'CUSTOMER_FINDER_FAILED');
             return false;
         }
@@ -516,7 +683,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_groupId = 0;
         }
         if ($this->_groupId === NULL || (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($this->_groupId))) {
-            Mage::helper("tnw_salesforce")->log("SKIPPING: Sync for group #" . $this->_groupId . " is disabled! Customer (" . $this->_email . ")");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Sync for group #" . $this->_groupId . " is disabled! Customer (" . $this->_email . ")");
             $this->_addError("Sync for group #" . $this->_groupId . " is disabled! Customer (" . $this->_email . ")", 'CUSTOMER_SKIPPED');
             return false;
         }
@@ -527,6 +694,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
     protected function _findMagentoCustomer() {
         if (property_exists($this->_salesforceObject, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
             $_websiteSfId = $this->_salesforceObject->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
+            $_websiteSfId = Mage::helper('tnw_salesforce')->prepareId($_websiteSfId);
             $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
             if ($_websiteId) {
                 $this->_websiteId = $_websiteId;
@@ -545,14 +713,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 $this->_groupId = $row['group_id'];
             }
         }
-        Mage::helper('tnw_salesforce')->log('------------------');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('------------------');
         if ($this->_magentoId && !$this->_isNew) {
-            Mage::helper('tnw_salesforce')->log("Customer Loaded by using Magento ID: " . $this->_magentoId);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer Loaded by using Magento ID: " . $this->_magentoId);
         } else {
-            Mage::helper('tnw_salesforce')->log('Possibly a New Customer');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Possibly a New Customer');
             // No Magento ID
             if ($this->_salesforceId && !$this->_magentoId) {
-                Mage::helper('tnw_salesforce')->log('Find by SF Id');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Find by SF Id');
                 // Try to find the user by SF Id
                 $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity_varchar') . "` WHERE value = '" . $this->_salesforceId . "' AND attribute_id = '" . $this->_attributes['salesforce_id'] . "' AND entity_type_id = '1'";
                 $row = $this->_write->query($sql)->fetch();
@@ -560,12 +728,12 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
 
             if ($this->_magentoId) {
-                Mage::helper('tnw_salesforce')->log("Customer #" . $this->_magentoId . " Loaded by using Salesforce ID: " . $this->_salesforceId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $this->_magentoId . " Loaded by using Salesforce ID: " . $this->_salesforceId);
                 $sql = "SELECT entity_id, group_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $this->_magentoId . "'";
                 $row = $this->_write->query($sql)->fetch();
                 $this->_groupId = ($row) ? $row['group_id'] : NULL;
             } else {
-                Mage::helper('tnw_salesforce')->log('Find by email');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Find by email');
                 //Last reserve, try to find by email
                 $sql = "SELECT entity_id, group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $this->_email . "'";
                 if ($this->_websiteId && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
@@ -574,14 +742,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
                 $row = $this->_write->query($sql)->fetch();
                 $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
-                Mage::helper("tnw_salesforce")->log('MID by email: ' . $this->_magentoId);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MID by email: ' . $this->_magentoId);
                 if ($this->_magentoId) {
-                    Mage::helper('tnw_salesforce')->log("Customer #" . $this->_magentoId . " Loaded by using Email: " . $this->_email);
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $this->_magentoId . " Loaded by using Email: " . $this->_email);
                     $this->_groupId = $row['group_id'];
                 } else {
                     //Brand new user
                     $this->_isNew = true;
-                    Mage::helper('tnw_salesforce')->log("New Customer. Creating!");
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("New Customer. Creating!");
                 }
             }
         }
@@ -610,10 +778,26 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         return NULL;
     }
 
-    protected function _addressLookup($_data = array(), $_entity = NULL) {
+    /**
+     * @param array $_data
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return bool
+     */
+    protected function _addressLookup($_data = array(), $_entity = NULL)
+    {
         $this->_countryCode = $this->_getCountryId($_data['country_id']);
+        $this->_regionCode  = null;
         if ($this->_countryCode) {
-            $this->_regionCode = $this->_getRegionId($_data['region'], $this->_countryCode);
+            foreach (array('region_id', 'region') as $_regionField) {
+                if (!isset($_data[$_regionField])) {
+                    continue;
+                }
+
+                $this->_regionCode = $this->_getRegionId($_data[$_regionField], $this->_countryCode);
+                if (!empty($this->_regionCode)) {
+                    break;
+                }
+            }
         }
 
         foreach($_entity->getAddresses() as $_address) {
@@ -628,6 +812,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 return $_address->getId();
             }
         }
+
         return false;
     }
 
@@ -669,7 +854,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
             if (!empty($sql)) {
                 $this->_write->query($sql);
-                Mage::helper('tnw_salesforce')->log("Orders: (" . join(', ', $_ordersUpdated) . ") were associated with customer (" . $_customerEmail . ").");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Orders: (" . join(', ', $_ordersUpdated) . ") were associated with customer (" . $_customerEmail . ").");
             }
         }
     }

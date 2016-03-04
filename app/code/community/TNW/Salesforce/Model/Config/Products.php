@@ -11,22 +11,26 @@ class TNW_Salesforce_Model_Config_Products
 
     public function buildDropDown($type)
     {
-        if (Mage::helper('tnw_salesforce')->isWorking()) {
-            $this->_getProducts($type);
-        }
-        if (!$this->_product && !empty($this->_productsLookup)) {
-            $this->_product = array();
-            foreach ($this->_productsLookup as $key => $_obj) {
+        try {
+            if (Mage::helper('tnw_salesforce')->isWorking()) {
+                $this->_getProducts($type);
+            }
+            if (!$this->_product && !empty($this->_productsLookup)) {
+                $this->_product = array();
+                foreach ($this->_productsLookup as $key => $_obj) {
+                    $this->_product[] = array(
+                        'label' => $_obj,
+                        'value' => $key
+                    );
+                }
+            } else if (empty($this->_productsLookup)) {
                 $this->_product[] = array(
-                    'label' => $_obj,
-                    'value' => $key
+                    'label' => 'No products found',
+                    'value' => 0
                 );
             }
-        } else if (empty($this->_productsLookup)) {
-            $this->_product[] = array(
-                'label' => 'No products found',
-                'value' => 0
-            );
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
         }
         return $this->_product;
     }
@@ -36,9 +40,11 @@ class TNW_Salesforce_Model_Config_Products
      * @param $type
      */
     protected function _getProducts($type) {
-        if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->productLookupAdvanced(NULL, $type)) {
+        $magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+
+        if ($collection = Mage::helper('tnw_salesforce/salesforce_lookup')->queryProducts($magentoId, $type, true)) {
             foreach ($collection as $_item) {
-                $this->_productsLookup[$this->_getKey($_item)] = $_item->Name;
+                $this->_productsLookup[$this->_getKey($_item)] = $_item['Name'];
             }
             unset($collection, $_item);
         }
@@ -50,7 +56,7 @@ class TNW_Salesforce_Model_Config_Products
      * @return mixed
      */
     protected function _getKey($_item) {
-        return $_item->PricebookEntityId;
+        return serialize($_item);
     }
 
 }

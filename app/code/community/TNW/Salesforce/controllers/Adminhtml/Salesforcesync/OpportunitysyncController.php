@@ -76,14 +76,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
 
                 if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                     $order = Mage::getModel('sales/order')->load($this->getRequest()->getParam('order_id'));
-                    $_productIds = array();
-                    foreach ($order->getAllVisibleItems() as $_item) {
-                        $_productIds[] = (int)Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart($_item);
-                    }
 
+                    $_productIds = Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdsFromEntity($order);
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
                     if (!$res) {
-                        Mage::helper("tnw_salesforce")->log('error: products from the order were not saved in local storage');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('products from the order were not saved in local storage');
                     }
 
                     // pass data to local storage
@@ -99,7 +96,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_opportunity',
+                        'tnw_salesforce_opportunity_process',
                         array(
                             'orderIds'      => array($this->getRequest()->getParam('order_id')),
                             'message'       => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
@@ -170,7 +167,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_opportunity',
+                        'tnw_salesforce_opportunity_process',
                         array(
                             'orderIds'  => $itemIds,
                             'message'   => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
@@ -203,10 +200,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                 Mage::getSingleton('adminhtml/session')->addSuccess(
                     Mage::helper('adminhtml')->__('%d Magento website entities were successfully synchronized', count($_ids))
                 );
-            } else {
-                if (Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addError('Salesforce connection could not be established!');
-                }
             }
         } catch (Exception $e) {
             Mage::getSingleton('adminhtml/session')->addError($e->getMessage());

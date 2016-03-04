@@ -46,7 +46,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         }
 
         // validate the license
-        if (!$this->validateLicense()) {
+        if ($this->isEnabledExtension() && !$this->validateLicense()) {
             self::$errorList[] = 'license validation failed';
         }
 
@@ -93,23 +93,10 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
             return true;
         }
 
-        // call server 1 (only if server 1 timed out or has non valid json response, call server 2)
-        // cache result (if false, don't attempt to login into sf)
-        $licenseIsValid = Mage::getSingleton('tnw_salesforce/license')->getStatus();
-        if (!$licenseIsValid) {
-
-            return false;
-        }
-
-        $connectionOk = $this->establishSfConnection();
-        if (!$connectionOk) {
-
-            return false;
-        }
-
-        // if connection established, try to login (if login failed, stop and show notification)
-        $loginOk = $this->loginSf();
-        if (!$loginOk) {
+        foreach (array('wsdl', 'connection', 'login') as $testName) {
+            if ($this->_checkTest($testName)) {
+                continue;
+            }
 
             return false;
         }
@@ -117,36 +104,11 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         return true;
     }
 
-    /**
-     * login to sf
-     *
-     * @return bool
-     */
-    public function loginSf()
+    protected function _checkTest($testName)
     {
-        // if login is good, save "salesforce url" and "session id" into cache
-        // we are also saving Org Id, don't forget about that one
-        $login = Mage::helper('tnw_salesforce/test_login')->performTest();
-        if (!$login) {
-            self::$notificationList[] = 'Salesforce login failed';
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * create sf connection
-     *
-     * @return bool
-     */
-    public function establishSfConnection()
-    {
-        // do pre-checks and try to establish connection (if failed, stop and show notification)
-        $connection = Mage::helper('tnw_salesforce/test_connection')->performTest();
-        if (!$connection) {
-            self::$notificationList[] = 'Salesforce connection failed';
+        $test = Mage::helper('tnw_salesforce/test_'.$testName)->performTest();
+        if ($test && $test->response != "Success!") {
+            self::$notificationList[] = $test->response;
 
             return false;
         }
@@ -186,6 +148,15 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         $this->validateStorage();
         $mageCache = Mage::app()->getCache();
         $useCache = Mage::app()->useCache('tnw_salesforce');
+
+        /**
+         * The Cache feature broke our authorization and we receive
+         * the 'Salesforce connection failed, bulk API session ID is invalid' error
+         *
+         * @TODO check my comment, is the change below fix this problem
+         */
+        $useCache = false;
+
         if ($useCache) {
             $res = unserialize($mageCache->load($key));
         }
@@ -231,6 +202,15 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     {
         $mageCache = Mage::app()->getCache();
         $useCache = Mage::app()->useCache('tnw_salesforce');
+
+        /**
+         * The Cache feature broke our authorization and we receive
+         * the 'Salesforce connection failed, bulk API session ID is invalid' error
+         *
+         * @TODO check my comment, is the change below fix this problem
+         */
+        $useCache = false;
+
         if ($useCache) {
             $res = $mageCache->save(serialize($value), $key, array("TNW_SALESFORCE"));
         }
@@ -257,7 +237,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         if (!empty(self::$notificationList)) {
             if (!$fromCli && Mage::helper('tnw_salesforce')->displayErrors()) {
                 $text = implode("<br />", self::$notificationList);
-                Mage::getSingleton('core/session')->addNotification($text);
+                Mage::getSingleton('core/session')->addNotice($text);
             }
             else {
                 $text = implode("\n", self::$notificationList);
@@ -277,7 +257,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     {
         if (!empty(self::$errorList)) {
             foreach (self::$errorList as $line) {
-                Mage::helper('tnw_salesforce')->log($line);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($line);
             }
         }
 

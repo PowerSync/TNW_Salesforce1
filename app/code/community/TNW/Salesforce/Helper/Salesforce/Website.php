@@ -1,10 +1,9 @@
 <?php
-/**
- * Copyright © 2016 TechNWeb, Inc. All rights reserved.
- * See app/code/community/TNW/TNW_LICENSE.txt for license details.
- */
 
-class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Salesforce_Abstract
+/**
+ * Class TNW_Salesforce_Helper_Salesforce_Website
+ */
+class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
      * @param bool $_return
@@ -13,18 +12,15 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
     public function process()
     {
         if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::helper('tnw_salesforce')->log("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
             if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
                 Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
             }
             return false;
         }
-        Mage::helper('tnw_salesforce')->log("================ MASS SYNC: START ================");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
         if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-            Mage::helper('tnw_salesforce')->log("WARNING: Sync websites, cache is empty!");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: SKIPPING synchronization, could not locate website data to synchronize.');
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("WARNING: Sync websites, cache is empty!");
             return false;
         }
 
@@ -41,12 +37,9 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
             $this->_onComplete();
 
-            Mage::helper('tnw_salesforce')->log("================= MASS SYNC: END =================");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
         } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
         }
     }
 
@@ -81,7 +74,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             }
         }
         if (!empty($sql)) {
-            Mage::helper('tnw_salesforce')->log("SQL: " . $sql);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SQL: " . $sql);
             $this->_write->query($sql . ' commit;');
         }
     }
@@ -89,7 +82,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
     protected function _pushToSalesforce()
     {
         // Website Sync
-        Mage::helper('tnw_salesforce')->log("---------- Start: Website Sync ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Website Sync ----------");
         $this->_dumpObjectToLog($this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'], 'Website');
 
         $_websiteIds = array_keys($this->_cache['entitiesUpdating']);
@@ -111,7 +104,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
                 $this->_cache['responses']['websites'][$_id] = $_response;
             }
             $_results = array();
-            Mage::helper('tnw_salesforce')->log('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($_results as $_key => $_result) {
@@ -120,14 +113,14 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
             if (property_exists($_result, 'success') && $_result->success) {
                 $this->_cache['toSaveInMagento'][$_websiteIds[$_key]]->salesforce_id = $_result->id;
-                Mage::helper('tnw_salesforce')->log("Websites: " . $_websiteIds[$_key] . " - ID: " . $_result->id);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Websites: " . $_websiteIds[$_key] . " - ID: " . $_result->id);
             } else {
                 $this->_processErrors($_result, 'website', $this->_cache['websitesToUpsert'][$_websiteIds[$_key]]);
             }
         }
 
-        Mage::helper('tnw_salesforce')->log("Websites: " . implode(',', $_websiteIds) . " upserted!");
-        Mage::helper('tnw_salesforce')->log("---------- End: Website Sync ----------");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Websites: " . implode(',', $_websiteIds) . " upserted!");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Website Sync ----------");
     }
 
     protected function _prepareWebsites()
@@ -138,6 +131,11 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'} = (int) $_website->website_id;
             $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c'} = $_website->code;
             $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Sort_Order__c'} = (int) $_website->sort_order;
+
+            if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+                $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+                $_object->$disableSyncField = true;
+            }
 
             if (!array_key_exists(Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c', $this->_cache['websitesToUpsert'])) {
                 $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'] = array();
@@ -169,11 +167,11 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $this->_cache['entitiesUpdating'] = $_websitesArray;
             $this->_cache['websitesLookup'] = Mage::helper('tnw_salesforce/salesforce_data_website')->websiteLookup($_websitesArray, array_keys($_websitesArray));
 
-        } catch (Exception $e) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addError('WARNING: ' . $e->getMessage());
-            }
-            Mage::helper("tnw_salesforce")->log("CRITICAL: " . $e->getMessage());
+            return true;
+        }
+        catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 

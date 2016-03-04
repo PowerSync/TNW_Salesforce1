@@ -46,12 +46,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     protected $_cache = array();
 
     /**
-     * @var null|Mage_Customer_Model_Group
-     */
-    protected $_customerGroupModel = null;
-
-
-    /**
      * @comment list of the loaded customer groups
      * @var array
      */
@@ -62,13 +56,6 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
      * @var bool
      */
     protected $_break = false;
-    /**
-     *
-     */
-    function __construct()
-    {
-        $this->_customerGroupModel = Mage::getModel('customer/group');
-    }
 
     /**
      * @comment Apply mapping rules
@@ -88,8 +75,9 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
             throw new Exception('Sync object is null! Use "setSync" method to define object.');
         }
 
+        $eventType = strtolower(str_replace(' ', '_', $this->_type));
         Mage::dispatchEvent(
-            'tnw_salesforce_sync_mapping_' . strtolower($this->_type) . '_before',
+            sprintf('tnw_salesforce_sync_mapping_%s_before', $eventType),
             array(
                 'mapping' => $this,
                 'entity' => $entity,
@@ -100,7 +88,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
         $this->_processMapping($entity, $additionalObject);
 
         Mage::dispatchEvent(
-            'tnw_salesforce_sync_mapping_' . strtolower($this->_type) . '_after',
+            sprintf('tnw_salesforce_sync_mapping_%s_after', $eventType),
             array(
                 'mapping' => $this,
                 'entity' => $entity,
@@ -115,7 +103,11 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     public function getMappingCollection()
     {
         if (empty($this->_mappingCollection)) {
-            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_type);
+            $this->_mappingCollection = Mage::getModel('tnw_salesforce/mapping')
+                ->getCollection()
+                ->addObjectToFilter($this->_type)
+                ->addFieldToFilter('active', 1)
+            ;
         }
 
         return $this->_mappingCollection;
@@ -237,7 +229,7 @@ abstract class TNW_Salesforce_Model_Sync_Mapping_Abstract_Base
     }
 
     /**
-     * @param null|TNW_Salesforce_Helper_Salesforce_Product|TNW_Salesforce_Helper_Salesforce_Customer|TNW_Salesforce_Helper_Salesforce_Order|TNW_Salesforce_Helper_Salesforce_Opportunity $sync
+     * @param null|TNW_Salesforce_Helper_Salesforce_Product|TNW_Salesforce_Helper_Salesforce_Customer|TNW_Salesforce_Helper_Salesforce_Abstract_Order $sync
      * @return $this
      */
     public function setSync($sync)

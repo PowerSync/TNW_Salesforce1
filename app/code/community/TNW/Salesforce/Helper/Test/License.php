@@ -23,7 +23,7 @@ class TNW_Salesforce_Helper_Test_License extends TNW_Salesforce_Helper_Test_Abst
 
     protected function _performTest()
     {
-        $this->_redirect = "http://powersync.biz";
-        return Mage::getSingleton('tnw_salesforce/license')->getStatus();
+        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        return $_model->checkPackage();
     }
 }

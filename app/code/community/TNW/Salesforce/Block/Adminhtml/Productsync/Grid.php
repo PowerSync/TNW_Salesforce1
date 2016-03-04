@@ -143,7 +143,7 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
         $this->addColumn('salesforce_pricebook_id', array(
             'header' => Mage::helper('sales')->__('Product2 Pricebook ID'),
             'index' => 'salesforce_pricebook_id',
-            'type' => 'varchar',
+            'type' => 'text',
             'width' => '250px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));

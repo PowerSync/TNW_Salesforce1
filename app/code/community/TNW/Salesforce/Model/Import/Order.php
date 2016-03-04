@@ -36,7 +36,7 @@ class TNW_Salesforce_Model_Import_Order
      */
     protected function log($string)
     {
-        Mage::helper('tnw_salesforce')->log($string);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($string);
     }
 
     /**
@@ -66,25 +66,25 @@ class TNW_Salesforce_Model_Import_Order
     {
         if (is_null($this->_order)) {
             if (isset($this->getObject()->Id) && $this->getObject()->Id) {
-                $this->log('Updating salesforce order ' . $this->getObject()->Id);
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Updating salesforce order ' . $this->getObject()->Id);
             }
 
             $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
             if (!isset($this->getObject()->$magentoId) || !$this->getObject()->$magentoId) {
-                $this->log('There is no magento id');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('There is no magento id');
                 $this->_order = false;
                 return false;
             }
 
             $this->_order = Mage::getModel('sales/order')->loadByIncrementId($this->getObject()->$magentoId);
             if (!$this->_order->getId()) {
-                Mage::helper('tnw_salesforce')->log(
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(
                     sprintf('Order with  Id not found, skipping update', $this->getObject()->$magentoId));
                 $this->_order = false;
                 return false;
             }
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Order Loaded: ' . $this->_order->getIncrementId());
         }
-
         return $this->_order;
     }
 
@@ -94,9 +94,12 @@ class TNW_Salesforce_Model_Import_Order
     public function process()
     {
         if ($this->getOrder()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Attempt to update order status');
             $this->updateStatus()
                 ->updateMappedFields()
                 ->saveEntities();
+        } else {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Order object is not set');
         }
     }
 
@@ -108,7 +111,13 @@ class TNW_Salesforce_Model_Import_Order
         //clear log fields before update
         $updateFieldsLog = array();
 
-        $mappings = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter($this->_objectType);
+        $additional = array();
+
+        $mappings = Mage::getModel('tnw_salesforce/mapping')
+            ->getCollection()
+            ->addObjectToFilter($this->_objectType)
+            ->addFieldToFilter('active', 1);
+
         foreach ($mappings as $mapping) {
             //skip if cannot find field in object
             if (!isset($this->getObject()->{$mapping->getSfField()})) {
@@ -122,6 +131,11 @@ class TNW_Salesforce_Model_Import_Order
             if (!$entity) {
                 continue;
             }
+
+            if ($entity instanceof Mage_Sales_Model_Order_Address) {
+                $additional[$entityName][$field] = $newValue;
+            }
+
             if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
                 $entity->setData($field, $newValue);
                 $this->addEntityToSave($entityName, $entity);
@@ -130,6 +144,39 @@ class TNW_Salesforce_Model_Import_Order
                 $updateFieldsLog[] = sprintf('%s - from "%s" to "%s"',
                     $mapping->getLocalField(), $entity->getOrigData($field), $newValue);
             }
+        }
+
+        foreach ($additional as $entityName => $address) {
+            $entity = $this->getEntity($entityName);
+            if (!$entity) {
+                continue;
+            }
+
+            if (!$entity instanceof Mage_Sales_Model_Order_Address) {
+                continue;
+            }
+
+            $_countryCode = $this->_getCountryId($address['country_id']);
+            $_regionCode  = null;
+            if ($_countryCode) {
+                foreach (array('region_id', 'region') as $_regionField) {
+                    if (!isset($address[$_regionField])) {
+                        continue;
+                    }
+
+                    $_regionCode = $this->_getRegionId($address[$_regionField], $_countryCode);
+                    if (!empty($_regionCode)) {
+                        break;
+                    }
+                }
+            }
+
+            $entity->addData(array(
+                'country_id' => $_countryCode,
+                'region_id'  => $_regionCode,
+            ));
+
+            $this->addEntityToSave($entityName, $entity);
         }
 
         //add comment about all updated fields
@@ -141,6 +188,28 @@ class TNW_Salesforce_Model_Import_Order
         }
 
         return $this;
+    }
+
+    protected function _getCountryId($_name  = NULL)
+    {
+        foreach(Mage::getModel('directory/country_api')->items() as $_country) {
+            if (in_array($_name, $_country)) {
+                return $_country['country_id'];
+            }
+        }
+
+        return NULL;
+    }
+
+    protected function _getRegionId($_name  = NULL, $_countryCode = NULL)
+    {
+        foreach(Mage::getModel('directory/region_api')->items($_countryCode) as $_region) {
+            if (in_array($_name, $_region)) {
+                return $_region['region_id'];
+            }
+        }
+
+        return NULL;
     }
 
     /**
@@ -195,6 +264,7 @@ class TNW_Salesforce_Model_Import_Order
     {
         $order = $this->getOrder();
         if (!isset($this->getObject()->Status) || !$this->getObject()->Status) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order status is not avaialble');
             return $this;
         }
 
@@ -204,6 +274,7 @@ class TNW_Salesforce_Model_Import_Order
         if (count($matchedStatuses) === 1) {
             foreach ($matchedStatuses as $_status) {
                 if ($order->getStatus() != $_status->getStatus()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Order status updated to ' . $_status->getStatus());
                     $oldStatusLabel = $order->getStatusLabel();
                     $order->setStatus($_status->getStatus());
                     $order->addStatusHistoryComment(
@@ -212,6 +283,8 @@ class TNW_Salesforce_Model_Import_Order
                         $order->getStatus()
                     );
                     $this->addEntityToSave('Order', $order);
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Order status is in sync');
                 }
                 break;
             }
@@ -221,11 +294,14 @@ class TNW_Salesforce_Model_Import_Order
             $log .= ' - not sure which one should be selected';
             $order->addStatusHistoryComment($log);
             $this->addEntityToSave('Order', $order);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: ' . $log);
         } else {
+            $message = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
+                . ' Mapped Salesforce status does not match any Magento Order status';
             $order->addStatusHistoryComment(
-                sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
-                . ' Mapped Salesforce status does not match any Magento Order status'
+                $message
             );
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: ' . $message);
             $this->addEntityToSave('Order', $order);
         }
 

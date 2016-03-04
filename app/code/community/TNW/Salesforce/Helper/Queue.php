@@ -40,7 +40,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 $this->_synchronizePreSet();
             }
         } catch (Exception $e) {
-            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
             return false;
         }
         return true;
@@ -87,7 +87,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         $_type = 'Invoice';
         // Allow Powersync to overwite fired event for customizations
         $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
-        Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+        Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $_object));
 
         $_module = 'tnw_salesforce/bulk_' . $_object->getObjectType();
 
@@ -199,7 +199,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         }
 
         if (count($_objectType) > 1) {
-            Mage::helper('tnw_salesforce')->log("ERROR: Synchronization of multiple record types is not supported yet, try synchronizing one record type.");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Synchronization of multiple record types is not supported yet, try synchronizing one record type.");
             return false;
         }
 
@@ -213,7 +213,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 if ($_type == 'Invoice') {
                     // Allow Powersync to overwite fired event for customizations
                     $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
-                    Mage::dispatchEvent('tnw_salesforce_set_invoice_object', array('sf_object' => $_object));
+                    Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $_object));
 
                     $_syncType = $_object->getObjectType();
                     $_idPrefix = 'invoice';
@@ -223,7 +223,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 }
 
                 Mage::dispatchEvent(
-                    'tnw_sales_process_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_process', $_syncType),
                     array(
                         $_idPrefix . 'Ids' => $_objectIdSet,
                         'message' => NULL,
@@ -236,7 +236,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
                 Mage::dispatchEvent(
-                    'tnw_sales_process_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_process', $_syncType),
                     array(
                         'orderIds' => $_objectIdSet,
                         'message' => NULL,
@@ -246,7 +246,12 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     )
                 );
             } else {
-                $_module = 'tnw_salesforce/bulk_' . strtolower($_type);
+
+                $helper = strtolower($_type);
+                if ($helper == 'abandoned') {
+                    $helper .= '_' . strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+                }
+                $_module = 'tnw_salesforce/bulk_' . $helper;
                 $_getAlternativeKey = NULL;
 
                 $manualSync = Mage::helper($_module);
@@ -255,25 +260,27 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
                     $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' started ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
                     $manualSync->massAdd($_objectIdSet);
 
                     $manualSync->process();
-                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' finished ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' finished ##################################');
 
                     // Update Queue
                     $_results = $manualSync->getSyncResults();
                     $_alternativeKeys = ($_getAlternativeKey) ? $manualSync->getAlternativeKeys() : array();
                     Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_objectIdSet, $_idSet, $_results, $_alternativeKeys);
+                } else {
+                    Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_idSet, 'new');
                 }
             }
 
             if (!empty($_idSet)) {
-                Mage::helper('tnw_salesforce')->log("INFO: " . $_type . " total synced: " . count($_idSet));
-                Mage::helper('tnw_salesforce')->log("INFO: removing synced rows from mysql table...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: " . $_type . " total synced: " . count($_idSet));
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: removing synced rows from mysql table...");
             }
         } else {
-            Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed");
             return false;
         }
     }
@@ -307,7 +314,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 }
 
                 Mage::dispatchEvent(
-                    'tnw_sales_process_' . $_syncType,
+                    sprintf('tnw_salesforce_%s_process', $_syncType),
                     array(
                         'orderIds' => $_objectIdSet,
                         'message' => NULL,
@@ -324,25 +331,27 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                     $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
                     $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
-                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' started ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
                     $manualSync->massAdd($_objectIdSet);
 
                     $manualSync->process();
-                    Mage::helper('tnw_salesforce')->log('################################## manual processing from queue for ' . $_type . ' finished ##################################');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' finished ##################################');
 
                     // Update Queue
                     $_results = $manualSync->getSyncResults();
                     $_alternativeKeys = ($_getAlternativeKey) ? $manualSync->getAlternativeKeys() : array();
                     Mage::getModel('tnw_salesforce/localstorage')->updateQueue($_objectIdSet, $_idSet, $_results, $_alternativeKeys);
+                } else {
+                    Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_idSet, 'new');
                 }
             }
 
             if (!empty($_idSet)) {
-                Mage::helper('tnw_salesforce')->log("INFO: " . $_type . " total synced: " . count($_idSet));
-                Mage::helper('tnw_salesforce')->log("INFO: removing synced rows from mysql table...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: " . $_type . " total synced: " . count($_idSet));
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: removing synced rows from mysql table...");
             }
         } else {
-            Mage::helper('tnw_salesforce')->log("ERROR: Salesforce connection failed");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed");
             return false;
         }
     }
@@ -357,7 +366,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
     public function prepareRecordsToBeAddedToQueue($itemIds = array(), $_sfObject = NULL, $_mageModel = NULL)
     {
         if (empty($itemIds) || !$_sfObject || !$_mageModel) {
-            Mage::getSingleton('adminhtml/session')->addError('Could not add records to the queue!');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not add records to the queue!');
         }
 
 

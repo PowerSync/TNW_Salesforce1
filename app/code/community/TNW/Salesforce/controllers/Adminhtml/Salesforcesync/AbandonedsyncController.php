@@ -78,14 +78,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                     $storeIds = array_keys($stores);
 
                     $abandoned = Mage::getModel('sales/quote')->setSharedStoreIds($storeIds)->load($this->getRequest()->getParam('abandoned_id'));
-                    $_productIds = array();
-                    foreach ($abandoned->getAllVisibleItems() as $_item) {
-                        $_productIds[] = (int)$this->_getProductIdFromCart($_item);
-                    }
 
+                    $_productIds = Mage::helper('tnw_salesforce/salesforce_abandoned_opportunity')->getProductIdsFromEntity($abandoned);
                     $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
                     if (!$res) {
-                        Mage::helper("tnw_salesforce")->log('ERROR: Products from the abandoned were not added to the queue');
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Products from the abandoned were not added to the queue');
                     }
 
                     // pass data to local storage
@@ -101,9 +98,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                     }
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
-                            'ids' => $itemIds,
+                            'orderIds' => $itemIds,
                             'object_type' => 'abandoned',
                             'message' => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
                             'type' => 'salesforce'
@@ -172,9 +169,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
 
                 } else {
                     Mage::dispatchEvent(
-                        'tnw_sales_process_' . $_syncType,
+                        sprintf('tnw_salesforce_%s_process', $_syncType),
                         array(
-                            'ids' => $itemIds,
+                            'orderIds' => $itemIds,
                             'message' => Mage::helper('adminhtml')->__('Total of %d abandoned(s) were synchronized', count($itemIds)),
                             'type' => 'bulk',
                             'object_type' => 'abandoned'
@@ -216,5 +213,4 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
         }
         return $id;
     }
-
 }

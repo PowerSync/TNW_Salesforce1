@@ -14,7 +14,7 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce_Info extends Mage_Adm
      */
     public function getSalesforceData()
     {
-        $_labels = Mage::helper('tnw_salesforce/field')->getOrderLabels();
+        $_labels = Mage::helper('tnw_salesforce/config_sales_order')->getOrderLabels();
         $sfData = array();
         if ($this->doesHaveOrder()) {
             foreach ($_labels as $_field => $_label) {
