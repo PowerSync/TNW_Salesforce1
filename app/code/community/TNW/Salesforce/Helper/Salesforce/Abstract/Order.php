@@ -2,6 +2,8 @@
 
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Abstract
+ *
+ * @method Mage_Sales_Model_Order getEntityByItem($_entity)
  */
 abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
@@ -182,76 +184,33 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @param $parentEntityNumber
      * @param $qty
      * @param $productIdentifier
-     * @param $description
+     * @param string $description
      *
+     * @param Mage_Sales_Model_Order_Item $item
      * @return bool
      */
     protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default', $item = null)
     {
-        $_cartItemFound = false;
-
-        /**
-         * @TODO: add magentoId field for SF Order/Opportunity/etc and define matching by this field
-         * other fields are not unique and can occur again for different items
-         */
-        $magentoIdField = $this->getMagentoIdField();
-
         /**
          * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
          */
-        $parentEntityCacheKey = $this->_salesforceEntityName . 'Lookup';
+        $parentEntityCacheKey = sprintf('%sLookup', $this->_salesforceEntityName);
 
         if (
             $this->_cache[$parentEntityCacheKey]
             && array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey])
-            && $this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->_itemsField}
+            && $this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}
         ) {
-            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->_itemsField}->records as $_cartItem) {
-                if (
-                    (
-                        $_cartItem->PricebookEntryId == $productIdentifier
-                        || ($magentoIdField && $_cartItem->{$magentoIdField} == $productIdentifier)
-
-                        || (property_exists($_cartItem, 'PricebookEntry')
-                            && property_exists($_cartItem->PricebookEntry, 'ProductCode')
-                            && ($_cartItem->PricebookEntry->ProductCode == trim($productIdentifier))
-                            && ($description === 'default' || !$description || (property_exists($_cartItem, 'Description') && $_cartItem->Description == $description))
-                        )
-                    )
-                    && $_cartItem->Quantity == (float)$qty
-                ) {
-
-                    /**
-                     * if SF object has not magentoId field - try to use alternative matching
-                     */
-                    if (!$magentoIdField
-                        || empty($_cartItem->{$magentoIdField})
-                    ) {
-
-                        /**
-                         * if current SF item already assigned to some Magento item - skip it and try to find one more
-                         * sometimes items with the same parameters can be in order - we should divide it
-                         */
-                        foreach ($this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert'] as $itemToUpsert) {
-                            if (property_exists($itemToUpsert, 'Id')
-                                && !empty($itemToUpsert->Id)
-                                && $_cartItem->Id == $itemToUpsert->Id
-                            ) {
-                                continue 2;
-                            }
-                        }
-
-                        $_cartItemFound = $_cartItem->Id;
-                        break;
-                    } elseif ($_cartItem->{$magentoIdField} == $productIdentifier) {
-                        $_cartItemFound = $_cartItem->Id;
-                        break;
-                    }
-
+            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}->records as $_cartItem) {
+                if ($_cartItem->Id != $item->getData('salesforce_id')) {
+                    continue;
                 }
+
+                return $_cartItem->Id;
             }
         }
-        return $_cartItemFound;
+
+        return null;
     }
 
     /**
@@ -332,6 +291,34 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected function _prepareEntityItemAfter($_entity)
     {
         $this->_applyAdditionalFees($_entity);
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order
+     * @param $item Varien_Object
+     */
+    protected function _prepareAdditionalFees($_entity, $item)
+    {
+        $_salesforceId        = null;
+        $_entityNumber        = $this->_getEntityNumber($_entity);
+        $parentEntityCacheKey = sprintf('%sLookup', $this->_salesforceEntityName);
+
+        if (
+            $this->_cache[$parentEntityCacheKey]
+            && array_key_exists($_entityNumber, $this->_cache[$parentEntityCacheKey])
+            && $this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}
+        ) {
+            foreach ($this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}->records as $_cartItem) {
+                if ($_cartItem->PricebookEntry->Product2Id != $item->getData('Id')) {
+                    continue;
+                }
+
+                $_salesforceId = $_cartItem->Id;
+                break;
+            }
+        }
+
+        $item->setData('salesforce_id', $_salesforceId);
     }
 
     /**
@@ -547,56 +534,113 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @comment prepare order item object (product, tax, shipping, discount) for Salesforce
-     * @param $parentEntity
-     * @param $item
-     * @return mixed|void
+     * @param $_entityItem
+     * @return bool|void
      * @throws Exception
      */
-    protected function _prepareEntityItemObj($parentEntity, $item)
+    protected function _getEntityItemSalesforceId($_entityItem)
     {
-        $parentEntityNumber = $this->_getEntityNumber($parentEntity);
-
         $this->_prepareTechnicalPrefixes();
+        $_entity = $this->getEntityByItem($_entityItem);
+        return $this->_doesCartItemExist($this->_getEntityNumber($_entity), null, null, null, $_entityItem);
+    }
 
-        $this->_obj = new stdClass();
+    /**
+     * @param $_entityItem Mage_Sales_Model_Order_Item
+     * @param $_type string
+     * @return null
+     * @throws Exception
+     */
+    protected function _getObjectByEntityItemType($_entityItem, $_type)
+    {
+        switch($_type)
+        {
+            case 'Order':
+                return $this->getEntityByItem($_entityItem);
 
-        $this->_prepareItemObjStart();
+            case 'Cart':
+            case 'Item':
+            case 'Cart Item':
+                return $_entityItem;
 
-        $_currencyCode = $this->getCurrencyCode($parentEntity);
+            case 'Product':
+                // Load by product Id only if bundled OR simple with options
+                $_productId = $this->getProductIdFromCart($_entityItem);
+                if ($_productId) {
+                    $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
+                    return Mage::getModel('catalog/product')
+                        ->setStoreId($storeId)->load($_productId);
+                }
+                else {
+                    $_entity        = $this->_getObjectByEntityItemType($_entityItem, 'Order');
+                    $pricebookId    = $this->_getPricebookIdToOrder($_entity);
+                    $_currencyCode  = $this->getCurrencyCode($_entity);
+                    $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')
+                        ->getProductPricebookEntry($_entityItem->getData('Id'), $pricebookId, $_currencyCode);
 
-        $qty = $this->getItemQty($item);
+                    if (!$pricebookEntry || !isset($pricebookEntry['Id'])) {
+                        throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getData('ProductCode') . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+                    }
 
-        if ($qty === NULL) {
-            $qty = 0;
+                    return new Varien_Object(array(
+                        'sku'                     => $_entityItem->getData('ProductCode'),
+                        'salesforce_id'           => $pricebookEntry['Id'],
+                        'salesforce_pricebook_id' => $pricebookEntry['Id'],
+                    ));
+                }
+
+            case 'Product Inventory':
+                $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
+                return Mage::getModel('cataloginventory/stock_item')
+                    ->loadByProduct($product);
+
+            case 'Custom':
+                return $this->_getObjectByEntityItemType($_entityItem, 'Order')
+                    ->getStore();
+
+            default:
+                return null;
         }
-        if ($qty == 0) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("NOTE: Product w/ SKU (" . $item->getSku() . ") is not synchronized, ordered quantity is zero!");
+    }
+
+    /**
+     * @param $_entityItem Mage_Sales_Model_Order_Item
+     * @throws Exception
+     */
+    protected function _prepareEntityItemObjCustom($_entityItem)
+    {
+        $_entity       = $this->getEntityByItem($_entityItem);
+        $_entityNumber = $this->_getEntityNumber($_entity);
+        $product       = $this->_getObjectByEntityItemType($_entityItem, 'Product');
+
+        $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($_entityNumber);
+
+        $_isDescription = property_exists($this->_obj, 'Description');
+        if ((!$_isDescription || ($_isDescription && empty($this->_obj->Description)))
+            && $_entityItem->getBundleItemToSync()
+        ) {
+            $this->_obj->Description = $_entityItem->getBundleItemToSync();
         }
 
-        $storeId = $parentEntity->getStoreId();
+        // use_product_campaign_assignment
+        if (
+            Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()
+            && $_entity instanceof Mage_Sales_Model_Order
+            && $product->getSalesforceCampaignId()
+        ) {
+            $contactId = $this->_cache['orderCustomers'][$_entityNumber]->getSalesforceId();
 
-        // Load by product Id only if bundled OR simple with options
-        $id = $this->getProductIdFromCart($item);
+            Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
+                ->prepareCampaignMemberItem('ContactId', $contactId, null, $product->getSalesforceCampaignId());
+        }
 
-        /**
-         * @comment do some additional actions if we add real product to the order
-         */
-        if ($id) {
-            /**
-             * @var $productModel Mage_Catalog_Model_Product
-             */
-            $productModel = Mage::getModel('catalog/product')->setStoreId($storeId);
-            $product = $productModel->load($id);
-
-            $sku = ($product->getSku()) ? $product->getSku() : $item->getSku();
-
+        // PricebookEntryId
+        if (!property_exists($this->_obj, 'Id')) {
+            $_currencyCode    = $this->getCurrencyCode($_entity);
             $pricebookEntryId = $product->getSalesforcePricebookId();
 
             if (!empty($pricebookEntryId)) {
                 $valuesArray = explode("\n", $pricebookEntryId);
-
-                $pricebookEntryId = '';
 
                 if (!empty($valuesArray)) {
                     foreach ($valuesArray as $value) {
@@ -614,148 +658,31 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 }
             }
 
-            if (!$pricebookEntryId) {
-
-                throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+            if (empty($pricebookEntryId)) {
+                throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getSku() . ") is not synchronized, could not add to $this->_salesforceEntityName!");
             }
 
-            $this->_pricebookEntryId = $pricebookEntryId;
-
-            /**
-             * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item
-             */
-            $mapping = Mage::getSingleton($this->getModulePrefix() . '/sync_mapping_' . $this->getMagentoEntityName() . '_' . $this->_salesforceEntityName . '_item');
-
-            $mapping->setSync($this)
-                ->processMapping($item, $product);
-
-            $identifier = $sku;
-            /**
-             * if MagentoId field exists - the orderItemId should be identifier
-             */
-            if ($this->getMagentoIdField() && $item->getId()) {
-                $identifier = $item->getId();
-            }
-
-            if ($item->getBundleItemToSync()) {
-                $this->_obj->Description = $item->getBundleItemToSync();
-            }
-
-            /**
-             * use_product_campaign_assignment
-             */
-            if (
-                Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()
-                && $parentEntity instanceof Mage_Sales_Model_Order
-                && $product->getSalesforceCampaignId()
-            ) {
-                $contactId = $this->_cache['orderCustomers'][$parentEntityNumber]->getSalesforceId();
-
-                Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
-                    ->prepareCampaignMemberItem('ContactId', $contactId, null, $product->getSalesforceCampaignId());
-            }
-
-        } else {
-            $product = new Varien_Object();
-            $sku = $item->getData('ProductCode');
-
-            $pricebookId = $this->_getPricebookIdToOrder($parentEntity);
-
-            $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')->getProductPricebookEntry($item->getData('Id'), $pricebookId, $_currencyCode);
-
-            if (!$pricebookEntry || !isset($pricebookEntry['Id'])) {
-                throw new Exception("NOTICE: Product w/ SKU (" . $sku . ") is not synchronized, could not add to $this->_salesforceEntityName!");
-            }
-            $pricebookEntryId = $pricebookEntry['Id'];
-
-            $product->setSalesforceId($pricebookEntryId);
-            $this->_pricebookEntryId = $pricebookEntryId;
-
-            // Used for custom object integration and overrides
-            $this->_updatePreparedObjectInfo($item);
-
-            $identifier = $this->_pricebookEntryId;
-            $this->_obj->Description = $item->getDescription();
-            $id = $item->getData('Id');
-        }
-
-        $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($parentEntityNumber);
-
-        $this->_obj->UnitPrice = $this->_prepareItemPrice($item, $qty);
-
-        // Description Item
-        $this->_getItemDescription($item);
-
-        /**
-         * @comment try to fined item in lookup array. Search prodyct by the sku or tax/shipping/discount by the SalesforcePricebookId
-         * @TODO: check, may be it sould be better search product by SalesforcePricebookId too
-         */
-        $description = $item->getBundleItemToSync();
-        if (!$description && property_exists($this->_obj, 'Description') && empty($this->_obj->Description)) {
-            $description = $this->_obj->Description;
-        }
-
-        $cartItemFound = $this->_doesCartItemExist($parentEntityNumber, $qty, $identifier, $description, $item);
-        if ($cartItemFound) {
-            $this->_obj->Id = $cartItemFound;
-        } else {
             $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
-        $this->_obj->Quantity = $qty;
-
-        $this->_prepareItemObjFinish($item, $product);
-
-        $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)] = array();
-
-        if ($this->isItemObjectValid()) {
-            /* Dump OpportunityLineItem object into the log */
-            foreach ($this->_obj as $key => $_item) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
-            }
-
-            $this->_cache[lcfirst($this->getItemsField()) . 'ProductsToSync'][$this->_getParentEntityId($parentEntityNumber)][] = $sku;
-
-            $key = $item->getId();
-
-            /**
-             * if it's fake product for order fee, has the same id's for all products
-             */
-            if (!$product->getId()) {
-                $key .= '_' . $parentEntityNumber;
-            }
-            $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $key] = $this->_obj;
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Magento product is most likely deleted or quantity is zero!');
+        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+            $this->_obj->CurrencyIsoCode = $_entity->getData('order_currency_code');
         }
 
+        /* Dump OpportunityLineItem object into the log */
+        foreach ($this->_obj as $key => $_item) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
+        }
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
 
-    }
+        $key = $_entityItem->getId();
+        // if it's fake product for order fee, has the same id's for all products
+        if (!$product->getId()) {
+            $key .= '_' . $_entityNumber;
+        }
 
-    /*
-     * Should Item object be added to SF
-     * aka validation to prevent errors
-     */
-    protected function isItemObjectValid()
-    {
-        return (
-            (property_exists($this->_obj, 'PricebookEntryId') && $this->_obj->PricebookEntryId)
-            || (property_exists($this->_obj, 'Product__c') && $this->_obj->Product__c)
-            || (property_exists($this->_obj, 'Id') && $this->_obj->Id)
-        ) && (
-            ($this->_obj->Quantity != 0)
-        )
-            ;
-    }
-
-    /**
-     * @comment run some code before order item preparing
-     * @return $this
-     */
-    protected function _prepareItemObjStart()
-    {
-        return $this;
+        $this->_cache[sprintf('%sProductsToSync', lcfirst($this->getItemsField()))][$this->_getParentEntityId($_entityNumber)][] = $product->getSku();
+        $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]['cart_' . $key] = $this->_obj;
     }
 
     /**

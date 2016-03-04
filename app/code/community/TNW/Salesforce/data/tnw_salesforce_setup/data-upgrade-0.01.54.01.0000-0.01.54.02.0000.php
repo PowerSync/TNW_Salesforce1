@@ -73,7 +73,29 @@ $data = array(
         'local_field'       => 'Order : price_book',
         'sf_field'          => 'Pricebook2Id',
         'sf_object'         => 'Order'
-    )
+    ),
+
+    // OrderItem
+    array(
+        'local_field'       => 'Cart : unit_price',
+        'sf_field'          => 'UnitPrice',
+        'sf_object'         => 'OrderItem'
+    ),
+    array(
+        'local_field'       => 'Cart : qty_ordered',
+        'sf_field'          => 'Quantity',
+        'sf_object'         => 'OrderItem'
+    ),
+    array(
+        'local_field'       => 'Cart : sf_product_options_html',
+        'sf_field'          => 'tnw_mage_basic__Product_Options__c',
+        'sf_object'         => 'OrderItem'
+    ),
+    array(
+        'local_field'       => 'Cart : sf_product_options_text',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'OrderItem'
+    ),
 );
 
 $data = array_map(function($value){

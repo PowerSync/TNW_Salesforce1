@@ -11,7 +11,7 @@ class TNW_Salesforce_Model_Mapping_Type_Custom extends TNW_Salesforce_Model_Mapp
     public function getValue($_entity)
     {
         $store = Mage::app()->getStore($_entity);
-        switch ($this->getLocalFieldAttributeCode()) {
+        switch ($this->_mapping->getLocalFieldAttributeCode()) {
             case 'current_url':
                 return Mage::helper('core/url')->getCurrentUrl();
             case 'todays_date':

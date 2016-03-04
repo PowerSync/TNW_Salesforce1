@@ -23,7 +23,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     /**
      * @var string
      */
-    protected $_mappingObjectName = 'Order';
+    protected $_mappingEntityName = 'Order';
+
+    /**
+     * @var string
+     */
+    protected $_mappingEntityItemName = 'OrderItem';
 
     /**
      * @comment magento entity model alias
@@ -110,7 +115,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     {
         switch($types)
         {
-            case 'Store':
+            case 'Custom':
                 return $_entity->getStore();
 
             case 'Order':
@@ -124,10 +129,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 return $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
 
             case 'Customer Group':
-                $_entityNumber = $this->_getEntityNumber($_entity);
-                $_customer     = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
-
-                $_groupId = ($_entity->getCustomerGroupId() !== NULL)
+                $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
+                $_groupId  = ($_entity->getCustomerGroupId() !== NULL)
                     ? $_entity->getCustomerGroupId() : $_customer->getGroupId();
 
                 return Mage::getModel('customer/group')->load($_groupId);
@@ -139,8 +142,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 return $_entity->getShippingAddress();
 
             case 'Aitoc':
-                $_entityNumber = $this->_getEntityNumber($_entity);
-                $_customer     = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+                $_customer     = $this->_getObjectByEntityType($_entity, 'Customer');
                 $aitocValues   = array('order' => NULL, 'customer' => NULL);
 
                 $modules       = Mage::getConfig()->getNode('modules')->children();

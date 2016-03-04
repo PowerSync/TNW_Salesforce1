@@ -559,24 +559,38 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateCartAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_order_item');
-        } catch (Exception $e) {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_order_item');
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento cart items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
+
         if ($collection) {
             $this->_cache[$type]['shopping'] = array(
                 'label' => 'Cart Attributes',
                 'value' => array()
             );
+
+            $_additionalAttributes = array(
+                'unit_price'              => 'Unit Price',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['shopping']['value'][] = array(
+                    'value' => 'Cart : '.$value,
+                    'label' => 'Cart : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'item_id'
-                    || $key == 'order_id'
-                    || $key == 'parent_item_id'
-                    || $key == 'quote_item_id'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('item_id', 'order_id', 'parent_item_id', 'quote_item_id', 'product_options'))) {
                     continue;
                 }
 

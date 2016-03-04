@@ -19,6 +19,19 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     const SET_TYPE_UPDATE = 'update';
 
     /**
+     * @var array
+     */
+    protected $_aliasType = array(
+        'cart'              => 'order_item',
+        'payment'           => 'order_payment',
+        'billing item'      => 'invoice_item',
+        'shipment item'     => 'shipment_item',
+        'product inventory' => 'product_inventory',
+        'billing'           => 'address_billing',
+        'shipping'          => 'address_shipping',
+    );
+
+    /**
      * @param array $objectMappings
      * @return null|string
      */
@@ -37,7 +50,12 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
      */
     public function getModelType()
     {
-        return Mage::getSingleton('tnw_salesforce/mapping_type_'.strtolower($this->getLocalFieldType()))
+        $type = strtolower($this->getLocalFieldType());
+        if (isset($this->_aliasType[$type])) {
+            $type = $this->_aliasType[$type];
+        }
+
+        return Mage::getSingleton('tnw_salesforce/mapping_type_'.$type)
             ->setMapping($this);
     }
 
