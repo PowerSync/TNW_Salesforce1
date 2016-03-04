@@ -1,10 +1,9 @@
 <?php
-
 /**
- * class for working with mysql table with objects for synchronization with sf
- *
- * Class TNW_Salesforce_Model_Localstorage
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 {
     protected $_mageModels = array();

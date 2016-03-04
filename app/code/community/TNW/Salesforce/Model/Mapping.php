@@ -1,17 +1,9 @@
 <?php
-
 /**
- * @method string getLocalField
- * @method string getLocalFieldType
- * @method string getLocalFieldAttributeCode
- * @method string getSfField
- * @method string getAttributeId
- * @method string getBackendType
- * @method string getSfObject
- * @method string getDefaultValue
- *
- * Class TNW_Salesforce_Model_Mapping
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {
 

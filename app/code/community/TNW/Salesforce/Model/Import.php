@@ -1,11 +1,9 @@
 <?php
-
 /**
- * @method TNW_Salesforce_Model_Import setObject($object)
- * @method stdClass getObject
- *
- * Class TNW_Salesforce_Model_Import
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
 {
     protected function _construct()

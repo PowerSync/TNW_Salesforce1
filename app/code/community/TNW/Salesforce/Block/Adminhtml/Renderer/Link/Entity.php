@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Class TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Action
 {
 

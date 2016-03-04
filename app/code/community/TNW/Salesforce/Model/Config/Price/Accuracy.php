@@ -1,10 +1,9 @@
 <?php
 /**
- * Author: Evgeniy Ermolaev
- * Email: eermolaev@yandex.ru
- * Date: 30.04.15
- * Time: 12:28
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 
 /**
  * drop down list

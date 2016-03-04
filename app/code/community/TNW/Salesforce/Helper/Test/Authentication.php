@@ -1,5 +1,10 @@
 <?php
 /**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
+
+/**
  * facade pattern used
  * on later project stage we need possibility to abstract from multiple sf connection classes located in TNW\Salesforce\Helper\Test namespace
  * the idea is to provide simplified interface which delegates calls to corresponding classes in namespace TNW\Salesforce\Helper\Test
