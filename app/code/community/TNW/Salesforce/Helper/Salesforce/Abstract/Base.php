@@ -540,6 +540,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_orderNumber] = $this->_obj;
         }
 
+        $this->_prepareEntityAfter();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('----------%s Preparation: End----------', $this->getUcParentEntityType()));
     }
 
@@ -551,6 +552,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _checkPrepareEntityAfter($_key)
     {
         return true;
+    }
+
+    protected function _prepareEntityAfter()
+    {
+        return;
     }
 
     /**
@@ -689,6 +695,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         $_entityNumber = $this->_getEntityNumber($_entity);
         $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
 
+        if (!isset($this->_cache[$_lookupKey][$_entityNumber])) {
+            return null;
+        }
+
         return $this->_cache[$_lookupKey][$_entityNumber]->Id;
     }
 
@@ -702,10 +712,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param $_entity
-     * @param $types string
+     * @param $type string
      * @return mixed
      */
-    protected function _getObjectByEntityType($_entity, $types)
+    protected function _getObjectByEntityType($_entity, $type)
     {
         return null;
     }

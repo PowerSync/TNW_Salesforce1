@@ -67,10 +67,11 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         $lines[] = 'SKU, Qty, Name, Price, Tax, Subtotal, Net Total';
         $lines[] = $delimiter;
 
-        /**
-         * @var $item Mage_Sales_Model_Order_Item
-         */
-        foreach ($order->getAllVisibleItems() as $itemId => $item) {
+        /** @var TNW_Salesforce_Helper_Salesforce_Order $_helperOrder */
+        $_helperOrder = Mage::helper('tnw_salesforce/salesforce_order');
+
+        /** @var $item Mage_Sales_Model_Order_Item */
+        foreach ($_helperOrder->getItems($order) as $itemId => $item) {
             $rowTotalInclTax = $baseCurrency ? $item->getBaseRowTotalInclTax() : $item->getRowTotalInclTax();
             $discount = $baseCurrency ? $item->getBaseDiscountAmount() : $item->getDiscountAmount();
 

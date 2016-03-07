@@ -96,6 +96,94 @@ $data = array(
         'sf_field'          => 'Description',
         'sf_object'         => 'OrderItem'
     ),
+
+    // Invoice
+    array(
+        'local_field'       => 'Invoice : sf_name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OrderInvoice'
+    ),
+    array(
+        'local_field'       => 'Invoice : created_at',
+        'sf_field'          => 'tnw_fulfilment__Invoice_Date__c',
+        'sf_object'         => 'OrderInvoice',
+        'backend_type'      => 'datetime'
+    ),
+    array(
+        'local_field'       => 'Invoice : number',
+        'sf_field'          => 'tnw_fulfilment__Magento_ID__c',
+        'sf_object'         => 'OrderInvoice',
+    ),
+    array(
+        'local_field'       => 'Invoice : sf_status',
+        'sf_field'          => 'tnw_fulfilment__Status__c',
+        'sf_object'         => 'OrderInvoice',
+    ),
+    array(
+        'local_field'       => 'Invoice : grand_total',
+        'sf_field'          => 'tnw_fulfilment__Total__c',
+        'sf_object'         => 'OrderInvoice',
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_account_id',
+        'sf_field'          => 'tnw_fulfilment__Account__c',
+        'sf_object'         => 'OrderInvoice',
+        '@attribute'        => 'customer:salesforce_account_id',
+    ),
+    array(
+        'local_field'       => 'Invoice : cart_all',
+        'sf_field'          => 'tnw_fulfilment__Description__c',
+        'sf_object'         => 'OrderInvoice',
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_id',
+        'sf_field'          => 'tnw_fulfilment__Billing_Contact__c',
+        'sf_object'         => 'OrderInvoice',
+        '@attribute'        => 'customer:salesforce_id'
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_id',
+        'sf_field'          => 'tnw_fulfilment__Shipping_Contact__c',
+        'sf_object'         => 'OrderInvoice',
+        '@attribute'        => 'customer:salesforce_id'
+    ),
+
+    // Invoice Item
+    array(
+        'local_field'       => 'Product : sku',
+        'sf_field'          => 'tnw_fulfilment__Product_Code__c',
+        'sf_object'         => 'OrderInvoiceItem',
+    ),
+    array(
+        'local_field'       => 'Product : name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OrderInvoiceItem',
+    ),
+    array(
+        'local_field'       => 'Billing Item : qty',
+        'sf_field'          => 'tnw_fulfilment__Quantity__c',
+        'sf_object'         => 'OrderInvoiceItem',
+    ),
+    array(
+        'local_field'       => 'Billing Item : unit_price',
+        'sf_field'          => 'tnw_fulfilment__Total__c',
+        'sf_object'         => 'OrderInvoiceItem',
+    ),
+    array(
+        'local_field'       => 'Billing Item : sf_product_options_text',
+        'sf_field'          => 'tnw_fulfilment__Description__c',
+        'sf_object'         => 'OrderInvoiceItem',
+    ),
+    array(
+        'local_field'       => 'Billing Item : sf_product_options_html',
+        'sf_field'          => 'tnw_fulfilment__Product_Options__c',
+        'sf_object'         => 'OrderInvoiceItem',
+    ),
+    array(
+        'local_field'       => 'Billing Item : number',
+        'sf_field'          => 'tnw_fulfilment__Magento_ID__c',
+        'sf_object'         => 'OrderInvoiceItem',
+    ),
 );
 
 $data = array_map(function($value){

@@ -566,10 +566,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             case 'Product':
                 // Load by product Id only if bundled OR simple with options
                 $_productId = $this->getProductIdFromCart($_entityItem);
+                $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
+
+                /** @var Mage_Catalog_Model_Product $_product */
+                $_product   = Mage::getModel('catalog/product')
+                    ->setStoreId($storeId);
+
                 if ($_productId) {
-                    $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
-                    return Mage::getModel('catalog/product')
-                        ->setStoreId($storeId)->load($_productId);
+                    return $_product->load($_productId);
                 }
                 else {
                     $_entity        = $this->_getObjectByEntityItemType($_entityItem, 'Order');
@@ -582,9 +586,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                         throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getData('ProductCode') . ") is not synchronized, could not add to $this->_salesforceEntityName!");
                     }
 
-                    return new Varien_Object(array(
+                    return $_product->addData(array(
+                        'name'                    => $_entityItem->getData('Name'),
                         'sku'                     => $_entityItem->getData('ProductCode'),
-                        'salesforce_id'           => $pricebookEntry['Id'],
+                        'salesforce_id'           => $_entityItem->getData('Id'),
                         'salesforce_pricebook_id' => $pricebookEntry['Id'],
                     ));
                 }
@@ -611,6 +616,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     {
         $_entity       = $this->getEntityByItem($_entityItem);
         $_entityNumber = $this->_getEntityNumber($_entity);
+        /** @var Mage_Catalog_Model_Product $product */
         $product       = $this->_getObjectByEntityItemType($_entityItem, 'Product');
 
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($_entityNumber);
@@ -666,7 +672,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $this->_obj->CurrencyIsoCode = $_entity->getData('order_currency_code');
+            $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
         }
 
         /* Dump OpportunityLineItem object into the log */

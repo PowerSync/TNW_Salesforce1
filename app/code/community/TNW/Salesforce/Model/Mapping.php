@@ -24,8 +24,9 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     protected $_aliasType = array(
         'cart'              => 'order_item',
         'payment'           => 'order_payment',
-        'billing item'      => 'invoice_item',
-        'shipment item'     => 'shipment_item',
+        'invoice'           => 'order_invoice',
+        'billing item'      => 'order_invoice_item',
+        'shipment item'     => 'order_shipment_item',
         'product inventory' => 'product_inventory',
         'billing'           => 'address_billing',
         'shipping'          => 'address_shipping',
