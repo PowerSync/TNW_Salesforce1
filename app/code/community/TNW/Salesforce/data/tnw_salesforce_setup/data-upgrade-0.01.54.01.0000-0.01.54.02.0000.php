@@ -125,15 +125,15 @@ $data = array(
         'sf_object'         => 'OrderInvoice',
     ),
     array(
+        'local_field'       => 'Invoice : cart_all',
+        'sf_field'          => 'tnw_fulfilment__Description__c',
+        'sf_object'         => 'OrderInvoice',
+    ),
+    array(
         'local_field'       => 'Customer : salesforce_account_id',
         'sf_field'          => 'tnw_fulfilment__Account__c',
         'sf_object'         => 'OrderInvoice',
         '@attribute'        => 'customer:salesforce_account_id',
-    ),
-    array(
-        'local_field'       => 'Invoice : cart_all',
-        'sf_field'          => 'tnw_fulfilment__Description__c',
-        'sf_object'         => 'OrderInvoice',
     ),
     array(
         'local_field'       => 'Customer : salesforce_id',
@@ -183,6 +183,155 @@ $data = array(
         'local_field'       => 'Billing Item : number',
         'sf_field'          => 'tnw_fulfilment__Magento_ID__c',
         'sf_object'         => 'OrderInvoiceItem',
+    ),
+
+    // Shipment
+    array(
+        'local_field'       => 'Shipment : sf_name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OrderShipment',
+    ),
+    array(
+        'local_field'       => 'Shipment : website',
+        'sf_field'          => 'tnw_fulfilment__Magento_Website__c',
+        'sf_object'         => 'OrderShipment',
+    ),
+    array(
+        'local_field'       => 'Shipment : created_at',
+        'sf_field'          => 'tnw_fulfilment__Date_Shipped__c',
+        'sf_object'         => 'OrderShipment',
+        'backend_type'      => 'datetime',
+    ),
+    array(
+        'local_field'       => 'Shipment : number',
+        'sf_field'          => 'tnw_fulfilment__Magento_ID__c',
+        'sf_object'         => 'OrderShipment',
+    ),
+    array(
+        'local_field'       => 'Shipment : total_qty',
+        'sf_field'          => 'tnw_fulfilment__Total_Quantity__c',
+        'sf_object'         => 'OrderShipment',
+    ),
+    array(
+        'local_field'       => 'Shipment : cart_all',
+        'sf_field'          => 'tnw_fulfilment__Description__c',
+        'sf_object'         => 'OrderShipment',
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_account_id',
+        'sf_field'          => 'tnw_fulfilment__Account__c',
+        'sf_object'         => 'OrderShipment',
+        '@attribute'        => 'customer:salesforce_account_id',
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_id',
+        'sf_field'          => 'tnw_fulfilment__Billing_Contact__c',
+        'sf_object'         => 'OrderShipment',
+        '@attribute'        => 'customer:salesforce_id',
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_id',
+        'sf_field'          => 'tnw_fulfilment__Shipping_Contact__c',
+        'sf_object'         => 'OrderShipment',
+        '@attribute'        => 'customer:salesforce_id',
+    ),
+
+    // Shipment Item
+    array(
+        'local_field'       => 'Product : sku',
+        'sf_field'          => 'tnw_fulfilment__Product_Code__c',
+        'sf_object'         => 'OrderShipmentItem',
+    ),
+    array(
+        'local_field'       => 'Product : name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OrderShipmentItem',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : sf_product_options_text',
+        'sf_field'          => 'tnw_fulfilment__Description__c',
+        'sf_object'         => 'OrderShipmentItem',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : sf_product_options_html',
+        'sf_field'          => 'tnw_fulfilment__Product_Options__c',
+        'sf_object'         => 'OrderShipmentItem',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : number',
+        'sf_field'          => 'tnw_fulfilment__Magento_ID__c',
+        'sf_object'         => 'OrderShipmentItem',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : qty',
+        'sf_field'          => 'tnw_fulfilment__Quantity__c',
+        'sf_object'         => 'OrderShipmentItem',
+    ),
+
+    // Opportunity
+    array(
+        'local_field'       => 'Order : number',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Opportunity',
+    ),
+    array(
+        'local_field'       => 'Order : created_at',
+        'sf_field'          => 'CloseDate',
+        'sf_object'         => 'Opportunity',
+        'backend_type'      => 'datetime',
+    ),
+    array(
+        'local_field'       => 'Order : cart_all',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'Opportunity',
+    ),
+    array(
+        'local_field'       => 'Order : sf_status',
+        'sf_field'          => 'StageName',
+        'sf_object'         => 'Opportunity',
+    ),
+    array(
+        'local_field'       => 'Order : website',
+        'sf_field'          => 'tnw_mage_basic__Magento_Website__c',
+        'sf_object'         => 'Opportunity',
+    ),
+    array(
+        'local_field'       => 'Order : price_book',
+        'sf_field'          => 'Pricebook2Id',
+        'sf_object'         => 'Opportunity'
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_account_id',
+        'sf_field'          => 'AccountId',
+        'sf_object'         => 'Opportunity',
+        '@attribute'        => 'customer:salesforce_account_id',
+    ),
+    array(
+        'local_field'       => 'Order : sf_name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'Opportunity',
+    ),
+
+    // Opportunity Item
+    array(
+        'local_field'       => 'Cart : unit_price',
+        'sf_field'          => 'UnitPrice',
+        'sf_object'         => 'OpportunityLineItem'
+    ),
+    array(
+        'local_field'       => 'Cart : qty_ordered',
+        'sf_field'          => 'Quantity',
+        'sf_object'         => 'OpportunityLineItem'
+    ),
+    array(
+        'local_field'       => 'Cart : sf_product_options_html',
+        'sf_field'          => 'tnw_mage_basic__Product_Options__c',
+        'sf_object'         => 'OpportunityLineItem'
+    ),
+    array(
+        'local_field'       => 'Cart : sf_product_options_text',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'OpportunityLineItem'
     ),
 );
 

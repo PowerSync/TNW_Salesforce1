@@ -1,11 +1,11 @@
 <?php
 
-class TNW_Salesforce_Model_Mapping_Type_Order_Invoice_Item extends TNW_Salesforce_Model_Mapping_Type_Order_Item
+class TNW_Salesforce_Model_Mapping_Type_Order_Shipment_Item extends TNW_Salesforce_Model_Mapping_Type_Order_Item
 {
-    const TYPE = 'Billing Item';
+    const TYPE = 'Shipment Item';
 
     /**
-     * @param $_entity Mage_Sales_Model_Order_Invoice_Item
+     * @param $_entity Mage_Sales_Model_Order_Shipment_Item
      * @return string
      */
     public function getValue($_entity)
@@ -14,9 +14,6 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice_Item extends TNW_Salesforc
         switch ($attribute) {
             case 'number':
                 return $this->convertNumber($_entity);
-
-            case 'unit_price':
-                return $this->convertUnitPrice($_entity);
 
             case 'sf_product_options_html':
                 return $this->convertSfProductOptionsHtml($_entity->getOrderItem());
@@ -29,21 +26,11 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice_Item extends TNW_Salesforc
     }
 
     /**
-     * @param $_entity Mage_Sales_Model_Order_Invoice_Item
+     * @param $_entity Mage_Sales_Model_Order_Shipment_Item
      * @return float|mixed
      */
     public function convertNumber($_entity)
     {
         return $_entity->getId();
-    }
-
-    /**
-     * @param $_entity Mage_Sales_Model_Order_Invoice_Item
-     * @return float|mixed
-     */
-    public function convertUnitPrice($_entity)
-    {
-        $netTotal = $this->_calculateItemPrice($_entity, $_entity->getQty());
-        return $this->numberFormat($netTotal);
     }
 }

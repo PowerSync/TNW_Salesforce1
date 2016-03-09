@@ -546,6 +546,46 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
+     * @param $_entity Mage_Sales_Model_Order
+     * @param $type string
+     * @return mixed
+     */
+    protected function _getObjectByEntityType($_entity, $type)
+    {
+        switch($type)
+        {
+            case 'Custom':
+                return $_entity->getStore();
+
+            case 'Order':
+                return $_entity;
+
+            case 'Payment':
+                return $_entity->getPayment();
+
+            case 'Customer':
+                $_entityNumber = $this->_getEntityNumber($_entity);
+                return $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+
+            case 'Customer Group':
+                $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
+                $_groupId  = ($_entity->getCustomerGroupId() !== NULL)
+                    ? $_entity->getCustomerGroupId() : $_customer->getGroupId();
+
+                return Mage::getModel('customer/group')->load($_groupId);
+
+            case 'Billing':
+                return $_entity->getBillingAddress();
+
+            case 'Shipping':
+                return $_entity->getShippingAddress();
+
+            default:
+                return null;
+        }
+    }
+
+    /**
      * @param $_entityItem Mage_Sales_Model_Order_Item
      * @param $_type string
      * @return null
@@ -1189,8 +1229,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         return $mapping->getMagentoIdField();
     }
-
-    protected function _updatePreparedObjectInfo($item) {}
 
     protected function _checkPrepareEntityBefore($_key)
     {

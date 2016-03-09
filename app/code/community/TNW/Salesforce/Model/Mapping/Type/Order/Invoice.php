@@ -68,12 +68,12 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
 
             $lines[] = implode(', ', array(
                 $item->getSku(),
-                $helper->numberFormat($item->getQtyOrdered()),
+                $this->numberFormat($item->getQty()),
                 $item->getName(),
-                $currency . $helper->numberFormat($baseCurrency ? $item->getBasePrice() : $item->getPrice()),
-                $currency . $helper->numberFormat($baseCurrency ? $item->getBaseTaxAmount() : $item->getTaxAmount()),
-                $currency . $helper->numberFormat($rowTotalInclTax),
-                $currency . $helper->numberFormat($rowTotalInclTax - $discount),
+                $currency . $this->numberFormat($baseCurrency ? $item->getBasePrice() : $item->getPrice()),
+                $currency . $this->numberFormat($baseCurrency ? $item->getBaseTaxAmount() : $item->getTaxAmount()),
+                $currency . $this->numberFormat($rowTotalInclTax),
+                $currency . $this->numberFormat($rowTotalInclTax - $discount),
             ));
         }
         $lines[] = $delimiter;
@@ -89,7 +89,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
                      'Discount Amount' => $grandTotal - ($shipping + $tax + $subtotal),
                      'Total' => $grandTotal,
                  ) as $label => $totalValue) {
-            $lines[] = sprintf('%s: %s%s', $label, $currency, $helper->numberFormat($totalValue));
+            $lines[] = sprintf('%s: %s%s', $label, $currency, $this->numberFormat($totalValue));
         }
 
         return implode("\n", $lines) . "\n";

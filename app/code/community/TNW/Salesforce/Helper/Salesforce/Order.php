@@ -115,32 +115,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     {
         switch($types)
         {
-            case 'Custom':
-                return $_entity->getStore();
-
-            case 'Order':
-                return $_entity;
-
-            case 'Payment':
-                return $_entity->getPayment();
-
-            case 'Customer':
-                $_entityNumber = $this->_getEntityNumber($_entity);
-                return $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
-
-            case 'Customer Group':
-                $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
-                $_groupId  = ($_entity->getCustomerGroupId() !== NULL)
-                    ? $_entity->getCustomerGroupId() : $_customer->getGroupId();
-
-                return Mage::getModel('customer/group')->load($_groupId);
-
-            case 'Billing':
-                return $_entity->getBillingAddress();
-
-            case 'Shipping':
-                return $_entity->getShippingAddress();
-
             case 'Aitoc':
                 $_customer     = $this->_getObjectByEntityType($_entity, 'Customer');
                 $aitocValues   = array('order' => NULL, 'customer' => NULL);
@@ -154,7 +128,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 return $aitocValues;
 
             default:
-                return null;
+                return parent::_getObjectByEntityType($_entity, $types);
         }
     }
 
@@ -165,9 +139,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     public function reset()
     {
         parent::reset();
-
-        $this->_standardPricebookId = Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
-        $this->_defaultPriceBook = (Mage::helper('tnw_salesforce')->getDefaultPricebook()) ? Mage::helper('tnw_salesforce')->getDefaultPricebook() : $this->_standardPricebookId;
 
         // get all allowed order statuses from configuration
         $this->_allowedOrderStatuses = explode(',', Mage::helper('tnw_salesforce')->getAllowedOrderStates());
@@ -202,14 +173,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             'orderCustomersToSync' => array(),
             'leadsFailedToConvert' => array()
         );
-
-        if (empty($this->_attributes)) {
-            $resource = Mage::getResourceModel('eav/entity_attribute');
-            $this->_attributes['salesforce_id'] = $resource->getIdByCode('customer', 'salesforce_id');
-            $this->_attributes['salesforce_account_id'] = $resource->getIdByCode('customer', 'salesforce_account_id');
-            $this->_attributes['salesforce_lead_id'] = $resource->getIdByCode('customer', 'salesforce_lead_id');
-            $this->_attributes['salesforce_is_person'] = $resource->getIdByCode('customer', 'salesforce_is_person');
-        }
 
         return $this->check();
     }
@@ -291,16 +254,18 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     $_undeleteIds[] = $_orderNum;
                 }
 
-                $this->_processErrors($_result, 'order', $this->_cache['ordersToUpsert'][$_orderNum]);
                 $this->_cache['failedOrders'][] = $_orderNum;
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('Order Failed: (order: ' . $_orderNum . ')');
+                $this->_processErrors($_result, 'order', $this->_cache['ordersToUpsert'][$_orderNum]);
             } else {
-                $_order = $this->_loadEntityByCache(array_search($_orderNum, $this->_cache['entitiesUpdating']), $_orderNum);
+                $_order    = $this->_loadEntityByCache(array_search($_orderNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_orderNum);
+                $_customer = $this->_getObjectByEntityType($_order, 'Customer');
+
                 $_order->addData(array(
-                    'contact_salesforce_id' => $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id'),
-                    'account_salesforce_id' => $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id'),
+                    'contact_salesforce_id' => $_customer->getData('salesforce_id'),
+                    'account_salesforce_id' => $_customer->getData('salesforce_account_id'),
                     'sf_insync'             => 1,
                     'salesforce_id'         => $_result->id
                 ));
@@ -427,9 +392,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $_entity->setData('sf_insync', 0);
                 $_entity->getResource()->save($_entity);
 
-                $this->_processErrors($_result, 'orderCart', $chunk[$_cartItemId]);
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('ERROR: One of the Cart Item for (order: ' . $_entityNum . ') failed to upsert.');
+                $this->_processErrors($_result, 'orderCart', $chunk[$_cartItemId]);
             }
             else {
                 $_item = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_cartItemId));

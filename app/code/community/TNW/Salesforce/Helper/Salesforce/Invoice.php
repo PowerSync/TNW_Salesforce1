@@ -527,12 +527,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 ->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
         }
 
-        $_entityArray = array_flip($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         $_undeleteIds = array();
-        if (!$results) {
-            $results = array();
-        }
-
         foreach ($results as $_key => $_result) {
             $_entityNum = $_keys[$_key];
 
@@ -544,24 +539,21 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                     $_undeleteIds[] = $_entityNum;
                 }
 
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('%s Failed: (%s: ' . $_entityNum . ')', $this->_salesforceEntityName, $this->_magentoEntityName));
-
                 $this->_processErrors($_result, $this->_salesforceEntityName, $this->_cache[$entityToUpsertKey][$_entityNum]);
                 $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_entityNum;
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError(sprintf('%s Failed: (%s: ' . $_entityNum . ')', $this->_salesforceEntityName, $this->_magentoEntityName));
             }
             else {
-                $sql = sprintf('UPDATE `%s` SET sf_insync = 1, salesforce_id = "%s" WHERE entity_id = %d;',
-                    $this->_modelEntity()->getResource()->getMainTable(), $_result->id, $_entityArray[$_entityNum]);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+                $_entity = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
+                $_entity->addData(array(
+                    'sf_insync'     => 1,
+                    'salesforce_id' => (string)$_result->id
+                ));
+                $_entity->getResource()->save($_entity);
 
                 $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_entityNum] = $_result->id;
-                if ($entity = $this->_loadEntityByCache($_entityArray[$_entityNum], $_entityNum)) {
-                    $entity->setData('salesforce_id', (string)$_result->id);
-                    $entity->setData('sf_insync', 1);
-                }
-
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace(sprintf('%s Upserted: %s' , $this->_salesforceEntityName, $_result->id));
             }

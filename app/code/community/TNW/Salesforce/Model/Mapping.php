@@ -26,6 +26,7 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         'payment'           => 'order_payment',
         'invoice'           => 'order_invoice',
         'billing item'      => 'order_invoice_item',
+        'shipment'          => 'order_shipment',
         'shipment item'     => 'order_shipment_item',
         'product inventory' => 'product_inventory',
         'billing'           => 'address_billing',

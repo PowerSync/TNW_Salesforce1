@@ -176,13 +176,29 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
      */
     public function convertSfStatus($_entity)
     {
+        if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
+            $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_order_status');
+            return ($orderStatus)
+                ? $orderStatus : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+        }
+        else {
+            $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_opportunity_status_code');
+            return ($orderStatus)
+                ? $orderStatus : 'Committed';
+        }
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return tnw_salesforce_model_order_status
+     */
+    protected function _getFirstItemStatusMapping($_entity)
+    {
         /** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $collection */
         $collection = Mage::getResourceModel('tnw_salesforce/order_status_collection')
             ->addStatusToFilter($_entity->getStatus());
-        $orderStatus = $collection->getFirstItem()->getData('sf_order_status');
 
-        return ($orderStatus)
-            ? $orderStatus : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+        return $collection->getFirstItem();
     }
 
     /**
@@ -191,7 +207,13 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
      */
     public function convertSfName($_entity)
     {
-        return "Magento Order #" . $this->convertNumber($_entity);
+        if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
+            return "Magento Order #" . $this->convertNumber($_entity);
+        }
+        else {
+            return "Request #" . $this->convertNumber($_entity);
+        }
+
     }
 
     /**

@@ -304,8 +304,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateShipmentAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList(
-                Mage::getModel('sales/order_shipment')->getResource()->getMainTable());
+            $collection = $this->getDbConnection('read')
+                ->describeTable(Mage::getModel('sales/order_shipment')->getResource()->getMainTable());
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento shipment schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -319,17 +319,29 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array()
             );
 
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items (Text)',
+                'website'           => 'Associate to Website',
+                'sf_status'         => 'Salesforce Status',
+                'sf_name'           => 'Salesforce Name',
+                'track_number'      => 'Track Number',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['shipment']['value'][] = array(
+                    'value' => 'Shipment : '.$value,
+                    'label' => 'Shipment : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
+                $key = $_attribute['COLUMN_NAME'];
                 if (in_array($key, array(
-                    'entity_id',
-                    'store_id',
-                    'order_id',
-                    'customer_id',
-                    'shipping_address_id',
-                    'billing_address_id',
-                    'sf_insync',
-                    'salesforce_id',
+                    'entity_id', 'store_id',
+                    'order_id', 'customer_id',
+                    'shipping_address_id', 'billing_address_id',
+                    'sf_insync', 'salesforce_id',
                 ))) {
                     continue;
                 }
@@ -708,7 +720,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateShipmentItemAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_shipment_item');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_shipment_item');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -722,15 +735,22 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array()
             );
 
+            $_additionalAttributes = array(
+                'number'                  => 'Number',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['shipment_items']['value'][] = array(
+                    'value' => 'Shipment Item : '.$value,
+                    'label' => 'Shipment Item : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'entity_id'
-                    || $key == 'parent_id'
-                    || $key == 'product_id'
-                    || $key == 'order_item_id'
-                    || $key == 'salesforce_id'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('entity_id', 'parent_id', 'product_id', 'order_item_id', 'salesforce_id'))) {
                     continue;
                 }
 
