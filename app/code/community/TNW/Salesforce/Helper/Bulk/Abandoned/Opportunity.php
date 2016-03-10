@@ -22,32 +22,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('quote');
     }
 
-    /**
-     * @param null $_quoteNumber
-     * @return null
-     */
-    protected function _getCustomerAccountId($_quoteNumber = NULL)
-    {
-        $_accountId = NULL;
-        // Get email from the quote object in Magento
-        $_quoteEmail = $this->_cache['quoteToEmail'][$_quoteNumber];
-        // Get email from customer object in Magento
-        $_customerEmail = (
-            is_array($this->_cache['quoteCustomers'])
-            && array_key_exists($_quoteNumber, $this->_cache['quoteCustomers'])
-            && is_object($this->_cache['quoteCustomers'][$_quoteNumber])
-            && $this->_cache['quoteCustomers'][$_quoteNumber]->getData('email')
-        ) ? strtolower($this->_cache['quoteCustomers'][$_quoteNumber]->getData('email')) : NULL;
-
-        if (is_array($this->_cache['accountsLookup']) && array_key_exists($_quoteEmail, $this->_cache['accountsLookup'][0])) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_quoteEmail]->Id;
-        } elseif ($_customerEmail && $_quoteEmail != $_customerEmail && is_array($this->_cache['accountsLookup']) && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])) {
-            $_accountId = $this->_cache['accountsLookup'][$_customerEmail][0]->Id;
-        }
-
-        return $_accountId;
-    }
-
     protected function _pushRemainingEntityData()
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {
@@ -285,73 +259,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
             $connection->query($sql);
         }
-    }
-
-    protected function _prepareContactRoles()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
-            if (in_array($_quoteNumber, $this->_cache['failedOpportunities'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('QUOTE (' . $_quoteNumber . '): Skipping, issues with upserting an opportunity!');
-                continue;
-            }
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $_quoteNumber . ') ********');
-            $this->_obj = new stdClass();
-
-            $_quote = $this->_loadEntityByCache($_key, $_quoteNumber);
-            $_customer = $this->getQuoteCustomer($_quote);
-
-            $_email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
-            if (
-                isset($this->_cache['accountsLookup'][0][$_email])
-                && is_object($this->_cache['accountsLookup'][0][$_email])
-                && property_exists($this->_cache['accountsLookup'][0][$_email], 'Id')
-            ) {
-                $this->_obj->ContactId = $this->_cache['accountsLookup'][0][$_email]->Id;
-            } elseif (array_key_exists($_quoteNumber, $this->_cache['convertedLeads'])) {
-                $this->_obj->ContactId = $this->_cache['convertedLeads'][$_quoteNumber]->contactId;
-            } else {
-                $this->_obj->ContactId = $_customer->getSalesforceId();
-            }
-
-            // Check if already exists
-            $_skip = false;
-
-            if (isset($this->_cache['opportunityLookup'][$_quoteNumber]) && $this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityContactRoles) {
-                foreach ($this->_cache['opportunityLookup'][$_quoteNumber]->OpportunityContactRoles->records as $_role) {
-                    if (property_exists($this->_obj, 'ContactId') && property_exists($_role, 'ContactId') && $_role->ContactId == $this->_obj->ContactId) {
-                        if ($_role->Role == Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole()) {
-                            // No update required
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Contact Role information is the same, no update required!');
-                            $_skip = true;
-                            break;
-                        }
-
-                        $this->_obj->Id = $_role->Id;
-                        $this->_obj->ContactId = $_role->ContactId;
-                        break;
-                    }
-                }
-            }
-
-            if (!$_skip) {
-                $this->_obj->IsPrimary = true;
-                $this->_obj->OpportunityId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_quoteNumber];
-
-                $this->_obj->Role = Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole();
-
-                foreach ($this->_obj as $key => $_item) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityContactRole Object: " . $key . " = '" . $_item . "'");
-                }
-
-                if (property_exists($this->_obj, 'ContactId') && $this->_obj->ContactId) {
-                    $this->_cache['contactRolesToUpsert'][] = $this->_obj;
-                } else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Was not able to convert customer Lead, skipping Opportunity Contact Role assignment. Please synchronize customer (email: ' . $_email . ')');
-                }
-            }
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: End----------');
     }
 
     protected function _onComplete()

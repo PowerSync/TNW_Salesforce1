@@ -1,6 +1,0 @@
-<?php
-
-abstract class TNW_Salesforce_Model_Sync_Mapping_Shipment_Base_Item extends TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item
-{
-
-}

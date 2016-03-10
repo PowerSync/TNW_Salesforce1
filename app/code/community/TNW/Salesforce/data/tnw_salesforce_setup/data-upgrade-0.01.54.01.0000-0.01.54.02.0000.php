@@ -77,22 +77,22 @@ $data = array(
 
     // OrderItem
     array(
-        'local_field'       => 'Cart : unit_price',
+        'local_field'       => 'Order Item : unit_price',
         'sf_field'          => 'UnitPrice',
         'sf_object'         => 'OrderItem'
     ),
     array(
-        'local_field'       => 'Cart : qty_ordered',
+        'local_field'       => 'Order Item : qty_ordered',
         'sf_field'          => 'Quantity',
         'sf_object'         => 'OrderItem'
     ),
     array(
-        'local_field'       => 'Cart : sf_product_options_html',
+        'local_field'       => 'Order Item : sf_product_options_html',
         'sf_field'          => 'tnw_mage_basic__Product_Options__c',
         'sf_object'         => 'OrderItem'
     ),
     array(
-        'local_field'       => 'Cart : sf_product_options_text',
+        'local_field'       => 'Order Item : sf_product_options_text',
         'sf_field'          => 'Description',
         'sf_object'         => 'OrderItem'
     ),
@@ -314,24 +314,89 @@ $data = array(
 
     // Opportunity Item
     array(
-        'local_field'       => 'Cart : unit_price',
+        'local_field'       => 'Order Item : unit_price',
         'sf_field'          => 'UnitPrice',
         'sf_object'         => 'OpportunityLineItem'
     ),
     array(
-        'local_field'       => 'Cart : qty_ordered',
+        'local_field'       => 'Order Item : qty_ordered',
         'sf_field'          => 'Quantity',
         'sf_object'         => 'OpportunityLineItem'
     ),
     array(
-        'local_field'       => 'Cart : sf_product_options_html',
+        'local_field'       => 'Order Item : sf_product_options_html',
         'sf_field'          => 'tnw_mage_basic__Product_Options__c',
         'sf_object'         => 'OpportunityLineItem'
     ),
     array(
-        'local_field'       => 'Cart : sf_product_options_text',
+        'local_field'       => 'Order Item : sf_product_options_text',
         'sf_field'          => 'Description',
         'sf_object'         => 'OpportunityLineItem'
+    ),
+
+    // Abandoned
+    array(
+        'local_field'       => 'Cart : number',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Abandoned',
+    ),
+    array(
+        'local_field'       => 'Cart : website',
+        'sf_field'          => 'tnw_mage_basic__Magento_Website__c',
+        'sf_object'         => 'Abandoned',
+    ),
+    array(
+        'local_field'       => 'Cart : sf_name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'Abandoned',
+    ),
+    array(
+        'local_field'       => 'Cart : sf_stage',
+        'sf_field'          => 'StageName',
+        'sf_object'         => 'Abandoned',
+    ),
+    array(
+        'local_field'       => 'Cart : price_book',
+        'sf_field'          => 'Pricebook2Id',
+        'sf_object'         => 'Abandoned',
+    ),
+    array(
+        'local_field'       => 'Cart : updated_at',
+        'sf_field'          => 'CloseDate',
+        'sf_object'         => 'Abandoned',
+    ),
+    array(
+        'local_field'       => 'Customer : salesforce_account_id',
+        'sf_field'          => 'AccountId',
+        'sf_object'         => 'Abandoned',
+        '@attribute'        => 'customer:salesforce_account_id',
+    ),
+    array(
+        'local_field'       => 'Cart : cart_all',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'Abandoned',
+    ),
+
+    // Abandoned Item
+    array(
+        'local_field'       => 'Cart Item : unit_price',
+        'sf_field'          => 'UnitPrice',
+        'sf_object'         => 'Abandoneditem'
+    ),
+    array(
+        'local_field'       => 'Cart Item : qty',
+        'sf_field'          => 'Quantity',
+        'sf_object'         => 'OpportunityLineItem'
+    ),
+    array(
+        'local_field'       => 'Cart Item : sf_product_options_html',
+        'sf_field'          => 'tnw_mage_basic__Product_Options__c',
+        'sf_object'         => 'Abandoneditem'
+    ),
+    array(
+        'local_field'       => 'Cart Item : sf_product_options_text',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'Abandoneditem'
     ),
 );
 
@@ -362,6 +427,13 @@ $data = array_map(function($value){
         'sf_magento_type'   => 'upsert'
     ), $value);
 }, $data);
+
+$installer->getConnection()->update($mappingTable, array(
+    'local_field' => new Zend_Db_Expr("REPLACE(local_field, 'Cart', 'Order Item')")
+), array('sf_object = ?' => array('OrderItem', 'OpportunityLineItem')));
+$installer->getConnection()->update($mappingTable, array(
+    'local_field' => new Zend_Db_Expr("REPLACE(local_field, 'Item', 'Cart Item')")
+), array('sf_object = ?' => 'Quote'));
 
 $installer->getConnection()->insertOnDuplicate($mappingTable, $data);
 

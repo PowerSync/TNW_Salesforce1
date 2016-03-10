@@ -98,7 +98,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();
 
-            $logger->add('Salesforce', 'leadsToConvert', $this->_cache['leadsToConvert'], $this->_cache['responses']['leadsToConvert']);
             $logger->add('Salesforce', 'Opportunity', $this->_cache['opportunitiesToUpsert'], $this->_cache['responses']['opportunities']);
             $logger->add('Salesforce', 'OpportunityLineItem', $this->_cache['opportunityLineItemsToUpsert'], $this->_cache['responses']['opportunityLineItems']);
             $logger->add('Salesforce', 'OpportunityContactRole', $this->_cache['contactRolesToUpsert'], $this->_cache['responses']['opportunityCustomerRoles']);
@@ -118,52 +117,41 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _assignOwnerIdToOpp()
     {
-        $_websites = $_emailArray = array();
-        foreach($this->_cache['orderToEmail'] as $_oid => $_email) {
-            $_customerId = $this->_cache['orderToCustomerId'][$_oid];
-            $_emailArray[$_customerId] = $_email;
-            $_order = Mage::registry('order_cached_' . $_oid);
-            $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
-            $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
-        }
-        // update contact lookup data
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailArray, $_websites);
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailArray, $_websites);
         // assign owner id to opp
-        foreach ($this->_cache['opportunitiesToUpsert'] as $_orderNumber => $_opportunityData) {
-            $_email = $this->_cache['orderToEmail'][$_orderNumber];
-            $_order = Mage::getModel('sales/order')->loadByIncrementId($_orderNumber);
-            $_websiteId = Mage::getModel('core/store')->load($_order->getData('store_id'))->getWebsiteId();
+        foreach ($this->_cache['opportunitiesToUpsert'] as $_entityNumber => $_opportunityData) {
+            $_entity   = $this->_loadEntityByCache(array_search($_entityNumber, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNumber);
+            /** @var Mage_Customer_Model_Customer $_customer */
+            $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
+
+            $_websiteId = Mage::getModel('core/store')->load($_entity->getStoreId())->getWebsiteId();
             $websiteSfId = $this->_websiteSfIds[$_websiteId];
 
             // Default Owner ID as configured in Magento
             $_opportunityData->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
             if (
-                is_array($this->_cache['opportunityLookup'])
-                && array_key_exists($_orderNumber, $this->_cache['opportunityLookup'])
-                && is_object($this->_cache['opportunityLookup'][$_orderNumber])
-                && property_exists($this->_cache['opportunityLookup'][$_orderNumber], 'OwnerId')
-                && $this->_cache['opportunityLookup'][$_orderNumber]->OwnerId
+                isset($this->_cache['opportunityLookup'][$_entityNumber])
+                && property_exists($this->_cache['opportunityLookup'][$_entityNumber], 'OwnerId')
+                && $this->_cache['opportunityLookup'][$_entityNumber]->OwnerId
             ) {
                 // Overwrite Owner ID if Opportuinity already exists, use existing owner
-                $_opportunityData->OwnerId = $this->_cache['opportunityLookup'][$_orderNumber]->OwnerId;
+                $_opportunityData->OwnerId = $this->_cache['opportunityLookup'][$_entityNumber]->OwnerId;
             } elseif (
-                $_email
-                && is_array($this->_cache['contactsLookup'])
-                && array_key_exists($websiteSfId, $this->_cache['contactsLookup'])
-                && array_key_exists($_email, $this->_cache['contactsLookup'][$websiteSfId])
-                && property_exists($this->_cache['contactsLookup'][$websiteSfId][$_email], 'OwnerId')
-                && $this->_cache['contactsLookup'][$websiteSfId][$_email]->OwnerId
+                isset($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()])
+                && property_exists($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()], 'OwnerId')
+                && $this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()]->OwnerId
             ) {
                 // Overwrite Owner ID, use Owner ID from Contact
-                $_opportunityData->OwnerId = $this->_cache['contactsLookup'][$websiteSfId][$_email]->OwnerId;
+                $_opportunityData->OwnerId = $this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()]->OwnerId;
             }
+
             // Reset back if inactive
             if (!$this->_isUserActive($_opportunityData->OwnerId)) {
                 $_opportunityData->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
             }
-            $this->_cache['opportunitiesToUpsert'][$_orderNumber] = $_opportunityData;
+
+            $this->_cache['opportunitiesToUpsert'][$_entityNumber] = $_opportunityData;
         }
+
         return true;
     }
 
@@ -277,9 +265,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 : $_order->getStore()->getWebsiteId();
 
             $websiteSfId = $this->_websiteSfIds[$websiteId];
-            if (isset($this->_cache['contactsLookup'][$websiteSfId])
-                && isset($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()])
-            ){
+            if (isset($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()])){
                 $this->_obj->ContactId = $this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()]->Id;
             }
 
@@ -289,7 +275,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             // Check if already exists
             $_skip = false;
-            if ($this->_cache['opportunityLookup'] && array_key_exists($_orderNumber, $this->_cache['opportunityLookup']) && $this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles) {
+            if (isset($this->_cache['opportunityLookup'][$_orderNumber]) && $this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles) {
                 foreach ($this->_cache['opportunityLookup'][$_orderNumber]->OpportunityContactRoles->records as $_role) {
                     if (property_exists($this->_obj, 'ContactId') && property_exists($_role, 'ContactId') && $_role->ContactId == $this->_obj->ContactId) {
                         if ($_role->Role == Mage::helper('tnw_salesforce')->getDefaultCustomerRole()) {
@@ -298,6 +284,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                             $_skip = true;
                             break;
                         }
+
                         $this->_obj->Id = $_role->Id;
                         $this->_obj->ContactId = $_role->ContactId;
                         break;

@@ -47,6 +47,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
         );
+        $this->_acl['orderItem'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
+        );
 
         $this->_acl['abandoned'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::ABANDONED_OBJECT,
@@ -68,10 +72,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
 
         );
-        $this->_acl['cart'] = array(
-            0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
-        );
+
         $this->_acl['product'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
@@ -130,8 +131,16 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $this->_populateInvoiceAttributes($type);
         }
 
+        if (in_array($type, $this->_acl['invoiceItem'])) {
+            $this->_populateInvoiceItemAttributes($type);
+        }
+
         if (in_array($type, $this->_acl['shipment'])) {
             $this->_populateShipmentAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['shipmentItem'])) {
+            $this->_populateShipmentItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['order'])) {
@@ -139,8 +148,17 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $this->_populatePaymentAttributes($type);
         }
 
+        if (in_array($type, $this->_acl['orderItem'])) {
+            /* Order Item */
+            $this->_populateOrderItemAttributes($type);
+        }
+
         if (in_array($type, $this->_acl['abandoned'])) {
             $this->_populateAbandonedAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['abandonedItem'])) {
+            $this->_populateAbandonedItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['customer'])) {
@@ -159,23 +177,6 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             if (property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
                 $this->_populateAitocAttributes($type);
             }
-        }
-
-        if (in_array($type, $this->_acl['abandonedItem'])) {
-            $this->_populateAbandonedItemAttributes($type);
-        }
-
-        if (in_array($type, $this->_acl['shipmentItem'])) {
-            $this->_populateShipmentItemAttributes($type);
-        }
-
-        if (in_array($type, $this->_acl['invoiceItem'])) {
-            $this->_populateInvoiceItemAttributes($type);
-        }
-
-        if (in_array($type, $this->_acl['cart'])) {
-            /* Cart Attributes */
-            $this->_populateCartAttributes($type);
         }
 
         if (in_array($type, $this->_acl['product'])) {
@@ -244,7 +245,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
                 $this->_cache[$type]['order']['value'][] = array(
                     'value' => 'Order : ' . $key,
-                    'label' => 'Order : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Order : ' . $this->toName($key),
                 );
             }
         }
@@ -295,7 +296,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
                 $this->_cache[$type]['invoice']['value'][] = array(
                     'value' => 'Invoice : ' . $key,
-                    'label' => 'Invoice : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Invoice : ' . $this->toName($key),
                 );
             }
         }
@@ -348,7 +349,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
                 $this->_cache[$type]['shipment']['value'][] = array(
                     'value' => 'Shipment : ' . $key,
-                    'label' => 'Shipment : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Shipment : ' . $this->toName($key),
                 );
             }
         }
@@ -357,7 +358,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateAbandonedAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_quote');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_quote');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -367,35 +369,35 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         if ($collection) {
             $this->_cache[$type]['abandoned'] = array(
-                'label' => 'Abandoned',
+                'label' => 'Cart Attribute',
                 'value' => array()
             );
 
-            $this->_cache[$type]['abandoned']['value'] = array(
-                array(
-                    'value' => 'Cart : number',
-                    'label' => 'Cart : Number',
-                ),
-                array(
-                    'value' => 'Cart : cart_all',
-                    'label' => 'Cart : All Cart Items',
-                ),
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items (Text)',
+                'website'           => 'Associate to Website',
+                'sf_stage'          => 'Salesforce Stage',
+                'sf_name'           => 'Salesforce Name',
+                'price_book'        => 'Price Book'
             );
 
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['abandoned']['value'][] = array(
+                    'value' => 'Cart : '.$value,
+                    'label' => 'Cart : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'increment_id'
-                    || $key == 'sf_insync'
-                    || $key == 'salesforce_id'
-                    || $key == 'status'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('increment_id', 'sf_insync', 'salesforce_id', 'status'))) {
                     continue;
                 }
 
                 $this->_cache[$type]['abandoned']['value'][] = array(
                     'value' => 'Cart : ' . $key,
-                    'label' => 'Cart : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Cart : ' . $this->toName($key),
                 );
             }
         }
@@ -404,7 +406,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populatePaymentAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_order_payment');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_order_payment');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento payment schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -419,10 +422,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             );
 
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
+                $key = $_attribute['COLUMN_NAME'];
                 $this->_cache[$type]['payment']['value'][] = array(
                     'value' => 'Payment : ' . $key,
-                    'label' => 'Payment : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Payment : ' . $this->toName($key),
                 );
             }
         }
@@ -515,7 +518,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
                 $this->_cache[$type]['customer_group']['value'][] = array(
                     'value' => 'Customer Group : ' . $key,
-                    'label' => 'Customer Group : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Customer Group : ' . $this->toName($key),
                 );
             }
             break;
@@ -589,7 +592,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         unset($collection, $_attribute);
     }
 
-    public function _populateCartAttributes($type)
+    public function _populateOrderItemAttributes($type)
     {
         try {
             $collection = $this->getDbConnection('read')
@@ -603,8 +606,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         }
 
         if ($collection) {
-            $this->_cache[$type]['shopping'] = array(
-                'label' => 'Cart Attributes',
+            $this->_cache[$type]['order_items'] = array(
+                'label' => 'Order Item Attributes',
                 'value' => array()
             );
 
@@ -615,9 +618,9 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             );
 
             foreach ($_additionalAttributes as $value => $label) {
-                $this->_cache[$type]['shopping']['value'][] = array(
-                    'value' => 'Cart : '.$value,
-                    'label' => 'Cart : '.$label,
+                $this->_cache[$type]['order_items']['value'][] = array(
+                    'value' => 'Order Item : '.$value,
+                    'label' => 'Order Item : '.$label,
                 );
             }
 
@@ -627,9 +630,9 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                     continue;
                 }
 
-                $this->_cache[$type]['shopping']['value'][] = array(
-                    'value' => 'Cart : ' . $key,
-                    'label' => 'Cart : ' . ucwords(str_replace("_", " ", $key)),
+                $this->_cache[$type]['order_items']['value'][] = array(
+                    'value' => 'Order Item : ' . $key,
+                    'label' => 'Order Item : ' . $this->toName($key),
                 );
             }
         }
@@ -638,7 +641,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateAbandonedItemAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_quote_item');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_quote_item');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -647,25 +651,33 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         }
 
         if ($collection) {
-            $this->_cache[$type]['shopping'] = array(
-                'label' => 'Abandoned Cart items attributes',
+            $this->_cache[$type]['abandoned_items'] = array(
+                'label' => 'Abandoned Cart items',
                 'value' => array()
             );
 
+            $_additionalAttributes = array(
+                'unit_price'              => 'Unit Price',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['abandoned_items']['value'][] = array(
+                    'value' => 'Cart Item : '.$value,
+                    'label' => 'Cart Item : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'item_id'
-                    || $key == 'quote_id'
-                    || $key == 'parent_item_id'
-                    || $key == 'quote_item_id'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('item_id', 'quote_id', 'parent_item_id', 'quote_item_id'))) {
                     continue;
                 }
 
                 $this->_cache[$type]['abandoned_items']['value'][] = array(
-                    'value' => 'Item : ' . $key,
-                    'label' => 'Item : ' . ucwords(str_replace("_", " ", $key)),
+                    'value' => 'Cart Item : ' . $key,
+                    'label' => 'Cart Item : ' . $this->toName($key),
                 );
             }
         }
@@ -711,7 +723,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
                 $this->_cache[$type]['invoice_items']['value'][] = array(
                     'value' => 'Billing Item : ' . $key,
-                    'label' => 'Billing Item : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Billing Item : ' . $this->toName($key),
                 );
             }
         }
@@ -756,7 +768,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
                 $this->_cache[$type]['shipment_items']['value'][] = array(
                     'value' => 'Shipment Item : ' . $key,
-                    'label' => 'Shipment Item : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Shipment Item : ' . $this->toName($key),
                 );
             }
         }
@@ -814,10 +826,13 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array(),
             );
 
-            foreach ($this->getTableColumnList() as $one) {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('cataloginventory_stock_item');
+
+            foreach ($collection as $one) {
                 $this->_cache[$type]['inventory']['value'][] = array(
-                    'value' => "Product Inventory : {$one['Field']}",
-                    'label' => 'Product Inventory : '.$this->toName($one['Field']),
+                    'value' => "Product Inventory : {$one['COLUMN_NAME']}",
+                    'label' => 'Product Inventory : '.$this->toName($one['COLUMN_NAME']),
                 );
             }
         }

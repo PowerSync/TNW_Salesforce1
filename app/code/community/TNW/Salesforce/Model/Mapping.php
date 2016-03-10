@@ -22,13 +22,11 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
      * @var array
      */
     protected $_aliasType = array(
-        'cart'              => 'order_item',
         'payment'           => 'order_payment',
         'invoice'           => 'order_invoice',
         'billing item'      => 'order_invoice_item',
         'shipment'          => 'order_shipment',
         'shipment item'     => 'order_shipment_item',
-        'product inventory' => 'product_inventory',
         'billing'           => 'address_billing',
         'shipping'          => 'address_shipping',
     );
@@ -57,6 +55,7 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
             $type = $this->_aliasType[$type];
         }
 
+        $type = str_replace(' ', '_', $type);
         return Mage::getSingleton('tnw_salesforce/mapping_type_'.$type)
             ->setMapping($this);
     }

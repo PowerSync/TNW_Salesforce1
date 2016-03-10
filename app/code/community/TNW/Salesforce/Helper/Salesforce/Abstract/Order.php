@@ -13,47 +13,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected $_stockItems = array();
 
     /**
-     * @var array
-     */
-    protected $_alternativeKeys = array();
-
-    /**
-     * @comment magento entity alias "convert from"
-     * @var string
-     */
-    protected $_magentoEntityName = '';
-
-    /**
-     * @comment salesforce entity alias "convert to"
-     * @var string
-     */
-    protected $_salesforceEntityName = '';
-
-    /**
-     * @comment cache keys
-     * @var string
-     */
-    protected $_ucParentEntityType = '';
-    protected $_manyParentEntityType = '';
-    protected $_itemsField = '';
-
-    /**
-     * @comment magento entity model alias
-     * @var array
-     */
-    protected $_magentoEntityModel = '';
-
-    /**
      * @comment magento entity model alias
      * @var array
      */
     protected $_magentoEntityId = 'entity_id';
-
-    /**
-     * @comment magento entity item qty field name
-     * @var array
-     */
-    protected $_itemQtyField = 'qty';
 
     /**
      * @comment current module name
@@ -68,11 +31,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     );
 
     protected $_pricebookEntryId = NULL;
-    /**
-     * @comment salesforce field name to assign parent entity
-     * @var string
-     */
-    protected $_salesforceParentIdField = '';
 
     /**
      * @comment order item field aliases
@@ -84,14 +42,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      * @var array
      */
     protected $_allowedOrderStatuses = array();
-
-    /**
-     * @return string
-     */
-    public function getSalesforceEntityName()
-    {
-        return $this->_salesforceEntityName;
-    }
 
     /**
      * @var int
@@ -922,7 +872,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         /**
          * Order customers sync can be denied if we just update order status
          */
-        if ($this->_updateCustomer) {
+        if ($this->getUpdateCustomer()) {
             $this->syncEntityCustomers($this->_emails, $this->_websites);
         }
 
@@ -967,9 +917,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
         }
 
-            foreach ($this->_skippedEntity as $_idToRemove) {
-                unset($this->_cache['entitiesUpdating'][$_idToRemove]);
-            }
+        foreach ($this->_skippedEntity as $_idToRemove) {
+            unset($this->_cache['entitiesUpdating'][$_idToRemove]);
+        }
 
         /**
          * use_product_campaign_assignment, reset data
@@ -1180,41 +1130,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected function _notesTableName()
     {
         return Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history');
-    }
-
-    /**
-     * @param null $_orderNumber
-     * @return null
-     */
-    protected function _getCustomerAccountId($_orderNumber = NULL)
-    {
-        $_accountId = NULL;
-        // Get email from the order object in Magento
-        $_orderEmail = $this->_cache['orderToEmail'][$_orderNumber];
-        // Get email from customer object in Magento
-        $_customerEmail = (
-            is_array($this->_cache['orderCustomers'])
-            && array_key_exists($_orderNumber, $this->_cache['orderCustomers'])
-            && is_object($this->_cache['orderCustomers'][$_orderNumber])
-            && $this->_cache['orderCustomers'][$_orderNumber]->getData('email')
-        ) ? strtolower($this->_cache['orderCustomers'][$_orderNumber]->getData('email')) : NULL;
-
-        if (
-            is_array($this->_cache['accountsLookup'])
-            && array_key_exists(0, $this->_cache['accountsLookup'])
-            && array_key_exists($_orderEmail, $this->_cache['accountsLookup'][0])
-        ) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_orderEmail]->Id;
-        } elseif (
-            $_customerEmail && $_orderEmail != $_customerEmail
-            && is_array($this->_cache['accountsLookup'])
-            && array_key_exists(0, $this->_cache['accountsLookup'])
-            && array_key_exists($_customerEmail, $this->_cache['accountsLookup'][0])
-        ) {
-            $_accountId = $this->_cache['accountsLookup'][0][$_customerEmail]->Id;
-        }
-
-        return $_accountId;
     }
 
     /**

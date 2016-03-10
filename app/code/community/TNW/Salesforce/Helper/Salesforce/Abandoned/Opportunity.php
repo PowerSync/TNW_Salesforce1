@@ -4,6 +4,7 @@
  * Class TNW_Salesforce_Helper_Salesforce_Opportunity
  *
  * @method Mage_Sales_Model_Quote _loadEntityByCache($_key, $cachePrefix = null)
+ * @method mixed _getObjectByEntityType(Mage_Sales_Model_Quote $_entity, $type)
  */
 class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
 {
@@ -12,6 +13,16 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      * @var string
      */
     protected $_magentoEntityName = 'quote';
+
+    /**
+     * @var string
+     */
+    protected $_mappingEntityName = 'Abandoned';
+
+    /**
+     * @var string
+     */
+    protected $_mappingEntityItemName = 'Abandoneditem';
 
     /**
      * @comment magento entity model alias
@@ -45,16 +56,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     /**
      * @param $id
      * @return Mage_Sales_Model_Quote
-     * @deprecated
-     */
-    protected function _loadQuote($id)
-    {
-        return $this->_loadEntity($id);
-    }
-
-    /**
-     * @param $id
-     * @return Mage_Sales_Model_Quote
      */
     protected function _loadEntity($id)
     {
@@ -77,63 +78,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         if (Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabledCustomerRole()) {
             $this->_prepareContactRoles();
-        }
-    }
-
-    /**
-     * @param $item Mage_Sales_Model_Quote_Item
-     */
-    protected function _getItemDescription($item)
-    {
-        $opt = array();
-        $_summary = array();
-
-        $typeId = $item->getProduct()->getTypeId();
-        switch($typeId) {
-            case 'bundle':
-                /** @var Mage_Bundle_Helper_Catalog_Product_configuration $configuration */
-                $configuration = Mage::helper('bundle/catalog_product_configuration');
-                $options = $configuration->getOptions($item);
-                break;
-
-            case 'downloadable':
-                /** @var Mage_Downloadable_Helper_Catalog_Product_Configuration $configuration */
-                $configuration = Mage::helper('downloadable/catalog_product_configuration');
-                $options = $configuration->getOptions($item);
-                break;
-
-            default:
-                /** @var Mage_Catalog_Helper_Product_Configuration $configuration */
-                $configuration = Mage::helper('catalog/product_configuration');
-                $options = $configuration->getOptions($item);
-                break;
-        }
-
-        $_prefix = '<table><thead><tr><th align="left">Option Name</th><th align="left">Title</th></tr></thead><tbody>';
-        foreach ($options as $_option) {
-            $optionValue = '';
-            if(isset($_option['print_value'])) {
-                $optionValue = $_option['print_value'];
-            } elseif (isset($_option['value'])) {
-                $optionValue = $_option['value'];
-            }
-
-            if (is_array($optionValue)) {
-                $optionValue = implode(', ', $optionValue);
-            }
-
-            $opt[] = '<tr><td align="left">' . $_option['label'] . '</td><td align="left">' . $optionValue . '</td></tr>';
-            $_summary[] = strip_tags($optionValue);
-        }
-
-        if (count($opt) > 0) {
-            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
-            $this->_obj->$syncParam = $_prefix . join("", $opt) . '</tbody></table>';
-
-            $this->_obj->Description = join(", ", $_summary);
-            if (strlen($this->_obj->Description) > 200) {
-                $this->_obj->Description = substr($this->_obj->Description, 0, 200) . '...';
-            }
         }
     }
 
@@ -186,70 +130,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: End----------');
     }
 
-    /**
-     * assign ownerId to opportunity
-     *
-     * @return bool
-     */
-    protected function _assignOwnerIdToOpp()
-    {
-        $_websites = $_emailArray = array();
-        foreach ($this->_cache['quoteToEmail'] as $_quoteNumber => $_email) {
-            $_customerId = $this->_cache['quoteToCustomerId'][$_quoteNumber];
-            $_emailArray[$_customerId] = $_email;
-            $_quote = $this->_loadEntityByCache(array_search($_quoteNumber, $this->_cache['entitiesUpdating']), $_quoteNumber);
-            $_websiteId = (array_key_exists($_quoteNumber, $this->_cache['quoteCustomers']) && $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id'))
-                ? $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id')
-                : Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
-
-            $_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
-        }
-
-        // update contact lookup data
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emailArray, $_websites);
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emailArray, $_websites);
-
-        // assign owner id to opp
-        foreach ($this->_cache['opportunitiesToUpsert'] as $_quoteNumber => $_opportunityData) {
-            $_email = $this->_cache['quoteToEmail'][$_quoteNumber];
-            $_quote = $this->_loadEntityByCache(array_search($_quoteNumber, $this->_cache['entitiesUpdating']), $_quoteNumber);
-            $_websiteId = ($this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id'))
-                ? $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id')
-                : Mage::getModel('core/store')->load($_quote->getData('store_id'))->getWebsiteId();
-
-            $websiteSfId = $this->_websiteSfIds[$_websiteId];
-
-            // Default Owner ID as configured in Magento
-            $_opportunityData->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
-            if (
-                is_array($this->_cache['opportunityLookup'])
-                && array_key_exists($_quoteNumber, $this->_cache['opportunityLookup'])
-                && is_object($this->_cache['opportunityLookup'][$_quoteNumber])
-                && property_exists($this->_cache['opportunityLookup'][$_quoteNumber], 'OwnerId')
-                && $this->_cache['opportunityLookup'][$_quoteNumber]->OwnerId
-            ) {
-                // Overwrite Owner ID if Opportuinity already exists, use existing owner
-                $_opportunityData->OwnerId = $this->_cache['opportunityLookup'][$_quoteNumber]->OwnerId;
-            } elseif (
-                $_email
-                && is_array($this->_cache['contactsLookup'])
-                && array_key_exists($websiteSfId, $this->_cache['contactsLookup'])
-                && array_key_exists($_email, $this->_cache['contactsLookup'][$websiteSfId])
-                && property_exists($this->_cache['contactsLookup'][$websiteSfId][$_email], 'OwnerId')
-                && $this->_cache['contactsLookup'][$websiteSfId][$_email]->OwnerId
-            ) {
-                // Overwrite Owner ID, use Owner ID from Contact
-                $_opportunityData->OwnerId = $this->_cache['contactsLookup'][$websiteSfId][$_email]->OwnerId;
-            }
-            // Reset back if inactive
-            if (!$this->_isUserActive($_opportunityData->OwnerId)) {
-                $_opportunityData->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
-            }
-            $this->_cache['opportunitiesToUpsert'][$_quoteNumber] = $_opportunityData;
-        }
-        return true;
-    }
-
     protected function _pushEntity()
     {
         if (empty($this->_cache['opportunitiesToUpsert'])) {
@@ -287,7 +167,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
 
             $results = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of an quote to Salesforce failed' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('CRITICAL: Push of an quote to Salesforce failed' . $e->getMessage());
         }
 
         $_undeleteIds = array();
@@ -302,23 +183,28 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $_undeleteIds[] = $_quoteNum;
                 }
 
-                $this->_processErrors($_result, 'quote', $this->_cache['opportunitiesToUpsert'][$_quoteNum]);
                 $this->_cache['failedOpportunities'][] = $_quoteNum;
 
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Opportunity Failed: (quote: ' . $_quoteNum . ')');
-            } else {
-                $_entity = $this->_loadEntityByCache(array_search($_quoteNum, $this->_cache['entitiesUpdating']), $_quoteNum);
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Opportunity Failed: (quote: ' . $_quoteNum . ')');
+                $this->_processErrors($_result, 'quote', $this->_cache['opportunitiesToUpsert'][$_quoteNum]);
+            }
+            else {
+                $_entity   = $this->_loadEntityByCache(array_search($_quoteNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_quoteNum);
+                $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
+
                 $_entity->addData(array(
                     'sf_sync_force'         => 0,
                     'sf_insync'             => 1,
                     'salesforce_id'         => $_result->id,
-                    'contact_salesforce_id' => $this->_cache['quoteCustomers'][$_quoteNum]->getSalesforceId(),
-                    'account_salesforce_id' => $this->_cache['quoteCustomers'][$_quoteNum]->getSalesforceAccountId()
+                    'contact_salesforce_id' => $_customer->getSalesforceId(),
+                    'account_salesforce_id' => $_customer->getSalesforceAccountId()
                 ));
                 $_entity->getResource()->save($_entity);
 
                 $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_quoteNum] = $_result->id;
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_result->id);
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('Opportunity Upserted: ' . $_result->id);
             }
         }
 
@@ -397,51 +283,36 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         return $entityIds;
     }
 
-    /**
-     * @param Mage_Sales_Model_Quote $quote
-     *
-     * @return Mage_Customer_Model_Customer
-     */
-    protected function getQuoteCustomer($quote)
-    {
-        $_entityNumber = $this->_getEntityNumber($quote);
-
-        if (!isset($this->_cache['quoteToCustomerId'][$_entityNumber])
-            || !$this->_cache['quoteToCustomerId'][$_entityNumber]
-        ) {
-            $this->_cache['quoteToCustomerId'][$_entityNumber] = $quote->getCustomerId();
-        }
-
-        $customerId = $this->_cache['quoteToCustomerId'][$_entityNumber];
-
-        //always update cache array if customer ids are the same
-        if ($customerId == $quote->getCustomerId() && !$this->_cache['quoteCustomers'][$_entityNumber]) {
-            $this->_cache['quoteCustomers'][$_entityNumber] = $quote->getCustomer();
-        }
-
-        return $this->_cache['quoteCustomers'][$_entityNumber];
-    }
-
     protected function _prepareContactRoles()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: Start----------');
         foreach ($this->getUpsertedEntityIds() as $key => $quoteNumber) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('******** QUOTE (' . $quoteNumber . ') ********');
 
-            $quote = $this->_loadEntityByCache($key, $quoteNumber);
-            $customer = $this->getQuoteCustomer($quote);
+            $quote    = $this->_loadEntityByCache($key, $quoteNumber);
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer = $this->_getObjectByEntityType($quote, 'Customer');
 
             $contactRole = new stdClass();
-            $email = strtolower($customer->getEmail());
 
-            $contactRole->ContactId = $customer->getSalesforceId();
+            $websiteId   = $customer->getWebsiteId()
+                ? $customer->getWebsiteId()
+                : $quote->getStore()->getWebsiteId();
+
+            $websiteSfId = $this->_websiteSfIds[$websiteId];
+            if (isset($this->_cache['contactsLookup'][$websiteSfId][$customer->getEmail()])){
+                $contactRole->ContactId = $this->_cache['contactsLookup'][$websiteSfId][$customer->getEmail()]->Id;
+            }
+
+            if ($customer->getData('salesforce_id')) {
+                $contactRole->ContactId = $customer->getData('salesforce_id');
+            }
 
             // Check if already exists
             $skip = false;
             $defaultCustomerRole = Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultCustomerRole();
 
-            if ($this->_cache['opportunityLookup']
-                && array_key_exists($quoteNumber, $this->_cache['opportunityLookup'])
+            if (isset($this->_cache['opportunityLookup'][$quoteNumber])
                 && $this->_cache['opportunityLookup'][$quoteNumber]->OpportunityContactRoles
             ) {
                 $opportunity = $this->_cache['opportunityLookup'][$quoteNumber];
@@ -449,10 +320,12 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     if ($role->ContactId == $contactRole->ContactId) {
                         if ($role->Role == $defaultCustomerRole) {
                             // No update required
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Contact Role information is the same, no update required!');
+                            Mage::getSingleton('tnw_salesforce/tool_log')
+                                ->saveTrace('Contact Role information is the same, no update required!');
                             $skip = true;
                             break;
                         }
+
                         $contactRole->Id = $role->Id;
                         $contactRole->ContactId = $role->ContactId;
                         break;
@@ -463,7 +336,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             if (!$skip) {
                 $contactRole->IsPrimary = true;
                 $contactRole->OpportunityId = $this->_cache['upserted' . $this->getManyParentEntityType()][$quoteNumber];
-
                 $contactRole->Role = $defaultCustomerRole;
 
                 foreach ($contactRole as $key => $value) {
@@ -476,19 +348,21 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 } else {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Was not able to convert customer Lead, '
                         . 'skipping Opportunity Contact Role assignment. '
-                        . 'Please synchronize customer (email: ' . $email . ')');
+                        . 'Please synchronize customer (email: ' . $customer->getEmail() . ')');
                 }
             }
         }
+
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Opportunity Contact Role: End----------');
     }
 
     protected function _pushEntityItems($chunk = array())
     {
-        if (empty($this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
-            return false;
+        if (empty($this->_cache['upserted'.$this->getManyParentEntityType()])) {
+            return;
         }
-        $_quoteNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
+
+        $_quoteNumbers = array_flip($this->_cache['upserted'.$this->getManyParentEntityType()]);
         $_quoteCartNumbers = array_keys($chunk);
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OpportunityLineItem');
@@ -500,12 +374,14 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
 
             $results = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('CRITICAL: Push of Opportunity Line Items to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($results as $_key => $_result) {
-
-            $_quoteNum = $_quoteNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_quoteCartNumbers[$_key]]->OpportunityId];
+            $_cartItemId = $_quoteCartNumbers[$_key];
+            $_quoteNum   = $_quoteNumbers[$this->_cache['opportunityLineItemsToUpsert'][$_cartItemId]->OpportunityId];
+            $_entity     = $this->_loadEntityByCache(array_search($_quoteNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_quoteNum);
 
             //Report Transaction
             $this->_cache['responses']['opportunityLineItems'][$_quoteNum]['subObj'][] = $_result;
@@ -523,15 +399,24 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                         continue 2;
                     }
                 }
-                // Reset sync status
-                $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_quote') . "` SET sf_insync = 0, created_at = created_at WHERE salesforce_id = '" . $this->_cache['opportunityLineItemsToUpsert'][$_quoteCartNumbers[$_key]]->OpportunityId . "';";
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: One of the Cart Item for (quote: ' . $_quoteNum . ') failed to upsert.');
+                // Reset sync status
+                $_entity->setData('sf_insync', 0);
+                $_entity->getResource()->save($_entity);
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: One of the Cart Item for (quote: ' . $_quoteNum . ') failed to upsert.');
                 $this->_processErrors($_result, 'quoteCart', $chunk[$_quoteCartNumbers[$_key]]);
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Cart Item (id: ' . $_result->id . ') for (quote: ' . $_quoteNum . ') upserted.');
+            }
+            else {
+                $_item = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_cartItemId));
+                if ($_item instanceof Mage_Core_Model_Abstract) {
+                    $_item->setData('salesforce_id', $_result->id);
+                    $_item->getResource()->save($_item);
+                }
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('Cart Item (id: ' . $_result->id . ') for (quote: ' . $_quoteNum . ') upserted.');
             }
         }
     }
@@ -609,102 +494,19 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         return $syncCustomer;
     }
 
-    protected function _updateQuoteStageName($quote)
-    {
-        $this->_obj->StageName = 'Committed'; // if $collection is empty then we had error "CRITICAL: Failed to upsert order: Required fields are missing: [StageName]"
-
-        if ($stage = Mage::helper('tnw_salesforce/config_sales_abandoned')->getDefaultAbandonedCartStageName()) {
-            $this->_obj->StageName = $stage;
-        }
-
-        return $this;
-    }
-
     /**
-     * create opportunity object
-     *
-     * @param $quote Mage_Sales_Model_Quote
-     * @return mixed|void
+     * @param $_entity Mage_Sales_Model_Quote
      */
-    protected function _setEntityInfo($quote)
+    protected function _prepareEntityObjCustom($_entity)
     {
-        $_websiteId   = $quote->getStoreId();
-        $_quoteNumber = $this->_getEntityNumber($quote);
-        $_customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_quoteNumber];
-        $_lookupKey   = sprintf('%sLookup', $this->_salesforceEntityName);
-
-        // Magento Order ID
-        if (isset($this->_cache[$_lookupKey][$_quoteNumber])) {
-            $this->_obj->Id = $this->_cache[$_lookupKey][$_quoteNumber]->Id;
-        }
-
-        $this->_obj->{$this->_magentoId}
-            = $_quoteNumber;
-
-        $this->_updateQuoteStageName($quote);
-
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $this->_obj->CurrencyIsoCode = $quote->getData('quote_currency_code');
+            $this->_obj->CurrencyIsoCode = $_entity->getData('quote_currency_code');
         }
-
-        // Link to a Website
-        if (
-            $_websiteId != NULL
-            && array_key_exists($_websiteId, $this->_websiteSfIds)
-            && $this->_websiteSfIds[$_websiteId]
-        ) {
-            $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
-        }
-
-        // Force configured pricebook
-        $this->_assignPricebookToOrder($quote);
-
-        // Close Date
-        if ($quote->getUpdatedAt()) {
-
-            $closeDate = new Zend_Date($quote->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
-            $closeDate->addDay(Mage::helper('tnw_salesforce/config_sales_abandoned')->getAbandonedCloseTimeAfter($quote));
-
-            // Always use quote date as closing date if quote already exists
-            $this->_obj->CloseDate = gmdate(DATE_ATOM, $closeDate->getTimestamp());
-
-        } else {
-            // this should never happen
-            $this->_obj->CloseDate = date("Y-m-d", Mage::getModel('core/date')->timestamp(time()));
-        }
-
-        // Account ID
-        $this->_obj->AccountId = ($_customer->getSalesforceAccountId()) ? $_customer->getSalesforceAccountId() : NULL;
-        // For guest, extract converted Account Id
-        if (!$this->_obj->AccountId) {
-            $this->_obj->AccountId = (
-                array_key_exists($_quoteNumber, $this->_cache['convertedLeads'])
-                && property_exists($this->_cache['convertedLeads'][$_quoteNumber], 'accountId')
-            ) ? $this->_cache['convertedLeads'][$_quoteNumber]->accountId : NULL;
-        }
-
-        //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_quote_opportunity')
-            ->setSync($this)
-            ->processMapping($quote);
-
-        $this->_setOpportunityName($_quoteNumber);
-    }
-
-    /**
-     * @param $orderNumber
-     */
-    protected function _setOpportunityName($orderNumber)
-    {
-        $this->_obj->Name = "Abandoned Cart #" . $orderNumber;
     }
 
     public function reset()
     {
         parent::reset();
-
-        $this->_standardPricebookId = Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
-        $this->_defaultPriceBook = (Mage::helper('tnw_salesforce')->getDefaultPricebook()) ? Mage::helper('tnw_salesforce')->getDefaultPricebook() : $this->_standardPricebookId;
 
         // Reset cache (need to conver to magento cache
         $this->_cache = array(
@@ -736,36 +538,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             'leadsFaildToConvert' => array()
         );
 
-        if (empty($this->_attributes)) {
-            $resource = Mage::getResourceModel('eav/entity_attribute');
-            $this->_attributes['salesforce_id'] = $resource->getIdByCode('customer', 'salesforce_id');
-            $this->_attributes['salesforce_account_id'] = $resource->getIdByCode('customer', 'salesforce_account_id');
-            $this->_attributes['salesforce_lead_id'] = $resource->getIdByCode('customer', 'salesforce_lead_id');
-            $this->_attributes['salesforce_is_person'] = $resource->getIdByCode('customer', 'salesforce_is_person');
-        }
-
         return $this->check();
-    }
-
-    /**
-     * Get child product ids
-     *
-     * @param Mage_Sales_Model_Quote_Item $_item
-     * @return array
-     */
-    protected function _getChildProductIdsFromCart($_item)
-    {
-        $Ids = array();
-        $productId = $_item->getItemId();
-        $Ids[] = (int) $_item->getProductId();
-
-        foreach ($_item->getQuote()->getAllItems() as $_itemProduct) {
-            if ($_itemProduct->getParentItemId() == $productId) {
-                $Ids[] = (int) $_itemProduct->getProductId();
-            }
-        }
-
-        return $Ids;
     }
 
     /**
