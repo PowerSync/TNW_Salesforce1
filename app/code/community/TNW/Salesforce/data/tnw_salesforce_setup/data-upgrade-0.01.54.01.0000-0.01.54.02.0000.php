@@ -398,6 +398,73 @@ $data = array(
         'sf_field'          => 'Description',
         'sf_object'         => 'Abandoneditem'
     ),
+
+    // Product
+    array(
+        'local_field'       => 'Product : attribute_set_id',
+        'sf_field'          => 'tnw_mage_basic__Attribute_Set__c',
+        'sf_object'         => 'Product2',
+    ),
+    array(
+        'local_field'       => 'Product : type_id',
+        'sf_field'          => 'tnw_mage_basic__Product_Type__c',
+        'sf_object'         => 'Product2',
+        'sf_magento_type'   => 'update'
+    ),
+    array(
+        'local_field'       => 'Product : sku',
+        'sf_field'          => 'ProductCode',
+        'sf_object'         => 'Product2',
+    ),
+    array(
+        'local_field'       => 'Product : name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'Product2',
+        'magento_sf_type'   => 'insert',
+        'sf_magento_type'   => 'insert'
+    ),
+    array(
+        'local_field'       => 'Product : id',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Product2',
+    ),
+    array(
+        'local_field'       => 'Custom : active',
+        'sf_field'          => 'IsActive',
+        'sf_object'         => 'Product2',
+        'default_value'     => 'Enabled',
+    ),
+
+    // Contact
+    array(
+        'local_field'       => 'Customer : email',
+        'sf_field'          => 'Email',
+        'sf_object'         => 'Contact',
+        '@attribute'        => 'customer:email',
+    ),
+    array(
+        'local_field'       => 'Customer : firstname',
+        'sf_field'          => 'FirstName',
+        'sf_object'         => 'Contact',
+        '@attribute'        => 'customer:firstname',
+    ),
+    array(
+        'local_field'       => 'Customer : lastname',
+        'sf_field'          => 'LastName',
+        'sf_object'         => 'Contact',
+        '@attribute'        => 'customer:lastname',
+    ),
+    array(
+        'local_field'       => 'Customer : id',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Contact',
+    ),
+    array(
+        'local_field'       => 'Customer : website_id',
+        'sf_field'          => 'tnw_mage_basic__Magento_Website__c',
+        'sf_object'         => 'Contact',
+        '@attribute'        => 'customer:website_id',
+    ),
 );
 
 $data = array_map(function($value){

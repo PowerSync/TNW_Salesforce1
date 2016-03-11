@@ -223,11 +223,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
          */
         $_accountsByCompany = (!empty($_companies)) ? $this->lookupByCompanies($_companies, 'CustomIndex') : array();
 
+        $_accountsForce = $this->lookupForce($_emails);
+
         $_accountsByDomain = $this->lookupByEmailDomain($_emails, 'id');
 
         $_accountsByContacts = $this->lookupByContact($_customerEmails, $_websites);
 
-        $_accounts = array_merge($_accountsByCompany, $_accountsByDomain, $_accountsByContacts);
+        $_accounts = array_merge($_accountsByCompany, $_accountsForce, $_accountsByDomain, $_accountsByContacts);
 
         $_accountsLookup = array();
 
@@ -339,6 +341,30 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     {
         $accountIds = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails);
         return $this->lookupByCriterias($accountIds, 'CustomIndex','Id');
+    }
+
+    /**
+     * @comment find account force
+     * @param array $emails
+     * @return array
+     */
+    public function lookupForce($emails = array())
+    {
+        /** @var TNW_Salesforce_Helper_Config_Customer $_hCustomer */
+        $_hCustomer = Mage::helper('tnw_salesforce/config_customer');
+        if (!$_hCustomer->useAccountSyncCustomer()) {
+            return array();
+        }
+
+        $forceAccountId = $_hCustomer->getAccountSelect();
+        $forceAccount   = $this->lookupByCriteria(array('forceAccount' => $forceAccountId), 'CustomIndex', 'Id');
+
+        $accounts = array();
+        foreach (array_keys($emails) as $id) {
+            $accounts[$id] = $forceAccount['forceAccount'];
+        }
+
+        return $accounts;
     }
 
     /**

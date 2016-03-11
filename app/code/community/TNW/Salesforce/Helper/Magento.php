@@ -488,6 +488,18 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'label' => 'Customer',
             'value' => array(),
         );
+
+        $_additionalAttributes = array(
+            'id'       => 'Id',
+        );
+
+        foreach ($_additionalAttributes as $value => $label) {
+            $this->_cache[$type]['customer']['value'][] = array(
+                'value' => 'Customer : '.$value,
+                'label' => 'Customer : '.$label,
+            );
+        }
+
         foreach ($collection as $_attribute) {
             if ($_attribute->frontend_label != "") {
                 $this->_cache[$type]['customer']['value'][] = array(
@@ -817,6 +829,12 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         $this->_cache[$type]['product']['value'][] = array(
             'value' => 'Product : product_url', // do not use type_Id cause error happens
             'label' => 'Product : Url of the product page',
+        );
+
+        // add product number
+        $this->_cache[$type]['product']['value'][] = array(
+            'value' => 'Product : id', // do not use type_Id cause error happens
+            'label' => 'Product : Id',
         );
 
         // add inventory field list

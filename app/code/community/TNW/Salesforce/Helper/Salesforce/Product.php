@@ -334,29 +334,30 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
     }
 
+    /**
+     * @param Mage_Catalog_Model_Product $product
+     */
     protected function _buildProductObject($product)
     {
         $this->_obj = new stdClass();
-        $sku = $product->getSku();
-        $this->_obj->ProductCode = $sku;
-
-        $productsLookup = $this->_cache['productsLookup'];
-        $sfProductId = is_array($productsLookup) && isset($productsLookup[$sku]) && is_object($productsLookup[$sku])
-            ? $productsLookup[$sku]->Id : null;
-        if ($sfProductId) {
-            $product->setSalesforceId($sfProductId);
+        if (isset($this->_cache['productsLookup'][$product->getSku()])) {
+            $this->_obj->Id = $this->_cache['productsLookup'][$product->getSku()]->Id;
         }
 
-        if ($product->getSalesforceId()) {
-            $this->_obj->Id = $product->getSalesforceId();
+        /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
+        $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter('Product2')
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+
+        $_objectMappings = array();
+        foreach ($_mappingCollection->walk('getLocalFieldType') as $_type) {
+            $_objectMappings[$_type] = $this->_getObjectByEntityType($product, $_type);
         }
 
-        $this->_obj->IsActive = true;
-
-        //Process mapping
-        Mage::getModel('tnw_salesforce/sync_mapping_product_product')
-            ->setSync($this)
-            ->processMapping($product);
+        /** @var tnw_salesforce_model_mapping $_mapping */
+        foreach ($_mappingCollection as $_mapping) {
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+        }
 
         // if "Synchronize product attributes" is set to "yes" we replace sf description with product attributes
         if (intval($this->getHelper()->getProductAttributesSync()) == 1) {
@@ -364,7 +365,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
 
         if (property_exists($this->_obj, 'IsActive')) {
-            $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
+                $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
         }
 
         if ($this->getHelper()->getType() == 'PRO') {
@@ -372,28 +373,34 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_obj->$disableSyncField = true;
         }
 
+        $syncId = property_exists($this->_obj, 'Id')
+            ? 'Id'
+            : Mage::helper('tnw_salesforce/config')->getMagentoIdField();
 
-        if ($product->getId()) {
-            $magentoIdField = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
-            $this->_obj->{$magentoIdField} = $product->getId();
+        $this->_cache['productsToSync'][$syncId][$product->getId()] = $this->_obj;
+    }
 
-            //get name from salesforce or from magento
-            if (!property_exists($this->_obj, 'Name')) {
-                if (empty($productsLookup)
-                    || !array_key_exists($sku, $productsLookup)
-                    || !property_exists($productsLookup[$sku], 'Name')
-                ) {
-                    $this->_obj->Name = $product->getName();
-                } else {
-                    $this->_obj->Name = $productsLookup[$sku]->Name;
-                }
-            }
+    /**
+     * @param Mage_Catalog_Model_Product $_entity
+     * @param string $_type
+     * @return null
+     */
+    protected function _getObjectByEntityType($_entity, $_type)
+    {
+        switch($_type)
+        {
+            case 'Product':
+                return $_entity;
 
-            $syncId = property_exists($this->_obj, 'Id') ? 'Id' : $magentoIdField;
-            $this->_cache['productsToSync'][$syncId][$product->getId()] = $this->_obj;
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('WARNING: Could not synchronize product (sku: '
-                . $sku . '), product ID is missing!');
+            case 'Product Inventory':
+                return Mage::getModel('cataloginventory/stock_item')
+                    ->loadByProduct($_entity);
+
+            case 'Custom':
+                return $_entity->getStore();
+
+            default:
+                return null;
         }
     }
 
