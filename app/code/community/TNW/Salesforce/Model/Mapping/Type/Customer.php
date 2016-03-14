@@ -15,8 +15,11 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
             case 'website_id':
                 return $this->convertWebsite($_entity);
 
-            case 'email_opt_out':
+            case 'sf_email_opt_out':
                 return $this->convertEmailOptOut($_entity);
+
+            case 'sf_record_type':
+                return $this->convertSfRecordType($_entity);
         }
 
         /** @var mage_customer_model_resource_customer $_resource */
@@ -65,6 +68,40 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertEmailOptOut($_entity)
     {
+        /** @var Mage_Newsletter_Model_Subscriber $subscriber */
+        $subscriber = Mage::getModel('newsletter/subscriber')
+            ->loadByCustomer($_entity);
+        return !$subscriber->isSubscribed();
+    }
 
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    public function convertSfRecordType($_entity)
+    {
+        $_websiteId = $_entity->getData('website_id');
+        $_forceRecordType = Mage::app()->getWebsite($_websiteId)
+            ->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE);
+
+        switch($_forceRecordType) {
+            case TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT:
+                return Mage::app()->getWebsite($_websiteId)
+                    ->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
+
+            case TNW_Salesforce_Model_Config_Account_Recordtypes::B2C_ACCOUNT:
+                return Mage::app()->getWebsite($_websiteId)
+                    ->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
+
+            default:
+                $_companyFill = $_entity->getDefaultBillingAddress()
+                    && $_entity->getDefaultBillingAddress()->getData('company');
+
+                return Mage::app()->getWebsite($_websiteId)
+                    ->getConfig(($_companyFill)
+                        ? TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE
+                        : TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE
+                    );
+        }
     }
 }

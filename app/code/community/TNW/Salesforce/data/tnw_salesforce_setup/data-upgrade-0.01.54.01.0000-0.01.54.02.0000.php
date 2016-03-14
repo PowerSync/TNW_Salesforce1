@@ -465,6 +465,67 @@ $data = array(
         'sf_object'         => 'Contact',
         '@attribute'        => 'customer:website_id',
     ),
+    array(
+        'local_field'       => 'Customer : sf_email_opt_out',
+        'sf_field'          => 'HasOptedOutOfEmail',
+        'sf_object'         => 'Contact',
+    ),
+
+    // Account
+    array(
+        'local_field'       => 'Customer : sf_record_type',
+        'sf_field'          => 'RecordTypeId',
+        'sf_object'         => 'Account',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing : company',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'Account',
+        '@attribute'        => 'customer_address:company',
+    ),
+
+    // Lead
+    array(
+        'local_field'       => 'Customer : email',
+        'sf_field'          => 'Email',
+        'sf_object'         => 'Lead',
+        '@attribute'        => 'customer:email',
+    ),
+    array(
+        'local_field'       => 'Customer : firstname',
+        'sf_field'          => 'FirstName',
+        'sf_object'         => 'Lead',
+        '@attribute'        => 'customer:firstname',
+    ),
+    array(
+        'local_field'       => 'Customer : lastname',
+        'sf_field'          => 'LastName',
+        'sf_object'         => 'Lead',
+        '@attribute'        => 'customer:lastname',
+    ),
+    array(
+        'local_field'       => 'Billing : company',
+        'sf_field'          => 'Company',
+        'sf_object'         => 'Lead',
+        '@attribute'        => 'customer_address:company',
+    ),
+    array(
+        'local_field'       => 'Customer : id',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Lead',
+    ),
+    array(
+        'local_field'       => 'Customer : website_id',
+        'sf_field'          => 'tnw_mage_basic__Magento_Website__c',
+        'sf_object'         => 'Lead',
+        '@attribute'        => 'customer:website_id',
+    ),
+    array(
+        'local_field'       => 'Customer : sf_email_opt_out',
+        'sf_field'          => 'HasOptedOutOfEmail',
+        'sf_object'         => 'Lead',
+    ),
 );
 
 $data = array_map(function($value){
@@ -497,7 +558,7 @@ $data = array_map(function($value){
 
 $installer->getConnection()->update($mappingTable, array(
     'local_field' => new Zend_Db_Expr("REPLACE(local_field, 'Cart', 'Order Item')")
-), array('sf_object = ?' => array('OrderItem', 'OpportunityLineItem')));
+), array('sf_object' => array('in' => array('OrderItem', 'OpportunityLineItem'))));
 $installer->getConnection()->update($mappingTable, array(
     'local_field' => new Zend_Db_Expr("REPLACE(local_field, 'Item', 'Cart Item')")
 ), array('sf_object = ?' => 'Quote'));

@@ -360,7 +360,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         $this->_skippedEntity = array();
         try {
-            $this->_massAddBefore();
+            $this->_massAddBefore($_ids);
 
             foreach ($_ids as $_id) {
                 $_entity        = $this->_loadEntityByCache($_id);
@@ -399,9 +399,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     *
+     * @param array $_ids
      */
-    protected function _massAddBefore()
+    protected function _massAddBefore($_ids)
     {
         return;
     }
@@ -673,7 +673,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
 
         $_objectMappings = array();
-        foreach ($_mappingCollection->walk('getLocalFieldType') as $_type) {
+        foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
             $_objectMappings[$_type] = $this->_getObjectByEntityType($_entity, $_type);
         }
 
@@ -820,7 +820,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
 
         $_objectMappings = array();
-        foreach ($_mappingCollection->walk('getLocalFieldType') as $_type) {
+        foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
             $_objectMappings[$_type] = $this->_getObjectByEntityItemType($_entityItem, $_type);
         }
 

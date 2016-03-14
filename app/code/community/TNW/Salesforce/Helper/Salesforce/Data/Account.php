@@ -398,7 +398,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     protected function _prepareCriteriaSql($criteria, $field)
     {
-        $sql = 'SELECT Id, OwnerId, Name FROM Account WHERE ';
+        $additionalSql = '';
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $additionalSql = ", IsPersonAccount";
+        }
+
+        $sql = 'SELECT Id, OwnerId, Name, RecordTypeId ' . $additionalSql . ' FROM Account WHERE ';
 
         $where = array();
         foreach ($criteria as $value) {
@@ -450,6 +455,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $_returnObject->Id = (isset($_item['Id'])) ? $_item['Id'] : NULL;
                 $_returnObject->OwnerId = (isset($_item['OwnerId'])) ? $_item['OwnerId'] : NULL;
                 $_returnObject->Name = (isset($_item['Name'])) ? $_item['Name'] : NULL;
+                $_returnObject->RecordTypeId = (isset($_item['RecordTypeId'])) ? $_item['RecordTypeId'] : NULL;
+                $_returnObject->IsPersonAccount = (isset($_item['IsPersonAccount'])) ? $_item['IsPersonAccount'] : false;
 
                 foreach ($criteria as $_customIndex => $_value) {
                     // Need case insensitive match

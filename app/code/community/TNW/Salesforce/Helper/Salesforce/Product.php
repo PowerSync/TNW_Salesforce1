@@ -350,7 +350,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
 
         $_objectMappings = array();
-        foreach ($_mappingCollection->walk('getLocalFieldType') as $_type) {
+        foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
             $_objectMappings[$_type] = $this->_getObjectByEntityType($product, $_type);
         }
 

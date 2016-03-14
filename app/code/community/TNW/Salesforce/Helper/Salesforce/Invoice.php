@@ -69,9 +69,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     }
 
     /**
-     *
+     * @param array $_ids
      */
-    protected function _massAddBefore()
+    protected function _massAddBefore($_ids)
     {
         $this->_guestCount = 0;
         $this->_emails = $this->_websites = array();
