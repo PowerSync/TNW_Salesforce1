@@ -359,6 +359,15 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
         }
 
+        // Unset attribute
+        foreach ($this->_obj as $_key => $_value) {
+            if (null !== $_value) {
+                continue;
+            }
+
+            unset($this->_obj->{$_key});
+        }
+
         // if "Synchronize product attributes" is set to "yes" we replace sf description with product attributes
         if (intval($this->getHelper()->getProductAttributesSync()) == 1) {
             $this->_obj->Description = $this->_formatProductAttributesForSalesforce($product, false);

@@ -302,6 +302,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 ) {
                     $returnArray[$key] = $_item->Account;
                     $returnArray[$key]->Id = $_item->AccountId;
+                    $returnArray[$key]->RecordTypeId = property_exists($_item->Account, 'RecordTypeId') ? $_item->Account->RecordTypeId : null;
+                    $returnArray[$key]->IsPersonAccount = property_exists($_item->Account, 'IsPersonAccount') ? $_item->Account->IsPersonAccount : false;
                 }
             }
         }
@@ -400,10 +402,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     {
         $additionalSql = '';
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $additionalSql = ", IsPersonAccount";
+            $additionalSql = ", RecordTypeId, IsPersonAccount";
         }
 
-        $sql = 'SELECT Id, OwnerId, Name, RecordTypeId ' . $additionalSql . ' FROM Account WHERE ';
+        $sql = 'SELECT Id, OwnerId, Name' . $additionalSql . ' FROM Account WHERE ';
 
         $where = array();
         foreach ($criteria as $value) {

@@ -585,6 +585,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
         }
 
+        // Unset attribute
+        foreach ($this->_obj as $_key => $_value) {
+            if (null !== $_value) {
+                continue;
+            }
+
+            unset($this->_obj->{$_key});
+        }
+
         // Add to queue
         if ($type == "Lead") {
             $_issetCompeny = property_exists($this->_obj, 'Company');
@@ -617,10 +626,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_cache['contactsToUpsert'][$_upsertOn][$_id] = $this->_obj;
             }
             else {
-                if ($this->_isPerson && property_exists($this->_obj, 'AccountId')) {
-                    unset($this->_obj->AccountId);
-                }
-
                 // Move the prepared Contact data to Person Account
                 if (
                     array_key_exists('Id', $this->_cache['accountsToUpsert'])
@@ -643,11 +648,35 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
 
                 $this->_fixPersonAccountFields($this->_cache['accountsToUpsert']['Id'][$_id]);
+
+                /**
+                 * remove account name if renaming not allowed
+                 */
+                if (
+                    !Mage::helper('tnw_salesforce')->canRenameAccount()
+                    && property_exists($this->_cache['accountsToUpsert']['Id'][$_id], 'Id')
+                    && $this->_cache['accountsToUpsert']['Id'][$_id]->Id
+                ) {
+                    if (property_exists($this->_cache['accountsToUpsert']['Id'][$_id], 'FirstName')) {
+                        // Remove Name since Account exists in Salesforce and we should not rename it
+                        unset($this->_cache['accountsToUpsert']['Id'][$_id]->FirstName);
+                    }
+
+                    if (property_exists($this->_cache['accountsToUpsert']['Id'][$_id], 'LastName')) {
+                        // Remove Name since Account exists in Salesforce and we should not rename it
+                        unset($this->_cache['accountsToUpsert']['Id'][$_id]->LastName);
+                    }
+                }
             }
         }
         else if ($type == "Account") {
-            if (property_exists($this->_obj, 'Id') && !property_exists($this->_obj, 'RecordTypeId')) {
-                $this->_obj->RecordTypeId = $this->_obj['accountLookup'][0][$_email]->RecordTypeId;
+            /**
+             * At the present time not possible change RecordType if some other date defined for account sync
+             */
+            if (property_exists($this->_obj, 'Id') /*&& !property_exists($this->_obj, 'RecordTypeId')*/) {
+                $this->_obj->RecordTypeId = ($this->_cache['accountLookup'][0][$_email]->RecordTypeId)
+                    ? $this->_cache['accountLookup'][0][$_email]->RecordTypeId
+                    : Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
             }
 
             $_personType = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
@@ -674,29 +703,20 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
              * remove account name if renaming not allowed
              */
             if (
-                !Mage::helper('tnw_salesforce')->canRenameAccount()
+                !$this->_isPerson
+                && !Mage::helper('tnw_salesforce')->canRenameAccount()
                 && property_exists($this->_obj, 'Id')
                 && $this->_obj->Id
             ) {
-
-                if (!$this->_isPerson) {
-                    if (property_exists($this->_obj, 'Name')) {
-                        // Remove Name since Account exists in Salesforce and we should not rename it
-                        unset($this->_obj->Name);
-                    }
+                if (property_exists($this->_obj, 'Name')) {
+                    // Remove Name since Account exists in Salesforce and we should not rename it
+                    unset($this->_obj->Name);
                 }
-                // Person account has not Name, but has First and Last names
-                else {
-                    if (property_exists($this->_obj, 'FirstName')) {
-                        // Remove Name since Account exists in Salesforce and we should not rename it
-                        unset($this->_obj->FirstName);
-                    }
+            }
 
-                    if (property_exists($this->_obj, 'LastName')) {
-                        // Remove Name since Account exists in Salesforce and we should not rename it
-                        unset($this->_obj->LastName);
-                    }
-                }
+            //Unset Record Type if blank
+            if (property_exists($this->_obj, 'RecordTypeId') && empty($this->_obj->RecordTypeId)) {
+                unset($this->_obj->RecordTypeId);
             }
 
             $this->_cache['accountsToUpsert']['Id'][$_id] = $this->_obj;
@@ -1623,7 +1643,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_contactIds = array_keys($this->_cache['accountsToUpsert']['Id']);
             try {
                 Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']['Id']));
-                $_results = $this->_mySforceConnection->upsert($_pushOn, array_values($this->_cache['accountsToUpsert']['Id']), 'Account');
+                $dfg = array_values($this->_cache['accountsToUpsert']['Id']);
+                //unset($dfg[0]->OwnerId, $dfg[0]->RecordTypeId);
+                $_results = $this->_mySforceConnection->upsert($_pushOn, $dfg, 'Account');
                 Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
                     "data" => $this->_cache['accountsToUpsert']['Id'],
                     "result" => $_results
