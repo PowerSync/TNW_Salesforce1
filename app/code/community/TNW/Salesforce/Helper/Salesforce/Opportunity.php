@@ -123,7 +123,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             /** @var Mage_Customer_Model_Customer $_customer */
             $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
 
-            $_websiteId = Mage::getModel('core/store')->load($_entity->getStoreId())->getWebsiteId();
+            $_websiteId = Mage::app()->getStore($_entity->getStoreId())->getWebsiteId();
             $websiteSfId = $this->_websiteSfIds[$_websiteId];
 
             // Default Owner ID as configured in Magento

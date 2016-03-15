@@ -112,8 +112,8 @@ class TNW_Salesforce_Model_Mapping_Type_Cart extends TNW_Salesforce_Model_Mappin
     {
         /** @var tnw_salesforce_helper_magento_websites $websiteHelper */
         $websiteHelper = Mage::helper('tnw_salesforce/magento_websites');
-        $_website = Mage::getModel('core/store')
-            ->load($_entity->getStoreId())
+        $_website = Mage::app()
+            ->getStore($_entity->getStoreId())
             ->getWebsite();
 
         return $websiteHelper->getWebsiteSfId($_website);

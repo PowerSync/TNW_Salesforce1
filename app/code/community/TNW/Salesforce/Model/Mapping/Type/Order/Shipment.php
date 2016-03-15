@@ -80,8 +80,8 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Shipment extends TNW_Salesforce_Mo
     {
         /** @var tnw_salesforce_helper_magento_websites $websiteHelper */
         $websiteHelper = Mage::helper('tnw_salesforce/magento_websites');
-        $_website = Mage::getModel('core/store')
-            ->load($_entity->getStoreId())
+        $_website = Mage::app()
+            ->getStore($_entity->getStoreId())
             ->getWebsite();
 
         return $websiteHelper->getWebsiteSfId($_website);

@@ -132,7 +132,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
 
         $_websiteId = ($this->_cache[$_cacheCustomers][$_recordNumber]->getData('website_id'))
             ? $this->_cache[$_cacheCustomers][$_recordNumber]->getData('website_id')
-            : Mage::getModel('core/store')->load($_entity->getData('store_id'))->getWebsiteId();
+            : Mage::app()->getStore($_entity->getData('store_id'))->getWebsiteId();
 
         $this->_emails[$_customerId]   = strtolower($this->_cache[$_cacheCustomers][$_recordNumber]->getEmail());
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
@@ -168,7 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             // Guest most likely
             $_customer = Mage::getModel('customer/customer');
 
-            $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+            $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
             $_storeId = $order->getStoreId();
             if ($_customer->getSharingConfig()->isWebsiteScope()) {
                 $_customer->setWebsiteId($_websiteId);
@@ -236,7 +236,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $_customer->setShippingAddress($_shippingAddress);
         }
 
-        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+        $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
         if ($_customer->getSharingConfig()->isWebsiteScope()) {
             $_customer->setWebsiteId($_websiteId);
         }

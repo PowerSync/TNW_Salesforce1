@@ -400,7 +400,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             // Guest most likely
             $_customer = Mage::getModel('customer/customer');
 
-            $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+            $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
             $_storeId = $order->getStoreId();
             if ($_customer->getSharingConfig()->isWebsiteScope()) {
                 $_customer->setWebsiteId($_websiteId);
@@ -468,7 +468,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $_customer->setShippingAddress($_shippingAddress);
         }
 
-        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+        $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
         if ($_customer->getSharingConfig()->isWebsiteScope()) {
             $_customer->setWebsiteId($_websiteId);
         }
@@ -815,7 +815,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return false;
         }
 
-        $_websiteId = Mage::getModel('core/store')->load($_entity->getData('store_id'))->getWebsiteId();
+        $_websiteId = Mage::app()->getStore($_entity->getData('store_id'))->getWebsiteId();
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
         if ($_entity->getQuoteId()) {
             $this->_quotes[] = $_entity->getQuoteId();

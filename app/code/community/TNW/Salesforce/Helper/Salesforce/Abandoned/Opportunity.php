@@ -594,11 +594,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             return false;
         }
 
-        $this->_emails[$_customerId] = strtolower($_entity->getCustomerEmail());
-
-        // Associate quote Number with a customer Email
-        $this->_cache['quoteToEmail'][$_entityNumber] = $this->_cache['quoteCustomers'][$_entityNumber]->getEmail();
-
         // Store quote number and customer Email into a variable for future use
         $_quoteEmail = strtolower($this->_cache['quoteCustomers'][$_entityNumber]->getEmail());
         if (empty($_quoteEmail)) {
@@ -606,11 +601,15 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             return false;
         }
 
+        $this->_emails[$_customerId] = $_quoteEmail;
+
+        // Associate quote Number with a customer Email
+        $this->_cache['quoteToEmail'][$_entityNumber] = $_quoteEmail;
+
         // Associate quote ID with quote Number
-        $this->_cache['entitiesUpdating'][$_entity->getId()] = $_entityNumber;
         $this->_quotes[$_entity->getId()] = $_entityNumber;
 
-        $_websiteId = Mage::getModel('core/store')->load($_entity->getData('store_id'))->getWebsiteId();
+        $_websiteId = Mage::app()->getStore($_entity->getData('store_id'))->getWebsiteId();
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
 
         return true;
@@ -641,7 +640,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         /**
          * Order customers sync can be denied if we just update order status
          */
-        if ($this->_updateCustomer) {
+        if ($this->getUpdateCustomer()) {
             $this->syncEntityCustomers($this->_emails, $this->_websites);
         }
 
