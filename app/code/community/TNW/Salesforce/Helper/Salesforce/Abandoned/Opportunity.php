@@ -4,7 +4,6 @@
  * Class TNW_Salesforce_Helper_Salesforce_Opportunity
  *
  * @method Mage_Sales_Model_Quote _loadEntityByCache($_key, $cachePrefix = null)
- * @method mixed _getObjectByEntityType(Mage_Sales_Model_Quote $_entity, $type)
  */
 class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
 {
@@ -676,6 +675,43 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             foreach ($this->_skippedEntity as $_idToRemove) {
                 unset($this->_cache['entitiesUpdating'][$_idToRemove]);
             }
+        }
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Quote
+     * @param $type string
+     * @return mixed
+     */
+    protected function _getObjectByEntityType($_entity, $type)
+    {
+        switch($type)
+        {
+            case 'Cart':
+                return $_entity;
+
+            default:
+                return parent::_getObjectByEntityType($_entity, $type);
+        }
+    }
+
+    /**
+     * @param $_entityItem Mage_Sales_Model_Quote_Item
+     * @param $_type
+     * @return null
+     */
+    protected function _getObjectByEntityItemType($_entityItem, $_type)
+    {
+        switch($_type)
+        {
+            case 'Cart':
+                return $this->getEntityByItem($_entityItem);
+
+            case 'Cart Item':
+                return $_entityItem;
+
+            default:
+                return parent::_getObjectByEntityItemType($_entityItem, $_type);
         }
     }
 }

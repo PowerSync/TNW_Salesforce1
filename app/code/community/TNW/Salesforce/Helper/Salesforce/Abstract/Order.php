@@ -548,9 +548,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             case 'Order':
                 return $this->getEntityByItem($_entityItem);
 
-            case 'Cart':
-            case 'Item':
-            case 'Cart Item':
+            case 'Order Item':
                 return $_entityItem;
 
             case 'Product':
