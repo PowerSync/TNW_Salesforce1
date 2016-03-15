@@ -618,11 +618,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $this->_obj->AccountId = $this->_cache['accountLookup'][0][$_email]->Id;
                 }
 
-                if (!array_key_exists($_email, $this->_cache['toSaveInMagento'][$_websiteId])) {
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_email] = new stdClass();
-                }
-
-                $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_obj->AccountId;
                 $this->_cache['contactsToUpsert'][$_upsertOn][$_id] = $this->_obj;
             }
             else {
@@ -1637,15 +1632,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (!empty($this->_cache['accountsToUpsert']['Id'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Account Sync ----------");
             $this->_dumpObjectToLog($this->_cache['accountsToUpsert']['Id'], 'Account');
-            // Accounts upsert
-            $_pushOn = 'Id';
 
+            // Accounts upsert
             $_contactIds = array_keys($this->_cache['accountsToUpsert']['Id']);
             try {
                 Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']['Id']));
-                $dfg = array_values($this->_cache['accountsToUpsert']['Id']);
-                //unset($dfg[0]->OwnerId, $dfg[0]->RecordTypeId);
-                $_results = $this->_mySforceConnection->upsert($_pushOn, $dfg, 'Account');
+
+                $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']['Id']), 'Account');
                 Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
                     "data" => $this->_cache['accountsToUpsert']['Id'],
                     "result" => $_results
