@@ -659,10 +659,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
-        }
-
         /* Dump OpportunityLineItem object into the log */
         foreach ($this->_obj as $key => $_item) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
