@@ -676,32 +676,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @comment run some code after order item preparing
-     * @return $this
-     */
-    protected function _prepareItemObjFinish($item = null, $product = null)
-    {
-        /**
-         * @comment rename fields if it's necessary
-         */
-        $itemFieldAlias = $this->getItemFieldAlias();
-        if (!empty($itemFieldAlias)) {
-            foreach ($itemFieldAlias as $defaultName => $customName) {
-                if (!property_exists($this->_obj, $defaultName)) {
-                    continue;
-                }
-                if (!empty($customName)) {
-                    $this->_obj->{$customName} = $this->_obj->{$defaultName};
-                }
-
-                unset($this->_obj->{$defaultName});
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @comment See if created from Abandoned Cart
      * @param $quotes
      */

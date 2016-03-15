@@ -129,6 +129,21 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: End----------');
     }
 
+    /**
+     * Return false to re-create items
+     *
+     * @param $parentEntityNumber
+     * @param $qty
+     * @param $productIdentifier
+     * @param string $description
+     * @param null $item
+     * @return bool
+     */
+    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default', $item = null)
+    {
+        return false;
+    }
+
     protected function _pushEntity()
     {
         if (empty($this->_cache['opportunitiesToUpsert'])) {
