@@ -859,7 +859,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         // Clean order cache
         if (is_array($this->_cache['entitiesUpdating'])) {
             foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                $this->_unsetEntityCache($_orderNumber);
+                $this->unsetEntityCache($_orderNumber);
             }
         }
 

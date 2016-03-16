@@ -476,25 +476,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
     }
 
-    /**
-     * @param $order
-     */
-    protected function _updateEntityStatus($order)
-    {
-        /** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $collection */
-        $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection()
-            ->addStatusToFilter($order->getStatus());
-        $opportunityStatus = $collection->getFirstItem()->getSfOpportunityStatusCode();
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Mapping status: " . $order->getStatus());
-
-        $this->_obj->StageName = ($opportunityStatus)
-            ? $opportunityStatus : 'Committed';
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_obj->StageName);
-        unset($collection);
-    }
-
     public function reset()
     {
         parent::reset();

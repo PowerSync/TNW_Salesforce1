@@ -69,7 +69,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Shipment extends TNW_Salesforce_Mo
      */
     public function convertNumber($_entity)
     {
-        $_entity->getIncrementId();
+        return $_entity->getIncrementId();
     }
 
     /**

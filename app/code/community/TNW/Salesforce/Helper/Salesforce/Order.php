@@ -442,26 +442,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         }
     }
 
-    /**
-     * @param $order
-     * Update Order Status
-     */
-    protected function _updateEntityStatus($order)
-    {
-        /** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $collection */
-        $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection()
-            ->addStatusToFilter($order->getStatus());
-        $orderStatus = $collection->getFirstItem()->getData('sf_order_status');
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Mapping status: " . $order->getStatus());
-
-        $this->_obj->Status = ($orderStatus)
-            ? $orderStatus : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order status: " . $this->_obj->Status);
-        unset($collection);
-    }
-
     protected function _prepareEntityAfter()
     {
         $_toUpsert = &$this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))];

@@ -101,7 +101,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
      */
     public function convertNumber($_entity)
     {
-        $_entity->getIncrementId();
+        return $_entity->getIncrementId();
     }
 
     /**

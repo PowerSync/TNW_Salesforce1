@@ -34,7 +34,11 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice_Item extends TNW_Salesforc
      */
     public function convertNumber($_entity)
     {
-        return $_entity->getId();
+        if ($_entity instanceof Mage_Sales_Model_Order_Invoice_Item) {
+            return $_entity->getId();
+        }
+
+        return '';
     }
 
     /**

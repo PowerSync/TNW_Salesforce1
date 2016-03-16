@@ -386,7 +386,7 @@ $data = array(
     array(
         'local_field'       => 'Cart Item : qty',
         'sf_field'          => 'Quantity',
-        'sf_object'         => 'OpportunityLineItem'
+        'sf_object'         => 'Abandoneditem'
     ),
     array(
         'local_field'       => 'Cart Item : sf_product_options_html',

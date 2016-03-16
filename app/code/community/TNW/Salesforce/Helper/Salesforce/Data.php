@@ -217,7 +217,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 "OwnerId",
                 $_magentoId,
                 "(SELECT Id, ContactId, Role FROM OpportunityContactRoles)",
-                "(SELECT Id, Quantity, ServiceDate, UnitPrice, PricebookEntry.ProductCode, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OpportunityLineItems)",
+                "(SELECT Id, Quantity, ServiceDate, UnitPrice, PricebookEntry.ProductCode, PricebookEntry.Product2Id, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OpportunityLineItems)",
                 "(SELECT Id, Title, Body FROM Notes)"
             );
             if (is_array($ids)) {

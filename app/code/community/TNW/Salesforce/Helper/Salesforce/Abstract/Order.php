@@ -1100,19 +1100,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         return Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history');
     }
 
-    /**
-     * @return bool|false|null|string
-     */
-    public function getMagentoIdField()
-    {
-        /**
-         * @var $mapping TNW_Salesforce_Model_Sync_Mapping_Order_Base_Item
-         */
-        $mapping = Mage::getSingleton($this->getModulePrefix() . '/sync_mapping_' . $this->getMagentoEntityName() . '_' . $this->_salesforceEntityName . '_item');
-
-        return $mapping->getMagentoIdField();
-    }
-
     protected function _checkPrepareEntityBefore($_key)
     {
         $skippedKey   = sprintf('%s_skipped', strtolower($this->getManyParentEntityType()));
@@ -1341,6 +1328,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->setUpdateCustomer(Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_STATUS_UPDATE_CUSTOMER));
         // Added a parameter to skip customer sync when updating order status
         $checkAdd = $this->massAdd($order->getId(), false);
+        $this->setEntityCache($order);
         $this->setUpdateCustomer($_updateCustomer);
 
         if (!$checkAdd) {
@@ -1349,22 +1337,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
         if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
+            $this->_prepareEntity();
 
-            $this->_obj = new stdClass();
-
-            // Magento Order ID
-            $this->_obj->Id = $this->_cache[$_lookupKey][$_entityNumber]->Id;
-
-            //Process mapping
-            Mage::getSingleton(sprintf('tnw_salesforce/sync_mapping_order_%s', $this->_salesforceEntityName))
-                ->setSync($this)
-                ->processMapping($order);
-
-            // Update order status
-            $this->_updateEntityStatus($order);
-
-            $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_entityNumber] = $this->_obj;
+            // Push Order
             $this->_pushEntity();
+
+            // Push Activated order
+            $this->_pushRemainingCustomEntityData();
         }
         else {
             // Need to do full sync instead
@@ -1373,11 +1352,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SUCCESS: Updating Order #" . $_entityNumber);
             }
         }
-    }
-
-    protected function _updateEntityStatus($order)
-    {
-        return;
     }
 
     /**
@@ -1391,7 +1365,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         // Clean order cache
         if (is_array($this->_cache['entitiesUpdating'])) {
             foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                $this->_unsetEntityCache($_orderNumber);
+                $this->unsetEntityCache($_orderNumber);
             }
         }
 

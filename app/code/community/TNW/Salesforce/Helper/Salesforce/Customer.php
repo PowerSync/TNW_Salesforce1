@@ -227,6 +227,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         /**
          * prepare fake customer object to use it in lookup
+         * @var Mage_Customer_Model_Customer $fakeCustomer
          */
         $fakeCustomer = Mage::getModel('customer/customer');
         $fakeCustomer->setGroupId(0); // NOT LOGGED IN
@@ -298,20 +299,28 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_assignOwner($fakeCustomer, 'Lead', $this->_websiteSfIds[$_websiteId]);
 
-            //Process mapping
-            Mage::getSingleton('tnw_salesforce/sync_mapping_customer_lead')
-                ->setSync($this)
-                ->processMapping($fakeCustomer);
+            /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
+            $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Lead')
+                ->addFilterTypeMS(false);
 
-            // Link to a Website
-            if (
-                $_websiteId !== NULL
-                && array_key_exists($_websiteId, $this->_websiteSfIds)
-                && $this->_websiteSfIds[$_websiteId]
-            ) {
-                $websiteSfId = $this->_websiteSfIds[$_websiteId];
-                $websiteSfId = $this->prepareId($websiteSfId);
-                $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $websiteSfId;
+            $_objectMappings = array();
+            foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
+                $_objectMappings[$_type] = $this->_getObjectByEntityType($fakeCustomer, $_type);
+            }
+
+            /** @var tnw_salesforce_model_mapping $_mapping */
+            foreach ($_mappingCollection as $_mapping) {
+                $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+            }
+
+            // Unset attribute
+            foreach ($this->_obj as $_key => $_value) {
+                if (null !== $_value) {
+                    continue;
+                }
+
+                unset($this->_obj->{$_key});
             }
 
             $this->_cache['leadsToUpsert']['contactUs'] = $this->_obj;

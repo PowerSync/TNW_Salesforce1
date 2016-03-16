@@ -380,15 +380,14 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 return $_entityItem;
 
             case 'Product':
-                $_productId    = $_entityItem->getOrderItem()
-                    ? $this->getProductIdFromCart($_entityItem->getOrderItem()) : false;
+                $_productId = $this->getProductIdFromCart($_entityItem->getOrderItem());
                 $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
 
                 /** @var Mage_Catalog_Model_Product $_product */
                 $_product   = Mage::getModel('catalog/product')
                     ->setStoreId($storeId);
 
-                if ($_productId) {
+                if (!empty($_productId)) {
                     return $_product->load($_productId);
                 }
                 else {
@@ -757,7 +756,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         // Clean order cache
         if (is_array($this->_cache['entitiesUpdating'])) {
             foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                $this->_unsetEntityCache($_orderNumber);
+                $this->unsetEntityCache($_orderNumber);
             }
         }
 
@@ -779,20 +778,22 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
      */
     protected function _prepareAdditionalFees($_entity, $item)
     {
+        /** @var Mage_Sales_Model_Order_Item $_orderItem */
+        $_orderItem           = Mage::getModel('sales/order_item');
+
         $orderLookup = @$this->_cache['orderLookup'][$_entity->getOrder()->getRealOrderId()];
-        if (! ($orderLookup && property_exists($orderLookup, 'OrderItems') && $orderLookup->OrderItems)) {
-            return;
-        }
+        if ($orderLookup && property_exists($orderLookup, 'OrderItems') && $orderLookup->OrderItems) {
+            foreach ($orderLookup->OrderItems->records as $record) {
+                if ($record->PricebookEntry->Product2Id != $item->getData('Id')) {
+                    continue;
+                }
 
-        foreach ($orderLookup->OrderItems->records as $record) {
-            if ($record->PricebookEntry->Product2Id != $item->getData('Id')) {
-                continue;
+                $_orderItem->setData('salesforce_id', $record->Id);
+                break;
             }
-
-            //FIX: $item->getOrderItem()->getData('salesforce_id')
-            $item->setData('order_item', new Varien_Object(array('salesforce_id' => $record->Id)));
-
-            break;
         }
+
+        //FIX: $item->getOrderItem()->getData('salesforce_id')
+        $item->setData('order_item', $_orderItem);
     }
 }

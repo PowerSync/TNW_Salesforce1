@@ -184,7 +184,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         // Generate cache key
         if (is_null($cachePrefix) && !empty($_key)) {
             $_entity = $this->_loadEntity($_key);
-            $cachePrefix = $this->_getEntityNumber($_entity);
+            $cachePrefix = $this->_generateKeyPrefixEntityCache($_entity);
         }
 
         $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
@@ -202,6 +202,20 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         return Mage::registry($entityRegistryKey);
     }
 
+    /**
+     * @param $_entity
+     * @return mixed
+     * @throws Exception
+     */
+    protected function _generateKeyPrefixEntityCache($_entity)
+    {
+        return $this->_getEntityNumber($_entity);
+    }
+
+    /**
+     * @param $cachePrefix
+     * @return string
+     */
     protected function _generateKeyEntityCache($cachePrefix)
     {
         return sprintf('%s_cached_%s', $this->_magentoEntityName, (string)$cachePrefix);
@@ -209,11 +223,48 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param $cachePrefix
+     * @return $this
      */
-    protected function _unsetEntityCache($cachePrefix)
+    public function unsetEntityCache($cachePrefix)
     {
         $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
         Mage::unregister($entityRegistryKey);
+
+        return $this;
+    }
+
+    /**
+     * @param $_entity
+     * @return $this
+     */
+    public function setEntityCache($_entity)
+    {
+        $cachePrefix       = $this->_generateKeyPrefixEntityCache($_entity);
+        $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
+
+        Mage::unregister($entityRegistryKey);
+        Mage::register($entityRegistryKey, $_entity);
+
+        return $this;
+    }
+
+    /**
+     * @param $cachePrefix
+     * @return mixed
+     */
+    public function getEntityCache($cachePrefix)
+    {
+        $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
+        return Mage::registry($entityRegistryKey);
+    }
+
+    /**
+     * @param $cachePrefix
+     * @return bool
+     */
+    public function issetEntityCache($cachePrefix)
+    {
+        return (bool)$this->getEntityCache($cachePrefix);
     }
 
     /**
