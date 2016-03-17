@@ -455,12 +455,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $_responses = $this->_mySforceConnection->upsert($_upsertOn, array_values($chunk), 'Product2');
             Mage::dispatchEvent("tnw_salesforce_product_send_after", array("data" => $chunk, "result" => $_responses));
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($_productIds as $_id) {
-                $this->_cache['responses']['products'][$_id] = $_response;
-            }
-            $_responses = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
+            $_responses = array_fill(0, count($_productIds),
+                $this->_buildErrorResponse($e->getMessage()));
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
         }
 
         $_success = false;
@@ -768,14 +767,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         try {
             $_responses = $this->_mySforceConnection->upsert('Id', array_values($chunk), 'PricebookEntry');
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($_keys as $_id) {
-                $this->_cache['responses']['products'][$_id] = $_response;
-            }
-            $_responses = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
-        }
+            $_responses = array_fill(0, count($_keys),
+                $this->_buildErrorResponse($e->getMessage()));
 
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
+        }
 
         foreach ($_responses as $_key => $_response) {
 

@@ -99,12 +99,11 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
                 "result" => $_results
             ));
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach($_websiteIds as $_id) {
-                $this->_cache['responses']['websites'][$_id] = $_response;
-            }
-            $_results = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
+            $_results = array_fill(0, count($_websiteIds),
+                $this->_buildErrorResponse($e->getMessage()));
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($_results as $_key => $_result) {

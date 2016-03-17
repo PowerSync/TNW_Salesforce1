@@ -300,6 +300,10 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
      */
     protected function _prepareEntityObjCustom($_entity)
     {
+        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+            $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
+        }
+
         // Link to Order
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order__c'}
             = $_entity->getOrder()->getData('salesforce_id');
@@ -516,12 +520,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             ));
         }
         catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($_keys as $_id) {
-                $this->_cache['responses'][strtolower($this->getManyParentEntityType())][$_id] = $_response;
-            }
+            $results   = array_fill(0, count($_keys),
+                $this->_buildErrorResponse($e->getMessage()));
 
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
         }
@@ -588,16 +589,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             $results = $this->_mySforceConnection->upsert(
                 'Id', array_values($chunk), TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT);
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($chunk as $_object) {
-                $_invoiceId  = $_object
-                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Invoice__c'};
-                $_entityNum  = $_orderNumbers[$_invoiceId];
+            $results = array_fill(0, count($chunk),
+                $this->_buildErrorResponse($e->getMessage()));
 
-                $this->_cache['responses'][lcfirst($this->getItemsField())][$_entityNum]['subObj'][] = $_response;
-            }
-
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of Order Invoice Items to SalesForce failed' . $e->getMessage());
         }

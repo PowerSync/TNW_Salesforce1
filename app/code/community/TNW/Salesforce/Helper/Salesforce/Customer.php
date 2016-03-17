@@ -1651,12 +1651,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     "result" => $_results
                 ));
             } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_contactIds as $_id) {
-                    $this->_cache['responses']['accounts'][$_id] = $_response;
-                }
-                $_results = array();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of accounts to SalesForce failed' . $e->getMessage());
+                $_results = array_fill(0, count($_contactIds),
+                    $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('CRITICAL: Push of accounts to SalesForce failed' . $e->getMessage());
             }
 
             $_entitites = array();
@@ -1770,12 +1769,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     "result" => $_results
                 ));
             } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_contactIds as $_id) {
-                    $this->_cache['responses']['contacts'][$_id] = $_response;
-                }
-                $_results = array();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                $_results = array_fill(0, count($_contactIds),
+                    $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
             $_entitites = array();
 
@@ -1867,12 +1865,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     "result" => $_results
                 ));
             } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_contactIds as $_id) {
-                    $this->_cache['responses']['contacts'][$_id] = $_response;
-                }
-                $_results = array();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                $_results = array_fill(0, count($_contactIds),
+                    $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
             $_entitites = array();
 
@@ -1944,12 +1941,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     "result" => $_results
                 ));
             } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_contactIds as $_id) {
-                    $this->_cache['responses']['leads'][$_id] = $_response;
-                }
-                $_results = array();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                $_results = array_fill(0, count($_contactIds),
+                    $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
             $_entitites = array();
 
@@ -2008,6 +2004,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 unset($assignmentRule, $header);
             }
 
+            $_contactIds = array_keys($this->_cache['leadsToUpsert']['Id']);
             try {
                 Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']['Id']));
                 $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['leadsToUpsert']['Id']), 'Lead');
@@ -2016,16 +2013,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     "result" => $_results
                 ));
             } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_contactIds as $_id) {
-                    $this->_cache['responses']['leads'][$_id] = $_response;
-                }
-                $_results = array();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
+                $_results = array_fill(0, count($_contactIds),
+                    $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('CRITICAL: Push of contact to SalesForce failed' . $e->getMessage());
             }
 
             $_entitites = array();
-            $_contactIds = array_keys($this->_cache['leadsToUpsert']['Id']);
             foreach ($_results as $_key => $_result) {
                 //Report Transaction
                 $this->_cache['responses']['leads'][$_contactIds[$_key]] = $_result;

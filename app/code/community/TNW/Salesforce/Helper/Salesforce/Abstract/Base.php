@@ -1315,15 +1315,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'Note');
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach($chunk as $_object) {
-                $_orderSalesforceId = $_object->ParentId;
-                $_entityNum = array_search($_orderSalesforceId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+            $results = array_fill(0, count($chunk),
+                $this->_buildErrorResponse($e->getMessage()));
 
-                $this->_cache['responses']['notes'][$_entityNum]['subObj'][] = $_response;
-            }
-
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Notes to SalesForce failed' . $e->getMessage());
         }
 

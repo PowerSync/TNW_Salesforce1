@@ -14,14 +14,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         'opportunity_contact_roles' => array(),
     );
 
-    /**
-     * @comment call leads convertation method
-     */
-    protected function _convertLeads()
-    {
-        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('quote');
-    }
-
     protected function _pushRemainingEntityData()
     {
         if (!empty($this->_cache['opportunityLineItemsToUpsert'])) {

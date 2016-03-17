@@ -701,7 +701,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     }
 
     /**
-     * @param $order
+     * @param $order Mage_Sales_Model_Order
      * @return null|string
      */
     protected function _getPricebookIdToOrder($order)
@@ -709,44 +709,22 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $pricebook2Id = null;
 
         try {
-            $_storeId = $order->getStoreId();
+            /** @var tnw_salesforce_helper_data $_helper */
             $_helper = Mage::helper('tnw_salesforce');
-
-            $pricebook2Id = Mage::app()->getStore($_storeId)->getConfig($_helper::PRODUCT_PRICEBOOK);
-
-        } catch (Exception $e) {
+            $pricebook2Id = Mage::app()
+                ->getStore($order->getStoreId())
+                ->getConfig($_helper::PRODUCT_PRICEBOOK);
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: Could not load pricebook based on the order ID. Loading default pricebook based on current store ID.");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            if ($this->_defaultPriceBook) {
-                $pricebook2Id = $this->_defaultPriceBook;
-            }
+
+            $_standardPricebookId = Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
+            $pricebook2Id = (Mage::helper('tnw_salesforce')->getDefaultPricebook())
+                ? Mage::helper('tnw_salesforce')->getDefaultPricebook() : $_standardPricebookId;
         }
+
         return $pricebook2Id;
-    }
-
-    /**
-     * @param $_order Mage_Sales_Model_Order|Mage_Sales_Model_Quote
-     */
-    protected function _assignPricebookToOrder($_order)
-    {
-        $this->_obj->Pricebook2Id = $this->_getPricebookIdToOrder($_order);
-    }
-
-    /**
-     * @param $incrementId
-     * @return Mage_Sales_Model_Order
-     */
-    public function getOrderByIncrementId($incrementId)
-    {
-        $order = Mage::registry('order_cached_' . $incrementId);
-        // Add to cache
-        if (!$order) {
-            // Load order by ID
-            $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
-            Mage::register('order_cached_' . $incrementId, $order);
-        }
-
-        return $order;
     }
 
     /**
@@ -1220,16 +1198,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         if (!in_array($itemId, $this->_stockItems[$_storeId])) {
             $this->_stockItems[$_storeId][] = $itemId;
         }
-    }
-
-    /**
-     * @depricated Exists compatibility for
-     * @comment call leads convertation method
-     */
-    protected function _convertLeads()
-    {
-        return Mage::helper('tnw_salesforce/salesforce_data_lead')
-            ->setParent($this)->convertLeads($this->_magentoEntityName);
     }
 
     /**

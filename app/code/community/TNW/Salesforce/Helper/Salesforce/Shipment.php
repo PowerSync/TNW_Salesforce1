@@ -541,16 +541,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $results = $this->_mySforceConnection->upsert(
                 'Id', array_values($chunk), TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT);
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($chunk as $_object) {
-                $_shipmentId = $_object
-                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
-                $_orderNum = $_orderNumbers[$_shipmentId];
+            $results = array_fill(0, count($chunk),
+                $this->_buildErrorResponse($e->getMessage()));
 
-                $this->_cache['responses'][lcfirst($this->getItemsField())][$_orderNum]['subObj'][] = $_response;
-            }
-
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
         }
@@ -603,16 +596,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
                 $results = $this->_mySforceConnection->upsert(
                     'Id', array_values($_itemsToPush), TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__c');
             } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_itemsToPush as $_object) {
-                    $_shipmentId = $_object
-                        ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
-                    $_orderNum = $_orderNumbers[$_shipmentId];
+                $results = array_fill(0, count($_itemsToPush),
+                    $this->_buildErrorResponse($e->getMessage()));
 
-                    $this->_cache['responses']['orderShipmentTrack'][$_orderNum]['subObj'][] = $_response;
-                }
-
-                $results = array();
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
             }
@@ -676,12 +662,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             ));
         }
         catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($_keys as $_id) {
-                $this->_cache['responses'][strtolower($this->getManyParentEntityType())][$_id] = $_response;
-            }
+            $results = array_fill(0, count($_keys),
+                $this->_buildErrorResponse($e->getMessage()));
 
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
         }

@@ -233,12 +233,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 "result" => $results
             ));
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($_keys as $_id) {
-                $this->_cache['responses']['orders'][$_id] = $_response;
-            }
+            $results = array_fill(0, count($_keys),
+                $this->_buildErrorResponse($e->getMessage()));
 
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
         }
@@ -366,15 +363,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OrderItem');
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($chunk as $_object) {
-                $_sOrderId   = $_object->OrderId;
-                $_entityNum  = $_orderNumbers[$_sOrderId];
+            $results = array_fill(0, count($chunk),
+                $this->_buildErrorResponse($e->getMessage()));
 
-                $this->_cache['responses']['orderItems'][$_entityNum]['subObj'][] = $_response;
-            }
-
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of Order Items to SalesForce failed' . $e->getMessage());
         }
