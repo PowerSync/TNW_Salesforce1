@@ -473,9 +473,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     {
         parent::reset();
 
-        // get all allowed order statuses from configuration
-        $this->_allowedOrderStatuses = explode(',', Mage::helper('tnw_salesforce')->getAllowedOrderStates());
-
         // Reset cache (need to conver to magento cache
         $this->_cache = array(
             'upsertedOpportunities' => array(),
