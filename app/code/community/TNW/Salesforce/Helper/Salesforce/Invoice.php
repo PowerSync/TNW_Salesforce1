@@ -364,7 +364,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     protected function _getEntityItemSalesforceId($_entityItem)
     {
         $_entity = $this->getEntityByItem($_entityItem);
-        return $this->_doesCartItemExist($_entity, $_entityItem, null);
+        return $this->_doesCartItemExist($_entity, $_entityItem);
     }
 
     /**
@@ -457,10 +457,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     /**
      * @param $_entity Mage_Sales_Model_Order_Invoice
      * @param $_entityItem Mage_Sales_Model_Order_Invoice_Item
-     * @param $_product Mage_Catalog_Model_Product
      * @return bool
      */
-    protected function _doesCartItemExist($_entity, $_entityItem, $_product)
+    protected function _doesCartItemExist($_entity, $_entityItem)
     {
         $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
         $_entityNumber = $this->_getEntityNumber($_entity);
