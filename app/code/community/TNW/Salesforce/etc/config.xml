@@ -159,52 +159,52 @@
                 </observers>
             </catalog_model_product_duplicate>
             <!-- Newsletter Subscription: Create -->
-            <newsletter_subscriber_save_after>
+            <newsletter_subscriber_save_commit_after>
                 <observers>
                     <tnw_salesforce_newsletter_observer>
                         <class>tnw_salesforce/newsletter_observer</class>
                         <method>triggerCreateEvent</method>
                     </tnw_salesforce_newsletter_observer>
                 </observers>
-            </newsletter_subscriber_save_after>
+            </newsletter_subscriber_save_commit_after>
 
             <!-- Newsletter Subscription: Delete -->
-            <newsletter_subscriber_delete_after>
+            <newsletter_subscriber_delete_commit_after>
                 <observers>
                     <tnw_salesforce_newsletter_observer>
                         <class>tnw_salesforce/newsletter_observer</class>
                         <method>triggerDeleteEvent</method>
                     </tnw_salesforce_newsletter_observer>
                 </observers>
-            </newsletter_subscriber_delete_after>
+            </newsletter_subscriber_delete_commit_after>
 
             <!-- -->
-            <sales_order_invoice_save_after>
+            <sales_order_invoice_save_commit_after>
                 <observers>
                     <tnw_salesforce_order_invoice_save_after>
                         <class>tnw_salesforce/order_invoice_observer</class>
                         <method>saveAfter</method>
                     </tnw_salesforce_order_invoice_save_after>
                 </observers>
-            </sales_order_invoice_save_after>
+            </sales_order_invoice_save_commit_after>
 
-            <sales_order_shipment_save_after>
+            <sales_order_shipment_save_commit_after>
                 <observers>
                     <tnw_salesforce_order_shipment_save_after>
                         <class>tnw_salesforce/order_shipment_observer</class>
                         <method>saveAfter</method>
                     </tnw_salesforce_order_shipment_save_after>
                 </observers>
-            </sales_order_shipment_save_after>
+            </sales_order_shipment_save_commit_after>
 
-            <sales_order_shipment_track_save_after>
+            <sales_order_shipment_track_save_commit_after>
                 <observers>
                     <tnw_salesforce_order_shipment_track_save_after>
                         <class>tnw_salesforce/order_shipment_observer</class>
                         <method>saveTrackAfter</method>
                     </tnw_salesforce_order_shipment_track_save_after>
                 </observers>
-            </sales_order_shipment_track_save_after>
+            </sales_order_shipment_track_save_commit_after>
 
             <!-- Order Save Event: Checkout -->
             <checkout_submit_all_after>
@@ -217,14 +217,14 @@
             </checkout_submit_all_after>
 
             <!-- Order Save Event: Status update-->
-            <sales_order_save_after>
+            <sales_order_save_commit_after>
                 <observers>
                     <tnw_salesforce_sale_observer>
                         <class>tnw_salesforce/sale_observer</class>
                         <method>orderStatusUpdateTrigger</method>
                     </tnw_salesforce_sale_observer>
                 </observers>
-            </sales_order_save_after>
+            </sales_order_save_commit_after>
 
             <tnw_salesforce_order_save_form>
                 <observers>
@@ -318,14 +318,14 @@
             </tnw_salesforce_shipment_comments_save_after>
 
             <!-- Product Save Event -->
-            <catalog_product_save_after>
+            <catalog_product_save_commit_after>
                 <observers>
                     <tnw_salesforce_product_observer>
                         <class>tnw_salesforce/product_observer</class>
                         <method>salesforceTriggerEvent</method>
                     </tnw_salesforce_product_observer>
                 </observers>
-            </catalog_product_save_after>
+            </catalog_product_save_commit_after>
 
             <tnw_salesforce_product_save>
                 <observers>
@@ -337,14 +337,14 @@
             </tnw_salesforce_product_save>
 
             <!-- Customer Save Event -->
-            <customer_save_after>
+            <customer_save_commit_after>
                 <observers>
                     <tnw_salesforce_customer_observer>
                         <class>tnw_salesforce/customer_observer</class>
                         <method>salesforceTriggerEvent</method>
                     </tnw_salesforce_customer_observer>
                 </observers>
-            </customer_save_after>
+            </customer_save_commit_after>
             <aitcfm_customer_save_after>
                 <observers>
                     <tnw_salesforce_customer_observer>
@@ -362,14 +362,14 @@
                 </observers>
             </tnw_salesforce_customer_save>
             <!-- Website Save Event -->
-            <website_save_after>
+            <website_save_commit_after>
                 <observers>
                     <tnw_salesforce_website_observer>
                         <class>tnw_salesforce/website_observer</class>
                         <method>salesforcePush</method>
                     </tnw_salesforce_website_observer>
                 </observers>
-            </website_save_after>
+            </website_save_commit_after>
             <adminhtml_store_edit_form_prepare_form>
                 <observers>
                     <tnw_salesforce_website_edit_observer>
@@ -533,14 +533,14 @@
 
                 </observers>
             </sales_order_place_after>
-            <customer_address_save_after>
+            <customer_address_save_commit_after>
                 <observers>
                     <tnw_salesforce_customer_address_save_after_observer>
                         <class>tnw_salesforce/customer_observer</class>
                         <method>afterAddressSave</method>
                     </tnw_salesforce_customer_address_save_after_observer>
                 </observers>
-            </customer_address_save_after>
+            </customer_address_save_commit_after>
         </events>
     </frontend>
     <admin>
