@@ -176,7 +176,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'name' => 'magento_sf_enable',
             'class' => 'chosen-select',
             'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
-            'note' => 'Allow Magento to change data in Salesforce for this mapping',
+            'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
         ));
 
         $fieldset->addField('magento_sf_type', 'select', array(
@@ -184,9 +184,9 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'name' => 'magento_sf_type',
             'class' => 'chosen-select',
             'values' => Mage::getModel('tnw_salesforce/config_mapping')->toArray(),
-            'note' => '<b>Upsert</b> - update value when inserting or creating record<br>'
+            'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
                 . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
-                . '<b>Update Only</b> - pass value to Salesforce only when updating a record'
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record')
         ));
 
         /* SF > Magento */
@@ -197,7 +197,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'name' => 'sf_magento_enable',
             'class' => 'chosen-select',
             'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
-            'note' => 'Allow Magento to change data in Salesforce for this mapping',
+            'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
         ));
 
         $fieldset->addField('sf_magento_type', 'select', array(
@@ -205,9 +205,9 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'name' => 'sf_magento_type',
             'class' => 'chosen-select',
             'values' => Mage::getModel('tnw_salesforce/config_mapping')->toArray(),
-            'note' => '<b>Upsert</b> - update value when inserting or creating record<br>'
+            'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
                 . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
-                . '<b>Update Only</b> - pass value to Salesforce only when updating a record'
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record')
         ));
 
         /* Custom Value */
