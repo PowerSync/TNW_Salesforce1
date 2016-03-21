@@ -17,6 +17,12 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
     protected $_sfEntity = '';
 
     /**
+     * type Magento attributes
+     * @var string
+     */
+    protected $_tmAttributes = '';
+
+    /**
      * array of fields which should be hidden
      * @var array
      */
@@ -67,6 +73,18 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             $sfEntity = strtolower($sfEntity);
         }
         return $sfEntity;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTypeAttribute()
+    {
+        if (empty($this->_tmAttributes)) {
+            return $this->getSfEntity(true);
+        }
+
+        return $this->_tmAttributes;
     }
 
     /**
@@ -147,15 +165,49 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'note' => $this->__('Choose Magento field you wish to map to Salesforce API.'),
             'style' => 'width:400px',
             'name' => 'local_field',
-            'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getSfEntity(true)),
+            'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getTypeAttribute()),
         ));
 
-        $fieldset->addField('active', 'select', array(
-            'label' => $this->__('Active'),
-            'class' => 'required-entry chosen-select',
-            'name' => 'active',
-            'style' => 'width:400px',
+        /* Magento > SF */
+        $fieldset = $form->addFieldset('magento_sf', array('legend' => $this->__('Magento > Salesforce Settings')));
+
+        $fieldset->addField('magento_sf_enable', 'select', array(
+            'label' => $this->__('Enable'),
+            'name' => 'magento_sf_enable',
+            'class' => 'chosen-select',
             'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
+        ));
+
+        $fieldset->addField('magento_sf_type', 'select', array(
+            'label' => $this->__('When'),
+            'name' => 'magento_sf_type',
+            'class' => 'chosen-select',
+            'values' => Mage::getModel('tnw_salesforce/config_mapping')->toArray(),
+            'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
+                . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record')
+        ));
+
+        /* SF > Magento */
+        $fieldset = $form->addFieldset('sf_magento', array('legend' => $this->__('Salesforce > Magento Settings')));
+
+        $fieldset->addField('sf_magento_enable', 'select', array(
+            'label' => $this->__('Enable'),
+            'name' => 'sf_magento_enable',
+            'class' => 'chosen-select',
+            'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
+        ));
+
+        $fieldset->addField('sf_magento_type', 'select', array(
+            'label' => $this->__('When'),
+            'name' => 'sf_magento_type',
+            'class' => 'chosen-select',
+            'values' => Mage::getModel('tnw_salesforce/config_mapping')->toArray(),
+            'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
+                . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record')
         ));
 
         /* Custom Value */
@@ -174,6 +226,16 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'style' => 'width:400px',
             'name' => 'default_value',
         ));
+
+        $this->setChild('form_after',
+            $this->getLayout()->createBlock('adminhtml/widget_form_element_dependence')
+                ->addFieldMap('magento_sf_enable', 'magento_sf_enable')
+                ->addFieldMap('magento_sf_type', 'magento_sf_type')
+                ->addFieldMap('sf_magento_enable', 'sf_magento_enable')
+                ->addFieldMap('sf_magento_type', 'sf_magento_type')
+                ->addFieldDependence('magento_sf_type', 'magento_sf_enable', '1')
+                ->addFieldDependence('sf_magento_type', 'sf_magento_enable', '1')
+        );
 
         if (Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data')) {
             $form->setValues(Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data'));

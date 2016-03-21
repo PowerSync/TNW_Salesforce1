@@ -35,8 +35,9 @@ class TNW_Salesforce_Model_Config_Customer_Backend_Address_Picklist extends Mage
             'Order:ShippingCountry',
         );
 
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */
         $groupCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection();
-        $tableName = Mage::getSingleton('core/resource')->getTableName('tnw_salesforce/mapping');
+        $tableName = $groupCollection->getMainTable();
 
         $recordsToUpdate = array();
 
@@ -76,8 +77,8 @@ class TNW_Salesforce_Model_Config_Customer_Backend_Address_Picklist extends Mage
 
             $writeConnection->update(
                 $tableName,
-                array('active' => $activateFlag),
-                array( 'mapping_id IN(?)' => $ids)
+                array('magento_sf_enable'=>$activateFlag, 'sf_magento_enable'=>$activateFlag),
+                array('mapping_id IN(?)'=>$ids)
             );
         }
 

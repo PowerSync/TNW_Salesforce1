@@ -107,14 +107,25 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             'index' => 'default_value',
         ));
 
-        $this->addColumn('active', array(
-            'header' => Mage::helper('sales')->__('Active'),
-            'width' => '40px',
+        $this->addColumn('magento_sf', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Magento > SF'),
+            'width' => '100px',
+            'index' => 'magento_sf_enable',
+            'renderer' => $this->getLayout()->createBlock('tnw_salesforce/adminhtml_renderer_entity_mappingset')
+                ->setDirection(TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Mappingset::SYNC_DIRECTION_MAGENTO_SF),
             'type' => 'options',
             'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
-            'index' => 'active',
         ));
 
+        $this->addColumn('sf_magento', array(
+            'header' => Mage::helper('tnw_salesforce')->__('SF > Magento'),
+            'width' => '100px',
+            'index' => 'sf_magento_enable',
+            'renderer' => $this->getLayout()->createBlock('tnw_salesforce/adminhtml_renderer_entity_mappingset')
+                ->setDirection(TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Mappingset::SYNC_DIRECTION_SF_MAGENTO),
+            'type' => 'options',
+            'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+        ));
 
         return parent::_prepareColumns();
     }

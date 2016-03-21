@@ -2,6 +2,8 @@
 
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Opportunity
+ *
+ * @method Mage_Sales_Model_Order _loadEntityByCache($_key, $cachePrefix = null)
  */
 class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper_Salesforce_Abstract_Order
 {
@@ -157,96 +159,87 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     protected function _pushEntity()
     {
-        if (!empty($this->_cache['opportunitiesToUpsert'])) {
-            $_pushOn = $this->_magentoId;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
-            foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
-                if (array_key_exists('Id', $_opp)) {
-                    $_pushOn = 'Id';
-                }
-                foreach ($_opp as $_key => $_value) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
-                }
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-            }
-
-            // assign owner id to opportunity
-            $this->_assignOwnerIdToOpp();
-
-            try {
-                Mage::dispatchEvent("tnw_salesforce_order_send_before",array("data" => $this->_cache['opportunitiesToUpsert']));
-
-                $_toSyncValues = array_values($this->_cache['opportunitiesToUpsert']);
-                $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
-                $results = $this->_mySforceConnection->upsert($_pushOn, $_toSyncValues, 'Opportunity');
-
-                Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
-                    "data" => $this->_cache['opportunitiesToUpsert'],
-                    "result" => $results
-                ));
-            } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach($_keys as $_id) {
-                    $this->_cache['responses']['opportunities'][$_id] = $_response;
-                }
-                $results = array();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
-            }
-
-
-            $_entityArray = array_flip($this->_cache['entitiesUpdating']);
-
-            $_undeleteIds = array();
-            foreach ($results as $_key => $_result) {
-                $_orderNum = $_keys[$_key];
-
-                //Report Transaction
-                $this->_cache['responses']['opportunities'][$_orderNum] = $_result;
-
-                if (!$_result->success) {
-                    if ($_result->errors[0]->statusCode == "ENTITY_IS_DELETED") {
-                        $_undeleteIds[] = $_orderNum;
-                    }
-
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Opportunity Failed: (order: ' . $_orderNum . ')');
-                    $this->_processErrors($_result, 'order', $this->_cache['opportunitiesToUpsert'][$_orderNum]);
-                    $this->_cache['failedOpportunities'][] = $_orderNum;
-                } else {
-                    $_contactId = ($this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id')) ? "'" . $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id') . "'" : 'NULL';
-                    $_accountId = ($this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id')) ? "'" . $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id') . "'" : 'NULL';
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET contact_salesforce_id = " . $_contactId . ", account_salesforce_id = " . $_accountId . ", sf_insync = 1, salesforce_id = '" . $_result->id . "' WHERE entity_id = " . $_entityArray[$_orderNum] . ";";
-
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-                    Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-                    $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum] = $_result->id;
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_result->id);
-
-                    $_order = $this->_loadEntityByCache($_entityArray[$_orderNum], $_orderNum);
-                    if ($_order) {
-                        $_order->addData(array(
-                            'contact_salesforce_id' => $_contactId,
-                            'account_salesforce_id' => $_accountId,
-                            'salesforce_id' => $_result->id,
-                            'sf_insync' => 1
-                        ));
-                    }
-                }
-            }
-            if (!empty($_undeleteIds)) {
-                $_deleted = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_undeleteIds);
-                $_toUndelete = array();
-                foreach ($_deleted as $_object) {
-                    $_toUndelete[] = $_object->Id;
-                }
-                if (!empty($_toUndelete)) {
-                    $this->_mySforceConnection->undelete($_toUndelete);
-                }
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: End----------');
-        } else {
+        if (empty($this->_cache['opportunitiesToUpsert'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('No Opportunities found queued for the synchronization!');
+            return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
+        foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
+            foreach ($_opp as $_key => $_value) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
+        }
+
+        // assign owner id to opportunity
+        $this->_assignOwnerIdToOpp();
+
+        $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
+        try {
+            Mage::dispatchEvent("tnw_salesforce_order_send_before",array(
+                "data" => $this->_cache['opportunitiesToUpsert']
+            ));
+
+            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['opportunitiesToUpsert']), 'Opportunity');
+            Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
+                "data" => $this->_cache['opportunitiesToUpsert'],
+                "result" => $results
+            ));
+        } catch (Exception $e) {
+            $_response = $this->_buildErrorResponse($e->getMessage());
+            foreach($_keys as $_id) {
+                $this->_cache['responses']['opportunities'][$_id] = $_response;
+            }
+
+            $results = array();
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
+        }
+
+        $_undeleteIds = array();
+        foreach ($results as $_key => $_result) {
+            $_orderNum = $_keys[$_key];
+
+            //Report Transaction
+            $this->_cache['responses']['opportunities'][$_orderNum] = $_result;
+
+            if (!$_result->success) {
+                if ($_result->errors[0]->statusCode == "ENTITY_IS_DELETED") {
+                    $_undeleteIds[] = $_orderNum;
+                }
+
+                $this->_processErrors($_result, 'order', $this->_cache['opportunitiesToUpsert'][$_orderNum]);
+                $this->_cache['failedOpportunities'][] = $_orderNum;
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Opportunity Failed: (order: ' . $_orderNum . ')');
+            } else {
+                $_order = $this->_loadEntityByCache(array_search($_orderNum, $this->_cache['entitiesUpdating']), $_orderNum);
+                $_order->addData(array(
+                    'contact_salesforce_id' => $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_id'),
+                    'account_salesforce_id' => $this->_cache['orderCustomers'][$_orderNum]->getData('salesforce_account_id'),
+                    'salesforce_id'         => $_result->id,
+                    'sf_insync'             => 1
+                ));
+                $_order->getResource()->save($_order);
+
+                $this->_cache[sprintf('upserted%s',$this->getManyParentEntityType())][$_orderNum] = $_result->id;
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_result->id);
+            }
+        }
+
+        if (!empty($_undeleteIds)) {
+            $_deleted = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_undeleteIds);
+            $_toUndelete = array();
+            foreach ($_deleted as $_object) {
+                $_toUndelete[] = $_object->Id;
+            }
+            if (!empty($_toUndelete)) {
+                $this->_mySforceConnection->undelete($_toUndelete);
+            }
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: End----------');
     }
 
     protected function _prepareContactRoles()
@@ -454,33 +447,26 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     /**
      * create opportunity object
      *
-     * @param $order
+     * @param $order Mage_Sales_Model_Order
+     * @return mixed|void
      */
     protected function _setEntityInfo($order)
     {
-        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+        $_websiteId   = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+        $_orderNumber = $this->_getEntityNumber($order);
+        /** @var Mage_Customer_Model_Customer $_customer */
+        $_customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_orderNumber];
+        $_lookupKey   = sprintf('%sLookup', $this->_salesforceEntityName);
+
+        // Magento Order ID
+        if (isset($this->_cache[$_lookupKey][$_orderNumber])) {
+            $this->_obj->Id = $this->_cache[$_lookupKey][$_orderNumber]->Id;
+        }
+
+        $this->_obj->{$this->_magentoId} = $_orderNumber;
 
         // Set StageName
         $this->_updateEntityStatus($order);
-
-        $_orderNumber = $order->getRealOrderId();
-        $_email = $this->_cache['orderToEmail'][$_orderNumber];
-        $_orderNumber = $order->getRealOrderId();
-
-        // For some reason some customers are removed from this list (some guests, not all)
-        // Following logic loads the missing customer again
-        if (!array_key_exists($_orderNumber, $this->_cache['orderCustomers']) || !is_object($this->_cache['orderCustomers'][$_orderNumber])) {
-            $_customer = $this->_getCustomer($order);
-            $this->_cache['orderCustomers'][$_orderNumber] = $_customer;
-            if (is_array($this->_cache['accountsLookup'])
-                && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-                && array_key_exists($_email, $this->_cache['accountsLookup'][0])) {
-                $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceId($this->_cache['accountsLookup'][0][$_email]->Id);
-                $this->_cache['orderCustomers'][$_orderNumber]->setSalesforceAccountId($this->_cache['accountsLookup'][0][$_email]->AccountId);
-            }
-        } else {
-            $_customer = $this->_cache['orderCustomers'][$_orderNumber];
-        }
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $order->getData('order_currency_code');
@@ -494,9 +480,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         ) {
             $this->_obj->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()} = $this->_websiteSfIds[$_websiteId];
         }
-
-        // Magento Order ID
-        $this->_obj->{$this->_magentoId} = $_orderNumber;
 
         // Use existing Opportunity if creating from Quote
         $modules = Mage::getConfig()->getNode('modules')->children();
@@ -547,32 +530,13 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             ->setSync($this)
             ->processMapping($order);
 
-        // Get Account Name from Salesforce
-        $_accountName = (
-            $this->_cache['accountsLookup']
-            && array_key_exists($this->_websiteSfIds[$_websiteId], $this->_cache['accountsLookup'])
-            && array_key_exists($_customer->getEmail(), $this->_cache['accountsLookup'][0])
-            && $this->_cache['accountsLookup'][0][$_customer->getEmail()]->AccountName
-        ) ? $this->_cache['accountsLookup'][0][$_customer->getEmail()]->AccountName : NULL;
-        if (!$_accountName) {
-            $_accountName = ($order->getBillingAddress()->getCompany()) ? $order->getBillingAddress()->getCompany() : NULL;
-            if (!$_accountName) {
-                $_accountName = ($_accountName && !$order->getShippingAddress()->getCompany()) ? $_accountName && !$order->getShippingAddress()->getCompany() : NULL;
-                if (!$_accountName) {
-                    $_accountName = $_customer->getFirstname() . " " . $_customer->getLastname();
-                }
-            }
-        }
-
-        $this->_setOpportunityName($_orderNumber, $_accountName);
-        unset($order);
+        $this->_setOpportunityName($_orderNumber);
     }
 
     /**
      * @param $orderNumber
-     * @param $accountName
      */
-    protected function _setOpportunityName($orderNumber, $accountName)
+    protected function _setOpportunityName($orderNumber)
     {
         $this->_obj->Name = "Request #" . $orderNumber;
     }
@@ -582,10 +546,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _updateEntityStatus($order)
     {
-        // Magento Order ID
-        $orderIdParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-        $this->_obj->{$orderIdParam} = $order->getRealOrderId();
-
         /** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $collection */
         $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection()
             ->addStatusToFilter($order->getStatus());

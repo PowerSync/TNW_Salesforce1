@@ -16,7 +16,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     protected $_product = null;
 
     /**
-     * @var array
+     * @var TNW_Salesforce_Model_Mysql4_Mapping_Collection
      */
     protected $_mapProductCollection = array();
 
@@ -59,7 +59,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter('Product2')
-            ->addFieldToFilter('active', 1);
+            ->addFieldToFilter('sf_magento_enable', 1);
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');
@@ -122,19 +122,17 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     {
         try {
             set_time_limit(30);
+
             // Creating Customer Entity
+            /** @var Mage_Catalog_Model_Product $_product */
+            $_product = Mage::getModel('catalog/product');
             if ($_isNew) {
-                $_product = Mage::getModel('catalog/product');
-                if ($_magentoId) {
-                    $_product->setId($_magentoId);
-                }
                 $_product->setAttributeSetId($_product->getDefaultAttributeSetId());
                 $_product->setStatus(1);
 
                 $this->_response->created = true;
             } else {
-                $_product = Mage::getModel('catalog/product')->load($_magentoId);
-
+                $_product->load($_magentoId);
                 $this->_response->created = false;
             }
 
@@ -144,6 +142,13 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $_product->setInSync(1);
 
             $_stock = array();
+
+            $this->_mapProductCollection->clear()
+                ->addFieldToFilter('sf_magento_type', array(
+                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                    ($_product->isObjectNew())
+                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+                ));
 
             // get attribute collection
             foreach ($this->_mapProductCollection as $_mapping) {

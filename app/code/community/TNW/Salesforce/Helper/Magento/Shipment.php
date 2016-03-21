@@ -185,9 +185,15 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
      */
     protected function _updateMappedEntityFields($object, $shipment)
     {
-        $mappings = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
-            ->addObjectToFilter('OrderShipment');
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
+        $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter('OrderShipment')
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->addFieldToFilter('sf_magento_type', array(
+                TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                ($shipment->isObjectNew())
+                    ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+            ));
 
         $updateFieldsLog = array();
         /** @var $mapping TNW_Salesforce_Model_Mapping */
@@ -267,10 +273,6 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
         $hasOrderId = $_shipmentItemCollection
             ->walk('getOrderItemId');
 
-        $mappings = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
-            ->addObjectToFilter('OrderShipmentItem');
-
         $_shipmentItemKey   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentItem__r';
         $_sItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
         foreach ($object->$_shipmentItemKey->records as $record) {
@@ -286,6 +288,16 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
 
             /** @var Mage_Sales_Model_Order_Invoice_Item $entity */
             $entity = $_shipmentItemCollection->getItemById($shipmentItemId);
+
+            /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
+            $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('OrderShipmentItem')
+                ->addFieldToFilter('sf_magento_enable', 1)
+                ->addFieldToFilter('sf_magento_type', array(
+                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                    ($entity->isObjectNew())
+                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+                ));
 
             /** @var $mapping TNW_Salesforce_Model_Mapping */
             foreach ($mappings as $mapping) {

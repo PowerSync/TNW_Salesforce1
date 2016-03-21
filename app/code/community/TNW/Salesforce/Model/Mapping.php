@@ -14,6 +14,9 @@
  */
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {
+    const SET_TYPE_UPSERT = 'upsert';
+    const SET_TYPE_INSERT = 'insert';
+    const SET_TYPE_UPDATE = 'update';
 
     /**
      * @var array
@@ -286,5 +289,26 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         }
 
         return $this;
+    }
+
+    /**
+     * @param $_type
+     * @return string
+     */
+    public function getNameBySetType($_type)
+    {
+        switch($_type) {
+            case self::SET_TYPE_INSERT:
+                return Mage::helper('tnw_salesforce')->__('Insert Only');
+
+            case self::SET_TYPE_UPDATE:
+                return Mage::helper('tnw_salesforce')->__('Update Only');
+
+            case self::SET_TYPE_UPSERT:
+                return Mage::helper('tnw_salesforce')->__('Upsert');
+
+            default:
+                return Mage::helper('tnw_salesforce')->__('Unknown');
+        }
     }
 }

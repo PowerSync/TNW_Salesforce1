@@ -153,14 +153,20 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
 
     /**
      * @param $object
-     * @param $invoice
+     * @param $invoice Mage_Sales_Model_Order_Invoice
      * @return $this
      */
     protected function _updateMappedEntityFields($object, $invoice)
     {
-        $mappings = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
-            ->addObjectToFilter('OrderInvoice');
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
+        $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter('OrderInvoice')
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->addFieldToFilter('sf_magento_type', array(
+                TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                ($invoice->isObjectNew())
+                    ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+            ));
 
         $updateFieldsLog = array();
         /** @var $mapping TNW_Salesforce_Model_Mapping */
@@ -240,10 +246,6 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         $hasOrderId = $_invoiceItemCollection
             ->walk('getOrderItemId');
 
-        $mappings = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
-            ->addObjectToFilter('OrderInvoiceItem');
-
         $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderInvoiceItem__r';
         $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
         foreach ($object->$_invoiceItemKey->records as $record) {
@@ -259,6 +261,16 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
 
             /** @var Mage_Sales_Model_Order_Invoice_Item $entity */
             $entity = $_invoiceItemCollection->getItemById($invoiceItemId);
+
+            /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
+            $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('OrderInvoiceItem')
+                ->addFieldToFilter('sf_magento_enable', 1)
+                ->addFieldToFilter('sf_magento_type', array(
+                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                    ($entity->isObjectNew())
+                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+                ));
 
             /** @var $mapping TNW_Salesforce_Model_Mapping */
             foreach ($mappings as $mapping) {
