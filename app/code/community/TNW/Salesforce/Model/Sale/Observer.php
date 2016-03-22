@@ -7,6 +7,7 @@
 class TNW_Salesforce_Model_Sale_Observer
 {
     protected $orderObject = NULL;
+    protected $orderHelper = NULL;
 
     /**
      * Shipment Sync Event
