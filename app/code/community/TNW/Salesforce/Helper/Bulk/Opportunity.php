@@ -14,14 +14,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         'opportunity_contact_roles' => array(),
     );
 
-    /**
-     * @comment call leads convertation method
-     */
-    protected function _convertLeads()
-    {
-       return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('order');
-    }
-
     protected function _pushRemainingEntityData()
     {
         $_resultRoles = $_resultProducts = null;

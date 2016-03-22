@@ -20,6 +20,16 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
     protected $_salesforceEntityName = 'orderShipment';
 
     /**
+     * @var string
+     */
+    protected $_mappingEntityName = 'OrderShipment';
+
+    /**
+     * @var string
+     */
+    protected $_mappingEntityItemName = 'OrderShipmentItem';
+
+    /**
      * @comment magento entity model alias
      * @var array
      */
@@ -46,9 +56,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
     protected $_websites = array();
 
     /**
-     *
+     * @param array $_ids
      */
-    protected function _massAddBefore()
+    protected function _massAddBefore($_ids)
     {
         $this->_guestCount = 0;
         $this->_emails = $this->_websites = array();
@@ -122,7 +132,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
 
         $_websiteId = ($this->_cache[$_cacheCustomers][$_recordNumber]->getData('website_id'))
             ? $this->_cache[$_cacheCustomers][$_recordNumber]->getData('website_id')
-            : Mage::getModel('core/store')->load($_entity->getData('store_id'))->getWebsiteId();
+            : Mage::app()->getStore($_entity->getData('store_id'))->getWebsiteId();
 
         $this->_emails[$_customerId]   = strtolower($this->_cache[$_cacheCustomers][$_recordNumber]->getEmail());
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
@@ -158,7 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             // Guest most likely
             $_customer = Mage::getModel('customer/customer');
 
-            $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+            $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
             $_storeId = $order->getStoreId();
             if ($_customer->getSharingConfig()->isWebsiteScope()) {
                 $_customer->setWebsiteId($_websiteId);
@@ -226,7 +236,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $_customer->setShippingAddress($_shippingAddress);
         }
 
-        $_websiteId = Mage::getModel('core/store')->load($order->getStoreId())->getWebsiteId();
+        $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
         if ($_customer->getSharingConfig()->isWebsiteScope()) {
             $_customer->setWebsiteId($_websiteId);
         }
@@ -305,126 +315,137 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
 
     /**
      * @param $_entity Mage_Sales_Model_Order_Shipment
-     * @return mixed
      */
-    protected function _setEntityInfo($_entity)
+    protected function _prepareEntityObjCustom($_entity)
     {
-        $_websiteId     = Mage::getModel('core/store')->load($_entity->getStoreId())->getWebsiteId();
-        $_entityNumber  = $this->_getEntityNumber($_entity);
-        $_customer      = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
-        $_lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
-
-        if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
-            $this->_obj->Id = $this->_cache[$_lookupKey][$_entityNumber]->Id;
-        }
-
-        $this->_obj->Name = $_entityNumber;
-
-        // Link to a Website
-        if (
-            $_websiteId != NULL
-            && array_key_exists($_websiteId, $this->_websiteSfIds)
-            && $this->_websiteSfIds[$_websiteId]
-        ) {
-            $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_Website__c'}
-                = $this->_websiteSfIds[$_websiteId];
-        }
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Date_Shipped__c'}
-            = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($_entity->getCreatedAtDate())));
-
         // Link to Order
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order__c'}
             = $_entity->getOrder()->getData('salesforce_id');
 
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'}
-            = $_entityNumber;
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Total_Quantity__c'}
-            = $_entity->getTotalQty();
-
-        // Account ID
-        $_customerSFAccountId = (is_object($_customer) && $_customer->getSalesforceAccountId())
-            ? $_customer->getSalesforceAccountId()
-            : $_entity->getOrder()->getData('account_salesforce_id');
-
-        // For guest, extract converted Account Id
-        if (!$_customerSFAccountId) {
-            $_customerSFAccountId = (
-                isset($this->_cache['convertedLeads'])
-                && isset($this->_cache['convertedLeads'][$_entityNumber])
-                && property_exists($this->_cache['convertedLeads'][$_entityNumber], 'accountId')
-            ) ? $this->_cache['convertedLeads'][$_entityNumber]->accountId : NULL;
-        }
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Account__c'}
-            = $_customerSFAccountId;
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Description__c'}
-            = $this->_getDescriptionByEntity($_entity);
-
-        $_customerSFContactId = (is_object($_customer) && $_customer->getSalesforceContactId())
-            ? $_customer->getSalesforceContactId()
-            : $_entity->getOrder()->getData('contact_salesforce_id');
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Billing_Contact__c'}
-            = $_customerSFContactId;
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipping_Contact__c'}
-            = $_customerSFContactId;
-
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'}
             = true;
-
-        //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_shipment_ordershipment')
-            ->setSync($this)
-            ->processMapping($_entity);
     }
 
     /**
      * @param $_entity Mage_Sales_Model_Order_Shipment
-     * @param $_entityItem Mage_Sales_Model_Order_Shipment_Item
+     * @param $type string
      * @return mixed
      */
-    protected function _prepareEntityItemObj($_entity, $_entityItem)
+    protected function _getObjectByEntityType($_entity, $type)
     {
+        switch($type)
+        {
+            case 'Shipment':
+                $_object   = $_entity;
+                break;
+
+            case 'Order':
+                $_object   = $_entity->getOrder();
+                break;
+
+            case 'Payment':
+                $_order    = $this->_getObjectByEntityType($_entity, 'Order');
+                $_object   = $_order->getPayment();
+                break;
+
+            case 'Customer':
+                $_entityNumber = $this->_getEntityNumber($_entity);
+                $_object   = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+                break;
+
+            case 'Customer Group':
+                $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
+                $_order    = $this->_getObjectByEntityType($_entity, 'Order');
+                $_groupId  = ($_order->getCustomerGroupId() !== NULL)
+                    ? $_order->getCustomerGroupId() : $_customer->getGroupId();
+
+                $_object   = Mage::getModel('customer/group')->load($_groupId);
+                break;
+
+            case 'Billing':
+                $_object   = $_entity->getBillingAddress();
+                break;
+
+            case 'Shipping':
+                $_object   = $_entity->getShippingAddress();
+                break;
+
+            case 'Custom':
+                $_object   = $_entity->getStore();
+                break;
+
+            default:
+                $_object = null;
+                break;
+        }
+
+        return $_object;
+    }
+
+    /**
+     * @param $_entityItem
+     * @return bool|void
+     */
+    protected function _getEntityItemSalesforceId($_entityItem)
+    {
+        $_entity = $this->getEntityByItem($_entityItem);
+        return $this->_doesCartItemExist($_entity, $_entityItem);
+    }
+
+    /**
+     * @param $_entityItem Mage_Sales_Model_Order_Shipment_Item
+     * @param $_type
+     * @return mixed
+     * @throws Exception
+     */
+    protected function _getObjectByEntityItemType($_entityItem, $_type)
+    {
+        switch($_type)
+        {
+            case 'Shipment':
+                $_object = $this->getEntityByItem($_entityItem);
+                break;
+
+            case 'Shipment Item':
+                $_object = $_entityItem;
+                break;
+
+            case 'Product':
+                $_productId    = $_entityItem->getOrderItem()
+                    ? $this->getProductIdFromCart($_entityItem->getOrderItem()) : false;
+                $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
+
+                $_object = Mage::getModel('catalog/product')
+                    ->setStoreId($storeId)
+                    ->load($_productId);
+                break;
+
+            case 'Product Inventory':
+                $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
+                $_object = Mage::getModel('cataloginventory/stock_item')
+                    ->loadByProduct($product);
+                break;
+
+            case 'Custom':
+                $_object = $this->_getObjectByEntityItemType($_entityItem, 'Shipment')
+                    ->getStore();
+                break;
+
+            default:
+                $_object = null;
+                break;
+        }
+
+        return $_object;
+    }
+
+    /**
+     * @param $_entityItem Mage_Sales_Model_Order_Shipment_Item
+     */
+    protected function _prepareEntityItemObjCustom($_entityItem)
+    {
+        $_entity       = $this->getEntityByItem($_entityItem);
         $_entityNumber = $this->_getEntityNumber($_entity);
-        $_quantity     = $this->getItemQty($_entityItem);
-
-        $this->_obj = new stdClass();
-
-        // Load by product Id only if bundled OR simple with options
-        $_productId    = $this->getProductIdFromCart($_entityItem);
-        if (!$_productId) {
-            return;
-        }
-
-        /** @var $_product Mage_Catalog_Model_Product */
-        $_product = Mage::getModel('catalog/product')
-            ->setStoreId($_entity->getStoreId())
-            ->load($_productId);
-
-        $cartItemFound = $this->_doesCartItemExist($_entity, $_entityItem, $_product);
-        if ($cartItemFound) {
-            $this->_obj->Id = $cartItemFound;
-        }
-
-        $this->_obj->Name = $_product->getName();
-
-        $this->_getItemDescription($_entityItem->getOrderItem());
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Description__c'}
-            = $this->_obj->Description;
-
-        $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Product_Options__c";
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Options__c'}
-            = $this->_obj->$syncParam;
-
-        unset($this->_obj->$syncParam, $this->_obj->Description);
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'}
-            = $_entityItem->getId();
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c'}
             = $_entityItem->getOrderItem()->getData('salesforce_id');
@@ -432,29 +453,14 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'}
             = $this->_getParentEntityId($_entityNumber);
 
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Code__c'}
-            = $_product->getSku();
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c'}
-            = $_quantity;
-
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'}
             = true;
-
-        //Process mapping
-        Mage::getSingleton('tnw_salesforce/sync_mapping_shipment_ordershipment_item')
-            ->setSync($this)
-            ->processMapping($_entityItem, $_product);
-
-        if (!$this->isItemObjectValid()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order Shipment item failed validation!');
-            return;
-        }
 
         /* Dump BillingItem object into the log */
         foreach ($this->_obj as $key => $_item) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Shipment Item Object: " . $key . " = '" . $_item . "'");
         }
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $_entityItem->getId()] = $this->_obj;
     }
@@ -514,10 +520,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
     /**
      * @param $_entity Mage_Sales_Model_Order_Shipment
      * @param $_entityItem Mage_Sales_Model_Order_Shipment_Item
-     * @param $_product Mage_Catalog_Model_Product
      * @return bool
      */
-    protected function _doesCartItemExist($_entity, $_entityItem, $_product)
+    protected function _doesCartItemExist($_entity, $_entityItem)
     {
         $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
         $_entityNumber = $this->_getEntityNumber($_entity);
@@ -542,67 +547,6 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
     }
 
     /**
-     * @return bool
-     */
-    protected function isItemObjectValid()
-    {
-        return (property_exists($this->_obj, TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c')
-            && $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c'});
-    }
-
-    /**
-     * @param $_item Mage_Sales_Model_Order_Shipment_Item
-     * @return int
-     * Get product Id from the cart
-     */
-    public function getProductIdFromCart($_item)
-    {
-        $_options = unserialize($_item->getOrderItem()->getData('product_options'));
-        if (
-            $_item->getOrderItem()->getData('product_type') == 'bundle'
-            || (is_array($_options) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getOrderItem()->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
-        }
-
-        return $id;
-    }
-
-    /**
-     * @param $item Mage_Sales_Model_Order_Invoice_Item
-     * @param int $qty
-     * @return float
-     */
-    protected function _prepareItemPrice($item, $qty = 1)
-    {
-        if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE ||
-            Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)
-        ) {
-            return parent::_prepareItemPrice($item, $qty);
-        }
-
-        $_orderItems = array();
-        /** @var Mage_Sales_Model_Order_Item $_item */
-        foreach ($item->getOrderItem()->getChildrenItems() as $_item) {
-            $_orderItems[] = $_item->getId();
-        }
-
-        $sum = 0;
-        /** @var Mage_Sales_Model_Order_Invoice_Item $_item */
-        foreach ($item->getInvoice()->getItemsCollection() as $_item) {
-            if (!in_array($_item->getOrderItemId(), $_orderItems)) {
-                continue;
-            }
-
-            $sum += $this->_calculateItemPrice($_item, $_item->getQty());
-        }
-
-        return $this->numberFormat($sum);
-    }
-
-    /**
      * @param array $chunk
      * @return mixed
      */
@@ -615,16 +559,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $results = $this->_mySforceConnection->upsert(
                 'Id', array_values($chunk), TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT);
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($chunk as $_object) {
-                $_shipmentId = $_object
-                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
-                $_orderNum = $_orderNumbers[$_shipmentId];
+            $results = array_fill(0, count($chunk),
+                $this->_buildErrorResponse($e->getMessage()));
 
-                $this->_cache['responses'][lcfirst($this->getItemsField())][$_orderNum]['subObj'][] = $_response;
-            }
-
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
         }
@@ -633,30 +570,29 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $_cartItemId = $_chunkKeys[$_key];
             $_shipmentId = $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))][$_cartItemId]
                 ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
-            $_orderNum = $_orderNumbers[$_shipmentId];
+            $_entityNum  = $_orderNumbers[$_shipmentId];
+            $_entity     = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
 
             //Report Transaction
-            $this->_cache['responses'][lcfirst($this->getItemsField())][$_orderNum]['subObj'][] = $_result;
+            $this->_cache['responses'][lcfirst($this->getItemsField())][$_entityNum]['subObj'][] = $_result;
             if (!$_result->success) {
                 // Reset sync status
-                $sql = sprintf('UPDATE `%s` SET sf_insync = 0 WHERE salesforce_id = "%s";',
-                    $this->_modelEntity()->getResource()->getMainTable(), $_shipmentId);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+                $_entity->setData('sf_insync', 0);
+                $_entity->getResource()->save($_entity);
 
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('ERROR: One of the Cart Item for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_orderNum));
                 $this->_processErrors($_result, 'shipmentCart', $chunk[$_cartItemId]);
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError(sprintf('ERROR: One of the Cart Item for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_entityNum));
             }
             else {
-                if ($_cartItemId && strrpos($_cartItemId, 'cart_', -strlen($_cartItemId)) !== FALSE) {
-                    $_sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_shipment_item') . "` SET salesforce_id = '" . $_result->id . "' WHERE entity_id = '" . str_replace('cart_', '', $_cartItemId) . "';";
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $_sql);
-                    Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
+                $_item = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_cartItemId));
+                if ($_item instanceof Mage_Core_Model_Abstract) {
+                    $_item->setData('salesforce_id', $_result->id);
+                    $_item->getResource()->save($_item);
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace(sprintf('Cart Item (id: %s) for (%s: %s) upserted.', $_result->id, $this->_magentoEntityName, $_orderNum));
+                    ->saveTrace(sprintf('Cart Item (id: %s) for (%s: %s) upserted.', $_result->id, $this->_magentoEntityName, $_entityNum));
             }
         }
     }
@@ -678,16 +614,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
                 $results = $this->_mySforceConnection->upsert(
                     'Id', array_values($_itemsToPush), TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__c');
             } catch (Exception $e) {
-                $_response = $this->_buildErrorResponse($e->getMessage());
-                foreach ($_itemsToPush as $_object) {
-                    $_shipmentId = $_object
-                        ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
-                    $_orderNum = $_orderNumbers[$_shipmentId];
+                $results = array_fill(0, count($_itemsToPush),
+                    $this->_buildErrorResponse($e->getMessage()));
 
-                    $this->_cache['responses']['orderShipmentTrack'][$_orderNum]['subObj'][] = $_response;
-                }
-
-                $results = array();
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('CRITICAL: Push of Order Shipment Items to SalesForce failed' . $e->getMessage());
             }
@@ -701,9 +630,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
                 //Report Transaction
                 $this->_cache['responses']['orderShipmentTrack'][$_orderNum]['subObj'][] = $_result;
                 if (!$_result->success) {
+                    $this->_processErrors($_result, 'shipmentCartTrack', $_itemsToPush[$_cartItemId]);
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveError(sprintf('ERROR: One of the Cart Item Track for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_orderNum));
-                    $this->_processErrors($_result, 'shipmentCartTrack', $_itemsToPush[$_cartItemId]);
                 }
                 else {
                     Mage::getSingleton('tnw_salesforce/tool_log')
@@ -751,22 +680,14 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             ));
         }
         catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach ($_keys as $_id) {
-                $this->_cache['responses'][strtolower($this->getManyParentEntityType())][$_id] = $_response;
-            }
+            $results = array_fill(0, count($_keys),
+                $this->_buildErrorResponse($e->getMessage()));
 
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());
         }
 
-        $_entityArray = array_flip($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         $_undeleteIds = array();
-        if (!$results) {
-            $results = array();
-        }
-
         foreach ($results as $_key => $_result) {
             $_entityNum = $_keys[$_key];
 
@@ -778,24 +699,21 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
                     $_undeleteIds[] = $_entityNum;
                 }
 
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('%s Failed: (%s: ' . $_entityNum . ')', $this->_salesforceEntityName, $this->_magentoEntityName));
-
                 $this->_processErrors($_result, $this->_salesforceEntityName, $this->_cache[$entityToUpsertKey][$_entityNum]);
                 $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_entityNum;
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError(sprintf('%s Failed: (%s: ' . $_entityNum . ')', $this->_salesforceEntityName, $this->_magentoEntityName));
             }
             else {
-                $sql = sprintf('UPDATE `%s` SET sf_insync = 1, salesforce_id = "%s" WHERE entity_id = %d;',
-                    $this->_modelEntity()->getResource()->getMainTable(), $_result->id, $_entityArray[$_entityNum]);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+                $_entity = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
+                $_entity->addData(array(
+                    'sf_insync'     => 1,
+                    'salesforce_id' => (string)$_result->id
+                ));
+                $_entity->getResource()->save($_entity);
 
                 $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_entityNum] = $_result->id;
-                if ($entity = $this->_loadEntityByCache($_entityArray[$_entityNum], $_entityNum)) {
-                    $entity->setData('salesforce_id', (string)$_result->id);
-                    $entity->setData('sf_insync', 1);
-                }
-
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace(sprintf('%s Upserted: %s' , $this->_salesforceEntityName, $_result->id));
             }
@@ -830,7 +748,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
     /**
      * @param $_entity Mage_Sales_Model_Order_Shipment
      * @throws Exception
-     * @return array
+     * @return Mage_Sales_Model_Resource_Order_Shipment_Comment_Collection
      */
     protected function _getEntityNotesCollection($_entity)
     {
@@ -852,7 +770,45 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
      */
     public function getItems($_entity)
     {
-        return $_entity->getAllItems();
+        $_itemCollection = $_entity->getItemsCollection();
+        $_hasOrderItemId = $_itemCollection->walk('getOrderItemId');
+
+        $items = array();
+        /** @var Mage_Sales_Model_Order_Invoice_Item $item */
+        foreach ($_itemCollection as $item) {
+            if ($item->isDeleted() || $item->getOrderItem()->getParentItem()) {
+                continue;
+            }
+
+            $items[] =  $item;
+
+            if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                continue;
+            }
+
+            /** @var Mage_Sales_Model_Order_Item $_orderItem */
+            foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
+                $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+                $_item   = $_itemCollection->getItemById($_itemId);
+
+                if (!$_item instanceof Mage_Sales_Model_Order_Shipment_Item) {
+                    continue;
+                }
+
+                $item->setRowTotal($item->getRowTotal() + $_item->getRowTotal());
+                if (!Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                    continue;
+                }
+
+                $_item->setRowTotal(null)
+                    ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                        . $item->getSku());
+
+                $items[] = $_item;
+            }
+        }
+
+        return $items;
     }
 
     /**
@@ -904,7 +860,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         // Clean order cache
         if (is_array($this->_cache['entitiesUpdating'])) {
             foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                $this->_unsetEntityCache($_orderNumber);
+                $this->unsetEntityCache($_orderNumber);
             }
         }
 

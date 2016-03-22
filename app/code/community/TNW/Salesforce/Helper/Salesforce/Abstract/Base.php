@@ -17,6 +17,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected $_salesforceEntityName = '';
 
     /**
+     * @var string
+     */
+    protected $_mappingEntityName = '';
+
+    /**
+     * @var string
+     */
+    protected $_mappingEntityItemName = '';
+
+    /**
      * @comment magento entity model alias
      * @var array
      */
@@ -174,7 +184,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         // Generate cache key
         if (is_null($cachePrefix) && !empty($_key)) {
             $_entity = $this->_loadEntity($_key);
-            $cachePrefix = $this->_getEntityNumber($_entity);
+            $cachePrefix = $this->_generateKeyPrefixEntityCache($_entity);
         }
 
         $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
@@ -192,6 +202,20 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         return Mage::registry($entityRegistryKey);
     }
 
+    /**
+     * @param $_entity
+     * @return mixed
+     * @throws Exception
+     */
+    protected function _generateKeyPrefixEntityCache($_entity)
+    {
+        return $this->_getEntityNumber($_entity);
+    }
+
+    /**
+     * @param $cachePrefix
+     * @return string
+     */
     protected function _generateKeyEntityCache($cachePrefix)
     {
         return sprintf('%s_cached_%s', $this->_magentoEntityName, (string)$cachePrefix);
@@ -199,11 +223,48 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param $cachePrefix
+     * @return $this
      */
-    protected function _unsetEntityCache($cachePrefix)
+    public function unsetEntityCache($cachePrefix)
     {
         $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
         Mage::unregister($entityRegistryKey);
+
+        return $this;
+    }
+
+    /**
+     * @param $_entity
+     * @return $this
+     */
+    public function setEntityCache($_entity)
+    {
+        $cachePrefix       = $this->_generateKeyPrefixEntityCache($_entity);
+        $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
+
+        Mage::unregister($entityRegistryKey);
+        Mage::register($entityRegistryKey, $_entity);
+
+        return $this;
+    }
+
+    /**
+     * @param $cachePrefix
+     * @return mixed
+     */
+    public function getEntityCache($cachePrefix)
+    {
+        $entityRegistryKey = $this->_generateKeyEntityCache($cachePrefix);
+        return Mage::registry($entityRegistryKey);
+    }
+
+    /**
+     * @param $cachePrefix
+     * @return bool
+     */
+    public function issetEntityCache($cachePrefix)
+    {
+        return (bool)$this->getEntityCache($cachePrefix);
     }
 
     /**
@@ -350,7 +411,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         $this->_skippedEntity = array();
         try {
-            $this->_massAddBefore();
+            $this->_massAddBefore($_ids);
 
             foreach ($_ids as $_id) {
                 $_entity        = $this->_loadEntityByCache($_id);
@@ -389,9 +450,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     *
+     * @param array $_ids
      */
-    protected function _massAddBefore()
+    protected function _massAddBefore($_ids)
     {
         return;
     }
@@ -530,6 +591,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_orderNumber] = $this->_obj;
         }
 
+        $this->_prepareEntityAfter();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('----------%s Preparation: End----------', $this->getUcParentEntityType()));
     }
 
@@ -541,6 +603,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _checkPrepareEntityAfter($_key)
     {
         return true;
+    }
+
+    protected function _prepareEntityAfter()
+    {
+        return;
     }
 
     /**
@@ -646,7 +713,71 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _setEntityInfo($_entity)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        $_entityId = $this->_getEntitySalesforceId($_entity);
+        if (!empty($_entityId)) {
+            $this->_obj->Id = $_entityId;
+        }
+
+        /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
+        $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter($this->_mappingEntityName)
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+
+        $_objectMappings = array();
+        foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
+            $_objectMappings[$_type] = $this->_getObjectByEntityType($_entity, $_type);
+        }
+
+        /** @var tnw_salesforce_model_mapping $_mapping */
+        foreach ($_mappingCollection as $_mapping) {
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+        }
+
+        // Unset attribute
+        foreach ($this->_obj as $_key => $_value) {
+            if (null !== $_value) {
+                continue;
+            }
+
+            unset($this->_obj->{$_key});
+        }
+
+        $this->_prepareEntityObjCustom($_entity);
+    }
+
+    /**
+     * @param $_entity
+     * @return mixed
+     * @throws Exception
+     */
+    protected function _getEntitySalesforceId($_entity)
+    {
+        $_entityNumber = $this->_getEntityNumber($_entity);
+        $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+
+        if (!isset($this->_cache[$_lookupKey][$_entityNumber])) {
+            return null;
+        }
+
+        return $this->_cache[$_lookupKey][$_entityNumber]->Id;
+    }
+
+    /**
+     * @param $_entity
+     */
+    protected function _prepareEntityObjCustom($_entity)
+    {
+        return;
+    }
+
+    /**
+     * @param $_entity
+     * @param $type string
+     * @return mixed
+     */
+    protected function _getObjectByEntityType($_entity, $type)
+    {
+        return null;
     }
 
     /**
@@ -721,11 +852,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param $_item
+     * @return mixed
      * @throws Exception
      */
     public function getEntityByItem($_item)
     {
-        return $_item->getData($this->_magentoEntityName);
+        return call_user_func(array($_item, sprintf('get%s', ucfirst($this->_magentoEntityName))));
     }
 
     /**
@@ -736,7 +868,64 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _prepareEntityItemObj($_entity, $_entityItem)
     {
+        $this->_obj = new stdClass();
+        $_entityItemId = $this->_getEntityItemSalesforceId($_entityItem);
+        if (!empty($_entityItemId)) {
+            $this->_obj->Id = $_entityItemId;
+        }
+
+        /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
+        $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter($this->_mappingEntityItemName)
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+
+        $_objectMappings = array();
+        foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
+            $_objectMappings[$_type] = $this->_getObjectByEntityItemType($_entityItem, $_type);
+        }
+
+        /** @var tnw_salesforce_model_mapping $_mapping */
+        foreach ($_mappingCollection as $_mapping) {
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+        }
+
+        // Unset attribute
+        foreach ($this->_obj as $_key => $_value) {
+            if (null !== $_value) {
+                continue;
+            }
+
+            unset($this->_obj->{$_key});
+        }
+
+        $this->_prepareEntityItemObjCustom($_entityItem);
+    }
+
+    /**
+     * @param $_entityItem
+     * @throws Exception
+     */
+    protected function _getEntityItemSalesforceId($_entityItem)
+    {
         throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+    }
+
+    /**
+     * @param $_entityItem
+     * @param $_type
+     * @return null
+     */
+    protected function _getObjectByEntityItemType($_entityItem, $_type)
+    {
+        return null;
+    }
+
+    /**
+     * @param $_entityItem
+     */
+    protected function _prepareEntityItemObjCustom($_entityItem)
+    {
+        return;
     }
 
     /**
@@ -785,14 +974,25 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             }
 
             $item->addData(array(
-                $this->getItemQtyField() => 1,
-                'description'            => $_helper->__($ucFee),
-                'row_total_incl_tax'     => $this->getEntityPrice($_entity, $ucFee . 'Amount'),
-                'row_total'              => $this->getEntityPrice($_entity, $ucFee . 'Amount')
+                $this->getItemQtyField()  => 1,
+                'description'             => $_helper->__($ucFee),
+                'row_total_incl_tax'      => $this->getEntityPrice($_entity, $ucFee . 'Amount'),
+                'row_total'               => $this->getEntityPrice($_entity, $ucFee . 'Amount'),
+                $this->_magentoEntityName => $_entity,
             ));
 
+            $this->_prepareAdditionalFees($_entity, $item);
             $this->_prepareEntityItemObj($_entity, $item);
         }
+    }
+
+    /**
+     * @param $_entity
+     * @param $item Varien_Object
+     */
+    protected function _prepareAdditionalFees($_entity, $item)
+    {
+        return;
     }
 
     /**
@@ -1115,15 +1315,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         try {
             $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'Note');
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach($chunk as $_object) {
-                $_orderSalesforceId = $_object->ParentId;
-                $_entityNum = array_search($_orderSalesforceId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+            $results = array_fill(0, count($chunk),
+                $this->_buildErrorResponse($e->getMessage()));
 
-                $this->_cache['responses']['notes'][$_entityNum]['subObj'][] = $_response;
-            }
-
-            $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of Notes to SalesForce failed' . $e->getMessage());
         }
 

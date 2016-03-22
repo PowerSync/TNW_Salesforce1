@@ -494,7 +494,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $parentEntity = $this->_loadEntity($parentEntityId, $parentEntityType);
                 }
 
-                $websiteId = Mage::getModel('core/store')->load($parentEntity->getData('store_id'))->getWebsiteId();
+                $websiteId = Mage::app()->getStore($parentEntity->getData('store_id'))->getWebsiteId();
             }
 
             $salesforceWebsiteId = $this->getWebsiteSfIds($websiteId);
@@ -730,7 +730,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 $parentEntity = $this->_loadEntity($parentEntityId, $parentEntityType);
             }
 
-            $_websiteId = Mage::getModel('core/store')->load($parentEntity->getData('store_id'))->getWebsiteId();
+            $_websiteId = Mage::app()->getStore($parentEntity->getData('store_id'))->getWebsiteId();
 
             $_customerId = (is_object($parentEntity) && $parentEntity->getCustomerId()) ? $parentEntity->getCustomerId() : NULL;
             if (!$_customerId) {

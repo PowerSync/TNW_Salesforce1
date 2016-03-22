@@ -57,6 +57,7 @@ class TNW_Salesforce_Model_Customer_Observer
 
         if (!empty($formData)) {
             try {
+                /** @var tnw_salesforce_helper_salesforce_customer $manualSync */
                 $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
                 $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
                 $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));

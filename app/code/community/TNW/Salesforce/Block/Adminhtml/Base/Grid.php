@@ -127,6 +127,14 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
         ));
 
+        $this->addColumn('is_system', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Is System'),
+            'width' => '50px',
+            'index' => 'is_system',
+            'type' => 'options',
+            'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+        ));
+
         return parent::_prepareColumns();
     }
 

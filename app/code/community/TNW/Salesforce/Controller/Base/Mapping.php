@@ -122,7 +122,7 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     {
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('%s Field Mapping', $this->getLocalEntity(true)));
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock($this->_blockGroup. '/adminhtml_' . $this->getBlockPath()));
+            ->_addContent($this->getLayout()->createBlock(sprintf('%s/adminhtml_%s', $this->_blockGroup, $this->getBlockPath())));
         $this->renderLayout();
     }
 
@@ -154,7 +154,7 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
                 ->getBlock('head')
                 ->setCanLoadExtJs(true);
 
-            $this->_addContent($this->getLayout()->createBlock(sprintf($this->_blockGroup. '/adminhtml_%s_edit', $this->getBlockPath())));
+            $this->_addContent($this->getLayout()->createBlock(sprintf('%s/adminhtml_%s_edit', $this->_blockGroup, $this->getBlockPath())));
             $this->renderLayout();
         } else {
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Item does not exist'));
@@ -191,15 +191,9 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
                     $data['attribute_id'] = $attr->getId();
                     $data['backend_type'] = $attr->getBackendType();
                 }
+
                 unset($data['default_code']);
                 $data['default_value'] = NULL;
-            }
-            // validate
-            if (!$this->_validate($data)) {
-                Mage::getSingleton('adminhtml/session')->addError("Attribute Code must be unique");
-                Mage::getSingleton('adminhtml/session')->setFormData($data);
-                $this->_redirect('*/*/edit', array('mapping_id' => $this->getRequest()->getParam('mapping_id')));
-                return;
             }
 
             // Save
@@ -209,21 +203,32 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
             try {
                 $model->save();
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('tnw_salesforce')->__('Mapping was successfully saved'));
-                Mage::getSingleton('adminhtml/session')->setFormData(false);
+
+                Mage::getSingleton('adminhtml/session')
+                    ->addSuccess(Mage::helper('tnw_salesforce')->__('Mapping was successfully saved'))
+                    ->setFormData(false);
+
                 if ($this->getRequest()->getParam('back')) {
                     $this->_redirect('*/*/edit', array('mapping_id' => $model->getId()));
                     return;
                 }
+
                 $this->_redirect('*/*/');
                 return;
-            } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-                Mage::getSingleton('adminhtml/session')->setFormData($data);
+            }
+            catch (Exception $e) {
+                $message = ($e instanceof Zend_Db_Statement_Exception && $e->getCode() == 23000)
+                    ? 'Attribute Code must be unique' : $e->getMessage();
+
+                Mage::getSingleton('adminhtml/session')
+                    ->addError($message)
+                    ->setFormData($data);
+
                 $this->_redirect('*/*/edit', array('mapping_id' => $this->getRequest()->getParam('mapping_id')));
                 return;
             }
         }
+
         Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Unable to find mapping to save'));
         $this->_redirect('*/*/');
     }
@@ -271,30 +276,5 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
             }
         }
         $this->_redirect('*/*/index');
-    }
-
-    /**
-     * @param $data
-     * @return bool
-     */
-    protected function _validate($data)
-    {
-        if (!$id = $this->getRequest()->getParam('mapping_id')) {
-            return true;
-        }
-        $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection();
-        $collection->getSelect()
-            ->where('main_table.local_field = ?', $data['local_field'])
-            ->where('main_table.sf_object = ?', $data['sf_object'])
-            ->where('main_table.sf_field = ?', $data['sf_field']);
-
-        foreach ($collection as $_item) {
-            if ($_item->getMappingId() != $id) {
-                // Found a duplicate
-                return false;
-            }
-        }
-
-        return true;
     }
 }

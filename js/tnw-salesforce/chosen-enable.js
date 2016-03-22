@@ -1,9 +1,13 @@
 document.observe('dom:loaded', function () {
     $$('.chosen-select').each(function (element) {
-        /**
-         * Why ?..
-         */
-        element.removeAttribute('disabled');
         new Chosen(element, {width: '280px', allow_single_deselect: true });
     });
 });
+
+FormElementDependenceController.prototype.oldTrackChange
+    = FormElementDependenceController.prototype.trackChange;
+
+FormElementDependenceController.prototype.trackChange = function(e, idTo, valuesFrom){
+    this.oldTrackChange(e, idTo, valuesFrom);
+    $(idTo).fire("chosen:updated");
+};

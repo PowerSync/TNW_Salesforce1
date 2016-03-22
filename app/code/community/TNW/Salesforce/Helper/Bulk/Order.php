@@ -14,14 +14,6 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
     );
 
     /**
-     * @comment call leads convertation method
-     */
-    protected function _convertLeads()
-    {
-        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsBulk('order');
-    }
-
-    /**
      * Push cart items, notes
      */
     protected function _pushRemainingEntityData()

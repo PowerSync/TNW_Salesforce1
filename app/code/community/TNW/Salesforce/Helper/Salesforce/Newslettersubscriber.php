@@ -462,7 +462,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
                 $customer = Mage::getModel('customer/customer')->load($customerId);
                 $websiteId = $customer->getData('website_id');
             } else {
-                $websiteId = Mage::getModel('core/store')->load($subscriber->getData('store_id'))->getWebsiteId();
+                $websiteId = Mage::app()->getStore($subscriber->getData('store_id'))->getWebsiteId();
             }
 
             // 2.1 Save data by indexes

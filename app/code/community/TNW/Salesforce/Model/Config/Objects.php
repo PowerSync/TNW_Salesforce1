@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Config_Objects
     const ABANDONED_OBJECT          =   'Abandoned';
     const ABANDONED_ITEM_OBJECT     =   'AbandonedItem';
     const OPPORTUNITY_OBJECT        =   'Opportunity';
-    const OPPORTUNITY_ITEM_OBJECT   =   'OpportunityItem';
+    const OPPORTUNITY_ITEM_OBJECT   =   'OpportunityLineItem';
     const ORDER_OBJECT              =   'Order';
     const ORDER_ITEM_OBJECT         =   'OrderItem';
     const ORDER_INVOICE_OBJECT      =   'tnw_fulfilment__OrderInvoice__c';
