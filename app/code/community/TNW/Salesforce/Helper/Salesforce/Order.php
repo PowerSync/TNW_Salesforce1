@@ -1,10 +1,12 @@
 <?php
-
 /**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  * Class TNW_Salesforce_Helper_Salesforce_Order
  *
  * @method Mage_Sales_Model_Order _loadEntityByCache($_key, $cachePrefix = null)
  */
+
 class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Order
 {
 

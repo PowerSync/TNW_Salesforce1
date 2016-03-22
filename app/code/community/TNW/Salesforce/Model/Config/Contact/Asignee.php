@@ -1,9 +1,7 @@
 <?php
 /**
- * Author: Evgeniy Ermolaev
- * Email: eermolaev@yandex.ru
- * Date: 19.04.15
- * Time: 15:46
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
 class TNW_Salesforce_Model_Config_Contact_Asignee

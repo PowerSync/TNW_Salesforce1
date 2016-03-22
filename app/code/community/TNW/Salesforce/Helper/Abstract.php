@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Class TNW_Salesforce_Helper_Abstract
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 {
     /**
@@ -73,7 +74,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     /**
      * sf connection entity
      *
-     * @var bool
+     * @var Salesforce_SforceEnterpriseClient
      */
     protected $_mySforceConnection = false;
 
@@ -325,6 +326,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     {
         $store = null;
         if ($storeId = Mage::app()->getRequest()->getParam('store')) {
+            if ($storeId == 'undefined') {
+                $storeId = 0;
+            }
             if (!is_array($storeId)) {
                 $store = Mage::app()->getStore($storeId);
             }

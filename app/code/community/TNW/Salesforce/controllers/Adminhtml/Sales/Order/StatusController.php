@@ -1,4 +1,9 @@
 <?php
+/**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
+
 require_once 'Mage/Adminhtml/controllers/Sales/Order/StatusController.php';
 
 class TNW_Salesforce_Adminhtml_Sales_Order_StatusController extends Mage_Adminhtml_Sales_Order_StatusController

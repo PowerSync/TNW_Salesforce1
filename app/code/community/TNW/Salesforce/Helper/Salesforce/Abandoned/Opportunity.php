@@ -1,10 +1,12 @@
 <?php
-
 /**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  * Class TNW_Salesforce_Helper_Salesforce_Opportunity
  *
  * @method Mage_Sales_Model_Quote _loadEntityByCache($_key, $cachePrefix = null)
  */
+
 class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesforce_Helper_Salesforce_Opportunity
 {
     /**

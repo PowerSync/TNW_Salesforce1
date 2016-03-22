@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Class TNW_Salesforce_Helper_Data
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+
 class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 {
     /* API Config */
@@ -35,7 +36,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
     const PRODUCT_PRICEBOOK = 'salesforce_product/general/default_pricebook';
-    const PRODUCT_ATTRIBUTES_SYNC = 'salesforce_product/general/product_attributes_sync';
 
     // newsletter related
     const CUSTOMER_NEWSLETTER_SYNC = 'salesforce_customer/newsletter_config/customer_newsletter_enable_sync';
@@ -110,8 +110,9 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CATALOG_PRICE_SCOPE = 'catalog/price/scope';
     const CUSTOMER_ACCOUNT_SHARING = 'customer/account_share/scope';
 
-    const SALESFORCE_ENTERPRISE = 'Enterprise';
-    const SALESFORCE_PROFESSIONAL = 'Professional';
+    const SALESFORCE_ENTERPRISE   = 'Enterprise Edition';
+    const SALESFORCE_PROFESSIONAL = 'Professional Edition';
+    const SALESFORCE_DEVELOPER    = 'Developer Edition';
 
     /* Defaults */
     const MODULE_TYPE = 'PRO';
@@ -450,11 +451,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     }
 
     // Salesforce default Pricebook used to store Product prices from Magento
-
-    public function getProductAttributesSync()
-    {
-        return $this->getStroreConfig(self::PRODUCT_ATTRIBUTES_SYNC);
-    }
 
     public function getCustomerNewsletterSync()
     {
@@ -1250,23 +1246,23 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function getSalesforceVersionType()
     {
-        /**
-         * default value
-         */
-        $result = 'Enterprise';
+        $type = self::SALESFORCE_ENTERPRISE;
 
-        $salesforcePackagesVersion = $this->getSalesforcePackagesVersion();
+        try {
+            $this->checkConnection();
 
-        /**
-         * try to find info about Salesforce version type (Enterprise or Professional) in wsdl file comments
-         */
-        preg_match("/.*Salesforce.com *(?<version_type>\w+) *Web Services API Version.*/i", $salesforcePackagesVersion, $matches);
-
-        if (isset($matches['version_type'])) {
-            $result = $matches['version_type'];
+            if ($this->_mySforceConnection) {
+                $typeObj = $this->_mySforceConnection->query('select OrganizationType from Organization');
+                if (is_object($typeObj) && property_exists($typeObj, 'size') && $typeObj->size) {
+                    $type = $typeObj->records[0]->OrganizationType;
+                }
+            }
+        }
+        catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . $e->getMessage());
         }
 
-        return $result;
+        return $type;
     }
 
     /**

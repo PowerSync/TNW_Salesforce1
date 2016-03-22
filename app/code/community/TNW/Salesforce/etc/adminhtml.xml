@@ -182,7 +182,7 @@
                             <sort_order>40</sort_order>
                         </order_config>
                         <account_matching>
-                            <title>Account Matching</title>
+                            <title>Account Matching Rules</title>
                             <action>adminhtml/salesforce_account_matching</action>
                             <sort_order>50</sort_order>
                         </account_matching>

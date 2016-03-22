@@ -46,6 +46,10 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Console_Form_Grid extends Mage_Adminht
     protected function _prepareColumns()
     {
 
+        if (empty($this->_collection)) {
+            return parent::_prepareColumns();
+        }
+
         foreach ($this->_collection as $item) {
             foreach ($item->getData() as $field => $value) {
 

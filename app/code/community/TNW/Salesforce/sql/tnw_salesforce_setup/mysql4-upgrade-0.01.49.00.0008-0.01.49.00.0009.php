@@ -1,4 +1,8 @@
 <?php
+/**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
 
 $installer = $this;
 
@@ -23,8 +27,6 @@ if ($_collection->count() == 0) {
 
     // Fresh Install
     $_statuses = Mage::getResourceModel('sales/order_status_collection');
-    $_statuses
-        ->joinStates();
 
     foreach($_statuses as $_status) {
         $_statusMapping = Mage::getModel('tnw_salesforce/order_status');
