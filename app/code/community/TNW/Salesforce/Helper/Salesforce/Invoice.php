@@ -322,18 +322,22 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         switch($type)
         {
             case 'Invoice':
-                return $_entity;
+                $_object = $_entity;
+                break;
 
             case 'Order':
-                return $_entity->getOrder();
+                $_object = $_entity->getOrder();
+                break;
 
             case 'Payment':
                 $_order = $this->_getObjectByEntityType($_entity, 'Order');
-                return $_order->getPayment();
+                $_object = $_order->getPayment();
+                break;
 
             case 'Customer':
                 $_entityNumber = $this->_getEntityNumber($_entity);
-                return $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+                $_object = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+                break;
 
             case 'Customer Group':
                 $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
@@ -341,20 +345,27 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 $_groupId  = ($_order->getCustomerGroupId() !== NULL)
                     ? $_order->getCustomerGroupId() : $_customer->getGroupId();
 
-                return Mage::getModel('customer/group')->load($_groupId);
+                $_object = Mage::getModel('customer/group')->load($_groupId);
+                break;
 
             case 'Billing':
-                return $_entity->getBillingAddress();
+                $_object = $_entity->getBillingAddress();
+                break;
 
             case 'Shipping':
-                return $_entity->getShippingAddress();
+                $_object = $_entity->getShippingAddress();
+                break;
 
             case 'Custom':
-                return $_entity->getStore();
+                $_object = $_entity->getStore();
+                break;
 
             default:
-                return null;
+                $_object = null;
+                break;
         }
+
+        return $_object;
     }
 
     /**
@@ -378,10 +389,12 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         switch($_type)
         {
             case 'Invoice':
-                return $this->getEntityByItem($_entityItem);
+                $_object = $this->getEntityByItem($_entityItem);
+                break;
 
             case 'Billing Item':
-                return $_entityItem;
+                $_object = $_entityItem;
+                break;
 
             case 'Product':
                 $_productId = $this->getProductIdFromCart($_entityItem->getOrderItem());
@@ -392,28 +405,35 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                     ->setStoreId($storeId);
 
                 if (!empty($_productId)) {
-                    return $_product->load($_productId);
+                    $_object = $_product->load($_productId);
+                    break;
                 }
                 else {
-                    return $_product->addData(array(
+                    $_object = $_product->addData(array(
                         'name'           => $_entityItem->getData('Name'),
                         'sku'            => $_entityItem->getData('ProductCode'),
                         'salesforce_id'  => $_entityItem->getData('Id'),
                     ));
+                    break;
                 }
 
             case 'Product Inventory':
                 $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
-                return Mage::getModel('cataloginventory/stock_item')
+                $_object = Mage::getModel('cataloginventory/stock_item')
                     ->loadByProduct($product);
+                break;
 
             case 'Custom':
-                return $this->_getObjectByEntityItemType($_entityItem, 'Invoice')
+                $_object = $this->_getObjectByEntityItemType($_entityItem, 'Invoice')
                     ->getStore();
+                break;
 
             default:
-                return null;
+                $_object = null;
+                break;
         }
+
+        return $_object;
     }
 
     /**

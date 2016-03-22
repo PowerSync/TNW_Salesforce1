@@ -125,11 +125,15 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     $aitocValues['order'] = Mage::getModel('aitcheckoutfields/transport')->loadByOrderId($_entity->getId());
                 }
 
-                return $aitocValues;
+                $_object = $aitocValues;
+                break;
 
             default:
-                return parent::_getObjectByEntityType($_entity, $types);
+                $_object = parent::_getObjectByEntityType($_entity, $types);
+                break;
         }
+
+        return $_object;
     }
 
     /**

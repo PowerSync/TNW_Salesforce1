@@ -691,11 +691,15 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         switch($type)
         {
             case 'Cart':
-                return $_entity;
+                $_object = $_entity;
+                break;
 
             default:
-                return parent::_getObjectByEntityType($_entity, $type);
+                $_object = parent::_getObjectByEntityType($_entity, $type);
+                break;
         }
+
+        return $_object;
     }
 
     /**
@@ -708,13 +712,18 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         switch($_type)
         {
             case 'Cart':
-                return $this->getEntityByItem($_entityItem);
+                $_object = $this->getEntityByItem($_entityItem);
+                break;
 
             case 'Cart Item':
-                return $_entityItem;
+                $_object = $_entityItem;
+                break;
 
             default:
-                return parent::_getObjectByEntityItemType($_entityItem, $_type);
+                $_object = parent::_getObjectByEntityItemType($_entityItem, $_type);
+                break;
         }
+
+        return $_object;
     }
 }

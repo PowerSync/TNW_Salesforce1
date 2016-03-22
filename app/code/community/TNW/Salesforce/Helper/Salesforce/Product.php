@@ -399,18 +399,24 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         switch($_type)
         {
             case 'Product':
-                return $_entity;
+                $_object = $_entity;
+                break;
 
             case 'Product Inventory':
-                return Mage::getModel('cataloginventory/stock_item')
+                $_object = Mage::getModel('cataloginventory/stock_item')
                     ->loadByProduct($_entity);
+                break;
 
             case 'Custom':
-                return $_entity->getStore();
+                $_object = $_entity->getStore();
+                break;
 
             default:
-                return null;
+                $_object = null;
+                break;
         }
+
+        return $_object;
     }
 
     /**

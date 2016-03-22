@@ -734,7 +734,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         switch($type) {
             case 'Customer':
-                return $_entity;
+                $_object = $_entity;
+                break;
 
             case 'Customer Group':
                 if (!isset($this->_customerGroups[$_entity->getGroupId()])) {
@@ -742,20 +743,27 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         ->load($_entity->getGroupId());
                 }
 
-                return $this->_customerGroups[$_entity->getGroupId()];
+                $_object = $this->_customerGroups[$_entity->getGroupId()];
+                break;
 
             case 'Billing':
-                return $_entity->getDefaultBillingAddress();
+                $_object = $_entity->getDefaultBillingAddress();
+                break;
 
             case 'Shipping':
-                return $_entity->getDefaultShippingAddress();
+                $_object = $_entity->getDefaultShippingAddress();
+                break;
 
             case 'Custom':
-                return $_entity->getStore();
+                $_object = $_entity->getStore();
+                break;
 
             default:
-                return null;
+                $_object = null;
+                break;
         }
+
+        return $_object;
     }
 
     /**

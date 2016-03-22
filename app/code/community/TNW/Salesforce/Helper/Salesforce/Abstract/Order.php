@@ -505,34 +505,44 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         switch($type)
         {
             case 'Custom':
-                return $_entity->getStore();
+                $_object   = $_entity->getStore();
+                break;
 
             case 'Order':
-                return $_entity;
+                $_object   = $_entity;
+                break;
 
             case 'Payment':
-                return $_entity->getPayment();
+                $_object   = $_entity->getPayment();
+                break;
 
             case 'Customer':
                 $_entityNumber = $this->_getEntityNumber($_entity);
-                return $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+                $_object   = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
+                break;
 
             case 'Customer Group':
                 $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
                 $_groupId  = ($_entity->getCustomerGroupId() !== NULL)
                     ? $_entity->getCustomerGroupId() : $_customer->getGroupId();
 
-                return Mage::getModel('customer/group')->load($_groupId);
+                $_object   = Mage::getModel('customer/group')->load($_groupId);
+                break;
 
             case 'Billing':
-                return $_entity->getBillingAddress();
+                $_object   = $_entity->getBillingAddress();
+                break;
 
             case 'Shipping':
-                return $_entity->getShippingAddress();
+                $_object   = $_entity->getShippingAddress();
+                break;
 
             default:
-                return null;
+                $_object   = null;
+                break;
         }
+
+        return $_object;
     }
 
     /**
@@ -546,10 +556,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         switch($_type)
         {
             case 'Order':
-                return $this->getEntityByItem($_entityItem);
+                $_object = $this->getEntityByItem($_entityItem);
+                break;
 
             case 'Order Item':
-                return $_entityItem;
+                $_object = $_entityItem;
+                break;
 
             case 'Product':
                 // Load by product Id only if bundled OR simple with options
@@ -561,7 +573,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     ->setStoreId($storeId);
 
                 if ($_productId) {
-                    return $_product->load($_productId);
+                    $_object = $_product->load($_productId);
+                    break;
                 }
                 else {
                     $_entity        = $this->_getObjectByEntityItemType($_entityItem, 'Order');
@@ -574,26 +587,32 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                         throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getData('ProductCode') . ") is not synchronized, could not add to $this->_salesforceEntityName!");
                     }
 
-                    return $_product->addData(array(
+                    $_object = $_product->addData(array(
                         'name'                    => $_entityItem->getData('Name'),
                         'sku'                     => $_entityItem->getData('ProductCode'),
                         'salesforce_id'           => $_entityItem->getData('Id'),
                         'salesforce_pricebook_id' => $pricebookEntry['Id'],
                     ));
+                    break;
                 }
 
             case 'Product Inventory':
                 $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
-                return Mage::getModel('cataloginventory/stock_item')
+                $_object = Mage::getModel('cataloginventory/stock_item')
                     ->loadByProduct($product);
+                break;
 
             case 'Custom':
-                return $this->_getObjectByEntityItemType($_entityItem, 'Order')
+                $_object = $this->_getObjectByEntityItemType($_entityItem, 'Order')
                     ->getStore();
+                break;
 
             default:
-                return null;
+                $_object = null;
+                break;
         }
+
+        return $_object;
     }
 
     /**
