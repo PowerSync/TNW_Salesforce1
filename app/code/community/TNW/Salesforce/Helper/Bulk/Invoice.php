@@ -58,52 +58,40 @@ class TNW_Salesforce_Helper_Bulk_Invoice extends TNW_Salesforce_Helper_Salesforc
 
     protected function _assignIds()
     {
-        $this->_client->setMethod('GET');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-        $_entityArray = array_flip($this->_cache['entitiesUpdating']);
-
         foreach ($this->_cache['batchCache'][$this->getManyParentEntityType()]['Id'] as $_key => $_batchId) {
-            $this->_client->setUri(sprintf('%s/services/async/%s/job/%s/batch/%s/result',
-                $this->getSalesforceServerDomain(), $this->_salesforceApiVersion,
-                $this->_cache['bulkJobs'][$this->_magentoEntityName]['Id'], $_batchId));
+            $_batch = &$this->_cache['batch'][$this->getManyParentEntityType()]['Id'][$_key];
 
             try {
-                $response = $this->_client->request()->getBody();
-                $response = simplexml_load_string($response);
-                $_i = 0;
-                $_batch = array_keys($this->_cache['batch'][$this->getManyParentEntityType()]['Id'][$_key]);
-                foreach ($response as $_item) {
-                    $_oid = $_batch[$_i++];
-
-                    //Report Transaction
-                    $this->_cache['responses'][strtolower($this->getManyParentEntityType())][$_oid] = json_decode(json_encode($_item), TRUE);
-
-                    if ($_item->success == "true") {
-                        $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_oid] = (string)$_item->id;
-
-                        $sql = sprintf('UPDATE `%s` SET salesforce_id = "%s" WHERE entity_id = %d;',
-                            $this->_modelEntity()->getResource()->getMainTable(), (string)$_item->id, $_entityArray[$_oid]);
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-                        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveTrace(ucwords($this->_magentoEntityName) . ' Upserted: ' . (string)$_item->id);
-
-                        if ($_record = $this->_loadEntityByCache(null, $_oid)) {
-                            $_record->setData('salesforce_id', (string)$_item->id);
-                            $_record->setData('sf_insync', 1);
-                        }
-                    }
-                    else {
-                        $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
-                        $this->_processErrors($_item, $this->_magentoEntityName,
-                            $this->_cache['batch'][$this->getManyParentEntityType()]['Id'][$_key][$_oid]);
-                    }
-                }
+                $response = $this->getBatch($this->_cache['bulkJobs'][$this->_magentoEntityName]['Id'], $_batchId);
             } catch (Exception $e) {
-                // TODO:  Log error, quit
-                $response = $e->getMessage();
+                $response = array_fill(0, count($_batch), $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Prepare batch #'. $_batchId .' Error: ' . $e->getMessage());
+            }
+
+            $_i = 0;
+            $_batchKeys = array_keys($_batch);
+            foreach ($response as $_item) {
+                $_oid = $_batchKeys[$_i++];
+
+                //Report Transaction
+                $this->_cache['responses'][strtolower($this->getManyParentEntityType())][$_oid] = json_decode(json_encode($_item), TRUE);
+
+                if ($_item->success == "true") {
+                    $_record = $this->_loadEntityByCache(array_search($_oid, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_oid);
+                    $_record->setData('salesforce_id', (string)$_item->id);
+                    $_record->setData('sf_insync', 1);
+                    $_record->getResource()->save($_record);
+
+                    $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_oid] = (string)$_item->id;
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace(ucwords($this->_magentoEntityName) . ' Upserted: ' . (string)$_item->id);
+                    continue;
+                }
+
+                $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
+                $this->_processErrors($_item, $this->_magentoEntityName, $_batch[$_oid]);
             }
         }
 
@@ -200,47 +188,51 @@ class TNW_Salesforce_Helper_Bulk_Invoice extends TNW_Salesforce_Helper_Salesforc
 
     protected function _checkItemData()
     {
-        $this->_client->setMethod('GET');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
         $itemKey = lcfirst($this->getItemsField());
         if (!array_key_exists($itemKey, $this->_cache['batchCache'])) {
             return;
         }
 
         foreach ($this->_cache['batchCache'][$itemKey]['Id'] as $_key => $_batchId) {
-            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs'][$itemKey]['Id'] . '/batch/' . $_batchId . '/result');
-            try {
-                $response = $this->_client->request()->getBody();
-                $response = simplexml_load_string($response);
-                $_i = 0;
-                $_batch = $this->_cache['batch'][$itemKey]['Id'][$_key];
-                $_batchKeys = array_keys($_batch);
-                foreach ($response as $_item) {
-                    $_recordItemId = $_batchKeys[$_i++];
-                    $_orderId      = (string)$_batch[$_recordItemId]
-                        ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Invoice__c'};
-                    $_oid          = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
+            $_batch = &$this->_cache['batch'][$itemKey]['Id'][$_key];
 
-                    //Report Transaction
-                    $this->_cache['responses'][$itemKey][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
-                    if ($_item->success == "false") {
-                        $this->_processErrors($_item, $itemKey, $_batch[$_recordItemId]);
-                        if (!in_array($_oid, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
-                            $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
-                        }
-                    }
-                    else {
-                        if ($_recordItemId && strrpos($_recordItemId, 'cart_', -strlen($_recordItemId)) !== FALSE) {
-                            $_sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice_item') . "` SET salesforce_id = '" . $_item->id . "' WHERE entity_id = '" . str_replace('cart_','',$_recordItemId) . "';";
-                            Mage::helper('tnw_salesforce')->getDbConnection()->query($_sql);
-                        }
-                    }
-                }
+            try {
+                $response = $this->getBatch($this->_cache['bulkJobs'][$itemKey]['Id'], $_batchId);
             } catch (Exception $e) {
-                // TODO:  Log error, quit
-                $response = $e->getMessage();
+                $response = array_fill(0, count($_batch), $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Prepare batch #'. $_batchId .' Error: ' . $e->getMessage());
+            }
+
+            $_i = 0;
+            $_batchKeys = array_keys($_batch);
+            foreach ($response as $_item) {
+                $_recordItemId = $_batchKeys[$_i++];
+                $_orderId      = (string)$_batch[$_recordItemId]
+                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Invoice__c'};
+                $_oid          = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
+
+                //Report Transaction
+                $this->_cache['responses'][$itemKey][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
+
+                if ($_item->success == "true") {
+                    /** @var Mage_Sales_Model_Order_Invoice_Item $entityItem */
+                    $entityItem = $this->_loadEntityByCache(array_search($_oid, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_oid)
+                        ->getItemById(str_replace('cart_','',$_recordItemId));
+
+                    if ($entityItem) {
+                        $entityItem->setData('salesforce_id', $_item->id);
+                        $entityItem->getResource()->save($entityItem);
+                    }
+
+                    continue;
+                }
+
+                $this->_processErrors($_item, $itemKey, $_batch[$_recordItemId]);
+                if (!in_array($_oid, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
+                    $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
+                }
             }
         }
 
@@ -252,49 +244,46 @@ class TNW_Salesforce_Helper_Bulk_Invoice extends TNW_Salesforce_Helper_Salesforc
 
     protected function _checkNotesData()
     {
-        $this->_client->setMethod('GET');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
         if (!array_key_exists('notes', $this->_cache['batchCache'])) {
             return;
         }
 
         foreach ($this->_cache['batchCache']['notes']['Id'] as $_key => $_batchId) {
-            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['notes']['Id'] . '/batch/' . $_batchId . '/result');
+            $_batch = &$this->_cache['batch']['notes']['Id'][$_key];
+
             try {
-                $response = $this->_client->request()->getBody();
-                $response = simplexml_load_string($response);
-                $_i = 0;
-
-                $_batch = $this->_cache['batch']['notes']['Id'][$_key];
-                $_batchKeys = array_keys($_batch);
-
-                foreach ($response as $_item) {
-                    $_noteId  = $_batchKeys[$_i++];
-                    $_orderId = (string)$_batch[$_noteId]->ParentId;
-                    $_oid     = array_search($_orderId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
-
-                    //Report Transaction
-                    $this->_cache['responses']['notes'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
-                    if ($_item->success == "false") {
-                        $this->_processErrors($_item, 'notes', $_batch[$_noteId]);
-                        if (!in_array($_oid, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
-                            $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
-                        }
-                    }
-                    else {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveTrace('Note (id: ' . $_noteId . ') upserted for ' . $this->_magentoEntityName . ' #' . $_orderId . ')');
-
-                        $sql = "UPDATE `" . $this->_notesTableName() . "` SET salesforce_id = '" . (string)$_item->id . "' WHERE entity_id = '" . $_noteId . "';";
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
-                        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-                    }
-                }
+                $response = $this->getBatch($this->_cache['bulkJobs']['notes']['Id'], $_batchId);
             } catch (Exception $e) {
-                // TODO:  Log error, quit
-                $response = $e->getMessage();
+                $response = array_fill(0, count($_batch), $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Prepare batch #'. $_batchId .' Error: ' . $e->getMessage());
+            }
+
+            $_i = 0;
+            $_batchKeys = array_keys($_batch);
+            foreach ($response as $_item) {
+                $_noteId  = $_batchKeys[$_i++];
+                $_orderId = (string)$_batch[$_noteId]->ParentId;
+                $_oid     = array_search($_orderId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
+
+                //Report Transaction
+                $this->_cache['responses']['notes'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
+                if ($_item->success == "true") {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Note (id: ' . $_noteId . ') upserted for ' . $this->_magentoEntityName . ' #' . $_orderId . ')');
+
+                    $sql = "UPDATE `" . $this->_notesTableName() . "` SET salesforce_id = '" . (string)$_item->id . "' WHERE entity_id = '" . $_noteId . "';";
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
+                    Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+
+                    continue;
+                }
+
+                $this->_processErrors($_item, 'notes', $_batch[$_noteId]);
+                if (!in_array($_oid, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
+                    $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
+                }
             }
         }
 

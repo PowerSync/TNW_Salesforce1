@@ -128,7 +128,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
         if ($assignmentRule) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
             $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
-            $this->_mySforceConnection->setAssignmentRuleHeader($header);
+            $this->getClient()->setAssignmentRuleHeader($header);
             unset($assignmentRule, $header);
         }
 
@@ -136,7 +136,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
         Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']));
 
-        $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['leadsToUpsert']), 'Lead');
+        $results = $this->getClient()->upsert('Id', array_values($this->_cache['leadsToUpsert']), 'Lead');
 
         Mage::dispatchEvent("tnw_salesforce_lead_send_after", array(
             "data" => $this->_cache['leadsToUpsert'],
@@ -285,7 +285,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
             Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']));
 
-            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['contactsToUpsert']), 'Contact');
+            $results = $this->getClient()->upsert('Id', array_values($this->_cache['contactsToUpsert']), 'Contact');
 
             Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
                 "data" => $this->_cache['contactsToUpsert'],
@@ -314,7 +314,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
             Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']));
 
-            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']), 'Account');
+            $results = $this->getClient()->upsert('Id', array_values($this->_cache['accountsToUpsert']), 'Account');
 
             Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
                 "data" => $this->_cache['accountsToUpsert'],
@@ -352,7 +352,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
                 Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['accountContactsToUpsert']));
 
-                $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountContactsToUpsert']), 'Contact');
+                $results = $this->getClient()->upsert('Id', array_values($this->_cache['accountContactsToUpsert']), 'Contact');
 
                 Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
                     "data" => $this->_cache['accountContactsToUpsert'],
@@ -593,7 +593,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
                 Mage::dispatchEvent("tnw_salesforce_campaign_member_send_before", array("data" => $this->_cache['campaignsToUpsert']));
 
-                $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['campaignsToUpsert']), 'CampaignMember');
+                $results = $this->getClient()->upsert('Id', array_values($this->_cache['campaignsToUpsert']), 'CampaignMember');
 
                 Mage::dispatchEvent("tnw_salesforce_campaign_member_send_after", array(
                     "data" => $this->_cache['campaignsToUpsert'],
@@ -616,9 +616,6 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     protected function _updateCampaingsBulk()
     {
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
         $this->_updateCampaingsBefore();
 
         if (!empty($this->_cache['campaignsToUpsert'])) {
@@ -680,31 +677,29 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     protected function _assignCampaignsIds($_on = 'Id')
     {
-        $this->_client->setMethod('GET');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
         foreach ($this->_cache['batchCache']['campaigns'][$_on] as $_key => $_batchId) {
-            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $this->_cache['bulkJobs']['campaigns'][$_on] . '/batch/' . $_batchId . '/result');
+            $_batch = array_keys($this->_cache['batch']['campaigns'][$_on][$_key]);
+
             try {
-                $response = $this->_client->request()->getBody();
-                $response = simplexml_load_string($response);
-                $_i = 0;
-                $_batch = array_keys($this->_cache['batch']['campaigns'][$_on][$_key]);
-                foreach ($response as $_item) {
-                    $_cid = $_batch[$_i];
-
-                    // report transaction
-                    $this->_cache['responses']['campaigns'][$_cid] = json_decode(json_encode($_item), TRUE);
-
-
-                    if ((string)$_item->success == "false") {
-                        $this->_processErrors($_item, 'campaigns', $this->_cache['batch']['campaigns'][$_on][$_key][$_cid]);
-                        continue;
-                    }
-                }
+                $response = $this->getBatch($this->_cache['bulkJobs']['campaigns'][$_on], $_batchId);
             } catch (Exception $e) {
-                // TODO:  Log error, quit
+                $response = array_fill(0, count($_batch), $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Prepare batch #'. $_batchId .' Error: ' . $e->getMessage());
+            }
+
+            $_i = 0;
+            foreach ($response as $_item) {
+                $_cid = $_batch[$_i];
+
+                // report transaction
+                $this->_cache['responses']['campaigns'][$_cid] = json_decode(json_encode($_item), TRUE);
+
+                if ((string)$_item->success != "true") {
+                    $this->_processErrors($_item, 'campaigns', $this->_cache['batch']['campaigns'][$_on][$_key][$_cid]);
+                    continue;
+                }
             }
         }
 

@@ -131,8 +131,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
     /**
      * @param array $ids
+     * @param bool $_isCron
+     * @return bool
      */
-    public function massAdd($ids = array())
+    public function massAdd($ids = array(), $_isCron = false)
     {
         try {
             //get product collection
@@ -453,7 +455,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         try {
             Mage::dispatchEvent("tnw_salesforce_product_send_before", array("data" => $chunk));
-            $_responses = $this->_mySforceConnection->upsert($_upsertOn, array_values($chunk), 'Product2');
+            $_responses = $this->getClient()->upsert($_upsertOn, array_values($chunk), 'Product2');
             Mage::dispatchEvent("tnw_salesforce_product_send_after", array("data" => $chunk, "result" => $_responses));
         } catch (Exception $e) {
             $_responses = array_fill(0, count($_productIds),
@@ -766,7 +768,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         $_keys = array_keys($chunk);
         try {
-            $_responses = $this->_mySforceConnection->upsert('Id', array_values($chunk), 'PricebookEntry');
+            $_responses = $this->getClient()->upsert('Id', array_values($chunk), 'PricebookEntry');
         } catch (Exception $e) {
             $_responses = array_fill(0, count($_keys),
                 $this->_buildErrorResponse($e->getMessage()));

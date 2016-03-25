@@ -329,13 +329,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if (!empty($assignmentRule) && $assignmentRule != "" && $assignmentRule != 0) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
                 $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
-                $this->_mySforceConnection->setAssignmentRuleHeader($header);
+                $this->getClient()->setAssignmentRuleHeader($header);
                 unset($assignmentRule, $header);
             }
 
             $_keys = array_keys($this->_cache['leadsToUpsert']);
             Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']));
-            $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['leadsToUpsert']), 'Lead');
+            $_results = $this->getClient()->upsert('Id', array_values($this->_cache['leadsToUpsert']), 'Lead');
             Mage::dispatchEvent("tnw_salesforce_lead_send_after", array(
                 "data" => $this->_cache['leadsToUpsert'],
                 "result" => $_results
@@ -370,7 +370,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             Mage::dispatchEvent("tnw_salesforce_task_send_before", array("data" => array($this->_obj)));
-            $_results = $this->_mySforceConnection->upsert('Id', array($this->_obj), 'Task');
+            $_results = $this->getClient()->upsert('Id', array($this->_obj), 'Task');
             Mage::dispatchEvent("tnw_salesforce_task_send_after", array(
                 "data" => array($this->_obj),
                 "result" => $_results
@@ -998,7 +998,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         $_ids = array_chunk($this->_toDelete, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
         foreach ($_ids as $_recordIds) {
-            $this->_mySforceConnection->delete($_recordIds);
+            $this->getClient()->delete($_recordIds);
         }
     }
 
@@ -1653,7 +1653,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             try {
                 Mage::dispatchEvent("tnw_salesforce_account_send_before", array("data" => $this->_cache['accountsToUpsert']['Id']));
 
-                $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['accountsToUpsert']['Id']), 'Account');
+                $_results = $this->getClient()->upsert('Id', array_values($this->_cache['accountsToUpsert']['Id']), 'Account');
                 Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
                     "data" => $this->_cache['accountsToUpsert']['Id'],
                     "result" => $_results
@@ -1771,7 +1771,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_contactIds = array_keys($this->_cache['contactsToUpsert']['Id']);
             try {
                 Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']['Id']));
-                $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['contactsToUpsert']['Id']), 'Contact');
+                $_results = $this->getClient()->upsert('Id', array_values($this->_cache['contactsToUpsert']['Id']), 'Contact');
                 Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
                     "data" => $this->_cache['contactsToUpsert']['Id'],
                     "result" => $_results
@@ -1867,7 +1867,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_contactIds = array_keys($this->_cache['contactsToUpsert'][$this->_magentoId]);
             try {
                 Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert'][$this->_magentoId]));
-                $_results = $this->_mySforceConnection->upsert($this->_magentoId, array_values($this->_cache['contactsToUpsert'][$this->_magentoId]), 'Contact');
+                $_results = $this->getClient()->upsert($this->_magentoId, array_values($this->_cache['contactsToUpsert'][$this->_magentoId]), 'Contact');
                 Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
                     "data" => $this->_cache['contactsToUpsert'][$this->_magentoId],
                     "result" => $_results
@@ -1936,14 +1936,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if (!empty($assignmentRule) && $assignmentRule != "" && $assignmentRule != 0) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
                 $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
-                $this->_mySforceConnection->setAssignmentRuleHeader($header);
+                $this->getClient()->setAssignmentRuleHeader($header);
                 unset($assignmentRule, $header);
             }
 
             $_contactIds = array_keys($this->_cache['leadsToUpsert'][$this->_magentoId]);
             try {
                 Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert'][$this->_magentoId]));
-                $_results = $this->_mySforceConnection->upsert($this->_magentoId, array_values($this->_cache['leadsToUpsert'][$this->_magentoId]), 'Lead');
+                $_results = $this->getClient()->upsert($this->_magentoId, array_values($this->_cache['leadsToUpsert'][$this->_magentoId]), 'Lead');
                 Mage::dispatchEvent("tnw_salesforce_lead_send_after", array(
                     "data" => $this->_cache['leadsToUpsert'][$this->_magentoId],
                     "result" => $_results
@@ -2008,14 +2008,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if (!empty($assignmentRule) && $assignmentRule != "" && $assignmentRule != 0) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Assignment Rule used: " . $assignmentRule);
                 $header = new Salesforce_AssignmentRuleHeader($assignmentRule, false);
-                $this->_mySforceConnection->setAssignmentRuleHeader($header);
+                $this->getClient()->setAssignmentRuleHeader($header);
                 unset($assignmentRule, $header);
             }
 
             $_contactIds = array_keys($this->_cache['leadsToUpsert']['Id']);
             try {
                 Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']['Id']));
-                $_results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['leadsToUpsert']['Id']), 'Lead');
+                $_results = $this->getClient()->upsert('Id', array_values($this->_cache['leadsToUpsert']['Id']), 'Lead');
                 Mage::dispatchEvent("tnw_salesforce_lead_send_after", array(
                     "data" => $this->_cache['leadsToUpsert']['Id'],
                     "result" => $_results

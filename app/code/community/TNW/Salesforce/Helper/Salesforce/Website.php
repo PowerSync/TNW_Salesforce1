@@ -6,10 +6,10 @@
 class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
-     * @param bool $_return
+     * @param string $type
      * @return bool|mixed
      */
-    public function process()
+    public function process($type = 'soft')
     {
         if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
@@ -89,7 +89,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
         try {
             Mage::dispatchEvent("tnw_salesforce_website_send_before", array("data" => $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c']));
-            $_results = $this->_mySforceConnection->upsert(
+            $_results = $this->getClient()->upsert(
                 Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c',
                 array_values($this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c']),
                 Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
@@ -145,8 +145,10 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
     /**
      * @param array $ids
+     * @param bool $_isCron
+     * @return bool
      */
-    public function massAdd($ids = array())
+    public function massAdd($ids = array(), $_isCron = false)
     {
         try {
             $_websitesArray = array();

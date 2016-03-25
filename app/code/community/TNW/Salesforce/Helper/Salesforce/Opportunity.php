@@ -182,7 +182,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 "data" => $this->_cache['opportunitiesToUpsert']
             ));
 
-            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['opportunitiesToUpsert']), 'Opportunity');
+            $results = $this->getClient()->upsert('Id', array_values($this->_cache['opportunitiesToUpsert']), 'Opportunity');
             Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
                 "data" => $this->_cache['opportunitiesToUpsert'],
                 "result" => $results
@@ -235,7 +235,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $_toUndelete[] = $_object->Id;
             }
             if (!empty($_toUndelete)) {
-                $this->_mySforceConnection->undelete($_toUndelete);
+                $this->getClient()->undelete($_toUndelete);
             }
         }
 
@@ -317,7 +317,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         $_orderNumbers = array_flip($this->_cache  ['upserted' . $this->getManyParentEntityType()]);
         $_chunkKeys = array_keys($chunk);
         try {
-            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OpportunityLineItem');
+            $results = $this->getClient()->upsert("Id", array_values($chunk), 'OpportunityLineItem');
         } catch (Exception $e) {
             $results = array_fill(0, count($chunk),
                 $this->_buildErrorResponse($e->getMessage()));
@@ -383,7 +383,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             // Push Contact Roles
             try {
-                $results = $this->_mySforceConnection->upsert("Id", $this->_cache['contactRolesToUpsert'], 'OpportunityContactRole');
+                $results = $this->getClient()->upsert("Id", $this->_cache['contactRolesToUpsert'], 'OpportunityContactRole');
             } catch (Exception $e) {
                 $results = array_fill(0, count($this->_cache['contactRolesToUpsert']),
                     $this->_buildErrorResponse($e->getMessage()));
@@ -466,7 +466,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 foreach ($oppItemSet as $item) {
                     $oppItemSetId[] = $item->Id;
                 }
-                $this->_mySforceConnection->delete($oppItemSetId);
+                $this->getClient()->delete($oppItemSetId);
             }
         }
     }
