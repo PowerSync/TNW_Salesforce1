@@ -152,7 +152,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 $currencyCode = $_tmp[2];
                 $pricebookEntryKey = $_keys[$_i];
                 ++$_i;
-                if ((string)$_result->success == "true") {
+                if ($_result->success == "true") {
                     if (!is_array($this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds)) {
                         $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds = array();
                     }
@@ -262,7 +262,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 $this->_cache['responses']['products'][$_magentoId] = json_decode(json_encode($_result), TRUE);
 
                 $_i++;
-                if ((string)$_result->success == "true") {
+                if ($_result->success == "true") {
                     $this->_cache['toSaveInMagento'][$_magentoId]->productId = (string)$_result->id;
                     $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = true;
                     $this->_addPriceBookEntry($_magentoId, $this->_cache['toSaveInMagento'][$_magentoId]->productId);

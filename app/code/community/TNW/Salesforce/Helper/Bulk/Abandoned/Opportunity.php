@@ -127,7 +127,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
     {
         if (array_key_exists('opportunityProducts', $this->_cache['batchCache'])) {
             foreach ($this->_cache['batchCache']['opportunityProducts']['Id'] as $_key => $_batchId) {
-                $_batch = array_values($this->_cache['batch']['opportunityProducts']['Id'][$_key]);
+                $_batch = &$this->_cache['batch']['opportunityProducts']['Id'][$_key];
 
                 try {
                     $response = $this->getBatch($this->_cache['bulkJobs']['opportunityProducts']['Id'], $_batchId);
@@ -139,20 +139,23 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 }
 
                 $_i = 0;
+                $_batchKeys = array_keys($_batch);
                 foreach ($response as $_item) {
-                    $_opportunityId = (string)$_batch[$_i]->OpportunityId;
+                    $_batchKey = $_batchKeys[$_i++];
+                    $_opportunityId = (string)$_batch[$_batchKey]->OpportunityId;
                     $_oid = array_search($_opportunityId, $this->_cache  ['upserted' . $this->getManyParentEntityType()]);
 
                     //Report Transaction
                     $this->_cache['responses']['opportunityLineItems'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
 
-                    if ($_item->success != "false") {
-                        $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
-                        if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
-                            $this->_cache['failedOpportunities'][] = $_oid;
-                        }
+                    if ($_item->success == "true") {
+                        continue;
                     }
-                    $_i++;
+
+                    $this->_processErrors($_item, 'opportunityProduct', $_batch[$_batchKey]);
+                    if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
+                        $this->_cache['failedOpportunities'][] = $_oid;
+                    }
                 }
             }
         }
@@ -171,19 +174,23 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                 }
 
                 $_i = 0;
+                $_batchKeys = array_keys($_batch);
                 foreach ($response as $_rKey => $_item) {
-                    $_opportunityId = (string)$_batch[$_i]->OpportunityId;
+                    $_batchKey = $_batchKeys[$_i++];
+                    $_opportunityId = (string)$_batch[$_batchKey]->OpportunityId;
                     $_oid = array_search($_opportunityId, $this->_cache['upserted'.$this->getManyParentEntityType()]);
 
                     //Report Transaction
                     $this->_cache['responses']['opportunityCustomerRoles'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
-                    if ($_item->success != "false") {
-                        $this->_processErrors($_item, 'opportunityProduct', $_batch[$_i]);
-                        if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
-                            $this->_cache['failedOpportunities'][] = $_oid;
-                        }
+
+                    if ($_item->success == "true") {
+                        continue;
                     }
-                    $_i++;
+
+                    $this->_processErrors($_item, 'opportunityProduct', $_batch[$_batchKey]);
+                    if (!in_array($_oid, $this->_cache['failedOpportunities'])) {
+                        $this->_cache['failedOpportunities'][] = $_oid;
+                    }
                 }
             }
         }
@@ -209,7 +216,7 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
         $connection = $helper->getDbConnection();
 
         foreach ($this->_cache['batchCache']['opportunities']['Id'] as $_key => $_batchId) {
-            $_batch = array_keys($this->_cache['batch']['opportunities']['Id'][$_key]);
+            $_batch = &$this->_cache['batch']['opportunities']['Id'][$_key];
 
             try {
                 $response = $this->getBatch($this->_cache['bulkJobs']['opportunity']['Id'], $_batchId);
@@ -221,8 +228,9 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
             }
 
             $_i = 0;
+            $_batchKeys = array_keys($_batch);
             foreach ($response as $_item) {
-                $_oid = $_batch[$_i];
+                $_oid = $_batchKeys[$_i++];
 
                 //Report Transaction
                 $this->_cache['responses']['opportunities'][$_oid] = json_decode(json_encode($_item), TRUE);
@@ -242,13 +250,13 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                         . "` SET " . implode(', ', $updateFields)
                         . " WHERE entity_id = " . $_entityArray[$_oid] . ";";
 
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Opportunity Upserted: ' . $_item->id);
-                } else {
-                    $this->_cache['failedOpportunities'][] = $_oid;
-                    $this->_processErrors($_item, 'opportunity',
-                        $this->_cache['batch']['opportunities']['Id'][$_key][$_oid]);
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Opportunity Upserted: ' . $_item->id);
+                    continue;
                 }
-                ++$_i;
+
+                $this->_cache['failedOpportunities'][] = $_oid;
+                $this->_processErrors($_item, 'opportunity', $_batch[$_oid]);
             }
         }
 

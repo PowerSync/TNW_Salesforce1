@@ -678,7 +678,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     protected function _assignCampaignsIds($_on = 'Id')
     {
         foreach ($this->_cache['batchCache']['campaigns'][$_on] as $_key => $_batchId) {
-            $_batch = array_keys($this->_cache['batch']['campaigns'][$_on][$_key]);
+            $_batch = &$this->_cache['batch']['campaigns'][$_on][$_key];
 
             try {
                 $response = $this->getBatch($this->_cache['bulkJobs']['campaigns'][$_on], $_batchId);
@@ -690,16 +690,18 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             }
 
             $_i = 0;
+            $_batchKeys = array_keys($_batch);
             foreach ($response as $_item) {
-                $_cid = $_batch[$_i];
+                $_cid = $_batchKeys[$_i++];
 
                 // report transaction
                 $this->_cache['responses']['campaigns'][$_cid] = json_decode(json_encode($_item), TRUE);
 
-                if ((string)$_item->success != "true") {
-                    $this->_processErrors($_item, 'campaigns', $this->_cache['batch']['campaigns'][$_on][$_key][$_cid]);
+                if ($_item->success == "true") {
                     continue;
                 }
+
+                $this->_processErrors($_item, 'campaigns', $_batch[$_cid]);
             }
         }
 
