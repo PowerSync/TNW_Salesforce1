@@ -36,18 +36,17 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     protected $_toSyncOrderCustomers = array();
 
     /**
-     * @param bool $_return
+     * @param string $type
      * @return array|bool|mixed
      */
-    public function process($_return = false)
+    public function process($type = 'soft')
     {
-
         /**
          * @comment apply bulk server settings
          */
         $this->getServerHelper()->apply(TNW_Salesforce_Helper_Config_Server::BULK);
 
-        $result = parent::process($_return);
+        $result = parent::process();
         /**
          * @comment restore server settings
          */
@@ -62,213 +61,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     protected function _updateCampaings()
     {
         Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaingsBulk();
-    }
-
-    /**
-     * @param array $_customers
-     * @param array $_existmingCustomers
-     */
-    public function forceAdd($_customers = array(), $_existingCustomers = array())
-    {
-        // Save existing customers
-        $this->_allOrderCustomers = $_existingCustomers;
-        $this->_toSyncOrderCustomers = $_customers;
-
-        // Lookup existing Contacts & Accounts
-        $_emailsArray = array();
-        $_websiteArray = array();
-        $_companies = array();
-
-        $_i = 0;
-        foreach ($this->_toSyncOrderCustomers as $_orderNum => $_customer) {
-            // Customer email has to be lowercased
-            $_email = strtolower($_customer->getEmail());
-            $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : Mage::app()->getWebsite()->getId();
-            $tmp = new stdClass();
-            if (!$_customer->getId()) {
-                //$this->_isPushingGuestData = true;
-                $tmp->MagentoId = 'guest_' . $_orderNum;
-                $this->_cache['guestsFromOrder']['guest_' . $_orderNum] = $_customer;
-
-                $_emailsArray['guest_' . $_orderNum] = $_email;
-                $_websites['guest_' . $_orderNum] = $this->_websiteSfIds[$_websiteId];
-            } else {
-                $tmp->MagentoId = $_customer->getId();
-                if (!Mage::registry('customer_cached_' . $_customer->getId())) {
-                    Mage::register('customer_cached_' . $_customer->getId(), $_customer);
-                }
-                $_emailsArray[$_customer->getId()] = $_email;
-                $_websites[$_customer->getId()] = $this->_websiteSfIds[$_websiteId];
-            }
-
-            /**
-             * @comment try to find customer company name
-             */
-            $_companyName = $_customer->getCompany();
-
-            if (!$_companyName) {
-                $_companyName = (
-                    $_customer->getDefaultBillingAddress() &&
-                    $_customer->getDefaultBillingAddress()->getCompany() &&
-                    strlen($_customer->getDefaultBillingAddress()->getCompany())
-                ) ? $_customer->getDefaultBillingAddress()->getCompany() : NULL;
-            }
-            /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
-            if (!Mage::helper("tnw_salesforce")->createPersonAccount() && !$_companyName) {
-                $_companyName = $_customer->getFirstname() . " " . $_customer->getLastname();
-            }
-            // only add company name to array if it exists
-            if ($_companyName) {
-                $_companies[$_email] = $_companyName;
-            }
-
-            $this->_cache['customerToWebsite'] = $_websites;
-            $this->_allOrderCustomers[$_orderNum] = $_customer;
-
-            $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : Mage::app()->getWebsite()->getId();
-            $_websiteArray[$_email] = $this->_websiteSfIds[$_websiteId];
-
-            $tmp->Email = $_email;
-            $tmp->SfInSync = 0;
-            $this->_cache['toSaveInMagento'][$_websiteId][$_email] = $tmp;
-
-            $_i++;
-        }
-
-        if (!empty($_companies)) {
-            $_salesforceDataAccount = Mage::helper('tnw_salesforce/salesforce_data_account');
-            $_companies = $_salesforceDataAccount->lookupByCompanies($_companies, 'CustomIndex');
-        }
-
-        $foundCustomers = array();
-
-        $this->_cache['entitiesUpdating'] = $_emailsArray;
-        if (!empty($this->_allOrderCustomers)) {
-            foreach ($this->_allOrderCustomers as $_orderNumber => $_customer) {
-
-                $_email = strtolower($_customer->getEmail());
-                if (isset($this->_cache['entitiesUpdating'][$_email])) {
-                    continue;
-                }
-
-                $_websiteId = ($_customer->getData('website_id') != NULL) ? $_customer->getData('website_id') : Mage::app()->getWebsite()->getId();
-
-                if (!$_customer->getId()) {
-                    $key = 'guest_' . $_orderNumber;
-
-                    $this->_cache['guestsFromOrder'][$key] = $_customer;
-
-                    $_websites[$key] = $this->_websiteSfIds[$_websiteId];
-
-                } else {
-                    $key = $_customer->getId();
-                    if (!Mage::registry('customer_cached_' . $_customer->getId())) {
-                        Mage::register('customer_cached_' . $_customer->getId(), $_customer);
-                    }
-                }
-                $this->_cache['entitiesUpdating'][$key] = $_email;
-                $this->_toSyncOrderCustomers[$_orderNumber] = $_customer;
-
-                $_i++;
-            }
-        }
-
-
-        if (!empty($_emailsArray)) {
-            $this->_cache['customerToWebsite'] = $_websites;
-            $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache['entitiesUpdating'], $_websites);
-            $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_cache['entitiesUpdating'], $_websites);
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
-                ->lookup(
-                    $this->_cache['entitiesUpdating'],
-                    $_websites,
-                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
-
-                );
-            $this->_customerAccountId = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emailsArray);
-        }
-
-        $_converted = array();
-        foreach ($_emailsArray as $_key => $_email) {
-            if (
-                $this->_cache['contactsLookup']
-                && array_key_exists($_websites[$_key], $this->_cache['contactsLookup'])
-                && (
-                    array_key_exists($_email, $this->_cache['contactsLookup'][$_websites[$_key]])
-                    || array_key_exists($_key, $this->_cache['contactsLookup'][$_websites[$_key]])
-                )
-            ) {
-                $foundCustomers[$_key] = array(
-                    'contactId' => $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->Id
-                );
-
-                $foundCustomers[$_key]['email'] = $_email;
-
-                if ($this->_cache['contactsLookup'][$_websites[$_key]][$_email]->AccountId) {
-                    $foundCustomers[$_key]['accountId'] = $this->_cache['contactsLookup'][$_websites[$_key]][$_email]->AccountId;
-                }
-
-                if (array_key_exists($_key, $this->_cache['contactsLookup'][$_websites[$_key]])) {
-                    $this->_cache['contactsLookup'][$_websites[$_key]][$_email] = $this->_cache['contactsLookup'][$_websites[$_key]][$_key];
-                    unset($this->_cache['contactsLookup'][$_websites[$_key]][$_key]);
-                }
-
-                if (!array_key_exists('contactId', $foundCustomers[$_key])) {
-                    $_converted[$_key] = $foundCustomers[$_key];
-                }
-
-                unset($_emailsArray[$_key]);
-                unset($_websites[$_key]);
-            }
-        }
-
-        // Lookup existing Leads
-        if (!empty($_emailsArray) || !empty($_converted)) {
-            $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
-                ->lookup(
-                    $this->_cache['entitiesUpdating'],
-                    $_websites,
-                    (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter()) ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null
-                );
-
-            if (!empty($this->_cache['leadLookup'])) {
-                foreach ($this->_cache['leadLookup'] as $_websiteId => $leads) {
-                    foreach ($leads as $email => $lead) {
-                        if (!$this->_cache['leadLookup'][$_websiteId][$email]->MagentoId) {
-                            foreach ($this->_cache['entitiesUpdating'] as $customerId => $customerEmail) {
-                                if ($customerEmail == $email) {
-                                    $this->_cache['leadLookup'][$_websiteId][$email]->MagentoId = $customerId;
-                                    $foundCustomers[$customerId] = (array)$this->_cache['leadLookup'][$_websiteId][$email];
-                                    $foundCustomers[$customerId]['email'] = $email;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        foreach ($_emailsArray as $_key => $_email) {
-            if (
-                !Mage::helper('tnw_salesforce')->isCustomerAsLead()
-                && !empty($this->_cache['leadLookup'])
-                && array_key_exists($_websites[$_key], $this->_cache['leadLookup'])
-                && array_key_exists($_email, $this->_cache['leadLookup'][$_websites[$_key]])
-            ) {
-                $foundCustomers[$_key]['email'] = $_email;
-            }
-        }
-
-        /**
-         * forceAdd method used for order sync process
-         * if lead sync enabled and order placed - we should convert lead to account + contact
-         */
-        if (Mage::helper('tnw_salesforce')->isCustomerAsLead()) {
-            $this->setForceLeadConvertaton(true);
-        }
-
-        $this->_cache['notFoundCustomers'] = $_emailsArray;
-
     }
 
     public function reset()
@@ -661,14 +453,13 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 if (!$this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = (string)$_item->id;
                 }
+            }
 
-                if (array_key_exists($_cid, $this->_cache['guestsFromOrder'])) {
-                    $this->_cache['guestsFromOrder'][$_cid]->setSalesforceId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId);
-                    if (!$this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
-                        $this->_cache['guestsFromOrder'][$_cid]->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
-                        $this->_cache['guestsFromOrder'][$_cid]->setSalesforceIsPerson(true);
-                    }
-                }
+            $_customer = $this->getEntityCache($_cid);
+            $_customer->setSalesforceId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId);
+            if (!$this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
+                $_customer->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
+                $_customer->setSalesforceIsPerson(true);
             }
 
             /**
@@ -758,10 +549,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
                 if ((string)$_item->success == "true") {
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = (string)$_item->id;
-                    if (array_key_exists($_cid, $this->_cache['guestsFromOrder'])) {
-                        $this->_cache['guestsFromOrder'][$_cid]->setSalesforceLeadId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId);
-                    }
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+
+                    $_customer = $this->getEntityCache($_cid);
+                    $_customer->setSalesforceLeadId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId);
 
                     /**
                      * Update lookup for lead convertation
@@ -843,12 +634,12 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         ) {
                             $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $this->_cache['accountsToContactLink'][$_cid];
                         }
-                        if (array_key_exists($_cid, $this->_cache['guestsFromOrder'])) {
-                            $this->_cache['guestsFromOrder'][$_cid]->setSalesforceId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId);
-                            $this->_cache['guestsFromOrder'][$_cid]->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
-                            if (property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'IsPersonAccount') && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
-                                $this->_cache['guestsFromOrder'][$_cid]->setSalesforceIsPerson($this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount);
-                            }
+
+                        $_customer = $this->getEntityCache($_cid);
+                        $_customer->setSalesforceId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId);
+                        $_customer->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
+                        if (property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'IsPersonAccount') && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
+                            $_customer->setSalesforceIsPerson($this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount);
                         }
 
                         if (!property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'LeadId')) {
@@ -1034,15 +825,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                     }
                     unset($this->_cache['accountsToUpsert']['Id'][$_magentoId]);
                 }
-            }
-        }
-    }
-
-    protected function _updateGuestCachedData()
-    {
-        if (!empty($this->_cache['guestDuplicates'])) {
-            foreach ($this->_cache['guestDuplicates'] as $_who => $_source) {
-                $this->_cache['guestsFromOrder'][$_who] = $this->_cache['guestsFromOrder'][$_source];
             }
         }
     }

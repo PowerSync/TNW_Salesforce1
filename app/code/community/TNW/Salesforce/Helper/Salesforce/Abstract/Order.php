@@ -838,7 +838,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * Order customers sync can be denied if we just update order status
          */
         if ($this->getUpdateCustomer()) {
-            $this->syncEntityCustomers($this->_emails, $this->_websites);
+            $this->syncEntityCustomers();
         }
 
         /**
@@ -855,6 +855,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                 $_websiteId = $this->_cache['orderCustomers'][$_orderNumber]->getData('website_id');
 
+                // TODO: Field "salesforce_id" and "salesforce_account_id" specified in the method of "syncEntityCustomers"
                 $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
                 $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
 
@@ -902,10 +903,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
     /**
      * Check and synchronize order customers if it's necessary
-     * @param $_emails
-     * @param $_websites
      */
-    public function syncEntityCustomers($_emails, $_websites)
+    public function syncEntityCustomers()
     {
         /**
          * Force sync of the customer
@@ -917,21 +916,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         /** @var $customer Mage_Customer_Model_Customer */
         foreach ($this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)] as $_entityNumber => $customer) {
-            if (!$this->_checkSyncCustomer($_entityNumber, $_websites)) {
+            if (!$this->_checkSyncCustomer($_entityNumber)) {
                 continue;
             }
 
             $_customersToSync[$_entityNumber] = $customer;
-
-            /**
-             * register custome, this data will be used in customer sync class
-             */
-            if ($customer->getId()) {
-                if (Mage::registry('customer_cached_' . $customer->getId())) {
-                    Mage::unregister('customer_cached_' . $customer->getId());
-                }
-                Mage::register('customer_cached_' . $customer->getId(), $customer);
-            }
         }
 
         if (!empty($_customersToSync)) {
@@ -940,40 +929,24 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $helperType = count($_customersToSync) > 1
                 ? 'bulk' : 'salesforce';
 
-            /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Customer|TNW_Salesforce_Helper_Bulk_Customer */
+            /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Customer */
             $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
-            if ($manualSync->reset()) {
-                $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-                $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
+            $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
+            $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
 
-                $manualSync->forceAdd($_customersToSync, $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)]);
+            if ($manualSync->reset() && $manualSync->forceAdd($_customersToSync) && $manualSync->process()) {
                 set_time_limit(30);
-                $orderCustomers = $manualSync->process(true);
-
-                if (!empty($orderCustomers)) {
-                    if (!is_array($orderCustomers)) {
-                        $orderIncrementIds = array_keys($_customersToSync);
-                        $orderCustomersArray[array_shift($orderIncrementIds)] = $orderCustomers;
-                    } else {
-                        $orderCustomersArray = $orderCustomers;
-                    }
-
-                    $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)] = $orderCustomersArray + $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)];
-                    set_time_limit(30);
-
-                    $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($_emails, $_websites);
-                    $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($_emails, $_websites);
-                }
+                $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_emails, $this->_websites);
+                $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_emails, $this->_websites);
             }
         }
     }
 
     /**
      * @param $_entityNumber
-     * @param $_websites
      * @return bool
      */
-    protected function _checkSyncCustomer($_entityNumber, $_websites)
+    protected function _checkSyncCustomer($_entityNumber)
     {
         $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
         if (false === $_entityId) {
@@ -982,7 +955,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
         $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
-        $websiteSfId = $_websites[$customerId];
+        $websiteSfId = $this->_websites[$customerId];
 
         /** @var $customer Mage_Customer_Model_Customer */
         $customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
