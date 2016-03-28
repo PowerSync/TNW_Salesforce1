@@ -963,7 +963,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (!$_client->initConnection()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
 
-            return true;
+            return false;
         }
 
         $this->_skippedEntity = array();
@@ -974,7 +974,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_massAddBefore($_existIds);
             foreach ($_customers as $_orderNum => $_customer) {
-                $this->setEntityCache($_customer->setData('_tnw_order', $_orderNum));
+                $_customer->setData('_tnw_order', $_orderNum);
+
+                $this->setEntityCache($_customer);
                 $entityId = $this->_getEntityId($_customer);
 
                 if (!$this->_checkMassAddEntity($_customer)) {
@@ -997,9 +999,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
              * forceAdd method used for order sync process
              * if lead sync enabled and order placed - we should convert lead to account + contact
              */
-            if (Mage::helper('tnw_salesforce')->isCustomerAsLead()) {
-                $this->setForceLeadConvertaton(true);
-            }
+            $this->setForceLeadConvertaton(true);
 
             return !empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         } catch (Exception $e) {

@@ -380,7 +380,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _getWebsiteIdByCustomerId($_customerId)
     {
-        return $this->getParent()->getEntityCache($_customerId)->getWebsiteId();
+        return Mage::helper('tnw_salesforce/salesforce_customer')
+            ->getEntityCache($_customerId)->getWebsiteId();
     }
 
     /**

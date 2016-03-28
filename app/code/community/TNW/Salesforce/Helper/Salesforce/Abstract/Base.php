@@ -406,7 +406,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         if (!$_client->initConnection()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
 
-            return true;
+            return false;
         }
 
         $this->_skippedEntity = array();
