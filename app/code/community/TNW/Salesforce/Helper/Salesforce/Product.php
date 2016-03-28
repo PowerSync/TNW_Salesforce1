@@ -131,8 +131,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
     /**
      * @param array $ids
+     * @param bool $_isCron
+     * @return bool
      */
-    public function massAdd($ids = array())
+    public function massAdd($ids = array(), $_isCron = false)
     {
         try {
             //get product collection

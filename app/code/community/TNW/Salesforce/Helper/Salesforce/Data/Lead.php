@@ -380,17 +380,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _getWebsiteIdByCustomerId($_customerId)
     {
-        $_isGuest = (strpos($_customerId, 'guest_') === 0) ? true : false;
-        if ($_isGuest) {
-            $_websiteId = $this->_cache['guestsFromOrder'][$_customerId]->getWebsiteId();
-        } else {
-            $customer = Mage::registry('customer_cached_' . $_customerId);
-            if (!$customer) {
-                $customer = Mage::getModel('customer/customer')->load($_customerId);
-            }
-            $_websiteId = $customer->getWebsiteId();
-        }
-        return $_websiteId;
+        return Mage::helper('tnw_salesforce/salesforce_customer')
+            ->getEntityCache($_customerId)->getWebsiteId();
     }
 
     /**
@@ -568,7 +559,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * @return null|TNW_Salesforce_Helper_Salesforce_Abstract
+     * @return null|TNW_Salesforce_Helper_Salesforce_Abstract_Base
      */
     public function getParent()
     {

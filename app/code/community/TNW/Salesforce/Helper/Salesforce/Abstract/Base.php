@@ -406,7 +406,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         if (!$_client->initConnection()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
 
-            return true;
+            return false;
         }
 
         $this->_skippedEntity = array();
@@ -464,7 +464,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _checkMassAddEntity($_entity)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -643,7 +643,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _getEntityNotesCollection($_entity)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -693,7 +693,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     protected function _getNotesParentSalesforceId($notes)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -703,7 +703,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _getEntityNumber($_entity)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -787,7 +787,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _pushEntityItems($chunk = array())
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -796,7 +796,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _pushEntity()
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -847,7 +847,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     public function getItems($_entity)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -907,7 +907,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _getEntityItemSalesforceId($_entityItem)
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 
     /**
@@ -1352,6 +1352,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _notesTableName()
     {
-        throw new Exception(sprintf('Method "%s::%s" must be overridden before use', __CLASS__, __METHOD__));
+        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
 }
