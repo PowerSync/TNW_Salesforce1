@@ -230,7 +230,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 "data" => $this->_cache['ordersToUpsert']
             ));
 
-            $results = $this->_mySforceConnection->upsert('Id', array_values($this->_cache['ordersToUpsert']), 'Order');
+            $results = $this->getClient()->upsert('Id', array_values($this->_cache['ordersToUpsert']), 'Order');
             Mage::dispatchEvent("tnw_salesforce_order_send_after", array(
                 "data" => $this->_cache['ordersToUpsert'],
                 "result" => $results
@@ -288,7 +288,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $_toUndelete[] = $_object->Id;
             }
             if (!empty($_toUndelete)) {
-                $this->_mySforceConnection->undelete($_toUndelete);
+                $this->getClient()->undelete($_toUndelete);
             }
         }
 
@@ -364,7 +364,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         $_orderNumbers = array_flip($this->_cache['upserted'.$this->getManyParentEntityType()]);
         $_chunkKeys = array_keys($chunk);
         try {
-            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'OrderItem');
+            $results = $this->getClient()->upsert("Id", array_values($chunk), 'OrderItem');
         } catch (Exception $e) {
             $results = array_fill(0, count($chunk),
                 $this->_buildErrorResponse($e->getMessage()));
@@ -410,7 +410,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected function _activateOrders($chunk = array())
     {
         try {
-            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'Order');
+            $results = $this->getClient()->upsert("Id", array_values($chunk), 'Order');
         } catch (Exception $e) {
             $results = array();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Activation of Orders in SalesForce failed!' . $e->getMessage());
@@ -463,7 +463,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         foreach(array_chunk($_opportunityIds, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true) as $_chunk) {
             try {
-                $results = $this->_mySforceConnection->retrieve('Id', 'Opportunity', array_values($_chunk));
+                $results = $this->getClient()->retrieve('Id', 'Opportunity', array_values($_chunk));
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Check exist Opportunity to Salesforce failed' . $e->getMessage());
                 continue;
@@ -490,7 +490,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
 
             try {
-                $results = $this->_mySforceConnection->undelete(array_values($_opportunityIdUndelete));
+                $results = $this->getClient()->undelete(array_values($_opportunityIdUndelete));
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Check exist Opportunity to Salesforce failed' . $e->getMessage());
                 continue;

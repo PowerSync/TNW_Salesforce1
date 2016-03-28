@@ -575,9 +575,6 @@ class TNW_Salesforce_Model_Cron
                              */
                             $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
                             if ($manualSync->reset()) {
-                                $testAuth = Mage::helper('tnw_salesforce/test_authentication');
-                                $manualSync->setSalesforceServerDomain($testAuth->getStorage('salesforce_url'));
-                                $manualSync->setSalesforceSessionId($testAuth->getStorage('salesforce_session_id'));
 
                                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type started ##################################");
                                 // sync products with sf

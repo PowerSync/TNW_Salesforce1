@@ -530,7 +530,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_before', $this->_magentoEntityName),
                 array("data" => $this->_cache[$entityToUpsertKey]));
 
-            $results = $this->_mySforceConnection->upsert(
+            $results = $this->getClient()->upsert(
                 'Id', array_values($this->_cache[$entityToUpsertKey]), TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT);
 
             Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_after', $this->_magentoEntityName), array(
@@ -588,7 +588,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             }
 
             if (!empty($_toUndelete)) {
-                $this->_mySforceConnection->undelete($_toUndelete);
+                $this->getClient()->undelete($_toUndelete);
             }
         }
 
@@ -605,7 +605,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
         $_chunkKeys    = array_keys($chunk);
 
         try {
-            $results = $this->_mySforceConnection->upsert(
+            $results = $this->getClient()->upsert(
                 'Id', array_values($chunk), TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT);
         } catch (Exception $e) {
             $results = array_fill(0, count($chunk),

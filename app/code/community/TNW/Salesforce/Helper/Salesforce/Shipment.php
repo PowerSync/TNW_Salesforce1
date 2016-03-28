@@ -556,7 +556,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
         $_chunkKeys    = array_keys($chunk);
 
         try {
-            $results = $this->_mySforceConnection->upsert(
+            $results = $this->getClient()->upsert(
                 'Id', array_values($chunk), TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT);
         } catch (Exception $e) {
             $results = array_fill(0, count($chunk),
@@ -611,7 +611,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             $_chunkKeys    = array_keys($_itemsToPush);
 
             try {
-                $results = $this->_mySforceConnection->upsert(
+                $results = $this->getClient()->upsert(
                     'Id', array_values($_itemsToPush), TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__c');
             } catch (Exception $e) {
                 $results = array_fill(0, count($_itemsToPush),
@@ -671,7 +671,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_before', $this->_magentoEntityName),
                 array("data" => $this->_cache[$entityToUpsertKey]));
 
-            $results = $this->_mySforceConnection->upsert(
+            $results = $this->getClient()->upsert(
                 'Id', array_values($this->_cache[$entityToUpsertKey]), TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT);
 
             Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_after', $this->_magentoEntityName), array(
@@ -729,7 +729,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
             }
 
             if (!empty($_toUndelete)) {
-                $this->_mySforceConnection->undelete($_toUndelete);
+                $this->getClient()->undelete($_toUndelete);
             }
         }
 

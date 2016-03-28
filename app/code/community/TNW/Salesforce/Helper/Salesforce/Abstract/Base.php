@@ -1313,7 +1313,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _pushNotes($chunk = array())
     {
         try {
-            $results = $this->_mySforceConnection->upsert("Id", array_values($chunk), 'Note');
+            $results = $this->getClient()->upsert("Id", array_values($chunk), 'Note');
         } catch (Exception $e) {
             $results = array_fill(0, count($chunk),
                 $this->_buildErrorResponse($e->getMessage()));

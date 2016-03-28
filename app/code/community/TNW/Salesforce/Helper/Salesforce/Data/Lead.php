@@ -345,7 +345,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                 $_customerKeys = array_keys($leadsToConvertChunk);
 
-                $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
+                $_results = $this->getClient()->convertLead(array_values($leadsToConvertChunk));
                 foreach ($_results as $_resultsArray) {
                     foreach ($_resultsArray as $_key => $_result) {
                         if (!property_exists($_result, 'success') || !(int)$_result->success) {
@@ -703,7 +703,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _pushLeadSegment($_leadsChunkToConvert, $parentEntityType = 'order')
     {
-        $results = $this->_mySforceConnection->convertLead(array_values($_leadsChunkToConvert));
+        $results = $this->getClient()->convertLead(array_values($_leadsChunkToConvert));
 
         $_keys = array_keys($_leadsChunkToConvert);
 
@@ -819,7 +819,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
 
-            $results = $this->_mySforceConnection->convertLead(array_values($this->_cache['leadsToConvert']));
+            $results = $this->getClient()->convertLead(array_values($this->_cache['leadsToConvert']));
             $_keys = array_keys($this->_cache['leadsToConvert']);
             foreach ($results->result as $_key => $_result) {
                 $parentEntityId = $_keys[$_key];
