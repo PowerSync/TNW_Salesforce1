@@ -647,7 +647,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 && !empty($this->_cache['accountsLookup'][0][$email])
             ) {
 
-                $_websiteId = $this->_cache['quoteCustomers'][$_quoteNumber]->getData('website_id');
+                $_websiteId = $this->_websites[$this->_cache['quoteToCustomerId'][$_quoteNumber]];
 
                 $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->Id);
                 $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$email]->Id);
@@ -658,8 +658,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
 
                 // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email])) {
-                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$email]->Id);
+                if (isset($this->_cache['contactsLookup'][$_websiteId][$email])) {
+                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$email]->Id);
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');

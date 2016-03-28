@@ -853,7 +853,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 && !empty($this->_cache['accountsLookup'][0][$_orderEmail])
             ) {
 
-                $_websiteId = $this->_cache['orderCustomers'][$_orderNumber]->getData('website_id');
+                $_websiteId = $this->_websites[$this->_cache['orderToCustomerId'][$_orderNumber]];
 
                 // TODO: Field "salesforce_id" and "salesforce_account_id" specified in the method of "syncEntityCustomers"
                 $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
@@ -865,8 +865,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 }
 
                 // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail])) {
-                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_orderEmail]->Id);
+                if (isset($this->_cache['contactsLookup'][$_websiteId][$_orderEmail])) {
+                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$_orderEmail]->Id);
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
