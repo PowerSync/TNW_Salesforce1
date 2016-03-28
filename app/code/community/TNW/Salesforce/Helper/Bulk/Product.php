@@ -297,8 +297,10 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
      * decorator pattern used
      *
      * @param array $ids
+     * @param bool $_isCron
+     * @return bool
      */
-    public function massAdd($ids = array())
+    public function massAdd($ids = array(), $_isCron = false)
     {
         $defaultObject = new stdClass();
         $defaultObject->productId = null;
