@@ -19,6 +19,11 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             return; // Disabled
         }
 
+        if (!Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Notes synchronization disabled');
+            return; // Disabled
+        }
+
         if (!Mage::helper('tnw_salesforce')->canPush()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
             return; // Disabled
@@ -83,6 +88,11 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
     {
         if (!Mage::helper('tnw_salesforce')->isEnabled()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Synchronization disabled');
+            return; // Disabled
+        }
+
+        if (!Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Notes synchronization disabled');
             return; // Disabled
         }
 
