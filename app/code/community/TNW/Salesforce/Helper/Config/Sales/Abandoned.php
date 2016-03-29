@@ -75,26 +75,26 @@ class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper
     {
         return
             Mage::helper('tnw_salesforce')->getType() == "PRO"
-            && $this->getStroreConfig(self::ABANDONED_CART_ENABLED);
+            && $this->getStoreConfig(self::ABANDONED_CART_ENABLED);
     }
 
     // is Customer Opportunity Role Enabled
     public function isEnabledCustomerRole()
     {
-        return $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE_ENABLED);
+        return $this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE_ENABLED);
     }
 
 
     // Default Customer Opportunity Role
     public function getDefaultCustomerRole()
     {
-        return ($this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE)) ? $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE) : $this->getStroreConfig(self::ABANDONED_CUSTOMER_ROLE_FALLBACK);
+        return ($this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE)) ? $this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE) : $this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE_FALLBACK);
     }
 
 
     // Default Stage name for abandoned cart
     public function getDefaultAbandonedCartStageName() {
-        return $this->getStroreConfig(self::DEFAULT_STATE_ABANDONED);
+        return $this->getStoreConfig(self::DEFAULT_STATE_ABANDONED);
     }
 
     public function getLimits()
@@ -122,7 +122,7 @@ class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper
 
     public function getAbandonedConfigLimit()
     {
-        return $this->getStroreConfig(self::ABANDONED_SYNC);
+        return $this->getStoreConfig(self::ABANDONED_SYNC);
     }
 
     /**

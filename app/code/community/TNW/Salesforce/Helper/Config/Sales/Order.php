@@ -6,7 +6,7 @@ class TNW_Salesforce_Helper_Config_Sales_Order extends TNW_Salesforce_Helper_Con
 
     public function isEnabledZeroOrderSync()
     {
-        return $this->getStroreConfig(self::ZERO_ORDER_SYNC);
+        return $this->getStoreConfig(self::ZERO_ORDER_SYNC);
     }
 
     public function getOrderLabels()

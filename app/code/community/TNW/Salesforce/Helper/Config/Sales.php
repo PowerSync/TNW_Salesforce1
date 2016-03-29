@@ -45,12 +45,12 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function useBaseCurrency()
     {
-        return $this->getStroreConfig(self::ORDER_CURRENCY_SYNC) == TNW_Salesforce_Model_Config_Sync_Currency::BASE_CURRENCY ;
+        return $this->getStoreConfig(self::ORDER_CURRENCY_SYNC) == TNW_Salesforce_Model_Config_Sync_Currency::BASE_CURRENCY ;
     }
 
     public function getOpportunityToOrderStatus()
     {
-        return $this->getStroreConfig(self::OPPORTUNITY_TO_ORDER_STATUS);
+        return $this->getStoreConfig(self::OPPORTUNITY_TO_ORDER_STATUS);
     }
 
     /**
