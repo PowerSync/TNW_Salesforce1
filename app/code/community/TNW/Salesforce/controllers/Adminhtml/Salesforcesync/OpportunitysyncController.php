@@ -191,12 +191,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
             }
 
             $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::getSingleton('core/session')->getSalesforceSessionId());
-
-            if ($manualSync->reset()) {
-                $manualSync->massAdd($_ids);
-                $manualSync->process();
+            if ($manualSync->reset() && $manualSync->massAdd($_ids) && $manualSync->process()) {
                 Mage::getSingleton('adminhtml/session')->addSuccess(
                     Mage::helper('adminhtml')->__('%d Magento website entities were successfully synchronized', count($_ids))
                 );
