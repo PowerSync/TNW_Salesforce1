@@ -49,6 +49,9 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const ORDER_STATUS_ALLOW = 'salesforce_order/general/order_status_allow';
     const ORDER_CUSTOMER_ADDRESS = 'salesforce_order/general/customer_address';
 
+    // Notes Config
+    const NONES_SYNC = 'salesforce_order/general/notes_synchronize';
+
     /* Order Customer Role */
     const ORDER_OBJECT = 'salesforce_order/customer_opportunity/order_or_opportunity';
     const CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
@@ -209,12 +212,12 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     /* Getters */
     public function isMultiCurrency()
     {
-        return $this->getStroreConfig(self::ORDER_MULTI_CURRENCY);
+        return $this->getStoreConfig(self::ORDER_MULTI_CURRENCY);
     }
 
     public function getPriceScope()
     {
-        return $this->getStroreConfig(self::CATALOG_PRICE_SCOPE);
+        return $this->getStoreConfig(self::CATALOG_PRICE_SCOPE);
     }
 
     //Extension Type: Enterprise or Professional
@@ -226,54 +229,54 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     // License Email
     public function getLicenseEmail()
     {
-        return $this->getStroreConfig(self::API_LICENSE_EMAIL);
+        return $this->getStoreConfig(self::API_LICENSE_EMAIL);
     }
 
     // License PayPal invoice ID
     public function getLicenseInvoice()
     {
-        return $this->getStroreConfig(self::API_LICENSE_INVOICE);
+        return $this->getStoreConfig(self::API_LICENSE_INVOICE);
     }
 
     // License PayPal transaction ID
     public function getLicenseTransaction()
     {
-        return $this->getStroreConfig(self::API_LICENSE_TRANSACTION);
+        return $this->getStoreConfig(self::API_LICENSE_TRANSACTION);
     }
 
     // Is extension enabled in config
 
     public function getApiUsername()
     {
-        return $this->getStroreConfig(self::API_USERNAME);
+        return $this->getStoreConfig(self::API_USERNAME);
     }
 
     // Salesforce API Username
 
     public function getApiPassword()
     {
-        return $this->getStroreConfig(self::API_PASSWORD);
+        return $this->getStoreConfig(self::API_PASSWORD);
     }
 
     // Salesforce API Password
 
     public function getApiToken()
     {
-        return $this->getStroreConfig(self::API_TOKEN);
+        return $this->getStoreConfig(self::API_TOKEN);
     }
 
     // Salesforce API User Tocken
 
     public function getApiWSDL()
     {
-        return $this->getStroreConfig(self::API_WSDL);
+        return $this->getStoreConfig(self::API_WSDL);
     }
 
     // Salesforce WSDL file location
 
     public function getOrderObject()
     {
-        return $this->getStroreConfig(self::ORDER_OBJECT);
+        return $this->getStoreConfig(self::ORDER_OBJECT);
     }
 
     // Salesforce object where Magento orders will go to
@@ -318,216 +321,216 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function isLogEnabled()
     {
-        return $this->getStroreConfig(self::API_LOG);
+        return $this->getStoreConfig(self::API_LOG);
     }
 
     // Is debug log enabled
 
     public function getFailEmail()
     {
-        return $this->getStroreConfig(self::FAIL_EMAIL);
+        return $this->getStoreConfig(self::FAIL_EMAIL);
     }
 
     // Integration debug email where to send errors
 
     public function getFailEmailPrefix()
     {
-        return $this->getStroreConfig(self::FAIL_EMAIL_SUBJECT);
+        return $this->getStoreConfig(self::FAIL_EMAIL_SUBJECT);
     }
 
     // Integration debug email subject prefix
 
     public function isRemoteLogEnabled()
     {
-        return $this->getStroreConfig(self::REMOTE_LOG);
+        return $this->getStoreConfig(self::REMOTE_LOG);
     }
 
     // Push data to idealdata.io for debugging
 
     public function isEnabledOrderSync()
     {
-        return $this->getStroreConfig(self::ORDER_SYNC);
+        return $this->getStoreConfig(self::ORDER_SYNC);
     }
 
     // Is order synchronization enabled
 
     public function doPushShoppingCart()
     {
-        return $this->getStroreConfig(self::ORDER_PRODUCT_SYNC);
+        return $this->getStoreConfig(self::ORDER_PRODUCT_SYNC);
     }
 
     // Attach Opportunity Line items
 
     public function isEnabledCustomerRole()
     {
-        return $this->getStroreConfig(self::CUSTOMER_ROLE_ENABLED);
+        return $this->getStoreConfig(self::CUSTOMER_ROLE_ENABLED);
     }
 
     // is Customer Opportunity Role Enabled
 
     public function getDefaultCustomerRole()
     {
-        return $this->getStroreConfig(self::CUSTOMER_ROLE);
+        return $this->getStoreConfig(self::CUSTOMER_ROLE);
     }
 
     // Default Customer Opportunity Role
 
     public function getObjectSyncType()
     {
-        return $this->getStroreConfig(self::OBJECT_SYNC_TYPE);
+        return $this->getStoreConfig(self::OBJECT_SYNC_TYPE);
     }
 
     // queue object sync type
 
     public function getCronLastRunTimestamp()
     {
-        return $this->getStroreConfig(self::CRON_LAST_RUN_TIMESTAMP);
+        return $this->getStoreConfig(self::CRON_LAST_RUN_TIMESTAMP);
     }
 
     // cron run last time
 
     public function getObjectSyncSpectimeFreq()
     {
-        return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_FREQ);
+        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQ);
     }
 
     // object sync spec time frequency
 
     public function getObjectSyncSpectimeFreqWeekday()
     {
-        return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_WEEKLY);
+        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_WEEKLY);
     }
 
     // get sync day of week
 
     public function getObjectSyncSpectimeFreqMonthday()
     {
-        return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_MONTH_DAY);
+        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_MONTH_DAY);
     }
 
     // get sync day of month
 
     public function getObjectSyncIntervalValue()
     {
-        return $this->getStroreConfig(self::OBJECT_SYNC_INTERVAL_VALUE);
+        return $this->getStoreConfig(self::OBJECT_SYNC_INTERVAL_VALUE);
     }
 
     public function getOrderSyncPeriod()
     {
-        return $this->getStroreConfig(self::ORDER_SYNC_INTERVAL);
+        return $this->getStoreConfig(self::ORDER_SYNC_INTERVAL);
     }
 
     // order sync period
 
     public function getObjectSpectimeHour()
     {
-        return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_HOUR);
+        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_HOUR);
     }
 
     // spectime hour
 
     public function getObjectSpectimeMinute()
     {
-        return $this->getStroreConfig(self::OBJECT_SYNC_SPECTIME_MINUTE);
+        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_MINUTE);
     }
 
     // spectime minute
 
     public function isOrderNotesEnabled()
     {
-        return true;
+        return $this->getStoreConfig(self::NONES_SYNC);
     }
 
     public function isEnabledProductSync()
     {
-        return $this->getStroreConfig(self::PRODUCT_SYNC);
+        return $this->getStoreConfig(self::PRODUCT_SYNC);
     }
 
     // Is product synchronization enabled
 
     public function getDefaultPricebook()
     {
-        return $this->getStroreConfig(self::PRODUCT_PRICEBOOK);
+        return $this->getStoreConfig(self::PRODUCT_PRICEBOOK);
     }
 
     // Salesforce default Pricebook used to store Product prices from Magento
 
     public function getCustomerNewsletterSync()
     {
-        return $this->getStroreConfig(self::CUSTOMER_NEWSLETTER_SYNC);
+        return $this->getStoreConfig(self::CUSTOMER_NEWSLETTER_SYNC);
     }
 
     public function getCutomerCampaignId()
     {
-        return $this->getStroreConfig(self::CUSTOMER_CAMPAIGN_ID);
+        return $this->getStoreConfig(self::CUSTOMER_CAMPAIGN_ID);
     }
 
     public function isEnabledCustomerSync()
     {
-        return $this->getStroreConfig(self::CUSTOMER_SYNC);
+        return $this->getStoreConfig(self::CUSTOMER_SYNC);
     }
 
     // Customer integration type
 
     public function getSyncAllGroups()
     {
-        return $this->getStroreConfig(self::CUSTOMER_ALL_GROUPS);
+        return $this->getStoreConfig(self::CUSTOMER_ALL_GROUPS);
     }
 
     // Syn all customer groups by default
 
     public function isEnabledContactForm()
     {
-        return $this->getStroreConfig(self::CUSTOMER_INTEGRATION_FORM);
+        return $this->getStoreConfig(self::CUSTOMER_INTEGRATION_FORM);
     }
 
     // Get list of enabled CustomerGroups
 
     public function getTaskAssignee()
     {
-        return $this->getStroreConfig(self::CUSTOMER_TASK_ASSIGNEE);
+        return $this->getStoreConfig(self::CUSTOMER_TASK_ASSIGNEE);
     }
 
     // Customer integration form
 
     public function isCustomerAsLead()
     {
-        return $this->getStroreConfig(self::CUSTOMER_CREATE_AS_LEAD);
+        return $this->getStoreConfig(self::CUSTOMER_CREATE_AS_LEAD);
     }
 
     // Customer default taska signee
 
     public function canRenameAccount()
     {
-        return !$this->getStroreConfig(self::ACCOUNT_RENAME);
+        return !$this->getStoreConfig(self::ACCOUNT_RENAME);
     }
 
     // Customer integration type
 
     public function usePersonAccount()
     {
-        return $this->getStroreConfig(self::CUSTOMER_PERSON_ACCOUNT);
+        return $this->getStoreConfig(self::CUSTOMER_PERSON_ACCOUNT);
     }
 
     // Can rename Account in Salesforce
 
     public function getPersonAccountRecordType()
     {
-        return $this->getStroreConfig(self::PERSON_RECORD_TYPE);
+        return $this->getStoreConfig(self::PERSON_RECORD_TYPE);
     }
 
     // Customer is Person Account Enabled
 
     public function getBusinessAccountRecordType()
     {
-        return $this->getStroreConfig(self::BUSINESS_RECORD_TYPE);
+        return $this->getStoreConfig(self::BUSINESS_RECORD_TYPE);
     }
 
     // Customer Person Account Record Type
 
     public function getLeadConvertedStatus()
     {
-        $status = $this->getStroreConfig(self::LEAD_CONVERTED_STATUS);
+        $status = $this->getStoreConfig(self::LEAD_CONVERTED_STATUS);
 
         /**
          * @comment use default status
@@ -543,63 +546,63 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getLeadDefaultOwner()
     {
-        return $this->getStroreConfig(self::LEAD_CONVERTED_OWNER);
+        return $this->getStoreConfig(self::LEAD_CONVERTED_OWNER);
     }
 
     // Customer get Lead Converted Status
 
     public function getDefaultOwner()
     {
-        return $this->getStroreConfig(self::DEFAULT_ENTITY_OWNER);
+        return $this->getStoreConfig(self::DEFAULT_ENTITY_OWNER);
     }
 
     // Default Lead owner to be used during conversion
 
     public function isCustomerSingleRecordType()
     {
-        return $this->getStroreConfig(self::CUSTOMER_FORCE_RECORDTYPE);
+        return $this->getStoreConfig(self::CUSTOMER_FORCE_RECORDTYPE);
     }
 
     // Default Lead/Contact/Account owner to be used during conversion
 
     public function isLeadRule()
     {
-        return $this->getStroreConfig(self::CUSTOMER_RULE);
+        return $this->getStoreConfig(self::CUSTOMER_RULE);
     }
 
     // Check if Customer Record Type is forced to one per website
 
     public function useTaxFeeProduct()
     {
-        return $this->getStroreConfig(self::ORDER_USE_TAX_PRODUCT);
+        return $this->getStoreConfig(self::ORDER_USE_TAX_PRODUCT);
     }
 
     // Default Assignment rule to use when creating a lead
 
     public function useShippingFeeProduct()
     {
-        return $this->getStroreConfig(self::ORDER_USE_SHIPPING_PRODUCT);
+        return $this->getStoreConfig(self::ORDER_USE_SHIPPING_PRODUCT);
     }
 
     // Use Tax Fee Product
 
     public function useDiscountFeeProduct()
     {
-        return $this->getStroreConfig(self::ORDER_USE_DISCOUNT_PRODUCT);
+        return $this->getStoreConfig(self::ORDER_USE_DISCOUNT_PRODUCT);
     }
 
     // Use Shipping Fee Product
 
     public function syncAllOrders()
     {
-        return $this->getStroreConfig(self::ORDER_STATUS_ALL);
+        return $this->getStoreConfig(self::ORDER_STATUS_ALL);
     }
 
     // Use Discount Fee Product
 
     public function getAllowedOrderStates()
     {
-        return $this->getStroreConfig(self::ORDER_STATUS_ALLOW);
+        return $this->getStoreConfig(self::ORDER_STATUS_ALLOW);
     }
 
     /**
@@ -609,7 +612,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function getOrderCustomerAddress()
     {
-        return $this->getStroreConfig(self::ORDER_CUSTOMER_ADDRESS);
+        return $this->getStoreConfig(self::ORDER_CUSTOMER_ADDRESS);
     }
 
     /**
@@ -626,35 +629,35 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getTaxProduct()
     {
-        return $this->getStroreConfig(self::ORDER_TAX_PRODUCT);
+        return $this->getStoreConfig(self::ORDER_TAX_PRODUCT);
     }
 
     // get a list of allowed order states for the sync
 
     public function getShippingProduct()
     {
-        return $this->getStroreConfig(self::ORDER_SHIPPING_PRODUCT);
+        return $this->getStoreConfig(self::ORDER_SHIPPING_PRODUCT);
     }
 
     // Tax Fee Product
 
     public function getDiscountProduct()
     {
-        return $this->getStroreConfig(self::ORDER_DISCOUNT_PRODUCT);
+        return $this->getStoreConfig(self::ORDER_DISCOUNT_PRODUCT);
     }
 
     // Shipping Fee Product
 
     public function getDefaultAccountId()
     {
-        return $this->getStroreConfig(self::CUSTOMER_DEFAULT_ACCOUNT);
+        return $this->getStoreConfig(self::CUSTOMER_DEFAULT_ACCOUNT);
     }
 
     // Discount Fee Product
 
     public function createPersonAccount()
     {
-        return $this->getStroreConfig(self::CUSTOMER_PERSON_ACCOUNT);
+        return $this->getStoreConfig(self::CUSTOMER_PERSON_ACCOUNT);
     }
 
     // Customer integration type
@@ -674,7 +677,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getCustomerScope()
     {
-        return $this->getStroreConfig(self::CUSTOMER_ACCOUNT_SHARING);
+        return $this->getStoreConfig(self::CUSTOMER_ACCOUNT_SHARING);
     }
 
     //Get Preset Config
@@ -766,7 +769,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function isEnabled()
     {
-        return $this->getStroreConfig(self::API_ENABLED);
+        return $this->getStoreConfig(self::API_ENABLED);
     }
 
     public function checkPhpVersion()
@@ -1130,7 +1133,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getAllowedCustomerGroups()
     {
-        return explode(',', $this->getStroreConfig(self::CUSTOMER_GROUPS));
+        return explode(',', $this->getStoreConfig(self::CUSTOMER_GROUPS));
     }
 
     /**

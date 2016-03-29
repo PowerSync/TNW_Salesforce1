@@ -640,6 +640,7 @@
                 <order_sync_enable>0</order_sync_enable>
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
+                <notes_synchronize>1</notes_synchronize>
                 <order_multi_currency>0</order_multi_currency>
                 <order_currency_sync>customer</order_currency_sync>
                 <order_status_all>1</order_status_all>
