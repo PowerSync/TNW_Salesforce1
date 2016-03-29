@@ -30,6 +30,11 @@
                     <order_creditmemo_comment>TNW_Salesforce_Model_Order_Creditmemo_Comment</order_creditmemo_comment>
                 </rewrite>
             </sales>
+            <catalog>
+                <rewrite>
+                    <product>TNW_Salesforce_Model_Product</product>
+                </rewrite>
+            </catalog>
             <tnw_salesforce>
                 <class>TNW_Salesforce_Model</class>
                 <resourceModel>tnw_salesforce_mysql4</resourceModel>
@@ -149,15 +154,6 @@
                 </observers>
             </controller_action_postdispatch_contacts>
 
-            <!-- Product duplication -->
-            <catalog_model_product_duplicate>
-                <observers>
-                    <tnw_salesforce_catalog_model_product_duplicate>
-                        <class>tnw_salesforce/product_observer</class>
-                        <method>duplicateBefore</method>
-                    </tnw_salesforce_catalog_model_product_duplicate>
-                </observers>
-            </catalog_model_product_duplicate>
             <!-- Newsletter Subscription: Create -->
             <newsletter_subscriber_save_commit_after>
                 <observers>

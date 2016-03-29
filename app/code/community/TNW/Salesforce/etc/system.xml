@@ -103,7 +103,6 @@
                         </api_wsdl>
                     </fields>
                 </api_config>
-                <!--
                 <api_license translate="label" module="tnw_salesforce">
                     <label>License</label>
                     <sort_order>200</sort_order>
@@ -130,7 +129,6 @@
                         </api_invoice>
                     </fields>
                 </api_license>
-                -->
                 <developer translate="label" module="tnw_salesforce">
                     <label>Notification</label>
                     <sort_order>300</sort_order>
