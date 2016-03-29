@@ -90,7 +90,8 @@ foreach ($_defaultMappingStatus as $_objectName => $_field) {
             'attribute_id' => $_attributeId,
             'backend_type' => $_backendType,
             'sf_object' => $_objectName,
-            'active' => 1
+            'magento_sf_enable' => 1,
+            'sf_magento_enable' => 1
         );
     }
 }
