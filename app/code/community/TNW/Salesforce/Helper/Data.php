@@ -441,6 +441,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::NONES_SYNC);
     }
 
+    public function isOrderRulesEnabled()
+    {
+        return true;
+    }
+
     public function isEnabledProductSync()
     {
         return $this->getStoreConfig(self::PRODUCT_SYNC);

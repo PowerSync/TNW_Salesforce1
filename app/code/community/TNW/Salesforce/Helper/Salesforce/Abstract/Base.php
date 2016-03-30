@@ -395,7 +395,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         $_ids           = !is_array($_ids) ? array($_ids) : $_ids;
         $this->_isCron  = $_isCron;
 
-        if (!$_ids) {
+        if (empty($_ids)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Entity Id is not specified, don't know what to synchronize!");
             return false;
         }
@@ -523,21 +523,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
             $this->_alternativeKeys = $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING];
             $this->_beforeProcess();
-
-            $this->_prepareEntity();
-            $this->_pushEntity();
-
-            $this->clearMemory();
-            set_time_limit(1000);
-
-            if ($type == 'full') {
-                $this->_prepareRemaining();
-                $this->_pushRemainingEntityData();
-
-                $this->clearMemory();
-            }
-
-            $this->_onComplete();
+            $this->_process($type);
             $this->_afterProcess();
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("================= %s SYNC: END =================", $_syncType));
@@ -547,6 +533,28 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @param $type
+     * @throws Exception
+     */
+    protected function _process($type)
+    {
+        $this->_prepareEntity();
+        $this->_pushEntity();
+
+        $this->clearMemory();
+        set_time_limit(1000);
+
+        if ($type == 'full') {
+            $this->_prepareRemaining();
+            $this->_pushRemainingEntityData();
+
+            $this->clearMemory();
+        }
+
+        $this->_onComplete();
     }
 
     protected function _beforeProcess()

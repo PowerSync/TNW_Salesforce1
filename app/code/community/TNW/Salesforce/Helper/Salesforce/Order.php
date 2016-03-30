@@ -513,4 +513,52 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             }
         }
     }
+
+    /**
+     * Remaining Data
+     */
+    protected function _prepareRemaining()
+    {
+        parent::_prepareRemaining();
+
+        if (Mage::helper('tnw_salesforce')->isOrderRulesEnabled()) {
+            $this->_prepareRules();
+        }
+    }
+
+    protected function _prepareRules()
+    {
+        $failedKey = sprintf('failed%s', $this->getManyParentEntityType());
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Rules: Start----------');
+
+        // Get all products from each order and decide if all needs to me synced prior to inserting them
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_number) {
+            if (in_array($_number, $this->_cache[$failedKey])) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('%s (%s): Skipping, issues with upserting an %s!',
+                    strtoupper($this->getMagentoEntityName()), $_number, $this->getSalesforceEntityName()));
+
+                continue;
+            }
+
+            $_entity = $this->_loadEntityByCache($_key, $_number);
+            /** @var Mage_Customer_Model_Customer $_customer */
+            $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
+
+            foreach (explode(',', $_entity->getAppliedRuleIds()) as $id) {
+                $rule = Mage::getModel('salesrule/rule')->load($id);
+                $rule->getData('salesforce_id');
+            }
+
+            /** @var Mage_Sales_Model_Order_Item $item */
+            foreach ($_entity->getAllVisibleItems() as $item) {
+                foreach (explode(',', $item->getAppliedRuleIds()) as $id) {
+                    $rule = Mage::getModel('catalogrule/rule')->load($id);
+                    $rule->getData('salesforce_id');
+                }
+            }
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Rules: End----------');
+    }
 }
