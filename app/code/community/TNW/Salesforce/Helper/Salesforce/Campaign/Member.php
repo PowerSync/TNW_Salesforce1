@@ -158,22 +158,31 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
     }
 
     /**
-     * @param $_entity
+     * @param $_entity Mage_Customer_Model_Customer
+     * @return mixed
+     * @throws Exception
+     */
+    protected function _getEntitySalesforceId($_entity)
+    {
+        return null;
+    }
+
+    /**
+     * @param $_entity Mage_Customer_Model_Customer
      */
     protected function _prepareEntityObjCustom($_entity)
     {
-        //$this->_obj->ContactId;
-        //$this->_obj->CurrencyIsoCode;
-        //$this->_obj->FirstRespondedDate;
-        //$this->_obj->HasResponded;
-        //$this->_obj->LeadId;
-        //$this->_obj->RecordTypeId;
-        //$this->_obj->Status;
+        $entityNumber = $this->_getEntityNumber($_entity);
+
+        $this->_obj->CampaignId = $this->_cache['entitiesCampaign'][$entityNumber];
+        $this->_obj->ContactId = $_entity->getData('salesforce_id');
+        $this->_obj->HasResponded = true;
+        $this->_obj->Status = 'Responded';
         return;
     }
 
     /**
-     * @param $_entity
+     * @param $_entity Mage_Customer_Model_Customer
      * @param $type string
      * @return mixed
      */
@@ -181,7 +190,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
     {
         switch($type)
         {
-            case 'Invoice':
+            case 'Customer':
                 $_object = $_entity;
                 break;
 
