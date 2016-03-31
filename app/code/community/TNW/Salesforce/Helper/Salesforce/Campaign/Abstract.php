@@ -152,4 +152,29 @@ abstract class TNW_Salesforce_Helper_Salesforce_Campaign_Abstract extends TNW_Sa
         $this->clearMemory();
         $this->_onComplete();
     }
+
+    /**
+     * @return bool|void
+     * Prepare values for the synchroization
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        if (is_array($this->_cache['entitiesUpdating'])) {
+            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+                $this->unsetEntityCache($_orderNumber);
+            }
+        }
+
+        $this->_cache = array(
+            'entitiesUpdating' => array(),
+            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
+            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
+            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
+        );
+
+        return $this->check();
+    }
 }

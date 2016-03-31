@@ -662,6 +662,12 @@
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>
             </invoice_configuration>
+            <shipment_configuration>
+                <sync_enabled>0</sync_enabled>
+            </shipment_configuration>
+            <salesforce_campaigns>
+                <sync_enabled>0</sync_enabled>
+            </salesforce_campaigns>
         </salesforce_order>
     </default>
     <phpunit>

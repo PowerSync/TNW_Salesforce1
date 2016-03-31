@@ -26,10 +26,10 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
     protected $_magentoEntityModel = 'customer/customer';
 
     /**
-     * @param Mage_Customer_Model_Customer[] $_customers
+     * @param array $customers
      * @return bool
      */
-    public function forceAdd(array $_customers)
+    public function memberAdd(array $customers)
     {
         // test sf api connection
         /** @var TNW_Salesforce_Model_Connection $_client */
@@ -43,22 +43,30 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         try {
             $_existIds = array_filter(array_map(function(Mage_Customer_Model_Customer $_customer){
                 return $_customer->getId();
-            }, $_customers));
+            }, call_user_func_array('array_merge', array_values($customers))));
 
             $this->_massAddBefore($_existIds);
 
-            foreach ($_customers as $key => $_customer) {
-                $_customer->setData('_tnw_order', $key);
+            $guestCount = 0;
+            foreach ($customers as $campaignId => $_customers) {
+                /** @var Mage_Customer_Model_Customer $_customer */
+                foreach ($_customers as $_customer) {
+                    if ($_customer->isObjectNew()) {
+                        $_customer->setData('_tnw_guest_count', $guestCount++);
+                    }
 
-                $this->setEntityCache($_customer);
-                $entityId = $this->_getEntityId($_customer);
+                    $this->setEntityCache($_customer);
+                    $entityId     = $this->_getEntityId($_customer);
+                    $entityNumber = $this->_getEntityNumber($_customer);
 
-                if (!$this->_checkMassAddEntity($_customer)) {
-                    continue;
+                    if (!$this->_checkMassAddEntity($_customer)) {
+                        continue;
+                    }
+
+                    // Associate order ID with order Number
+                    $this->_cache['entitiesCampaign'][$entityNumber] = $campaignId;
+                    $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$entityId] = $entityNumber;
                 }
-
-                // Associate order ID with order Number
-                $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$entityId] = $this->_getEntityNumber($_customer);
             }
 
             if (empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
@@ -100,8 +108,8 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _getEntityId($_entity)
     {
-        if (!$_entity->getId() && $_entity->hasData('_tnw_order')) {
-            return 'guest_' . $_entity->getData('_tnw_order');
+        if (!$_entity->getId()) {
+            return 'guest_' . (int)$_entity->getData('_tnw_guest_count');
         }
 
         return $_entity->getId();
@@ -257,5 +265,43 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Order Push: End----------');
+    }
+
+    /**
+     * @param $type
+     * @throws Exception
+     */
+    protected function _process($type)
+    {
+        $this->_prepareEntity();
+        $this->_pushEntity();
+
+        $this->clearMemory();
+        $this->_onComplete();
+    }
+
+    /**
+     * @return bool|void
+     * Prepare values for the synchroization
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        if (is_array($this->_cache['entitiesUpdating'])) {
+            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+                $this->unsetEntityCache($_orderNumber);
+            }
+        }
+
+        $this->_cache = array(
+            'entitiesUpdating' => array(),
+            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
+            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
+            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
+        );
+
+        return $this->check();
     }
 }

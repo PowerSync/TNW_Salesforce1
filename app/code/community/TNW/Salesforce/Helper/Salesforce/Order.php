@@ -532,7 +532,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Rules: Start----------');
 
-        // Get all products from each order and decide if all needs to me synced prior to inserting them
+        $customers = array();
         foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_number) {
             if (in_array($_number, $this->_cache[$failedKey])) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('%s (%s): Skipping, issues with upserting an %s!',
@@ -541,23 +541,40 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 continue;
             }
 
-            $_entity = $this->_loadEntityByCache($_key, $_number);
+            $_entity   = $this->_loadEntityByCache($_key, $_number);
             /** @var Mage_Customer_Model_Customer $_customer */
             $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
 
-            foreach (explode(',', $_entity->getAppliedRuleIds()) as $id) {
-                $rule = Mage::getModel('salesrule/rule')->load($id);
-                $rule->getData('salesforce_id');
+            foreach (array_filter(explode(',', $_entity->getAppliedRuleIds())) as $id) {
+                $rule       = Mage::getModel('salesrule/rule')->load($id);
+                $campaignId = $rule->getData('salesforce_id');
+                if (empty($campaignId)) {
+                    continue;
+                }
+
+                $customers[$campaignId][] = $_customer;
             }
 
             /** @var Mage_Sales_Model_Order_Item $item */
             foreach ($_entity->getAllVisibleItems() as $item) {
-                foreach (explode(',', $item->getAppliedRuleIds()) as $id) {
+                foreach (array_filter(explode(',', $item->getAppliedRuleIds())) as $id) {
                     $rule = Mage::getModel('catalogrule/rule')->load($id);
-                    $rule->getData('salesforce_id');
+                    $campaignId = $rule->getData('salesforce_id');
+                    if (empty($campaignId)) {
+                        continue;
+                    }
+
+                    $customers[$campaignId][] = $_customer;
                 }
             }
         }
+
+        $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
+        if ($campaignMember->reset() && $campaignMember->memberAdd($customers)) {
+            $campaignMember->process();
+        }
+
+        $campaignMember->process();
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Rules: End----------');
     }
