@@ -39,6 +39,17 @@
                             <action>adminhtml/salesforcesync_abandonedsync</action>
                             <sort_order>50</sort_order>
                         </abandoned_sync>
+                        <campaign_sync>
+                            <title>Campaign</title>
+                            <sort_order>60</sort_order>
+                            <children>
+                                <catalogrule_sync>
+                                    <title>Catalog Rule</title>
+                                    <action>adminhtml/salesforcesync_campaign_catalogrulesync</action>
+                                    <sort_order>10</sort_order>
+                                </catalogrule_sync>
+                            </children>
+                        </campaign_sync>
                     </children>
                 </manual_sync>
                 <mappings translate="title" module="tnw_salesforce">
@@ -150,6 +161,22 @@
                                 </order_cart_mapping>
                             </children>
                         </abandoned_mapping>
+                        <campaign_mapping>
+                            <title>Campaign Mappings</title>
+                            <sort_order>700</sort_order>
+                            <children>
+                                <catalogrule_mapping translate="title" module="tnw_salesforce">
+                                    <title>Catalog Rule</title>
+                                    <action>adminhtml/salesforce_campaign_catalogrule</action>
+                                    <sort_order>70</sort_order>
+                                </catalogrule_mapping>
+                                <member_mapping translate="title" module="tnw_salesforce">
+                                    <title>Member</title>
+                                    <action>adminhtml/salesforce_campaign_member</action>
+                                    <sort_order>80</sort_order>
+                                </member_mapping>
+                            </children>
+                        </campaign_mapping>
                     </children>
                 </mappings>
                 <queue_sync translate="title" module="tnw_salesforce">

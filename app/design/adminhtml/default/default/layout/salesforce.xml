@@ -172,6 +172,14 @@
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_ordershipmentitem_edit>
 
+    <adminhtml_salesforce_campaign_catalogrule_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_campaign_catalogrule_edit>
+
+    <adminhtml_salesforce_campaign_member_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_campaign_member_edit>
+
     <adminhtml_tool_log_file_view>
         <reference name="head">
             <action method="addJs">

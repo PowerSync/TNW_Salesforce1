@@ -1,0 +1,172 @@
+<?php
+/**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
+
+class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController extends Mage_Adminhtml_Controller_Action
+{
+    /**
+     * Array of actions which can be processed without secret key validation
+     *
+     * @var array
+     */
+    protected $_publicActions = array('grid', 'index');
+
+    protected function _construct()
+    {
+        $this->setUsedModuleName('Mage_Sales');
+    }
+
+    protected function _initLayout()
+    {
+        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
+            Mage::getSingleton('adminhtml/session')
+                ->addNotice("Salesforce integration is not working! Refer to the config or the log files for more information.");
+        }
+
+        $this->loadLayout()
+            ->_setActiveMenu('tnw_salesforce')
+            ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Manual Catalog Rule Synchronization'), Mage::helper('tnw_salesforce')->__('Manual Catalog Rule Synchronization'));
+
+        return $this;
+    }
+
+    /**
+     * Index Action
+     *
+     */
+    public function indexAction()
+    {
+        $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('Manual Sync'))->_title($this->__('Catalog Rule'));
+        $this->_initLayout()
+            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_campaign_catalogrulesync'));
+        Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
+
+        $this->renderLayout();
+    }
+
+    /**
+     * Order grid
+     */
+    public function gridAction()
+    {
+        $this->loadLayout(false);
+        $this->renderLayout();
+    }
+
+    /**
+     * Sync Action
+     *
+     */
+    public function syncAction()
+    {
+        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('adminhtml/session')
+                ->addError("API Integration is disabled.");
+
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
+        }
+
+        if (!$_syncType) {
+            Mage::getSingleton('adminhtml/session')
+                ->addError("Integration Type is not set.");
+
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce_order'));
+            return;
+        }
+
+        $catalogruleId = $this->getRequest()->getParam('catalogrule_id');
+        if ($catalogruleId > 0) {
+            try {
+                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+                    $res = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject(array($catalogruleId), 'Campaign', 'catalogrule');
+
+                    if (!$res) {
+                        Mage::getSingleton('adminhtml/session')->addError('Could not add catalogrule to the queue!');
+                    }
+                    else {
+                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
+                            Mage::getSingleton('adminhtml/session')->addSuccess(
+                                Mage::helper('adminhtml')->__('Order was added to the queue!')
+                            );
+                        }
+                    }
+
+                } else {
+                    $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_catalogrule');
+                    if ($campaignMember->reset() && $campaignMember->massAdd(array($catalogruleId))) {
+                        $campaignMember->process();
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('adminhtml/session')
+                    ->addError($e->getMessage());
+            }
+        }
+
+        $this->_redirect('*/*/');
+    }
+
+    public function massSyncForceAction()
+    {
+        set_time_limit(0);
+        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
+            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
+            Mage::app()->getResponse()->sendResponse();
+        }
+        if (!$_syncType) {
+            Mage::getSingleton('adminhtml/session')->addError("Integration Type is not set.");
+            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce_order')));
+            Mage::app()->getResponse()->sendResponse();
+        }
+        $itemIds = $this->getRequest()->getParam('catalogrules');
+        if (!is_array($itemIds)) {
+            Mage::getSingleton('adminhtml/session')
+                ->addError(Mage::helper('tnw_salesforce')->__('Please select catalog rule(s)'));
+        }
+        elseif (Mage::helper('tnw_salesforce')->getType() != "PRO") {
+            Mage::getSingleton('adminhtml/session')
+                ->addError(Mage::helper('tnw_salesforce')->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
+        }
+        elseif(((Mage::helper('tnw_salesforce')->getObjectSyncType() == 'sync_type_realtime')) && (count($itemIds) > 50)) {
+            Mage::getSingleton('adminhtml/session')
+                ->addError(Mage::helper('tnw_salesforce')->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
+        }
+        else {
+            try {
+                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+
+                    $res = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject($itemIds, 'Campaign', 'catalogrule');
+
+                    if (!$res) {
+                        Mage::getSingleton('adminhtml/session')->addError('Could not add catalog rule(s) to the queue!');
+                    }
+                    else {
+                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
+                            Mage::getSingleton('adminhtml/session')->addSuccess(
+                                $this->__('Records are pending addition into the queue!')
+                            );
+                        }
+                    }
+                }
+                else {
+                    $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_catalogrule');
+                    if ($campaignMember->reset() && $campaignMember->massAdd($itemIds)) {
+                        $campaignMember->process();
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+            }
+        }
+
+        $this->_redirect('*/*/index');
+    }
+}

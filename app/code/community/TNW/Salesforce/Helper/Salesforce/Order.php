@@ -574,8 +574,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $campaignMember->process();
         }
 
-        $campaignMember->process();
-
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Rules: End----------');
     }
 }

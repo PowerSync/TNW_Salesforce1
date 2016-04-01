@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.02.0000</version>
+            <version>0.01.54.03.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -667,6 +667,8 @@
             </shipment_configuration>
             <salesforce_campaigns>
                 <sync_enabled>0</sync_enabled>
+                <default_status>In Progress</default_status>
+                <default_type>Other</default_type>
             </salesforce_campaigns>
         </salesforce_order>
     </default>
