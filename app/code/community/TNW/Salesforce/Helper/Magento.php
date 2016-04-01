@@ -106,6 +106,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         $this->_acl['catalogrule'] = array(
             'Catalogrule'
         );
+
+        $this->_acl['salesrule'] = array(
+            'Salesrule'
+        );
     }
 
     /**
@@ -191,6 +195,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         if (in_array($type, $this->_acl['catalogrule'])) {
             $this->_populateCatalogruleAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['salesrule'])) {
+            $this->_populateSalesruleAttributes($type);
         }
 
         /* Customization */
@@ -873,7 +881,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('salesrule');
+                ->describeTable('catalogrule');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -907,6 +915,49 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 $this->_cache[$type]['catalog_rule']['value'][] = array(
                     'value' => 'Catalog Rule : ' . $key,
                     'label' => 'Catalog Rule : ' . $this->toName($key),
+                );
+            }
+        }
+    }
+
+    public function _populateSalesruleAttributes($type)
+    {
+        try {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('salesrule');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['sales_rule'] = array(
+                'label' => 'Shopping cart rule attributes',
+                'value' => array()
+            );
+
+            $_additionalAttributes = array(
+                'number'                  => 'Number',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['sales_rule']['value'][] = array(
+                    'value' => 'Shopping Cart Rule : '.$value,
+                    'label' => 'Shopping Cart Rule : '.$label,
+                );
+            }
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('salesforce_id'))) {
+                    continue;
+                }
+
+                $this->_cache[$type]['sales_rule']['value'][] = array(
+                    'value' => 'Shopping Cart Rule : ' . $key,
+                    'label' => 'Shopping Cart Rule : ' . $this->toName($key),
                 );
             }
         }

@@ -176,6 +176,10 @@
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_campaign_catalogrule_edit>
 
+    <adminhtml_salesforce_campaign_salesrule_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_campaign_salesrule_edit>
+
     <adminhtml_salesforce_campaign_member_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_campaign_member_edit>
