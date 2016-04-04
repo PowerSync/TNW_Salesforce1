@@ -264,12 +264,9 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             foreach ($_chunks as $_chunk) {
 
                 $collection->resetData();
+                $collection->addFieldToFilter($entityModel->getIdFieldName(), array('in' => $_chunk));
 
                 $select = $collection->getSelect();
-                $inCond = $collection->getConnection()->prepareSqlCondition($entityModel->getIdFieldName(), array('in' => $_chunk));
-
-                $select->where($inCond);
-
                 $select->reset(Zend_Db_Select::COLUMNS);
 
                 $columns = array(

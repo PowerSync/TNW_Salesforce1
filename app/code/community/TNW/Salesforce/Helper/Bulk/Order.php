@@ -130,6 +130,13 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: End----------');
             }
         }
+
+        if (!empty($this->_cache['userRulesToUpsert'])) {
+            $campaignMember = Mage::helper('tnw_salesforce/bulk_campaign_member');
+            if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['userRulesToUpsert'])) {
+                $campaignMember->process();
+            }
+        }
     }
 
     protected function _pushEntity()

@@ -488,8 +488,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         $ids = !is_array($ids)
             ? array($ids) : $ids;
 
-        $mainTable = $this->_modelEntity()->getResource()->getMainTable();
-        $sql = "UPDATE `" . $mainTable . "` SET salesforce_id = NULL, sf_insync = 0 WHERE entity_id IN (" . join(',', $ids) . ");";
+        $resource    = $this->_modelEntity()->getResource();
+        $mainTable   = $resource->getMainTable();
+        $idFieldName = $resource->getIdFieldName();
+        $sql = "UPDATE `$mainTable` SET salesforce_id = NULL, sf_insync = 0 WHERE $idFieldName IN (" . join(',', $ids) . ");";
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 
         Mage::getSingleton('tnw_salesforce/tool_log')

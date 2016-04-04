@@ -12,6 +12,7 @@ $installer->getConnection()
         'length'    => 1,
         'default'   => 0,
         'nullable'  => false,
+        'comment'   => 'Is sync'
     ));
 
 $installer->getConnection()
@@ -24,6 +25,7 @@ $installer->getConnection()
         'length'    => 1,
         'default'   => 0,
         'nullable'  => false,
+        'comment'   => 'Is sync'
     ));
 
 $installer->getConnection()

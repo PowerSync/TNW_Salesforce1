@@ -3,16 +3,10 @@
 abstract class TNW_Salesforce_Helper_Salesforce_Campaign_Abstract extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
-     * @comment magento entity alias "convert from"
-     * @var string
-     */
-    protected $_magentoEntityName = 'rule';
-
-    /**
      * @comment salesforce entity alias "convert to"
      * @var string
      */
-    protected $_salesforceEntityName = 'CampaignType';
+    protected $_salesforceEntityName = 'Campaign';
 
     /**
      * @param array $_ids
@@ -33,37 +27,23 @@ abstract class TNW_Salesforce_Helper_Salesforce_Campaign_Abstract extends TNW_Sa
     }
 
     /**
-     * @param $_entity
+     *
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _massAddAfter()
     {
-        //$this->_obj->Status;
-        //$this->_obj->Type;
-        //$this->_obj->OwnerId;
-        //$this->_obj->IsActive;
-        //$this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_Id__c'};
+        // Salesforce lookup, find all orders by Magento order number
+        $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_campaign')
+            ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
+
         return;
     }
 
     /**
      * @param $_entity
-     * @param $type string
-     * @return mixed
      */
-    protected function _getObjectByEntityType($_entity, $type)
+    protected function _prepareEntityObjCustom($_entity)
     {
-        switch($type)
-        {
-            case 'Invoice':
-                $_object = $_entity;
-                break;
-
-            default:
-                $_object = null;
-                break;
-        }
-
-        return $_object;
+        return;
     }
 
     /**
@@ -103,8 +83,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Campaign_Abstract extends TNW_Sa
             ));
         }
         catch (Exception $e) {
-            $results   = array_fill(0, count($_keys),
-                $this->_buildErrorResponse($e->getMessage()));
+            $results   = array_fill(0, count($_keys), $this->_buildErrorResponse($e->getMessage()));
 
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('CRITICAL: Push of an order to Salesforce failed' . $e->getMessage());

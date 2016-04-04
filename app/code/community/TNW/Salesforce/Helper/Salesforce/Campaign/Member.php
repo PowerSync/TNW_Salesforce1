@@ -178,7 +178,6 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         $this->_obj->ContactId = $_entity->getData('salesforce_id');
         $this->_obj->HasResponded = true;
         $this->_obj->Status = 'Responded';
-        return;
     }
 
     /**
@@ -192,6 +191,10 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         {
             case 'Customer':
                 $_object = $_entity;
+                break;
+
+            case 'Custom':
+                $_object = $_entity->getStore();
                 break;
 
             default:

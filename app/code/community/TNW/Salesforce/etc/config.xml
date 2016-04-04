@@ -473,6 +473,14 @@
                 </observers>
             </tnw_salesforce_order_products_send_after>
 
+            <salesrule_rule_save_commit_after>
+                <observers>
+                    <tnw_after_salesrule_rule_save>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>afterSalesRuleSave</method>
+                    </tnw_after_salesrule_rule_save>
+                </observers>
+            </salesrule_rule_save_commit_after>
         </events>
     </global>
     <adminhtml>

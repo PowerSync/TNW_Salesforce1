@@ -3,6 +3,12 @@
 class TNW_Salesforce_Helper_Salesforce_Campaign_Catalogrule extends TNW_Salesforce_Helper_Salesforce_Campaign_Abstract
 {
     /**
+     * @comment magento entity alias "convert from"
+     * @var string
+     */
+    protected $_magentoEntityName = 'catalogrule';
+
+    /**
      * @var string
      */
     protected $_mappingEntityName = 'CampaignCatalogRule';
@@ -24,14 +30,27 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Catalogrule extends TNW_Salesfor
     }
 
     /**
-     *
+     * @param $_entity Mage_CatalogRule_Model_Rule
+     * @param $type string
+     * @return mixed
      */
-    protected function _massAddAfter()
+    protected function _getObjectByEntityType($_entity, $type)
     {
-        // Salesforce lookup, find all orders by Magento order number
-        $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_campaign')
-            ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
+        switch($type)
+        {
+            case 'Catalog Rule':
+                $_object = $_entity;
+                break;
 
-        return;
+            case 'Custom':
+                $_object = Mage::app()->getStore();
+                break;
+
+            default:
+                $_object = null;
+                break;
+        }
+
+        return $_object;
     }
 }
