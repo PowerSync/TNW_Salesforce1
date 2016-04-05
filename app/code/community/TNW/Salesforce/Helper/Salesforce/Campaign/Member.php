@@ -1,18 +1,23 @@
 <?php
 
+/**
+ * Class TNW_Salesforce_Helper_Salesforce_Campaign_Member
+ *
+ * @method Mage_Customer_Model_Customer getEntityCache($cachePrefix)
+ */
 class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
      * @comment magento entity alias "convert from"
      * @var string
      */
-    protected $_magentoEntityName = '';
+    protected $_magentoEntityName = 'customer';
 
     /**
      * @comment salesforce entity alias "convert to"
      * @var string
      */
-    protected $_salesforceEntityName = '';
+    protected $_salesforceEntityName = 'CampaignMember';
 
     /**
      * @var string
@@ -99,7 +104,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _getEntityNumber($_entity)
     {
-        return strtolower($_entity->getData('email'));
+        return $this->_getEntityId($_entity);
     }
 
     /**
@@ -150,9 +155,27 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _massAddAfter()
     {
+        $contactIds = array();
+        foreach (array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]) as $prefix) {
+            $entity         = $this->getEntityCache($prefix);
+            $entityNumber   = $this->_getEntityNumber($entity);
+            $campaignId     = $this->_cache['entitiesCampaign'][$entityNumber];
+
+            $contactIds[$campaignId][] = $entity;
+        }
+
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_campaign_member')
-            ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
+            ->lookup($contactIds);
+
+        foreach (array_keys($this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)]) as $_campaignId) {
+            $entityNumber = array_search(Mage::helper('tnw_salesforce')->prepareId($_campaignId), $this->_cache['entitiesCampaign']);
+            if (empty($entityNumber)) {
+                continue;
+            }
+
+            $this->_cache['entitiesCampaign'][$entityNumber] = $_campaignId;
+        }
 
         return;
     }
@@ -164,6 +187,24 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _getEntitySalesforceId($_entity)
     {
+        $entityNumber = $this->_getEntityNumber($_entity);
+        $lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $campaignId   = $this->_cache['entitiesCampaign'][$entityNumber];
+        
+        if (!isset($this->_cache[$lookupKey][$campaignId])) {
+            return null;
+        }
+
+        foreach ($this->_cache[$lookupKey][$campaignId] as $item) {
+            if ($item->ContactId == $_entity->getData('salesforce_id')) {
+                return $item->Id;
+            }
+
+            if ($item->LeadId == $_entity->getData('salesforce_lead_id')) {
+                return $item->Id;
+            }
+        }
+
         return null;
     }
 
@@ -174,10 +215,24 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
     {
         $entityNumber = $this->_getEntityNumber($_entity);
 
-        $this->_obj->CampaignId = $this->_cache['entitiesCampaign'][$entityNumber];
-        $this->_obj->ContactId = $_entity->getData('salesforce_id');
-        $this->_obj->HasResponded = true;
-        $this->_obj->Status = 'Responded';
+        if (! (property_exists($this->_obj, 'Id') && $this->_obj->Id)) {
+            $this->_obj->CampaignId     = $this->_cache['entitiesCampaign'][$entityNumber];
+            //$this->_obj->HasResponded   = true;
+
+            switch (true) {
+                case (bool)$_entity->getData('salesforce_id'):
+                    $this->_obj->ContactId = $_entity->getData('salesforce_id');
+                    break;
+
+                case (bool)$_entity->getData('salesforce_lead_id'):
+                    $this->_obj->LeadId = $_entity->getData('salesforce_lead_id');
+                    break;
+
+                default:
+                    Mage::throwException('');
+                    break;
+            }
+        }
     }
 
     /**
@@ -230,13 +285,13 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         $_keys = array_keys($this->_cache[$entityToUpsertKey]);
 
         try {
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_before', $this->_magentoEntityName),
+            Mage::dispatchEvent('tnw_salesforce_campaign_member_send_before',
                 array("data" => $this->_cache[$entityToUpsertKey]));
 
             $results = $this->getClient()->upsert(
-                'Id', array_values($this->_cache[$entityToUpsertKey]), '');
+                'Id', array_values($this->_cache[$entityToUpsertKey]), 'CampaignMember');
 
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_after', $this->_magentoEntityName), array(
+            Mage::dispatchEvent('tnw_salesforce_campaign_member_send_after', array(
                 "data" => $this->_cache[$entityToUpsertKey],
                 "result" => $results
             ));
@@ -263,13 +318,6 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
                     ->saveError(sprintf('%s Failed: (%s: ' . $_entityNum . ')', $this->_salesforceEntityName, $this->_magentoEntityName));
             }
             else {
-                $_entity = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
-                $_entity->addData(array(
-                    'sf_insync'     => 1,
-                    'salesforce_id' => (string)$_result->id
-                ));
-                $_entity->getResource()->save($_entity);
-
                 $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_entityNum] = $_result->id;
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace(sprintf('%s Upserted: %s' , $this->_salesforceEntityName, $_result->id));

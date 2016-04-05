@@ -54,6 +54,15 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
             }
         }
 
+        /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber */
+        $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
+        if (!empty($this->_cache['productCampaignAssignment']) && $manualSync->validateSync(true)) {
+            $campaignMember = Mage::helper('tnw_salesforce/bulk_campaign_member');
+            if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['productCampaignAssignment'])) {
+                $campaignMember->process();
+            }
+        }
+
         if (!empty($this->_cache['notesToUpsert'])) {
             if (!$this->_cache['bulkJobs']['notes']['Id']) {
                 // Create Job

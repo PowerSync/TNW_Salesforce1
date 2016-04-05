@@ -22,7 +22,7 @@ class TNW_Salesforce_Helper_Bulk_Campaign_Member extends TNW_Salesforce_Helper_S
                     $this->_cache['bulkJobs'][$this->_magentoEntityName]['Id']));
         }
 
-        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_before', $this->_magentoEntityName),
+        Mage::dispatchEvent('tnw_salesforce_campaign_member_send_before',
             array("data" => $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))]));
 
         $this->_pushChunked(
@@ -95,7 +95,7 @@ class TNW_Salesforce_Helper_Bulk_Campaign_Member extends TNW_Salesforce_Helper_S
             }
         }
 
-        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_send_after', $this->_magentoEntityName), array(
+        Mage::dispatchEvent('tnw_salesforce_campaign_member_send_after', array(
             "data" => $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))],
             "result" => $this->_cache['responses'][strtolower($this->getManyParentEntityType())]
         ));

@@ -3,49 +3,64 @@
 class TNW_Salesforce_Helper_Salesforce_Data_Campaign_Member extends TNW_Salesforce_Helper_Salesforce_Data
 {
     /**
-     * @param array $ids
+     * @param array $campaignCustomers
      * @return array|bool
      */
-    public function lookup($ids = array())
+    public function lookup($campaignCustomers = array())
     {
-        $ids = !is_array($ids)
-            ? array($ids) : $ids;
-
         try {
             if (!is_object($this->getClient())) {
                 return false;
             }
 
-            $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c';
-            $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderInvoiceItem__r';
             $_fields    = array(
-                'Id', $_magentoId,
-                sprintf('(SELECT Id, Name, %s, %s, %s FROM %s)',
-                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c',
-                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Code__c',
-                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c',
-                    $oiiTable
-                ),
-                '(SELECT Id, Title, Body FROM Notes)'
+                'Id', 'ContactId', 'LeadId', 'CampaignId'
             );
 
-            $query = sprintf('SELECT %s FROM %s WHERE %s IN (\'%s\')',
-                implode(', ', $_fields), TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT, $_magentoId, implode('\',\'', $ids));
-
-            $result = $this->getClient()->query($query);
-            if (!$result || $result->size < 1) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("Order lookup returned: %s results...", $result->size));
-                return false;
-            }
-
             $returnArray = array();
-            foreach ($result->records as $_item) {
-                $tmp = new stdClass();
-                $tmp->Id = $_item->Id;
-                $tmp->Notes = (property_exists($_item, 'Notes')) ? $_item->Notes : NULL;
-                $tmp->Items = (property_exists($_item, $oiiTable)) ? $_item->$oiiTable : NULL;
-                $tmp->MagentoId = $_item->$_magentoId;
-                $returnArray[$tmp->MagentoId] = $tmp;
+            /**
+             * @var string $campaignId
+             * @var Mage_Customer_Model_Customer[] $customers
+             */
+            foreach ($campaignCustomers as $campaignId => $customers) {
+                $query = sprintf('SELECT %s FROM CampaignMember WHERE CampaignId = \'%s\' AND',
+                    implode(', ', $_fields), $campaignId);
+
+                $sfIds = array_filter(array_map(function(Mage_Customer_Model_Customer $customer){
+                    return $customer->getData('salesforce_id');
+                }, $customers));
+
+                $where = array();
+                if (!empty($sfIds)) {
+                    $where[] = sprintf('ContactId IN (\'%s\')', implode(', ', $sfIds));
+                }
+
+                $sfLeadIds = array_filter(array_map(function(Mage_Customer_Model_Customer $customer){
+                    return $customer->getData('salesforce_lead_id');
+                }, $customers));
+
+                if (!empty($sfLeadIds)) {
+                    $where[] = sprintf('LeadId IN (\'%s\')', implode(', ', $sfLeadIds));
+                }
+
+                $query .= ' (' . implode(' OR ', $where) . ')';
+
+                $result = $this->getClient()->query($query);
+                if (!$result || $result->size < 1) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace(sprintf("Order lookup returned: %s results...", $result->size));
+
+                    continue;
+                }
+
+                foreach ($result->records as $_item) {
+                    $tmp = new stdClass();
+                    $tmp->Id = (property_exists($_item, "Id")) ? $_item->Id : null;
+                    $tmp->ContactId = (property_exists($_item, "ContactId")) ? $_item->ContactId : null;
+                    $tmp->LeadId = (property_exists($_item, "LeadId")) ? $_item->LeadId : null;
+                    $tmp->CampaignId = (property_exists($_item, "CampaignId")) ? $_item->CampaignId : null;
+                    $returnArray[$_item->CampaignId][] = $tmp;
+                }
             }
 
             return $returnArray;

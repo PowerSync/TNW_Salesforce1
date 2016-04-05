@@ -585,20 +585,20 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _prepareEntity()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('----------%s Preparation: Start----------', $this->getUcParentEntityType()));
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_orderNumber)
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_entityNumber)
         {
             if (!$this->_checkPrepareEntityBefore($_key)) {
                 continue;
             }
 
             $this->_obj = new stdClass();
-            $this->_setEntityInfo($this->_loadEntityByCache($_key, $_orderNumber));
+            $this->_setEntityInfo($this->getEntityCache($_entityNumber));
 
             if (!$this->_checkPrepareEntityAfter($_key)) {
                 continue;
             }
 
-            $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_orderNumber] = $this->_obj;
+            $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_entityNumber] = $this->_obj;
         }
 
         $this->_prepareEntityAfter();

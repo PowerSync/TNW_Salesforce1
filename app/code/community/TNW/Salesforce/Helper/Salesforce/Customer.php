@@ -134,9 +134,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         if (is_array($this->_cache['entitiesUpdating'])) {
             foreach ($this->_cache['entitiesUpdating'] as $_id => $_email) {
-                if (Mage::registry('customer_cached_' . $_id)) {
-                    Mage::unregister('customer_cached_' . $_id);
-                }
+                $this->unsetEntityCache($_id);
             }
         }
 
@@ -154,6 +152,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             'accountsToContactLink' => array(),
             'entitiesUpdating' => array(),
             'toSaveInMagento' => array(),
+            'subscriberToUpsert' => array(),
             'responses' => array(
                 'leads' => array(),
                 'contacts' => array(),
@@ -435,6 +434,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             /**
              * send data to Salesforce
              */
+            $this->_prepareCampaignMembers();
             $this->_updateCampaings();
             $this->_onComplete();
 
@@ -447,13 +447,48 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
     }
 
+    /**
+     * prepare campaign members data fo SF
+     */
+    protected function _prepareCampaignMembers()
+    {
+        if (!Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->validateSync()) {
+            return;
+        }
+
+        $customers = array();
+        $chunks = array_chunk($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+        foreach ($chunks as $chunk) {
+
+            /** @var Mage_Newsletter_Model_Resource_Subscriber_Collection $subscribers */
+            $subscribers = Mage::getModel('newsletter/subscriber')->getCollection();
+            $subscribers
+                ->addFieldToFilter('subscriber_email', array_values($chunk))
+                ->addFieldToFilter('subscriber_status', Mage_Newsletter_Model_Subscriber::STATUS_SUBSCRIBED);
+
+            /** @var Mage_Newsletter_Model_Subscriber $subscriber */
+            foreach ($subscribers as $subscriber) {
+                $customers[] = $this->getEntityCache(array_search(strtolower($subscriber->getEmail()), $chunk));
+            }
+        }
+
+        $campaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
+        $this->_cache['subscriberToUpsert'] = array($campaignId => $customers);
+    }
 
     /**
      * push data to Salesforce
      */
     protected function _updateCampaings()
     {
-        Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaings();
+        if (empty($this->_cache['subscriberToUpsert'])) {
+            return;
+        }
+
+        $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
+        if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['subscriberToUpsert'])) {
+            $campaignMember->process();
+        }
     }
 
     /**
@@ -1424,7 +1459,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
 
-        $customerIds = array();
         foreach ($this->_cache['toSaveInMagento'] as $_websiteId => $_websiteCustomers) {
             foreach ($_websiteCustomers as $_data) {
                 if (!is_object($_data) || !property_exists($_data, 'MagentoId') || !$_data->MagentoId || strpos($_data->MagentoId, 'guest_') === 0) {
@@ -1449,52 +1483,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 foreach (array_keys($_saveAttributes) as $_code) {
                     $_customer->getResource()->saveAttribute($_customer, $_code);
                 }
-
-                $customerIds[] = $_customer->getId();
             }
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($_websiteCustomers) . " customers!");
         }
 
-        $this->_prepareCampaignMembers($customerIds);
-
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
-    }
-
-    /**
-     * prepare campaign members data fo SF
-     */
-    protected function _prepareCampaignMembers($customerIds)
-    {
-        $_ids = array_chunk($customerIds, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-        foreach ($_ids as $_recordIds) {
-
-            $subscribers = Mage::getModel('newsletter/subscriber')->getCollection()->addFieldToFilter('customer_id', $_recordIds);
-            $subscribers->addFieldToFilter('subscriber_status', Mage_Newsletter_Model_Subscriber::STATUS_SUBSCRIBED);
-
-            foreach ($subscribers as $subscriber) {
-
-                if (!$subscriber->getCustomerId()) {
-                    continue;
-                }
-
-                $_updatedCustomer = Mage::registry('customer_cached_' . $subscriber->getCustomerId());
-                $campaignMemberType = 'LeadId';
-                $campaignMemberId = $_updatedCustomer->getSalesforceLeadId();
-                if ($_updatedCustomer->getSalesforceId()) {
-                    $campaignMemberType = 'ContactId';
-                    $campaignMemberId = $_updatedCustomer->getSalesforceId();
-                }
-
-                if ($campaignMemberId) {
-                    /**
-                     * prepare subscriber data to add new members
-                     */
-                    Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
-                        ->prepareCampaignMember($campaignMemberType, $campaignMemberId, $subscriber, $_updatedCustomer->getEmail());
-                }
-            }
-        }
     }
 
     public function updateMagentoEntityValue($_customerId = NULL, $_value = 0, $_attributeName = NULL, $_tableName = 'customer_entity_varchar')
@@ -1994,7 +1988,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected function _convertLeads()
     {
-        return Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsSimple();
+        Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsSimple();
     }
 
 }

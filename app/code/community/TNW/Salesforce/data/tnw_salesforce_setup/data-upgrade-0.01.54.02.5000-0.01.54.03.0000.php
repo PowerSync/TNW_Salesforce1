@@ -62,6 +62,14 @@ $data = array(
         'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
         'sf_object'         => 'CampaignSalesRule',
     ),
+
+    //
+    array(
+        'local_field'       => 'Custom : Status',
+        'sf_field'          => 'Status',
+        'sf_object'         => 'CampaignMember',
+        'default_value'     => 'Responded',
+    ),
 );
 
 $data = array_map(function($value){

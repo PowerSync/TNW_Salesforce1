@@ -316,6 +316,15 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     {
         parent::_pushRemainingCustomEntityData();
 
+        /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber */
+        $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
+        if (!empty($this->_cache['productCampaignAssignment']) && $manualSync->validateSync(true)) {
+            $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
+            if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['productCampaignAssignment'])) {
+                $campaignMember->process();
+            }
+        }
+
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach ($this->_cache['orderToActivate'] as $_orderNum => $_object) {
@@ -550,6 +559,10 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
             $_entity   = $this->_loadEntityByCache($_key, $_number);
             foreach ($this->getUserRulesByOrder($_entity) as $campaignId => $item) {
+                if (!isset($this->_cache['userRulesToUpsert'][$campaignId])) {
+                    $this->_cache['userRulesToUpsert'][$campaignId] = array();
+                }
+
                 $this->_cache['userRulesToUpsert'][$campaignId] = array_merge($this->_cache['userRulesToUpsert'][$campaignId], $item);
             }
         }

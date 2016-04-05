@@ -43,7 +43,8 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Salesrule extends TNW_Salesforce
                 break;
 
             case 'Custom':
-                $_object = Mage::app()->getStore();
+                $websiteIds = $_entity->getWebsiteIds();
+                $_object = Mage::app()->getWebsite(reset($websiteIds))->getDefaultStore();
                 break;
 
             default:
