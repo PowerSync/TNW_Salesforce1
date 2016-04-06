@@ -191,4 +191,12 @@
             </action>
         </reference>
     </adminhtml_tool_log_file_view>
+
+    <adminhtml_promo_quote_edit>
+        <update handle="tnw_salesforce_chosen"/>
+        <reference name="promo_quote_edit_tabs">
+            <block type="tnw_salesforce/adminhtml_promo_edit_tab_main" name="promo_quote_edit_tab_salesforce" />
+            <action method="addTab"><name>salesforce_section</name><block>promo_quote_edit_tab_salesforce</block></action>
+        </reference>
+    </adminhtml_promo_quote_edit>
 </layout>

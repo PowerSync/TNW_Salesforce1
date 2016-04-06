@@ -13,6 +13,9 @@ document.observe('dom:loaded', function () {
     $$('#product_info_tabs > li > a[title="Salesforce"] > span').each(function(s){
         s.addClassName('tnw-salesforce-secondary-menu-icon');
     });
+    $$('#promo_catalog_edit_tabs > li > a[title="Salesforce"] > span').each(function(s){
+        s.addClassName('tnw-salesforce-secondary-menu-icon');
+    });
     $$('#import_form > .fileUpload > .upload').each(function(s){
         s.observe('change', function(event) {
             var element = Event.element(event);

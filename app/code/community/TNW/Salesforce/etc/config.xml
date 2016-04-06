@@ -467,6 +467,7 @@
             <salesrule_rule_save_commit_after>
                 <observers>
                     <tnw_after_salesrule_rule_save>
+                        <type>singleton</type>
                         <class>tnw_salesforce/sale_observer</class>
                         <method>afterSalesRuleSave</method>
                     </tnw_after_salesrule_rule_save>
@@ -507,6 +508,16 @@
                     </tnw_salesforce_block_observer>
                 </observers>
             </core_block_abstract_to_html_after>
+
+            <adminhtml_controller_salesrule_prepare_save>
+                <observers>
+                    <tnw_controller_salesrule_prepare_save>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>controllerSalesRulePrepareSave</method>
+                    </tnw_controller_salesrule_prepare_save>
+                </observers>
+            </adminhtml_controller_salesrule_prepare_save>
         </events>
     </adminhtml>
     <frontend>

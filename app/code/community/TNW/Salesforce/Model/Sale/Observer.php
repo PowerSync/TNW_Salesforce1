@@ -6,8 +6,9 @@
 
 class TNW_Salesforce_Model_Sale_Observer
 {
-    protected $orderObject = NULL;
-    protected $orderHelper = NULL;
+    protected $orderObject      = null;
+    protected $orderHelper      = null;
+    protected $assignToCampaign = null;
 
     /**
      * Shipment Sync Event
@@ -406,6 +407,25 @@ class TNW_Salesforce_Model_Sale_Observer
             return; // Disabled
         }
 
+        if (!empty($this->assignToCampaign)) {
+            $obj = new stdClass();
+            $obj->Id = $this->assignToCampaign;
+            $obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = 'sr_'.$rule->getId();
+
+            // Assign Campaign
+            try {
+                Mage::getSingleton('tnw_salesforce/connection')->getClient()
+                    ->update(array($obj), 'Campaign');
+
+                $rule->setData('salesforce_id', $this->assignToCampaign);
+                $rule->getResource()->save($rule);
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Assign Campaign: '.$e->getMessage());
+                return; // Disabled
+            }
+        }
+
         try {
             if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
 
@@ -430,5 +450,19 @@ class TNW_Salesforce_Model_Sale_Observer
         } catch (Exception $e) {
             Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
         }
+    }
+
+    public function controllerSalesRulePrepareSave($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('SKIPING: Synchronization disabled');
+
+            return; // Disabled
+        }
+
+        /** @var Mage_Core_Controller_Request_Http $request */
+        $request = $observer->getEvent()->getRequest();
+        $this->assignToCampaign = $request->getParam('assign_to_campaign');
     }
 }
