@@ -194,6 +194,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                     // Product
                     $_magentoFieldName = str_replace('Product : ', '', $_mapping->getLocalField());
 
+                    $_value = '';
                     if (property_exists($object, $_mapping->getSfField())) {
                         // get attribute object
                         $localFieldAr = explode(":", $_mapping->getLocalField());
