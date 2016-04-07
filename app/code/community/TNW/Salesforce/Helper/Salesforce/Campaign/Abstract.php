@@ -17,12 +17,19 @@ abstract class TNW_Salesforce_Helper_Salesforce_Campaign_Abstract extends TNW_Sa
     }
 
     /**
-     * @param $_entity
+     * @param $_entity Varien_Object
      * @return bool
      * @throws Exception
      */
     protected function _checkMassAddEntity($_entity)
     {
+        if (!$_entity->getData('salesforce_id') && !Mage::helper('tnw_salesforce')->isCampaignsCreateAutomate()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('SKIPPED: Automatic creation of prohibited');
+
+            return false;
+        }
+
         return true;
     }
 

@@ -679,6 +679,7 @@
                 <sync_enabled>0</sync_enabled>
                 <default_status>In Progress</default_status>
                 <default_type>Other</default_type>
+                <create_campaign_automatic>0</create_campaign_automatic>
             </salesforce_campaigns>
         </salesforce_order>
     </default>

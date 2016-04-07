@@ -31,9 +31,7 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
      */
     public function canShowTab()
     {
-        /** @var Mage_SalesRule_Model_Rule $model */
-        $model = Mage::registry('current_promo_quote_rule');
-        return !$model->getData('salesforce_id');
+        return true;
     }
 
     /**
@@ -48,11 +46,8 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
 
     protected function _prepareForm()
     {
-        /** @var Mage_SalesRule_Model_Rule $model */
-        $model = Mage::registry('current_promo_quote_rule');
-        if ($model->getData('salesforce_id')) {
-            return $this;
-        }
+        ///** @var Mage_SalesRule_Model_Rule $model */
+        //$model = Mage::registry('current_promo_quote_rule');
 
         $form = new Varien_Data_Form();
 
@@ -68,7 +63,7 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
             'name'      => 'assign_to_campaign',
             'label'     => $this->__('Assign to Campaign'),
             'title'     => $this->__('Assign to Campaign'),
-            'note'      => $this->__('Assign to Campaign'),
+            //'note'      => $this->__('Assign to Campaign'),
             'class'     => 'chosen-select',
             'options'   => array_merge(array(
                 '0' => $this->__('Select Campaign')
