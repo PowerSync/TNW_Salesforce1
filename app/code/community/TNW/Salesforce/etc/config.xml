@@ -464,15 +464,15 @@
                 </observers>
             </tnw_salesforce_order_send_after>
 
-            <salesrule_rule_save_commit_after>
+            <tnw_salesforce_order_products_send_after>
                 <observers>
-                    <tnw_after_salesrule_rule_save>
-                        <type>singleton</type>
+                    <tnw_send_order_item_campaing>
                         <class>tnw_salesforce/sale_observer</class>
-                        <method>afterSalesRuleSave</method>
-                    </tnw_after_salesrule_rule_save>
+                        <method>sendOrderItemCampaing</method>
+                    </tnw_send_order_item_campaing>
                 </observers>
-            </salesrule_rule_save_commit_after>
+            </tnw_salesforce_order_products_send_after>
+
         </events>
     </global>
     <adminhtml>
@@ -508,16 +508,6 @@
                     </tnw_salesforce_block_observer>
                 </observers>
             </core_block_abstract_to_html_after>
-
-            <adminhtml_controller_salesrule_prepare_save>
-                <observers>
-                    <tnw_controller_salesrule_prepare_save>
-                        <type>singleton</type>
-                        <class>tnw_salesforce/sale_observer</class>
-                        <method>controllerSalesRulePrepareSave</method>
-                    </tnw_controller_salesrule_prepare_save>
-                </observers>
-            </adminhtml_controller_salesrule_prepare_save>
         </events>
     </adminhtml>
     <frontend>
@@ -672,15 +662,6 @@
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>
             </invoice_configuration>
-            <shipment_configuration>
-                <sync_enabled>0</sync_enabled>
-            </shipment_configuration>
-            <salesforce_campaigns>
-                <sync_enabled>0</sync_enabled>
-                <default_status>In Progress</default_status>
-                <default_type>Other</default_type>
-                <create_campaign_automatic>0</create_campaign_automatic>
-            </salesforce_campaigns>
         </salesforce_order>
     </default>
     <phpunit>
