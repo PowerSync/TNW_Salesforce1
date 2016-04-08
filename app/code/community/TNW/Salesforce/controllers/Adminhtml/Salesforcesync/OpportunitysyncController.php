@@ -202,6 +202,22 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
         $this->_redirect('*/system_store/index');
     }
 
+    public function syncCurrencyAction() {
+        try {
+            $currencyModel = Mage::getModel('directory/currency');
+            $currencies = $currencyModel->getConfigAllowCurrencies();
+
+            $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
+            if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
+                Mage::getSingleton('adminhtml/session')
+                    ->addSuccess($this->__('%d Magento currency entities were successfully synchronized', count($currencies)));
+            }
+        } catch (Exception $e) {
+            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+        }
+        $this->_redirect('*/system_currency/index');
+    }
+
     public function massCartSyncAction()
     {
         $this->_redirect('*/*/index');
