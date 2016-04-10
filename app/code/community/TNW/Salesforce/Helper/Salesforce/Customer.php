@@ -640,7 +640,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $_personType = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
-            $this->_isPerson = (property_exists($this->_obj, 'RecordTypeId') && $this->_obj->RecordTypeId == $_personType);
+            $this->_isPerson = (property_exists($this->_obj, 'RecordTypeId') && !empty($this->_obj->RecordTypeId) && $this->_obj->RecordTypeId == $_personType);
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
