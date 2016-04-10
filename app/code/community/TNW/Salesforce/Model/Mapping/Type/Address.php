@@ -30,6 +30,19 @@ class TNW_Salesforce_Model_Mapping_Type_Address extends TNW_Salesforce_Model_Map
                 }
 
                 return $_value;
+            case 'company':
+                $_value = parent::getValue($_entity);
+                /**
+                 * if empty - try load company name from customer data
+                 */
+                if (
+                    empty($_value)
+                    && $_entity->getCustomer()
+                ) {
+                    $_value = $_entity->getCustomer()->getData($attribute);
+                }
+                return $_value;
+
         }
 
         return parent::getValue($_entity);
