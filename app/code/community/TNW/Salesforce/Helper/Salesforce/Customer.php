@@ -228,7 +228,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if (isset($_websiteId)) {
             $fakeCustomer->setWebsiteId($_websiteId);
         }
-        $fakeCustomer->setData($_data);
+        $fakeCustomer->addData($_data);
 
 
         $firstName = ($_lastName) ? $_fullName[0] : '';
@@ -245,10 +245,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $_billingAddress = Mage::getModel('customer/address');
         $_billingAddress->setCustomerId(0)
+            ->setId('1')
             ->setIsDefaultBilling('1')
             ->setSaveInAddressBook('0')
             ->setTelephone(strip_tags($_data['telephone']));
-        $fakeCustomer->setBillingAddress($_billingAddress);
+        $_billingAddress->setCompany($company);
+        $fakeCustomer->addAddress($_billingAddress);
+        $_billingAddress->setCustomer($fakeCustomer);
+        $fakeCustomer->setDefaultBilling(1);
 
         $customerId = (int)$fakeCustomer->getId();
         if (Mage::registry('customer_cached_' . $customerId)) {
@@ -598,8 +602,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         // Add to queue
         if ($type == "Lead") {
-            $_issetCompeny = property_exists($this->_obj, 'Company');
-            if (!$_issetCompeny || ($_issetCompeny && empty($this->_obj->Company))) {
+            $_issetCompany = property_exists($this->_obj, 'Company');
+            if (!$_issetCompany || ($_issetCompany && empty($this->_obj->Company))) {
                 $this->_obj->Company = $_customer->getName();
             }
 
@@ -675,7 +679,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $_personType = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
-            $this->_isPerson = (property_exists($this->_obj, 'RecordTypeId') && $this->_obj->RecordTypeId == $_personType);
+            $this->_isPerson = (property_exists($this->_obj, 'RecordTypeId') && !empty($this->_obj->RecordTypeId) && $this->_obj->RecordTypeId == $_personType);
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;

@@ -1181,23 +1181,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
 
-        /** @var TNW_Salesforce_Helper_Bulk_Product $manualSync */
-        $manualSync = Mage::helper('tnw_salesforce/bulk_product');
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Domain: " . $this->getSalesforceServerDomain());
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Session: " . $this->getSalesforceSessionId());
+        /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
+        $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
 
         foreach ($this->_stockItems as $_storeId => $_products) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Store Id: " . $_storeId);
             $manualSync->setOrderStoreId($_storeId);
-            if ($manualSync->reset()) {
-                $manualSync->massAdd($this->_stockItems[$_storeId]);
-                $manualSync->process();
+            if ($manualSync->reset() && $manualSync->massAdd($this->_stockItems[$_storeId]) && $manualSync->process()) {
                 if (!$this->isFromCLI()) {
-                    Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
+                    Mage::getSingleton('adminhtml/session')
+                        ->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
                 }
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('WARNING: Salesforce Connection could not be established!');
+            }
+            else {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('WARNING: Salesforce Connection could not be established!');
             }
         }
 
