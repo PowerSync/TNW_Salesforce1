@@ -60,7 +60,14 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
      */
     protected function _updateCampaings()
     {
-        Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaingsBulk();
+        if (empty($this->_cache['subscriberToUpsert'])) {
+            return;
+        }
+
+        $campaignMember = Mage::helper('tnw_salesforce/bulk_campaign_member');
+        if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['subscriberToUpsert'])) {
+            $campaignMember->process();
+        }
     }
 
     public function reset()
@@ -77,10 +84,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             'account' => array('Id' => NULL),
         );
 
-
-        $valid = $this->check();
-
-        return $valid;
+        return $this->check();
     }
 
     /**

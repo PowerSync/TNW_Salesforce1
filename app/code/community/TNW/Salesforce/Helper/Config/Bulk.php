@@ -68,4 +68,16 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     {
         return $this->getStoreConfig(self::BULK_SHIPMENT_PATH);
     }
+
+    // Get Invoice batch size
+    public function getSalesRuleBatchSize()
+    {
+        return 150;
+    }
+
+    // Get Invoice batch size
+    public function getCatalogRuleBatchSize()
+    {
+        return 150;
+    }
 }

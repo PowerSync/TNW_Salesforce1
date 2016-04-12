@@ -21,6 +21,7 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         'shipment item'     => 'order_shipment_item',
         'billing'           => 'address_billing',
         'shipping'          => 'address_shipping',
+        'shopping cart rule'=> 'sales_rule',
     );
 
     /**
