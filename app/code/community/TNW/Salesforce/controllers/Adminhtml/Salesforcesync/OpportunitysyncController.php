@@ -203,6 +203,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
     }
 
     public function syncCurrencyAction() {
+        if (!Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+            $this->_redirect('*/system_currency/index');
+            return;
+        }
+
         try {
             $currencyModel = Mage::getModel('directory/currency');
             $currencies = $currencyModel->getConfigAllowCurrencies();

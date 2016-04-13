@@ -21,6 +21,8 @@ class TNW_Salesforce_Block_Adminhtml_System_Currency extends Mage_Adminhtml_Bloc
 
     protected function getResetButtonHtml()
     {
-        return $this->getChildHtml('sync_currency') . $this->getChildHtml('reset_button');
+        return $this->getChildHtml('sync_currency') .
+            (Mage::helper('tnw_salesforce')->isMultiCurrency())
+                ? $this->getChildHtml('reset_button') : '';
     }
 }

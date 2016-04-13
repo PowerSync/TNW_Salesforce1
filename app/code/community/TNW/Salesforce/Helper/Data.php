@@ -44,7 +44,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     /* Order Config */
     const ORDER_SYNC = 'salesforce_order/general/order_sync_enable';
     const ORDER_PRODUCT_SYNC = 'salesforce_order/general/order_product_enable';
-    const ORDER_MULTI_CURRENCY = 'salesforce_order/general/order_multi_currency';
+    const ORDER_MULTI_CURRENCY = 'salesforce_order/currency/multi_currency';
     const ORDER_STATUS_ALL = 'salesforce_order/general/order_status_all';
     const ORDER_STATUS_ALLOW = 'salesforce_order/general/order_status_allow';
     const ORDER_CUSTOMER_ADDRESS = 'salesforce_order/general/customer_address';

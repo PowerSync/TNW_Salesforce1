@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.02.0000</version>
+            <version>0.01.54.05.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -569,6 +569,10 @@
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::addAbandonedToQueue</model></run>
             </tnw_salesforce_abandoned>
+
+            <tnw_salesforce_currency>
+                <run><model>tnw_salesforce/cron::syncCurrency</model></run>
+            </tnw_salesforce_currency>
         </jobs>
     </crontab>
     <default>
@@ -641,11 +645,13 @@
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
                 <notes_synchronize>1</notes_synchronize>
-                <order_multi_currency>0</order_multi_currency>
-                <order_currency_sync>customer</order_currency_sync>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
             </general>
+            <currency>
+                <multi_currency>0</multi_currency>
+                <currency_sync>customer</currency_sync>
+            </currency>
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
