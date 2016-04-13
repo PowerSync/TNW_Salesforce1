@@ -174,7 +174,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 'notes' => array(),
             ),
             'orderCustomersToSync' => array(),
-            'leadsFailedToConvert' => array()
+            'leadsFailedToConvert' => array(),
+            'userRulesToUpsert' => array(),
         );
 
         return $this->check();
@@ -315,6 +316,15 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     {
         parent::_pushRemainingCustomEntityData();
 
+        /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber */
+        $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
+        if (!empty($this->_cache['productCampaignAssignment']) && $manualSync->validateSync(true)) {
+            $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
+            if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['productCampaignAssignment'])) {
+                $campaignMember->process();
+            }
+        }
+
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach ($this->_cache['orderToActivate'] as $_orderNum => $_object) {
@@ -350,6 +360,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: End----------');
+            }
+        }
+
+        if (!empty($this->_cache['userRulesToUpsert'])) {
+            $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
+            if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['userRulesToUpsert'])) {
+                $campaignMember->process();
             }
         }
     }
@@ -512,5 +529,80 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 unset($_toUpsert[$_entityNumber]->{$this->_salesforceParentOpportunityField});
             }
         }
+    }
+
+    /**
+     * Remaining Data
+     */
+    protected function _prepareRemaining()
+    {
+        parent::_prepareRemaining();
+
+        if (Mage::helper('tnw_salesforce')->isOrderRulesEnabled()) {
+            $this->_prepareRules();
+        }
+    }
+
+    protected function _prepareRules()
+    {
+        $failedKey = sprintf('failed%s', $this->getManyParentEntityType());
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Rules: Start----------');
+
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_number) {
+            if (in_array($_number, $this->_cache[$failedKey])) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('%s (%s): Skipping, issues with upserting an %s!',
+                    strtoupper($this->getMagentoEntityName()), $_number, $this->getSalesforceEntityName()));
+
+                continue;
+            }
+
+            $_entity   = $this->_loadEntityByCache($_key, $_number);
+            foreach ($this->getUserRulesByOrder($_entity) as $campaignId => $item) {
+                if (!isset($this->_cache['userRulesToUpsert'][$campaignId])) {
+                    $this->_cache['userRulesToUpsert'][$campaignId] = array();
+                }
+
+                $this->_cache['userRulesToUpsert'][$campaignId] = array_merge($this->_cache['userRulesToUpsert'][$campaignId], $item);
+            }
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Prepare Rules: End----------');
+    }
+
+    /**
+     * @param $entity Mage_Sales_Model_Order
+     * @return array
+     */
+    public function getUserRulesByOrder($entity)
+    {
+        /** @var Mage_Customer_Model_Customer $_customer */
+        $_customer = $this->_getObjectByEntityType($entity, 'Customer');
+
+        $customers = array();
+        foreach (array_filter(explode(',', $entity->getAppliedRuleIds())) as $id) {
+            $rule       = Mage::getModel('salesrule/rule')->load($id);
+            $campaignId = $rule->getData('salesforce_id');
+            if (empty($campaignId)) {
+                continue;
+            }
+
+            $customers[$campaignId][] = $_customer;
+        }
+
+        /** @var Mage_Sales_Model_Order_Item $item */
+        /*foreach ($entity->getAllVisibleItems() as $item) {
+            foreach (array_filter(explode(',', $item->getAppliedRuleIds())) as $id) {
+                $rule = Mage::getModel('catalogrule/rule')->load($id);
+                $campaignId = $rule->getData('salesforce_id');
+                if (empty($campaignId)) {
+                    continue;
+                }
+
+                $customers[$campaignId][] = $_customer;
+            }
+        }*/
+
+        return $customers;
     }
 }

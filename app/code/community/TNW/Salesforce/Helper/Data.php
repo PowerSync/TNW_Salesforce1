@@ -52,6 +52,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     // Notes Config
     const NONES_SYNC = 'salesforce_order/general/notes_synchronize';
 
+    // Campaigns Config
+    const CAMPAIGNS_SYNC = 'salesforce_order/salesforce_campaigns/sync_enabled';
+    const CAMPAIGNS_CREATE_AUTOMATE = 'salesforce_order/salesforce_campaigns/create_campaign_automatic';
+
     /* Order Customer Role */
     const ORDER_OBJECT = 'salesforce_order/customer_opportunity/order_or_opportunity';
     const CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
@@ -439,6 +443,16 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function isOrderNotesEnabled()
     {
         return $this->getStoreConfig(self::NONES_SYNC);
+    }
+
+    public function isOrderRulesEnabled()
+    {
+        return $this->getStoreConfig(self::CAMPAIGNS_SYNC);
+    }
+
+    public function isCampaignsCreateAutomate()
+    {
+        return $this->getStoreConfig(self::CAMPAIGNS_CREATE_AUTOMATE);
     }
 
     public function isEnabledProductSync()

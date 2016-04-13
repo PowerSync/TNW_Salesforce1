@@ -639,12 +639,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         if (
             Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()
             && $_entity instanceof Mage_Sales_Model_Order
-            && $product->getSalesforceCampaignId()
+            && $product->getData('salesforce_campaign_id')
         ) {
-            $contactId = $this->_cache['orderCustomers'][$_entityNumber]->getSalesforceId();
-
-            Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')
-                ->prepareCampaignMemberItem('ContactId', $contactId, null, $product->getSalesforceCampaignId());
+            $this->_cache['productCampaignAssignment'][$product->getData('salesforce_campaign_id')][]
+                = $this->_getObjectByEntityType($_entity, 'Customer');
         }
 
         // PricebookEntryId
@@ -886,19 +884,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         foreach ($this->_skippedEntity as $_idToRemove) {
             unset($this->_cache['entitiesUpdating'][$_idToRemove]);
         }
-
-        /**
-         * use_product_campaign_assignment, reset data
-         */
-        if (Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()) {
-
-            /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber */
-            $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
-
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-            $manualSync->validateSync(true);
-        }
     }
 
     /**
@@ -931,9 +916,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
             /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Customer */
             $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
-            $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
-
             if ($manualSync->reset() && $manualSync->forceAdd($_customersToSync) && $manualSync->process()) {
                 set_time_limit(30);
                 $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_emails, $this->_websites);
@@ -1199,25 +1181,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
 
-        /** @var TNW_Salesforce_Helper_Bulk_Product $manualSync */
-        $manualSync = Mage::helper('tnw_salesforce/bulk_product');
-        $manualSync->setSalesforceServerDomain($this->getSalesforceServerDomain());
-        $manualSync->setSalesforceSessionId($this->getSalesforceSessionId());
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Domain: " . $this->getSalesforceServerDomain());
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SF Session: " . $this->getSalesforceSessionId());
+        /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
+        $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
 
         foreach ($this->_stockItems as $_storeId => $_products) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Store Id: " . $_storeId);
             $manualSync->setOrderStoreId($_storeId);
-            if ($manualSync->reset()) {
-                $manualSync->massAdd($this->_stockItems[$_storeId]);
-                $manualSync->process();
+            if ($manualSync->reset() && $manualSync->massAdd($this->_stockItems[$_storeId]) && $manualSync->process()) {
                 if (!$this->isFromCLI()) {
-                    Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
+                    Mage::getSingleton('adminhtml/session')
+                        ->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
                 }
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('WARNING: Salesforce Connection could not be established!');
+            }
+            else {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('WARNING: Salesforce Connection could not be established!');
             }
         }
 
@@ -1278,8 +1256,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return;
         }
 
-        $this->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-        $this->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
         if (!$this->reset()) {
             return;
         }
@@ -1334,6 +1310,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_cache = array(
             'accountsLookup' => array(),
+            'productCampaignAssignment' => array(),
             'entitiesUpdating' => array(),
             sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
             sprintf('failed%s', $this->getManyParentEntityType()) => array(),

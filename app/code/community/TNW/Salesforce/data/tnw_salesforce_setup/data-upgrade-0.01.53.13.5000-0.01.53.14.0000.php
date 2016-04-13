@@ -123,7 +123,8 @@ foreach ($_defaultMappingStatus as $_key => $_value) {
             'attribute_id' => $_attributeId,
             'backend_type' => $_backendType,
             'sf_object' => $_objectName,
-            'active' => 0
+            'magento_sf_enable' => 0,
+            'sf_magento_enable' => 0
         );
     }
 }

@@ -337,6 +337,12 @@ class TNW_Salesforce_Model_Cron
         // Sync shipment
         $this->syncShipment();
 
+        // Sync SalesRule
+        $this->syncSalesRule();
+
+        // Sync CatalogRule
+        //$this->syncCatalogRule();
+
         // Sync custom objects
         $this->_syncCustomObjects();
     }
@@ -398,6 +404,12 @@ class TNW_Salesforce_Model_Cron
                 break;
             case 'shipment':
                 $batchSize = $_configHelper->getShipmentBatchSize();
+                break;
+            case 'campaign_salesrule':
+                $batchSize = $_configHelper->getSalesRuleBatchSize();
+                break;
+            case 'campaign_catalogrule':
+                $batchSize = $_configHelper->getCatalogRuleBatchSize();
                 break;
             default:
                 throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
@@ -626,9 +638,10 @@ class TNW_Salesforce_Model_Cron
                                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type finished ##################################");
 
                                 // Update Queue
-                                $_results = $manualSync->getSyncResults();
-                                Mage::getModel('tnw_salesforce/localstorage')->updateQueue($objectIdSet, $idSet, $_results);
-                            } else {
+                                Mage::getModel('tnw_salesforce/localstorage')
+                                    ->updateQueue($objectIdSet, $idSet, $manualSync->getSyncResults(), $manualSync->getAlternativeKeys());
+                            }
+                            else {
                                 Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet, 'new');
                                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
                                 return;
@@ -713,6 +726,40 @@ class TNW_Salesforce_Model_Cron
             $this->syncEntity('shipment');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: shipment not synced: %s", $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch shipment ids from local storage and sync with sf
+     *
+     * @return bool
+     */
+    public function syncSalesRule()
+    {
+        try {
+            $this->syncEntity('campaign_salesrule');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: SalesRule not synced: %s", $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch CatalogRule ids from local storage and sync with sf
+     *
+     * @return bool
+     */
+    public function syncCatalogRule()
+    {
+        try {
+            $this->syncEntity('campaign_catalogrule');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: CatalogRule not synced: %s", $e->getMessage()));
             return false;
         }
 
