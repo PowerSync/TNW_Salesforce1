@@ -12,7 +12,7 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     /**
      * @comment config path
      */
-    const ORDER_CURRENCY_SYNC = 'salesforce_order/general/order_currency_sync';
+    const ORDER_CURRENCY_SYNC = 'salesforce_order/currency/currency_sync';
 
     /**
      * @comment change opportunity status when order placed to

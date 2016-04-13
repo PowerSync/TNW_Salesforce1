@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.04.0000</version>
+            <version>0.01.54.05.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -96,6 +96,9 @@
                     <campaign_member>
                         <table>CampaignMember</table>
                     </campaign_member>
+                    <currency>
+                        <table>CurrencyType</table>
+                    </currency>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>
@@ -132,6 +135,7 @@
             <adminhtml>
                 <rewrite>
                     <system_store_store>TNW_Salesforce_Block_Adminhtml_System_Store</system_store_store>
+                    <system_currency>TNW_Salesforce_Block_Adminhtml_System_Currency</system_currency>
                     <sales_order_status_grid>TNW_Salesforce_Block_Sales_Order_Status_Grid</sales_order_status_grid>
                     <sales_order_status_new_form>TNW_Salesforce_Block_Sales_Order_Status_New_Form</sales_order_status_new_form>
                     <sales_order_status_edit_form>TNW_Salesforce_Block_Sales_Order_Status_Edit_Form</sales_order_status_edit_form>
@@ -556,6 +560,10 @@
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::addAbandonedToQueue</model></run>
             </tnw_salesforce_abandoned>
+
+            <tnw_salesforce_currency>
+                <run><model>tnw_salesforce/cron::syncCurrency</model></run>
+            </tnw_salesforce_currency>
         </jobs>
     </crontab>
     <default>
@@ -628,11 +636,13 @@
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
                 <notes_synchronize>1</notes_synchronize>
-                <order_multi_currency>0</order_multi_currency>
-                <order_currency_sync>customer</order_currency_sync>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
             </general>
+            <currency>
+                <multi_currency>0</multi_currency>
+                <currency_sync>customer</currency_sync>
+            </currency>
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>

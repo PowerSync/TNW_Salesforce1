@@ -38,8 +38,10 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $this->_onComplete();
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
+            return true;
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 

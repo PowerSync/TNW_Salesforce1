@@ -1085,33 +1085,6 @@
                             <can_be_empty>0</can_be_empty>
                             <comment>Only synchronize orders with statuses selected above</comment>
                         </order_status_allow>
-                        <order_multi_currency translate="label">
-                            <label>Multi-Currency</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_currency</source_model>
-                            <sort_order>100</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
-                                Salesforce multi-currency support must be enabled as well.
-                                <a href="https://help.salesforce.com/HTViewHelpDoc?id=admin_enable_multicurrency.htm&amp;language=en_US">Salesforce Topic</a>
-                                ]]></comment>
-                        </order_multi_currency>
-
-                        <order_currency_sync translate="label">
-                            <label>Which currency should be used</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_sync_currency</source_model>
-                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mappings</comment>
-                            <sort_order>110</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <depends>
-                                <order_multi_currency>0</order_multi_currency>
-                            </depends>
-                        </order_currency_sync>
 
                         <customer_address translate="label">
                             <label>Customer Address</label>
@@ -1126,6 +1099,79 @@
 
                     </fields>
                 </general>
+                <currency>
+                    <label>Currency Configuration</label>
+                    <sort_order>60</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <multi_currency translate="label">
+                            <label>Multi-Currency</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_currency</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
+                                Salesforce multi-currency support must be enabled as well.
+                                <a href="https://help.salesforce.com/HTViewHelpDoc?id=admin_enable_multicurrency.htm&amp;language=en_US">Salesforce Topic</a>
+                                ]]></comment>
+                        </multi_currency>
+
+                        <currency_sync translate="label">
+                            <label>Which currency should be used</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_sync_currency</source_model>
+                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mappings</comment>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>0</multi_currency>
+                            </depends>
+                        </currency_sync>
+
+                        <enabled_auto_sync translate="label">
+                            <label>Enable Automatic Sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>1</multi_currency>
+                            </depends>
+                        </enabled_auto_sync>
+                        <time translate="label">
+                            <label>Start Time</label>
+                            <frontend_type>time</frontend_type>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>1</multi_currency>
+                            </depends>
+                        </time>
+                        <frequency translate="label">
+                            <label>Frequency</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_cron_frequency</source_model>
+                            <backend_model>tnw_salesforce/config_backend_currency_cron</backend_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>1</multi_currency>
+                            </depends>
+                        </frequency>
+                    </fields>
+                </currency>
                 <customer_opportunity translate="label" module="tnw_salesforce">
                     <label>Order Integration</label>
                     <sort_order>100</sort_order>

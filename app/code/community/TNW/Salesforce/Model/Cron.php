@@ -213,6 +213,32 @@ class TNW_Salesforce_Model_Cron
     }
 
     /**
+     * @comment Auto Currency Sync
+     */
+    public function syncCurrency()
+    {
+        /** @var TNW_Salesforce_Helper_Data $_helperData */
+        $_helperData = Mage::helper('tnw_salesforce');
+        if (!$_helperData->isEnabled() || !$_helperData->isMultiCurrency()) {
+            return;
+        }
+
+        $currencies = Mage::getModel('directory/currency')
+            ->getConfigAllowCurrencies();
+
+        try {
+            $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
+            if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace($_helperData->__('%d Magento currency entities were successfully synchronized', count($currencies)));
+            }
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError($e->getMessage());
+        }
+    }
+
+    /**
      * this method is called instantly from cron script
      *
      * @return bool
