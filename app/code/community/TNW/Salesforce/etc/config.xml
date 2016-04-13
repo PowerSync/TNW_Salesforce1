@@ -464,15 +464,6 @@
                 </observers>
             </tnw_salesforce_order_send_after>
 
-            <tnw_salesforce_order_products_send_after>
-                <observers>
-                    <tnw_send_order_item_campaing>
-                        <class>tnw_salesforce/sale_observer</class>
-                        <method>sendOrderItemCampaing</method>
-                    </tnw_send_order_item_campaing>
-                </observers>
-            </tnw_salesforce_order_products_send_after>
-
         </events>
     </global>
     <adminhtml>
