@@ -77,6 +77,14 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         $this->_cache['batch'] = array();
         $this->_cache['batchCache'] = array();
         $this->_cache['guestDuplicates'] = array();
+        $this->_cache['contactsToUpsertBackup'] = array(
+            'Id' => array(),
+            $this->_magentoId => array()
+        );
+        $this->_cache['contactsToUpsert'] = array(
+            'Id' => array(),
+            $this->_magentoId => array()
+        );
 
         $this->_cache['bulkJobs'] = array(
             'lead' => array('Id' => NULL, $this->_magentoId => NULL),
@@ -148,10 +156,9 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     }
 
     /**
-     * @param $_isOrder
      * @return bool|void
      */
-    protected function _pushToSalesforce($_isOrder)
+    protected function _pushToSalesforce()
     {
         // before we send data to sf - check if connection / login / wsdl is valid
         // related ticket https://trello.com/c/TNEu7Rk1/54-salesforce-maintenance-causes-bulk-sync-to-run-indefinately
@@ -736,7 +743,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
                             if (array_key_exists($_magentoId, $this->_cache['contactsToUpsert'][$cacheUpsertKey])) {
                                 $contact = $this->_cache['contactsToUpsert'][$cacheUpsertKey][$_magentoId];
-                            } else {
+                            } else if (array_key_exists($_magentoId, $this->_cache['contactsToUpsertBackup'][$cacheUpsertKey])) {
                                 $contact = $this->_cache['contactsToUpsertBackup'][$cacheUpsertKey][$_magentoId];
                             }
 
