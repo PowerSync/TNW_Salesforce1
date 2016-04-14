@@ -461,7 +461,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
 
         $customers = array();
-        $chunks = array_chunk($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
+        $chunks = array_chunk($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
         foreach ($chunks as $chunk) {
 
             /** @var Mage_Newsletter_Model_Resource_Subscriber_Collection $subscribers */
@@ -474,6 +474,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             foreach ($subscribers as $subscriber) {
                 $customers[] = $this->getEntityCache(array_search(strtolower($subscriber->getEmail()), $chunk));
             }
+        }
+
+        if (empty($customers)) {
+            return;
         }
 
         $campaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
