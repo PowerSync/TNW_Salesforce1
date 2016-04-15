@@ -70,7 +70,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
         /** @var Mage_Newsletter_Model_Subscriber $subscriber */
         $subscriber = Mage::getModel('newsletter/subscriber')
             ->loadByCustomer($_entity);
-        return !$subscriber->isSubscribed();
+        return (int)!$subscriber->isSubscribed();
     }
 
     /**
