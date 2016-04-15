@@ -436,7 +436,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                  */
                 foreach ($this->_cache['leadsToUpsert'] as $_upsertOn => $_objects) {
                     if (array_key_exists($_cid, $_objects)) {
-                        if (!property_exists($_objects, 'Company')) {
+                        if (!property_exists($_objects[$_cid], 'Company')) {
                             $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = $this->_cache['accountsToUpsert']['Id'][$_cid]->Name;
                         }
                     }
@@ -638,7 +638,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $contactId;
                         if (
-                            !$this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId
+                            !(property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId')
+                              && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId)
                             && is_array($this->_cache['accountsToContactLink'])
                             && array_key_exists($_cid, $this->_cache['accountsToContactLink'])
                             && $this->_cache['accountsToContactLink'][$_cid]
@@ -648,7 +649,10 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
                         $_customer = $this->getEntityCache($_cid);
                         $_customer->setSalesforceId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId);
-                        $_customer->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
+                        if (property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId')) {
+                            $_customer->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
+                        }
+
                         if (property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'IsPersonAccount') && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
                             $_customer->setSalesforceIsPerson($this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount);
                         }
