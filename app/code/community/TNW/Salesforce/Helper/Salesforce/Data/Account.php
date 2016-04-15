@@ -342,8 +342,20 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function lookupByEmailDomain($emails = array(), $_hashKey = 'email')
     {
-        $accountIds = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails);
-        return $this->lookupByCriterias($accountIds, 'CustomIndex','Id');
+        $accountIds  = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails);
+        $accountObjs = $this->lookupByCriterias($accountIds, 'CustomIndex', 'Id');
+
+        $return = array();
+        foreach ($accountIds as $key => $accountId) {
+            foreach ($accountObjs as $accountObj) {
+                if ($accountObj->Id == $accountId) {
+                    $return[$key] = $accountObj;
+                    break;
+                }
+            }
+        }
+
+        return $return;
     }
 
     /**
