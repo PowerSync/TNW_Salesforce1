@@ -985,6 +985,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     public function forceAdd(array $_customers)
     {
+        /**
+         * forceAdd method used for order sync process
+         * if lead sync enabled and order placed - we should convert lead to account + contact
+         */
+        $this->setForceLeadConvertaton(true);
+
         // test sf api connection
         /** @var TNW_Salesforce_Model_Connection $_client */
         $_client = Mage::getSingleton('tnw_salesforce/connection');
@@ -1022,12 +1028,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->resetEntity(array_diff($_existIds, $this->_skippedEntity));
             $this->_massAddAfter();
-
-            /**
-             * forceAdd method used for order sync process
-             * if lead sync enabled and order placed - we should convert lead to account + contact
-             */
-            $this->setForceLeadConvertaton(true);
 
             return !empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         } catch (Exception $e) {
@@ -1342,7 +1342,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
         }
 
-        if (Mage::helper('tnw_salesforce')->isCustomerAsLead()) {
+        if (Mage::helper('tnw_salesforce')->isCustomerAsLead() && !$this->isForceLeadConvertation()) {
             foreach ($_emailsArray as $_key => $_email) {
                 if (!isset($this->_cache['leadLookup'][$this->_websites[$_key]][$_email])) {
                     continue;
