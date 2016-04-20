@@ -21,6 +21,11 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
         /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
         $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
 
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $collection->getSelect()
+                ->where('IsPersonAccount = false');
+        }
+
         $fieldset = $form->addFieldset('account_matching', array('legend' => $this->__('Rule Information')));
         $fieldset->addField('account_id', 'select', array(
             'label' => $this->__('Account Name'),
