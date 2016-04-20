@@ -651,25 +651,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 }
 
                 $this->_fixPersonAccountFields($this->_cache['accountsToUpsert']['Id'][$_id]);
-
-                /**
-                 * remove account name if renaming not allowed
-                 */
-                if (
-                    !Mage::helper('tnw_salesforce')->canRenameAccount()
-                    && property_exists($this->_cache['accountsToUpsert']['Id'][$_id], 'Id')
-                    && $this->_cache['accountsToUpsert']['Id'][$_id]->Id
-                ) {
-                    if (property_exists($this->_cache['accountsToUpsert']['Id'][$_id], 'FirstName')) {
-                        // Remove Name since Account exists in Salesforce and we should not rename it
-                        unset($this->_cache['accountsToUpsert']['Id'][$_id]->FirstName);
-                    }
-
-                    if (property_exists($this->_cache['accountsToUpsert']['Id'][$_id], 'LastName')) {
-                        // Remove Name since Account exists in Salesforce and we should not rename it
-                        unset($this->_cache['accountsToUpsert']['Id'][$_id]->LastName);
-                    }
-                }
             }
         }
         else if ($type == "Account") {
