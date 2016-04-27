@@ -468,6 +468,15 @@
                 </observers>
             </tnw_salesforce_order_send_after>
 
+            <salesrule_rule_save_commit_after>
+                <observers>
+                    <tnw_after_sales_rule_save>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>afterSalesRuleSave</method>
+                    </tnw_after_sales_rule_save>
+                </observers>
+            </salesrule_rule_save_commit_after>
         </events>
     </global>
     <adminhtml>
@@ -503,6 +512,16 @@
                     </tnw_salesforce_block_observer>
                 </observers>
             </core_block_abstract_to_html_after>
+
+            <adminhtml_controller_salesrule_prepare_save>
+                <observers>
+                    <tnw_controller_sales_rule_prepare_save>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>controllerSalesRulePrepareSave</method>
+                    </tnw_controller_sales_rule_prepare_save>
+                </observers>
+            </adminhtml_controller_salesrule_prepare_save>
         </events>
     </adminhtml>
     <frontend>
@@ -665,16 +684,4 @@
             </invoice_configuration>
         </salesforce_order>
     </default>
-    <phpunit>
-        <suite>
-            <modules>
-                <TNW_Salesforce />
-            </modules>
-            <fixture>
-                <processors>
-                    <salesforce>tnw_salesforce/fixture_processor_salesforce</salesforce>
-                </processors>
-            </fixture>
-        </suite>
-    </phpunit>
 </config>

@@ -394,7 +394,9 @@ class TNW_Salesforce_Model_Sale_Observer
 
     public function afterSalesRuleSave($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+        if (!Mage::helper('tnw_salesforce')->isEnabled()
+            || !Mage::helper('tnw_salesforce')->isOrderRulesEnabled()
+        ) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace('SKIPING: Synchronization disabled');
 
@@ -407,7 +409,7 @@ class TNW_Salesforce_Model_Sale_Observer
             return; // Disabled
         }
 
-        if (!empty($this->assignToCampaign)) {
+        if (!empty($this->assignToCampaign) && ($rule->getData('salesforce_id') != $this->assignToCampaign)) {
             $obj = new stdClass();
             $obj->Id = $this->assignToCampaign;
             $obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = 'sr_'.$rule->getId();
@@ -454,13 +456,6 @@ class TNW_Salesforce_Model_Sale_Observer
 
     public function controllerSalesRulePrepareSave($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('SKIPING: Synchronization disabled');
-
-            return; // Disabled
-        }
-
         /** @var Mage_Core_Controller_Request_Http $request */
         $request = $observer->getEvent()->getRequest();
         $this->assignToCampaign = $request->getParam('assign_to_campaign');
