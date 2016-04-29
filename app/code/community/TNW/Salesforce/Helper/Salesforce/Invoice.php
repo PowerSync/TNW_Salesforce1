@@ -270,9 +270,61 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
     protected function _massAddAfter()
     {
         // Salesforce lookup, find all contacts/accounts by email address
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
+        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
             ->lookup($this->_emails, $this->_websites);
 
+        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
+            ->lookup($this->_emails, $this->_websites);
+
+        $this->_massAddAfterInvoice();
+
+        /**
+         * define Salesforce data for order customers
+         */
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
+            $entity  = $this->_loadEntityByCache($key, $number);
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer = $this->_getObjectByEntityType($entity, 'Customer');
+
+            if (isset($this->_cache['accountsLookup'][0][$customer->getEmail()])
+                && !empty($this->_cache['accountsLookup'][0][$customer->getEmail()])
+            ) {
+                $_websiteId = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
+
+                $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customer->getEmail()]->Id);
+
+                // Overwrite Contact Id for Person Account
+                if (property_exists($this->_cache['accountsLookup'][0][$customer->getEmail()], 'PersonContactId')) {
+                    $customer->setData('salesforce_id', $this->_cache['accountsLookup'][0][$customer->getEmail()]->PersonContactId);
+                }
+
+                // Overwrite from Contact Lookup if value exists there
+                if (isset($this->_cache['contactsLookup'][$_websiteId][$customer->getEmail()])) {
+                    $customer->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customer->getEmail()]->Id);
+                }
+            }
+            else {
+                /**
+                 * No customers for this order in salesforce - error
+                 */
+                // Something is wrong, could not create / find Magento customer in SalesForce
+                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $customer->getEmail() . ') could not be created / found!');
+                $this->_skippedEntity[$key] = $key;
+
+                continue;
+            }
+        }
+
+        foreach ($this->_skippedEntity as $_idToRemove) {
+            unset($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_idToRemove]);
+        }
+    }
+
+    /**
+     *
+     */
+    protected function _massAddAfterInvoice()
+    {
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_invoice')
             ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
