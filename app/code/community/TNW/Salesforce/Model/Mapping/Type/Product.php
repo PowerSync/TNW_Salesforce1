@@ -97,7 +97,9 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
     protected function getProductTypes($id = null)
     {
         if (empty($this->_productTypes)) {
-            $this->_productTypes = Mage::getModel('catalog/product_type')->getOptionArray();
+            $this->_productTypes = array_map(function($type) {
+                return $type['label'];
+            }, Mage::getConfig()->getNode('global/catalog/product/type')->asArray());
         }
 
         if (!empty($id)) {

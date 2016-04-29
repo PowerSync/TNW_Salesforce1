@@ -98,12 +98,20 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     public function getProductTypeId($name)
     {
         if (empty($this->_productTypes)) {
-            $this->_productTypes = Mage::getModel('catalog/product_type')->getOptionArray();
+            $this->_productTypes = array_map(function($type) {
+                return $type['label'];
+            }, Mage::getConfig()->getNode('global/catalog/product/type')->asArray());
         }
 
         $result = array_search($name, $this->_productTypes);
 
         if ($result === false) {
+            // Temporary solution
+            $result = array_search($name, Mage::getModel('catalog/product_type')->getOptionArray());
+            if ($result !== false) {
+                return $result;
+            }
+
             $result = $name;
         }
 
