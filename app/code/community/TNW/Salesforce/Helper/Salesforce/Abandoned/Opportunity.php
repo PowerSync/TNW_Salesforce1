@@ -728,4 +728,40 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         return $_object;
     }
+
+    /**
+     * Return parent entity items and bundle items
+     *
+     * @param $parentEntity Mage_Sales_Model_Order
+     * @return mixed
+     */
+    public function getItems($parentEntity)
+    {
+        $_items = array();
+
+        /** @var Mage_Sales_Model_Quote_Item $_item */
+        foreach ($parentEntity->getAllVisibleItems() as $_item) {
+            $_items[] = $_item;
+
+            if ($_item->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                continue;
+            }
+
+            if (!Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                continue;
+            }
+
+            foreach ($_item->getChildren() as $_childItem) {
+                $_childItem->setRowTotalInclTax(null)
+                    ->setRowTotal(null)
+                    ->setDiscountAmount(null)
+                    ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                        . $_item->getSku());
+
+                $_items[] = $_childItem;
+            }
+        }
+
+        return $_items;
+    }
 }
