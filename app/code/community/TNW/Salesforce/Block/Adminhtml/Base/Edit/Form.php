@@ -17,6 +17,12 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
     protected $_sfEntity = '';
 
     /**
+     * type Magento attributes
+     * @var string
+     */
+    protected $_tmAttributes = '';
+
+    /**
      * array of fields which should be hidden
      * @var array
      */
@@ -70,6 +76,18 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
     }
 
     /**
+     * @return string
+     */
+    public function getTypeAttribute()
+    {
+        if (empty($this->_tmAttributes)) {
+            return $this->getSfEntity(true);
+        }
+
+        return $this->_tmAttributes;
+    }
+
+    /**
      * @param string $sfEntity
      * @return $this
      */
@@ -99,12 +117,15 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'method' => 'post',
             'enctype' => 'multipart/form-data'
         ));
+
         $form->setUseContainer(true);
         $this->setForm($form);
-        $fieldset = $form->addFieldset($this->getSfEntity() . '_map', array('legend' => $this->__('Mapping Information')));
-        $formData = Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))->getData();
 
-        if (array_key_exists('default_value', $formData) && $formData['default_value']) {
+        $formData = Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))->getData();
+        $_isSystem = isset($formData['is_system'])
+            ? (bool)$formData['is_system'] : false;
+
+        if (isset($formData['default_value']) && $formData['default_value']) {
             $locAttr = explode(" : ", $formData['local_field']);
             $formData['default_code'] = end($locAttr);
             array_pop($locAttr);
@@ -115,22 +136,31 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
 
         $sfFields = array();
         $helper = Mage::helper('tnw_salesforce/salesforce_data');
-
         foreach ($helper->getAllFields($this->getSfEntity(true)) as $key => $field) {
             if ($this->_hideField($key)) {
                 continue;
             }
+
             $sfFields[] = array(
                 'value' => $key,
                 'label' => $field
             );
         }
+
         if (empty($sfFields)) {
             $sfFields[] = array(
                 'value' => '',
                 'label' => 'No custom fields found in Salesforce'
             );
         }
+
+        $_typeValues = Mage::getModel('tnw_salesforce/config_mapping')->toArray();
+        if ($_isSystem) {
+            unset($_typeValues[TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE]);
+        }
+
+        /* Mapping Information */
+        $fieldset = $form->addFieldset($this->getSfEntity() . '_map', array('legend' => $this->__('Mapping Information')));
 
         $fieldset->addField('sf_field', 'select', array(
             'label' => $this->__('Salesforce Name'),
@@ -139,6 +169,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'style' => 'width:400px',
             'values' => $sfFields,
             'class' => 'chosen-select',
+            'disabled' => $_isSystem
         ));
 
         $fieldset->addField('local_field', 'select', array(
@@ -147,15 +178,52 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'note' => $this->__('Choose Magento field you wish to map to Salesforce API.'),
             'style' => 'width:400px',
             'name' => 'local_field',
-            'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getSfEntity(true)),
+            'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getTypeAttribute()),
+            'disabled' => $_isSystem
         ));
 
-        $fieldset->addField('active', 'select', array(
-            'label' => $this->__('Active'),
-            'class' => 'required-entry chosen-select',
-            'name' => 'active',
-            'style' => 'width:400px',
+        /* Magento > SF */
+        $fieldset = $form->addFieldset('magento_sf', array('legend' => $this->__('Magento > Salesforce Settings')));
+
+        $_magentoSfEnable = $fieldset->addField('magento_sf_enable', 'select', array(
+            'label' => $this->__('Enable'),
+            'name' => 'magento_sf_enable',
+            'class' => 'chosen-select',
             'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
+            'disabled' => $_isSystem
+        ));
+
+        $_magentoSfType = $fieldset->addField('magento_sf_type', 'select', array(
+            'label' => $this->__('When'),
+            'name' => 'magento_sf_type',
+            'class' => 'chosen-select',
+            'values' => $_typeValues,
+            'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
+                . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record'),
+        ));
+
+        /* SF > Magento */
+        $fieldset = $form->addFieldset('sf_magento', array('legend' => $this->__('Salesforce > Magento Settings')));
+
+        $_sfMagentoEnable = $fieldset->addField('sf_magento_enable', 'select', array(
+            'label' => $this->__('Enable'),
+            'name' => 'sf_magento_enable',
+            'class' => 'chosen-select',
+            'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
+            'disabled' => $_isSystem
+        ));
+
+        $_sfMagentoType = $fieldset->addField('sf_magento_type', 'select', array(
+            'label' => $this->__('When'),
+            'name' => 'sf_magento_type',
+            'class' => 'chosen-select',
+            'values' => $_typeValues,
+            'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
+                . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record'),
         ));
 
         /* Custom Value */
@@ -166,6 +234,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'note' => $this->__('Unique attribute code.'),
             'style' => 'width:400px',
             'name' => 'default_code',
+            'disabled' => $_isSystem
         ));
 
         $fieldset->addField('default_value', 'text', array(
@@ -173,7 +242,27 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'note' => $this->__('Value to be used when Object is created'),
             'style' => 'width:400px',
             'name' => 'default_value',
+            'disabled' => $_isSystem
         ));
+
+        /** @var mage_adminhtml_block_widget_form_element_dependence $_formElementDependence */
+        $_formElementDependence = $this->getLayout()
+            ->createBlock('adminhtml/widget_form_element_dependence');
+
+        $_formElementDependence
+            ->addFieldMap($_magentoSfEnable->getId(), 'sf_enable')
+            ->addFieldMap($_magentoSfType->getId(), 'sf_type')
+            ->addFieldDependence('sf_type', 'sf_enable', '1');
+
+        $_formElementDependence
+            ->addFieldMap($_sfMagentoEnable->getId(), 'mg_enable')
+            ->addFieldMap($_sfMagentoType->getId(), 'mg_type')
+            ->addFieldDependence('mg_type', 'mg_enable', '1');
+
+        /*$_formElementDependence
+            ->addConfigOptions(array('can_edit_price'=> false, 'levels_up'=> 1))*/;
+
+        $this->setChild('form_after', $_formElementDependence);
 
         if (Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data')) {
             $form->setValues(Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data'));

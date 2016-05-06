@@ -9,6 +9,6 @@ class TNW_Salesforce_Helper_Config_Product extends TNW_Salesforce_Helper_Config
      */
     public function getPriceAccuracy()
     {
-        return $this->getStroreConfig(self::PRICE_ACCURACY);
+        return $this->getStoreConfig(self::PRICE_ACCURACY);
     }
 }

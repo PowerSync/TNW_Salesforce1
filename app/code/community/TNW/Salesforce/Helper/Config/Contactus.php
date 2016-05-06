@@ -11,6 +11,6 @@ class TNW_Salesforce_Helper_Config_Contactus extends TNW_Salesforce_Helper_Confi
     // Create new customers from Salesforce
     public function getDefaultEmailTemplate()
     {
-        return $this->getStroreConfig(self::EMAIL_TEMPLATE);
+        return $this->getStoreConfig(self::EMAIL_TEMPLATE);
     }
 }

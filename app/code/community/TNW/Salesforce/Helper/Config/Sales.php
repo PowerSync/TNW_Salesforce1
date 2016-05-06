@@ -6,10 +6,13 @@
 
 class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
 {
+    const SYNC_TYPE_ORDER = 'order';
+    const SYNC_TYPE_OPPORTUNITY = 'opportunity';
+
     /**
      * @comment config path
      */
-    const ORDER_CURRENCY_SYNC = 'salesforce_order/general/order_currency_sync';
+    const ORDER_CURRENCY_SYNC = 'salesforce_order/currency/currency_sync';
 
     /**
      * @comment change opportunity status when order placed to
@@ -42,12 +45,12 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function useBaseCurrency()
     {
-        return $this->getStroreConfig(self::ORDER_CURRENCY_SYNC) == TNW_Salesforce_Model_Config_Sync_Currency::BASE_CURRENCY ;
+        return $this->getStoreConfig(self::ORDER_CURRENCY_SYNC) == TNW_Salesforce_Model_Config_Sync_Currency::BASE_CURRENCY ;
     }
 
     public function getOpportunityToOrderStatus()
     {
-        return $this->getStroreConfig(self::OPPORTUNITY_TO_ORDER_STATUS);
+        return $this->getStoreConfig(self::OPPORTUNITY_TO_ORDER_STATUS);
     }
 
     /**

@@ -17,7 +17,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
     protected $_customer = NULL;
 
     /**
-     * @var array
+     * @var TNW_Salesforce_Model_Mysql4_Mapping_Collection
      */
     protected $_mapCollection = array();
 
@@ -78,12 +78,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      */
     protected $_websiteId = NULL;
 
-    public function __construct()
-    {
-        parent::__construct();
-        //$this->prepare();
-    }
-
     /**
      * @param null $_object
      * @return bool|false|Mage_Core_Model_Abstract
@@ -105,10 +99,9 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_prepare();
 
         $_type = $this->_salesforceObject->attributes->type;
-        unset($this->_salesforceObject->attributes);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
-        $_entity = $this->syncFromSalesforce();
+        $_entity = $this->syncFromSalesforce($this->_salesforceObject);
 
         if (!$this->_skip) {
             // Update history orders and assigne to customer we just created
@@ -118,6 +111,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             // Handle success and fail
             if (is_object($_entity)) {
+                $this->_salesforceAssociation[$_type][] = array(
+                    'salesforce_id' => $_entity->getData('salesforce_id'),
+                    'magento_id'    => $_entity->getId()
+                );
+
                 $this->_response->success = true;
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
@@ -236,7 +234,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_mapCollection = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter('Contact')
-            ->addFieldToFilter('active', 1);
+            ->addFieldToFilter('sf_magento_enable', 1);
 
         if (!$this->_customer) {
             $this->_customer = Mage::getModel('customer/customer');
@@ -268,17 +266,12 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             set_time_limit(30);
 
             // Creating Customer Entity
+            /** @var Mage_Customer_Model_Customer $_entity */
+            $_entity = Mage::getModel('customer/customer');
             if ($this->_isNew) {
-                /** @var Mage_Customer_Model_Customer $_entity */
-                $_entity = Mage::getModel('customer/customer');
-                if ($this->_magentoId) {
-                    $_entity->setId($this->_magentoId);
-                }
-
                 $this->_response->created = true;
             } else {
-                $_entity = Mage::getModel('customer/customer')->load($this->_magentoId);
-
+                $_entity->load($this->_magentoId);
                 $this->_response->created = false;
             }
 
@@ -292,6 +285,13 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 'shipping' => array(),
                 'customer_group' => array()
             );
+
+            $this->_mapCollection->clear()
+                ->addFieldToFilter('sf_magento_type', array(
+                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                    ($_entity->isObjectNew())
+                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+                ));
 
             // get attribute collection
             foreach ($this->_mapCollection as $_mapping) {
@@ -647,7 +647,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
      * @param null $object
      * @return bool|false|Mage_Core_Model_Abstract
      */
-    public function syncFromSalesforce()
+    public function syncFromSalesforce($object = null)
     {
         // Pre config, settings, etc
         parent::_prepare();

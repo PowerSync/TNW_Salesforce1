@@ -191,12 +191,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
             }
 
             $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::getSingleton('core/session')->getSalesforceSessionId());
-
-            if ($manualSync->reset()) {
-                $manualSync->massAdd($_ids);
-                $manualSync->process();
+            if ($manualSync->reset() && $manualSync->massAdd($_ids) && $manualSync->process()) {
                 Mage::getSingleton('adminhtml/session')->addSuccess(
                     Mage::helper('adminhtml')->__('%d Magento website entities were successfully synchronized', count($_ids))
                 );
@@ -205,6 +200,27 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
             Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
         }
         $this->_redirect('*/system_store/index');
+    }
+
+    public function syncCurrencyAction() {
+        if (!Mage::helper('tnw_salesforce')->isMultiCurrency()) {
+            $this->_redirect('*/system_currency/index');
+            return;
+        }
+
+        try {
+            $currencyModel = Mage::getModel('directory/currency');
+            $currencies = $currencyModel->getConfigAllowCurrencies();
+
+            $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
+            if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
+                Mage::getSingleton('adminhtml/session')
+                    ->addSuccess($this->__('%d Magento currency entities were successfully synchronized', count($currencies)));
+            }
+        } catch (Exception $e) {
+            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+        }
+        $this->_redirect('*/system_currency/index');
     }
 
     public function massCartSyncAction()

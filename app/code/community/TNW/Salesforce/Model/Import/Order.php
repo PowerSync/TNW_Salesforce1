@@ -116,7 +116,9 @@ class TNW_Salesforce_Model_Import_Order
         $mappings = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter($this->_objectType)
-            ->addFieldToFilter('active', 1);
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->addFieldToFilter('sf_magento_type',
+                array(TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT, TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE));
 
         foreach ($mappings as $mapping) {
             //skip if cannot find field in object

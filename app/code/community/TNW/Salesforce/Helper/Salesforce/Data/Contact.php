@@ -336,7 +336,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                         }
                         if (!$_websiteKey) {
                             // Guest, grab the first record (create other records if Magento customer scope is not global)
-                            $_personEmail = (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) ? $tmp->Email : $tmp->Email;
+                            $_personEmail = (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) ? $tmp->PersonEmail : $tmp->Email;
                             $_customerId = array_search($_personEmail, $email);
                             if ($_customerId !== FALSE) {
                                 $_websiteKey = $_websites[$_customerId];

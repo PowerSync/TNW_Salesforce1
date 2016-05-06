@@ -130,30 +130,29 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     protected function _updatePriceBookEntry($_type = NULL, $_jobId = NULL)
     {
         foreach ($this->_cache['batchCache'][$_type]['Id'] as $_key => $_batch) {
-            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $_jobId . '/batch/' . $_batch . '/result');
-            $this->_client->setMethod('GET');
-            $this->_client->setHeaders('Content-Type: application/xml');
-            $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-            try {
-                $response = $this->_client->request()->getBody();
-                $response = simplexml_load_string($response);
-                $_keys = array_keys($this->_cache['batch'][$_type]['Id'][$_key]);
-                $_i = 0;
-                foreach ($response as $_result) {
-                    $_tmp = explode(':::', $_keys[$_i]);
-                    $pricebookItem = $this->_cache['batch'][$_type]['Id'][$_key][$_keys[$_i]];
-                    //Report Transaction
-                    $this->_cache['responses']['pricebooks'][$_keys[$_i]] = json_decode(json_encode($_result), TRUE);
+            $_keys = array_keys($this->_cache['batch'][$_type]['Id'][$_key]);
 
-                    $_magentoId = $_tmp[1];
-                    $currencyCode = $_tmp[2];
-                    $pricebookEntryKey = $_keys[$_i];
-                    ++$_i;
-                    if ((string)$_result->success == "false") {
-                        $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = false;
-                        $this->_processErrors($_result, 'productPricebook', $pricebookItem);
-                        continue;
-                    }
+            try {
+                $response = $this->getBatch($_jobId, $_batch);
+            } catch (Exception $e) {
+                $response = array_fill(0, count($_keys), $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('_updatePriceBookEntry error ' . $e->getMessage() . '!');
+            }
+
+            $_i = 0;
+            foreach ($response as $_result) {
+                $_tmp = explode(':::', $_keys[$_i]);
+                $pricebookItem = $this->_cache['batch'][$_type]['Id'][$_key][$_keys[$_i]];
+                //Report Transaction
+                $this->_cache['responses']['pricebooks'][$_keys[$_i]] = json_decode(json_encode($_result), TRUE);
+
+                $_magentoId = $_tmp[1];
+                $currencyCode = $_tmp[2];
+                $pricebookEntryKey = $_keys[$_i];
+                ++$_i;
+                if ($_result->success == "true") {
                     if (!is_array($this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds)) {
                         $this->_cache['toSaveInMagento'][$_magentoId]->pricebookEntityIds = array();
                     }
@@ -169,12 +168,13 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                     if ($this->_cache['toSaveInMagento'][$_magentoId]->syncComplete != false) {
                         $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = true;
                     }
-                    $this->clearMemory();
-                }
-            } catch (Exception $e) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('_updatePriceBookEntry error ' . $e->getMessage() . '!');
 
-                // TODO:  Log error, quit
+                    $this->clearMemory();
+                    continue;
+                }
+
+                $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = false;
+                $this->_processErrors($_result, 'productPricebook', $pricebookItem);
             }
         }
     }
@@ -243,45 +243,47 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
     {
         // Get upserted product ID's and create a batches for Pricebooks
         foreach ($this->_cache['batchCache']['product'][$_type] as $_key => $_batch) {
-            $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch/' . $_batch . '/result');
-            $this->_client->setMethod('GET');
-            $this->_client->setHeaders('Content-Type: application/xml');
-            $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-            try {
-                $response = $this->_client->request()->getBody();
-                $response = simplexml_load_string($response);
-                $_magentoIds = array_keys($this->_cache['batch']['product'][$_type][$_key]);
-                $_i = 0;
-                foreach ($response as $_result) {
-                    $_magentoId = $_magentoIds[$_i];
-                    //Report Transaction
-                    $this->_cache['responses']['products'][$_magentoId] = json_decode(json_encode($_result), TRUE);
+            $_magentoIds = array_keys($this->_cache['batch']['product'][$_type][$_key]);
 
-                    $_i++;
-                    if ((string)$_result->success == "false") {
-                        // Hide errors when product has been archived
-                        foreach ($_result->errors as $_error) {
-                            if ($_error->message == 'entity is deleted'
-                                && $_error->statusCode == 'ENTITY_IS_DELETED'){
-                                Mage::getSingleton('adminhtml/session')
-                                    ->addWarning('Product w/ SKU "'
-                                        . $this->_obj->ProductCode
-                                        . '" have not been synchronized. Entity is deleted or archived.'
-                                    );
-                                continue 2;
-                            }
-                        }
-                        $this->_processErrors($_result, 'product', $this->_cache['batch']['product'][$_type][$_key][$_magentoId]);
-                        continue;
-                    }
+            try {
+                $response = $this->getBatch($jobId, $_batch);
+            } catch (Exception $e) {
+                $response = array_fill(0, count($_magentoIds), $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('_preparePriceBooks function has an error: '.$e->getMessage());
+            }
+
+            $_i = 0;
+            foreach ($response as $_result) {
+                $_magentoId = $_magentoIds[$_i];
+
+                //Report Transaction
+                $this->_cache['responses']['products'][$_magentoId] = json_decode(json_encode($_result), TRUE);
+
+                $_i++;
+                if ($_result->success == "true") {
                     $this->_cache['toSaveInMagento'][$_magentoId]->productId = (string)$_result->id;
                     $this->_cache['toSaveInMagento'][$_magentoId]->syncComplete = true;
                     $this->_addPriceBookEntry($_magentoId, $this->_cache['toSaveInMagento'][$_magentoId]->productId);
-                }
-            } catch (Exception $e) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('_preparePriceBooks function has an error: '.$e->getMessage());
 
-                // TODO:  Log error, quit
+                    continue;
+                }
+
+                // Hide errors when product has been archived
+                foreach ($_result->errors as $_error) {
+                    if ($_error->message == 'entity is deleted'
+                        && $_error->statusCode == 'ENTITY_IS_DELETED'){
+                        Mage::getSingleton('adminhtml/session')
+                            ->addWarning('Product w/ SKU "'
+                                . $this->_obj->ProductCode
+                                . '" have not been synchronized. Entity is deleted or archived.'
+                            );
+                        continue 2;
+                    }
+                }
+
+                $this->_processErrors($_result, 'product', $this->_cache['batch']['product'][$_type][$_key][$_magentoId]);
             }
         }
 
@@ -297,8 +299,10 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
      * decorator pattern used
      *
      * @param array $ids
+     * @param bool $_isCron
+     * @return bool
      */
-    public function massAdd($ids = array())
+    public function massAdd($ids = array(), $_isCron = false)
     {
         $defaultObject = new stdClass();
         $defaultObject->productId = null;
@@ -310,7 +314,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $object->magentoId = $id;
             $this->_cache['toSaveInMagento'][$id] = $object;
         }
-        return parent::massAdd($ids);
+        return parent::massAdd($ids, $_isCron);
     }
 
     /**
@@ -424,19 +428,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             'pricebookEntry' => array('Id' => NULL),
         );
 
-        $this->_client = $this->getHttpClient();
-        $this->_client->setConfig(
-            array(
-                'maxredirects' => 0,
-                'timeout' => 10,
-                'keepalive' => true,
-                'storeresponse' => true,
-            )
-        );
-
-        $valid = $this->check();
-
-        return $valid;
+        return $this->check();
     }
 
     public function process()

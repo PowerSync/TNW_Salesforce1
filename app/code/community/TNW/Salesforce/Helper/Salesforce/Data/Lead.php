@@ -345,7 +345,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                 $_customerKeys = array_keys($leadsToConvertChunk);
 
-                $_results = $this->_mySforceConnection->convertLead(array_values($leadsToConvertChunk));
+                $_results = $this->getClient()->convertLead(array_values($leadsToConvertChunk));
                 foreach ($_results as $_resultsArray) {
                     foreach ($_resultsArray as $_key => $_result) {
                         if (!property_exists($_result, 'success') || !(int)$_result->success) {
@@ -380,17 +380,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _getWebsiteIdByCustomerId($_customerId)
     {
-        $_isGuest = (strpos($_customerId, 'guest_') === 0) ? true : false;
-        if ($_isGuest) {
-            $_websiteId = $this->_cache['guestsFromOrder'][$_customerId]->getWebsiteId();
-        } else {
-            $customer = Mage::registry('customer_cached_' . $_customerId);
-            if (!$customer) {
-                $customer = Mage::getModel('customer/customer')->load($_customerId);
-            }
-            $_websiteId = $customer->getWebsiteId();
-        }
-        return $_websiteId;
+        return Mage::helper('tnw_salesforce/salesforce_customer')
+            ->getEntityCache($_customerId)->getWebsiteId();
     }
 
     /**
@@ -495,7 +486,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     $parentEntity = $this->_loadEntity($parentEntityId, $parentEntityType);
                 }
 
-                $websiteId = Mage::getModel('core/store')->load($parentEntity->getData('store_id'))->getWebsiteId();
+                $websiteId = Mage::app()->getStore($parentEntity->getData('store_id'))->getWebsiteId();
             }
 
             $salesforceWebsiteId = $this->getWebsiteSfIds($websiteId);
@@ -568,7 +559,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * @return null|TNW_Salesforce_Helper_Salesforce_Abstract
+     * @return null|TNW_Salesforce_Helper_Salesforce_Abstract_Base
      */
     public function getParent()
     {
@@ -712,7 +703,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _pushLeadSegment($_leadsChunkToConvert, $parentEntityType = 'order')
     {
-        $results = $this->_mySforceConnection->convertLead(array_values($_leadsChunkToConvert));
+        $results = $this->getClient()->convertLead(array_values($_leadsChunkToConvert));
 
         $_keys = array_keys($_leadsChunkToConvert);
 
@@ -731,7 +722,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 $parentEntity = $this->_loadEntity($parentEntityId, $parentEntityType);
             }
 
-            $_websiteId = Mage::getModel('core/store')->load($parentEntity->getData('store_id'))->getWebsiteId();
+            $_websiteId = Mage::app()->getStore($parentEntity->getData('store_id'))->getWebsiteId();
 
             $_customerId = (is_object($parentEntity) && $parentEntity->getCustomerId()) ? $parentEntity->getCustomerId() : NULL;
             if (!$_customerId) {
@@ -828,7 +819,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 }
             }
 
-            $results = $this->_mySforceConnection->convertLead(array_values($this->_cache['leadsToConvert']));
+            $results = $this->getClient()->convertLead(array_values($this->_cache['leadsToConvert']));
             $_keys = array_keys($this->_cache['leadsToConvert']);
             foreach ($results->result as $_key => $_result) {
                 $parentEntityId = $_keys[$_key];

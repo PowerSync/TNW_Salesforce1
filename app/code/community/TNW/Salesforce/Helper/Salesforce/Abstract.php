@@ -150,6 +150,18 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         }
     }
 
+    /**
+     * @return Salesforce_SforceEnterpriseClient
+     */
+    public function getClient()
+    {
+        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
+    }
+
+    /**
+     * @param null $_value
+     * @deprecated
+     */
     public function setSalesforceServerDomain($_value = NULL)
     {
         $this->_salesforceServerDomain = $_value;
@@ -160,9 +172,18 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function getSalesforceServerDomain()
     {
-        return $this->_salesforceServerDomain;
+        $this->getClient();
+
+        $instance_url = explode('/', Mage::getSingleton('core/session')->getSalesforceServerUrl());
+        Mage::getSingleton('core/session')->setSalesforceServerDomain('https://' . $instance_url[2]);
+
+        return 'https://' . $instance_url[2];
     }
 
+    /**
+     * @param null $_value
+     * @deprecated
+     */
     public function setSalesforceSessionId($_value = NULL)
     {
         $this->_salesforceSessionId = $_value;
@@ -173,7 +194,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function getSalesforceSessionId()
     {
-        return $this->_salesforceSessionId;
+        $this->getClient();
+        return Mage::getSingleton('core/session')->getSalesforceSessionId();
     }
 
     public function setIsFromCLI($_value = false)
@@ -246,24 +268,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function _createJob($_obj = NULL, $_operation = 'upsert', $_externalId = NULL)
     {
-        if (!$this->getSalesforceSessionId()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
-            return NULL;
-        }
-        if (!$this->getSalesforceServerDomain()) {
-            $this->_getSalesforceDomainFromSession();
-
-            if (!$this->getSalesforceServerDomain()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API domain is not set!");
-                return NULL;
-            }
-        }
-
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job');
-        $this->_client->setMethod('POST');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
         $_data = '<?xml version="1.0" encoding="UTF-8"?>
             <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
                 <operation>' . $_operation . '</operation>
@@ -272,15 +276,19 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $_data .= '<externalIdFieldName>' . $_externalId . '</externalIdFieldName>';
         } else {
             $_data .= '<concurrencyMode>Parallel</concurrencyMode>';
-
         }
+
         $_data .= '<contentType>XML</contentType>
             </jobInfo>';
 
+        $_client = $this->getHttpClient()
+            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job')
+            ->setMethod('POST')
+            ->setHeaders('Content-Type: application/xml')
+            ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId())
+            ->setRawData($_data);
 
-        $this->_client->setRawData($_data);
-
-        $response = $this->_client->request()->getBody();
+        $response = $_client->request()->getBody();
         $_jobInfo = simplexml_load_string($response);
 
         if (isset($_jobInfo->exceptionMessage)) {
@@ -341,21 +349,21 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _closeJob($_jobId = NULL)
     {
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $_jobId);
-        $this->_client->setMethod('POST');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
         $_data = '<?xml version="1.0" encoding="UTF-8"?>
             <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
                 <state>Closed</state>
             </jobInfo>';
 
-        $this->_client->setRawData($_data);
+        $_client = $this->getHttpClient()
+            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $_jobId)
+            ->setMethod('POST')
+            ->setHeaders('Content-Type: application/xml')
+            ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId())
+            ->setRawData($_data);
 
         $_state = false;
         try {
-            $response = simplexml_load_string($this->_client->request()->getBody());
+            $response = simplexml_load_string($_client->request()->getBody());
 
             if ((string)$response->state == "Closed") {
                 $_state = true;
@@ -390,11 +398,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         }
         $_batchId = NULL;
 
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $_jobId . '/batch');
-        $this->_client->setMethod('POST');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
         $_data = '<?xml version="1.0" encoding="UTF-8"?>
             <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">';
 
@@ -410,10 +413,16 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         }
 
         $_data .= '</sObjects>';
-        $this->_client->setRawData($_data);
+
+        $_client = $this->getHttpClient()
+            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $_jobId . '/batch')
+            ->setMethod('POST')
+            ->setHeaders('Content-Type: application/xml')
+            ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId())
+            ->setRawData($_data);
 
         try {
-            $response = $this->_client->request()->getBody();
+            $response = $_client->request()->getBody();
             $_batchInfo = simplexml_load_string($response);
 
             $_batchId = substr($_batchInfo->id, 0, -3);
@@ -430,7 +439,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $this->_cache['batch'][$_batchType][$_on][$_batchNum] = $chunk;
             return true;
         } catch (Exception $e) {
-            // TODO:  Log error, quit
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: '. $e->getMessage());
             return false;
         }
     }
@@ -438,24 +447,20 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * check batch info
      *
-     * @param null $jobId
-     * @param null $batchId
+     * @param string $jobId
+     * @param string $batchId
      * @return SimpleXMLElement|string
      */
-    public function getBatch($jobId = NULL, $batchId = NULL)
+    public function getBatch($jobId, $batchId)
     {
         // Check for update on all batches
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch/' . $batchId . '/result');
-        $this->_client->setMethod('GET');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-        try {
-            $response = simplexml_load_string($this->_client->request()->getBody());
-        } catch (Exception $e) {
-            // TODO:  Log error, quit
-            $response = $e->getMessage();
-        }
-        return $response;
+        $_client = $this->getHttpClient()
+            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch/' . $batchId . '/result')
+            ->setMethod('GET')
+            ->setHeaders('Content-Type: application/xml')
+            ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
+
+        return simplexml_load_string($_client->request()->getBody());
     }
 
     /**
@@ -469,17 +474,13 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     public function getBatchResult($jobId = NULL, $batchId = NULL, $_resultId = NULL)
     {
         // Check for update on all batches
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch/' . $batchId . '/result/' . $_resultId);
-        $this->_client->setMethod('GET');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-        try {
-            $response = new SimpleXMLElement($this->_client->request()->getBody());
-        } catch (Exception $e) {
-            // TODO:  Log error, quit
-            $response = $e->getMessage();
-        }
-        return $response;
+        $_client = $this->getHttpClient()
+            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch/' . $batchId . '/result/' . $_resultId)
+            ->setMethod('GET')
+            ->setHeaders('Content-Type: application/xml')
+            ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
+
+        return simplexml_load_string($_client->request()->getBody());
     }
 
     /**
@@ -495,16 +496,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected function _checkBatchCompletion($jobId)
     {
         $completed = true;
-        $logHelper = Mage::helper('tnw_salesforce');
-        $client = $this->_client;
 
         // check for update on all batches
         try {
-            $client->setUri(sprintf('%s/services/async/%s/job/%s/batch',
-                $this->getSalesforceServerDomain(), $this->_salesforceApiVersion, $jobId));
-            $client->setMethod('GET');
-            $client->setHeaders('Content-Type: text/csv');
-            $client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
+            $client = $this->getHttpClient()
+                ->setUri(sprintf('%s/services/async/%s/job/%s/batch', $this->getSalesforceServerDomain(), $this->_salesforceApiVersion, $jobId))
+                ->setMethod('GET')
+                ->setHeaders('Content-Type: text/csv')
+                ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
 
             $response = simplexml_load_string($client->request()->getBody());
             foreach ($response as $_responseRow) {
@@ -569,15 +568,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         Mage::helper('tnw_salesforce')->clearMemory();
     }
 
-    protected function _getSalesforceDomainFromSession()
-    {
-        if (Mage::getSingleton('core/session')->getSalesforceServerUrl()) {
-            $instance_url = explode('/', Mage::getSingleton('core/session')->getSalesforceServerUrl());
-            Mage::getSingleton('core/session')->setSalesforceServerDomain('https://' . $instance_url[2]);
-            $this->setSalesforceServerDomain('https://' . $instance_url[2]);
-        }
-    }
-
     protected function reset()
     {
         $this->_initCache();
@@ -593,12 +583,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         $this->_maxBatchLimit = 10000;
 
-        if (!$this->getSalesforceServerDomain()) {
-            $this->_getSalesforceDomainFromSession();
-        } else {
-            Mage::getSingleton('core/session')->setSalesforceServerDomain($this->getSalesforceServerDomain());
-        }
-
         $sql = "SELECT * FROM `" . Mage::helper('tnw_salesforce')->getTable('eav_entity_type') . "` WHERE entity_type_code = 'customer'";
         $row = $this->_write->query($sql)->fetch();
         $this->_customerEntityTypeCode = ($row) ? (int)$row['entity_type_id'] : NULL;
@@ -608,14 +592,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $this->_productEntityTypeCode = ($row) ? (int)$row['entity_type_id'] : NULL;
 
         $this->_client = $this->getHttpClient();
-        $this->_client->setConfig(
-            array(
-                'maxredirects' => 0,
-                'timeout' => 10,
-                'keepalive' => true,
-                'storeresponse' => true,
-            )
-        );
 
         $this->_fillWebsiteSfIds();
 
@@ -624,9 +600,20 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     public function getHttpClient()
     {
-        $client = new Zend_Http_Client();
-        return $client;
+        static $lastCreateTime = 0;
+        if (time() - $lastCreateTime > 30) {
+            $lastCreateTime = time();
+            $this->_client = new Zend_Http_Client();
+            $this->_client->setConfig(array(
+                'maxredirects' => 0,
+                'timeout' => 10,
+                'keepalive' => false,
+                'storeresponse' => true,
+            ));
+            $this->_client->resetParameters();
+        }
 
+        return $this->_client;
     }
 
     protected function _fillWebsiteSfIds()
@@ -707,19 +694,15 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function _query($_query = NULL, $jobId = NULL)
     {
-        if (!$this->getSalesforceSessionId()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
-            return NULL;
-        }
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch');
-        $this->_client->setMethod('POST');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
-        $this->_client->setRawData($_query);
+        $client = $this->getHttpClient()
+            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job/' . $jobId . '/batch')
+            ->setMethod('POST')
+            ->setHeaders('Content-Type: application/xml')
+            ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId())
+            ->setRawData($_query);
 
         try {
-            $response = $this->_client->request()->getBody();
+            $response = $client->request()->getBody();
             $_batchInfo = simplexml_load_string($response);
 
             $_batchId = substr($_batchInfo->id, 0, -3);
@@ -735,15 +718,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function _createJobQuery($_obj = NULL)
     {
-        if (!$this->getSalesforceSessionId()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Salesforce connection failed, bulk API session ID is invalid!");
-            return NULL;
-        }
-        $this->_client->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job');
-        $this->_client->setMethod('POST');
-        $this->_client->setHeaders('Content-Type: application/xml');
-        $this->_client->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
-
         $_data = '<?xml version="1.0" encoding="UTF-8"?>
                     <jobInfo xmlns="http://www.force.com/2009/06/asyncapi/dataload">
                         <operation>query</operation>
@@ -753,10 +727,15 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                     </jobInfo>
         ';
 
-        $this->_client->setRawData($_data);
+        $client = $this->getHttpClient()
+            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job')
+            ->setMethod('POST')
+            ->setHeaders('Content-Type: application/xml')
+            ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId())
+            ->setRawData($_data);
 
         try {
-            $response = $this->_client->request()->getBody();
+            $response = $client->request()->getBody();
             $_jobInfo = simplexml_load_string($response);
             return substr($_jobInfo->id, 0, -3);
         } catch (Exception $e) {

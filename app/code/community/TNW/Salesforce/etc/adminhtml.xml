@@ -9,11 +9,6 @@
                     <title>Manual Sync</title>
                     <sort_order>10</sort_order>
                     <children>
-                        <order_sync translate="title" module="tnw_salesforce">
-                            <title>Orders</title>
-                            <action>adminhtml/salesforcesync_ordersync</action>
-                            <sort_order>30</sort_order>
-                        </order_sync>
                         <product_sync translate="title" module="tnw_salesforce">
                             <title>Products</title>
                             <action>adminhtml/salesforcesync_productsync</action>
@@ -24,11 +19,44 @@
                             <action>adminhtml/salesforcesync_customersync</action>
                             <sort_order>20</sort_order>
                         </customer_sync>
+                        <order_sync translate="title" module="tnw_salesforce">
+                            <title>Orders</title>
+                            <action>adminhtml/salesforcesync_ordersync</action>
+                            <sort_order>30</sort_order>
+                        </order_sync>
+                        <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                            <title>Invoices</title>
+                            <action>adminhtml/salesforcesync_invoicesync</action>
+                            <sort_order>32</sort_order>
+                        </invoice_sync>
+                        <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                            <title>Shipments</title>
+                            <action>adminhtml/salesforcesync_shipmentsync</action>
+                            <sort_order>34</sort_order>
+                        </shipment_sync>
                         <abandoned_sync translate="title" module="tnw_salesforce">
                             <title>Abandoned Cart</title>
                             <action>adminhtml/salesforcesync_abandonedsync</action>
                             <sort_order>50</sort_order>
                         </abandoned_sync>
+                        <campaign_sync>
+                            <title>Campaign</title>
+                            <sort_order>60</sort_order>
+                            <children>
+                                <!--
+                                <catalogrule_sync>
+                                    <title>Catalog Price Rules</title>
+                                    <action>adminhtml/salesforcesync_campaign_catalogrulesync</action>
+                                    <sort_order>10</sort_order>
+                                </catalogrule_sync>
+                                -->
+                                <salesrule_sync>
+                                    <title>Shopping Cart Price Rules</title>
+                                    <action>adminhtml/salesforcesync_campaign_salesrulesync</action>
+                                    <sort_order>20</sort_order>
+                                </salesrule_sync>
+                            </children>
+                        </campaign_sync>
                     </children>
                 </manual_sync>
                 <mappings translate="title" module="tnw_salesforce">
@@ -92,9 +120,41 @@
                                 </status_mapping>
                             </children>
                         </order_mapping>
+                        <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                            <title>Invoice Mappings</title>
+                            <sort_order>400</sort_order>
+                            <children>
+                                <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Invoice</title>
+                                    <action>adminhtml/salesforce_orderinvoice</action>
+                                    <sort_order>110</sort_order>
+                                </invoice_mapping>
+                                <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Invoice Items</title>
+                                    <action>adminhtml/salesforce_orderinvoiceitem</action>
+                                    <sort_order>120</sort_order>
+                                </invoice_cart_mapping>
+                            </children>
+                        </invoice_mapping>
+                        <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                            <title>Shipment Mappings</title>
+                            <sort_order>500</sort_order>
+                            <children>
+                                <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Shipment</title>
+                                    <action>adminhtml/salesforce_ordershipment</action>
+                                    <sort_order>100</sort_order>
+                                </shipment_mapping>
+                                <shipment_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Shipment Products</title>
+                                    <action>adminhtml/salesforce_ordershipmentitem</action>
+                                    <sort_order>120</sort_order>
+                                </shipment_cart_mapping>
+                            </children>
+                        </shipment_mapping>
                         <abandoned_mapping translate="title" module="tnw_salesforce">
                             <title>Abandoned Cart Mappings</title>
-                            <sort_order>300</sort_order>
+                            <sort_order>600</sort_order>
                             <children>
                                 <order_mapping translate="title" module="tnw_salesforce">
                                     <title>Opportunity</title>
@@ -108,6 +168,29 @@
                                 </order_cart_mapping>
                             </children>
                         </abandoned_mapping>
+                        <campaign_mapping>
+                            <title>Campaign Mappings</title>
+                            <sort_order>700</sort_order>
+                            <children>
+                                <!--
+                                <catalogrule_mapping translate="title" module="tnw_salesforce">
+                                    <title>Catalog Price Rules</title>
+                                    <action>adminhtml/salesforce_campaign_catalogrule</action>
+                                    <sort_order>70</sort_order>
+                                </catalogrule_mapping>
+                                -->
+                                <salesrule_mapping translate="title" module="tnw_salesforce">
+                                    <title>Shopping Cart Price Rules</title>
+                                    <action>adminhtml/salesforce_campaign_salesrule</action>
+                                    <sort_order>80</sort_order>
+                                </salesrule_mapping>
+                                <member_mapping translate="title" module="tnw_salesforce">
+                                    <title>Member</title>
+                                    <action>adminhtml/salesforce_campaign_member</action>
+                                    <sort_order>90</sort_order>
+                                </member_mapping>
+                            </children>
+                        </campaign_mapping>
                     </children>
                 </mappings>
                 <queue_sync translate="title" module="tnw_salesforce">
@@ -146,7 +229,6 @@
                         </account_matching>
                     </children>
                 </setup>
-
                 <tools translate="title" module="tnw_salesforce">
                     <title>Tools</title>
                     <sort_order>500</sort_order>
@@ -170,7 +252,6 @@
                         </sync_log_file>
                     </children>
                 </tools>
-
             </children>
         </tnw_salesforce>
         <catalog>
@@ -249,16 +330,26 @@
                             <title>Manual Sync</title>
                             <sort_order>10</sort_order>
                             <children>
-                                <sync_orders translate="title" module="tnw_salesforce">
+                                <order_sync translate="title" module="tnw_salesforce">
                                     <title>Orders</title>
                                     <sort_order>10</sort_order>
                                     <action>adminhtml/salesforcesync_ordersync</action>
-                                </sync_orders>
-                                <sync_abandoned_carts translate="title" module="tnw_salesforce">
+                                </order_sync>
+                                <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                    <title>Invoices</title>
+                                    <action>adminhtml/salesforcesync_invoicesync</action>
+                                    <sort_order>20</sort_order>
+                                </invoice_sync>
+                                <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                    <title>Shipments</title>
+                                    <action>adminhtml/salesforcesync_shipmentsync</action>
+                                    <sort_order>30</sort_order>
+                                </shipment_sync>
+                                <abandoned_sync translate="title" module="tnw_salesforce">
                                     <title>Abandoned Carts</title>
-                                    <sort_order>10</sort_order>
+                                    <sort_order>40</sort_order>
                                     <action>adminhtml/salesforcesync_abandonedsync</action>
-                                </sync_abandoned_carts>
+                                </abandoned_sync>
                             </children>
                         </manual_sync>
                         <order_mappings>
@@ -292,9 +383,41 @@
                                 </status_mapping>
                             </children>
                         </order_mappings>
-                        <abandoned_mapping translate="title" module="tnw_salesforce">
-                            <title>Abandoned Cart Mappings</title>
+                        <invoice_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                            <title>Invoice Mappings</title>
                             <sort_order>40</sort_order>
+                            <children>
+                                <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Invoice</title>
+                                    <action>adminhtml/salesforce_orderinvoice</action>
+                                    <sort_order>10</sort_order>
+                                </invoice_mapping>
+                                <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Invoice Items</title>
+                                    <action>adminhtml/salesforce_orderinvoiceitem</action>
+                                    <sort_order>20</sort_order>
+                                </invoice_cart_mapping>
+                            </children>
+                        </invoice_mappings>
+                        <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                            <title>Shipment Mappings</title>
+                            <sort_order>50</sort_order>
+                            <children>
+                                <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Shipment</title>
+                                    <action>adminhtml/salesforce_ordershipment</action>
+                                    <sort_order>10</sort_order>
+                                </shipment_mapping>
+                                <shipment_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Shipment Items</title>
+                                    <action>adminhtml/salesforce_ordershipmentitem</action>
+                                    <sort_order>20</sort_order>
+                                </shipment_cart_mapping>
+                            </children>
+                        </shipment_mappings>
+                        <abandoned_mappings translate="title" module="tnw_salesforce">
+                            <title>Abandoned Cart Mappings</title>
+                            <sort_order>60</sort_order>
                             <children>
                                 <order_mapping translate="title" module="tnw_salesforce">
                                     <title>Opportunity</title>
@@ -307,7 +430,7 @@
                                     <sort_order>80</sort_order>
                                 </order_cart_mapping>
                             </children>
-                        </abandoned_mapping>
+                        </abandoned_mappings>
                         <configuration>
                             <title>Configuration</title>
                             <action>adminhtml/system_config/edit/section/salesforce_order</action>
@@ -332,14 +455,22 @@
                                         <title>Manual Sync</title>
                                         <sort_order>10</sort_order>
                                         <children>
-                                            <sync_orders>
+                                            <orders_sync>
                                                 <title>Orders Synchronization</title>
                                                 <sort_order>10</sort_order>
-                                            </sync_orders>
-                                            <sync_abandoned_carts>
+                                            </orders_sync>
+                                            <invoice_sync ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                                <title>Invoices Synchronization</title>
+                                                <sort_order>20</sort_order>
+                                            </invoice_sync>
+                                            <shipment_sync>
+                                                <title>Shipments Synchronization</title>
+                                                <sort_order>30</sort_order>
+                                            </shipment_sync>
+                                            <abandoned_sync>
                                                 <title>Abandoned Carts Synchronization</title>
-                                                <sort_order>10</sort_order>
-                                            </sync_abandoned_carts>
+                                                <sort_order>40</sort_order>
+                                            </abandoned_sync>
                                         </children>
                                     </manual_sync>
                                     <order_mappings>
@@ -368,6 +499,32 @@
                                             </status_mapping>
                                         </children>
                                     </order_mappings>
+                                    <invoice_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                        <title>Invoice Mappings</title>
+                                        <children>
+                                            <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Invoice</title>
+                                                <sort_order>10</sort_order>
+                                            </invoice_mapping>
+                                            <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Invoice Items</title>
+                                                <sort_order>20</sort_order>
+                                            </invoice_cart_mapping>
+                                        </children>
+                                    </invoice_mappings>
+                                    <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                        <title>Shipment Mappings</title>
+                                        <children>
+                                            <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Shipment</title>
+                                                <sort_order>10</sort_order>
+                                            </shipment_mapping>
+                                            <shipment_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Shipment Products</title>
+                                                <sort_order>20</sort_order>
+                                            </shipment_cart_mapping>
+                                        </children>
+                                    </shipment_mappings>
                                     <abandoned_mapping>
                                         <title>Abandoned Cart Mappings</title>
                                         <sort_order>40</sort_order>
@@ -469,6 +626,14 @@
                                         <title>Synchronize Orders</title>
                                         <sort_order>30</sort_order>
                                     </order_sync>
+                                    <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                        <title>Invoices</title>
+                                        <sort_order>32</sort_order>
+                                    </invoice_sync>
+                                    <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                        <title>Shipments</title>
+                                        <sort_order>34</sort_order>
+                                    </shipment_sync>
                                     <abandoned_sync>
                                         <title>Synchronize Abandoned Cart</title>
                                         <sort_order>50</sort_order>
@@ -527,9 +692,37 @@
                                             </status_mapping>
                                         </children>
                                     </order_mapping>
+                                    <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                        <title>Invoice Mappings</title>
+                                        <sort_order>400</sort_order>
+                                        <children>
+                                            <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Invoice Field Mappings</title>
+                                                <sort_order>50</sort_order>
+                                            </invoice_mapping>
+                                            <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Invoice Item Field Mappings</title>
+                                                <sort_order>60</sort_order>
+                                            </invoice_cart_mapping>
+                                        </children>
+                                    </invoice_mapping>
+                                    <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                        <title>Shipment Mappings</title>
+                                        <sort_order>500</sort_order>
+                                        <children>
+                                            <shipment_mapping ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Shipment Field Mappings</title>
+                                                <sort_order>50</sort_order>
+                                            </shipment_mapping>
+                                            <shipment_cart_mapping ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Shipment Product Field Mappings</title>
+                                                <sort_order>60</sort_order>
+                                            </shipment_cart_mapping>
+                                        </children>
+                                    </shipment_mapping>
                                     <abandoned_mapping>
                                         <title>Abandoned Cart Mappings</title>
-                                        <sort_order>300</sort_order>
+                                        <sort_order>600</sort_order>
                                         <children>
                                             <order_mapping>
                                                 <title>Opportunity Field Mappings</title>

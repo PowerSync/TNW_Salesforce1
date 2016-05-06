@@ -6,10 +6,10 @@
 class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
-     * @param bool $_return
+     * @param string $type
      * @return bool|mixed
      */
-    public function process()
+    public function process($type = 'soft')
     {
         if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
@@ -38,8 +38,10 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $this->_onComplete();
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
+            return true;
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -89,7 +91,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
         try {
             Mage::dispatchEvent("tnw_salesforce_website_send_before", array("data" => $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c']));
-            $_results = $this->_mySforceConnection->upsert(
+            $_results = $this->getClient()->upsert(
                 Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c',
                 array_values($this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c']),
                 Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
@@ -99,12 +101,11 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
                 "result" => $_results
             ));
         } catch (Exception $e) {
-            $_response = $this->_buildErrorResponse($e->getMessage());
-            foreach($_websiteIds as $_id) {
-                $this->_cache['responses']['websites'][$_id] = $_response;
-            }
-            $_results = array();
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
+            $_results = array_fill(0, count($_websiteIds),
+                $this->_buildErrorResponse($e->getMessage()));
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('CRITICAL: Push of website to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($_results as $_key => $_result) {
@@ -146,8 +147,10 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
 
     /**
      * @param array $ids
+     * @param bool $_isCron
+     * @return bool
      */
-    public function massAdd($ids = array())
+    public function massAdd($ids = array(), $_isCron = false)
     {
         try {
             $_websitesArray = array();

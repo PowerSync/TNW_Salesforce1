@@ -6,29 +6,64 @@
 
 class TNW_Salesforce_Model_Mysql4_Mapping_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
 {
+    /**
+     *
+     */
     protected function _construct()
     {
         parent::_construct();
         $this->_init('tnw_salesforce/mapping');
     }
 
+    /**
+     * @param $so
+     * @return $this
+     */
     public function addObjectToFilter($so)
     {
-        $this->getSelect()
-            ->where('main_table.sf_object = ?', $so);
-        return $this;
+        return $this->addFieldToFilter('sf_object', $so);
     }
 
+    /**
+     * @param $f
+     * @return $this
+     */
     public function addLocalFieldToFilter($f)
     {
-        $this->getSelect()
-            ->where('main_table.local_field = ?', $f);
-        return $this;
+        return $this->addFieldToFilter('local_field', $f);
+    }
+
+    /**
+     * @param $update bool
+     * @return $this
+     */
+    public function addFilterTypeMS($update)
+    {
+        return $this->addFieldToFilter('magento_sf_enable', 1)
+            ->addFieldToFilter('magento_sf_type', array(
+                TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                $update ? TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE : TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT
+            ));
+    }
+
+    /**
+     * @param $update bool
+     * @return $this
+     */
+    public function addFilterTypeSM($update)
+    {
+        return $this->addFieldToFilter('sf_magento_enable', 1)
+            ->addFieldToFilter('sf_magento_type', array(
+                TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                $update ? TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE : TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT
+            ));
     }
 
     protected function _afterLoad()
     {
         parent::_afterLoad();
+
+        /** @var TNW_Salesforce_Model_Mapping $item */
         foreach ($this as $item) {
             $item->afterLoad();
         }

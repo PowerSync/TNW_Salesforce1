@@ -3,8 +3,17 @@
  * Copyright © 2016 TechNWeb, Inc. All rights reserved.
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
+abstract class TNW_Salesforce_Helper_Magento_Abstract
+{
+    /**
+     * @var array
+     */
+    protected $_entitiesToSave = array();
 
-class TNW_Salesforce_Helper_Magento_Abstract {
+    /**
+     * @var null
+     */
+    protected $_salesforceAssociation = array();
 
     /**
      * @var null
@@ -35,28 +44,41 @@ class TNW_Salesforce_Helper_Magento_Abstract {
     protected $_time = NULL;
 
     /**
+     * @return null
+     */
+    public function getSalesforceAssociationAndClean()
+    {
+        $_association = $this->_salesforceAssociation;
+        $this->_salesforceAssociation = array();
+
+        return $_association;
+    }
+
+    /**
      * @param null $_object
      * @return bool|false|Mage_Core_Model_Abstract
      */
     public function process($_object = null)
     {
-        if (
-            !$_object
-            || !Mage::helper('tnw_salesforce')->isWorking()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No Salesforce object passed on connector is not working");
-
+        if (!$_object || !Mage::helper('tnw_salesforce')->isWorking()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("No Salesforce object passed on connector is not working");
             return false;
         }
+
         $this->_response = new stdClass();
         $_type = $_object->attributes->type;
-        unset($_object->attributes);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $_object->Id . " **");
         $_entity = $this->syncFromSalesforce($_object);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $_object->Id . " **");
 
         // Handle success and fail
         if (is_object($_entity)) {
+            $this->_salesforceAssociation[$_type][] = array(
+                'salesforce_id' => $_entity->getData('salesforce_id'),
+                'magento_id'    => $this->_getEntityNumber($_entity)
+            );
+
             $this->_response->success = true;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
@@ -67,22 +89,82 @@ class TNW_Salesforce_Helper_Magento_Abstract {
         }
 
         if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
+            /** @var TNW_Salesforce_Helper_Report $logger */
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();
-
-            $logger->add('Magento', 'Product', array($_object->Id => $_object), array($_object->Id => $this->_response));
-
+            $logger->add('Magento', $_type, array($_object->Id => $_object), array($_object->Id => $this->_response));
             $logger->send();
         }
 
         return $_entity;
     }
 
-    public function __destruct()
+    /**
+     * @param $_entity
+     * @return mixed
+     */
+    protected function _getEntityNumber($_entity)
     {
-        foreach ($this as $index => $value) unset($this->$index);
+        return $_entity->getId();
     }
 
+    /**
+     * @param null $object
+     * @return mixed
+     */
+    abstract public function syncFromSalesforce($object = null);
+
+    public static function sendMagentoIdToSalesforce($_association)
+    {
+        /** @var TNW_Salesforce_Model_Connection $_client */
+        $_client = Mage::getSingleton('tnw_salesforce/connection');
+        if (!$_client->initConnection()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
+
+            return;
+        }
+
+        foreach ($_association as $type => $item) {
+            $sendData = array();
+
+            $itemsToUpsert = array_chunk($item, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($itemsToUpsert as $_itemsToPush) {
+                foreach ($_itemsToPush as $_item) {
+                    if (empty($_item['salesforce_id'])) {
+                        continue;
+                    }
+
+                    $sendData[] = static::_prepareEntityUpdate($_item);
+                }
+
+                try {
+                    $_client->getClient()->upsert('Id', $sendData, $type);
+                } catch (Exception $e) {}
+            }
+        }
+    }
+
+    /**
+     * @param $_data
+     * @return stdClass
+     */
+    protected static function _prepareEntityUpdate($_data)
+    {
+        $_obj = new stdClass();
+        $_obj->Id = $_data['salesforce_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = $_data['magento_id'];
+
+        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+            $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'} = true;
+        }
+
+        return $_obj;
+    }
+
+    /**
+     * @param $_message
+     * @param $_code
+     */
     protected function _addError($_message, $_code) {
         if (!property_exists($this->_response, 'errors')) {
             $this->_response->errors = array();
@@ -143,5 +225,31 @@ class TNW_Salesforce_Helper_Magento_Abstract {
 
     protected function _setTime() {
         $this->_time = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
+    }
+
+    /**
+     * @param string $key
+     * @param Mage_Core_Model_Abstract $entity
+     */
+    protected function addEntityToSave($key, $entity)
+    {
+        $this->_entitiesToSave[$key] = $entity;
+    }
+
+    /**
+     * @return $this
+     * @throws Exception
+     */
+    protected function saveEntities()
+    {
+        if (!empty($this->_entitiesToSave)) {
+            $transaction = Mage::getSingleton('core/resource_transaction');
+            foreach ($this->_entitiesToSave as $key => $entityToSave) {
+                $transaction->addObject($entityToSave);
+            }
+            $transaction->save();
+        }
+
+        return $this;
     }
 }

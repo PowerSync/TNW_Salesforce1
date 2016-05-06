@@ -224,11 +224,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
          */
         $_accountsByCompany = (!empty($_companies)) ? $this->lookupByCompanies($_companies, 'CustomIndex') : array();
 
+        $_accountsForce = $this->lookupForce($_emails);
+
         $_accountsByDomain = $this->lookupByEmailDomain($_emails, 'id');
 
         $_accountsByContacts = $this->lookupByContact($_customerEmails, $_websites);
 
-        $_accounts = array_merge($_accountsByCompany, $_accountsByDomain, $_accountsByContacts);
+        $_accounts = array_merge($_accountsByCompany, $_accountsForce, $_accountsByDomain, $_accountsByContacts);
 
         $_accountsLookup = array();
 
@@ -301,6 +303,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 ) {
                     $returnArray[$key] = $_item->Account;
                     $returnArray[$key]->Id = $_item->AccountId;
+                    $returnArray[$key]->RecordTypeId = property_exists($_item->Account, 'RecordTypeId') ? $_item->Account->RecordTypeId : null;
+                    $returnArray[$key]->IsPersonAccount = property_exists($_item->Account, 'IsPersonAccount') ? $_item->Account->IsPersonAccount : false;
                 }
             }
         }
@@ -338,8 +342,44 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function lookupByEmailDomain($emails = array(), $_hashKey = 'email')
     {
-        $accountIds = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails);
-        return $this->lookupByCriterias($accountIds, 'CustomIndex','Id');
+        $accountIds  = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails);
+        $accountObjs = $this->lookupByCriterias($accountIds, 'CustomIndex', 'Id');
+
+        $return = array();
+        foreach ($accountIds as $key => $accountId) {
+            foreach ($accountObjs as $accountObj) {
+                if ($accountObj->Id == $accountId) {
+                    $return[$key] = $accountObj;
+                    break;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @comment find account force
+     * @param array $emails
+     * @return array
+     */
+    public function lookupForce($emails = array())
+    {
+        /** @var TNW_Salesforce_Helper_Config_Customer $_hCustomer */
+        $_hCustomer = Mage::helper('tnw_salesforce/config_customer');
+        if (!$_hCustomer->useAccountSyncCustomer()) {
+            return array();
+        }
+
+        $forceAccountId = $_hCustomer->getAccountSelect();
+        $forceAccount   = $this->lookupByCriteria(array('forceAccount' => $forceAccountId), 'CustomIndex', 'Id');
+
+        $accounts = array();
+        foreach (array_keys($emails) as $id) {
+            $accounts[$id] = $forceAccount['forceAccount'];
+        }
+
+        return $accounts;
     }
 
     /**
@@ -373,7 +413,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     protected function _prepareCriteriaSql($criteria, $field)
     {
-        $sql = 'SELECT Id, OwnerId, Name FROM Account WHERE ';
+        $additionalSql = '';
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $additionalSql = ", RecordTypeId, IsPersonAccount";
+        }
+
+        $sql = 'SELECT Id, OwnerId, Name' . $additionalSql . ' FROM Account WHERE ';
 
         $where = array();
         foreach ($criteria as $value) {
@@ -425,6 +470,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 $_returnObject->Id = (isset($_item['Id'])) ? $_item['Id'] : NULL;
                 $_returnObject->OwnerId = (isset($_item['OwnerId'])) ? $_item['OwnerId'] : NULL;
                 $_returnObject->Name = (isset($_item['Name'])) ? $_item['Name'] : NULL;
+                $_returnObject->RecordTypeId = (isset($_item['RecordTypeId'])) ? $_item['RecordTypeId'] : NULL;
+                $_returnObject->IsPersonAccount = (isset($_item['IsPersonAccount'])) ? $_item['IsPersonAccount'] : false;
 
                 foreach ($criteria as $_customIndex => $_value) {
                     // Need case insensitive match
