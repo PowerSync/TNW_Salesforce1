@@ -16,6 +16,12 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
     protected $_sfEntity = '';
 
     /**
+     * name of Local object in case sensitive
+     * @var string
+     */
+    protected $_localEntity = '';
+
+    /**
      * @param bool|false $uc should we make first letter in upper case?
      * @return string
      */
@@ -26,6 +32,23 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             $sfEntity = strtolower($sfEntity);
         }
         return $sfEntity;
+    }
+
+    /**
+     * @param bool|false $uc should we make first letter in upper case?
+     * @return string
+     */
+    public function getLocalEntity($uc = false)
+    {
+        $localEntity = $this->_localEntity;
+        if (empty($localEntity)) {
+            return $this->getSfEntity($uc);
+        }
+
+        if (!$uc) {
+            $localEntity = strtolower($localEntity);
+        }
+        return $localEntity;
     }
 
     /**
@@ -53,7 +76,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
     protected function _prepareCollection()
     {
         $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection()
-            ->addObjectToFilter($this->getSfEntity(true));
+            ->addObjectToFilter($this->getLocalEntity(true));
         $this->setCollection($collection);
         return parent::_prepareCollection();
     }
@@ -84,14 +107,33 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             'index' => 'default_value',
         ));
 
-        $this->addColumn('active', array(
-            'header' => Mage::helper('sales')->__('Active'),
-            'width' => '40px',
+        $this->addColumn('magento_sf', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Magento > SF'),
+            'width' => '100px',
+            'index' => 'magento_sf_enable',
+            'renderer' => $this->getLayout()->createBlock('tnw_salesforce/adminhtml_renderer_entity_mappingset')
+                ->setDirection(TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Mappingset::SYNC_DIRECTION_MAGENTO_SF),
             'type' => 'options',
             'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
-            'index' => 'active',
         ));
 
+        $this->addColumn('sf_magento', array(
+            'header' => Mage::helper('tnw_salesforce')->__('SF > Magento'),
+            'width' => '100px',
+            'index' => 'sf_magento_enable',
+            'renderer' => $this->getLayout()->createBlock('tnw_salesforce/adminhtml_renderer_entity_mappingset')
+                ->setDirection(TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Mappingset::SYNC_DIRECTION_SF_MAGENTO),
+            'type' => 'options',
+            'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+        ));
+
+        $this->addColumn('is_system', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Is System'),
+            'width' => '50px',
+            'index' => 'is_system',
+            'type' => 'options',
+            'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+        ));
 
         return parent::_prepareColumns();
     }

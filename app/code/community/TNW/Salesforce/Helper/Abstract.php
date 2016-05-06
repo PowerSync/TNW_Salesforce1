@@ -103,6 +103,14 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         }
     }
 
+    /**
+     * @return Salesforce_SforceEnterpriseClient
+     */
+    public function getClient()
+    {
+        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
+    }
+
     protected function _processErrors($_response, $type = 'order', $_object = null)
     {
         if (is_array($_response->errors)) {

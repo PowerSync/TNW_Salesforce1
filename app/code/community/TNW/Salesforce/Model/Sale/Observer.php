@@ -6,7 +6,9 @@
 
 class TNW_Salesforce_Model_Sale_Observer
 {
-    protected $orderObject = NULL;
+    protected $orderObject      = null;
+    protected $orderHelper      = null;
+    protected $assignToCampaign = null;
 
     /**
      * Shipment Sync Event
@@ -302,28 +304,34 @@ class TNW_Salesforce_Model_Sale_Observer
     public function orderCancelled($observer)
     {
         if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
             return; // Disabled
         }
+
+        /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
         if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper('tnw_salesforce/salesforce_opportunity')->resetOrder($order->getId());
+            Mage::helper('tnw_salesforce/salesforce_opportunity')
+                ->resetEntity($order->getId());
         }
 
         if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
         }
+
         if (
             !Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
         ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('SKIPING: Order synchronization disabled');
             return; // Disabled
         }
 
         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-
         if (!$this->orderHelper) {
             $this->orderHelper = 'tnw_salesforce/salesforce_' . $_syncType;
         }
@@ -334,65 +342,122 @@ class TNW_Salesforce_Model_Sale_Observer
 
             // Extract all purchased products and add to local storage for sync
             $_productIds = array();
-            foreach ($order->getAllVisibleItems() as $_item) {
-                $_productIds[] = (int)Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart($_item);
+            foreach (Mage::helper($this->orderHelper)->getItems($order) as $_item) {
+                $_productIds[] = (int)Mage::helper($this->orderHelper)->getProductIdFromCart($_item);
             }
 
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
+            $res = Mage::getModel('tnw_salesforce/localstorage')
+                ->addObjectProduct($_productIds, 'Product', 'product');
+
             if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: products from the order were not saved in local storage');
-                return false;
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR:: products from the order were not saved in local storage');
+                return;
             }
 
             // Add order into the Queue
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
+            $res = Mage::getModel('tnw_salesforce/localstorage')
+                ->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
+
             if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: order cancellation not saved to local storage');
-                return false;
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR:: order cancellation not saved to local storage');
+                return;
             }
-            return true;
+
+            return;
         }
 
         if ($order->getId() && $order->getStatus()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
             $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
             if ($manualSync->reset()) {
                 $itemIds = array();
-                foreach ($order->getAllVisibleItems() as $_item) {
+                foreach (Mage::helper($this->orderHelper)->getItems($order) as $_item) {
                     $itemIds[] = (int)Mage::helper($this->orderHelper)->getProductIdFromCart($_item);
                 }
-                if (!empty($itemIds)) {
-                    $manualSync->massAdd($itemIds);
-                    $manualSync->process();
-                    Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product inventory was synchronized with Salesforce'));
+
+                if (!empty($itemIds) && $manualSync->massAdd($itemIds) && $manualSync->process()) {
+                    Mage::getSingleton('adminhtml/session')
+                        ->addSuccess(Mage::helper('adminhtml')->__('Product inventory was synchronized with Salesforce'));
                 }
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce Connection failed!');
             }
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: END ================");
+            else {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Salesforce Connection failed!');
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("================ INVENTORY SYNC: END ================");
         }
     }
 
-    /**
-     * Assign customer to product's campaign, send this data to SF
-     * @param $observer
-     */
-    public function sendOrderItemCampaing($observer)
+    public function afterSalesRuleSave($observer)
     {
-        $mode = $observer->getEvent()->getMode();
+        if (!Mage::helper('tnw_salesforce')->isEnabled()
+            || !Mage::helper('tnw_salesforce')->isOrderRulesEnabled()
+        ) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('SKIPING: Synchronization disabled');
 
-        /**
-         * use_product_campaign_assignment
-         */
-        if (Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()) {
-            if ($mode == 'bulk') {
-                Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaingsBulk();
-            } else {
-                Mage::helper('tnw_salesforce/salesforce_newslettersubscriber')->updateCampaings();
+            return; // Disabled
+        }
+
+        /** @var Mage_SalesRule_Model_Rule $rule */
+        $rule = $observer->getEvent()->getRule();
+        if (!$rule->getId()) {
+            return; // Disabled
+        }
+
+        if (!empty($this->assignToCampaign) && ($rule->getData('salesforce_id') != $this->assignToCampaign)) {
+            $obj = new stdClass();
+            $obj->Id = $this->assignToCampaign;
+            $obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = 'sr_'.$rule->getId();
+
+            // Assign Campaign
+            try {
+                Mage::getSingleton('tnw_salesforce/connection')->getClient()
+                    ->update(array($obj), 'Campaign');
+
+                $rule->setData('salesforce_id', $this->assignToCampaign);
+                $rule->getResource()->save($rule);
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Assign Campaign: '.$e->getMessage());
+                return; // Disabled
             }
         }
+
+        try {
+            if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+
+                $res = Mage::getModel('tnw_salesforce/localstorage')
+                    ->addObject(array($rule->getId()), 'Campaign_SalesRule', 'salesrule');
+
+                if (!$res) {
+                    Mage::getSingleton('adminhtml/session')->addError('Could not add catalog rule(s) to the queue!');
+                }
+                else if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
+                    Mage::getSingleton('adminhtml/session')->addSuccess(
+                        $this->__('Records are pending addition into the queue!')
+                    );
+                }
+            }
+            else {
+                $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
+                if ($campaignMember->reset() && $campaignMember->massAdd(array($rule->getId()))) {
+                    $campaignMember->process();
+                }
+            }
+        } catch (Exception $e) {
+            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+        }
+    }
+
+    public function controllerSalesRulePrepareSave($observer)
+    {
+        /** @var Mage_Core_Controller_Request_Http $request */
+        $request = $observer->getEvent()->getRequest();
+        $this->assignToCampaign = $request->getParam('assign_to_campaign');
     }
 }

@@ -16,7 +16,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     protected $_product = null;
 
     /**
-     * @var array
+     * @var TNW_Salesforce_Model_Mysql4_Mapping_Collection
      */
     protected $_mapProductCollection = array();
 
@@ -46,49 +46,6 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         $this->prepare();
     }
 
-    /**
-     * @param null $_object
-     * @return bool|false|Mage_Core_Model_Abstract
-     */
-    public function process($_object = null)
-    {
-        if (
-            !$_object
-            || !Mage::helper('tnw_salesforce')->isWorking()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No Salesforce object passed on connector is not working");
-
-            return false;
-        }
-        $this->_response = new stdClass();
-        $_type = $_object->attributes->type;
-        unset($_object->attributes);
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $_object->Id . " **");
-        $_entity = $this->syncFromSalesforce($_object);
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $_object->Id . " **");
-
-        // Handle success and fail
-        if (is_object($_entity)) {
-            $this->_response->success = true;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Magento Id: " . $_entity->getId());
-        } else {
-            $this->_response->success = false;
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not upsert " . $_type . " into Magento, see Magento log for details");
-            $_entity = false;
-        }
-
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
-            $logger->add('Magento', 'Product', array($_object->Id => $_object), array($_object->Id => $this->_response));
-
-            $logger->send();
-        }
-        return $_entity;
-    }
-
     protected function prepare()
     {
         if (empty($this->_attributes)) {
@@ -102,7 +59,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
             ->getCollection()
             ->addObjectToFilter('Product2')
-            ->addFieldToFilter('active', 1);
+            ->addFieldToFilter('sf_magento_enable', 1);
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');
@@ -141,12 +98,20 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     public function getProductTypeId($name)
     {
         if (empty($this->_productTypes)) {
-            $this->_productTypes = Mage::getModel('catalog/product_type')->getOptionArray();
+            $this->_productTypes = array_map(function($type) {
+                return $type['label'];
+            }, Mage::getConfig()->getNode('global/catalog/product/type')->asArray());
         }
 
         $result = array_search($name, $this->_productTypes);
 
         if ($result === false) {
+            // Temporary solution
+            $result = array_search($name, Mage::getModel('catalog/product_type')->getOptionArray());
+            if ($result !== false) {
+                return $result;
+            }
+
             $result = $name;
         }
 
@@ -165,19 +130,17 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     {
         try {
             set_time_limit(30);
+
             // Creating Customer Entity
+            /** @var Mage_Catalog_Model_Product $_product */
+            $_product = Mage::getModel('catalog/product');
             if ($_isNew) {
-                $_product = Mage::getModel('catalog/product');
-                if ($_magentoId) {
-                    $_product->setId($_magentoId);
-                }
                 $_product->setAttributeSetId($_product->getDefaultAttributeSetId());
                 $_product->setStatus(1);
 
                 $this->_response->created = true;
             } else {
-                $_product = Mage::getModel('catalog/product')->load($_magentoId);
-
+                $_product->load($_magentoId);
                 $this->_response->created = false;
             }
 
@@ -188,12 +151,20 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             $_stock = array();
 
+            $this->_mapProductCollection->clear()
+                ->addFieldToFilter('sf_magento_type', array(
+                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+                    ($_product->isObjectNew())
+                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+                ));
+
             // get attribute collection
             foreach ($this->_mapProductCollection as $_mapping) {
                 if (strpos($_mapping->getLocalField(), 'Product : ') === 0) {
                     // Product
                     $_magentoFieldName = str_replace('Product : ', '', $_mapping->getLocalField());
 
+                    $_value = '';
                     if (property_exists($object, $_mapping->getSfField())) {
                         // get attribute object
                         $localFieldAr = explode(":", $_mapping->getLocalField());

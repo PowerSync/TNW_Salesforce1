@@ -16,6 +16,17 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     protected $_sfEntity = '';
 
     /**
+     * name of Local object in case sensitive
+     * @var string
+     */
+    protected $_localEntity = '';
+
+    /**
+     * @var string
+     */
+    protected $_blockGroup = 'tnw_salesforce';
+
+    /**
      * path to the blocks which will be rendered by controller
      * can be usefull if Salesforce entity name and block class name are different
      * @var string
@@ -59,6 +70,23 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     }
 
     /**
+     * @param bool|false $uc should we make first letter in upper case?
+     * @return string
+     */
+    public function getLocalEntity($uc = false)
+    {
+        $localEntity = $this->_localEntity;
+        if (empty($localEntity)) {
+            return $this->getSfEntity($uc);
+        }
+
+        if (!$uc) {
+            $localEntity = strtolower($localEntity);
+        }
+        return $localEntity;
+    }
+
+    /**
      * @param string $sfEntity
      * @return $this
      */
@@ -81,8 +109,9 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
-            ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getSfEntity(true)), Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getSfEntity(true)));
+            ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)), Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)));
 
+        Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
         return $this;
     }
 
@@ -91,10 +120,9 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
      */
     public function indexAction()
     {
-        $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('%s Field Mapping', $this->getSfEntity(true)));
+        $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('%s Field Mapping', $this->getLocalEntity(true)));
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_' . $this->getBlockPath()));
-        Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
+            ->_addContent($this->getLayout()->createBlock(sprintf('%s/adminhtml_%s', $this->_blockGroup, $this->getBlockPath())));
         $this->renderLayout();
     }
 
@@ -121,13 +149,12 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
             Mage::register(sprintf('salesforce_%s_data', $this->getSfEntity()), $model);
 
-            $this->loadLayout();
-            $this->_setActiveMenu('system/salesforce');
+            $this->_initLayout()
+                ->getLayout()
+                ->getBlock('head')
+                ->setCanLoadExtJs(true);
 
-            $this->getLayout()->getBlock('head')->setCanLoadExtJs(true);
-
-            $this->_addContent($this->getLayout()->createBlock(sprintf('tnw_salesforce/adminhtml_%s_edit', $this->getBlockPath())));
-            Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
+            $this->_addContent($this->getLayout()->createBlock(sprintf('%s/adminhtml_%s_edit', $this->_blockGroup, $this->getBlockPath())));
             $this->renderLayout();
         } else {
             Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Item does not exist'));
@@ -141,7 +168,8 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
     public function saveAction()
     {
         if ($data = $this->getRequest()->getPost()) {
-            $data['sf_object'] = $this->getSfEntity(true);
+            $data['sf_object'] = $this->getLocalEntity(true);
+
             // Inject custom logic for custom fields
             if ($data['local_field'] == "Custom : field") {
                 $locAattr = array(strstr($data['local_field'], ' : ', true));
@@ -163,15 +191,9 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
                     $data['attribute_id'] = $attr->getId();
                     $data['backend_type'] = $attr->getBackendType();
                 }
+
                 unset($data['default_code']);
                 $data['default_value'] = NULL;
-            }
-            // validate
-            if (!$this->_validate($data)) {
-                Mage::getSingleton('adminhtml/session')->addError("Attribute Code must be unique");
-                Mage::getSingleton('adminhtml/session')->setFormData($data);
-                $this->_redirect('*/*/edit', array('mapping_id' => $this->getRequest()->getParam('mapping_id')));
-                return;
             }
 
             // Save
@@ -181,21 +203,32 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
             try {
                 $model->save();
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('tnw_salesforce')->__('Mapping was successfully saved'));
-                Mage::getSingleton('adminhtml/session')->setFormData(false);
+
+                Mage::getSingleton('adminhtml/session')
+                    ->addSuccess(Mage::helper('tnw_salesforce')->__('Mapping was successfully saved'))
+                    ->setFormData(false);
+
                 if ($this->getRequest()->getParam('back')) {
                     $this->_redirect('*/*/edit', array('mapping_id' => $model->getId()));
                     return;
                 }
+
                 $this->_redirect('*/*/');
                 return;
-            } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-                Mage::getSingleton('adminhtml/session')->setFormData($data);
+            }
+            catch (Exception $e) {
+                $message = ($e instanceof Zend_Db_Statement_Exception && $e->getCode() == 23000)
+                    ? 'Attribute Code must be unique' : $e->getMessage();
+
+                Mage::getSingleton('adminhtml/session')
+                    ->addError($message)
+                    ->setFormData($data);
+
                 $this->_redirect('*/*/edit', array('mapping_id' => $this->getRequest()->getParam('mapping_id')));
                 return;
             }
         }
+
         Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Unable to find mapping to save'));
         $this->_redirect('*/*/');
     }
@@ -243,30 +276,5 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
             }
         }
         $this->_redirect('*/*/index');
-    }
-
-    /**
-     * @param $data
-     * @return bool
-     */
-    protected function _validate($data)
-    {
-        if (!$id = $this->getRequest()->getParam('mapping_id')) {
-            return true;
-        }
-        $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection();
-        $collection->getSelect()
-            ->where('main_table.local_field = ?', $data['local_field'])
-            ->where('main_table.sf_object = ?', $data['sf_object'])
-            ->where('main_table.sf_field = ?', $data['sf_field']);
-
-        foreach ($collection as $_item) {
-            if ($_item->getMappingId() != $id) {
-                // Found a duplicate
-                return false;
-            }
-        }
-
-        return true;
     }
 }

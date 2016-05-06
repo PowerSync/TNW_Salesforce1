@@ -45,6 +45,12 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
             TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
+        );
+        $this->_acl['orderItem'] = array(
+            0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
         );
 
         $this->_acl['abandoned'] = array(
@@ -63,12 +69,11 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ACCOUNT_OBJECT,
             TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
 
         );
-        $this->_acl['cart'] = array(
-            0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
-            TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
-        );
+
         $this->_acl['product'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_ITEM_OBJECT,
@@ -76,20 +81,34 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::PRODUCT_OBJECT,
             'Product2',
             TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT,
         );
 
         $this->_acl['invoice'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
         );
         $this->_acl['invoiceItem'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT
         );
 
         $this->_acl['shipment'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
         );
         $this->_acl['shipmentItem'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::SHIPMENT_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT,
+        );
+
+        $this->_acl['catalogrule'] = array(
+            'Catalogrule'
+        );
+
+        $this->_acl['salesrule'] = array(
+            'Salesrule'
         );
     }
 
@@ -121,8 +140,16 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $this->_populateInvoiceAttributes($type);
         }
 
+        if (in_array($type, $this->_acl['invoiceItem'])) {
+            $this->_populateInvoiceItemAttributes($type);
+        }
+
         if (in_array($type, $this->_acl['shipment'])) {
             $this->_populateShipmentAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['shipmentItem'])) {
+            $this->_populateShipmentItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['order'])) {
@@ -130,8 +157,17 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $this->_populatePaymentAttributes($type);
         }
 
+        if (in_array($type, $this->_acl['orderItem'])) {
+            /* Order Item */
+            $this->_populateOrderItemAttributes($type);
+        }
+
         if (in_array($type, $this->_acl['abandoned'])) {
             $this->_populateAbandonedAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['abandonedItem'])) {
+            $this->_populateAbandonedItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['customer'])) {
@@ -152,26 +188,17 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             }
         }
 
-        if (in_array($type, $this->_acl['abandonedItem'])) {
-            $this->_populateAbandonedItemAttributes($type);
-        }
-
-        if (in_array($type, $this->_acl['shipmentItem'])) {
-            $this->_populateShipmentItemAttributes($type);
-        }
-
-        if (in_array($type, $this->_acl['invoiceItem'])) {
-            $this->_populateInvoiceItemAttributes($type);
-        }
-
-        if (in_array($type, $this->_acl['cart'])) {
-            /* Cart Attributes */
-            $this->_populateCartAttributes($type);
-        }
-
         if (in_array($type, $this->_acl['product'])) {
             /* Product Attributes */
             $this->_populateProductAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['catalogrule'])) {
+            $this->_populateCatalogruleAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['salesrule'])) {
+            $this->_populateSalesruleAttributes($type);
         }
 
         /* Customization */
@@ -194,10 +221,13 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateOrderAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_order');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_order');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
 
         if ($collection) {
@@ -206,39 +236,33 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array()
             );
 
-            $this->_cache[$type]['order']['value'] = array(
-                array(
-                    'value' => 'Order : number',
-                    'label' => 'Order : Number',
-                ),
-                array(
-                    'value' => 'Order : cart_all',
-                    'label' => 'Order : All Cart Items',
-                ),
-                array(
-                    'value' => 'Order : payment_method',
-                    'label' => 'Order : Payment Method Label',
-                ),
-                array(
-                    'value' => 'Order : notes',
-                    'label' => 'Order : Status Notes (Admin)',
-                )
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items (Text)',
+                'payment_method'    => 'Payment Method Label',
+                'notes'             => 'Status Notes (Admin)',
+                'website'           => 'Associate to Website',
+                'sf_status'         => 'Salesforce Status',
+                'sf_name'           => 'Salesforce Name',
+                'price_book'        => 'Price Book'
             );
 
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['order']['value'][] = array(
+                    'value' => 'Order : '.$value,
+                    'label' => 'Order : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'increment_id'
-                    || $key == 'sf_insync'
-                    || $key == 'salesforce_id'
-                    || $key == 'status'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('increment_id', 'sf_insync', 'salesforce_id'))) {
                     continue;
                 }
 
                 $this->_cache[$type]['order']['value'][] = array(
                     'value' => 'Order : ' . $key,
-                    'label' => 'Order : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Order : ' . $this->toName($key),
                 );
             }
         }
@@ -247,10 +271,13 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateInvoiceAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_invoice');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_invoice');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
 
         if ($collection) {
@@ -259,24 +286,34 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array()
             );
 
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items (Text)',
+                'website'           => 'Associate to Website',
+                'sf_status'         => 'Salesforce Status',
+                'sf_name'           => 'Salesforce Name',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['invoice']['value'][] = array(
+                    'value' => 'Invoice : '.$value,
+                    'label' => 'Invoice : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'entity_id'
-                    || $key == 'sf_insync'
-                    || $key == 'salesforce_id'
-                    || $key == 'can_void_flag'
-                    || $key == 'shipping_address_id'
-                    || $key == 'billing_address_id'
-                    || $key == 'increment_id'
-                    || $key == 'transaction_id'
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array(
+                    'entity_id', 'sf_insync', 'salesforce_id',
+                    'can_void_flag', 'shipping_address_id',
+                    'billing_address_id', 'increment_id', 'transaction_id'))
                 ) {
                     continue;
                 }
 
                 $this->_cache[$type]['invoice']['value'][] = array(
                     'value' => 'Invoice : ' . $key,
-                    'label' => 'Invoice : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Invoice : ' . $this->toName($key),
                 );
             }
         }
@@ -285,11 +322,13 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateShipmentAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList(
-                Mage::getModel('sales/order_shipment')->getResource()->getMainTable());
+            $collection = $this->getDbConnection('read')
+                ->describeTable(Mage::getModel('sales/order_shipment')->getResource()->getMainTable());
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento shipment schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
 
         if ($collection) {
@@ -298,24 +337,36 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array()
             );
 
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items (Text)',
+                'website'           => 'Associate to Website',
+                'sf_status'         => 'Salesforce Status',
+                'sf_name'           => 'Salesforce Name',
+                'track_number'      => 'Track Number',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['shipment']['value'][] = array(
+                    'value' => 'Shipment : '.$value,
+                    'label' => 'Shipment : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
+                $key = $_attribute['COLUMN_NAME'];
                 if (in_array($key, array(
-                    'entity_id',
-                    'store_id',
-                    'order_id',
-                    'customer_id',
-                    'shipping_address_id',
-                    'billing_address_id',
-                    'sf_insync',
-                    'salesforce_id',
+                    'entity_id', 'store_id',
+                    'order_id', 'customer_id',
+                    'shipping_address_id', 'billing_address_id',
+                    'sf_insync', 'salesforce_id',
                 ))) {
                     continue;
                 }
 
                 $this->_cache[$type]['shipment']['value'][] = array(
                     'value' => 'Shipment : ' . $key,
-                    'label' => 'Shipment : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Shipment : ' . $this->toName($key),
                 );
             }
         }
@@ -324,43 +375,46 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populateAbandonedAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_quote');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_quote');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
 
         if ($collection) {
             $this->_cache[$type]['abandoned'] = array(
-                'label' => 'Abandoned',
+                'label' => 'Cart Attribute',
                 'value' => array()
             );
 
-            $this->_cache[$type]['abandoned']['value'] = array(
-                array(
-                    'value' => 'Cart : number',
-                    'label' => 'Cart : Number',
-                ),
-                array(
-                    'value' => 'Cart : cart_all',
-                    'label' => 'Cart : All Cart Items',
-                ),
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items (Text)',
+                'website'           => 'Associate to Website',
+                'sf_stage'          => 'Salesforce Stage',
+                'sf_name'           => 'Salesforce Name',
+                'price_book'        => 'Price Book'
             );
 
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['abandoned']['value'][] = array(
+                    'value' => 'Cart : '.$value,
+                    'label' => 'Cart : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'increment_id'
-                    || $key == 'sf_insync'
-                    || $key == 'salesforce_id'
-                    || $key == 'status'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('increment_id', 'sf_insync', 'salesforce_id', 'status'))) {
                     continue;
                 }
 
                 $this->_cache[$type]['abandoned']['value'][] = array(
                     'value' => 'Cart : ' . $key,
-                    'label' => 'Cart : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Cart : ' . $this->toName($key),
                 );
             }
         }
@@ -369,21 +423,26 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     protected function _populatePaymentAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_order_payment');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_order_payment');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento payment schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
+
         if ($collection) {
             $this->_cache[$type]['payment'] = array(
                 'label' => 'Payment',
                 'value' => array()
             );
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
+                $key = $_attribute['COLUMN_NAME'];
                 $this->_cache[$type]['payment']['value'][] = array(
                     'value' => 'Payment : ' . $key,
-                    'label' => 'Payment : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Payment : ' . $this->toName($key),
                 );
             }
         }
@@ -446,6 +505,20 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'label' => 'Customer',
             'value' => array(),
         );
+
+        $_additionalAttributes = array(
+            'id'               => 'Id',
+            'sf_record_type'   => 'Record Type',
+            'sf_email_opt_out' => 'Email Opt Out'
+        );
+
+        foreach ($_additionalAttributes as $value => $label) {
+            $this->_cache[$type]['customer']['value'][] = array(
+                'value' => 'Customer : '.$value,
+                'label' => 'Customer : '.$label,
+            );
+        }
+
         foreach ($collection as $_attribute) {
             if ($_attribute->frontend_label != "") {
                 $this->_cache[$type]['customer']['value'][] = array(
@@ -476,7 +549,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
                 $this->_cache[$type]['customer_group']['value'][] = array(
                     'value' => 'Customer Group : ' . $key,
-                    'label' => 'Customer Group : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Customer Group : ' . $this->toName($key),
                 );
             }
             break;
@@ -550,33 +623,47 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         unset($collection, $_attribute);
     }
 
-    public function _populateCartAttributes($type)
+    public function _populateOrderItemAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_order_item');
-        } catch (Exception $e) {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_order_item');
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento cart items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
+
         if ($collection) {
-            $this->_cache[$type]['shopping'] = array(
-                'label' => 'Cart Attributes',
+            $this->_cache[$type]['order_items'] = array(
+                'label' => 'Order Item Attributes',
                 'value' => array()
             );
+
+            $_additionalAttributes = array(
+                'unit_price'              => 'Unit Price',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['order_items']['value'][] = array(
+                    'value' => 'Order Item : '.$value,
+                    'label' => 'Order Item : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'item_id'
-                    || $key == 'order_id'
-                    || $key == 'parent_item_id'
-                    || $key == 'quote_item_id'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('item_id', 'order_id', 'parent_item_id', 'quote_item_id', 'product_options'))) {
                     continue;
                 }
 
-                $this->_cache[$type]['shopping']['value'][] = array(
-                    'value' => 'Cart : ' . $key,
-                    'label' => 'Cart : ' . ucwords(str_replace("_", " ", $key)),
+                $this->_cache[$type]['order_items']['value'][] = array(
+                    'value' => 'Order Item : ' . $key,
+                    'label' => 'Order Item : ' . $this->toName($key),
                 );
             }
         }
@@ -585,30 +672,43 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateAbandonedItemAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_quote_item');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_quote_item');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
+
         if ($collection) {
-            $this->_cache[$type]['shopping'] = array(
-                'label' => 'Abandoned Cart items attributes',
+            $this->_cache[$type]['abandoned_items'] = array(
+                'label' => 'Abandoned Cart items',
                 'value' => array()
             );
+
+            $_additionalAttributes = array(
+                'unit_price'              => 'Unit Price',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['abandoned_items']['value'][] = array(
+                    'value' => 'Cart Item : '.$value,
+                    'label' => 'Cart Item : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'item_id'
-                    || $key == 'quote_id'
-                    || $key == 'parent_item_id'
-                    || $key == 'quote_item_id'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('item_id', 'quote_id', 'parent_item_id', 'quote_item_id'))) {
                     continue;
                 }
 
                 $this->_cache[$type]['abandoned_items']['value'][] = array(
-                    'value' => 'Item : ' . $key,
-                    'label' => 'Item : ' . ucwords(str_replace("_", " ", $key)),
+                    'value' => 'Cart Item : ' . $key,
+                    'label' => 'Cart Item : ' . $this->toName($key),
                 );
             }
         }
@@ -617,31 +717,89 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateInvoiceItemAttributes($type)
     {
         try {
-            $collection = $this->getTableColumnList('sales_flat_invoice_item');
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_invoice_item');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
         }
+
         if ($collection) {
             $this->_cache[$type]['invoice_items'] = array(
                 'label' => 'Invoice item attributes',
                 'value' => array()
             );
+
+            $_additionalAttributes = array(
+                'number'                  => 'Number',
+                'unit_price'              => 'Unit Price',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['invoice_items']['value'][] = array(
+                    'value' => 'Billing Item : '.$value,
+                    'label' => 'Billing Item : '.$label,
+                );
+            }
+
             foreach ($collection as $_attribute) {
-                $key = $_attribute['Field'];
-                if (
-                    $key == 'entity_id'
-                    || $key == 'parent_id'
-                    || $key == 'product_id'
-                    || $key == 'order_item_id'
-                    || $key == 'salesforce_id'
-                ) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('entity_id', 'parent_id', 'product_id', 'order_item_id', 'salesforce_id'))) {
                     continue;
                 }
 
                 $this->_cache[$type]['invoice_items']['value'][] = array(
                     'value' => 'Billing Item : ' . $key,
-                    'label' => 'Billing Item : ' . ucwords(str_replace("_", " ", $key)),
+                    'label' => 'Billing Item : ' . $this->toName($key),
+                );
+            }
+        }
+    }
+
+    public function _populateShipmentItemAttributes($type)
+    {
+        try {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_shipment_item');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['shipment_items'] = array(
+                'label' => 'Shipment item attributes',
+                'value' => array()
+            );
+
+            $_additionalAttributes = array(
+                'number'                  => 'Number',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['shipment_items']['value'][] = array(
+                    'value' => 'Shipment Item : '.$value,
+                    'label' => 'Shipment Item : '.$label,
+                );
+            }
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('entity_id', 'parent_id', 'product_id', 'order_item_id', 'salesforce_id'))) {
+                    continue;
+                }
+
+                $this->_cache[$type]['shipment_items']['value'][] = array(
+                    'value' => 'Shipment Item : ' . $key,
+                    'label' => 'Shipment Item : ' . $this->toName($key),
                 );
             }
         }
@@ -692,6 +850,12 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'label' => 'Product : Url of the product page',
         );
 
+        // add product number
+        $this->_cache[$type]['product']['value'][] = array(
+            'value' => 'Product : id', // do not use type_Id cause error happens
+            'label' => 'Product : Id',
+        );
+
         // add inventory field list
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
             $this->_cache[$type]['inventory'] = array(
@@ -699,15 +863,104 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'value' => array(),
             );
 
-            foreach ($this->getTableColumnList() as $one) {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('cataloginventory_stock_item');
+
+            foreach ($collection as $one) {
                 $this->_cache[$type]['inventory']['value'][] = array(
-                    'value' => "Product Inventory : {$one['Field']}",
-                    'label' => 'Product Inventory : '.$this->toName($one['Field']),
+                    'value' => "Product Inventory : {$one['COLUMN_NAME']}",
+                    'label' => 'Product Inventory : '.$this->toName($one['COLUMN_NAME']),
                 );
             }
         }
 
         unset($collection, $_attribute);
+    }
+
+    public function _populateCatalogruleAttributes($type)
+    {
+        try {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('catalogrule');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['catalog_rule'] = array(
+                'label' => 'Catalog rule attributes',
+                'value' => array()
+            );
+
+            $_additionalAttributes = array(
+                'number'                  => 'Number',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['catalog_rule']['value'][] = array(
+                    'value' => 'Catalog Rule : '.$value,
+                    'label' => 'Catalog Rule : '.$label,
+                );
+            }
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('salesforce_id'))) {
+                    continue;
+                }
+
+                $this->_cache[$type]['catalog_rule']['value'][] = array(
+                    'value' => 'Catalog Rule : ' . $key,
+                    'label' => 'Catalog Rule : ' . $this->toName($key),
+                );
+            }
+        }
+    }
+
+    public function _populateSalesruleAttributes($type)
+    {
+        try {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('salesrule');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['sales_rule'] = array(
+                'label' => 'Shopping cart rule attributes',
+                'value' => array()
+            );
+
+            $_additionalAttributes = array(
+                'number'                  => 'Number',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['sales_rule']['value'][] = array(
+                    'value' => 'Shopping Cart Rule : '.$value,
+                    'label' => 'Shopping Cart Rule : '.$label,
+                );
+            }
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('salesforce_id'))) {
+                    continue;
+                }
+
+                $this->_cache[$type]['sales_rule']['value'][] = array(
+                    'value' => 'Shopping Cart Rule : ' . $key,
+                    'label' => 'Shopping Cart Rule : ' . $this->toName($key),
+                );
+            }
+        }
     }
 
     /**

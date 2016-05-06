@@ -58,10 +58,8 @@ class TNW_Salesforce_Model_Customer_Observer
 
         if (!empty($formData)) {
             try {
+                /** @var tnw_salesforce_helper_salesforce_customer $manualSync */
                 $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-                $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
                 if ($manualSync->reset()) {
                     $manualSync->pushLead($formData);
                 }
@@ -116,16 +114,7 @@ class TNW_Salesforce_Model_Customer_Observer
 
         /** @var tnw_salesforce_helper_salesforce_customer $manualSync */
         $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-        if ($manualSync->reset()) {
-            $manualSync->updateMagentoEntityValue($customer->getId(), NULL, 'sf_insync', 'customer_entity_int');
-
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
-            if ($manualSync->massAdd(array($customer->getId()))){
-                $manualSync->process();
-            }
-
+        if ($manualSync->reset() && $manualSync->massAdd(array($customer->getId())) && $manualSync->process()) {
             if (Mage::helper('tnw_salesforce')->displayErrors()
                 && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
                 Mage::getSingleton('adminhtml/session')

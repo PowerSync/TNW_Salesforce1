@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.53.15.0003</version>
+            <version>0.01.54.05.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -30,6 +30,11 @@
                     <order_creditmemo_comment>TNW_Salesforce_Model_Order_Creditmemo_Comment</order_creditmemo_comment>
                 </rewrite>
             </sales>
+            <catalog>
+                <rewrite>
+                    <product>TNW_Salesforce_Model_Product</product>
+                </rewrite>
+            </catalog>
             <tnw_salesforce>
                 <class>TNW_Salesforce_Model</class>
                 <resourceModel>tnw_salesforce_mysql4</resourceModel>
@@ -91,6 +96,9 @@
                     <campaign_member>
                         <table>CampaignMember</table>
                     </campaign_member>
+                    <currency>
+                        <table>CurrencyType</table>
+                    </currency>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>
@@ -127,6 +135,7 @@
             <adminhtml>
                 <rewrite>
                     <system_store_store>TNW_Salesforce_Block_Adminhtml_System_Store</system_store_store>
+                    <system_currency>TNW_Salesforce_Block_Adminhtml_System_Currency</system_currency>
                     <sales_order_status_grid>TNW_Salesforce_Block_Sales_Order_Status_Grid</sales_order_status_grid>
                     <sales_order_status_new_form>TNW_Salesforce_Block_Sales_Order_Status_New_Form</sales_order_status_new_form>
                     <sales_order_status_edit_form>TNW_Salesforce_Block_Sales_Order_Status_Edit_Form</sales_order_status_edit_form>
@@ -149,44 +158,53 @@
                 </observers>
             </controller_action_postdispatch_contacts>
 
-            <!-- Product duplication -->
-            <catalog_model_product_duplicate>
-                <observers>
-                    <tnw_salesforce_catalog_model_product_duplicate>
-                        <class>tnw_salesforce/product_observer</class>
-                        <method>duplicateBefore</method>
-                    </tnw_salesforce_catalog_model_product_duplicate>
-                </observers>
-            </catalog_model_product_duplicate>
             <!-- Newsletter Subscription: Create -->
-            <newsletter_subscriber_save_after>
+            <newsletter_subscriber_save_commit_after>
                 <observers>
                     <tnw_salesforce_newsletter_observer>
                         <class>tnw_salesforce/newsletter_observer</class>
                         <method>triggerCreateEvent</method>
                     </tnw_salesforce_newsletter_observer>
                 </observers>
-            </newsletter_subscriber_save_after>
+            </newsletter_subscriber_save_commit_after>
 
             <!-- Newsletter Subscription: Delete -->
-            <newsletter_subscriber_delete_after>
+            <newsletter_subscriber_delete_commit_after>
                 <observers>
                     <tnw_salesforce_newsletter_observer>
                         <class>tnw_salesforce/newsletter_observer</class>
                         <method>triggerDeleteEvent</method>
                     </tnw_salesforce_newsletter_observer>
                 </observers>
-            </newsletter_subscriber_delete_after>
+            </newsletter_subscriber_delete_commit_after>
 
             <!-- -->
-            <sales_order_invoice_save_after>
+            <sales_order_invoice_save_commit_after>
                 <observers>
                     <tnw_salesforce_order_invoice_save_after>
                         <class>tnw_salesforce/order_invoice_observer</class>
                         <method>saveAfter</method>
                     </tnw_salesforce_order_invoice_save_after>
                 </observers>
-            </sales_order_invoice_save_after>
+            </sales_order_invoice_save_commit_after>
+
+            <sales_order_shipment_save_commit_after>
+                <observers>
+                    <tnw_salesforce_order_shipment_save_after>
+                        <class>tnw_salesforce/order_shipment_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_order_shipment_save_after>
+                </observers>
+            </sales_order_shipment_save_commit_after>
+
+            <sales_order_shipment_track_save_commit_after>
+                <observers>
+                    <tnw_salesforce_order_shipment_track_save_after>
+                        <class>tnw_salesforce/order_shipment_observer</class>
+                        <method>saveTrackAfter</method>
+                    </tnw_salesforce_order_shipment_track_save_after>
+                </observers>
+            </sales_order_shipment_track_save_commit_after>
 
             <!-- Order Save Event: Checkout -->
             <checkout_submit_all_after>
@@ -199,14 +217,14 @@
             </checkout_submit_all_after>
 
             <!-- Order Save Event: Status update-->
-            <sales_order_save_after>
+            <sales_order_save_commit_after>
                 <observers>
                     <tnw_salesforce_sale_observer>
                         <class>tnw_salesforce/sale_observer</class>
                         <method>orderStatusUpdateTrigger</method>
                     </tnw_salesforce_sale_observer>
                 </observers>
-            </sales_order_save_after>
+            </sales_order_save_commit_after>
 
             <tnw_salesforce_order_save_form>
                 <observers>
@@ -281,15 +299,33 @@
                 </observers>
             </tnw_salesforce_order_comments_save_after>
 
+            <tnw_salesforce_invoice_comments_save_after>
+                <observers>
+                    <tnw_salesforce_notes_observer>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>baseNotesPush</method>
+                    </tnw_salesforce_notes_observer>
+                </observers>
+            </tnw_salesforce_invoice_comments_save_after>
+
+            <tnw_salesforce_shipment_comments_save_after>
+                <observers>
+                    <tnw_salesforce_notes_observer>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>baseNotesPush</method>
+                    </tnw_salesforce_notes_observer>
+                </observers>
+            </tnw_salesforce_shipment_comments_save_after>
+
             <!-- Product Save Event -->
-            <catalog_product_save_after>
+            <catalog_product_save_commit_after>
                 <observers>
                     <tnw_salesforce_product_observer>
                         <class>tnw_salesforce/product_observer</class>
                         <method>salesforceTriggerEvent</method>
                     </tnw_salesforce_product_observer>
                 </observers>
-            </catalog_product_save_after>
+            </catalog_product_save_commit_after>
 
             <tnw_salesforce_product_save>
                 <observers>
@@ -301,14 +337,14 @@
             </tnw_salesforce_product_save>
 
             <!-- Customer Save Event -->
-            <customer_save_after>
+            <customer_save_commit_after>
                 <observers>
                     <tnw_salesforce_customer_observer>
                         <class>tnw_salesforce/customer_observer</class>
                         <method>salesforceTriggerEvent</method>
                     </tnw_salesforce_customer_observer>
                 </observers>
-            </customer_save_after>
+            </customer_save_commit_after>
             <aitcfm_customer_save_after>
                 <observers>
                     <tnw_salesforce_customer_observer>
@@ -326,14 +362,14 @@
                 </observers>
             </tnw_salesforce_customer_save>
             <!-- Website Save Event -->
-            <website_save_after>
+            <website_save_commit_after>
                 <observers>
                     <tnw_salesforce_website_observer>
                         <class>tnw_salesforce/website_observer</class>
                         <method>salesforcePush</method>
                     </tnw_salesforce_website_observer>
                 </observers>
-            </website_save_after>
+            </website_save_commit_after>
             <adminhtml_store_edit_form_prepare_form>
                 <observers>
                     <tnw_salesforce_website_edit_observer>
@@ -361,6 +397,24 @@
                     </tnw_salesforce_push_opportunity>
                 </observers>
             </tnw_salesforce_opportunity_process>
+            <!-- Pushing invoice object into Salesforce post all validation -->
+            <tnw_salesforce_invoice_process>
+                <observers>
+                    <tnw_salesforce_push_invoice>
+                        <class>tnw_salesforce/observer</class>
+                        <method>pushInvoice</method>
+                    </tnw_salesforce_push_invoice>
+                </observers>
+            </tnw_salesforce_invoice_process>
+            <!-- Pushing shipment object into Salesforce post all validation -->
+            <tnw_salesforce_shipment_process>
+                <observers>
+                    <tnw_salesforce_push_shipment>
+                        <class>tnw_salesforce/observer</class>
+                        <method>pushShipment</method>
+                    </tnw_salesforce_push_shipment>
+                </observers>
+            </tnw_salesforce_shipment_process>
             <!-- Update order status - Opportunity -->
             <tnw_salesforce_opportunity_status_update>
                 <observers>
@@ -414,15 +468,15 @@
                 </observers>
             </tnw_salesforce_order_send_after>
 
-            <tnw_salesforce_order_products_send_after>
+            <salesrule_rule_save_commit_after>
                 <observers>
-                    <tnw_send_order_item_campaing>
+                    <tnw_after_sales_rule_save>
+                        <type>singleton</type>
                         <class>tnw_salesforce/sale_observer</class>
-                        <method>sendOrderItemCampaing</method>
-                    </tnw_send_order_item_campaing>
+                        <method>afterSalesRuleSave</method>
+                    </tnw_after_sales_rule_save>
                 </observers>
-            </tnw_salesforce_order_products_send_after>
-
+            </salesrule_rule_save_commit_after>
         </events>
     </global>
     <adminhtml>
@@ -458,6 +512,16 @@
                     </tnw_salesforce_block_observer>
                 </observers>
             </core_block_abstract_to_html_after>
+
+            <adminhtml_controller_salesrule_prepare_save>
+                <observers>
+                    <tnw_controller_sales_rule_prepare_save>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>controllerSalesRulePrepareSave</method>
+                    </tnw_controller_sales_rule_prepare_save>
+                </observers>
+            </adminhtml_controller_salesrule_prepare_save>
         </events>
     </adminhtml>
     <frontend>
@@ -479,14 +543,14 @@
 
                 </observers>
             </sales_order_place_after>
-            <customer_address_save_after>
+            <customer_address_save_commit_after>
                 <observers>
                     <tnw_salesforce_customer_address_save_after_observer>
                         <class>tnw_salesforce/customer_observer</class>
                         <method>afterAddressSave</method>
                     </tnw_salesforce_customer_address_save_after_observer>
                 </observers>
-            </customer_address_save_after>
+            </customer_address_save_commit_after>
         </events>
     </frontend>
     <admin>
@@ -515,6 +579,10 @@
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::addAbandonedToQueue</model></run>
             </tnw_salesforce_abandoned>
+
+            <tnw_salesforce_currency>
+                <run><model>tnw_salesforce/cron::syncCurrency</model></run>
+            </tnw_salesforce_currency>
         </jobs>
     </crontab>
     <default>
@@ -586,11 +654,14 @@
                 <order_sync_enable>0</order_sync_enable>
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
-                <order_multi_currency>0</order_multi_currency>
-                <order_currency_sync>customer</order_currency_sync>
+                <notes_synchronize>1</notes_synchronize>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
             </general>
+            <currency>
+                <multi_currency>0</multi_currency>
+                <currency_sync>customer</currency_sync>
+            </currency>
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
@@ -613,16 +684,4 @@
             </invoice_configuration>
         </salesforce_order>
     </default>
-    <phpunit>
-        <suite>
-            <modules>
-                <TNW_Salesforce />
-            </modules>
-            <fixture>
-                <processors>
-                    <salesforce>tnw_salesforce/fixture_processor_salesforce</salesforce>
-                </processors>
-            </fixture>
-        </suite>
-    </phpunit>
 </config>

@@ -13,22 +13,6 @@ class TNW_Salesforce_Model_Product_Observer
     /**
      * @param $observer
      */
-    public function duplicateBefore($observer)
-    {
-        /**
-         * @var Mage_Catalog_Model_Product $_newProduct
-         */
-        $_newProduct = $observer->getEvent()->getNewProduct();
-
-        $_newProduct->unsSalesforceId();
-        $_newProduct->unsSalesforcePricebookId();
-
-        return;
-    }
-
-    /**
-     * @param $observer
-     */
     public function salesforceTriggerEvent($observer)
     {
        $_product = $observer->getEvent()->getProduct();

@@ -103,7 +103,6 @@
                         </api_wsdl>
                     </fields>
                 </api_config>
-                <!--
                 <api_license translate="label" module="tnw_salesforce">
                     <label>License</label>
                     <sort_order>200</sort_order>
@@ -130,7 +129,6 @@
                         </api_invoice>
                     </fields>
                 </api_license>
-                -->
                 <developer translate="label" module="tnw_salesforce">
                     <label>Notification</label>
                     <sort_order>300</sort_order>
@@ -469,6 +467,18 @@
                                 <developer_settings>1</developer_settings>
                             </depends>
                         </invoice_batch_size>
+
+                        <shipment_batch_size translate="label">
+                            <label>Shipment Limit</label>
+                            <sort_order>160</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Shipment batch size limit]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </shipment_batch_size>
 
                         <!-- Bulk settings end -->
 
@@ -1030,6 +1040,16 @@
                             <show_in_store>0</show_in_store>
                             <comment>Attach Salesforce products to the Order in Salesforce</comment>
                         </order_product_enable>
+                        <notes_synchronize>
+                            <label>Synchronize Notes</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable the ability to synchronize order notes with Salesforce</comment>
+                        </notes_synchronize>
                         <order_status_all translate="label">
                             <label>Sync all orders</label>
                             <frontend_type>select</frontend_type>
@@ -1065,33 +1085,6 @@
                             <can_be_empty>0</can_be_empty>
                             <comment>Only synchronize orders with statuses selected above</comment>
                         </order_status_allow>
-                        <order_multi_currency translate="label">
-                            <label>Multi-Currency</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_currency</source_model>
-                            <sort_order>100</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
-                                Salesforce multi-currency support must be enabled as well.
-                                <a href="https://help.salesforce.com/HTViewHelpDoc?id=admin_enable_multicurrency.htm&amp;language=en_US">Salesforce Topic</a>
-                                ]]></comment>
-                        </order_multi_currency>
-
-                        <order_currency_sync translate="label">
-                            <label>Which currency should be used</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_sync_currency</source_model>
-                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mappings</comment>
-                            <sort_order>110</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <depends>
-                                <order_multi_currency>0</order_multi_currency>
-                            </depends>
-                        </order_currency_sync>
 
                         <customer_address translate="label">
                             <label>Customer Address</label>
@@ -1106,6 +1099,79 @@
 
                     </fields>
                 </general>
+                <currency>
+                    <label>Currency Configuration</label>
+                    <sort_order>60</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <multi_currency translate="label">
+                            <label>Multi-Currency</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_currency</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
+                                Salesforce multi-currency support must be enabled as well.
+                                <a href="https://help.salesforce.com/HTViewHelpDoc?id=admin_enable_multicurrency.htm&amp;language=en_US">Salesforce Topic</a>
+                                ]]></comment>
+                        </multi_currency>
+
+                        <currency_sync translate="label">
+                            <label>Which currency should be used</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_sync_currency</source_model>
+                            <comment>This option doesn't take affect for the "Order" and "OrderItem" mappings</comment>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>0</multi_currency>
+                            </depends>
+                        </currency_sync>
+
+                        <enabled_auto_sync translate="label">
+                            <label>Enable Automatic Sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>1</multi_currency>
+                            </depends>
+                        </enabled_auto_sync>
+                        <time translate="label">
+                            <label>Start Time</label>
+                            <frontend_type>time</frontend_type>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>1</multi_currency>
+                            </depends>
+                        </time>
+                        <frequency translate="label">
+                            <label>Frequency</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_cron_frequency</source_model>
+                            <backend_model>tnw_salesforce/config_backend_currency_cron</backend_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <multi_currency>1</multi_currency>
+                            </depends>
+                        </frequency>
+                    </fields>
+                </currency>
                 <customer_opportunity translate="label" module="tnw_salesforce">
                     <label>Order Integration</label>
                     <sort_order>100</sort_order>
@@ -1422,7 +1488,8 @@
                         <invoice_sync_enable translate="label">
                             <label>Enable Integration</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_no</source_model>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <backend_model>tnw_salesforce/config_invoice_backend_sync_enable</backend_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -1441,7 +1508,8 @@
                         <sync_enabled translate="label comment" module="tnw_salesforce">
                             <label>Enable Integration</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_no</source_model>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <backend_model>tnw_salesforce/config_shipment_backend_sync_enable</backend_model>
                             <sort_order>100</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -1450,6 +1518,65 @@
                         </sync_enabled>
                     </fields>
                 </shipment_configuration>
+                <salesforce_campaigns>
+                    <label>Campaigns</label>
+                    <sort_order>360</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enabled translate="label comment" module="tnw_salesforce">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>100</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Integrate Shopping Cart Price Rules with Salesforce Campaigns</comment>
+                        </sync_enabled>
+                        <default_status>
+                            <label>Default Status</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_campaign_status</source_model>
+                            <sort_order>110</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default campaign status</comment>
+                        </default_status>
+                        <default_type>
+                            <label>Default Type</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_campaign_type</source_model>
+                            <sort_order>120</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default campaign type</comment>
+                        </default_type>
+                        <default_owner>
+                            <label>Default Owner</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>chosen-select</frontend_class>
+                            <sort_order>130</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default Campaign Owner</comment>
+                        </default_owner>
+                        <create_campaign_automatic>
+                            <label>Create new Campaign automatic</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>140</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </create_campaign_automatic>
+                    </fields>
+                </salesforce_campaigns>
             </groups>
         </salesforce_order>
     </sections>
