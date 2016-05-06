@@ -120,6 +120,17 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
                     continue;
                 }
 
+                /** @var Mage_Sales_Model_Order_Item $item */
+                $item = $order->getItemsCollection()->getItemById($orderItemId);
+                if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                    /** @var Mage_Sales_Model_Order_Item $_item */
+                    foreach ($item->getChildrenItems() as $_item) {
+                        $savedQtys[$_item->getId()] = (int)$record->$_iItemQuantityKey;
+                    }
+
+                    continue;
+                }
+
                 $savedQtys[$orderItemId] = (int)$record->$_iItemQuantityKey;
             }
 
