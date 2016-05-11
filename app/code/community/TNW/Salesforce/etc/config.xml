@@ -612,6 +612,7 @@
                 <order_batch_size>150</order_batch_size>
                 <abandoned_batch_size>150</abandoned_batch_size>
                 <invoice_batch_size>150</invoice_batch_size>
+                <shipment_batch_size>150</shipment_batch_size>
 
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
