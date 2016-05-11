@@ -90,6 +90,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                             && $tmp->ConvertedContactId
                         )
                     ) {
+                        $_websiteKey = $this->prepareId($_websiteKey);
                         /**
                          * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
                          */
@@ -105,7 +106,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                                 $_key = $email[$tmp->MagentoId];
                             }
 
-                            $_websiteKey = $this->prepareId($_websiteKey);
                             $returnArray[$_websiteKey][$_key] = $tmp;
                         }
                     }
