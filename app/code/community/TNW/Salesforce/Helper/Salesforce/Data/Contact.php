@@ -349,8 +349,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                      */
                     if (
                         !isset($returnArray[$_websiteKey][$_key])
-                        || ($tmp->MagentoId && isset($email[$tmp->MagentoId]) && $email[$tmp->MagentoId] == $tmp->Email)
+                        || ($tmp->MagentoId && !empty($email[$tmp->MagentoId]))
                     ) {
+
+                        /**
+                         * if record was found by MagentoId and has different email - use email from Magento system
+                         */
+                        if (!empty($email[$tmp->MagentoId])) {
+                            $_key = $email[$tmp->MagentoId];
+                        }
+
                         $_websiteKey = $this->prepareId($_websiteKey);
                         $returnArray[$_websiteKey][$_key] = $tmp;
                     }

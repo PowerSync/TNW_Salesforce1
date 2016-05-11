@@ -298,8 +298,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                  */
                 if (
                     !isset($returnArray[$key])
-                    || (isset($_emails[$_contactMagentoIdValue]) && $_emails[$_contactMagentoIdValue] == $_email)
-                    || (isset($_emails[$_accountMagentoIdValue]) && $_emails[$_accountMagentoIdValue] == $_email)
+                    || (!empty($emails[$_contactMagentoIdValue]))
+                    || (!empty($emails[$_accountMagentoIdValue]))
                 ) {
                     $returnArray[$key] = $_item->Account;
                     $returnArray[$key]->Id = $_item->AccountId;
