@@ -201,7 +201,8 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'values' => $_typeValues,
             'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
                 . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
-                . '<b>Update Only</b> - pass value to Salesforce only when updating a record'),
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record. '
+                . 'Available for non-system mapping only.'),
         ));
 
         /* SF > Magento */
@@ -212,7 +213,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'name' => 'sf_magento_enable',
             'class' => 'chosen-select',
             'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
-            'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
+            'note' => $this->__('Allow Salesforce to change data in Magento for this mapping'),
             'disabled' => $_isSystem
         ));
 
@@ -223,7 +224,8 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'values' => $_typeValues,
             'note' => $this->__('<b>Upsert</b> - update value when inserting or creating record<br>'
                 . '<b>Insert Only</b> - pass value to Salesforce only when creating a new record<br>'
-                . '<b>Update Only</b> - pass value to Salesforce only when updating a record'),
+                . '<b>Update Only</b> - pass value to Salesforce only when updating a record. '
+                . 'Available for non-system mapping only.'),
         ));
 
         /* Custom Value */
