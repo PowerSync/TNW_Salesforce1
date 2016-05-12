@@ -264,6 +264,9 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             // Save Product
             $_product->save();
 
+            // Update Price
+            $this->updatePrice($object, $_product->getId());
+
             if ($_flag) {
                 Mage::getSingleton('core/session')->setFromSalesForce(false);
             }
@@ -276,6 +279,64 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: " . $e->getMessage());
             unset($e);
             return false;
+        }
+    }
+
+    /**
+     * @param $object stdClass
+     * @param $productId
+     * @throws Mage_Core_Exception
+     */
+    protected function updatePrice($object, $productId)
+    {
+        // Update Price
+        if (!property_exists($object, 'PriceBookEntry') || !is_array($object->PriceBookEntry)) {
+            return;
+        }
+
+        $storeIds = array_keys(Mage::app()->getStores());
+        if (Mage::getStoreConfig(Mage_Catalog_Helper_Data::XML_PATH_PRICE_SCOPE) == Mage_Catalog_Helper_Data::PRICE_SCOPE_GLOBAL) {
+            $storeIds = array(Mage::app()->getWebsite(true)->getDefaultStore()->getId());
+        }
+
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        foreach ($storeIds as $storeId) {
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+
+            $currencyBase = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE)
+                : null;
+
+            $pricebookId = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::PRODUCT_PRICEBOOK);
+
+            $price = null;
+            foreach ($object->PriceBookEntry as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'Currency')) {
+                    $_price->Currency = null;
+                }
+
+                if ($_price->Currency != $currencyBase) {
+                    continue;
+                }
+
+                $price = $_price->UnitPrice;
+                break;
+            }
+
+            if (!empty($price)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('price' => (float)$price), $storeId);
+            }
+
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
     }
 
