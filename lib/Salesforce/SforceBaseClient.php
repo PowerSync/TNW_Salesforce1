@@ -850,7 +850,7 @@ class Salesforce_SforceBaseClient
         $arg = new stdClass;
         $arg->queryLocator = $queryLocator;
         $QueryResult = $this->sforce->queryMore($arg)->result;
-        return new Salesforce_QueryResult($QueryResult);
+        return new $QueryResult;
     }
 
     /**
