@@ -46,7 +46,7 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_View_Opportunities extend
 
     protected function _beforeToHtml()
     {
-        if (!Mage::helper('tnw_salesforce/config_customer')->isOpportunityView()) {
+        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
             return $this;
         }
 
