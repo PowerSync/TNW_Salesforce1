@@ -11,6 +11,8 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     const CONFIG_MERGE_DUPLICATES = 'salesforce_customer/sync/merge_duplicates';
     const CONFIG_ACCOUNT_SYNC_CUSTOMER = 'salesforce_customer/sync/single_account_sync_customer';
     const CONFIG_ACCOUNT_SELECT = 'salesforce_customer/sync/single_account_select';
+    const CONFIG_OPPORTUNITY_VIEW = 'salesforce_order/customer_view/opportunity_display';
+    const CONFIG_OPPORTUNITY_FILTER = 'salesforce_order/customer_view/opportunity_filter';
 
     // Create new customers from Salesforce
     public function allowSalesforceToCreate()
@@ -58,5 +60,33 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     public function getAccountSelect()
     {
         return $this->getStoreConfig(self::CONFIG_ACCOUNT_SELECT);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isOpportunityView()
+    {
+        return (bool)$this->getStoreConfig(self::CONFIG_OPPORTUNITY_VIEW);
+    }
+
+    /**
+     * @return string
+     */
+    public function getOpportunityFilterType()
+    {
+        return $this->getStoreConfig(self::CONFIG_OPPORTUNITY_FILTER);
+    }
+
+    /**
+     * @return array
+     */
+    public function getAccordionConfig()
+    {
+        return array(
+            'title'       => $this->__('Customer Opportunity'),
+            'ajax'        => true,
+            'content_url' => Mage::getSingleton('core/url')->getUrl('*/*/opportunities', array('_current' => true)),
+        );
     }
 }

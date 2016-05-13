@@ -135,6 +135,7 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
             'header' => Mage::helper('sales')->__('Opportunity ID'),
             'index' => 'salesforce_id',
             'type' => 'text',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
 

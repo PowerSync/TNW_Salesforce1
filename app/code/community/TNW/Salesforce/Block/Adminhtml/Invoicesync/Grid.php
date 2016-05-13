@@ -81,6 +81,7 @@ class TNW_Salesforce_Block_Adminhtml_Invoicesync_Grid extends Mage_Adminhtml_Blo
             'header' => $this->__('Salesforce ID'),
             'index' => 'salesforce_id',
             'type' => 'text',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
             'filter_index' => 'flat_invoice.salesforce_id',
         ));

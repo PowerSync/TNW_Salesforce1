@@ -98,6 +98,10 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     {
         $row = $this->fetchRow($sql, $bind);
 
+        if (isset($row['any'])) {
+            $row = $row['any'];
+        }
+
         return is_array($row) ? current($row) : null;
     }
 

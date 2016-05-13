@@ -80,6 +80,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
             'header' => $this->__('Salesforce ID'),
             'index' => 'salesforce_id',
             'type' => 'text',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
             'filter_index' => 'flat_shipment.salesforce_id',
         ));
