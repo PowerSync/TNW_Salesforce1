@@ -48,7 +48,7 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
             }
             $_dataToLog->type = $_type;
             $_dataToLog->response = $_responses[$_key];
-            $this->_logData[] = serialize($_dataToLog);
+            $this->_logData[] = $_dataToLog;
         }
     }
 
@@ -71,10 +71,12 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
         try {
             $client = new Zend_Http_Client('http://www.idealdata.io/monitoring/log');
             $validator =
-                $this->_encrypt(Mage::helper('tnw_salesforce')->getLicenseInvoice()) . $this->_separator .
-                $this->_encrypt(Mage::helper('tnw_salesforce')->getLicenseEmail()) . $this->_separator .
-                $this->_encrypt($this->_serverName) . $this->_separator .
-                $this->_encrypt(serialize($this->_logData))
+                Mage::helper('tnw_salesforce')->getLicenseInvoice() . $this->_separator .
+                Mage::helper('tnw_salesforce')->getLicenseEmail() . $this->_separator .
+                $this->_serverName . $this->_separator .
+                json_encode($this->_logData) . $this->_separator .
+                Mage::helper('tnw_salesforce')->getType() . $this->_separator .
+                Mage::helper('tnw_salesforce')->getExtensionVersion()
             ;
 
             $client->setParameterPost('log', $validator);
