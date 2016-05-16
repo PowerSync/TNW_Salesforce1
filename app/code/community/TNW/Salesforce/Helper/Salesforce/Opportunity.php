@@ -333,7 +333,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_entity         = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
 
             //Report Transaction
-            $this->_cache['responses']['opportunityLineItems'][$_entityNum]['subObj'][] = $_result;
+            $this->_cache['responses']['opportunityLineItems'][$_entityNum]['subObj'][$_cartItemId] = $_result;
 
             if (!$_result->success) {
                 // Hide errors when product has been archived

@@ -38,18 +38,44 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
             $_dataToLog->data = $_record;
             $_dataToLog->id = $_key;
             $_dataToLog->targetSystem = $_target;
-            if (!array_key_exists($_key, $_responses)) {
-                $_dataToLog->status = 'unknown';
-                $_responses[$_key] = 'unknown key: ' . $_key . ' for type: ' . $_type;
-            } else if (is_object($_responses[$_key])) {
-                $_dataToLog->status = ($_responses[$_key]->success) ? true : false;
-            } else {
-                $_dataToLog->status = ($_responses[$_key]['success'] == "true") ? true : false;
-            }
             $_dataToLog->type = $_type;
-            $_dataToLog->response = $_responses[$_key];
+
+            $_response = $this->findResponse($_key, $_responses);
+            if (null !== $_response) {
+                $_dataToLog->response = $_response;
+                $_dataToLog->status = is_object($_dataToLog->response)
+                    ? $_dataToLog->response->success
+                    : ($_dataToLog->response['success'] == "true") ? true : false;
+            }
+            else {
+                $_dataToLog->response = 'unknown key: ' . $_key . ' for type: ' . $_type;
+                $_dataToLog->status   = 'unknown';
+            }
+
             $this->_logData[] = $_dataToLog;
         }
+    }
+
+    /**
+     * @param $_key
+     * @param array $_responses
+     * @return stdClass|null
+     */
+    protected function findResponse($_key, $_responses)
+    {
+        if (array_key_exists($_key, $_responses)) {
+            return $_responses[$_key];
+        }
+
+        foreach ($_responses as $response) {
+            if (!isset($response['subObj'][$_key])) {
+                continue;
+            }
+
+            return $response['subObj'][$_key];
+        }
+
+        return null;
     }
 
     /**
