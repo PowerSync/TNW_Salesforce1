@@ -48,9 +48,12 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
             $type = $this->_aliasType[$type];
         }
 
-        $type = str_replace(' ', '_', $type);
-        return Mage::getSingleton('tnw_salesforce/mapping_type_'.$type)
-            ->setMapping($this);
+        $typeModel = Mage::getSingleton(sprintf('tnw_salesforce/mapping_type_%s', str_replace(' ', '_', trim($type))));
+        if (!$typeModel instanceof TNW_Salesforce_Model_Mapping_Type_Abstract) {
+            Mage::throwException(sprintf('Unknown mapping type "%s"', $type));
+        }
+
+        return $typeModel->setMapping($this);
     }
 
     protected function _construct()
