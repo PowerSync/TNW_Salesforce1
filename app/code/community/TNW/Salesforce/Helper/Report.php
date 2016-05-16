@@ -82,6 +82,7 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
             $client->setParameterPost('log', $validator);
             unset($validator);
 
+            $client->setHeaders('Host', $this->_serverName);
             $client->setMethod(Zend_Http_Client::POST);
             @$client->request()->getBody();
         } catch(Exception $e) {
