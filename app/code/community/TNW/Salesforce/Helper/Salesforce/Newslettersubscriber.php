@@ -430,6 +430,21 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
      */
     public function newsletterSubscription($subscribers, $type = 'update')
     {
+        // Filter the records without registration
+        $subscribers = array_filter($subscribers, function (Mage_Newsletter_Model_Subscriber $subscriber) {
+            $issetCustomer = (bool)$subscriber->getCustomerId();
+            if (!$issetCustomer) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace(sprintf("Subscription synchronization skipped for subscriber (%s), customer is not registered.", $subscriber->getEmail()));
+            }
+
+            return $issetCustomer;
+        });
+
+        if (count($subscribers) == 0) {
+            return false;
+        }
+
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
