@@ -32,7 +32,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Campaign_Member extends TNW_Salesfor
 
                 $where = array();
                 if (!empty($sfIds)) {
-                    $where[] = sprintf('ContactId IN (\'%s\')', implode(', ', $sfIds));
+                    $where[] = sprintf('ContactId IN (\'%s\')', implode('\', \'', $sfIds));
                 }
 
                 $sfLeadIds = array_filter(array_map(function(Mage_Customer_Model_Customer $customer){
@@ -40,7 +40,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Campaign_Member extends TNW_Salesfor
                 }, $customers));
 
                 if (!empty($sfLeadIds)) {
-                    $where[] = sprintf('LeadId IN (\'%s\')', implode(', ', $sfLeadIds));
+                    $where[] = sprintf('LeadId IN (\'%s\')', implode('\', \'', $sfLeadIds));
                 }
 
                 $query .= ' (' . implode(' OR ', $where) . ')';

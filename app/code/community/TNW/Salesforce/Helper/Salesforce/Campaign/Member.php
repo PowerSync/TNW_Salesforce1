@@ -364,4 +364,137 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
 
         return $this->check();
     }
+
+
+    /**
+     * remove duplicate values
+     */
+    public function removeDuplicates()
+    {
+        if (!empty($this->_cache['campaignmembersToUpsert'])) {
+            foreach ($this->_cache['campaignmembersToUpsert'] as $i => $campaignsToUpsertI) {
+                foreach ($this->_cache['campaignmembersToUpsert'] as $j => $campaignsToUpsertJ) {
+                    if (
+                        $i != $j
+                        && (array)$this->_cache['campaignmembersToUpsert'][$i] == (array)$this->_cache['campaignmembersToUpsert'][$j]
+                    ) {
+                        unset($this->_cache['campaignmembersToUpsert'][$j]);
+                    }
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    protected function _prepareEntityAfter()
+    {
+
+        /**
+         * @var $campaignResourceModel TNW_Salesforce_Model_Api_Entity_Resource_Abstract
+         * @var $campaignMemberResourceModel TNW_Salesforce_Model_Api_Entity_Resource_Abstract
+         */
+        $campaignResourceModel = Mage::getModel('tnw_salesforce/api_entity_campaign')->getResource();
+        $campaignMemberResourceModel = Mage::getModel('tnw_salesforce/api_entity_campaign_member')->getResource();
+
+        /**
+         * reset array if campaign and campaignMember not available
+         */
+        if (!$campaignResourceModel->isTableAvailable() || !$campaignMemberResourceModel->isTableAvailable()) {
+            $this->_cache['campaignmembersToUpsert'] = array();
+        }
+
+        $this->removeDuplicates();
+        if (!empty($this->_cache['campaignmembersToUpsert'])) {
+
+            $campaignsToUpsert = array_chunk($this->_cache['campaignmembersToUpsert'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+            foreach ($campaignsToUpsert as $chunk) {
+                /**
+                 * @var $campaignMemberCollection TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection
+                 */
+                $campaignMemberCollection = Mage::getModel('tnw_salesforce/api_entity_campaign_member')->getCollection();
+                $campaignMemberCollection->getSelect()->columns(array(
+                    'LeadId',
+                    'ContactId',
+                    'CampaignId'
+                ));
+
+                $filtered = false;
+                foreach ($chunk as $key => $item) {
+
+                    $field = null;
+                    $value = null;
+                    /**
+                     * skip synchronized entity
+                     */
+                    if (property_exists($item, 'Id')) {
+                        unset($this->_cache['campaignmembersToUpsert'][$key]);
+                        continue;
+                    }
+
+                    if (property_exists($item, 'LeadId')) {
+                        $field = 'LeadId';
+                        $value = $item->LeadId;
+                        $filtered = true;
+                    } elseif (property_exists($item, 'ContactId')) {
+                        $field = 'ContactId';
+                        $value = $item->ContactId;
+                        $filtered = true;
+                    }
+
+                    $campaignIdCondition = $campaignMemberCollection->getConnection()->prepareSqlCondition('CampaignId', $item->CampaignId);
+                    $campaignMemberIdFilter = $campaignMemberCollection->getConnection()->prepareSqlCondition($field, $value);
+
+                    $campaignMemberCollection
+                        ->getSelect()
+                        ->orWhere(sprintf(' ( %s AND %s ) ', $campaignIdCondition, $campaignMemberIdFilter));
+                }
+
+                /**
+                 * avoid all data loading without filters
+                 */
+                if (!$filtered) {
+                    continue;
+                }
+
+                $campaignMemberCollection->load();
+
+                /**
+                 * remove item if data already exists in SF
+                 */
+                foreach ($campaignMemberCollection as $campaignMember) {
+                    foreach ($chunk as $key => $item) {
+
+                        /**
+                         * skip synchronized entity
+                         */
+                        if (property_exists($item, 'Id')) {
+                            unset($this->_cache['campaignmembersToUpsert'][$key]);
+                            continue;
+                        }
+
+                        $campaignId = $campaignMember->getData('CampaignId');
+                        $campaignId = $this->prepareId($campaignId);
+
+                        if ($this->prepareId($item->CampaignId) != $campaignId) {
+                            continue;
+                        }
+
+                        if ((property_exists($item, 'LeadId')
+                                && $this->prepareId($item->LeadId) == $this->prepareId($campaignMember->getData('LeadId'))
+                            )
+                            || (property_exists($item, 'ContactId')
+                                && $this->prepareId($item->ContactId) == $this->prepareId($campaignMember->getData('ContactId'))
+                            )
+                        ) {
+                            unset($this->_cache['campaignmembersToUpsert'][$key]);
+                        }
+
+                    }
+                }
+
+            }
+        }
+        return $this;
+    }
 }
