@@ -210,6 +210,9 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     public function opportunityLookup($ids = array())
     {
+        $ids = !is_array($ids)
+            ? array($ids) : $ids;
+
         try {
             if (!is_object($this->getClient())) {
 

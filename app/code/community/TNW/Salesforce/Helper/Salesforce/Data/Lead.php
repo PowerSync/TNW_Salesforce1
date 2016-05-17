@@ -46,7 +46,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             }
 
             if (empty($_results)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: no results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead lookup returned: no results...");
                 return false;
             }
 

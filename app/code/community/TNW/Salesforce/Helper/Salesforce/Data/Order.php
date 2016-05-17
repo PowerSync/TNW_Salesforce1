@@ -22,6 +22,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
      */
     public function lookup($ids = array())
     {
+        $ids = !is_array($ids)
+            ? array($ids) : $ids;
+
         try {
             if (!is_object($this->getClient())) {
 
