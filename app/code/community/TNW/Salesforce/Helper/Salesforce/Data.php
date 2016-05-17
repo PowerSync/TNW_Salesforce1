@@ -6,6 +6,11 @@
 
 class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesforce
 {
+    /**
+     * Chunk size
+     */
+    const UPDATE_LIMIT = 100;
+
     const PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL = 'NOT IN USE';
     /**
      * @var null
@@ -211,39 +216,37 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 return false;
             }
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-            $_selectFields = array(
-                "ID",
-                "AccountId",
-                "Pricebook2Id",
-                "OwnerId",
-                $_magentoId,
-                "(SELECT Id, ContactId, Role FROM OpportunityContactRoles)",
-                "(SELECT Id, Quantity, ServiceDate, UnitPrice, PricebookEntry.ProductCode, PricebookEntry.Product2Id, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OpportunityLineItems)",
-                "(SELECT Id, Title, Body FROM Notes)"
-            );
-            if (is_array($ids)) {
-                $query = "SELECT " . implode(',', $_selectFields) . " FROM Opportunity WHERE " . $_magentoId . " IN ('" . implode("','", $ids) . "')";
-            } else {
-                $query = "SELECT " . implode(',', $_selectFields) . " FROM Opportunity WHERE " . $_magentoId . "='" . $ids . "'";
+
+            $_results = array();
+            foreach (array_chunk($ids, self::UPDATE_LIMIT) as $_ids) {
+                $result = $this->_queryOpportunities($_magentoId, $_ids);
+                if (empty($result) || $result->size < 1) {
+                    continue;
+                }
+
+                $_results[] = $result;
             }
-            $result = $this->getClient()->query(($query));
-            unset($query);
-            if (!$result || $result->size < 1) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity lookup returned: " . $result->size . " results...");
+
+            if (empty($_results)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: no results...");
                 return false;
             }
+
             $returnArray = array();
-            foreach ($result->records as $_item) {
-                $tmp = new stdClass();
-                $tmp->Id = $_item->Id;
-                $tmp->AccountId = (property_exists($_item, "AccountId")) ? $_item->AccountId : NULL;
-                $tmp->Pricebook2Id = (property_exists($_item, "Pricebook2Id")) ? $_item->Pricebook2Id : NULL;
-                $tmp->MagentoId = $_item->$_magentoId;
-                $tmp->OpportunityContactRoles = (property_exists($_item, "OpportunityContactRoles")) ? $_item->OpportunityContactRoles : NULL;
-                $tmp->OpportunityLineItems = (property_exists($_item, "OpportunityLineItems")) ? $_item->OpportunityLineItems : NULL;
-                $tmp->Notes = (property_exists($_item, "Notes")) ? $_item->Notes : NULL;
-                $tmp->OwnerId = (property_exists($_item, "OwnerId")) ? $_item->OwnerId : NULL;
-                $returnArray[$tmp->MagentoId] = $tmp;
+            foreach ($_results as $result) {
+                foreach ($result->records as $_item) {
+                    $tmp = new stdClass();
+                    $tmp->Id = $_item->Id;
+                    $tmp->AccountId = (property_exists($_item, "AccountId")) ? $_item->AccountId : NULL;
+                    $tmp->Pricebook2Id = (property_exists($_item, "Pricebook2Id")) ? $_item->Pricebook2Id : NULL;
+                    $tmp->MagentoId = $_item->$_magentoId;
+                    $tmp->OpportunityContactRoles = (property_exists($_item, "OpportunityContactRoles")) ? $_item->OpportunityContactRoles : NULL;
+                    $tmp->OpportunityLineItems = (property_exists($_item, "OpportunityLineItems")) ? $_item->OpportunityLineItems : NULL;
+                    $tmp->Notes = (property_exists($_item, "Notes")) ? $_item->Notes : NULL;
+                    $tmp->OwnerId = (property_exists($_item, "OwnerId")) ? $_item->OwnerId : NULL;
+
+                    $returnArray[$tmp->MagentoId] = $tmp;
+                }
             }
             return $returnArray;
         } catch (Exception $e) {
@@ -252,6 +255,37 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             unset($email);
             return false;
         }
+    }
+
+    /**
+     * @param $_magentoId
+     * @param $ids
+     * @return array|stdClass
+     */
+    protected function _queryOpportunities($_magentoId, $ids)
+    {
+        $_selectFields = array(
+            "ID",
+            "AccountId",
+            "Pricebook2Id",
+            "OwnerId",
+            $_magentoId,
+            "(SELECT Id, ContactId, Role FROM OpportunityContactRoles)",
+            "(SELECT Id, Quantity, ServiceDate, UnitPrice, PricebookEntry.ProductCode, PricebookEntry.Product2Id, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OpportunityLineItems)",
+            "(SELECT Id, Title, Body FROM Notes)"
+        );
+
+        $query = "SELECT " . implode(',', $_selectFields) . " FROM Opportunity WHERE " . $_magentoId . " IN ('" . implode("','", $ids) . "')";
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
+        try {
+            $result = $this->getClient()->query($query);
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            $result = array();
+        }
+
+        return $result;
     }
 
     /**

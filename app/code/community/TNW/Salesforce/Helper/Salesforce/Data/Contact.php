@@ -107,6 +107,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
+     * @param array $_emailsArray
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Contact_Collection
      */
     public function getDuplicates($_emailsArray = array())
@@ -161,8 +162,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     /**
      * @param $_magentoId
      * @param $_extra
-     * @param $email
-     * @param $ids
+     * @param $_emails
+     * @param $_websites
      * @return array
      */
     protected function _queryContacts($_magentoId, $_extra, $_emails, $_websites)
@@ -228,8 +229,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
      */
     public function getContactsByEmails($email = NULL, $_websites = array())
     {
-        $_howMany = 35;
-
         $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $_extra = NULL;
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -244,7 +243,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         }
 
         $_results = array();
-        $_emailChunk = array_chunk($email, $_howMany, true);
+        $_emailChunk = array_chunk($email, self::UPDATE_LIMIT);
         foreach ($_emailChunk as $_emails) {
             $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
         }
@@ -254,7 +253,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
     /**
      * @param null $email
-     * @param array $ids
+     * @param array $_websites
      * @return array|bool
      */
     public function lookup($email = NULL, $_websites = array())
