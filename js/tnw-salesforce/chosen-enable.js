@@ -46,12 +46,16 @@ Element.prototype.toggleValueElements = function (checkbox, container, excludedE
                  * code below is necessary because 'fire' not works with disabled elements
                  */
                 if (elem.hasClassName('chosen-select')) {
-                    elem.fire("chosen:updated");
-                    var registry = Element.retrieve(elem, 'prototype_event_registry');
+                    var registry = Element.retrieve(elem, 'prototype_event_registry', $H());
                     var eventObj = registry.get('chosen:updated');
 
-                    var eventHandlers = eventObj.pluck('handler');
-                    eventHandlers[0](null);
+                    if (Object.isUndefined(eventObj)) {
+                        return false;
+                    }
+
+                    eventObj.pluck('handler').each(function(eventHandler){
+                        eventHandler(null);
+                    });
                 }
 
                 if (elem.nodeName.toLowerCase() == 'img') {
