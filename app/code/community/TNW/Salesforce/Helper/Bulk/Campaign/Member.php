@@ -79,10 +79,6 @@ class TNW_Salesforce_Helper_Bulk_Campaign_Member extends TNW_Salesforce_Helper_S
                 $this->_cache['responses'][strtolower($this->getManyParentEntityType())][$_oid] = json_decode(json_encode($_item), TRUE);
 
                 if ($_item->success == "true") {
-                    $_record = $this->_loadEntityByCache(array_search($_oid, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_oid);
-                    $_record->setData('salesforce_id', (string)$_item->id);
-                    $_record->setData('sf_insync', 1);
-                    $_record->getResource()->save($_record);
 
                     $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_oid] = (string)$_item->id;
                     Mage::getSingleton('tnw_salesforce/tool_log')

@@ -64,8 +64,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
     /**
      * @param $_entity Mage_Sales_Model_Order
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         $_entityNumber = $this->_getEntityNumber($_entity);
         if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {

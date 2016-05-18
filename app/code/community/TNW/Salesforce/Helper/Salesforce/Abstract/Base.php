@@ -592,7 +592,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             }
 
             $this->_obj = new stdClass();
-            $this->_setEntityInfo($this->getEntityCache($_entityNumber));
+            $this->_setEntityInfo($this->getEntityCache($_entityNumber), $_key);
 
             if (!$this->_checkPrepareEntityAfter($_key)) {
                 continue;
@@ -721,7 +721,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      * @return mixed
      * @throws Exception
      */
-    protected function _setEntityInfo($_entity)
+    protected function _setEntityInfo($_entity, $key = null)
     {
         $_entityId = $this->_getEntitySalesforceId($_entity);
         if (!empty($_entityId)) {
@@ -752,7 +752,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             unset($this->_obj->{$_key});
         }
 
-        $this->_prepareEntityObjCustom($_entity);
+        $this->_prepareEntityObjCustom($_entity, $key);
     }
 
     /**
@@ -774,8 +774,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param $_entity
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         return;
     }
