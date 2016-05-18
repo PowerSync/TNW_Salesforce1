@@ -11,11 +11,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
     const ACTIVATED_STATUS = 'Activated';
     const DRAFT_STATUS = 'Draft';
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
      * @param array $ids
      * @return array|bool
@@ -43,7 +38,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
             }
 
             if (empty($_results)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: no results...");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order lookup returned: no results...");
                 return false;
             }
 
@@ -96,12 +91,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
             "(SELECT $orderItemFieldsToSelect FROM OrderItems)",
             "(SELECT Id, Title, Body FROM Notes)"
         );
-        if (is_array($ids)) {
-            $query = "SELECT " . implode(',', $_selectFields) . " FROM Order WHERE " . $_magentoId . " IN ('" . implode("','", $ids) . "')";
-        } else {
-            $query = "SELECT " . implode(',', $_selectFields) . " FROM Order WHERE " . $_magentoId . "='" . $ids . "'";
-        }
 
+        $query = "SELECT " . implode(',', $_selectFields) . " FROM Order WHERE " . $_magentoId . " IN ('" . implode("','", $ids) . "')";
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
         try {
             $result = $this->getClient()->query($query);
         } catch (Exception $e) {
