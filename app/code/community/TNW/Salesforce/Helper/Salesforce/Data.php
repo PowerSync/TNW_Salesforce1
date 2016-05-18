@@ -454,50 +454,79 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     public function productLookup($sku = NULL)
     {
-        if (!$sku) {
+        $sku = !is_array($sku)
+            ? array($sku) : $sku;
+
+        if (empty($sku)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SKU is missing for product lookup");
             return false;
         }
+
         try {
             if (!is_object($this->getClient())) {
                 return false;
             }
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-            if (is_array($sku)) {
-                $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode IN ('" . implode("','", $sku) . "')";
-            } else {
-                $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode='" . $sku . "'";
-            }
-            $result = $this->getClient()->query(($query));
 
-            unset($query);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check if the product already exist in SalesForce...");
-            if (!$result || $result->size < 1) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: " . $result->size . " results...");
+            $_results = array();
+            foreach (array_chunk($sku, self::UPDATE_LIMIT) as $_sku) {
+                $result = $this->_queryProduct($_magentoId, $_sku);
+                if (empty($result) || $result->size < 1) {
+                    continue;
+                }
+
+                $_results[] = $result;
+            }
+
+            if (empty($_results)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product lookup returned: no results...");
                 return false;
             }
+
             $returnArray = array();
-            foreach ($result->records as $_item) {
-                // Conditional preserves products only with Magento Id defined, otherwise last found product will be used
-                if (!array_key_exists($_item->ProductCode, $returnArray) || (property_exists($_item, $_magentoId) && $_item->$_magentoId)) {
-                    $tmp = new stdClass();
-                    $tmp->Id = $_item->Id;
-                    $tmp->Name = $_item->Name;
-                    $tmp->ProductCode = $_item->ProductCode;
-                    $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->$_magentoId : NULL;
-                    $returnArray[$_item->ProductCode] = $tmp;
+            foreach ($_results as $result) {
+                foreach ($result->records as $_item) {
+                    // Conditional preserves products only with Magento Id defined, otherwise last found product will be used
+                    if (!array_key_exists($_item->ProductCode, $returnArray) || (property_exists($_item, $_magentoId) && $_item->$_magentoId)) {
+                        $tmp = new stdClass();
+                        $tmp->Id = $_item->Id;
+                        $tmp->Name = $_item->Name;
+                        $tmp->ProductCode = $_item->ProductCode;
+                        $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->$_magentoId : NULL;
+
+                        $returnArray[$_item->ProductCode] = $tmp;
+                    }
                 }
             }
+
             return $returnArray;
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a product by Magento SKU #" . $sku);
-            unset($sku);
             return false;
         }
     }
 
+    /**
+     * @param $_magentoId
+     * @param $sku
+     * @return array|stdClass
+     */
+    protected function _queryProduct($_magentoId, $sku)
+    {
+        $query = "SELECT ID, ProductCode, Name, " . $_magentoId . " FROM Product2 WHERE ProductCode IN ('" . implode("','", $sku) . "')";
 
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
+        try {
+            $result = $this->getClient()->query($query);
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            $result = array();
+        }
+
+        return $result;
+    }
 
     /**
      * @return array|bool
