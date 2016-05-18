@@ -46,7 +46,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         }
 
         try {
-            $_existIds = array_filter(array_map(function(Mage_Customer_Model_Customer $_customer){
+            $_existIds = array_filter(array_map(function (Mage_Customer_Model_Customer $_customer) {
                 return $_customer->getId();
             }, call_user_func_array('array_merge', array_values($customers))));
 
@@ -61,7 +61,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
                     }
 
                     $this->setEntityCache($_customer);
-                    $entityId     = $this->_getEntityId($_customer);
+                    $entityId = $this->_getEntityId($_customer);
                     $entityNumber = $this->_getEntityNumber($_customer);
 
                     if (!$this->_checkMassAddEntity($_customer)) {
@@ -69,8 +69,8 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
                     }
 
                     // Associate order ID with order Number
-                    $this->_cache['entitiesCampaign'][$entityNumber] = $campaignId;
-                    $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$entityId] = $entityNumber;
+                    $this->_cache['entitiesCampaign'][$entityNumber][$this->prepareId($campaignId)] = $this->prepareId($campaignId);
+                    $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$campaignId . '_' . $entityId] = $entityNumber;
                 }
             }
 
@@ -137,7 +137,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
     {
         if (!$_entity->getData('salesforce_id')) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPING: The customer #". $_entity->getData('email') ." is not synchronized!");
+                ->saveNotice("SKIPPING: The customer #" . $_entity->getData('email') . " is not synchronized!");
             return false;
         }
 
@@ -156,12 +156,14 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
     protected function _massAddAfter()
     {
         $contactIds = array();
-        foreach (array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]) as $prefix) {
-            $entity         = $this->getEntityCache($prefix);
-            $entityNumber   = $this->_getEntityNumber($entity);
-            $campaignId     = $this->_cache['entitiesCampaign'][$entityNumber];
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $prefix) {
+            $entity = $this->getEntityCache($prefix);
+            $entityNumber = $this->_getEntityNumber($entity);
+            $campaignIds = $this->_cache['entitiesCampaign'][$entityNumber];
 
-            $contactIds[$campaignId][] = $entity;
+            foreach ($campaignIds as $campaignId) {
+                $contactIds[$campaignId][] = $entity;
+            }
         }
 
         // Salesforce lookup, find all orders by Magento order number
@@ -187,10 +189,19 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _getEntitySalesforceId($_entity)
     {
-        $entityNumber = $this->_getEntityNumber($_entity);
-        $lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
-        $campaignId   = $this->_cache['entitiesCampaign'][$entityNumber];
-        
+        $lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+
+        if (is_string($_entity)) {
+            list($campaignId, $entityNumber) = explode('_', $_entity);
+            $_entity = $this->getEntityCache($entityNumber);
+            $campaignId = $this->prepareId($campaignId);
+
+        } else {
+
+            $entityNumber = $this->_getEntityNumber($_entity);
+            $campaignId = $this->_cache['entitiesCampaign'][$entityNumber];
+        }
+
         if (!isset($this->_cache[$lookupKey][$campaignId])) {
             return null;
         }
@@ -208,15 +219,54 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         return null;
     }
 
+    protected function _checkPrepareEntityBefore($_key)
+    {
+        $result = true;
+
+        $_entityId = $this->_getEntitySalesforceId($_key);
+        if (!empty($_entityId)) {
+            $result = false;
+        }
+
+        $result = $result && parent::_checkPrepareEntityBefore($_key);
+        return $result;
+    }
+
+    protected function _prepareEntity()
+    {
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('----------%s Preparation: Start----------', $this->getUcParentEntityType()));
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_entityNumber)
+        {
+            if (!$this->_checkPrepareEntityBefore($_key)) {
+                continue;
+            }
+
+            $this->_obj = new stdClass();
+            $this->_setEntityInfo($this->getEntityCache($_entityNumber), $_key);
+
+            if (!$this->_checkPrepareEntityAfter($_key)) {
+                continue;
+            }
+
+            $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))][$_key] = $this->_obj;
+        }
+
+        $this->_prepareEntityAfter();
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('----------%s Preparation: End----------', $this->getUcParentEntityType()));
+    }
+
     /**
      * @param $_entity Mage_Customer_Model_Customer
+     * @param $key
+     * @throws Mage_Core_Exception
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         $entityNumber = $this->_getEntityNumber($_entity);
+        $campaingId = str_replace('_' . $entityNumber, '', $key);
 
-        if (! (property_exists($this->_obj, 'Id') && $this->_obj->Id)) {
-            $this->_obj->CampaignId     = $this->_cache['entitiesCampaign'][$entityNumber];
+        if (!(property_exists($this->_obj, 'Id') && $this->_obj->Id)) {
+            $this->_obj->CampaignId = $this->_cache['entitiesCampaign'][$entityNumber][$this->prepareId($campaingId)];
             //$this->_obj->HasResponded   = true;
 
             switch (true) {
@@ -242,8 +292,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _getObjectByEntityType($_entity, $type)
     {
-        switch($type)
-        {
+        switch ($type) {
             case 'Customer':
                 $_object = $_entity;
                 break;
@@ -295,9 +344,8 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
                 "data" => $this->_cache[$entityToUpsertKey],
                 "result" => $results
             ));
-        }
-        catch (Exception $e) {
-            $results   = array_fill(0, count($_keys),
+        } catch (Exception $e) {
+            $results = array_fill(0, count($_keys),
                 $this->_buildErrorResponse($e->getMessage()));
 
             Mage::getSingleton('tnw_salesforce/tool_log')
@@ -316,11 +364,10 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError(sprintf('%s Failed: (%s: ' . $_entityNum . ')', $this->_salesforceEntityName, $this->_magentoEntityName));
-            }
-            else {
+            } else {
                 $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_entityNum] = $_result->id;
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace(sprintf('%s Upserted: %s' , $this->_salesforceEntityName, $_result->id));
+                    ->saveTrace(sprintf('%s Upserted: %s', $this->_salesforceEntityName, $_result->id));
             }
         }
 
@@ -363,5 +410,32 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         );
 
         return $this->check();
+    }
+
+    /**
+     * remove duplicate values
+     */
+    public function removeDuplicates()
+    {
+        if (!empty($this->_cache['campaignmembersToUpsert'])) {
+            foreach ($this->_cache['campaignmembersToUpsert'] as $i => $campaignsToUpsertI) {
+                foreach ($this->_cache['campaignmembersToUpsert'] as $j => $campaignsToUpsertJ) {
+                    if (
+                        $i != $j
+                        && (array)$this->_cache['campaignmembersToUpsert'][$i] == (array)$this->_cache['campaignmembersToUpsert'][$j]
+                    ) {
+                        unset($this->_cache['campaignmembersToUpsert'][$j]);
+                    }
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    protected function _prepareEntityAfter()
+    {
+        $this->removeDuplicates();
+        return $this;
     }
 }

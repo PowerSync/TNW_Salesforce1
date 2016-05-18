@@ -4,6 +4,7 @@
  * Class TNW_Salesforce_Helper_Salesforce_Abstract
  *
  * @method Mage_Sales_Model_Order getEntityByItem($_entity)
+ * @method Mage_Sales_Model_Order _loadEntityByCache($_entityId, $_entityNumber)
  */
 abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
@@ -798,7 +799,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return false;
         }
 
-        $this->_emails[$_customerId] = $this->_cache['orderCustomers'][$_entityNumber]->getEmail();
+        $this->_emails[$_customerId] = strtolower($this->_cache['orderCustomers'][$_entityNumber]->getEmail());
 
         // Associate order Number with a customer Email
         $this->_cache['orderToEmail'][$_entityNumber] = $this->_emails[$_customerId];
@@ -842,47 +843,43 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         /**
          * define Salesforce data for order customers
          */
-        foreach ($this->_cache['entitiesUpdating'] as $id => $_orderNumber) {
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
+            $entity         = $this->_loadEntityByCache($key, $number);
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer       = $this->_getObjectByEntityType($entity, 'Customer');
+            $customerEmail  = strtolower($customer->getEmail());
 
-            $_orderEmail = strtolower($this->_cache['orderToEmail'][$_orderNumber]);
+            if (!empty($this->_cache['accountsLookup'][0][$customerEmail])) {
+                $_websiteId = $this->_websites[$this->_cache['orderToCustomerId'][$number]];
 
-            if (isset($this->_cache['orderCustomers'][$_orderNumber])
-                && is_object($this->_cache['orderCustomers'][$_orderNumber])
-                && !empty($this->_cache['accountsLookup'][0][$_orderEmail])
-            ) {
-
-                $_websiteId = $this->_websites[$this->_cache['orderToCustomerId'][$_orderNumber]];
-
-                // TODO: Field "salesforce_id" and "salesforce_account_id" specified in the method of "syncEntityCustomers"
-                $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
-                $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$_orderEmail]->Id);
+                $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customerEmail]->Id);
 
                 // Overwrite Contact Id for Person Account
-                if (property_exists($this->_cache['accountsLookup'][0][$_orderEmail], 'PersonContactId')) {
-                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$_orderEmail]->PersonContactId);
+                if (property_exists($this->_cache['accountsLookup'][0][$customerEmail], 'PersonContactId')) {
+                    $customer->setData('salesforce_id', $this->_cache['accountsLookup'][0][$customerEmail]->PersonContactId);
                 }
 
                 // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$_websiteId][$_orderEmail])) {
-                    $this->_cache['orderCustomers'][$_orderNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$_orderEmail]->Id);
+                if (isset($this->_cache['contactsLookup'][$_websiteId][$customerEmail])) {
+                    $customer->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customerEmail]->Id);
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
-
-            } else {
+            }
+            else {
                 /**
                  * No customers for this order in salesforce - error
                  */
                 // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $_orderEmail . ') could not be created / found!');
-                $this->_skippedEntity[$id] = $id;
+                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $customerEmail . ') could not be created / found!');
+                $this->_skippedEntity[$key] = $key;
 
                 continue;
             }
         }
 
         foreach ($this->_skippedEntity as $_idToRemove) {
-            unset($this->_cache['entitiesUpdating'][$_idToRemove]);
+            unset($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_idToRemove]);
         }
     }
 
