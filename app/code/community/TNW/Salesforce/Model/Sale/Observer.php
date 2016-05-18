@@ -438,9 +438,7 @@ class TNW_Salesforce_Model_Sale_Observer
                     Mage::getSingleton('adminhtml/session')->addError('Could not add catalog rule(s) to the queue!');
                 }
                 else if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addSuccess(
-                        $this->__('Records are pending addition into the queue!')
-                    );
+                    Mage::getSingleton('adminhtml/session')->addSuccess('Records are pending addition into the queue!');
                 }
             }
             else {
