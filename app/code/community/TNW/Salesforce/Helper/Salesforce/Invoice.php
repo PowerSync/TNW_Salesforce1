@@ -675,7 +675,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
             $_entity     = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
 
             //Report Transaction
-            $this->_cache['responses'][lcfirst($this->getItemsField())][$_entityNum]['subObj'][] = $_result;
+            $this->_cache['responses'][lcfirst($this->getItemsField())][$_entityNum]['subObj'][$_cartItemId] = $_result;
             if (!$_result->success) {
                 // Reset sync status
                 $_entity->setData('sf_insync', 0);
