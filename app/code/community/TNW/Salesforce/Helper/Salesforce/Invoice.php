@@ -282,25 +282,24 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
          * define Salesforce data for order customers
          */
         foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
-            $entity  = $this->_loadEntityByCache($key, $number);
+            $entity         = $this->_loadEntityByCache($key, $number);
             /** @var Mage_Customer_Model_Customer $customer */
-            $customer = $this->_getObjectByEntityType($entity, 'Customer');
+            $customer       = $this->_getObjectByEntityType($entity, 'Customer');
+            $customerEmail  = strtolower($customer->getEmail());
 
-            if (isset($this->_cache['accountsLookup'][0][$customer->getEmail()])
-                && !empty($this->_cache['accountsLookup'][0][$customer->getEmail()])
-            ) {
+            if (!empty($this->_cache['accountsLookup'][0][$customerEmail])) {
                 $_websiteId = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
 
-                $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customer->getEmail()]->Id);
+                $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customerEmail]->Id);
 
                 // Overwrite Contact Id for Person Account
-                if (property_exists($this->_cache['accountsLookup'][0][$customer->getEmail()], 'PersonContactId')) {
-                    $customer->setData('salesforce_id', $this->_cache['accountsLookup'][0][$customer->getEmail()]->PersonContactId);
+                if (property_exists($this->_cache['accountsLookup'][0][$customerEmail], 'PersonContactId')) {
+                    $customer->setData('salesforce_id', $this->_cache['accountsLookup'][0][$customerEmail]->PersonContactId);
                 }
 
                 // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$_websiteId][$customer->getEmail()])) {
-                    $customer->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customer->getEmail()]->Id);
+                if (isset($this->_cache['contactsLookup'][$_websiteId][$customerEmail])) {
+                    $customer->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customerEmail]->Id);
                 }
             }
             else {
@@ -308,7 +307,7 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                  * No customers for this order in salesforce - error
                  */
                 // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $customer->getEmail() . ') could not be created / found!');
+                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $customerEmail . ') could not be created / found!');
                 $this->_skippedEntity[$key] = $key;
 
                 continue;
