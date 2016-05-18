@@ -443,8 +443,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     /**
      * @param $_entity Mage_Sales_Model_Order
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);

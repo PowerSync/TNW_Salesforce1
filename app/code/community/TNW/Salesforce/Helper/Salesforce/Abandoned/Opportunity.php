@@ -502,8 +502,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     /**
      * @param $_entity Mage_Sales_Model_Quote
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $_entity->getData('quote_currency_code');

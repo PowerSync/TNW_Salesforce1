@@ -348,8 +348,9 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
 
     /**
      * @param $_entity
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);

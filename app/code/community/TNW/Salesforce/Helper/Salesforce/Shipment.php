@@ -368,8 +368,9 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
 
     /**
      * @param $_entity Mage_Sales_Model_Order_Shipment
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         // Link to Order
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order__c'}
