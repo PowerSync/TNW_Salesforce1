@@ -319,11 +319,11 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                     continue;
                 }
 
-                if (!property_exists($_price, 'Currency')) {
-                    $_price->Currency = null;
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
                 }
 
-                if ($_price->Currency != $currencyBase) {
+                if ($_price->CurrencyIsoCode != $currencyBase) {
                     continue;
                 }
 
