@@ -290,7 +290,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     protected function updatePrice($object, $productId)
     {
         // Update Price
-        if (!property_exists($object, 'PriceBookEntry') || !is_array($object->PriceBookEntry)) {
+        if (!property_exists($object, 'PricebookEntries') || $object->PricebookEntries->totalSize < 1) {
             return;
         }
 
@@ -310,7 +310,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $pricebookId = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::PRODUCT_PRICEBOOK);
 
             $price = null;
-            foreach ($object->PriceBookEntry as $_price) {
+            foreach ($object->PricebookEntries->records as $_price) {
                 if (!$_price->IsActive) {
                     continue;
                 }
