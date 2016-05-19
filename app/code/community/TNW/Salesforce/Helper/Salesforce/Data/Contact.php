@@ -320,9 +320,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                     }
 
                     if (property_exists($_item, 'Email') && $tmp->Email) {
-                        $_key = $tmp->Email;
+                        $_key = strtolower($tmp->Email);
                     } elseif (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) {
-                        $_key = $tmp->PersonEmail;
+                        $_key = strtolower($tmp->PersonEmail);
                     } elseif (property_exists($_item, 'MagentoId') && $_item->MagentoId) {
                         $_key = $_item->MagentoId;
                     }
@@ -335,7 +335,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                         }
                         if (!$_websiteKey) {
                             // Guest, grab the first record (create other records if Magento customer scope is not global)
-                            $_personEmail = (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) ? $tmp->PersonEmail : $tmp->Email;
+                            $_personEmail = (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) ? strtolower($tmp->PersonEmail) : strtolower($tmp->Email);
                             $_customerId = array_search($_personEmail, $email);
                             if ($_customerId !== FALSE) {
                                 $_websiteKey = $_websites[$_customerId];

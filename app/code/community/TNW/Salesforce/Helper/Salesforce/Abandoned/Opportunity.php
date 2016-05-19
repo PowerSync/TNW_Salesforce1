@@ -305,6 +305,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             $quote    = $this->_loadEntityByCache($key, $quoteNumber);
             /** @var Mage_Customer_Model_Customer $customer */
             $customer = $this->_getObjectByEntityType($quote, 'Customer');
+            $customerEmail = strtolower($customer->getEmail());
 
             $contactRole = new stdClass();
 
@@ -313,8 +314,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 : $quote->getStore()->getWebsiteId();
 
             $websiteSfId = $this->_websiteSfIds[$websiteId];
-            if (isset($this->_cache['contactsLookup'][$websiteSfId][$customer->getEmail()])){
-                $contactRole->ContactId = $this->_cache['contactsLookup'][$websiteSfId][$customer->getEmail()]->Id;
+            if (isset($this->_cache['contactsLookup'][$websiteSfId][$customerEmail])){
+                $contactRole->ContactId = $this->_cache['contactsLookup'][$websiteSfId][$customerEmail]->Id;
             }
 
             if ($customer->getData('salesforce_id')) {
@@ -361,7 +362,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 } else {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Was not able to convert customer Lead, '
                         . 'skipping Opportunity Contact Role assignment. '
-                        . 'Please synchronize customer (email: ' . $customer->getEmail() . ')');
+                        . 'Please synchronize customer (email: ' . $customerEmail . ')');
                 }
             }
         }
@@ -501,8 +502,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     /**
      * @param $_entity Mage_Sales_Model_Quote
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $_entity->getData('quote_currency_code');

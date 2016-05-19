@@ -47,8 +47,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Campaign_Abstract extends TNW_Sa
 
     /**
      * @param $_entity
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         return;
     }
