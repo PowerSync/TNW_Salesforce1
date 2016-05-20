@@ -495,6 +495,23 @@ class TNW_Salesforce_Model_Observer
         $this->_processOrderPush($_invoiceIds, $_message, 'tnw_salesforce/' . $_type . '_invoice', $_queueIds);
     }
 
+    public function pushCreditMemo(Varien_Event_Observer $observer)
+    {
+        $_creditmemoIds = $observer->getEvent()->getData('creditmemoIds');
+        $_message       = $observer->getEvent()->getMessage();
+        $_type          = $observer->getEvent()->getType();
+        $_isQueue       = $observer->getEvent()->getData('isQueue');
+
+        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
+
+        if (count($_creditmemoIds) == 1 && $_type == 'bulk') {
+            $_type = 'salesforce';
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Credit Memo ... ');
+        $this->_processOrderPush($_creditmemoIds, $_message, 'tnw_salesforce/' . $_type . '_creditmemo', $_queueIds);
+    }
+
     public function pushShipment(Varien_Event_Observer $observer)
     {
         $_shipmentIds = $observer->getEvent()->getData('shipmentIds');

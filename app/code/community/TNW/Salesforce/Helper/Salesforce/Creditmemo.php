@@ -816,8 +816,8 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         parent::reset();
 
         // Clean order cache
-        if (is_array($this->_cache['entitiesUpdating'])) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
+        if (is_array($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
+            foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_orderNumber) {
                 $this->unsetEntityCache($_orderNumber);
             }
         }

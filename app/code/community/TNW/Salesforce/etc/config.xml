@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.06.0000</version>
+            <version>0.01.54.07.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -415,6 +415,15 @@
                     </tnw_salesforce_push_shipment>
                 </observers>
             </tnw_salesforce_shipment_process>
+            <!-- Pushing creditmemo object into Salesforce post all validation -->
+            <tnw_salesforce_creditmemo_process>
+                <observers>
+                    <tnw_salesforce_push_creditmemo>
+                        <class>tnw_salesforce/observer</class>
+                        <method>pushCreditMemo</method>
+                    </tnw_salesforce_push_creditmemo>
+                </observers>
+            </tnw_salesforce_creditmemo_process>
             <!-- Update order status - Opportunity -->
             <tnw_salesforce_opportunity_status_update>
                 <observers>

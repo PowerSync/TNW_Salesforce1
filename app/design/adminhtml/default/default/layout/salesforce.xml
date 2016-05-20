@@ -172,6 +172,14 @@
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_ordershipmentitem_edit>
 
+    <adminhtml_salesforce_ordercreditmemo_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_ordercreditmemo_edit>
+
+    <adminhtml_salesforce_ordercreditmemoitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_ordercreditmemoitem_edit>
+
     <adminhtml_salesforce_campaign_catalogrule_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_campaign_catalogrule_edit>

@@ -34,6 +34,11 @@
                             <action>adminhtml/salesforcesync_shipmentsync</action>
                             <sort_order>34</sort_order>
                         </shipment_sync>
+                        <creditmemo_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemo">
+                            <title>Credit Memo</title>
+                            <action>adminhtml/salesforcesync_creditmemosync</action>
+                            <sort_order>35</sort_order>
+                        </creditmemo_sync>
                         <abandoned_sync translate="title" module="tnw_salesforce">
                             <title>Abandoned Cart</title>
                             <action>adminhtml/salesforcesync_abandonedsync</action>
@@ -152,6 +157,22 @@
                                 </shipment_cart_mapping>
                             </children>
                         </shipment_mapping>
+                        <creditmemo_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemo">
+                            <title>Credit Memo Mappings</title>
+                            <sort_order>550</sort_order>
+                            <children>
+                                <creditmemo_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemoForOrder">
+                                    <title>Credit Memo</title>
+                                    <action>adminhtml/salesforce_ordercreditmemo</action>
+                                    <sort_order>100</sort_order>
+                                </creditmemo_mapping>
+                                <creditmemo_item_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemoForOrder">
+                                    <title>Credit Memo Items</title>
+                                    <action>adminhtml/salesforce_ordercreditmemoitem</action>
+                                    <sort_order>120</sort_order>
+                                </creditmemo_item_mapping>
+                            </children>
+                        </creditmemo_sync>
                         <abandoned_mapping translate="title" module="tnw_salesforce">
                             <title>Abandoned Cart Mappings</title>
                             <sort_order>600</sort_order>
@@ -345,9 +366,14 @@
                                     <action>adminhtml/salesforcesync_shipmentsync</action>
                                     <sort_order>30</sort_order>
                                 </shipment_sync>
+                                <creditmemo_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemo">
+                                    <title>Credit Memo</title>
+                                    <action>adminhtml/salesforcesync_creditmemosync</action>
+                                    <sort_order>40</sort_order>
+                                </creditmemo_sync>
                                 <abandoned_sync translate="title" module="tnw_salesforce">
                                     <title>Abandoned Carts</title>
-                                    <sort_order>40</sort_order>
+                                    <sort_order>50</sort_order>
                                     <action>adminhtml/salesforcesync_abandonedsync</action>
                                 </abandoned_sync>
                             </children>
@@ -415,6 +441,22 @@
                                 </shipment_cart_mapping>
                             </children>
                         </shipment_mappings>
+                        <creditmemo_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemo">
+                            <title>Credit Memo Mappings</title>
+                            <sort_order>50</sort_order>
+                            <children>
+                                <creditmemo_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemoForOrder">
+                                    <title>Credit Memo</title>
+                                    <action>adminhtml/salesforce_ordercreditmemo</action>
+                                    <sort_order>10</sort_order>
+                                </creditmemo_mapping>
+                                <creditmemo_item_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemoForOrder">
+                                    <title>Credit Memo Items</title>
+                                    <action>adminhtml/salesforce_ordercreditmemoitem</action>
+                                    <sort_order>20</sort_order>
+                                </creditmemo_item_mapping>
+                            </children>
+                        </creditmemo_mappings>
                         <abandoned_mappings translate="title" module="tnw_salesforce">
                             <title>Abandoned Cart Mappings</title>
                             <sort_order>60</sort_order>
