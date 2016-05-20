@@ -31,7 +31,7 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_View_Opportunities extend
                 break;
         }
 
-        $column = array('Id', 'Name', 'Owner.Name', 'Amount');
+        $column = array('Id', 'Name', 'Owner.Name', 'Amount', 'StageName', 'CreatedDate', 'LastModifiedDate', 'CloseDate');
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $column[] = 'CurrencyIsoCode';
         }
@@ -66,6 +66,18 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_View_Opportunities extend
             }
 
             $item->setData('OwnerName', $owner->Name);
+
+            $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+            $dateTime = new \DateTime(date('Y-m-d H:i:s', strtotime($item->getData('CloseDate'))), new \DateTimeZone($timezone));
+            $item->setData('CloseDate', $dateTime->format('c'));
+
+            $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+            $dateTime = new \DateTime(date('Y-m-d H:i:s', strtotime($item->getData('CreatedDate'))), new \DateTimeZone($timezone));
+            $item->setData('CreatedDate', $dateTime->format('c'));
+
+            $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+            $dateTime = new \DateTime(date('Y-m-d H:i:s', strtotime($item->getData('LastModifiedDate'))), new \DateTimeZone($timezone));
+            $item->setData('LastModifiedDate', $dateTime->format('c'));
         });
 
         return $this;
@@ -92,6 +104,32 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_View_Opportunities extend
             'index'         => 'OwnerName',
             'filter_index'  => 'Owner.Name',
             'type'          => 'varchar',
+        ));
+
+        $this->addColumn('StageName', array(
+            'header'        => Mage::helper('customer')->__('Stage'),
+            'index'         => 'StageName',
+            'type'          => 'varchar',
+        ));
+
+        $this->addColumn('CloseDate', array(
+            'header'        => Mage::helper('customer')->__('Close Date'),
+            'index'         => 'CloseDate',
+            'type'          => 'date',
+        ));
+
+        $this->addColumn('CreatedDate', array(
+            'header'        => Mage::helper('customer')->__('Created Date'),
+            'index'         => 'CreatedDate',
+            'type'          => 'datetime',
+            'filter_time'   => true
+        ));
+
+        $this->addColumn('LastModifiedDate', array(
+            'header'        => Mage::helper('customer')->__('Update Date'),
+            'index'         => 'LastModifiedDate',
+            'type'          => 'datetime',
+            'filter_time'   => true,
         ));
 
         $this->addColumn('Amount', array(
