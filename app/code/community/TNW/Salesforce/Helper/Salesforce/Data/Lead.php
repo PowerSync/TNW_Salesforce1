@@ -21,13 +21,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * @param null $email
+     * @param string $email
      * @param array $ids
+     * @param string $leadSource
+     * @param string $idPrefix
      * @return array|bool
      */
     public function lookup($email = NULL, $ids = array(), $leadSource = '', $idPrefix = '')
     {
-        $_howMany = 35;
         try {
             if (!is_object($this->getClient())) {
                 return false;
@@ -35,13 +36,17 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $_results = array();
-            $_emailChunk = array_chunk($email, $_howMany, true);
-            foreach ($_emailChunk as $_emails) {
-                $_results[] = $this->_queryLeads($_magentoId, $_emails, $ids, $leadSource, $idPrefix);
+            foreach (array_chunk($email, self::UPDATE_LIMIT) as $_emails) {
+                $result = $this->_queryLeads($_magentoId, $_emails, $ids, $leadSource, $idPrefix);
+                if (empty($result) || $result->size < 1) {
+                    continue;
+                }
+
+                $_results[] = $result;
             }
 
-            if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lookup returned: no results...");
+            if (empty($_results)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead lookup returned: no results...");
                 return false;
             }
 
@@ -219,6 +224,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
     /**
      * get duplicates minimal data
+     * @param array $_emailsArray
      * @param string $leadSource
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
      */
@@ -274,6 +280,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param $_magentoId
      * @param $emails
      * @param $_websites
+     * @param string $leadSource
+     * @param string $idPrefix
      * @return mixed
      */
     protected function _queryLeads($_magentoId, $emails, $_websites, $leadSource = '', $idPrefix = '')
