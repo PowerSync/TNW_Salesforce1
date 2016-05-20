@@ -55,32 +55,35 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_View_Opportunities extend
 
     protected function _afterLoadCollection()
     {
-        $this->getCollection()->walk(function(Varien_Object $item) {
+        $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+
+        /** @var Varien_Object $item */
+        foreach ($this->getCollection() as $item) {
             $owner = $item->getData('Owner');
-            if (!is_object($owner)) {
-                return;
+            if (is_object($owner)) {
+                $item->setData('OwnerName', $owner->Name);
             }
 
             if (!Mage::helper('tnw_salesforce')->isMultiCurrency()) {
                 $item->setData('CurrencyIsoCode', Mage::app()->getStore()->getBaseCurrencyCode());
             }
 
-            $item->setData('OwnerName', $owner->Name);
-
-            $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-            $dateTime = new \DateTime(date('Y-m-d H:i:s', strtotime($item->getData('CloseDate'))), new \DateTimeZone($timezone));
-            $item->setData('CloseDate', $dateTime->format('c'));
-
-            $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-            $dateTime = new \DateTime(date('Y-m-d H:i:s', strtotime($item->getData('CreatedDate'))), new \DateTimeZone($timezone));
-            $item->setData('CreatedDate', $dateTime->format('c'));
-
-            $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-            $dateTime = new \DateTime(date('Y-m-d H:i:s', strtotime($item->getData('LastModifiedDate'))), new \DateTimeZone($timezone));
-            $item->setData('LastModifiedDate', $dateTime->format('c'));
-        });
+            $item->setData('CloseDate',         $this->_prepareDateTime($item->getData('CloseDate'), $timezone)->format('c'));
+            $item->setData('CreatedDate',       $this->_prepareDateTime($item->getData('CreatedDate'), $timezone)->format('c'));
+            $item->setData('LastModifiedDate',  $this->_prepareDateTime($item->getData('LastModifiedDate'), $timezone)->format('c'));
+        }
 
         return $this;
+    }
+
+    /**
+     * @param string $date
+     * @param string $timezone
+     * @return DateTime
+     */
+    private function _prepareDateTime($date, $timezone)
+    {
+        return new \DateTime(date('Y-m-d H:i:s', strtotime($date)), new \DateTimeZone($timezone));
     }
 
     protected function _prepareColumns()
