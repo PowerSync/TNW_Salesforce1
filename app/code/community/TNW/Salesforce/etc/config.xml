@@ -683,6 +683,10 @@
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>
             </invoice_configuration>
+            <customer_view>
+                <opportunity_display>0</opportunity_display>
+                <opportunity_filter>customer</opportunity_filter>
+            </customer_view>
         </salesforce_order>
     </default>
 </config>

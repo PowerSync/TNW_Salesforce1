@@ -98,6 +98,10 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     {
         $row = $this->fetchRow($sql, $bind);
 
+        if (isset($row['any'])) {
+            $row = $row['any'];
+        }
+
         return is_array($row) ? current($row) : null;
     }
 
@@ -357,8 +361,11 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
             'lteq'          => "{{fieldName}} <= ?",
             'finset'        => "FIND_IN_SET(?, {{fieldName}})",
             'regexp'        => "{{fieldName}} REGEXP ?",
+            'from'          => "{{fieldName}} >= ?",
+            'to'            => "{{fieldName}} <= ?",
         );
 
+        $query = '';
         if (is_array($condition)) {
             if (isset($condition['field_expr'])) {
                 $fieldName = str_replace('#?', $this->quoteIdentifier($fieldName), $condition['field_expr']);
@@ -366,7 +373,18 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
             }
             $key = key(array_intersect_key($condition, $conditionKeyMap));
 
-            if (array_key_exists($key, $conditionKeyMap)) {
+            if (isset($condition['from']) || isset($condition['to'])) {
+                if (isset($condition['from'])) {
+                    $from  = $this->_prepareSqlDateCondition($condition, 'from');
+                    $query = $this->_prepareQuotedSqlCondition($conditionKeyMap['from'], $from, $fieldName);
+                }
+
+                if (isset($condition['to'])) {
+                    $query .= empty($query) ? '' : ' AND ';
+                    $to     = $this->_prepareSqlDateCondition($condition, 'to');
+                    $query = $this->_prepareQuotedSqlCondition($query . $conditionKeyMap['to'], $to, $fieldName);
+                }
+            } elseif (array_key_exists($key, $conditionKeyMap)) {
                 $value = $condition[$key];
                 $query = $this->_prepareQuotedSqlCondition($conditionKeyMap[$key], $value, $fieldName);
             } else {
@@ -423,4 +441,43 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
         return $this;
     }
 
+    /**
+     * Prepare sql date condition
+     *
+     * @param array $condition
+     * @param string $key
+     * @return string
+     */
+    protected function _prepareSqlDateCondition($condition, $key)
+    {
+        if (empty($condition['date'])) {
+            if (empty($condition['datetime'])) {
+                $result = $condition[$key];
+            } else {
+                $result = $this->formatDate($condition[$key], isset($condition['datetime']));
+            }
+        } else {
+            $result = $this->formatDate($condition[$key], isset($condition['datetime']));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Format Date to internal database date format
+     *
+     * @param int|string|Zend_Date $date
+     * @param boolean $includeTime
+     * @return Zend_Db_Expr
+     */
+    public function formatDate($date, $includeTime = true)
+    {
+        if ($includeTime) {
+            $date = gmdate(DATE_ATOM, strtotime($date));
+            return new Zend_Db_Expr($date);
+        }
+
+        $date = date('Y-m-d', strtotime($date));
+        return new Zend_Db_Expr($date);
+    }
 }

@@ -199,4 +199,19 @@
             <action method="addTab"><name>salesforce_section</name><block>promo_quote_edit_tab_salesforce</block></action>
         </reference>
     </adminhtml_promo_quote_edit>
+
+    <adminhtml_customer_edit>
+        <reference name="accordion">
+            <action method="addItem" ifconfig="salesforce_order/customer_view/opportunity_display">
+                <itemId>opportunity</itemId>
+                <config helper="tnw_salesforce/config_customer/getAccordionConfig"/>
+            </action>
+        </reference>
+    </adminhtml_customer_edit>
+
+    <adminhtml_customer_opportunities>
+        <block type="core/text_list" name="root" output="toHtml">
+            <block type="tnw_salesforce/adminhtml_customer_edit_tab_view_opportunities" name="admin.customer.opportunities"/>
+        </block>
+    </adminhtml_customer_opportunities>
 </layout>
