@@ -47,6 +47,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_CREDIT_MEMO_OBJECT,
         );
         $this->_acl['orderItem'] = array(
             0 => TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_ITEM_OBJECT,
@@ -71,6 +72,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::SHIPMENT_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_CREDIT_MEMO_OBJECT,
 
         );
 
@@ -83,6 +85,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::INVOICE_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_CREDIT_MEMO_ITEM_OBJECT,
         );
 
         $this->_acl['invoice'] = array(
@@ -103,6 +106,14 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT,
         );
 
+        $this->_acl['creditMemo'] = array(
+            TNW_Salesforce_Model_Config_Objects::ORDER_CREDIT_MEMO_OBJECT,
+        );
+
+        $this->_acl['creditMemoItem'] = array(
+            TNW_Salesforce_Model_Config_Objects::ORDER_CREDIT_MEMO_ITEM_OBJECT,
+        );
+
         $this->_acl['catalogrule'] = array(
             'Catalogrule'
         );
@@ -111,7 +122,6 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             'Salesrule'
         );
     }
-
     /**
      * @param null $type
      * @return array
@@ -150,6 +160,14 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         if (in_array($type, $this->_acl['shipmentItem'])) {
             $this->_populateShipmentItemAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['creditMemo'])) {
+            $this->_populateCreditMemoAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['creditMemoItem'])) {
+            $this->_populateCreditMemoItemAttributes($type);
         }
 
         if (in_array($type, $this->_acl['order'])) {
@@ -367,6 +385,59 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 $this->_cache[$type]['shipment']['value'][] = array(
                     'value' => 'Shipment : ' . $key,
                     'label' => 'Shipment : ' . $this->toName($key),
+                );
+            }
+        }
+    }
+
+    protected function _populateCreditMemoAttributes($type)
+    {
+        try {
+            $collection = $this->getDbConnection('read')
+                ->describeTable(Mage::getModel('sales/order_creditmemo')->getResource()->getMainTable());
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento shipment schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['creditmemo'] = array(
+                'label' => 'Credit Memo',
+                'value' => array()
+            );
+
+            $_additionalAttributes = array(
+                'number'            => 'Number',
+                'cart_all'          => 'All Cart Items (Text)',
+                'website'           => 'Associate to Website',
+                'sf_status'         => 'Salesforce Status',
+                'sf_name'           => 'Salesforce Name',
+                'track_number'      => 'Track Number',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['creditmemo']['value'][] = array(
+                    'value' => 'Credit Memo : '.$value,
+                    'label' => 'Credit Memo : '.$label,
+                );
+            }
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array(
+                    'entity_id', 'store_id',
+                    'order_id', 'customer_id',
+                    'shipping_address_id', 'billing_address_id',
+                    'sf_insync', 'salesforce_id',
+                ))) {
+                    continue;
+                }
+
+                $this->_cache[$type]['creditmemo']['value'][] = array(
+                    'value' => 'Credit Memo : ' . $key,
+                    'label' => 'Credit Memo : ' . $this->toName($key),
                 );
             }
         }
@@ -800,6 +871,51 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 $this->_cache[$type]['shipment_items']['value'][] = array(
                     'value' => 'Shipment Item : ' . $key,
                     'label' => 'Shipment Item : ' . $this->toName($key),
+                );
+            }
+        }
+    }
+
+    public function _populateCreditMemoItemAttributes($type)
+    {
+        try {
+            $collection = $this->getDbConnection('read')
+                ->describeTable('sales_flat_creditmemo_item');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+
+            return;
+        }
+
+        if ($collection) {
+            $this->_cache[$type]['creditmemo_items'] = array(
+                'label' => 'Credit Memo item attributes',
+                'value' => array()
+            );
+
+            $_additionalAttributes = array(
+                'number'                  => 'Number',
+                'sf_product_options_html' => 'Product Options (HTML)',
+                'sf_product_options_text' => 'Product Options (Text)',
+            );
+
+            foreach ($_additionalAttributes as $value => $label) {
+                $this->_cache[$type]['creditmemo_items']['value'][] = array(
+                    'value' => 'Credit Memo Item : '.$value,
+                    'label' => 'Credit Memo Item : '.$label,
+                );
+            }
+
+            foreach ($collection as $_attribute) {
+                $key = $_attribute['COLUMN_NAME'];
+                if (in_array($key, array('entity_id', 'parent_id', 'product_id', 'order_item_id', 'salesforce_id'))) {
+                    continue;
+                }
+
+                $this->_cache[$type]['creditmemo_items']['value'][] = array(
+                    'value' => 'Credit Memo Item : ' . $key,
+                    'label' => 'Credit Memo Item : ' . $this->toName($key),
                 );
             }
         }

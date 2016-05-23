@@ -19,6 +19,8 @@ class TNW_Salesforce_Model_Config_Objects
     const ORDER_INVOICE_ITEM_OBJECT =   'tnw_fulfilment__OrderInvoiceItem__c';
     const ORDER_SHIPMENT_OBJECT     =   'tnw_fulfilment__OrderShipment__c';
     const ORDER_SHIPMENT_ITEM_OBJECT=   'tnw_fulfilment__OrderShipmentItem__c';
+    const ORDER_CREDIT_MEMO_OBJECT        =   'OrderCreditMemo';
+    const ORDER_CREDIT_MEMO_ITEM_OBJECT   =   'OrderCreditMemoItem';
     const PRODUCT_OBJECT            =   'Product';
     const INVOICE_OBJECT            =   'Invoice';
     const INVOICE_ITEM_OBJECT       =   'InvoiceItem';

@@ -57,6 +57,9 @@
                     <order_status>
                         <table>tnw_salesforce_order_status</table>
                     </order_status>
+                    <order_creditmemo_status>
+                        <table>tnw_salesforce_order_creditmemo_status</table>
+                    </order_creditmemo_status>
                     <assignmentrule>
                         <table>tnw_salesforce_assignmentrule</table>
                     </assignmentrule>

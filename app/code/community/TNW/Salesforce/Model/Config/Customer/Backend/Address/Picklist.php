@@ -33,6 +33,12 @@ class TNW_Salesforce_Model_Config_Customer_Backend_Address_Picklist extends Mage
 
             'Order:ShippingState',
             'Order:ShippingCountry',
+
+            'OrderCreditMemo:BillingState',
+            'OrderCreditMemo:BillingCountry',
+
+            'OrderCreditMemo:ShippingState',
+            'OrderCreditMemo:ShippingCountry',
         );
 
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */

@@ -67,14 +67,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
             return;
         }
 
-        $invoiceId = $this->getRequest()->getParam('invoice_id');
-        if (empty($invoiceId)) {
+        $creditMemoId = $this->getRequest()->getParam('creditmemo_id');
+        if (empty($creditMemoId)) {
             $this->_redirect('*/*/');
             return;
         }
 
         try {
-            $itemIds = array($invoiceId);
+            $itemIds = array($creditMemoId);
 
             if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                 // pass data to local storage

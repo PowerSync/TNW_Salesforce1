@@ -1,8 +1,6 @@
 <?php
 
 /**
- * Class TNW_Salesforce_Helper_Salesforce_Invoice
- *
  * @method Mage_Sales_Model_Order_Creditmemo _loadEntityByCache($_entityId, $_entityNumber)
  */
 class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
@@ -22,12 +20,12 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     /**
      * @var string
      */
-    protected $_mappingEntityName = 'CreditMemo';
+    protected $_mappingEntityName = 'OrderCreditMemo';
 
     /**
      * @var string
      */
-    protected $_mappingEntityItemName = 'OrderInvoiceItem';
+    protected $_mappingEntityItemName = 'OrderCreditMemoItem';
 
     /**
      * @comment magento entity model alias
@@ -334,15 +332,6 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_creditmemo')
             ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
-
-        $orders = array();
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key=>$number) {
-            $invoice = $this->_loadEntityByCache($key, $number);
-            $orders[] = $invoice->getOrder()->getRealOrderId();
-        }
-
-        $this->_cache['orderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')
-            ->lookup($orders);
     }
 
     /**
@@ -356,12 +345,12 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         }
 
         // Link to Order
-        if (!property_exists('Id', $this->_obj)) {
+        if (!property_exists($this->_obj, 'Id')) {
             $this->_obj->OriginalOrderId    = $_entity->getOrder()->getData('salesforce_id');
             $this->_obj->IsReductionOrder   = true;
         }
 
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'}
+        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'}
             = true;
     }
 
@@ -374,7 +363,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     {
         switch($type)
         {
-            case 'Creditmemo':
+            case 'Credit Memo':
                 $_object = $_entity;
                 break;
 
@@ -441,11 +430,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     {
         switch($_type)
         {
-            case 'Creditmemo':
+            case 'Credit Memo':
                 $_object = $this->getEntityByItem($_entityItem);
                 break;
 
-            case 'Billing Item':
+            case 'Credit Memo Item':
                 $_object = $_entityItem;
                 break;
 
@@ -477,7 +466,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                 break;
 
             case 'Custom':
-                $_object = $this->_getObjectByEntityItemType($_entityItem, 'Invoice')
+                $_object = $this->_getObjectByEntityItemType($_entityItem, 'Credit Memo')
                     ->getStore();
                 break;
 
@@ -502,14 +491,9 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         $this->_obj->OrderId
             = $this->_getParentEntityId($_entityNumber);
 
-        $this->_obj->OriginalOrderItemId
-            = $_entityItem->getOrderItem()->getData('salesforce_id');
-
-        $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'}
-            = true;
-
-        if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
-            $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
+        if (!property_exists($this->_obj, 'Id')) {
+            $this->_obj->OriginalOrderItemId
+                = $_entityItem->getOrderItem()->getData('salesforce_id');
         }
 
         /* Dump BillingItem object into the log */
@@ -629,7 +613,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         }
 
         if (!empty($_undeleteIds)) {
-            $_deleted = Mage::helper('tnw_salesforce/salesforce_data_invoice')
+            $_deleted = Mage::helper('tnw_salesforce/salesforce_data_creditmemo')
                 ->lookup($_undeleteIds);
 
             $_toUndelete = array();
@@ -662,7 +646,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                 $this->_buildErrorResponse($e->getMessage()));
 
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError('CRITICAL: Push of Order Invoice Items to SalesForce failed' . $e->getMessage());
+                ->saveError('CRITICAL: Push of Order Credit Memo Items to SalesForce failed' . $e->getMessage());
         }
 
         foreach ($results as $_key => $_result) {
@@ -678,7 +662,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                 $_entity->setData('sf_insync', 0);
                 $_entity->getResource()->save($_entity);
 
-                $this->_processErrors($_result, 'invoiceCart', $chunk[$_cartItemId]);
+                $this->_processErrors($_result, 'creditmemoCart', $chunk[$_cartItemId]);
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError(sprintf('ERROR: One of the Cart Item for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_entityNum));
             }
@@ -791,9 +775,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                 $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))],
                 $this->_cache['responses'][strtolower($this->getManyParentEntityType())]);
 
-            $logger->add('Salesforce', ucwords($this->_magentoEntityName) . 'Item',
-                $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))],
-                $this->_cache['responses'][lcfirst($this->getItemsField())]);
+            if (!empty($this->_cache['responses'][lcfirst($this->getItemsField())])) {
+                $logger->add('Salesforce', ucwords($this->_magentoEntityName) . 'Item',
+                    $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))],
+                    $this->_cache['responses'][lcfirst($this->getItemsField())]);
+            }
 
             if (!empty($this->_cache['responses']['notes'])) {
                 $logger->add('Salesforce', 'Note', $this->_cache['notesToUpsert'], $this->_cache['responses']['notes']);

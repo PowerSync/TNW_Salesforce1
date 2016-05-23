@@ -121,7 +121,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
                     array(
                         'caption' => Mage::helper('sales')->__('Sync'),
                         'url' => array('base' => '*/*/sync'),
-                        'field' => 'order_id'
+                        'field' => 'creditmemo_id'
                     )
                 ),
                 'filter' => false,

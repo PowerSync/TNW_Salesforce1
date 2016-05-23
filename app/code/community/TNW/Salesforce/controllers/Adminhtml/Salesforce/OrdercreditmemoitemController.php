@@ -6,7 +6,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrdercreditmemoitemController extends 
      * name of  Salesforce object in case sensitive
      * @var string
      */
-    protected $_sfEntity = 'Order';
+    protected $_sfEntity = 'OrderItem';
 
     /**
      * name of Local object in case sensitive
