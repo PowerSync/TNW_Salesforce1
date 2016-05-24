@@ -101,6 +101,7 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
             'header' => Mage::helper('sales')->__('Contact ID'),
             'index' => 'salesforce_id',
             'type' => 'varchar',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
 
@@ -108,6 +109,7 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
             'header' => Mage::helper('sales')->__('Account ID'),
             'index' => 'salesforce_account_id',
             'type' => 'varchar',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Account_Id(),
         ));
 
@@ -115,6 +117,7 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
             'header' => Mage::helper('sales')->__('Lead ID'),
             'index' => 'salesforce_lead_id',
             'type' => 'varchar',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Lead_Id(),
         ));
 
