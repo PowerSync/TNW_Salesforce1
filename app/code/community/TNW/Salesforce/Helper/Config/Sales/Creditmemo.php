@@ -6,12 +6,12 @@
 
 class TNW_Salesforce_Helper_Config_Sales_Creditmemo extends TNW_Salesforce_Helper_Config_Sales
 {
-    const CREDIT_MEMO_SYNC_ENABLE = 'salesforce_order/creditmemo_configuration/sync_enable';
+    const CREDIT_MEMO_SYNC_ENABLE = 'salesforce_order/creditmemo_configuration/sync_enabled';
 
     // Allow Magento to synchronize invoices with Salesforce
     public function syncCreditMemo()
     {
-        return 1;//(int)$this->getStoreConfig(self::CREDIT_MEMO_SYNC_ENABLE);
+        return (int)$this->getStoreConfig(self::CREDIT_MEMO_SYNC_ENABLE);
     }
 
     /**

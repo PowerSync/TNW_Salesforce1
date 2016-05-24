@@ -36,7 +36,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
 
         // check if queue sync setting is on - then save to database
         if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($_creditmemo->getId()), 'Credit Memo', 'creditmemo');
+            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($_creditmemo->getId()), 'Creditmemo', 'creditmemo');
             if (!$res) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Invoice not saved to local storage');
             }

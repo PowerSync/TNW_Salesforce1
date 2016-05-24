@@ -22,9 +22,9 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemostatus_Grid extends Mage_Adminhtm
     protected function _prepareColumns()
     {
         $this->addColumn('status_id', array(
-            'header' => $this->__('Mapping ID'),
-            'width' => '1',
-            'index' => 'status_id',
+            'header'    => $this->__('Mapping ID'),
+            'width'     => '1',
+            'index'     => 'status_id',
         ));
 
         $this->addColumn('magento_stage', array(
@@ -37,6 +37,9 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemostatus_Grid extends Mage_Adminhtm
         $this->addColumn('salesforce_status', array(
             'header'    => $this->__('Salesforce Status'),
             'index'     => 'salesforce_status',
+            'sortable'  => false,
+            'filter'    => false,
+            'type'      => 'text',
         ));
 
         return parent::_prepareColumns();
@@ -44,14 +47,15 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemostatus_Grid extends Mage_Adminhtm
 
     protected function _prepareMassaction()
     {
-        $this->setMassactionIdField('id');
-        $this->getMassactionBlock()->setFormFieldName('ids');
+        $this->setMassactionIdField('status_id');
+        $this->getMassactionBlock()->setFormFieldName('status_ids');
 
-        $this->getMassactionBlock()->addItem('delete', array(
-            'label' => $this->__('Delete'),
-            'url' => $this->getUrl('*/*/massDelete'),
-            'confirm' => $this->__('Are you sure?')
-        ));
+        $this->getMassactionBlock()
+            ->addItem('delete', array(
+                'label' => $this->__('Delete'),
+                'url' => $this->getUrl('*/*/massDelete'),
+                'confirm' => $this->__('Are you sure?')
+            ));
 
         return $this;
     }
@@ -59,6 +63,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemostatus_Grid extends Mage_Adminhtm
     /**
      * Row click url
      *
+     * @param $row tnw_salesforce_model_order_creditmemo_status
      * @return string
      */
     public function getRowUrl($row)

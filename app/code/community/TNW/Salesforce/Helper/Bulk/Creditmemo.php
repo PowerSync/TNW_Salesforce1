@@ -81,7 +81,6 @@ class TNW_Salesforce_Helper_Bulk_Creditmemo extends TNW_Salesforce_Helper_Salesf
                 if ($_item->success == "true") {
                     $_record = $this->_loadEntityByCache(array_search($_oid, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_oid);
                     $_record->setData('salesforce_id', (string)$_item->id);
-                    $_record->setData('sf_insync', 1);
                     $_record->getResource()->save($_record);
 
                     $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_oid] = (string)$_item->id;
@@ -179,6 +178,48 @@ class TNW_Salesforce_Helper_Bulk_Creditmemo extends TNW_Salesforce_Helper_Salesf
 
             if (strval($_result) != 'exception') {
                 $this->_checkNotesData();
+            }
+        }
+
+        // Activate orders
+        if (!empty($this->_cache['orderToActivate'])) {
+            foreach($this->_cache['orderToActivate'] as $_orderNum => $_object) {
+                if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
+                    $_object->Id = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
+                    continue;
+                }
+
+                unset($this->_cache['orderToActivate'][$_orderNum]);
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+            }
+
+            if (!empty($this->_cache['orderToActivate'])) {
+                if (!$this->_cache['bulkJobs']['orderToActivate']['Id']) {
+                    // Create Job
+                    $this->_cache['bulkJobs']['orderToActivate']['Id'] = $this->_createJob('Order', 'upsert', 'Id');
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Syncronizing Order, created job: ' . $this->_cache['bulkJobs']['notes']['Id']);
+                }
+
+                $this->_pushChunked($this->_cache['bulkJobs']['orderToActivate']['Id'], 'orderToActivate', $this->_cache['orderToActivate']);
+
+                $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderToActivate']['Id']);
+                $_attempt = 1;
+                while (strval($_result) != 'exception' && !$_result) {
+                    set_time_limit(1800);
+                    sleep(5);
+                    $_result = $this->_checkBatchCompletion($this->_cache['bulkJobs']['orderToActivate']['Id']);
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Still checking notesToUpsert (job: ' . $this->_cache['bulkJobs']['orderToActivate']['Id'] . ')...');
+
+                    $_result = $this->_whenToStopWaiting($_result, $_attempt++, $this->_cache['bulkJobs']['orderToActivate']['Id']);
+                }
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Order sync is complete! Moving on...');
+
+                if (strval($_result) != 'exception') {
+                    $this->_checkOrderActivateData();
+                }
             }
         }
 
@@ -290,6 +331,47 @@ class TNW_Salesforce_Helper_Bulk_Creditmemo extends TNW_Salesforce_Helper_Salesf
             "data" => $this->_cache['notesToUpsert'],
             "result" => $this->_cache['responses']['notes']
         ));
+    }
+
+    protected function _checkOrderActivateData()
+    {
+        if (!array_key_exists('orderToActivate', $this->_cache['batchCache'])) {
+            return;
+        }
+
+        foreach ($this->_cache['batchCache']['orderToActivate']['Id'] as $_key => $_batchId) {
+            $_batch = &$this->_cache['batch']['orderToActivate']['Id'][$_key];
+
+            try {
+                $response = $this->getBatch($this->_cache['bulkJobs']['orderToActivate']['Id'], $_batchId);
+            } catch (Exception $e) {
+                $response = array_fill(0, count($_batch), $this->_buildErrorResponse($e->getMessage()));
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Prepare batch #'. $_batchId .' Error: ' . $e->getMessage());
+            }
+
+            $_i = 0;
+            $_batchKeys = array_keys($_batch);
+            foreach ($response as $_item) {
+                $_oid  = $_batchKeys[$_i++];
+
+                //Report Transaction
+                $this->_cache['responses']['orderToActivate'][$_oid] = json_decode(json_encode($_item), TRUE);
+                if ($_item->success == "true") {
+                    $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_oid] = (string)$_item->id;
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace(ucwords($this->_magentoEntityName) . ' Upserted: ' . (string)$_item->id);
+
+                    continue;
+                }
+
+                $this->_processErrors($_item, 'orderToActivate', $_batch[$_oid]);
+                if (!in_array($_oid, $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())])) {
+                    $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_oid;
+                }
+            }
+        }
     }
 
     protected function _updateRecords()

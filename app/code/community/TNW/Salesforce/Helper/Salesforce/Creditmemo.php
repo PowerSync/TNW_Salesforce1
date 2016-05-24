@@ -352,6 +352,25 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'}
             = true;
+
+        /**
+         * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
+         */
+        $_currentStatus = $this->_obj->Status;
+        if ($_currentStatus != TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS) {
+            $this->_obj->Status = TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+            $_toActivate = new stdClass();
+            $_toActivate->Status = $_currentStatus;
+            $_toActivate->Id = NULL;
+
+            if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+                $_toActivate->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'}
+                    = true;
+            }
+
+            $_entityNumber = $this->_getEntityNumber($_entity);
+            $this->_cache['orderToActivate'][$_entityNumber] = $_toActivate;
+        }
     }
 
     /**
@@ -679,6 +698,70 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         }
     }
 
+    protected function _pushRemainingCustomEntityData()
+    {
+        parent::_pushRemainingCustomEntityData();
+
+        // Activate orders
+        if (!empty($this->_cache['orderToActivate'])) {
+            foreach ($this->_cache['orderToActivate'] as $_orderNum => $_object) {
+                $salesforceOrderId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
+                if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
+                    $_object->Id = $salesforceOrderId;
+                    continue;
+                }
+
+                unset($this->_cache['orderToActivate'][$_orderNum]);
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+            }
+
+            if (!empty($this->_cache['orderToActivate'])) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: Start----------');
+
+                $_orderChunk = array_chunk($this->_cache['orderToActivate'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
+                foreach ($_orderChunk as $_itemsToPush) {
+                    $this->_activateOrders($_itemsToPush);
+                }
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Activating Orders: End----------');
+            }
+        }
+    }
+
+    /**
+     * @param array $chunk
+     * Actiate orders in Salesforce
+     */
+    protected function _activateOrders($chunk = array())
+    {
+        try {
+            $results = $this->getClient()->upsert("Id", array_values($chunk), 'Order');
+        } catch (Exception $e) {
+            $results = array();
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Activation of Orders in SalesForce failed!' . $e->getMessage());
+        }
+
+        $_orderNumbers = array_keys($chunk);
+        foreach ($results as $_key => $_result) {
+            $_entityNum = $_orderNumbers[$_key];
+
+            if (!$_result->success) {
+                // Reset sync status
+                $_entity = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
+                $_entity->setData('sf_insync', 0);
+                $_entity->getResource()->save($_entity);
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Order: ' . $_entityNum . ') failed to activate.');
+            }
+            else {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('Order: ' . $_entityNum . ') activated.');
+            }
+        }
+    }
+
     /**
      * @param $notes Mage_Sales_Model_Order_Creditmemo_Comment
      * @throws Exception
@@ -811,6 +894,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         $this->_cache = array(
             'accountsLookup' => array(),
             'entitiesUpdating' => array(),
+            'orderToActivate' => array(),
             sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
             sprintf('failed%s', $this->getManyParentEntityType()) => array(),
             sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),

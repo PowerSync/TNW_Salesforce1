@@ -41,6 +41,11 @@ $data = array(
         'sf_object'         => 'OrderCreditMemo',
         'is_system'         => '1',
     ),
+    array(
+        'local_field'       => 'Credit Memo : cart_all',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'OrderCreditMemo',
+    ),
 
     // Customer
     array(
@@ -83,6 +88,7 @@ $data = array(
         'sf_field'          => 'BillingState',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => !$usePickList,
+        'sf_magento_enable' => !$usePickList,
         '@attribute'        => 'customer_address:region'
     ),
     array(
@@ -90,6 +96,7 @@ $data = array(
         'sf_field'          => 'BillingStateCode',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => $usePickList,
+        'sf_magento_enable' => $usePickList,
         '@attribute'        => 'customer_address:region_id'
     ),
     array(
@@ -103,6 +110,7 @@ $data = array(
         'sf_field'          => 'BillingCountry',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => !$usePickList,
+        'sf_magento_enable' => !$usePickList,
         '@attribute'        => 'customer_address:country_id'
     ),
     array(
@@ -110,6 +118,7 @@ $data = array(
         'sf_field'          => 'BillingCountryCode',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => $usePickList,
+        'sf_magento_enable' => $usePickList,
         '@attribute'        => 'customer_address:country_id'
     ),
 
@@ -131,6 +140,7 @@ $data = array(
         'sf_field'          => 'ShippingState',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => !$usePickList,
+        'sf_magento_enable' => !$usePickList,
         '@attribute'        => 'customer_address:region'
     ),
     array(
@@ -138,6 +148,7 @@ $data = array(
         'sf_field'          => 'ShippingStateCode',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => $usePickList,
+        'sf_magento_enable' => $usePickList,
         '@attribute'        => 'customer_address:region_id'
     ),
     array(
@@ -151,6 +162,7 @@ $data = array(
         'sf_field'          => 'ShippingCountry',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => !$usePickList,
+        'sf_magento_enable' => !$usePickList,
         '@attribute'        => 'customer_address:country_id'
     ),
     array(
@@ -158,6 +170,7 @@ $data = array(
         'sf_field'          => 'ShippingCountryCode',
         'sf_object'         => 'OrderCreditMemo',
         'magento_sf_enable' => $usePickList,
+        'sf_magento_enable' => $usePickList,
         '@attribute'        => 'customer_address:country_id'
     ),
 
@@ -166,6 +179,7 @@ $data = array(
         'local_field'       => 'Credit Memo Item : qty',
         'sf_field'          => 'Quantity',
         'sf_object'         => 'OrderCreditMemoItem',
+        'is_system'         => '1',
     ),
     array(
         'local_field'       => 'Credit Memo Item : sf_product_options_text',
@@ -202,7 +216,7 @@ $data = array_map(function($value){
         'is_system'         => '0',
         'magento_sf_enable' => '1',
         'magento_sf_type'   => 'upsert',
-        'sf_magento_enable' => '0',
+        'sf_magento_enable' => '1',
         'sf_magento_type'   => 'upsert'
     ), $value);
 }, $data);

@@ -136,15 +136,15 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->setMassactionIdField('mapping_id');
-            $this->getMassactionBlock()->setFormFieldName('creditmemo');
+            $this->setMassactionIdField('increment_id');
+            $this->getMassactionBlock()->setFormFieldName('creditmemo_ids');
 
             if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {
                 $this->getMassactionBlock()->addItem(
                     'sync', array(
                         'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
                         'url' => $this->getUrl('*/*/massSyncForce'),
-                        'confirm' => Mage::helper('tnw_salesforce')->__('This may duplicate any existing Opportunity Products / Notes / Contact Roles. For best results please delete existing Opportunity for this order in Salesforce!')
+                        'confirm' => Mage::helper('tnw_salesforce')->__('Are you sure?')
                     )
                 );
             }

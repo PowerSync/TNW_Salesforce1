@@ -320,6 +320,15 @@
                 </observers>
             </tnw_salesforce_shipment_comments_save_after>
 
+            <tnw_salesforce_creditmemo_comments_save_after>
+                <observers>
+                    <tnw_salesforce_notes_observer>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>baseNotesPush</method>
+                    </tnw_salesforce_notes_observer>
+                </observers>
+            </tnw_salesforce_creditmemo_comments_save_after>
+
             <!-- Product Save Event -->
             <catalog_product_save_commit_after>
                 <observers>
@@ -625,6 +634,7 @@
                 <abandoned_batch_size>500</abandoned_batch_size>
                 <invoice_batch_size>500</invoice_batch_size>
                 <shipment_batch_size>500</shipment_batch_size>
+                <creditmemo_batch_size>500</creditmemo_batch_size>
 
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
@@ -695,6 +705,12 @@
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>
             </invoice_configuration>
+            <shipment_configuration>
+                <sync_enabled>0</sync_enabled>
+            </shipment_configuration>
+            <creditmemo_configuration>
+                <sync_enabled>0</sync_enabled>
+            </creditmemo_configuration>
         </salesforce_order>
     </default>
 </config>

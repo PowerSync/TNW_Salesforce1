@@ -79,7 +79,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
             if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                 // pass data to local storage
                 $addSuccess = Mage::getModel('tnw_salesforce/localstorage')
-                    ->addObject($itemIds, 'Credit Memo', 'creditmemo');
+                    ->addObject($itemIds, 'Creditmemo', 'creditmemo');
 
                 if ($addSuccess) {
                     Mage::getSingleton('adminhtml/session')
@@ -121,10 +121,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
             return;
         }
 
-        $itemIds = $this->getRequest()->getParam('invoice_ids');
+        $itemIds = $this->getRequest()->getParam('creditmemo_ids');
         if (!is_array($itemIds)) {
             Mage::getSingleton('adminhtml/session')
-                ->addError($this->__('Please select orders(s)'));
+                ->addError($this->__('Please select Credit Memo(s)'));
 
             $this->_redirect('*/*/index');
             return;
@@ -143,7 +143,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
                 $addSuccess = Mage::getModel('tnw_salesforce/localstorage')
                     ->addObject($itemIds, 'Creditmemo', 'creditmemo');
 
-                if (!$addSuccess) {
+                if ($addSuccess) {
                     Mage::getSingleton('adminhtml/session')
                         ->addSuccess($this->__('Records are pending addition into the queue!'));
                 }
