@@ -31,7 +31,7 @@ class TNW_Salesforce_Model_Cron
      * @return bool
      */
     public function _isTimeToRun()
-    {return true;
+    {
         /** @var TNW_Salesforce_Helper_Data $_helperData */
         $_helperData = Mage::helper('tnw_salesforce');
 

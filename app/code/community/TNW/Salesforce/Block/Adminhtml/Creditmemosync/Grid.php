@@ -94,6 +94,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
             'header' => Mage::helper('sales')->__('Salesforce ID'),
             'index' => 'salesforce_id',
             'type' => 'text',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
 
