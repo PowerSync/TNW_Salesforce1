@@ -126,6 +126,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'header' => Mage::helper('sales')->__(Mage::helper('tnw_salesforce')->getOrderObject() . ' ID'),
             'index' => 'salesforce_id',
             'type' => 'text',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
         $this->addColumn('grand_total', array(

@@ -116,6 +116,7 @@ class TNW_Salesforce_Block_Adminhtml_Campaign_Salesrulesync_Grid extends Mage_Ad
             'header' => Mage::helper('sales')->__('Salesforce ID'),
             'index' => 'salesforce_id',
             'type' => 'varchar',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
 

@@ -711,6 +711,10 @@
             <creditmemo_configuration>
                 <sync_enabled>0</sync_enabled>
             </creditmemo_configuration>
+            <customer_view>
+                <opportunity_display>0</opportunity_display>
+                <opportunity_filter>customer</opportunity_filter>
+            </customer_view>
         </salesforce_order>
     </default>
 </config>
