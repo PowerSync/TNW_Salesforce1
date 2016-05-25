@@ -15,6 +15,7 @@ $data = array(
         'sf_field'          => 'Name',
         'sf_object'         => 'OrderCreditMemo',
         'is_system'         => '1',
+        'sf_magento_enable' => '0',
     ),
     array(
         'local_field'       => 'Credit Memo : sf_status',
@@ -27,24 +28,28 @@ $data = array(
         'sf_field'          => 'EffectiveDate',
         'sf_object'         => 'OrderCreditMemo',
         'is_system'         => '1',
-        'backend_type'      => 'datetime'
+        'backend_type'      => 'datetime',
+        'sf_magento_enable' => '0',
     ),
     array(
         'local_field'       => 'Credit Memo : number',
         'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
         'sf_object'         => 'OrderCreditMemo',
         'is_system'         => '1',
+        'sf_magento_enable' => '0',
     ),
     array(
         'local_field'       => 'Credit Memo : website',
         'sf_field'          => 'tnw_mage_basic__Magento_Website__c',
         'sf_object'         => 'OrderCreditMemo',
         'is_system'         => '1',
+        'sf_magento_enable' => '0',
     ),
     array(
         'local_field'       => 'Credit Memo : cart_all',
         'sf_field'          => 'Description',
         'sf_object'         => 'OrderCreditMemo',
+        'sf_magento_enable' => '0',
     ),
 
     // Customer
@@ -185,11 +190,13 @@ $data = array(
         'local_field'       => 'Credit Memo Item : sf_product_options_text',
         'sf_field'          => 'Description',
         'sf_object'         => 'OrderCreditMemoItem',
+        'sf_magento_enable' => '0',
     ),
     array(
         'local_field'       => 'Credit Memo Item : sf_product_options_html',
         'sf_field'          => 'tnw_mage_basic__Product_Options__c',
         'sf_object'         => 'OrderCreditMemoItem',
+        'sf_magento_enable' => '0',
     ),
 );
 

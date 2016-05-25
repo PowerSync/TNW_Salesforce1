@@ -16,4 +16,9 @@ class TNW_Salesforce_Model_Mysql4_Order_Creditmemo_Status_Collection extends Mag
     {
         return $this->_toOptionHash('magento_stage', 'salesforce_status');
     }
+
+    public function toReverseStatusHash()
+    {
+        return $this->_toOptionHash('salesforce_status', 'magento_stage');
+    }
 }
