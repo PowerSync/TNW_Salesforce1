@@ -160,6 +160,13 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($value));
                 break;
 
+            case 'multiselect':
+                $value = $attribute->getFrontend()->getOption($value);
+                if (is_array($value)) {
+                    $value = implode(';', $value);
+                }
+                break;
+
             default:
                 $value = $attribute->getFrontend()->getValue($entity);
                 break;
