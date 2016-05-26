@@ -204,7 +204,13 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                     return null;
                 }
 
-                return $source->getOptionId($value);
+                foreach ($source->getAllOptions() as $option) {
+                    if (mb_strtolower($option['label'], 'UTF-8') === mb_strtolower($value, 'UTF-8')) {
+                        return $option['value'];
+                    }
+                }
+
+                return null;
 
             case 'multiselect':
                 $value = explode(';', $value);
@@ -214,7 +220,12 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 }
 
                 foreach ($value as &$_value) {
-                    $_value = $source->getOptionId($_value);
+                    foreach ($source->getAllOptions() as $option) {
+                        if (mb_strtolower($option['label'], 'UTF-8') === mb_strtolower($_value, 'UTF-8')) {
+                            $_value = $option['value'];
+                            continue;
+                        }
+                    }
                 }
 
                 return $value;
