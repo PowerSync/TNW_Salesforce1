@@ -37,26 +37,14 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
                 return $this->convertAttributeSetId($_entity);
         }
 
-        /** @var mage_catalog_model_resource_product $_resource */
-        $_resource = Mage::getResourceSingleton('catalog/product');
-        $attribute = $_resource->getAttribute($attributeCode);
-        if ($attribute)
-        {
-            if(!$_entity->hasData($attributeCode)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('Attribute product "%s" is missing. Product sku: "%s"', $attributeCode, $_entity->getSku()));
+        $attribute = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute) {
+            if($_entity->hasData($attributeCode)) {
+                return $this->_prepareAttribute($_entity, $attribute);
             }
 
-            $_value = $_entity->getData($attributeCode);
-            switch($attribute->getFrontend()->getInputType())
-            {
-                case 'select':
-                case 'multiselect':
-                    return $attribute->getSource()->getOptionText($_value);
-
-                default:
-                    return $_value;
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice(sprintf('Attribute product "%s" is missing. Product sku: "%s"', $attributeCode, $_entity->getSku()));
         }
 
         return parent::getValue($_entity);

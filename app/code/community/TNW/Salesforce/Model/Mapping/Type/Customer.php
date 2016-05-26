@@ -22,26 +22,14 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                 return $this->convertSfRecordType($_entity);
         }
 
-        /** @var mage_customer_model_resource_customer $_resource */
-        $_resource = Mage::getResourceSingleton('customer/customer');
-        $attribute = $_resource->getAttribute($attributeCode);
-        if ($attribute)
-        {
-            if(!$_entity->hasData($attributeCode)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('Attribute customer "%s" is missing. Customer email: "%s"', $attributeCode, $_entity->getEmail()));
+        $attribute = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute) {
+            if($_entity->hasData($attributeCode)) {
+                return $this->_prepareAttribute($_entity, $attribute);
             }
 
-            $_value = $_entity->getData($attributeCode);
-            switch($attribute->getFrontend()->getInputType())
-            {
-                case 'select':
-                case 'multiselect':
-                    return $attribute->getSource()->getOptionText($_value);
-
-                default:
-                    return $_value;
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice(sprintf('Attribute customer "%s" is missing. Customer email: "%s"', $attributeCode, $_entity->getEmail()));
         }
 
         return parent::getValue($_entity);
