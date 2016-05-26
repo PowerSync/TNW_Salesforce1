@@ -25,7 +25,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
         $attribute = $this->_getAttribute($_entity, $attributeCode);
         if ($attribute) {
             if($_entity->hasData($attributeCode)) {
-                return $this->_prepareAttribute($_entity, $attribute);
+                return $this->_convertValueForAttribute($_entity, $attribute);
             }
 
             Mage::getSingleton('tnw_salesforce/tool_log')

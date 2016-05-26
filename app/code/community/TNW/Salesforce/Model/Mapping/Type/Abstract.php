@@ -37,6 +37,20 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
     /**
      * @param $_entity Mage_Core_Model_Abstract
+     * @param $value string
+     */
+    public function setValue($_entity, $value)
+    {
+        if (empty($value) && $_entity->isObjectNew()) {
+            $value = $this->_mapping->getDefaultValue();
+        }
+
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $_entity->setData($attributeCode, $value);
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
      * @param $code
      * @return null
      */
@@ -150,7 +164,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      * @param $attribute Mage_Eav_Model_Entity_Attribute_Abstract
      * @return bool|mixed|string|void
      */
-    protected function _prepareAttribute($entity, $attribute)
+    protected function _convertValueForAttribute($entity, $attribute)
     {
         $value = $entity->getData($attribute->getAttributeCode());
         switch ($attribute->getFrontend()->getConfigField('input'))
@@ -170,6 +184,40 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
             default:
                 $value = $attribute->getFrontend()->getValue($entity);
                 break;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param $attribute Mage_Eav_Model_Entity_Attribute_Abstract
+     * @param $value
+     * @return bool|mixed|string|void
+     */
+    protected function _reverseConvertValueForAttribute($attribute, $value)
+    {
+        switch ($attribute->getFrontend()->getConfigField('input'))
+        {
+            case 'select':
+                $source = $attribute->getSource();
+                if (!$source) {
+                    return null;
+                }
+
+                return $source->getOptionId($value);
+
+            case 'multiselect':
+                $value = explode(';', $value);
+                $source = $attribute->getSource();
+                if (!$source) {
+                    return null;
+                }
+
+                foreach ($value as &$_value) {
+                    $_value = $source->getOptionId($_value);
+                }
+
+                return $value;
         }
 
         return $value;
