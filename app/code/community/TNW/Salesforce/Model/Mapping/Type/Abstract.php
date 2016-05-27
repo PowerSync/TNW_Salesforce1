@@ -37,6 +37,20 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
     /**
      * @param $_entity Mage_Core_Model_Abstract
+     * @param $value string
+     */
+    public function setValue($_entity, $value)
+    {
+        if (empty($value) && $_entity->isObjectNew()) {
+            $value = $this->_mapping->getDefaultValue();
+        }
+
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $_entity->setData($attributeCode, $value);
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
      * @param $code
      * @return null
      */
@@ -150,7 +164,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      * @param $attribute Mage_Eav_Model_Entity_Attribute_Abstract
      * @return bool|mixed|string|void
      */
-    protected function _prepareAttribute($entity, $attribute)
+    protected function _convertValueForAttribute($entity, $attribute)
     {
         $value = $entity->getData($attribute->getAttributeCode());
         switch ($attribute->getFrontend()->getConfigField('input'))
@@ -160,9 +174,61 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($value));
                 break;
 
+            case 'multiselect':
+                $value = $attribute->getFrontend()->getOption($value);
+                if (is_array($value)) {
+                    $value = implode(';', $value);
+                }
+                break;
+
             default:
                 $value = $attribute->getFrontend()->getValue($entity);
                 break;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param $attribute Mage_Eav_Model_Entity_Attribute_Abstract
+     * @param $value
+     * @return bool|mixed|string|void
+     */
+    protected function _reverseConvertValueForAttribute($attribute, $value)
+    {
+        switch ($attribute->getFrontend()->getConfigField('input'))
+        {
+            case 'select':
+                $source = $attribute->getSource();
+                if (!$source) {
+                    return null;
+                }
+
+                foreach ($source->getAllOptions() as $option) {
+                    if (mb_strtolower($option['label'], 'UTF-8') === mb_strtolower($value, 'UTF-8')) {
+                        return $option['value'];
+                    }
+                }
+
+                return null;
+
+            case 'multiselect':
+                $value = explode(';', $value);
+                $source = $attribute->getSource();
+                if (!$source) {
+                    return null;
+                }
+
+                foreach ($value as &$_value) {
+                    foreach ($source->getAllOptions() as $option) {
+                        if (mb_strtolower($option['label'], 'UTF-8') === mb_strtolower($_value, 'UTF-8')) {
+                            $_value = $option['value'];
+                            continue;
+                        }
+                    }
+                }
+
+                return $value;
         }
 
         return $value;
