@@ -26,14 +26,55 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
                 ->where('IsPersonAccount = false');
         }
 
+$select2Enable = <<<HTML
+<script type="application/javascript">
+    (function($) {
+        $(document).ready(function() {
+            jQuery(".tnw-ajax-find-select").select2({
+              ajax: {
+                url: "https://api.github.com/search/repositories",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                  return {
+                    q: params.term, // search term
+                    page: params.page
+                  };
+                },
+                processResults: function (data, params) {
+                  params.page = params.page || 1;
+
+                  return {
+                    results: data.items,
+                    pagination: {
+                      more: (params.page * 30) < data.total_count
+                    }
+                  };
+                },
+                cache: true
+              },
+              minimumInputLength: 4,
+              templateResult: function(data) {
+                  if (data.id === '') { // adjust for custom placeholder values
+                      return 'Custom styled placeholder text';
+                    }
+                return data.full_name;
+              }
+            });
+        });
+    })(jQuery);
+</script>
+HTML;
+
         $fieldset = $form->addFieldset('account_matching', array('legend' => $this->__('Rule Information')));
         $fieldset->addField('account_id', 'select', array(
             'label' => $this->__('Account Name'),
             'name' => 'account_id',
             'style' => 'width:273px',
             'values' => $collection->setFullIdMode(true)->getAllOptions(),
-            'class' => 'select2-select',
+            'class' => 'tnw-ajax-find-select',
             'required' => true,
+            'after_element_html' => $select2Enable
         ));
 
         $fieldset->addField('email_domain', 'text', array(
