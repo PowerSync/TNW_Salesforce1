@@ -34,6 +34,27 @@
         </reference>
     </tnw_salesforce_chosen>
 
+    <tnw_salesforce_select2>
+        <reference name="head">
+            <action method="addJs">
+                <file>lib/jquery/jquery-1.10.2.min.js</file>
+            </action>
+            <action method="addJs">
+                <file>lib/jquery/noconflict.js</file>
+            </action>
+            <action method="addJs">
+                <file>tnw-salesforce/select2/js/select2.min.js</file>
+            </action>
+            <action method="addJs">
+                <file>tnw-salesforce/select2-enable.js</file>
+            </action>
+            <action method="addItem">
+                <type>js_css</type>
+                <file>tnw-salesforce/select2/css/select2.min.css</file>
+            </action>
+        </reference>
+    </tnw_salesforce_select2>
+
     <default>
         <update handle="tnw_salesforce_admin"/>
     </default>
@@ -125,7 +146,7 @@
     </adminhtml_salesforce_account_edit>
 
     <adminhtml_salesforce_account_matching_edit>
-        <update handle="tnw_salesforce_chosen"/>
+        <update handle="tnw_salesforce_select2"/>
     </adminhtml_salesforce_account_matching_edit>
 
     <adminhtml_salesforce_abandoned_opportunity_edit>
