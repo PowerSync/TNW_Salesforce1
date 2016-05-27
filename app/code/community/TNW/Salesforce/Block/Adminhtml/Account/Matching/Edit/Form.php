@@ -32,7 +32,7 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
             'name' => 'account_id',
             'style' => 'width:273px',
             'values' => $collection->setFullIdMode(true)->getAllOptions(),
-            'class' => 'chosen-select',
+            'class' => 'select2-select',
             'required' => true,
         ));
 
