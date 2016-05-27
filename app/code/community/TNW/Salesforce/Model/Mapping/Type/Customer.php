@@ -36,6 +36,32 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     }
 
     /**
+     * @param Mage_Customer_Model_Customer $entity
+     * @param string $value
+     * @return string
+     */
+    public function setValue($entity, $value)
+    {
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        switch ($attributeCode) {
+            case 'website_id':
+                $value = $this->reverseConvertWebsite($value);
+                break;
+
+            case 'website_ids':
+                $value = $this->reverseConvertWebsiteIds($value);
+                break;
+        }
+
+        $attribute = $this->_getAttribute($entity, $attributeCode);
+        if ($attribute) {
+            $value = $this->_reverseConvertValueForAttribute($attribute, $value);
+        }
+
+        parent::setValue($entity, $value);
+    }
+
+    /**
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
      */
@@ -47,6 +73,33 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
             ->getWebsite($_entity->getWebsiteId());
 
         return $websiteHelper->getWebsiteSfId($_website);
+    }
+
+    /**
+     * @param $value
+     * @return mixed|null
+     */
+    public function reverseConvertWebsite($value)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::app()->getWebsites(true) as $website) {
+            if ($website->getData('salesforce_id') !== $value) {
+                continue;
+            }
+
+            return $website->getId();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $value
+     * @return array
+     */
+    public function reverseConvertWebsiteIds($value)
+    {
+        return explode(',', $value);
     }
 
     /**
