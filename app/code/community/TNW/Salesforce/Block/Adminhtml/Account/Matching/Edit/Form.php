@@ -18,26 +18,41 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
         $form->setUseContainer(true);
         $this->setForm($form);
 
+        $formValues = array();
+        if (Mage::getSingleton('adminhtml/session')->getAccountData()) {
+            $formValues = Mage::getSingleton('adminhtml/session')->getAccountData();
+            Mage::getSingleton('adminhtml/session')->getAccountData(null);
+        } elseif (Mage::registry('salesforce_account_matching_data')) {
+            $formValues = Mage::registry('salesforce_account_matching_data')->getData();
+        }
+
         /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-        $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
+        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
+            ->setPageSize(1);
+
+        if (isset($formValues['account_id'])) {
+            $collection->addFieldToFilter('Id', array('eq'=>$formValues['account_id']));
+        }
 
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
             $collection->getSelect()
                 ->where('IsPersonAccount = false');
         }
 
-$select2Enable = <<<HTML
+        $select2Url = $this->getUrl('*/*/search');
+
+$select2Html = <<<HTML
 <script type="application/javascript">
     (function($) {
         $(document).ready(function() {
-            jQuery(".tnw-ajax-find-select").select2({
+            $(".tnw-ajax-find-select").select2({
               ajax: {
-                url: "https://api.github.com/search/repositories",
+                url: "{$select2Url}",
                 dataType: 'json',
                 delay: 250,
                 data: function (params) {
                   return {
-                    q: params.term, // search term
+                    q: params.term,
                     page: params.page
                   };
                 },
@@ -47,19 +62,13 @@ $select2Enable = <<<HTML
                   return {
                     results: data.items,
                     pagination: {
-                      more: (params.page * 30) < data.total_count
+                      more: (params.page * 30) < data.totalRecords
                     }
                   };
                 },
                 cache: true
               },
-              minimumInputLength: 4,
-              templateResult: function(data) {
-                  if (data.id === '') { // adjust for custom placeholder values
-                      return 'Custom styled placeholder text';
-                    }
-                return data.full_name;
-              }
+              minimumInputLength: 4
             });
         });
     })(jQuery);
@@ -74,7 +83,7 @@ HTML;
             'values' => $collection->setFullIdMode(true)->getAllOptions(),
             'class' => 'tnw-ajax-find-select',
             'required' => true,
-            'after_element_html' => $select2Enable
+            'after_element_html' => $select2Html
         ));
 
         $fieldset->addField('email_domain', 'text', array(
@@ -84,13 +93,7 @@ HTML;
             'required' => true,
         ));
 
-        if (Mage::getSingleton('adminhtml/session')->getAccountData()) {
-            $form->setValues(Mage::getSingleton('adminhtml/session')->getAccountData());
-            Mage::getSingleton('adminhtml/session')->getAccountData(null);
-        } elseif (Mage::registry('salesforce_account_matching_data')) {
-            $form->setValues(Mage::registry('salesforce_account_matching_data')->getData());
-        }
-
+        $form->setValues($formValues);
         return parent::_prepareForm();
     }
 

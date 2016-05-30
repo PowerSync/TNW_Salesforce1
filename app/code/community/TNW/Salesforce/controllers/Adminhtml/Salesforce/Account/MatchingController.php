@@ -301,6 +301,53 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         $this->_redirect('*/*/');
     }
 
+    public function searchAction()
+    {
+        $query = $this->getRequest()->getQuery('q');
+        if (empty($query)) {
+            $this->_sendJson(array());
+            return;
+        }
+
+        $curPage = $this->getRequest()->getQuery('page', 1);
+
+        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
+        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
+            ->addFieldToFilter('Name', array('like' => "%$query%"))
+            ->setPageSize(30)
+            ->setCurPage($curPage);
+
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $collection->getSelect()
+                ->where('IsPersonAccount = false');
+        }
+
+        $result = array();
+        foreach ($collection as $item) {
+            $result[] = array(
+                'id'    => $item->getId(),
+                'text'  => $item->getData('Name'),
+            );
+        }
+
+        $this->_sendJson(array(
+            'totalRecords' => $collection->getSize(),
+            'items' => $result
+        ));
+        return;
+    }
+
+    /**
+     * @param $json
+     */
+    private function _sendJson($json)
+    {
+        $jsonData = Zend_Json::encode($json);
+        $this->getResponse()
+            ->setHeader('Content-type', 'application/json')
+            ->setBody($jsonData);
+    }
+
     /**
      * Export matching grid to CSV format
      */
