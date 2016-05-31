@@ -471,10 +471,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     /**
      * @param $_entityNumber
-     * @param $_websites
      * @return bool
      */
-    protected function _checkSyncCustomer($_entityNumber, $_websites)
+    protected function _checkSyncCustomer($_entityNumber)
     {
         $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
         if (false === $_entityId) {
@@ -483,7 +482,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
         $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
-        $websiteSfId = $_websites[$customerId];
+        $websiteSfId = $this->_websites[$customerId];
 
         $syncCustomer = false;
 
