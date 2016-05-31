@@ -314,7 +314,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
         $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
             ->addFieldToFilter('Name', array('like' => "%$query%"))
-            ->setPageSize(30)
+            ->setPageSize(TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE)
             ->setCurPage($curPage);
 
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -323,6 +323,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         }
 
         $result = array();
+        /** @var TNW_Salesforce_Model_Api_Entity_Account $item */
         foreach ($collection as $item) {
             $result[] = array(
                 'id'    => $item->getId(),
