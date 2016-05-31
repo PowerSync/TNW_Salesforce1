@@ -171,7 +171,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         {
             case 'date':
             case 'datetime':
-                $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($value));
+                $value = $this->_prepareDateTime($value)->format('c');
                 break;
 
             case 'multiselect':
