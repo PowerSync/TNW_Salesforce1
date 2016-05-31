@@ -4,6 +4,13 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
+/**
+ * @method string getSfField()
+ * @method string getLocalField()
+ * @method string getBackendType()
+ * @method string getLocalFieldAttributeCode()
+ * @method string getDefaultValue()
+ */
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {
     const SET_TYPE_UPSERT = 'upsert';
