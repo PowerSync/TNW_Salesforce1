@@ -32,7 +32,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
     protected $_isPersonAccount = false;
 
     /**
-     * @var null
+     * @var null|stdClass
      */
     protected $_salesforceObject = NULL;
 
@@ -104,13 +104,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $_entity = $this->syncFromSalesforce($this->_salesforceObject);
 
         if (!$this->_skip) {
-            // Update history orders and assigne to customer we just created
-            $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $this->_salesforceObject->Id . " **");
-
             // Handle success and fail
             if (is_object($_entity)) {
+                // Update history orders and assigne to customer we just created
+                $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
+
                 $this->_salesforceAssociation[$_type][] = array(
                     'salesforce_id' => $_entity->getData('salesforce_id'),
                     'magento_id'    => $_entity->getId()
@@ -653,12 +651,15 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         return $this->_updateMagento();
     }
 
-    protected function _findMagentoCustomer() {
-        if (property_exists($this->_salesforceObject, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
-            $_websiteSfId = $this->_salesforceObject->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
-            $_websiteSfId = Mage::helper('tnw_salesforce')->prepareId($_websiteSfId);
+    protected function _findMagentoCustomer()
+    {
+        $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+        if (property_exists($this->_salesforceObject, $_websiteSfField)) {
+            $_websiteSfId = Mage::helper('tnw_salesforce')
+                ->prepareId($this->_salesforceObject->{$_websiteSfField});
+
             $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-            if ($_websiteId) {
+            if ($_websiteId !== false) {
                 $this->_websiteId = $_websiteId;
             }
         }
@@ -721,7 +722,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_groupId = $this->_getCustomerGroupFromSalesforce();
         }
 
-        if (!Mage::helper('tnw_salesforce/config_customer')->allowSalesforceToCreate()) {
+        if ($this->_isNew && !Mage::helper('tnw_salesforce/config_customer')->allowSalesforceToCreate()) {
             $this->_skip = true;
         }
     }
