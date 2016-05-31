@@ -54,6 +54,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
                     $tmp->MagentoId = $_item->$_magentoId;
                     $tmp->OrderItems = (property_exists($_item, "OrderItems")) ? $_item->OrderItems : NULL;
                     $tmp->Notes = (property_exists($_item, "Notes")) ? $_item->Notes : NULL;
+                    $tmp->hasReductionOrder = (property_exists($_item, "Orders")) ? $_item->Orders->size > 0 : false;
+                    $tmp->Orders = (property_exists($_item, "Orders")) ? $_item->Orders : false;
 
                     $returnArray[$tmp->MagentoId] = $tmp;
                 }
@@ -89,6 +91,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
             "Status",
             $_magentoId,
             "(SELECT $orderItemFieldsToSelect FROM OrderItems)",
+            "(SELECT Id FROM Orders)",
             "(SELECT Id, Title, Body FROM Notes)"
         );
 

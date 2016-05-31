@@ -68,11 +68,6 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
 
     protected function _updateMagento($object, $_miIncrementId, $_sOrderId, $_mOriginalOrderId)
     {
-        // TODO: $object->OrderItems
-        if (!$_miIncrementId) {
-            return false;
-        }
-
         if ($_miIncrementId) {
             /** @var Mage_Sales_Model_Order_Creditmemo $creditMemo */
             $creditMemo = Mage::getModel('sales/order_creditmemo')
@@ -95,11 +90,12 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
                 return false;
             }
 
-            if (!property_exists($object, 'OrderItems')) {
+            $_orderItemKey = 'OrderItems';
+            if (!property_exists($object, $_orderItemKey)) {
                 return false;
             }
 
-            if (!property_exists($object->OrderItems, 'records')) {
+            if (!property_exists($object->$_orderItemKey, 'records')) {
                 return false;
             }
 
@@ -113,7 +109,7 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
                 'qtys' => array()
             );
 
-            foreach ($object->OrderItems->records as $record) {
+            foreach ($object->$_orderItemKey->records as $record) {
                 if (!property_exists($record, $_iItemOrderItemKey)) {
                     continue;
                 }
@@ -299,9 +295,6 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
      */
     protected function _updateMappedEntityItemFields($object, $creditmemo)
     {
-        //TODO: $object->OrderItems
-        return $this;
-
         $hasSalesforceId = $creditmemo->getOrder()->getItemsCollection()
             ->walk('getSalesforceId');
 
@@ -345,6 +338,12 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
 
                 $newValue   = $record->{$mapping->getSfField()};
                 $field      = $mapping->getLocalFieldAttributeCode();
+
+                switch ($field) {
+                    case 'qty':
+                        $newValue = abs($newValue);
+                        break;
+                }
 
                 if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
                     $entity->setData($field, $newValue);
