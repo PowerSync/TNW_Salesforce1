@@ -39,41 +39,14 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
                 ->where('IsPersonAccount = false');
         }
 
-        $select2Url = $this->getUrl('*/*/search');
-
-$select2Html = <<<HTML
-<script type="application/javascript">
-    (function($) {
-        $(document).ready(function() {
-            $(".tnw-ajax-find-select").select2({
-              ajax: {
-                url: "{$select2Url}",
-                dataType: 'json',
-                delay: 250,
-                data: function (params) {
-                  return {
-                    q: params.term,
-                    page: params.page
-                  };
-                },
-                processResults: function (data, params) {
-                  params.page = params.page || 1;
-
-                  return {
-                    results: data.items,
-                    pagination: {
-                      more: (params.page * 30) < data.totalRecords
-                    }
-                  };
-                },
-                cache: true
-              },
-              minimumInputLength: 4
-            });
-        });
-    })(jQuery);
-</script>
-HTML;
+        /** @var Mage_Core_Block_Template $block */
+        $block = $this->getLayout()
+            ->getBlockSingleton('core/template')
+            ->setTemplate('salesforce/select2ajax.phtml')
+            ->addData(array(
+                'url'       => $this->getUrl('*/*/search'),
+                'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
+            ));
 
         $fieldset = $form->addFieldset('account_matching', array('legend' => $this->__('Rule Information')));
         $fieldset->addField('account_id', 'select', array(
@@ -83,7 +56,7 @@ HTML;
             'values' => $collection->setFullIdMode(true)->getAllOptions(),
             'class' => 'tnw-ajax-find-select',
             'required' => true,
-            'after_element_html' => $select2Html
+            'after_element_html' => $block->toHtml()
         ));
 
         $fieldset->addField('email_domain', 'text', array(
