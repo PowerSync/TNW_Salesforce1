@@ -183,15 +183,9 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
             return;
         }
 
-        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-        $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
         try {
-            $data['account_name'] = '';
-            $toOptionHash = $collection->setFullIdMode(true)->toOptionHashCustom();
-            if ($toOptionHash[$data['account_id']]) {
-                $data['account_name'] = $toOptionHash[$data['account_id']];
-            }
-
+            $data['account_name'] = Mage::getModel('tnw_salesforce_api_entity/account')
+                ->load($data['account_id'])->getData('Name');
         } catch(Exception $e) {}
 
         /** @var TNW_Salesforce_Model_Account_Matching $model */
