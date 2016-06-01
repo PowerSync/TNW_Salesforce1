@@ -137,14 +137,14 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
             'header' => Mage::helper('sales')->__('Product2 ID'),
             'index' => 'salesforce_id',
             'type' => 'varchar',
-            'width' => '150px',
+            'width' => '140px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
         $this->addColumn('salesforce_pricebook_id', array(
             'header' => Mage::helper('sales')->__('Product2 Pricebook ID'),
             'index' => 'salesforce_pricebook_id',
             'type' => 'text',
-            'width' => '250px',
+            'width' => '180px',
             'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
         ));
         $store = $this->_getStore();

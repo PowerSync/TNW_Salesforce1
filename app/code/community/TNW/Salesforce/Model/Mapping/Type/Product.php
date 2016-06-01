@@ -37,38 +37,60 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
                 return $this->convertAttributeSetId($_entity);
         }
 
-        /** @var mage_catalog_model_resource_product $_resource */
-        $_resource = Mage::getResourceSingleton('catalog/product');
-        $attribute = $_resource->getAttribute($attributeCode);
-        if ($attribute)
-        {
-            if(!$_entity->hasData($attributeCode)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('Attribute product "%s" is missing. Product sku: "%s"', $attributeCode, $_entity->getSku()));
+        $attribute = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute) {
+            if($_entity->hasData($attributeCode)) {
+                return $this->_convertValueForAttribute($_entity, $attribute);
             }
 
-            $_value = $_entity->getData($attributeCode);
-            switch($attribute->getFrontend()->getInputType())
-            {
-                case 'select':
-                case 'multiselect':
-                    return $attribute->getSource()->getOptionText($_value);
-
-                default:
-                    return $_value;
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice(sprintf('Attribute product "%s" is missing. Product sku: "%s"', $attributeCode, $_entity->getSku()));
         }
 
         return parent::getValue($_entity);
     }
 
     /**
-     * @param $_entity Mage_Catalog_Model_Product
+     * @param Mage_Catalog_Model_Product $entity
+     * @param string $value
      * @return string
      */
-    public function convertNumber($_entity)
+    public function setValue($entity, $value)
     {
-        return $_entity->getId();
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        switch ($attributeCode) {
+            case 'website_ids':
+                $value = $this->reverseConvertWebsiteIds($value);
+                break;
+
+            case 'status':
+                $value = $this->reverseConvertStatus($value);
+                break;
+
+            case 'type_id':
+                $value = $this->reverseConvertTypeId($value);
+                break;
+
+            case 'attribute_set_id':
+                $value = $this->reverseConvertAttributeSetId($value);
+                break;
+        }
+
+        $attribute = $this->_getAttribute($entity, $attributeCode);
+        if ($attribute) {
+            $value = $this->_reverseConvertValueForAttribute($attribute, $value);
+        }
+
+        parent::setValue($entity, $value);
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    public function reverseConvertStatus($value)
+    {
+        return ($value === 1 || $value === true) ? 'Enabled' : 'Disabled';
     }
 
     /**
@@ -81,29 +103,64 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
     }
 
     /**
+     * @param $value
+     * @return array
+     */
+    public function reverseConvertWebsiteIds($value)
+    {
+        return explode(',', $value);
+    }
+
+    /**
      * @param $_entity Mage_Catalog_Model_Product
      * @return string
      */
     public function convertTypeId($_entity)
     {
         $value = $_entity->getTypeId();
-        return $this->getProductTypes($value);
+        if (empty($value)) {
+            return null;
+        }
+
+        $productTypes = $this->getProductTypes();
+        if (!isset($productTypes[$value])) {
+            return null;
+        }
+
+        return $productTypes[$value];
     }
 
     /**
-     * @param null $id
+     * @param $value string
+     * @return mixed|string
+     */
+    public function reverseConvertTypeId($value)
+    {
+        $productTypes = $this->getProductTypes();
+        $result = array_search($value, $productTypes);
+
+        if (false === $result) {
+            // Temporary solution
+            $result = array_search($value, Mage::getModel('catalog/product_type')->getOptionArray());
+            if (false !== $result) {
+                return $result;
+            }
+
+            $result = $value;
+        }
+
+        return $result;
+    }
+
+    /**
      * @return array|null
      */
-    protected function getProductTypes($id = null)
+    protected function getProductTypes()
     {
         if (empty($this->_productTypes)) {
             $this->_productTypes = array_map(function($type) {
                 return $type['label'];
             }, Mage::getConfig()->getNode('global/catalog/product/type')->asArray());
-        }
-
-        if (!empty($id)) {
-            return isset($this->_productTypes[$id]) ? $this->_productTypes[$id] : null;
         }
 
         return $this->_productTypes;
@@ -116,32 +173,25 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
     public function convertAttributeSetId($_entity)
     {
         $value = $_entity->getAttributeSetId();
-        return $this->getAttributeSets($value);
+        return Mage::getSingleton('catalog/config')
+            ->getAttributeSetName(Mage_Catalog_Model_Product::ENTITY, $value);
     }
 
     /**
-     * @param null $id
-     * @return array|null
+     * @param $value string
+     * @return string
      */
-    protected function getAttributeSets($id = null)
+    public function reverseConvertAttributeSetId($value)
     {
-        if (empty($this->_attribute_sets)) {
+        $value = Mage::getSingleton('catalog/config')
+            ->getAttributeSetId(Mage_Catalog_Model_Product::ENTITY, $value);
 
-            $entityTypeId = Mage::getModel('eav/entity')
-                ->setType('catalog_product')
-                ->getTypeId();
-
-            $this->_attribute_sets = Mage::getModel('eav/entity_attribute_set')
-                ->getCollection()
-                ->setEntityTypeFilter($entityTypeId)
-                ->toOptionHash();
-
+        if (!$value) {
+            $value = Mage::getResourceSingleton('catalog/product')
+                ->getEntityType()
+                ->getDefaultAttributeSetId();
         }
 
-        if (!empty($id)) {
-            return isset($this->_attribute_sets[$id]) ? $this->_attribute_sets[$id] : null;
-        }
-
-        return $this->_attribute_sets;
+        return $value;
     }
 }

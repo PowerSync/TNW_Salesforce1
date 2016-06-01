@@ -124,6 +124,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_entity   = $this->_loadEntityByCache(array_search($_entityNumber, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNumber);
             /** @var Mage_Customer_Model_Customer $_customer */
             $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
+            $customerEmail = strtolower($_customer->getEmail());
 
             $_websiteId = Mage::app()->getStore($_entity->getStoreId())->getWebsiteId();
             $websiteSfId = $this->_websiteSfIds[$_websiteId];
@@ -138,12 +139,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 // Overwrite Owner ID if Opportuinity already exists, use existing owner
                 $_opportunityData->OwnerId = $this->_cache['opportunityLookup'][$_entityNumber]->OwnerId;
             } elseif (
-                isset($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()])
-                && property_exists($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()], 'OwnerId')
-                && $this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()]->OwnerId
+                isset($this->_cache['contactsLookup'][$websiteSfId][$customerEmail])
+                && property_exists($this->_cache['contactsLookup'][$websiteSfId][$customerEmail], 'OwnerId')
+                && $this->_cache['contactsLookup'][$websiteSfId][$customerEmail]->OwnerId
             ) {
                 // Overwrite Owner ID, use Owner ID from Contact
-                $_opportunityData->OwnerId = $this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()]->OwnerId;
+                $_opportunityData->OwnerId = $this->_cache['contactsLookup'][$websiteSfId][$customerEmail]->OwnerId;
             }
 
             // Reset back if inactive
@@ -259,14 +260,15 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
             /** @var Mage_Customer_Model_Customer $_customer */
             $_customer   = $this->_getObjectByEntityType($_order, 'Customer');
+            $customerEmail = strtolower($_customer->getEmail());
 
             $websiteId   = $_customer->getWebsiteId()
                 ? $_customer->getWebsiteId()
                 : $_order->getStore()->getWebsiteId();
 
             $websiteSfId = $this->_websiteSfIds[$websiteId];
-            if (isset($this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()])){
-                $this->_obj->ContactId = $this->_cache['contactsLookup'][$websiteSfId][$_customer->getEmail()]->Id;
+            if (isset($this->_cache['contactsLookup'][$websiteSfId][$customerEmail])){
+                $this->_obj->ContactId = $this->_cache['contactsLookup'][$websiteSfId][$customerEmail]->Id;
             }
 
             if ($_customer->getData('salesforce_id')) {
@@ -305,7 +307,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 if ($this->_obj->ContactId) {
                     $this->_cache['contactRolesToUpsert'][] = $this->_obj;
                 } else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Was not able to convert customer Lead, skipping Opportunity Contact Role assignment. Please synchronize customer (email: ' . $_customer->getEmail() . ')');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Was not able to convert customer Lead, skipping Opportunity Contact Role assignment. Please synchronize customer (email: ' . $customerEmail . ')');
                 }
             }
         }
@@ -333,7 +335,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             $_entity         = $this->_loadEntityByCache(array_search($_entityNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_entityNum);
 
             //Report Transaction
-            $this->_cache['responses']['opportunityLineItems'][$_entityNum]['subObj'][] = $_result;
+            $this->_cache['responses']['opportunityLineItems'][$_entityNum]['subObj'][$_cartItemId] = $_result;
 
             if (!$_result->success) {
                 // Hide errors when product has been archived
@@ -441,8 +443,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     /**
      * @param $_entity Mage_Sales_Model_Order
+     * @param $key
      */
-    protected function _prepareEntityObjCustom($_entity)
+    protected function _prepareEntityObjCustom($_entity, $key)
     {
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
