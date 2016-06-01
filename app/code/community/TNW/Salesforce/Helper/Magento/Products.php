@@ -245,7 +245,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         }
 
         $appEmulation = Mage::getSingleton('core/app_emulation');
-        foreach ($storeIds as $storeId) {
+        foreach (array_merge($storeIds, array((int)Mage::app()->getStore('admin')->getId())) as $storeId) {
             $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
 
             $currencyBase = Mage::helper('tnw_salesforce')->isMultiCurrency()
