@@ -281,6 +281,36 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                     ->updateAttributes(array($productId), array('price' => (float)$price), $storeId);
             }
 
+            $currencyAllow = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? explode(',', Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_ALLOW))
+                : array(null);
+
+            $priceBook = array();
+            foreach ($object->PricebookEntries->records as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
+                }
+
+                if (!in_array($_price->CurrencyIsoCode, array_merge($currencyAllow, array($currencyBase)))) {
+                    continue;
+                }
+
+                $priceBook[] = implode(':', array_filter(array($_price->CurrencyIsoCode, $_price->Id)));
+            }
+
+            if (!empty($priceBook)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('salesforce_pricebook_id' => implode("\n", $priceBook)), $storeId);
+            }
+
             $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
     }
