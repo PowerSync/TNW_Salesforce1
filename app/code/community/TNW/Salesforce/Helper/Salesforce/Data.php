@@ -501,6 +501,32 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         }
     }
 
+    /**
+     * @param $customer Mage_Customer_Model_Customer
+     * @return null|string
+     */
+    public function getCompanyByCustomer($customer)
+    {
+        $_companyName = $customer->getCompany();
+        if (empty($_companyName)) {
+            $_companyName = $customer->getDefaultBillingAddress()
+                ? trim($customer->getDefaultBillingAddress()->getCompany()) : null;
+        }
+
+        //for guest get data from another path
+        if (empty($_companyName)) {
+            $_companyName = $customer->getBillingAddress()
+                ? trim($customer->getBillingAddress()->getCompany()) : null;
+        }
+
+        /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
+        if (empty($_companyName) && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+            $_companyName = trim($customer->getFirstname() . ' ' . $customer->getLastname());
+        }
+
+        return $_companyName;
+    }
+
 
 
 

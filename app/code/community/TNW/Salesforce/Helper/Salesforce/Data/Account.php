@@ -180,23 +180,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
             $key            = '_' . $_customer->getId();
             $_emails[$key]  = strtolower($_customer->getEmail());
 
-            $_companyName = $_customer->getCompany();
-            if (empty($_companyName)) {
-                $_companyName = $_customer->getDefaultBillingAddress()
-                    ? trim($_customer->getDefaultBillingAddress()->getCompany()) : null;
-            }
-
-            //for guest get data from another path
-            if (empty($_companyName)) {
-                $_companyName = $_customer->getBillingAddress()
-                    ? trim($_customer->getBillingAddress()->getCompany()) : null;
-            }
-
-            /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
-            if (empty($_companyName) && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
-                $_companyName = trim($_customer->getFirstname() . ' ' . $_customer->getLastname());
-            }
-
+            $_companyName = $this->getCompanyByCustomer($_customer);
             if (!empty($_companyName)) {
                 $_companies[$key] = $_companyName;
             }

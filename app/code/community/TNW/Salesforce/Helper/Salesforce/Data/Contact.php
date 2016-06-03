@@ -197,7 +197,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
                 && !empty($_website)
             ) {
-                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_website . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
+                $websiteFieldName = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+                    . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+                $tmp .= " AND ($websiteFieldName = '$_website' OR $websiteFieldName = '')";
             }
             $tmp .= ")";
             $_lookup[] = $tmp;
