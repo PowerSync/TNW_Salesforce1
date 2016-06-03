@@ -470,15 +470,9 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             $email = strtolower($subscriber->getData('subscriber_email'));
             $customerId = $subscriber->getData('customer_id');
 
-            /** @var Mage_Customer_Model_Customer|null $customer */
-            $customer = null;
-
-            if ($customerId) {
-                $customer = Mage::getModel('customer/customer')->load($customerId);
-                $websiteId = $customer->getData('website_id');
-            } else {
-                $websiteId = Mage::app()->getStore($subscriber->getData('store_id'))->getWebsiteId();
-            }
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer = Mage::getModel('customer/customer')->load($customerId);
+            $websiteId = $customer->getData('website_id');
 
             // 2.1 Save data by indexes
             $customersArray[$index] = $customer;
@@ -490,13 +484,8 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
 
         // 3.1 Check for Contact
-        /** @var TNW_Salesforce_Helper_Salesforce_Data_Contact $helperContact */
-        $helperContact = Mage::helper('tnw_salesforce/salesforce_data_contact');
-        $contactLookup = $helperContact->lookup($emailsArray, $sfWebsitesArray);
-
-        /** @var TNW_Salesforce_Helper_Salesforce_Data $helperSf */
-        $helperSf = Mage::helper('tnw_salesforce/salesforce_data');
-        $accountsFound = $helperSf->accountLookupByEmailDomain($emailsArray);
+        $contactLookup = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($customersArray);
+        $accountsFound = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emailsArray);
 
         foreach ($subscribers as $index => $subscriber) {
             $email = $emailsArray[$index];
@@ -540,9 +529,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
 
         // 3.3 Check for Leads
         if ($helper->isCustomerAsLead()) {
-            /** @var TNW_Salesforce_Helper_Salesforce_Data_Lead $helperLead */
-            $helperLead = Mage::helper('tnw_salesforce/salesforce_data_lead');
-            $leadLookup = $helperLead->lookup($emailsArray, $sfWebsitesArray);
+            $leadLookup = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($customersArray);
 
             // 4.1 Going throw Leads matches and add Lync for sync
             foreach ($subscribers as $index => $subscriber) {

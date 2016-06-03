@@ -166,56 +166,39 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @param $_customerEmails
-     * @param array $_websites
+     * @param $_customers Mage_Customer_Model_Customer[]
      * @return array
      *
      * @comment returns following structure: 0 => "$emails" => account data
      */
-    public function lookup($_customerEmails, $_websites = array())
+    public function lookup($_customers)
     {
 
         $_companies = array();
         $_emails = array();
-        foreach ($_customerEmails as $_customerId => &$_email) {
+        foreach ($_customers as $_customer) {
+            $key            = '_' . $_customer->getId();
+            $_emails[$key]  = strtolower($_customer->getEmail());
 
-            if ($_email instanceof Mage_Customer_Model_Customer) {
-                $_customer = $_email;
-                $_email = $_customer->getEmail();
-            } else {
-                $_customer = Mage::registry('customer_cached_' . $_customerId);
-                if (!$_customer && $_customerId) {
-                    $_customer = Mage::getModel('customer/customer')->load($_customerId);
-                    Mage::register('customer_cached_' . $_customerId, $_customer);
-                }
+            $_companyName = $_customer->getCompany();
+            if (empty($_companyName)) {
+                $_companyName = $_customer->getDefaultBillingAddress()
+                    ? trim($_customer->getDefaultBillingAddress()->getCompany()) : null;
             }
 
-            $key = '_' . $_customerId;
-            $_emails[$key] = strtolower($_email);
+            //for guest get data from another path
+            if (empty($_companyName)) {
+                $_companyName = $_customer->getBillingAddress()
+                    ? trim($_customer->getBillingAddress()->getCompany()) : null;
+            }
 
-            //try to find customer company name
-            if ($_customer) {
-                $_companyName = $_customer->getCompany();
+            /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
+            if (empty($_companyName) && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+                $_companyName = trim($_customer->getFirstname() . ' ' . $_customer->getLastname());
+            }
 
-                if (!$_companyName) {
-                    $_companyName = $_customer->getDefaultBillingAddress()
-                        ? trim($_customer->getDefaultBillingAddress()->getCompany()) : null;
-                }
-
-                //for guest get data from another path
-                if (!$_companyName) {
-                    $_companyName = $_customer->getBillingAddress()
-                        ? trim($_customer->getBillingAddress()->getCompany()) : null;
-                }
-
-                /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
-                if (!$_companyName && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
-                    $_companyName = trim($_customer->getFirstname() . ' ' . $_customer->getLastname());
-                }
-
-                if ($_companyName) {
-                    $_companies[$key] = $_companyName;
-                }
+            if (!empty($_companyName)) {
+                $_companies[$key] = $_companyName;
             }
         }
 
@@ -228,7 +211,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
         $_accountsByDomain = $this->lookupByEmailDomain($_emails, 'id');
 
-        $_accountsByContacts = $this->lookupByContact($_customerEmails, $_websites);
+        $_accountsByContacts = $this->lookupByContact($_customers);
 
         $_accounts = array_merge($_accountsByCompany, $_accountsForce, $_accountsByDomain, $_accountsByContacts);
 
@@ -247,14 +230,19 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
     /**
      * @comment find accounts by contact
-     * @param null $emails
-     * @param array $websites
+     * @param Mage_Customer_Model_Customer[] $_customers
      * @param string $field
      * @return array, key - customerId
      */
-    public function lookupByContact($emails = NULL, $websites = array(), $field = 'id')
+    public function lookupByContact($_customers, $field = 'id')
     {
-        $_results = Mage::helper('tnw_salesforce/salesforce_data_contact')->getContactsByEmails($emails, $websites);
+        $_results = Mage::helper('tnw_salesforce/salesforce_data_contact')
+            ->getContactsByEmails($_customers);
+
+        $emails = array();
+        foreach ($_customers as $customer) {
+            $emails[$customer->getId()] = strtolower($customer->getEmail());
+        }
 
         $returnArray = array();
 

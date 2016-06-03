@@ -564,18 +564,29 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         // Get Magento customer object
-        $this->_cache['quoteCustomers'][$_entityNumber] = $this->_getCustomer($_entity);
+        $customer = $this->_generateCustomerByOrder($_entity);
 
         // Associate quote Number with a customer ID
-        $_customerId = ($this->_cache['quoteCustomers'][$_entityNumber]->getId())
-            ? $this->_cache['quoteCustomers'][$_entityNumber]->getId()
-            : $this->_guestCount++;
+        $_customerId = ($customer->getId())
+            ? $customer->getId() : sprintf('guest-%d', $this->_guestCount++);
+
+        $customer->setId($_customerId);
+
+        // Store quote number and customer Email into a variable for future use
+        $_quoteEmail = strtolower($customer->getEmail());
+        if (empty($_quoteEmail)) {
+            $this->logNotice('SKIPPED: Sync for quote #' . $_entityNumber . ' failed, quote is missing an email address!');
+            return false;
+        }
+
+        $this->_cache['quoteCustomers'][$_entityNumber] = $customer;
         $this->_cache['quoteToCustomerId'][$_entityNumber] = $_customerId;
+        $this->_cache['quoteToEmail'][$_entityNumber] = $_quoteEmail;
 
         // Check if customer from this group is allowed to be synchronized
         $_customerGroup = $_entity->getData('customer_group_id');
         if ($_customerGroup === NULL) {
-            $_customerGroup = $this->_cache['quoteCustomers'][$_entityNumber]->getGroupId();
+            $_customerGroup = $customer->getGroupId();
         }
 
         if ($_customerGroup === NULL && !$this->isFromCLI()) {
@@ -587,23 +598,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             return false;
         }
 
-        // Store quote number and customer Email into a variable for future use
-        $_quoteEmail = strtolower($this->_cache['quoteCustomers'][$_entityNumber]->getEmail());
-        if (empty($_quoteEmail)) {
-            $this->logNotice('SKIPPED: Sync for quote #' . $_entityNumber . ' failed, quote is missing an email address!');
-            return false;
-        }
-
-        $this->_emails[$_customerId] = $_quoteEmail;
-
-        // Associate quote Number with a customer Email
-        $this->_cache['quoteToEmail'][$_entityNumber] = $_quoteEmail;
-
-        // Associate quote ID with quote Number
-        $this->_quotes[$_entity->getId()] = $_entityNumber;
-
         $_websiteId = Mage::app()->getStore($_entity->getData('store_id'))->getWebsiteId();
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
+        $this->_emails[$_customerId] = $_quoteEmail;
+        $this->_quotes[$_entity->getId()] = $_entityNumber;
 
         return true;
     }
@@ -615,74 +613,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function _getEntityNumber($_entity)
     {
         return TNW_Salesforce_Helper_Config_Sales_Abandoned::ABANDONED_CART_ID_PREFIX . $_entity->getId();
-    }
-
-    /**
-     *
-     */
-    protected function _massAddAfter()
-    {
-        // Salesforce lookup, find all contacts/accounts by email address
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_emails, $this->_websites);
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_emails, $this->_websites);
-        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')->lookup($this->_emails, $this->_websites);
-
-        // Salesforce lookup, find all opportunities by Magento quote number
-        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($this->_cache['entitiesUpdating']);
-
-        /**
-         * Order customers sync can be denied if we just update order status
-         */
-        if ($this->getUpdateCustomer()) {
-            $this->syncEntityCustomers();
-        }
-
-        /**
-         * define Salesforce data for order customers
-         */
-        foreach ($this->_cache['entitiesUpdating'] as $id => $_quoteNumber) {
-
-            $email = strtolower($this->_cache['quoteToEmail'][$_quoteNumber]);
-
-            if (isset($this->_cache['quoteCustomers'][$_quoteNumber])
-                && $this->_cache['quoteCustomers'][$_quoteNumber] instanceof Varien_Object
-                && !empty($this->_cache['accountsLookup'][0][$email])
-            ) {
-
-                $_websiteId = $this->_websites[$this->_cache['quoteToCustomerId'][$_quoteNumber]];
-
-                $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->Id);
-                $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$email]->Id);
-
-                // Overwrite Contact Id for Person Account
-                if (property_exists($this->_cache['accountsLookup'][0][$email], 'PersonContactId')) {
-                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['accountsLookup'][0][$email]->PersonContactId);
-                }
-
-                // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$_websiteId][$email])) {
-                    $this->_cache['quoteCustomers'][$_quoteNumber]->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$email]->Id);
-                }
-
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
-
-            } else {
-                /**
-                 * No customers for this order in salesforce - error
-                 */
-                // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $email . ') could not be created / found!');
-                $this->_skippedEntity[$id] = $id;
-
-                continue;
-            }
-        }
-
-        if (!empty($this->_skippedEntity)) {
-            foreach ($this->_skippedEntity as $_idToRemove) {
-                unset($this->_cache['entitiesUpdating'][$_idToRemove]);
-            }
-        }
     }
 
     /**

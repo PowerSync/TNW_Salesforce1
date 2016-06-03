@@ -6,11 +6,6 @@
 
 class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helper_Salesforce_Data
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
      * @param $duplicateData
      * @return $this
@@ -161,22 +156,28 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     /**
      * @param $_magentoId
      * @param $_extra
-     * @param $email
-     * @param $ids
+     * @param $customers Mage_Customer_Model_Customer[]
      * @return array
      */
-    protected function _queryContacts($_magentoId, $_extra, $_emails, $_websites)
+    protected function _queryContacts($_magentoId, $_extra, $customers)
     {
-        if (empty($_emails)) {
+        if (empty($customers)) {
             return false;
         }
         $query = "SELECT ID, FirstName, LastName, Email, AccountId, OwnerId, " . $_magentoId . $_extra . " FROM Contact WHERE ";
 
         $_lookup = array();
-        foreach ($_emails as $_id => $_email) {
-            if (empty($_email)) {
+        foreach ($customers as $customer) {
+            if (!$customer instanceof Mage_Customer_Model_Customer) {
                 continue;
             }
+
+            $_id      = $customer->getId();
+            $_email   = strtolower($customer->getEmail());
+            $_website = $customer->getWebsiteId()
+                ? Mage::app()->getWebsite($customer->getWebsiteId())->getData('salesforce_id')
+                : null;
+
             $tmp = "(((";
             $tmp .= "Email='" . addslashes($_email) . "'";
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -184,10 +185,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             }
             $tmp .= ")";
 
-            if (
-                !empty($_id)
-                && $_id != 0
-            ) {
+            if (is_numeric($_id)) {
                 $tmp .= " OR " . $_magentoId . "='" . $_id . "'";
             }
 
@@ -197,9 +195,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             $tmp .= ")";
             if (
                 Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
-                && array_key_exists($_id, $_websites)
+                && !empty($_website)
             ) {
-                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_websites[$_id] . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
+                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_website . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
             }
             $tmp .= ")";
             $_lookup[] = $tmp;
@@ -222,11 +220,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @param null $email
-     * @param array $_websites
+     * @param Mage_Customer_Model_Customer[] $customers
      * @return array
      */
-    public function getContactsByEmails($email = NULL, $_websites = array())
+    public function getContactsByEmails($customers)
     {
         $_howMany = 35;
 
@@ -244,21 +241,27 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         }
 
         $_results = array();
-        $_emailChunk = array_chunk($email, $_howMany, true);
-        foreach ($_emailChunk as $_emails) {
-            $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
+        foreach (array_chunk($customers, $_howMany, true) as $_customers) {
+            $_results[] = $this->_queryContacts($_magentoId, $_extra, $_customers);
         }
 
         return $_results;
     }
 
     /**
-     * @param null $email
-     * @param array $ids
+     * @param Mage_Customer_Model_Customer[] $customers
      * @return array|bool
      */
-    public function lookup($email = NULL, $_websites = array())
+    public function lookup($customers)
     {
+        $_websites = $email = array();
+        foreach ($customers as $customer) {
+            $email[$customer->getId()]      = strtolower($customer->getEmail());
+            $_websites[$customer->getId()]  = Mage::app()
+                ->getWebsite($customer->getWebsiteId())
+                ->getData('salesforce_id');
+        }
+
         try {
             if (!is_object($this->getClient())) {
                 return false;
@@ -269,9 +272,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 $_personMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
             }
 
-            $_results = $this->getContactsByEmails($email, $_websites);
-
-            unset($query);
+            $_results = $this->getContactsByEmails($customers);
             if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contact lookup returned: no results...");
                 return false;
