@@ -26,9 +26,13 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
             $formValues = Mage::registry('salesforce_account_matching_data')->getData();
         }
 
-        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
-            ->addFieldToFilter('Id', array('eq' => $formValues['account_id']));
+        $aIdVal = array();
+        if (isset($formValues['account_id'])) {
+            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
+            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
+                ->addFieldToFilter('Id', array('eq' => @$formValues['account_id']));
+            $aIdVal = $collection->setFullIdMode(true)->getAllOptions();
+        }
 
         /** @var Mage_Core_Block_Template $block */
         $block = $this->getLayout()
@@ -44,7 +48,7 @@ class TNW_Salesforce_Block_Adminhtml_Account_Matching_Edit_Form extends Mage_Adm
             'label' => $this->__('Account Name'),
             'name' => 'account_id',
             'style' => 'width:273px',
-            'values' => $collection->setFullIdMode(true)->getAllOptions(),
+            'values' => $aIdVal,
             'class' => 'tnw-ajax-find-select',
             'required' => true,
             'after_element_html' => $block->toHtml()
