@@ -349,7 +349,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
         $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('Product2')
-            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id)
+            ->firstSystem();
 
         $_objectMappings = array();
         foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
