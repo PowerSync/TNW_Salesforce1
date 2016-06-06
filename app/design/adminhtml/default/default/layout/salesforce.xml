@@ -149,6 +149,10 @@
         <update handle="tnw_salesforce_select2"/>
     </adminhtml_salesforce_account_matching_edit>
 
+    <adminhtml_system_config_edit>
+        <update handle="tnw_salesforce_select2"/>
+    </adminhtml_system_config_edit>
+
     <adminhtml_salesforce_abandoned_opportunity_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_abandoned_opportunity_edit>

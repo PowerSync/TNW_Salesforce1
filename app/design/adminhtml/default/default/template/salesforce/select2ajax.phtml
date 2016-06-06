@@ -1,10 +1,13 @@
 <?php
 /** @var Mage_Core_Block_Template $this */
+$selector = $this->hasData('selector')
+    ? $this->getData('selector')
+    : '.tnw-ajax-find-select'
 ?>
 <script type="application/javascript">
     (function($) {
         $(document).ready(function() {
-            $(".tnw-ajax-find-select").select2({
+            $("<?php echo $selector ?>").select2({
                 ajax: {
                     url: "<?php echo $this->getData('url') ?>",
                     dataType: 'json',
