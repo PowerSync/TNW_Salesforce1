@@ -9,9 +9,15 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
 {
     protected function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
     {
-        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
-            ->addFieldToFilter('Id', array('eq' => $element->getData('value')));
+        $aIdVal = array();
+        $value = $element->getData('value');
+        if (!empty($value)) {
+            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
+            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
+                ->addFieldToFilter('Id', array('eq' => $value));
+
+            $aIdVal = $collection->setFullIdMode(true)->getAllOptions();
+        }
 
         /** @var Mage_Core_Block_Template $block */
         $block = $this->getLayout()
@@ -23,7 +29,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
             ));
 
         $element->addData(array(
-            'values'                => $collection->setFullIdMode(true)->getAllOptions(),
+            'values'                => $aIdVal,
             'after_element_html'    => $block->toHtml(),
         ));
 
