@@ -151,12 +151,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             $_stock = array();
 
-            $this->_mapProductCollection->clear()
-                ->addFieldToFilter('sf_magento_type', array(
-                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                    ($_product->isObjectNew())
-                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-                ));
+            $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Product2')
+                ->addFilterTypeSM(!$_product->isObjectNew())
+                ->firstSystem();
 
             // get attribute collection
             foreach ($this->_mapProductCollection as $_mapping) {

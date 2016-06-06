@@ -286,12 +286,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 'customer_group' => array()
             );
 
-            $this->_mapCollection->clear()
-                ->addFieldToFilter('sf_magento_type', array(
-                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                    ($_entity->isObjectNew())
-                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-                ));
+            $this->_mapCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Contact')
+                ->addFilterTypeSM(!$_entity->isObjectNew())
+                ->firstSystem();
 
             // get attribute collection
             foreach ($this->_mapCollection as $_mapping) {
