@@ -179,7 +179,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'style' => 'width:400px',
             'name' => 'local_field',
             'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getTypeAttribute()),
-            'disabled' => $_isSystem
+            'disabled' => false//$_isSystem
         ));
 
         /* Magento > SF */
@@ -236,7 +236,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'note' => $this->__('Unique attribute code.'),
             'style' => 'width:400px',
             'name' => 'default_code',
-            'disabled' => $_isSystem
+            'disabled' => false//$_isSystem
         ));
 
         $fieldset->addField('default_value', 'text', array(
@@ -244,7 +244,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'note' => $this->__('Value to be used when Object is created'),
             'style' => 'width:400px',
             'name' => 'default_value',
-            'disabled' => $_isSystem
+            'disabled' => false//$_isSystem
         ));
 
         /** @var mage_adminhtml_block_widget_form_element_dependence $_formElementDependence */
