@@ -11,12 +11,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
     {
         /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
         $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
-            ->setPageSize(1);
-
-        $value = $element->getData('value');
-        if (!empty($value)) {
-            $collection->addFieldToFilter('Id', array('eq'=>$value));
-        }
+            ->addFieldToFilter('Id', array('eq' => $element->getData('value')));
 
         /** @var Mage_Core_Block_Template $block */
         $block = $this->getLayout()
