@@ -221,7 +221,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     public function lookupByContact($_customers, $field = 'id')
     {
         return Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->customLookup($_customers, array($this, 'prepareContactRecord'), array('field' => $field));
+            ->customLookup($_customers, array($this, 'prepareContactRecord', array('field' => $field)));
     }
 
     /**

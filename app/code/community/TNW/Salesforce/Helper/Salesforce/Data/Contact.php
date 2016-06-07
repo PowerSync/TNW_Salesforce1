@@ -281,11 +281,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     /**
      * @param $customers Mage_Customer_Model_Customer[]
      * @param $callableResult
-     * @param array $customData
      * @return array
      * @throws Mage_Core_Exception
      */
-    public function customLookup($customers, $callableResult, $customData = array())
+    public function customLookup($customers, $callableResult)
     {
         $_magentoId         = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $_personMagentoId   = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
@@ -362,7 +361,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 continue;
             }
 
-            $returnArray = array_merge_recursive($returnArray, call_user_func($callableResult, $customer, $record, $customData));
+            $callback    = array_slice($callableResult, 0, 2);
+            $customData  = isset($callableResult[2]) ? $callableResult[2] : array();
+            $returnArray = array_merge_recursive($returnArray, call_user_func($callback, $customer, $record, $customData));
         }
 
         return $returnArray;
