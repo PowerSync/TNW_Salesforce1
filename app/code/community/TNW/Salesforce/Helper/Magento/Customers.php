@@ -231,10 +231,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_attributes['password_hash'] = $resource->getIdByCode('customer', 'password_hash');
         }
 
-        $this->_mapCollection = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
+        $this->_mapCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('Contact')
-            ->addFieldToFilter('sf_magento_enable', 1);
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem();
 
         if (!$this->_customer) {
             $this->_customer = Mage::getModel('customer/customer');
@@ -286,12 +286,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 'customer_group' => array()
             );
 
-            $this->_mapCollection->clear()
-                ->addFieldToFilter('sf_magento_type', array(
-                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                    ($_entity->isObjectNew())
-                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-                ));
+            $this->_mapCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Contact')
+                ->addFilterTypeSM(!$_entity->isObjectNew())
+                ->firstSystem();
 
             // get attribute collection
             foreach ($this->_mapCollection as $_mapping) {

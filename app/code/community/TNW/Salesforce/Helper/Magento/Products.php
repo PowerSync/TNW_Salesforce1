@@ -56,10 +56,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
         }
 
-        $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
+        $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('Product2')
-            ->addFieldToFilter('sf_magento_enable', 1);
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem();
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');
@@ -151,12 +151,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             $_stock = array();
 
-            $this->_mapProductCollection->clear()
-                ->addFieldToFilter('sf_magento_type', array(
-                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                    ($_product->isObjectNew())
-                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-                ));
+            $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Product2')
+                ->addFilterTypeSM(!$_product->isObjectNew())
+                ->firstSystem();
 
             // get attribute collection
             foreach ($this->_mapProductCollection as $_mapping) {

@@ -172,12 +172,8 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
         $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('OrderInvoice')
-            ->addFieldToFilter('sf_magento_enable', 1)
-            ->addFieldToFilter('sf_magento_type', array(
-                TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                ($invoice->isObjectNew())
-                    ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-            ));
+            ->addFilterTypeSM(!$invoice->isObjectNew())
+            ->firstSystem();
 
         $updateFieldsLog = array();
         /** @var $mapping TNW_Salesforce_Model_Mapping */
@@ -276,12 +272,8 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
             $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
                 ->addObjectToFilter('OrderInvoiceItem')
-                ->addFieldToFilter('sf_magento_enable', 1)
-                ->addFieldToFilter('sf_magento_type', array(
-                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                    ($entity->isObjectNew())
-                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-                ));
+                ->addFilterTypeSM(!$entity->isObjectNew())
+                ->firstSystem();
 
             /** @var $mapping TNW_Salesforce_Model_Mapping */
             foreach ($mappings as $mapping) {

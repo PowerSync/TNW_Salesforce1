@@ -76,7 +76,9 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
                         }
 
                         // Custom Mapping
-                        $collection = Mage::getModel('tnw_salesforce/mapping')->getCollection()->addObjectToFilter('OpportunityLineItem');
+                        $collection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                            ->addObjectToFilter('OpportunityLineItem')
+                            ->firstSystem();
                         foreach ($collection as $_map) {
                             $this->_processMapping($product, $_map, "_shippedOLI");
                         }
