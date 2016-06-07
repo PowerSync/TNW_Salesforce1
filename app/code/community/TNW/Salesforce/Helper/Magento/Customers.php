@@ -229,10 +229,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             $this->_attributes['password_hash'] = $resource->getIdByCode('customer', 'password_hash');
         }
 
-        $this->_mapCollection = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
+        $this->_mapCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('Contact')
-            ->addFieldToFilter('sf_magento_enable', 1);
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem();
 
         if (!$this->_customer) {
             $this->_customer = Mage::getModel('customer/customer');

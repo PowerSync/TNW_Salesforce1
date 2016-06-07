@@ -56,10 +56,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
         }
 
-        $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
+        $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('Product2')
-            ->addFieldToFilter('sf_magento_enable', 1);
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem();
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');
