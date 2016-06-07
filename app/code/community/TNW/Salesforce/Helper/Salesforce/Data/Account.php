@@ -220,67 +220,31 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function lookupByContact($_customers, $field = 'id')
     {
-        $_results = Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->getContactsByEmails($_customers);
+        return Mage::helper('tnw_salesforce/salesforce_data_contact')
+            ->customLookup($_customers, array($this, 'prepareContactRecord'), array('field' => $field));
+    }
 
-        $emails = array();
-        foreach ($_customers as $customer) {
-            $emails[$customer->getId()] = strtolower($customer->getEmail());
+    /**
+     * @param $customer Mage_Customer_Model_Customer
+     * @param $record
+     * @param $customData
+     * @return array
+     */
+    public function prepareContactRecord($customer, $record, $customData)
+    {
+        if (!property_exists($record, 'Account')) {
+            return array();
         }
 
-        $returnArray = array();
+        $tmp = $record->Account;
+        $tmp->Id = $record->AccountId;
+        $tmp->RecordTypeId = property_exists($record->Account, 'RecordTypeId') ? $record->Account->RecordTypeId : null;
+        $tmp->IsPersonAccount = property_exists($record->Account, 'IsPersonAccount') ? $record->Account->IsPersonAccount : false;
 
-        $_contactMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-        $_accountMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
+        $key = (isset($customData['field']) && $customData['field'] == 'email')
+            ? $customer->getEmail() : '_'.$customer->getId();
 
-        foreach ($_results as $result) {
-
-            if (!is_object($result) || !property_exists($result, 'records') || empty($result->records)) {
-                continue;
-            }
-
-            foreach ($result->records as $_item) {
-
-                if (!property_exists($_item, 'Account')) {
-                    continue;
-                }
-
-                $key = null;
-
-                $_contactMagentoIdValue = property_exists($_item, $_contactMagentoId)? $_item->$_contactMagentoId: null;
-                $_accountMagentoIdValue = property_exists($_item->Account, $_accountMagentoId)? $_item->Account->$_accountMagentoId: null;
-                $_email = (property_exists($_item, 'Email') && $_item->Email) ? strtolower($_item->Email) : NULL;
-
-                if (isset($emails[$_contactMagentoIdValue])) {
-                    $key = $_contactMagentoIdValue;
-                } elseif (isset($emails[$_accountMagentoIdValue])) {
-                    $key = $_accountMagentoIdValue;
-                } elseif (array_search($_email, $emails) !== false) {
-                    $key = array_search($_email, $emails);
-                }
-
-                if ($field == 'email') {
-                    $key = $emails[$key];
-                } elseif ($field == 'id') {
-                    $key = '_' . $key;
-                }
-
-                /**
-                 * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
-                 */
-                if (
-                    !isset($returnArray[$key])
-                    || (!empty($emails[$_contactMagentoIdValue]))
-                    || (!empty($emails[$_accountMagentoIdValue]))
-                ) {
-                    $returnArray[$key] = $_item->Account;
-                    $returnArray[$key]->Id = $_item->AccountId;
-                    $returnArray[$key]->RecordTypeId = property_exists($_item->Account, 'RecordTypeId') ? $_item->Account->RecordTypeId : null;
-                    $returnArray[$key]->IsPersonAccount = property_exists($_item->Account, 'IsPersonAccount') ? $_item->Account->IsPersonAccount : false;
-                }
-            }
-        }
-        return $returnArray;
+        return array($key => $tmp);
     }
 
     /**

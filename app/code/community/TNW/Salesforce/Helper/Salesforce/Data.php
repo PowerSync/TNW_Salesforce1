@@ -527,7 +527,24 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         return $_companyName;
     }
 
+    /**
+     * @param $records array
+     * @return array
+     */
+    protected function mergeRecords($records)
+    {
+        $_records = array();
+        /** @var stdClass $record */
+        foreach ($records as $record) {
+            if (!is_object($record) || !property_exists($record, 'records') || empty($record->records)) {
+                continue;
+            }
 
+            $_records[] = $record->records;
+        }
+
+        return call_user_func_array('array_merge', $_records);
+    }
 
 
     /*               ---- OLD SHIT -------                            */
