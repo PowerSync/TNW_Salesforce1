@@ -56,10 +56,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
         }
 
-        $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
+        $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('Product2')
-            ->addFieldToFilter('sf_magento_enable', 1);
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem();
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');
@@ -151,80 +151,23 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             $_stock = array();
 
-            $this->_mapProductCollection->clear()
-                ->addFieldToFilter('sf_magento_type', array(
-                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                    ($_product->isObjectNew())
-                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-                ));
+            $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Product2')
+                ->addFilterTypeSM(!$_product->isObjectNew())
+                ->firstSystem();
 
-            // get attribute collection
+            /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($this->_mapProductCollection as $_mapping) {
                 if (strpos($_mapping->getLocalField(), 'Product : ') === 0) {
-                    // Product
-                    $_magentoFieldName = str_replace('Product : ', '', $_mapping->getLocalField());
+                    $value = property_exists($object, $_mapping->getSfField())
+                        ? $object->{$_mapping->getSfField()} : null;
 
-                    $_value = '';
-                    if (property_exists($object, $_mapping->getSfField())) {
-                        // get attribute object
-                        $localFieldAr = explode(":", $_mapping->getLocalField());
-                        $localField = trim(array_pop($localFieldAr));
-                        $attOb = Mage::getModel('eav/config')->getAttribute('catalog_product', $localField);
+                    Mage::getSingleton('tnw_salesforce/mapping_type_product')
+                        ->setMapping($_mapping)
+                        ->setValue($_product, $value);
 
-                        // here we set value depending of the attr type
-                        if ($attOb->getFrontendInput() == 'select') {
-                            // it's drop down attr type
-                            $attOptionList = $attOb->getSource()->getAllOptions(true, true);
-                            $_value = false;
-                            foreach ($attOptionList as $key => $value) {
-
-                                // we compare sf value with mage default value or mage locate related value (if not english lang is set)
-                                $sfField = mb_strtolower($object->{$_mapping->getSfField()}, 'UTF-8');
-                                $mageAttValueDefault = mb_strtolower($value['label'], 'UTF-8');
-
-                                //if (in_array($sfField, array($mageAttValueDefault, $mageAttValueLocaleRelated))) {
-                                if (in_array($sfField, array($mageAttValueDefault))) {
-                                    $_value = $value['value'];
-                                }
-                            }
-                            // the product code not found, skipping
-                            if (empty($_value)) {
-                                $sfValue = $object->{$_mapping->getSfField()};
-                                Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: product code $sfValue not found in magento");
-                                continue;
-                            }
-                        } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
-                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($object->{$_mapping->getSfField()})));
-                        } elseif ($_magentoFieldName == 'website_ids') {
-                            // websiteids hack
-                            $_value = explode(',', $object->{$_mapping->getSfField()});
-                        } elseif ($_magentoFieldName == 'status') {
-                            // status hack
-                            $_value = ($object->{$_mapping->getSfField()} === 1 || $object->{$_mapping->getSfField()} === true) ? 'Enabled' : 'Disabled';
-                        } elseif ($_magentoFieldName == 'type_id') {
-                            // status hack
-                            $_value = $object->{$_mapping->getSfField()};
-                            $_value = $this->getProductTypeId($_value);
-                        } elseif ($_magentoFieldName == 'attribute_set_id') {
-                            // attribute set hack
-                            $_value = $object->{$_mapping->getSfField()};
-                            $_value = Mage::getSingleton('catalog/config')
-                                ->getAttributeSetId(Mage_Catalog_Model_Product::ENTITY, $_value);
-                            if (!$_value) {
-                                $_value = $_product->getDefaultAttributeSetId();
-                            }
-                        } else {
-                            $_value = $object->{$_mapping->getSfField()};
-                        }
-                    } elseif ($_isNew && $_mapping->getDefaultValue()) {
-                        $_value = $_mapping->getDefaultValue();
-                    }
-                    if ($_value) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product: ' . $_magentoFieldName . ' = ' . $_value);
-                        $_product->setData($_magentoFieldName, $_value);
-                    } else {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Product: ' . $_magentoFieldName . ' - no value specified in Salesforce');
-                    }
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Product: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_product->getData($_mapping->getLocalFieldAttributeCode()), true));
                 } elseif (strpos($_mapping->getLocalField(), 'Product Inventory : ') === 0) {
                     // Inventory
                     $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
