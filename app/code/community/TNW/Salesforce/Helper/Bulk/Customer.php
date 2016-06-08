@@ -96,66 +96,6 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
     }
 
     /**
-     * @return array|mixed
-     */
-    public function getAllAccounts()
-    {
-        $jobId = $this->_createJobQuery('Account');
-        $sql = 'SELECT Id, Name ';
-        $recordTypes = Mage::helper('tnw_salesforce')->getBusinessAccountRecordIds();
-        // BULK API v.34 does not support RecordTypeId
-        //if (!empty($recordTypes) && !in_array(TNW_Salesforce_Helper_Salesforce_Data::PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL, $recordTypes)) {
-        //    $sql .= ', RecordType ';
-        //}
-        $sql .= 'FROM Account';
-
-        // Don't return Person Accounts
-        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $sql .= " WHERE IsPersonAccount != true";
-        }
-
-        if (!empty($jobId)) {
-            $batchId = $this->_query($sql, $jobId);
-            $maxAttempts = 50;
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Checking query completion...');
-            $isComplete = $this->_checkBatchCompletion($jobId);
-            $attempt = 0;
-            while (strval($isComplete) != 'exception' && !$isComplete && ++$attempt <= $maxAttempts) {
-                sleep(5);
-                $isComplete = $this->_checkBatchCompletion($jobId);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Still checking [5] (job: ' . $jobId . ')...');
-                // Break infinite loop after 50 attempts.
-                if (!$isComplete && $attempt == $maxAttempts) {
-                    $isComplete = 'exception';
-                }
-            }
-        }
-
-        $result = array();
-        if (!empty($jobId)) {
-            $this->_closeJob($jobId);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $jobId);
-
-            if ($attempt != $maxAttempts) {
-                $resultIds = $this->getBatch($jobId, $batchId);
-                foreach ($resultIds as $_resultId) {
-                    $tmpResult = $this->getBatchResult($jobId, $batchId, $_resultId);
-                    foreach ($tmpResult->records as $record) {
-                        $result[(string)$record->Id[0]] = new stdClass();
-                        $result[(string)$record->Id[0]]->Name = (string)$record->Name;
-                        //if (!empty($recordTypes) && !in_array(TNW_Salesforce_Helper_Salesforce_Data::PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL, $recordTypes)) {
-                        //    $result[(string)$record->Id[0]]->RecordTypeId = (string)$record->RecordTypeId;
-                        //}
-                    }
-                }
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * @return bool|void
      */
     protected function _pushToSalesforce()
