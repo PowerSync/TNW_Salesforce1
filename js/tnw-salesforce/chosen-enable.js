@@ -64,4 +64,4 @@ Element.prototype.toggleValueElements = function (checkbox, container, excludedE
             }
         });
     }
-}
+};
