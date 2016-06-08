@@ -106,16 +106,6 @@ class TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
         return $countSelect;
     }
 
-    /**
-     * Get collection size
-     *
-     * @return int
-     */
-    public function getSize()
-    {
-        return count($this);
-    }
-
     protected function _prepareDataForSave($object)
     {
         $data = $this->_prepareDataForTable($object, $this->getMainTable());

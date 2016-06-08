@@ -9,6 +9,6 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Lead_Id extends Ma
     public function render(Varien_Object $row)
     {
         $_field = $row->getData('salesforce_lead_id');
-        return Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($_field);
+        return '<span style="font-family: monospace;">'.Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($_field).'</span>';
     }
 }
