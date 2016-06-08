@@ -162,7 +162,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     protected function _queryContacts($_magentoId, $_extra, $customers)
     {
         if (empty($customers)) {
-            return false;
+            return array();
         }
         $query = "SELECT ID, FirstName, LastName, Email, AccountId, OwnerId, " . $_magentoId . $_extra . " FROM Contact WHERE ";
 
@@ -259,7 +259,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     {
         try {
             if (!is_object($this->getClient())) {
-                return false;
+                return array();
             }
 
             return $this->customLookup($customers, array($this, 'prepareRecord'));
@@ -274,7 +274,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("Could not find a contact by Magento Email #" . implode(", ", $email));
 
-            return false;
+            return array();
         }
     }
 
@@ -293,7 +293,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         $_results = $this->getContactsByEmails($customers);
         if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contact lookup returned: no results...");
-            return false;
+            return array();
         }
 
         $recordsEmail = $recordsMagentoId = array();

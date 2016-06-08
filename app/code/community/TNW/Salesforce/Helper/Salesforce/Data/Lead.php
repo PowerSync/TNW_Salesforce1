@@ -24,14 +24,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param Mage_Customer_Model_Customer[] $customers
      * @param string $leadSource
      * @param string $idPrefix
-     * @return array|bool
+     * @return array
      * @throws Mage_Core_Exception
      */
     public function lookup($customers, $leadSource = '', $idPrefix = '')
     {
         try {
             if (!is_object($this->getClient())) {
-                return false;
+                return array();
             }
 
             return $this->customLookup($customers, array($this, 'prepareRecord'), array(), $leadSource, $idPrefix);
@@ -43,7 +43,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("Could not find a contact by Magento Email #" . implode(",", $email));
 
-            return false;
+            return array();
         }
     }
 
@@ -72,7 +72,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
         if (empty($_results)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead lookup returned: no results...");
-            return false;
+            return array();
         }
 
         $recordsEmail = $recordsMagentoId = array();
