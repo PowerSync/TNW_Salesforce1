@@ -125,15 +125,6 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
         $_isSystem = isset($formData['is_system'])
             ? (bool)$formData['is_system'] : false;
 
-        if (isset($formData['default_value']) && $formData['default_value']) {
-            $locAttr = explode(" : ", $formData['local_field']);
-            $formData['default_code'] = end($locAttr);
-            array_pop($locAttr);
-            array_push($locAttr, "field");
-            $formData['local_field'] = join(" : ", $locAttr);
-            Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))->setData($formData);
-        }
-
         $sfFields = array();
         $allFields = Mage::helper('tnw_salesforce/salesforce_data')
             ->getAllFields($this->getSfEntity(true));
