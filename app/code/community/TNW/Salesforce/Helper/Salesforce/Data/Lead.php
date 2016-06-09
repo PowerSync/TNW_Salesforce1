@@ -545,6 +545,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     }
                 }
 
+                $leadConvert->sendNotificationEmail = Mage::helper('tnw_salesforce/config_customer')
+                    ->isLeadEmailNotification();
+
                 // logs
                 foreach ($leadConvert as $key => $value) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead Conversion: " . $key . " = '" . $value . "'");

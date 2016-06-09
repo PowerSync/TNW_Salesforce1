@@ -633,6 +633,7 @@
                 <customer_integration>0</customer_integration>
                 <lead_source>Web</lead_source>
                 <use_lead_source_filter>0</use_lead_source_filter>
+                <email_notification>0</email_notification>
             </lead_config>
             <contactus>
                 <customer_form_enable>0</customer_form_enable>
