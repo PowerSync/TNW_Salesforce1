@@ -13,22 +13,26 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     public function getValue($_entity)
     {
-        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $value = null;
+
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute) {
+            if($_entity->hasData($attributeCode)) {
+                $value = $this->_convertValueForAttribute($_entity, $attribute);
+            }
+
+            if (empty($value)) {
+                $value = $this->_mapping->getDefaultValue();
+            }
+
+            return $value;
+        }
 
         $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
         $value = call_user_func(array($_entity, $method));
         if (empty($value)) {
             $value = $this->_mapping->getDefaultValue();
-        }
-
-        $attribute = $this->_getAttribute($_entity, $attributeCode);
-        if ($attribute) {
-            if($_entity->hasData($attributeCode)) {
-                return $this->_convertValueForAttribute($_entity, $attribute);
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice(sprintf('Attribute "%s" is missing.', $attributeCode));
         }
 
         $attributeType = $this->_mapping->getBackendType();
