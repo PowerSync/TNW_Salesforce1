@@ -37,16 +37,6 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
                 return $this->convertAttributeSetId($_entity);
         }
 
-        $attribute = $this->_getAttribute($_entity, $attributeCode);
-        if ($attribute) {
-            if($_entity->hasData($attributeCode)) {
-                return $this->_convertValueForAttribute($_entity, $attribute);
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice(sprintf('Attribute product "%s" is missing. Product sku: "%s"', $attributeCode, $_entity->getSku()));
-        }
-
         return parent::getValue($_entity);
     }
 
@@ -74,11 +64,6 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
             case 'attribute_set_id':
                 $value = $this->reverseConvertAttributeSetId($value);
                 break;
-        }
-
-        $attribute = $this->_getAttribute($entity, $attributeCode);
-        if ($attribute) {
-            $value = $this->_reverseConvertValueForAttribute($attribute, $value);
         }
 
         parent::setValue($entity, $value);

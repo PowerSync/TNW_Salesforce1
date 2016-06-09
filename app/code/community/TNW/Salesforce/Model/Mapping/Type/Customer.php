@@ -22,16 +22,6 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                 return $this->convertSfRecordType($_entity);
         }
 
-        $attribute = $this->_getAttribute($_entity, $attributeCode);
-        if ($attribute) {
-            if($_entity->hasData($attributeCode)) {
-                return $this->_convertValueForAttribute($_entity, $attribute);
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice(sprintf('Attribute customer "%s" is missing. Customer email: "%s"', $attributeCode, $_entity->getEmail()));
-        }
-
         return parent::getValue($_entity);
     }
 
@@ -51,11 +41,6 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
             case 'website_ids':
                 $value = $this->reverseConvertWebsiteIds($value);
                 break;
-        }
-
-        $attribute = $this->_getAttribute($entity, $attributeCode);
-        if ($attribute) {
-            $value = $this->_reverseConvertValueForAttribute($attribute, $value);
         }
 
         parent::setValue($entity, $value);
