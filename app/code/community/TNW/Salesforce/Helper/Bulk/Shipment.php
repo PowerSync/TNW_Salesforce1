@@ -186,7 +186,7 @@ class TNW_Salesforce_Helper_Bulk_Shipment extends TNW_Salesforce_Helper_Salesfor
             if (!$this->_cache['bulkJobs']['orderShipmentTrack']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['orderShipmentTrack']['Id']
-                    = $this->_createJob(TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__c', 'upsert', 'Id');
+                    = $this->_createJob(TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentTracking__c', 'upsert', 'Id');
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('Syncronizing Shipment Track, created job: ' . $this->_cache['bulkJobs']['orderShipmentTrack']['Id']);
@@ -242,7 +242,7 @@ class TNW_Salesforce_Helper_Bulk_Shipment extends TNW_Salesforce_Helper_Salesfor
             foreach ($response as $_item) {
                 $_recordItemId = $_batchKeys[$_i++];
                 $_orderId = (string)$_batch[$_recordItemId]
-                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
+                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Shipment__c'};
                 $_oid = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
 
                 //Report Transaction
@@ -348,7 +348,7 @@ class TNW_Salesforce_Helper_Bulk_Shipment extends TNW_Salesforce_Helper_Salesfor
             foreach ($response as $_item) {
                 $_noteId  = $_batchKeys[$_i++];
                 $_orderId = (string)$_batch[$_noteId]
-                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Shipment__c'};
+                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Shipment__c'};
                 $_oid     = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
 
                 //Report Transaction

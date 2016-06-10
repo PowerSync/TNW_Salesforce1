@@ -14,12 +14,12 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             ? $object->Id : null;
 
         if (!$_sInvoiceId) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting invoice into Magento: tnw_fulfilment__OrderInvoice__c ID is missing");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting invoice into Magento: tnw_invoice__Invoice__c ID is missing");
             $this->_addError('Could not upsert Invoice into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
 
-        $_miIncrementIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c";
+        $_miIncrementIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . "Magento_ID__c";
         $_miIncrementId    = (property_exists($object, $_miIncrementIdKey) && $object->$_miIncrementIdKey)
             ? $object->$_miIncrementIdKey : null;
 
@@ -45,13 +45,13 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             }
         }
 
-        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Order__c";
+        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . "Order__c";
         $_sOrderId    = (property_exists($object, $_sOrderIdKey) && $object->$_sOrderIdKey)
             ? $object->$_sOrderIdKey : null;
 
         if (!$_sOrderId) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError("ERROR Object \"tnw_fulfilment__OrderInvoice__c\" lost contact with the object \"Order\"");
+                ->saveError("ERROR Object \"tnw_invoice__Invoice__c\" lost contact with the object \"Order\"");
             return false;
         }
 
@@ -90,7 +90,7 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
                 return false;
             }
 
-            $_invoiceItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderInvoiceItem__r';
+            $_invoiceItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'OrderInvoiceItem__r';
             if (!property_exists($object, $_invoiceItemKey)) {
                 return false;
             }
@@ -102,8 +102,8 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             $hasSalesforceId = $order->getItemsCollection()
                 ->walk('getSalesforceId');
 
-            $_iItemQuantityKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c';
-            $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
+            $_iItemQuantityKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Quantity__c';
+            $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c';
 
             $savedQtys = array();
             foreach ($object->$_invoiceItemKey->records as $record) {
@@ -194,7 +194,7 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
                     $method = sprintf('get%sAddress', $entityName);
                     $entity = $invoice->$method();
 
-                    $keyState = sprintf('tnw_fulfilment__%s_Country__c', $entityName);
+                    $keyState = sprintf('tnw_invoice__%s_Country__c', $entityName);
                     if (($field == 'region') && property_exists($object, $keyState)) {
                         foreach(Mage::getModel('directory/region_api')->items($object->$keyState) as $_region) {
                             if (!in_array($newValue, $_region)) {
@@ -253,8 +253,8 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         $hasOrderId = $_invoiceItemCollection
             ->walk('getOrderItemId');
 
-        $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderInvoiceItem__r';
-        $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
+        $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'OrderInvoiceItem__r';
+        $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c';
         foreach ($object->$_invoiceItemKey->records as $record) {
             $orderItemId = array_search($record->$_iItemOrderItemKey, $hasSalesforceId);
             if (false === $orderItemId) {
@@ -318,8 +318,8 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
     {
         $_obj = new stdClass();
         $_obj->Id = $_data['salesforce_id'];
-        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'} = $_data['magento_id'];
-        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'} = true;
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c'} = $_data['magento_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'disableMagentoSync__c'} = true;
 
         return $_obj;
     }
