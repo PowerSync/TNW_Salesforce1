@@ -1,9 +1,8 @@
 <?php
 /**
- * @var $installer Mage_Core_Model_Resource_Setup
+ * @var $this TNW_Salesforce_Model_Mysql4_Setup
  */
 $installer = $this;
-
 $installer->startSetup();
 
 $_defaultMappingStatus = array(
@@ -63,41 +62,52 @@ $_defaultMappingStatus = array(
     ),
 );
 
+$tableName       = $installer->getTable('tnw_salesforce/mapping');
+$select          = $installer->getConnection()->select()->from($tableName, array('sf_field', 'sf_object'));
+$mappingAssoc    = $installer->getConnection()->fetchAssoc($select);
+$mappingAssoc    = $mappingAssoc ? $mappingAssoc : array();
+
+$selectAttribute = $installer->getConnection()->select()
+    ->from(array('a' => $this->getTable('eav/attribute')), array('a.attribute_id', 'a.backend_type'))
+    ->join(
+        array('t' => $this->getTable('eav/entity_type')),
+        'a.entity_type_id = t.entity_type_id',
+        array())
+    ->where('t.entity_type_code = :entity_type_code')
+    ->where('a.attribute_code = :attribute_code');
+
 $picklistMapping = array();
 foreach ($_defaultMappingStatus as $_objectName => $_field) {
-    /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */
-    $groupCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-        ->addObjectToFilter($_objectName);
-
-    $allValues = $groupCollection->getAllValues();
     foreach ($_field as $_fieldName => $_param) {
-        if (isset($allValues[$_fieldName])) {
-            continue;
+        foreach ($mappingAssoc as $_mapping) {
+            if ($_mapping['sf_field'] == $_fieldName && $_mapping['sf_object'] == $_objectName) {
+                continue 2;
+            }
         }
 
         list($_type, $_attributeCode) = explode(':', $_param['attribute']);
-        $attrId = Mage::getResourceModel('eav/entity_attribute')
-            ->getIdByCode($_type, $_attributeCode);
+        $row = $installer->getConnection()->fetchRow($selectAttribute, array(
+            ':entity_type_code' => $_type,
+            ':attribute_code'   => $_attributeCode
+        ));
 
-        /** @var Mage_Catalog_Model_Resource_Eav_Attribute $attr */
-        $attr = Mage::getModel('catalog/resource_eav_attribute')->load($attrId);
-        $_attributeId = $attr->getId();
-        $_backendType = $attr->getBackendType();
+        $_attributeId = $_backendType = null;
+        if (!empty($row)) {
+            $_attributeId = $row['attribute_id'];
+            $_backendType = $row['backend_type'];
+        }
 
         $picklistMapping[] = array(
             'local_field' => sprintf('%s : %s', $_param['localField'], $_attributeCode),
             'sf_field' => $_fieldName,
+            'sf_object' => $_objectName,
             'attribute_id' => $_attributeId,
             'backend_type' => $_backendType,
-            'sf_object' => $_objectName,
-            'magento_sf_enable' => 1,
-            'sf_magento_enable' => 1
         );
     }
 }
 
 //Execute
-/** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */
-$groupCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection');
-$installer->getConnection()->insertMultiple($groupCollection->getMainTable(), $picklistMapping);
+$installer->getConnection()->insertMultiple($tableName, $picklistMapping);
+
 $installer->endSetup();
