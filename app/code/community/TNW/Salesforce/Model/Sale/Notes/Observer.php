@@ -101,11 +101,16 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             return; // Disabled
         }
 
+        $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
+        if (!in_array($orderObject, array(TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER, TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_OPPORTUNITY))) {
+            return; // Disabled
+        }
+
         $event      = $observer->getEvent();
         $entityType = $event->getType();
         switch ($entityType) {
             case 'invoice':
-                if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoicesForOrder()) {
+                if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Invoice synchronization disabled');
                     return; // Disabled
                 }
@@ -117,7 +122,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 break;
 
             case 'shipment':
-                if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipmentsForOrder()) {
+                if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Shipment synchronization disabled');
                     return; // Disabled
                 }
@@ -155,8 +160,11 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             $note = $event->getNote();
             call_user_func(array($note, sprintf('set%s', ucfirst($entityType))), $entity);
 
-            /** @var TNW_Salesforce_Helper_Salesforce_Invoice $syncHelper */
-            $syncHelper = Mage::helper(sprintf('tnw_salesforce/salesforce_%s', $entityType));
+            $helperType = (TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER == $orderObject)
+                ? 'order_' : 'opportunity_';
+
+            /** @var TNW_Salesforce_Helper_Salesforce_Order_Invoice $syncHelper */
+            $syncHelper = Mage::helper(sprintf('tnw_salesforce/salesforce_%s', $helperType . $entityType));
             $syncHelper->reset();
             $syncHelper->createObjNones(array($note));
             $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$entity->getIncrementId()] = $entity->getSalesforceId();

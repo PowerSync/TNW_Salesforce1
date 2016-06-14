@@ -124,32 +124,52 @@
                             <title>Invoice Mappings</title>
                             <sort_order>400</sort_order>
                             <children>
-                                <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                    <title>Invoice</title>
-                                    <action>adminhtml/salesforce_orderinvoice</action>
+                                <order_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Order Invoice</title>
+                                    <action>adminhtml/salesforce_order_invoice</action>
                                     <sort_order>110</sort_order>
-                                </invoice_mapping>
-                                <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                    <title>Invoice Items</title>
-                                    <action>adminhtml/salesforce_orderinvoiceitem</action>
+                                </order_invoice>
+                                <order_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Order Invoice Items</title>
+                                    <action>adminhtml/salesforce_order_invoiceitem</action>
                                     <sort_order>120</sort_order>
-                                </invoice_cart_mapping>
+                                </order_invoice_item>
+                                <opportunity_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOpportunity">
+                                    <title>Opportunity Invoice</title>
+                                    <action>adminhtml/salesforce_opportunity_invoice</action>
+                                    <sort_order>130</sort_order>
+                                </opportunity_invoice>
+                                <opportunity_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOpportunity">
+                                    <title>Opportunity Invoice Items</title>
+                                    <action>adminhtml/salesforce_opportunity_invoiceitem</action>
+                                    <sort_order>140</sort_order>
+                                </opportunity_invoice_item>
                             </children>
                         </invoice_mapping>
                         <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
                             <title>Shipment Mappings</title>
                             <sort_order>500</sort_order>
                             <children>
-                                <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                    <title>Shipment</title>
-                                    <action>adminhtml/salesforce_ordershipment</action>
+                                <order_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Order Shipment</title>
+                                    <action>adminhtml/salesforce_order_shipment</action>
                                     <sort_order>100</sort_order>
-                                </shipment_mapping>
-                                <shipment_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                    <title>Shipment Products</title>
-                                    <action>adminhtml/salesforce_ordershipmentitem</action>
+                                </order_shipment>
+                                <order_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Order Shipment Products</title>
+                                    <action>adminhtml/salesforce_order_shipmentitem</action>
                                     <sort_order>120</sort_order>
-                                </shipment_cart_mapping>
+                                </order_shipment_item>
+                                <opportunity_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                    <title>Opportunity Shipment</title>
+                                    <action>adminhtml/salesforce_opportunity_shipment</action>
+                                    <sort_order>100</sort_order>
+                                </opportunity_shipment>
+                                <opportunity_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                    <title>Opportunity Shipment Products</title>
+                                    <action>adminhtml/salesforce_opportunity_shipmentitem</action>
+                                    <sort_order>120</sort_order>
+                                </opportunity_shipment_item>
                             </children>
                         </shipment_mapping>
                         <abandoned_mapping translate="title" module="tnw_salesforce">
@@ -387,32 +407,52 @@
                             <title>Invoice Mappings</title>
                             <sort_order>40</sort_order>
                             <children>
-                                <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                    <title>Invoice</title>
-                                    <action>adminhtml/salesforce_orderinvoice</action>
+                                <order_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Order Invoice</title>
+                                    <action>adminhtml/salesforce_order_invoice</action>
                                     <sort_order>10</sort_order>
-                                </invoice_mapping>
-                                <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                    <title>Invoice Items</title>
-                                    <action>adminhtml/salesforce_orderinvoiceitem</action>
+                                </order_invoice>
+                                <order_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                    <title>Order Invoice Items</title>
+                                    <action>adminhtml/salesforce_order_invoiceitem</action>
                                     <sort_order>20</sort_order>
-                                </invoice_cart_mapping>
+                                </order_invoice_item>
+                                <opportunity_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncShipmentsForOpportunity">
+                                    <title>Opportunity Invoice</title>
+                                    <action>adminhtml/salesforce_opportunity_invoice</action>
+                                    <sort_order>30</sort_order>
+                                </opportunity_invoice>
+                                <opportunity_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncShipmentsForOpportunity">
+                                    <title>Opportunity Invoice Items</title>
+                                    <action>adminhtml/salesforce_opportunity_invoiceitem</action>
+                                    <sort_order>40</sort_order>
+                                </opportunity_invoice_item>
                             </children>
                         </invoice_mappings>
                         <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
                             <title>Shipment Mappings</title>
                             <sort_order>50</sort_order>
                             <children>
-                                <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                    <title>Shipment</title>
-                                    <action>adminhtml/salesforce_ordershipment</action>
+                                <order_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Order Shipment</title>
+                                    <action>adminhtml/salesforce_order_shipment</action>
                                     <sort_order>10</sort_order>
-                                </shipment_mapping>
-                                <shipment_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                    <title>Shipment Items</title>
-                                    <action>adminhtml/salesforce_ordershipmentitem</action>
+                                </order_shipment>
+                                <order_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                    <title>Order Shipment Items</title>
+                                    <action>adminhtml/salesforce_order_shipmentitem</action>
                                     <sort_order>20</sort_order>
-                                </shipment_cart_mapping>
+                                </order_shipment_item>
+                                <opportunity_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                    <title>Opportunity Shipment</title>
+                                    <action>adminhtml/salesforce_opportunity_shipment</action>
+                                    <sort_order>10</sort_order>
+                                </opportunity_shipment>
+                                <opportunity_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                    <title>Opportunity Shipment Items</title>
+                                    <action>adminhtml/salesforce_opportunity_shipmentitem</action>
+                                    <sort_order>20</sort_order>
+                                </opportunity_shipment_item>
                             </children>
                         </shipment_mappings>
                         <abandoned_mappings translate="title" module="tnw_salesforce">
@@ -502,27 +542,43 @@
                                     <invoice_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
                                         <title>Invoice Mappings</title>
                                         <children>
-                                            <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                                <title>Invoice</title>
+                                            <order_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Order Invoice</title>
                                                 <sort_order>10</sort_order>
-                                            </invoice_mapping>
-                                            <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                                <title>Invoice Items</title>
+                                            </order_invoice>
+                                            <order_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Order Invoice Items</title>
                                                 <sort_order>20</sort_order>
-                                            </invoice_cart_mapping>
+                                            </order_invoice_item>
+                                            <opportunity_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOpportunity">
+                                                <title>Opportunity Invoice</title>
+                                                <sort_order>30</sort_order>
+                                            </opportunity_invoice>
+                                            <opportunity_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOpportunity">
+                                                <title>Opportunity Invoice Items</title>
+                                                <sort_order>40</sort_order>
+                                            </opportunity_invoice_item>
                                         </children>
                                     </invoice_mappings>
                                     <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
                                         <title>Shipment Mappings</title>
                                         <children>
-                                            <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                                <title>Shipment</title>
+                                            <order_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Order Shipment</title>
                                                 <sort_order>10</sort_order>
-                                            </shipment_mapping>
-                                            <shipment_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                                <title>Shipment Products</title>
+                                            </order_shipment>
+                                            <order_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Order Shipment Products</title>
                                                 <sort_order>20</sort_order>
-                                            </shipment_cart_mapping>
+                                            </order_shipment_item>
+                                            <opportunity_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                                <title>Opportunity Shipment</title>
+                                                <sort_order>30</sort_order>
+                                            </opportunity_shipment>
+                                            <opportunity_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                                <title>Opportunity Shipment Products</title>
+                                                <sort_order>40</sort_order>
+                                            </opportunity_shipment_item>
                                         </children>
                                     </shipment_mappings>
                                     <abandoned_mapping>
@@ -696,28 +752,44 @@
                                         <title>Invoice Mappings</title>
                                         <sort_order>400</sort_order>
                                         <children>
-                                            <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                                <title>Invoice Field Mappings</title>
+                                            <order_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Order Invoice Field Mappings</title>
                                                 <sort_order>50</sort_order>
-                                            </invoice_mapping>
-                                            <invoice_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
-                                                <title>Invoice Item Field Mappings</title>
+                                            </order_invoice>
+                                            <order_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOrder">
+                                                <title>Order Invoice Item Field Mappings</title>
                                                 <sort_order>60</sort_order>
-                                            </invoice_cart_mapping>
+                                            </order_invoice_item>
+                                            <opportunity_invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOpportunity">
+                                                <title>Opportunity Invoice Field Mappings</title>
+                                                <sort_order>50</sort_order>
+                                            </opportunity_invoice>
+                                            <opportunity_invoice_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoicesForOpportunity">
+                                                <title>Opportunity Invoice Item Field Mappings</title>
+                                                <sort_order>60</sort_order>
+                                            </opportunity_invoice_item>
                                         </children>
                                     </invoice_mapping>
                                     <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
                                         <title>Shipment Mappings</title>
                                         <sort_order>500</sort_order>
                                         <children>
-                                            <shipment_mapping ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                                <title>Shipment Field Mappings</title>
+                                            <order_shipment ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Order Shipment Field Mappings</title>
                                                 <sort_order>50</sort_order>
-                                            </shipment_mapping>
-                                            <shipment_cart_mapping ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                                <title>Shipment Product Field Mappings</title>
+                                            </order_shipment>
+                                            <order_shipment_item ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
+                                                <title>Order Shipment Product Field Mappings</title>
                                                 <sort_order>60</sort_order>
-                                            </shipment_cart_mapping>
+                                            </order_shipment_item>
+                                            <opportunity_shipment ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                                <title>Opportunity Shipment Field Mappings</title>
+                                                <sort_order>70</sort_order>
+                                            </opportunity_shipment>
+                                            <opportunity_shipment_item ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
+                                                <title>Opportunity Shipment Product Field Mappings</title>
+                                                <sort_order>80</sort_order>
+                                            </opportunity_shipment_item>
                                         </children>
                                     </shipment_mapping>
                                     <abandoned_mapping>

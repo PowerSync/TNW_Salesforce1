@@ -18,4 +18,13 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
         return $this->syncShipments()
             && self::SYNC_TYPE_ORDER == strtolower($this->_helper()->getOrderObject());
     }
+
+    /**
+     * @return bool
+     */
+    public function syncShipmentsForOpportunity()
+    {
+        return $this->syncShipments()
+            && self::SYNC_TYPE_OPPORTUNITY == strtolower($this->_helper()->getOrderObject());
+    }
 }

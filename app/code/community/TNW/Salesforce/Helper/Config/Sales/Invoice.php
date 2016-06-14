@@ -20,6 +20,15 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
     public function syncInvoicesForOrder()
     {
         return $this->syncInvoices()
-            && self::SYNC_TYPE_ORDER == strtolower($this->_helper()->getOrderObject());
+            && strcasecmp(self::SYNC_TYPE_ORDER, $this->_helper()->getOrderObject()) == 0;
+    }
+
+    /**
+     * @return bool
+     */
+    public function syncInvoicesForOpportunity()
+    {
+        return $this->syncInvoices()
+            && strcasecmp(self::SYNC_TYPE_OPPORTUNITY, $this->_helper()->getOrderObject()) == 0;
     }
 }
