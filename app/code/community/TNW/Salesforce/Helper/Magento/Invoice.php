@@ -90,7 +90,7 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
                 return false;
             }
 
-            $_invoiceItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'OrderInvoiceItem__r';
+            $_invoiceItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
             if (!property_exists($object, $_invoiceItemKey)) {
                 return false;
             }
@@ -253,7 +253,7 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         $hasOrderId = $_invoiceItemCollection
             ->walk('getOrderItemId');
 
-        $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'OrderInvoiceItem__r';
+        $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
         $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c';
         foreach ($object->$_invoiceItemKey->records as $record) {
             $orderItemId = array_search($record->$_iItemOrderItemKey, $hasSalesforceId);

@@ -17,8 +17,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Shipment extends TNW_Salesforce_Help
             }
 
             $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Magento_ID__c';
-            $osiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentItem__r';
-            $ostTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentTracking__r';
+            $osiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentItem__r';
+            $ostTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentTracking__r';
             $_fields    = array(
                 'Id', $_magentoId,
                 sprintf('(SELECT Id, Name, %s, %s, %s FROM %s)',

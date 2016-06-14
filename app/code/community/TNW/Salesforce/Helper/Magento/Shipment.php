@@ -99,7 +99,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
                 return false;
             }
 
-            $_shipmentItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentItem__r';
+            $_shipmentItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentItem__r';
             if (!property_exists($object, $_shipmentItemKey)) {
                 return false;
             }
@@ -144,7 +144,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             ->setData('sf_insync', 1);
         $this->addEntityToSave('Shipment', $shipment);
 
-        $_shipmentTrackingKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentTracking__r';
+        $_shipmentTrackingKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentTracking__r';
         if (property_exists($object, $_shipmentTrackingKey) && $object->$_shipmentTrackingKey->totalSize > 0) {
             $hasNumber = $shipment->getTracksCollection()
                 ->walk('getNumber');
@@ -269,7 +269,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
         $hasOrderId = $_shipmentItemCollection
             ->walk('getOrderItemId');
 
-        $_shipmentItemKey   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentItem__r';
+        $_shipmentItemKey   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentItem__r';
         $_sItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
         foreach ($object->$_shipmentItemKey->records as $record) {
             $orderItemId = array_search($record->$_sItemOrderItemKey, $hasSalesforceId);

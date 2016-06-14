@@ -666,7 +666,7 @@ class TNW_Salesforce_Helper_Salesforce_Shipment extends TNW_Salesforce_Helper_Sa
 
             try {
                 $results = $this->getClient()->upsert(
-                    'Id', array_values($_itemsToPush), TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentTracking__c');
+                    'Id', array_values($_itemsToPush), TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentTracking__c');
             } catch (Exception $e) {
                 $results = array_fill(0, count($_itemsToPush),
                     $this->_buildErrorResponse($e->getMessage()));

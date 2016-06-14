@@ -186,7 +186,7 @@ class TNW_Salesforce_Helper_Bulk_Shipment extends TNW_Salesforce_Helper_Salesfor
             if (!$this->_cache['bulkJobs']['orderShipmentTrack']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['orderShipmentTrack']['Id']
-                    = $this->_createJob(TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'OrderShipmentTracking__c', 'upsert', 'Id');
+                    = $this->_createJob(TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentTracking__c', 'upsert', 'Id');
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('Syncronizing Shipment Track, created job: ' . $this->_cache['bulkJobs']['orderShipmentTrack']['Id']);

@@ -17,7 +17,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helpe
             }
 
             $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c';
-            $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'OrderInvoiceItem__r';
+            $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
             $_fields    = array(
                 'Id', $_magentoId,
                 sprintf('(SELECT Id, Name, %s, %s, %s FROM %s)',

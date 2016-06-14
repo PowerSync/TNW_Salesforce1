@@ -24,7 +24,12 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     /**
      * @var
      */
-    protected $_packageFulfilmentAvailable = NULL;
+    protected $_packageShipmentAvailable = NULL;
+
+    /**
+     * @var
+     */
+    protected $_packageInvoiceAvailable = NULL;
 
     /**
      * @var null
@@ -275,35 +280,70 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      * @comment check if our package is installed in Salesforce
      * @return bool
      */
-    public function checkFulfilmentPackage()
+    public function checkShipmentPackage()
     {
-        if (!is_null($this->_packageFulfilmentAvailable)) {
-            return $this->_packageFulfilmentAvailable;
+        if (!is_null($this->_packageShipmentAvailable)) {
+            return $this->_packageShipmentAvailable;
         }
 
         /**
          * connection not exists or authorization failed
          */
         if (!$this->_client || !$this->_loggedIn) {
-            $this->_packageFulfilmentAvailable = false;
-            return $this->_packageFulfilmentAvailable;
+            $this->_packageShipmentAvailable = false;
+            return $this->_packageShipmentAvailable;
+        }
+
+        try {
+            /** @comment try to take object from our package */
+            $this->_client->describeSObject(TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT);
+            $this->_packageShipmentAvailable = true;
+        }
+        catch (Exception $e) {
+            $errorMessage = Mage::helper('tnw_salesforce')->__('PowerSync Shipment managed package in Salesforce is either not installed or license is expired.<br />');
+            $errorMessage .= Mage::helper('tnw_salesforce')->__('Please contact <a href="https://technweb.atlassian.net/servicedesk/customer/portal/2">Powersync Support</a> for more information');
+            $this->_errorMessage = $errorMessage;
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($errorMessage);
+            $this->_packageShipmentAvailable = false;
+        }
+
+        return $this->_packageShipmentAvailable;
+    }
+
+    /**
+     * @comment check if our package is installed in Salesforce
+     * @return bool
+     */
+    public function checkInvoicePackage()
+    {
+        if (!is_null($this->_packageInvoiceAvailable)) {
+            return $this->_packageInvoiceAvailable;
+        }
+
+        /**
+         * connection not exists or authorization failed
+         */
+        if (!$this->_client || !$this->_loggedIn) {
+            $this->_packageInvoiceAvailable = false;
+            return $this->_packageInvoiceAvailable;
         }
 
         try {
             /** @comment try to take object from our package */
             $this->_client->describeSObject(TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT);
-            $this->_packageFulfilmentAvailable = true;
+            $this->_packageInvoiceAvailable = true;
         }
         catch (Exception $e) {
-            $errorMessage = Mage::helper('tnw_salesforce')->__('PowerSync Fulfilment managed package in Salesforce is either not installed or license is expired.<br />');
+            $errorMessage = Mage::helper('tnw_salesforce')->__('PowerSync Invoice managed package in Salesforce is either not installed or license is expired.<br />');
             $errorMessage .= Mage::helper('tnw_salesforce')->__('Please contact <a href="https://technweb.atlassian.net/servicedesk/customer/portal/2">Powersync Support</a> for more information');
             $this->_errorMessage = $errorMessage;
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError($errorMessage);
-            $this->_packageFulfilmentAvailable = false;
+            $this->_packageInvoiceAvailable = false;
         }
 
-        return $this->_packageFulfilmentAvailable;
+        return $this->_packageInvoiceAvailable;
     }
 
     public function getLoginResponse()
