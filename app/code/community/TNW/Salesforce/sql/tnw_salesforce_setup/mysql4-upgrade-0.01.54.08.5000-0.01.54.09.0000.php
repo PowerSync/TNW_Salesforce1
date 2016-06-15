@@ -58,6 +58,78 @@ $data = array(
         'sf_object'         => 'OpportunityInvoice',
         '@attribute'        => 'customer:salesforce_id'
     ),
+    array(
+        'local_field'       => 'Billing : street',
+        'sf_field'          => 'tnw_invoice__Billing_Street__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:street'
+    ),
+    array(
+        'local_field'       => 'Billing : city',
+        'sf_field'          => 'tnw_invoice__Billing_City__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:city'
+    ),
+    array(
+        'local_field'       => 'Billing : region',
+        'sf_field'          => 'tnw_invoice__Billing_State__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:region'
+    ),
+    array(
+        'local_field'       => 'Billing : postcode',
+        'sf_field'          => 'tnw_invoice__Billing_PostalCode__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:postcode'
+    ),
+    array(
+        'local_field'       => 'Billing : country_id',
+        'sf_field'          => 'tnw_invoice__Billing_Country__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:country_id'
+    ),
+    array(
+        'local_field'       => 'Billing : telephone',
+        'sf_field'          => 'tnw_invoice__Billing_Phone__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:telephone'
+    ),
+    array(
+        'local_field'       => 'Shipping : street',
+        'sf_field'          => 'tnw_invoice__Shipping_Street__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:street'
+    ),
+    array(
+        'local_field'       => 'Shipping : city',
+        'sf_field'          => 'tnw_invoice__Shipping_City__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:city'
+    ),
+    array(
+        'local_field'       => 'Shipping : region',
+        'sf_field'          => 'tnw_invoice__Shipping_State__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:region'
+    ),
+    array(
+        'local_field'       => 'Shipping : postcode',
+        'sf_field'          => 'tnw_invoice__Shipping_PostalCode__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:postcode'
+    ),
+    array(
+        'local_field'       => 'Shipping : country_id',
+        'sf_field'          => 'tnw_invoice__Shipping_Country__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:country_id'
+    ),
+    array(
+        'local_field'       => 'Shipping : telephone',
+        'sf_field'          => 'tnw_invoice__Shipping_Phone__c',
+        'sf_object'         => 'OpportunityInvoice',
+        '@attribute'        => 'customer_address:telephone'
+    ),
 
     // Invoice Item
     array(
@@ -145,6 +217,78 @@ $data = array(
         'sf_field'          => 'tnw_shipment__Shipping_Contact__c',
         'sf_object'         => 'OpportunityShipment',
         '@attribute'        => 'customer:salesforce_id',
+    ),
+    array(
+        'local_field'       => 'Billing : street',
+        'sf_field'          => 'tnw_shipment__Billing_Street__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:street',
+    ),
+    array(
+        'local_field'       => 'Billing : city',
+        'sf_field'          => 'tnw_shipment__Billing_City__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:city',
+    ),
+    array(
+        'local_field'       => 'Billing : region',
+        'sf_field'          => 'tnw_shipment__Billing_State__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:region',
+    ),
+    array(
+        'local_field'       => 'Billing : postcode',
+        'sf_field'          => 'tnw_shipment__Billing_PostalCode__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:postcode',
+    ),
+    array(
+        'local_field'       => 'Billing : country_id',
+        'sf_field'          => 'tnw_shipment__Billing_Country__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:country_id',
+    ),
+    array(
+        'local_field'       => 'Billing : telephone',
+        'sf_field'          => 'tnw_shipment__Billing_Phone__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:telephone',
+    ),
+    array(
+        'local_field'       => 'Shipping : street',
+        'sf_field'          => 'tnw_shipment__Shipping_Street__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:street',
+    ),
+    array(
+        'local_field'       => 'Shipping : city',
+        'sf_field'          => 'tnw_shipment__Shipping_City__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:city',
+    ),
+    array(
+        'local_field'       => 'Shipping : region',
+        'sf_field'          => 'tnw_shipment__Shipping_State__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:region',
+    ),
+    array(
+        'local_field'       => 'Shipping : postcode',
+        'sf_field'          => 'tnw_shipment__Shipping_PostalCode__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:postcode',
+    ),
+    array(
+        'local_field'       => 'Shipping : country_id',
+        'sf_field'          => 'tnw_shipment__Shipping_Country__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:country_id',
+    ),
+    array(
+        'local_field'       => 'Shipping : telephone',
+        'sf_field'          => 'tnw_shipment__Shipping_Phone__c',
+        'sf_object'         => 'OpportunityShipment',
+        '@attribute'        => 'customer_address:telephone',
     ),
 
     // Shipment Item
