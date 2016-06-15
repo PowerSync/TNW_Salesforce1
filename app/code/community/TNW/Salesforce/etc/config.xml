@@ -294,7 +294,7 @@
                 <observers>
                     <tnw_salesforce_notes_observer>
                         <class>tnw_salesforce/sale_notes_observer</class>
-                        <method>notesPush</method>
+                        <method>baseNotesPush</method>
                     </tnw_salesforce_notes_observer>
                 </observers>
             </tnw_salesforce_order_comments_save_after>

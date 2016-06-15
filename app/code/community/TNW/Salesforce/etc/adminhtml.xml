@@ -166,7 +166,7 @@
                                     <sort_order>100</sort_order>
                                 </opportunity_shipment>
                                 <opportunity_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
-                                    <title>Opportunity Shipment Products</title>
+                                    <title>Opportunity Shipment Items</title>
                                     <action>adminhtml/salesforce_opportunity_shipmentitem</action>
                                     <sort_order>120</sort_order>
                                 </opportunity_shipment_item>
@@ -568,7 +568,7 @@
                                                 <sort_order>10</sort_order>
                                             </order_shipment>
                                             <order_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                                <title>Order Shipment Products</title>
+                                                <title>Order Shipment Items</title>
                                                 <sort_order>20</sort_order>
                                             </order_shipment_item>
                                             <opportunity_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
@@ -576,7 +576,7 @@
                                                 <sort_order>30</sort_order>
                                             </opportunity_shipment>
                                             <opportunity_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
-                                                <title>Opportunity Shipment Products</title>
+                                                <title>Opportunity Shipment Items</title>
                                                 <sort_order>40</sort_order>
                                             </opportunity_shipment_item>
                                         </children>
@@ -779,7 +779,7 @@
                                                 <sort_order>50</sort_order>
                                             </order_shipment>
                                             <order_shipment_item ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOrder">
-                                                <title>Order Shipment Product Field Mappings</title>
+                                                <title>Order Shipment Items Field Mappings</title>
                                                 <sort_order>60</sort_order>
                                             </order_shipment_item>
                                             <opportunity_shipment ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
@@ -787,7 +787,7 @@
                                                 <sort_order>70</sort_order>
                                             </opportunity_shipment>
                                             <opportunity_shipment_item ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
-                                                <title>Opportunity Shipment Product Field Mappings</title>
+                                                <title>Opportunity Shipment Items Field Mappings</title>
                                                 <sort_order>80</sort_order>
                                             </opportunity_shipment_item>
                                         </children>
