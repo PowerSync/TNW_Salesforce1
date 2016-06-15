@@ -97,9 +97,9 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
         }
         else {
             Mage::dispatchEvent($this->_syncEventName($entityType), array(
-                sprintf('%sIds', $entityType) => array($entity->getId()),
-                'message'    => NULL,
-                'type'       => 'salesforce'
+                "{$entityType}Ids"  => array($entity->getId()),
+                'message'           => NULL,
+                'type'              => 'salesforce'
             ));
         }
     }
@@ -145,7 +145,18 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
      */
     protected function _syncEventName($entityType)
     {
-        $entityType = strtolower($entityType);
-        return sprintf('tnw_salesforce_%s_process', $entityType);
+        switch ($entityType) {
+            case 'order':
+                $entityType = Mage::helper('tnw_salesforce')->getOrderObject();
+                break;
+            case 'invoice':
+                $entityType = Mage::helper('tnw_salesforce')->getInvoiceObject();
+                break;
+            case 'shipment':
+                $entityType = Mage::helper('tnw_salesforce')->getShipmentObject();
+                break;
+        }
+
+        return sprintf('tnw_salesforce_%s_process', strtolower($entityType));
     }
 }
