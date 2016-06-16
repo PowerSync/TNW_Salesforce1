@@ -34,7 +34,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 return array();
             }
 
-            return $this->customLookup($customers, array($this, 'prepareRecord'), array(), $leadSource, $idPrefix);
+            return $this->customLookup($customers, array($this, 'prepareRecord'), $leadSource, $idPrefix);
         }
         catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -269,56 +269,63 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * get duplicates minimal data
      * @param string $leadSource
-     * @return TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
+     * @return tnw_salesforce_model_api_entity_resource_lead_collection
      */
-    public function getDuplicates($_emailsArray = array(), $leadSource = '')
+    protected function _generateDuplicatesCollection($leadSource = '')
     {
-        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-
+        /** @var tnw_salesforce_model_api_entity_resource_lead_collection $collection */
         $collection = Mage::getModel('tnw_salesforce_api_entity/lead')->getCollection();
-
         $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
-        $collection->getSelect()->columns('Email');
         $collection->getSelect()->columns('COUNT(Id) items_count');
-
+        $collection->getSelect()->having('COUNT(Id) > ?', 1);
         /**
          * special option, define limitation for queries with sql expression
          */
         $collection->useExpressionLimit(true);
-
-        $collection->getSelect()->where("Email != ''");
         $collection->getSelect()->where("IsConverted != true");
         if ($leadSource) {
             $collection->getSelect()->where("LeadSource = ?", $leadSource);
         }
 
-        $collection->getSelect()->group('Email');
-
-        $collection->getSelect()->having('COUNT(Id) > ?', 1);
-
-        if (!empty($_emailsArray)) {
-
-            $whereEmail = "Email = '" . implode("' OR Email = '", $_emailsArray) . "'";
-            $whereCustomerId = "$_magentoId = '" . implode("' OR $_magentoId = '", array_keys($_emailsArray)) . "'";
-            $collection->getSelect()->where("($whereEmail OR  $whereCustomerId)");
-        }
-
         if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+                . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
-            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
-
-            $collection->getSelect()->columns($websiteField);
-            $collection->getSelect()->group($websiteField);
-
-            /**
-             * records with empty websiteId - are duplicates potentially
-             */
-            $collection->getSelect()->orHaving("$websiteField = '' ");
+            $collection->getSelect()
+                ->columns($websiteField)
+                ->group($websiteField)
+                ->orHaving("$websiteField = '' ");
         }
 
         return $collection;
+    }
+
+    /**
+     * get duplicates minimal data
+     * @param $customers Mage_Customer_Model_Customer[]
+     * @param string $leadSource
+     * @return TNW_Salesforce_Model_Api_Entity_Lead[]
+     */
+    public function getDuplicates($customers, $leadSource = '')
+    {
+        /** @var tnw_salesforce_model_api_entity_resource_lead_collection $collection */
+        $collection = $this->_generateDuplicatesCollection($leadSource);
+        $collection->getSelect()
+            ->columns('Email')
+            ->where("Email != ''")
+            ->group('Email');
+
+        if (!empty($customers)) {
+            $emails = array();
+            foreach ($customers as $customer) {
+                $emails[] = $customer->getEmail();
+            }
+
+            $collection->getSelect()->where('Email IN(?)', $emails);
+        }
+
+        return $collection->getItems();
     }
 
     /**

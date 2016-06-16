@@ -1307,15 +1307,17 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected function _massAddAfter()
     {
-        if (Mage::helper('tnw_salesforce/config_customer')->mergeDuplicates()) {
-            Mage::helper('tnw_salesforce/salesforce_data_user')
-                ->setCache($this->_cache)
-                ->processDuplicates($this->_cache['entitiesUpdating']);
-        }
-
         $customers = array();
         foreach (array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]) as $id) {
             $customers[] = $this->getEntityCache($id);
+        }
+
+        if (Mage::helper('tnw_salesforce/config_customer')->mergeDuplicates()) {
+            foreach (array_chunk($customers, TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT) as $_customers) {
+                Mage::helper('tnw_salesforce/salesforce_data_user')
+                    ->setCache($this->_cache)
+                    ->processDuplicates($_customers);
+            }
         }
 
         $this->_cache['customerToWebsite'] = $this->_websites;

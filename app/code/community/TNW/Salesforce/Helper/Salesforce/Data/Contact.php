@@ -102,48 +102,32 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @return TNW_Salesforce_Model_Api_Entity_Resource_Contact_Collection
+     * @return tnw_salesforce_model_api_entity_resource_contact_collection
      */
-    public function getDuplicates($_emailsArray = array())
+    protected function _generateDuplicatesCollection()
     {
-        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-
+        /** @var tnw_salesforce_model_api_entity_resource_contact_collection $collection */
         $collection = Mage::getModel('tnw_salesforce_api_entity/contact')->getCollection();
-
-        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
-        $collection->getSelect()->columns('Email');
-        $collection->getSelect()->columns('COUNT(Id) items_count');
+        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS)
+            ->columns('COUNT(Id) items_count')
+            ->having('COUNT(Id) > ?', 1);
 
         /**
          * special option, define limitation for queries with sql expression
          */
         $collection->useExpressionLimit(true);
 
-        $collection->getSelect()->where("Email != ''");
-
-        $collection->getSelect()->group('Email');
-
-        $collection->getSelect()->having('COUNT(Id) > ?', 1);
-
-        if (!empty($_emailsArray)) {
-
-            $whereEmail = "Email = '" . implode("' OR Email = '", $_emailsArray) . "'";
-            $whereCustomerId = "$_magentoId = '" . implode("' OR $_magentoId = '", array_keys($_emailsArray)) . "'";
-            $collection->getSelect()->where("($whereEmail OR  $whereCustomerId)");
-        }
-
         if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
-            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
-
-            $collection->getSelect()->columns($websiteField);
-            $collection->getSelect()->group($websiteField);
-            /**
-             * records with empty websiteId - are duplicates potentially
-             */
-            $collection->getSelect()->orHaving("$websiteField = '' ");
+            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+                . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
             $order = new Zend_Db_Expr($websiteField . ' ASC NULLS LAST');
-            $collection->getSelect()->order($order);
+
+            $collection->getSelect()
+                ->columns($websiteField)
+                ->group($websiteField)
+                ->orHaving("$websiteField = '' ")
+                ->order($order);
         }
 
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -151,6 +135,32 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         }
 
         return $collection;
+    }
+
+    /**
+     * @param $customers Mage_Customer_Model_Customer[]
+     * @return TNW_Salesforce_Model_Api_Entity_Contact[]
+     */
+    public function getDuplicates($customers = array())
+    {
+        $collection = $this->_generateDuplicatesCollection();
+        $collection->getSelect()
+            ->columns('Email')
+            ->where("Email != ''")
+            ->group('Email');
+
+        if (!empty($customers)) {
+            $emails = $iDs = array();
+            foreach ($customers as $customer) {
+                $iDs[]      = $customer->getId();
+                $emails[]   = $customer->getEmail();
+            }
+
+            $collection->getSelect()
+                ->where('Email IN(?)', $emails);
+        }
+
+        return $collection->getItems();
     }
 
     /**

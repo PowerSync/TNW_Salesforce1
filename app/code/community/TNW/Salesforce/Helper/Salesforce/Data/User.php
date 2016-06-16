@@ -114,8 +114,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
 
     /**
      * Find customer and merge duplicates in SF
+     * @param $customers Mage_Customer_Model_Customer[]
      */
-    public function processDuplicates($_emailsArray = array())
+    public function processDuplicates($customers)
     {
         foreach (array('lead', 'account', 'contact') as $sfEntityType) {
 
@@ -126,34 +127,34 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
             $helper = Mage::helper('tnw_salesforce/salesforce_data_' . $sfEntityType);
             switch ($sfEntityType) {
                 case 'lead':
-                    $_useLeadSourceFilter = Mage::helper('tnw_salesforce/data')->useLeadSourceFilter();
-                    $duplicates = $helper->getDuplicates($_emailsArray,
-                        $_useLeadSourceFilter ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null);
+                    $leadSource = (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())
+                        ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null;
+
+                    $duplicates = $helper->getDuplicates($customers, $leadSource);
                     break;
                 case 'account':
-                    /**
-                     * @var $duplicates TNW_Salesforce_Model_Api_Entity_Resource_Lead_Collection
-                     */
-                    $duplicates = $helper->getDuplicates($_emailsArray);
+                    $duplicates = $helper->getDuplicates($customers);
                     if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                        $duplicatesPersonAccount = $helper->getDuplicates($_emailsArray, true);
-                        $duplicates = array_merge($duplicates->getItems(), $duplicatesPersonAccount->getItems());
+                        $duplicatesPersonAccount = $helper->getDuplicates($customers, true);
+                        $duplicates = array_merge($duplicates, $duplicatesPersonAccount);
                     }
                     break;
                 case 'contact':
-                    $duplicates = $helper->getDuplicates($_emailsArray);
+                    $duplicates = $helper->getDuplicates($customers);
                     break;
 
             }
 
             foreach ($duplicates as $duplicate) {
                 if ($sfEntityType == 'lead') {
-                    $_useLeadSourceFilter = Mage::helper('tnw_salesforce/data')->useLeadSourceFilter();
-                    $helper->mergeDuplicates($duplicate,
-                        $_useLeadSourceFilter ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null);
-                } else {
-                    $helper->mergeDuplicates($duplicate);
+                    $leadSource = (Mage::helper('tnw_salesforce/data')->useLeadSourceFilter())
+                        ? Mage::helper('tnw_salesforce/data')->getLeadSource() : null;
+
+                    $helper->mergeDuplicates($duplicate, $leadSource);
+                    continue;
                 }
+
+                $helper->mergeDuplicates($duplicate);
             }
         }
     }
