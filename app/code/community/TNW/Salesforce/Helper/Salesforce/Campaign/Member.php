@@ -54,6 +54,10 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
 
             $guestCount = 0;
             foreach ($customers as $campaignId => $_customers) {
+                if (empty($campaignId)) {
+                    continue;
+                }
+
                 /** @var Mage_Customer_Model_Customer $_customer */
                 foreach ($_customers as $_customer) {
                     if ($_customer->isObjectNew()) {
