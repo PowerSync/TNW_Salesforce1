@@ -7,6 +7,8 @@
 class TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection
     extends TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
 {
+    const PAGE_SIZE = 30;
+
     protected function _construct()
     {
         parent::_construct();

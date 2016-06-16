@@ -731,7 +731,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
         $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter($this->_mappingEntityName)
-            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id)
+            ->firstSystem();
 
         $_objectMappings = array();
         foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
@@ -888,7 +889,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
         $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter($this->_mappingEntityItemName)
-            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id)
+            ->firstSystem();
 
         $_objectMappings = array();
         foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {

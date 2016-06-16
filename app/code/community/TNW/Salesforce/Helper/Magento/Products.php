@@ -56,10 +56,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
         }
 
-        $this->_mapProductCollection = Mage::getModel('tnw_salesforce/mapping')
-            ->getCollection()
+        $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('Product2')
-            ->addFieldToFilter('sf_magento_enable', 1);
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem();
 
         if (!$this->_product) {
             $this->_product = Mage::getModel('catalog/product');
@@ -151,12 +151,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             $_stock = array();
 
-            $this->_mapProductCollection->clear()
-                ->addFieldToFilter('sf_magento_type', array(
-                    TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                    ($_product->isObjectNew())
-                        ? TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT : TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
-                ));
+            $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Product2')
+                ->addFilterTypeSM(!$_product->isObjectNew())
+                ->firstSystem();
 
             /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($this->_mapProductCollection as $_mapping) {
@@ -209,6 +207,9 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             // Save Product
             $_product->save();
 
+            // Update Price
+            $this->updatePrice($object, $_product->getId());
+
             if ($_flag) {
                 Mage::getSingleton('core/session')->setFromSalesForce(false);
             }
@@ -221,6 +222,94 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: " . $e->getMessage());
             unset($e);
             return false;
+        }
+    }
+
+    /**
+     * @param $object stdClass
+     * @param $productId
+     * @throws Mage_Core_Exception
+     */
+    protected function updatePrice($object, $productId)
+    {
+        // Update Price
+        if (!property_exists($object, 'PricebookEntries') || $object->PricebookEntries->totalSize < 1) {
+            return;
+        }
+
+        $storeIds = array_keys(Mage::app()->getStores());
+        if (Mage::getStoreConfig(Mage_Catalog_Helper_Data::XML_PATH_PRICE_SCOPE) == Mage_Catalog_Helper_Data::PRICE_SCOPE_GLOBAL) {
+            $storeIds = array(Mage::app()->getWebsite(true)->getDefaultStore()->getId());
+        }
+
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        foreach (array_merge($storeIds, array((int)Mage::app()->getStore('admin')->getId())) as $storeId) {
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+
+            $currencyBase = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE)
+                : null;
+
+            $pricebookId = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::PRODUCT_PRICEBOOK);
+
+            $price = null;
+            foreach ($object->PricebookEntries->records as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
+                }
+
+                if ($_price->CurrencyIsoCode != $currencyBase) {
+                    continue;
+                }
+
+                $price = $_price->UnitPrice;
+                break;
+            }
+
+            if (!empty($price)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('price' => (float)$price), $storeId);
+            }
+
+            $currencyAllow = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? explode(',', Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_ALLOW))
+                : array(null);
+
+            $priceBook = array();
+            foreach ($object->PricebookEntries->records as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
+                }
+
+                if (!in_array($_price->CurrencyIsoCode, array_merge($currencyAllow, array($currencyBase)))) {
+                    continue;
+                }
+
+                $priceBook[] = implode(':', array_filter(array($_price->CurrencyIsoCode, $_price->Id)));
+            }
+
+            if (!empty($priceBook)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('salesforce_pricebook_id' => implode("\n", $priceBook)), $storeId);
+            }
+
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
     }
 

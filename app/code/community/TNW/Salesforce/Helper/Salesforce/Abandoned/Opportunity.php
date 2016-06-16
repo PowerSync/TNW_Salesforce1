@@ -471,10 +471,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
     /**
      * @param $_entityNumber
-     * @param $_websites
      * @return bool
      */
-    protected function _checkSyncCustomer($_entityNumber, $_websites)
+    protected function _checkSyncCustomer($_entityNumber)
     {
         $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
         if (false === $_entityId) {
@@ -483,7 +482,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
         $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
-        $websiteSfId = $_websites[$customerId];
+        $websiteSfId = $this->_websites[$customerId];
 
         $syncCustomer = false;
 
@@ -673,24 +672,38 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         /** @var Mage_Sales_Model_Quote_Item $_item */
         foreach ($parentEntity->getAllVisibleItems() as $_item) {
-            $_items[] = $_item;
-
             if ($_item->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                $_items[] = $_item;
                 continue;
             }
 
-            if (!Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-                continue;
-            }
+            switch (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                case 0:
+                    $_items[] = $_item;
+                    break;
 
-            foreach ($_item->getChildren() as $_childItem) {
-                $_childItem->setRowTotalInclTax(null)
-                    ->setRowTotal(null)
-                    ->setDiscountAmount(null)
-                    ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
-                        . $_item->getSku());
+                case 1:
+                    $_items[] = $_item;
 
-                $_items[] = $_childItem;
+                    foreach ($_item->getChildren() as $_childItem) {
+                        $_childItem->setRowTotalInclTax(null)
+                            ->setRowTotal(null)
+                            ->setDiscountAmount(null)
+                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                                . $_item->getSku());
+
+                        $_items[] = $_childItem;
+                    }
+                    break;
+
+                case 2:
+                    foreach ($_item->getChildren() as $_childItem) {
+                        $_childItem->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                            . $_item->getSku());
+
+                        $_items[] = $_childItem;
+                    }
+                    break;
             }
         }
 

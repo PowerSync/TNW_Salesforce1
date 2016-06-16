@@ -646,36 +646,76 @@ class TNW_Salesforce_Helper_Salesforce_Invoice extends TNW_Salesforce_Helper_Sal
                 continue;
             }
 
-            $items[] =  $item;
-
             if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                $items[] =  $item;
                 continue;
             }
 
-            /** @var Mage_Sales_Model_Order_Item $_orderItem */
-            foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
-                $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+            switch (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                case 0:
+                    //Add parent
+                    $_items[] = $item;
 
-                $_item   = $_itemCollection->getItemById($_itemId);
-                if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
-                    continue;
-                }
+                    /** @var Mage_Sales_Model_Order_Item $_orderItem */
+                    foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
+                        $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
-                    ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
-                    ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+                        $_item   = $_itemCollection->getItemById($_itemId);
+                        if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
+                            continue;
+                        }
 
-                if (!Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-                    continue;
-                }
+                        $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                            ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
+                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+                    }
+                    break;
 
-                $_item->setRowTotalInclTax(null)
-                    ->setRowTotal(null)
-                    ->setDiscountAmount(null)
-                    ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
-                        . $item->getSku());
+                case 1:
+                    //Add parent
+                    $_items[] = $item;
 
-                $items[] = $_item;
+                    //Add children
+                    /** @var Mage_Sales_Model_Order_Item $_orderItem */
+                    foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
+                        $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+
+                        $_item   = $_itemCollection->getItemById($_itemId);
+                        if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
+                            continue;
+                        }
+
+                        $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                            ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
+                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+
+                        $_item->setRowTotalInclTax(null)
+                            ->setRowTotal(null)
+                            ->setDiscountAmount(null)
+                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                                . $item->getSku());
+
+                        $items[] = $_item;
+                    }
+                    break;
+
+                case 2:
+                    //Add children
+                    /** @var Mage_Sales_Model_Order_Item $_orderItem */
+                    foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
+                        $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+
+                        $_item   = $_itemCollection->getItemById($_itemId);
+                        if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
+                            continue;
+                        }
+
+                        $_item->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                            . $item->getSku());
+
+                        $items[] = $_item;
+                    }
+                    break;
             }
         }
 

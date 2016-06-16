@@ -212,24 +212,38 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         /** @var Mage_Sales_Model_Order_Item $_item */
         foreach ($parentEntity->getAllVisibleItems() as $_item) {
-            $_items[] = $_item;
-
             if ($_item->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                $_items[] = $_item;
                 continue;
             }
 
-            if (!Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
-                continue;
-            }
+            switch (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
+                case 0:
+                    $_items[] = $_item;
+                    break;
 
-            foreach ($_item->getChildrenItems() as $_childItem) {
-                $_childItem->setRowTotalInclTax(null)
-                    ->setRowTotal(null)
-                    ->setDiscountAmount(null)
-                    ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
-                        . $_item->getSku());
+                case 1:
+                    $_items[] = $_item;
 
-                $_items[] = $_childItem;
+                    foreach ($_item->getChildrenItems() as $_childItem) {
+                        $_childItem->setRowTotalInclTax(null)
+                            ->setRowTotal(null)
+                            ->setDiscountAmount(null)
+                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                                . $_item->getSku());
+
+                        $_items[] = $_childItem;
+                    }
+                    break;
+
+                case 2:
+                    foreach ($_item->getChildrenItems() as $_childItem) {
+                        $_childItem
+                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER . $_item->getSku());
+
+                        $_items[] = $_childItem;
+                    }
+                    break;
             }
         }
 
