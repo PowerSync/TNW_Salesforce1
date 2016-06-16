@@ -39,11 +39,13 @@ class TNW_Salesforce_Model_Mysql4_Mapping_Collection extends Mage_Core_Model_Mys
      */
     public function addFilterTypeMS($update)
     {
+        $types = array(
+            TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+            $update ? TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE : TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT
+        );
+
         return $this->addFieldToFilter('magento_sf_enable', 1)
-            ->addFieldToFilter('magento_sf_type', array(
-                TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                $update ? TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE : TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT
-            ));
+            ->addFieldToFilter('magento_sf_type', array('in' => $types));
     }
 
     /**
@@ -52,11 +54,21 @@ class TNW_Salesforce_Model_Mysql4_Mapping_Collection extends Mage_Core_Model_Mys
      */
     public function addFilterTypeSM($update)
     {
+        $types = array(
+            TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
+            $update ? TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE : TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT
+        );
+
         return $this->addFieldToFilter('sf_magento_enable', 1)
-            ->addFieldToFilter('sf_magento_type', array(
-                TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT,
-                $update ? TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE : TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT
-            ));
+            ->addFieldToFilter('sf_magento_type', array('in' => $types));
+    }
+
+    /**
+     * @return Varien_Data_Collection_Db
+     */
+    public function firstSystem()
+    {
+        return $this->setOrder('is_system', self::SORT_ORDER_DESC);
     }
 
     protected function _afterLoad()

@@ -608,8 +608,8 @@
                         <single_account_select translate="label">
                             <label>Single Account</label>
                             <frontend_type>select</frontend_type>
-                            <frontend_class>chosen-select</frontend_class>
-                            <source_model>tnw_salesforce/config_account_conjoint</source_model>
+                            <frontend_class>tnw-ajax-find-select</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_account</frontend_model>
                             <sort_order>23</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
