@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      * @param $_entity Mage_Customer_Model_Customer
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attributeCode) {
@@ -22,28 +22,26 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                 return $this->convertSfRecordType($_entity);
         }
 
-        return parent::getValue($_entity);
+        return parent::_prepareValue($_entity);
     }
 
     /**
-     * @param Mage_Customer_Model_Customer $entity
-     * @param string $value
-     * @return string
+     * @param $_entity Mage_Customer_Model_Customer
+     * @param $value
+     * @return mixed
      */
-    public function setValue($entity, $value)
+    protected function _prepareReverseValue($_entity, $value)
     {
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attributeCode) {
             case 'website_id':
-                $value = $this->reverseConvertWebsite($value);
-                break;
+                return $this->reverseConvertWebsite($value);
 
             case 'website_ids':
-                $value = $this->reverseConvertWebsiteIds($value);
-                break;
+                return $this->reverseConvertWebsiteIds($value);
         }
 
-        parent::setValue($entity, $value);
+        return parent::_prepareReverseValue($_entity, $value);
     }
 
     /**

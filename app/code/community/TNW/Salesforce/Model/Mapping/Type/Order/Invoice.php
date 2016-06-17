@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
      * @param $_entity Mage_Sales_Model_Order_Invoice
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $attribute = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attribute) {
@@ -28,7 +28,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
                 return $this->convertSfName($_entity);
         }
 
-        return parent::getValue($_entity);
+        return parent::_prepareValue($_entity);
     }
 
     /**

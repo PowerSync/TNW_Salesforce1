@@ -11,7 +11,7 @@ class TNW_Salesforce_Model_Mapping_Type_Address extends TNW_Salesforce_Model_Map
      * @param $_entity Mage_Customer_Model_Address_Abstract
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $attribute = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attribute) {
@@ -23,7 +23,7 @@ class TNW_Salesforce_Model_Mapping_Type_Address extends TNW_Salesforce_Model_Map
                 $_value = null;
                 if (!empty($regions)) {
                     foreach ($regions as $region) {
-                        if ($region->getId() == parent::getValue($_entity)) {
+                        if ($region->getId() == parent::_prepareValue($_entity)) {
                             $_value = $region->getCode();
                         }
                     }
@@ -31,7 +31,7 @@ class TNW_Salesforce_Model_Mapping_Type_Address extends TNW_Salesforce_Model_Map
 
                 return $_value;
             case 'company':
-                $_value = parent::getValue($_entity);
+                $_value = parent::_prepareValue($_entity);
                 /**
                  * if empty - try load company name from customer data
                  */
@@ -45,7 +45,7 @@ class TNW_Salesforce_Model_Mapping_Type_Address extends TNW_Salesforce_Model_Map
 
         }
 
-        return parent::getValue($_entity);
+        return parent::_prepareValue($_entity);
     }
 
     /**
