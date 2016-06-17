@@ -28,7 +28,15 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
     protected function _prepareCollection()
     {
         /** @var Mage_Sales_Model_Resource_Order_Creditmemo_Grid_Collection $collection */
-        $collection = Mage::getResourceModel($this->_getCollectionClass());
+        $collection = Mage::getResourceModel($this->_getCollectionClass())
+            ->addFieldToSelect('increment_id')
+            ->addFieldToSelect('created_at')
+            ->addFieldToSelect('order_increment_id')
+            ->addFieldToSelect('order_created_at')
+            ->addFieldToSelect('billing_name')
+            ->addFieldToSelect('state')
+            ->addFieldToSelect('grand_total');
+
         $collection->getSelect()->join(
             array('flat_order' => Mage::helper('tnw_salesforce')->getTable('sales_flat_creditmemo')),
             'main_table.entity_id = flat_order.entity_id',
@@ -100,7 +108,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
 
         $this->addColumn('state', array(
             'header'    => Mage::helper('sales')->__('Status'),
-            'index'     => 'state',
+            'index'     => 'main_table.state',
             'type'      => 'options',
             'options'   => Mage::getModel('sales/order_creditmemo')->getStates(),
         ));
