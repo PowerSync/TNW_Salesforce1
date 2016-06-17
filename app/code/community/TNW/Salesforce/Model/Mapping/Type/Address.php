@@ -30,6 +30,10 @@ class TNW_Salesforce_Model_Mapping_Type_Address extends TNW_Salesforce_Model_Map
                 }
 
                 return $_value;
+
+            case 'country_id':
+                return $_entity->getCountryId();
+
             case 'company':
                 $_value = parent::_prepareValue($_entity);
                 /**
