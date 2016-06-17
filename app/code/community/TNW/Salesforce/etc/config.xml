@@ -200,6 +200,15 @@
                 </observers>
             </sales_order_shipment_save_commit_after>
 
+            <sales_order_creditmemo_save_commit_after>
+                <observers>
+                    <tnw_salesforce_order_creditmemo_save_after>
+                        <class>tnw_salesforce/order_creditmemo_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_order_creditmemo_save_after>
+                </observers>
+            </sales_order_creditmemo_save_commit_after>
+
             <sales_order_shipment_track_save_commit_after>
                 <observers>
                     <tnw_salesforce_order_shipment_track_save_after>
