@@ -210,7 +210,7 @@ class TNW_Salesforce_Helper_Bulk_Invoice extends TNW_Salesforce_Helper_Salesforc
             foreach ($response as $_item) {
                 $_recordItemId = $_batchKeys[$_i++];
                 $_orderId      = (string)$_batch[$_recordItemId]
-                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Invoice__c'};
+                    ->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Invoice__c'};
                 $_oid          = array_search($_orderId, $this->_cache['upserted' . $this->getManyParentEntityType()]);
 
                 //Report Transaction

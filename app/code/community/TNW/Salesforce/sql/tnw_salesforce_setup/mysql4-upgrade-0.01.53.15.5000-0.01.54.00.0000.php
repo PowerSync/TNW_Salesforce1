@@ -7,57 +7,57 @@ $installer->startSetup();
 
 $_defaultMappingStatus = array(
     'OrderInvoice' => array(
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_Street__c'      => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Billing_Street__c'      => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:street'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_City__c'        => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Billing_City__c'        => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:city'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_State__c'       => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Billing_State__c'       => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:region'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_PostalCode__c'  => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Billing_PostalCode__c'  => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:postcode'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_Country__c'     => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Billing_Country__c'     => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:country_id'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_Phone__c'     => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Billing_Phone__c'     => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:telephone'),
 
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_Street__c'     => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Shipping_Street__c'     => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:street'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_City__c'       => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Shipping_City__c'       => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:city'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_State__c'      => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Shipping_State__c'      => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:region'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_PostalCode__c' => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Shipping_PostalCode__c' => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:postcode'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_Country__c'    => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Shipping_Country__c'    => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:country_id'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_Phone__c'    => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE .'Shipping_Phone__c'    => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:telephone'),
     ),
     'OrderShipment' => array(
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_Street__c'      => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Billing_Street__c'      => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:street'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_City__c'        => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Billing_City__c'        => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:city'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_State__c'       => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Billing_State__c'       => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:region'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_PostalCode__c'  => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Billing_PostalCode__c'  => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:postcode'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_Country__c'     => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Billing_Country__c'     => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:country_id'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Billing_Phone__c'     => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Billing_Phone__c'     => array(
             'localField'=>'Billing', 'attribute'=>'customer_address:telephone'),
 
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_Street__c'     => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Shipping_Street__c'     => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:street'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_City__c'       => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Shipping_City__c'       => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:city'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_State__c'      => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Shipping_State__c'      => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:region'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_PostalCode__c' => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Shipping_PostalCode__c' => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:postcode'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_Country__c'    => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Shipping_Country__c'    => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:country_id'),
-        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT .'Shipping_Phone__c'    => array(
+        TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT .'Shipping_Phone__c'    => array(
             'localField'=>'Shipping', 'attribute'=>'customer_address:telephone'),
     ),
 );
