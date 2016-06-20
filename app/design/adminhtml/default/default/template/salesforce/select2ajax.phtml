@@ -1,0 +1,37 @@
+<?php
+/** @var Mage_Core_Block_Template $this */
+$selector = $this->hasData('selector')
+    ? $this->getData('selector')
+    : '.tnw-ajax-find-select'
+?>
+<script type="application/javascript">
+    (function($) {
+        $(document).ready(function() {
+            $("<?php echo $selector ?>").select2({
+                ajax: {
+                    url: "<?php echo $this->getData('url') ?>",
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term,
+                            page: params.page
+                        };
+                    },
+                    processResults: function (data, params) {
+                        params.page = params.page || 1;
+
+                        return {
+                            results: data.items,
+                            pagination: {
+                                more: (params.page * <?php echo $this->getData('page_size') ?>) < data.totalRecords
+                            }
+                        };
+                    },
+                    cache: true
+                },
+                minimumInputLength: 4
+            });
+        });
+    })(jQuery);
+</script>

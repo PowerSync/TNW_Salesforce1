@@ -8,8 +8,9 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
 {
     // Global configuration
     const SALESFORCE_PREFIX_PROFESSIONAL = 'tnw_mage_basic__';
-    const SALESFORCE_PREFIX_ENTERPRISE = 'tnw_mage_enterp__';
-    const SALESFORCE_PREFIX_FULFILMENT = 'tnw_fulfilment__';
+    const SALESFORCE_PREFIX_ENTERPRISE   = 'tnw_mage_enterp__';
+    const SALESFORCE_PREFIX_SHIPMENT     = 'tnw_shipment__';
+    const SALESFORCE_PREFIX_INVOICE      = 'tnw_invoice__';
 
     /**
      * Get Salesforce managed package prefix
@@ -51,54 +52,6 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     public function getDisableSyncField()
     {
         return $this->getSalesforcePrefix('enterprise') . 'disableMagentoSync__c';
-    }
-
-    /**
-     * @param bool $reloadCache
-     *
-     * @return array
-     */
-    public function getSalesforceAccounts($reloadCache = false)
-    {
-        $accounts = array();
-        $cache = Mage::app()->getCache();
-        $cacheKey = 'tnw_salesforce_accounts';
-
-        $cacheLoaded = false;
-        if (!$reloadCache) {
-            $cacheLoaded = $cache->load($cacheKey);
-        }
-
-        if ($cacheLoaded) {
-            $accounts = (array)unserialize($cacheLoaded);
-        } elseif (Mage::helper('tnw_salesforce')->isWorking()) {
-            $client = Mage::getSingleton('tnw_salesforce/connection')->getClient();
-            if ($client) {
-                $helperName = 'tnw_salesforce/bulk_customer';
-
-                $resetHelper = !Mage::registry('_helper/' . $helperName);
-
-                $manualSync = Mage::helper($helperName);
-                /**
-                 * Call reset method if it's new instance only. Fix: PCMI-471
-                 */
-                if ($resetHelper) {
-                    $manualSync->reset();
-                }
-
-                $manualSync->setSalesforceServerDomain(
-                    Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                $manualSync->setSalesforceSessionId(
-                    Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-                $accounts = (array)$manualSync->getAllAccounts();
-
-                if (Mage::app()->useCache('tnw_salesforce') && !empty($accounts)) {
-                    $cache->save(serialize($accounts), $cacheKey, array('TNW_SALESFORCE', 'TNW_SALESFORCE_ACCOUNTS'));
-                }
-            }
-        }
-
-        return $accounts;
     }
 
     /**

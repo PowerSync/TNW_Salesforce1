@@ -1,6 +1,6 @@
 <?php
 /**
- * @var $this TNW_Salesforce_Block_Adminhtml_System_Config_Form_Field_Array_Carrier
+ * @var $this TNW_Accountingseed_Block_Adminhtml_System_Config_Form_Field_Array_Carrier
  */
 $_htmlId = $this->getHtmlId() ? : '_' . uniqid();
 
@@ -22,11 +22,6 @@ $_colspan = '';
 
         </tbody>
     </table>
-    <div style="text-align:right;margin-top: 10px;">
-        <button type="button"
-                onclick="setLocation('<?php echo $this->getUrl('adminhtml/salesforce_config/reloadAccounts') ?>')"
-            ><?php echo $this->__('Refresh Accounts') ?></button>
-    </div>
 </div>
 <div id="empty<?php echo $_htmlId ?>">
     <strong><?php echo $this->__('Please make at least one shipment method active.') ?></strong>
@@ -55,46 +50,46 @@ $_colspan = '';
             if ('' == templateData) {
                 var d = new Date();
                 var templateData = {
-                <?php foreach ($this->_columns as $columnName => $column):?>
-                <?php echo $columnName ?> : '',
+                    <?php foreach ($this->_columns as $columnName => $column):?>
+                        <?php echo $columnName ?> : '',
                     <?php endforeach;?>
                     _id : '_' + d.getTime() + '_' + d.getMilliseconds()
-            };
+                };
+            }
+
+            // insert before last row
+            if ('' == insertAfterId) {
+                Element.insert(this.template.evaluate(templateData));
+            }
+            // insert after specified row
+            else {
+                Element.insert($(insertAfterId), {after: this.template.evaluate(templateData)});
+            }
+
+            // NEW CODE
+
+            // set the selected drop-down list item
+            <?php foreach ($this->_columns as $columnName => $column):?>
+            var options = $$('td.' + templateData._id + '-' + '<?php echo $columnName?>' + ' option');
+            for(var index = 0; index < options.length; ++index) {
+                var option = options[index];
+                if(option.getAttribute('value') == templateData.<?php echo $columnName?>) {
+                    option.selected = true
+                }
+            }
+            <?php endforeach;?>
+
+            // END NEW CODE
+
+            this.rowsCount += 1;
+        },
+
+        showButtonOnly : function()
+        {
+            $('grid<?php echo $_htmlId ?>').hide();
+            $('empty<?php echo $_htmlId ?>').show();
         }
-
-        // insert before last row
-        if ('' == insertAfterId) {
-        Element.insert(this.template.evaluate(templateData));
-    }
-    // insert after specified row
-    else {
-        Element.insert($(insertAfterId), {after: this.template.evaluate(templateData)});
-    }
-
-    // NEW CODE
-
-    // set the selected drop-down list item
-    <?php foreach ($this->_columns as $columnName => $column):?>
-    var options = $$('td.' + templateData._id + '-' + '<?php echo $columnName?>' + ' option');
-    for(var index = 0; index < options.length; ++index) {
-        var option = options[index];
-        if(option.getAttribute('value') == templateData.<?php echo $columnName?>) {
-            option.selected = true
-        }
-    }
-    <?php endforeach;?>
-
-    // END NEW CODE
-
-    this.rowsCount += 1;
-    },
-
-    showButtonOnly : function()
-    {
-        $('grid<?php echo $_htmlId ?>').hide();
-        $('empty<?php echo $_htmlId ?>').show();
-    }
-    }
+    };
 
     // add existing rows
     <?php
@@ -105,7 +100,31 @@ $_colspan = '';
     }
     ?>
     $$('#grid<?php echo $_htmlId ?> select').each(function (element) {
-        new Chosen(element);
+        jQuery(element).select2({
+            ajax: {
+                url: "<?php echo $this->getUrl('*/salesforce_account_matching/search') ?>",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term,
+                        page: params.page
+                    };
+                },
+                processResults: function (data, params) {
+                    params.page = params.page || 1;
+
+                    return {
+                        results: data.items,
+                        pagination: {
+                            more: (params.page * <?php echo TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE ?>) < data.totalRecords
+                        }
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 4
+        });
     });
 
     // initialize standalone button

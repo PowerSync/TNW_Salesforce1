@@ -81,6 +81,14 @@ if (!$helper->isWorking()) {
         }
     } catch (Exception $e) {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: ' . $e->getMessage());
+
+        /* Create JSON to send back to Salesforce */
+        $response->error = $e->getMessage();
+        $return = json_encode($response);
+        print($return);
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Return JSON to Salesforce: " . $return);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("========== Sync from Salesforce End ==========");
         exit;
     }
 

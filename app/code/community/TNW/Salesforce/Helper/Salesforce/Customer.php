@@ -299,7 +299,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
             $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
                 ->addObjectToFilter('Lead')
-                ->addFilterTypeMS(false);
+                ->addFilterTypeMS(false)
+                ->firstSystem();
 
             $_objectMappings = array();
             foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {
@@ -460,6 +461,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
 
+        $campaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
+        if (empty($campaignId)) {
+            return;
+        }
+
         $customers = array();
         $chunks = array_chunk($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
         foreach ($chunks as $chunk) {
@@ -480,7 +486,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
 
-        $campaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
         $this->_cache['subscriberToUpsert'] = array($campaignId => $customers);
     }
 
@@ -583,7 +588,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
         $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter($type)
-            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id);
+            ->addFilterTypeMS(property_exists($this->_obj, 'Id') && $this->_obj->Id)
+            ->firstSystem();
 
         $_objectMappings = array();
         foreach (array_unique($_mappingCollection->walk('getLocalFieldType')) as $_type) {

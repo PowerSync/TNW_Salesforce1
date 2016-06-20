@@ -39,4 +39,31 @@ if (!$installer->tableExists($tableName))
     $installer->getConnection()->createTable($table);
 }
 
+// Create Data
+$select = $installer->getConnection()->select()
+    ->from($installer->getTable('core/config_data'), 'value')
+    ->where('path LIKE \'salesforce_customer/account_catchall/domains\'')
+    ->limit(1);
+
+$conf = $installer->getConnection()
+    ->fetchOne($select);
+
+if (!empty($conf) && ($data = @unserialize($conf)) && is_array($data) && array_key_exists('account', $data) && is_array($data['account'])) {
+
+    $prepareDate = array();
+    foreach($data['account'] as $key => $accountId) {
+        if (empty($accountId)) {
+            continue;
+        }
+
+        $prepareDate[] = array(
+            'account_name' => '',
+            'account_id'   => $accountId,
+            'email_domain' => $data['domain'][$key],
+        );
+    }
+
+    $installer->getConnection()->insertMultiple($tableName, $prepareDate);
+}
+
 $installer->endSetup();
