@@ -1226,6 +1226,23 @@
                             </depends>
                         </customer_integration_opp>
 
+                        <draft_order_status translate="label">
+                            <label>Draft Order Status</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_sync_order_status</source_model>
+                            <comment><![CDATA[
+                                Connector will place order in this status to make updates.<br />
+                                <span style="color:red;">IMPORTANT:</span> Status must be for "Draft" category and NOT in "Activated" status category.
+                            ]]></comment>
+                            <sort_order>94</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </draft_order_status>
+
                         <opportunity_to_order_status translate="label">
                             <label>Converted opportunity status</label>
                             <frontend_type>select</frontend_type>
