@@ -158,10 +158,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($this->_mapProductCollection as $_mapping) {
-                if (strpos($_mapping->getLocalField(), 'Product : ') === 0) {
-                    $value = property_exists($object, $_mapping->getSfField())
-                        ? $object->{$_mapping->getSfField()} : null;
+                $value = property_exists($object, $_mapping->getSfField())
+                    ? $object->{$_mapping->getSfField()} : null;
 
+                if (strpos($_mapping->getLocalField(), 'Product : ') === 0) {
                     Mage::getSingleton('tnw_salesforce/mapping_type_product')
                         ->setMapping($_mapping)
                         ->setValue($_product, $value);
@@ -170,11 +170,13 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                         ->saveTrace('Product: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_product->getData($_mapping->getLocalFieldAttributeCode()), true));
                 } elseif (strpos($_mapping->getLocalField(), 'Product Inventory : ') === 0) {
                     // Inventory
-                    $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
-                    if (property_exists($object, $_mapping->getSfField())) {
-                        $_stock[$_magentoFieldName] = $object->{$_mapping->getSfField()};
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product Inventory: ' . $_magentoFieldName . ' = ' . $object->{$_mapping->getSfField()});
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
                     }
+
+                    $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
+                    $_stock[$_magentoFieldName] = $value;
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product Inventory: ' . $_magentoFieldName . ' = ' . $value);
                 }
             }
 
