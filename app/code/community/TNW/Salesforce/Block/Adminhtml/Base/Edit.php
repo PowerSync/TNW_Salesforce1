@@ -82,20 +82,6 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit extends Mage_Adminhtml_Block_Widg
             function saveAndContinueEdit(){
                 editForm.submit($('edit_form').action+'back/edit/');
             }
-            $('contact_map_custom').hide();
-            $$('#local_field option').each(function(o){
-            	if (o.selected && o.readAttribute('value') == 'Custom : field') {
-            		$('contact_map_custom').show();
-    			}
-    		});
-            $('local_field').observe('change',function(){
-            	$('contact_map_custom').hide();
-            	$$('#local_field option').each(function(o){
-            		if (o.selected && o.readAttribute('value') == 'Custom : field') {
-            			$('contact_map_custom').show();
-    				}
-    			});
-    		});
         ";
     }
 

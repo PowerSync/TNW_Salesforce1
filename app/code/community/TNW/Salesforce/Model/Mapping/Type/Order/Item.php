@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
      * @param $_entity Mage_Sales_Model_Order_Item
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $attribute = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attribute) {
@@ -25,7 +25,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
                 return $this->convertSfProductOptionsText($_entity);
         }
 
-        return parent::getValue($_entity);
+        return parent::_prepareValue($_entity);
     }
 
     /**
