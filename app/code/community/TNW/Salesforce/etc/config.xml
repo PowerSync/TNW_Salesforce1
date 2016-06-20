@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.05.0004</version>
+            <version>0.01.54.08.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -679,6 +679,7 @@
             </opportunity_cart>
             <shopping_cart>
                 <use_product_campaign_assignment>0</use_product_campaign_assignment>
+                <orders_bundle_item_sync>0</orders_bundle_item_sync>
             </shopping_cart>
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>

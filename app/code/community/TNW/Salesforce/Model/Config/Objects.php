@@ -15,10 +15,10 @@ class TNW_Salesforce_Model_Config_Objects
     const OPPORTUNITY_ITEM_OBJECT   =   'OpportunityLineItem';
     const ORDER_OBJECT              =   'Order';
     const ORDER_ITEM_OBJECT         =   'OrderItem';
-    const ORDER_INVOICE_OBJECT      =   'tnw_fulfilment__OrderInvoice__c';
-    const ORDER_INVOICE_ITEM_OBJECT =   'tnw_fulfilment__OrderInvoiceItem__c';
-    const ORDER_SHIPMENT_OBJECT     =   'tnw_fulfilment__OrderShipment__c';
-    const ORDER_SHIPMENT_ITEM_OBJECT=   'tnw_fulfilment__OrderShipmentItem__c';
+    const ORDER_INVOICE_OBJECT      =   'tnw_invoice__Invoice__c';
+    const ORDER_INVOICE_ITEM_OBJECT =   'tnw_invoice__InvoiceItem__c';
+    const ORDER_SHIPMENT_OBJECT     =   'tnw_shipment__Shipment__c';
+    const ORDER_SHIPMENT_ITEM_OBJECT=   'tnw_shipment__ShipmentItem__c';
     const PRODUCT_OBJECT            =   'Product';
     const INVOICE_OBJECT            =   'Invoice';
     const INVOICE_ITEM_OBJECT       =   'InvoiceItem';
