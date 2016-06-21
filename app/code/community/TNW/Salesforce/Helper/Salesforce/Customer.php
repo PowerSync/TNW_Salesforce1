@@ -680,34 +680,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
             }
 
-            // Check if Account Name is empty
-            $_issetName = property_exists($this->_obj, 'Name');
-            if (
-                !$this->_isPerson
-                && (($_issetName && empty($this->_obj->Name)) || !$_issetName)
-            ) {
-                if ($_customer->getData('company')) {
-                    $this->_obj->Name = $_customer->getData('company');
-                } else if ($_customer->getFirstname() || $_customer->getLastname()) {
-                    $this->_obj->Name = $_customer->getName();
-                }
-            }
-
-            /**
-             * remove account name if renaming not allowed
-             */
-            if (
-                !$this->_isPerson
-                && !Mage::helper('tnw_salesforce')->canRenameAccount()
-                && property_exists($this->_obj, 'Id')
-                && $this->_obj->Id
-            ) {
-                if (property_exists($this->_obj, 'Name')) {
-                    // Remove Name since Account exists in Salesforce and we should not rename it
-                    unset($this->_obj->Name);
-                }
-            }
-
             //Unset Record Type if blank
             if (property_exists($this->_obj, 'RecordTypeId') && empty($this->_obj->RecordTypeId)) {
                 unset($this->_obj->RecordTypeId);
