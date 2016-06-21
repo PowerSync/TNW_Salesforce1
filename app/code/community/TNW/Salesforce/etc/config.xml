@@ -658,6 +658,7 @@
                 <notes_synchronize>1</notes_synchronize>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
+                <draft_order_status>Draft</draft_order_status>
             </general>
             <currency>
                 <multi_currency>0</multi_currency>
