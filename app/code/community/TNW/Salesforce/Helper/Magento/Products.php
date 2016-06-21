@@ -158,10 +158,10 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
             /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($this->_mapProductCollection as $_mapping) {
-                if (strpos($_mapping->getLocalField(), 'Product : ') === 0) {
-                    $value = property_exists($object, $_mapping->getSfField())
-                        ? $object->{$_mapping->getSfField()} : null;
+                $value = property_exists($object, $_mapping->getSfField())
+                    ? $object->{$_mapping->getSfField()} : null;
 
+                if (strpos($_mapping->getLocalField(), 'Product : ') === 0) {
                     Mage::getSingleton('tnw_salesforce/mapping_type_product')
                         ->setMapping($_mapping)
                         ->setValue($_product, $value);
@@ -170,11 +170,13 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                         ->saveTrace('Product: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_product->getData($_mapping->getLocalFieldAttributeCode()), true));
                 } elseif (strpos($_mapping->getLocalField(), 'Product Inventory : ') === 0) {
                     // Inventory
-                    $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
-                    if (property_exists($object, $_mapping->getSfField())) {
-                        $_stock[$_magentoFieldName] = $object->{$_mapping->getSfField()};
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product Inventory: ' . $_magentoFieldName . ' = ' . $object->{$_mapping->getSfField()});
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
                     }
+
+                    $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
+                    $_stock[$_magentoFieldName] = $value;
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product Inventory: ' . $_magentoFieldName . ' = ' . $value);
                 }
             }
 
@@ -207,6 +209,9 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             // Save Product
             $_product->save();
 
+            // Update Price
+            $this->updatePrice($object, $_product->getId());
+
             if ($_flag) {
                 Mage::getSingleton('core/session')->setFromSalesForce(false);
             }
@@ -219,6 +224,94 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: " . $e->getMessage());
             unset($e);
             return false;
+        }
+    }
+
+    /**
+     * @param $object stdClass
+     * @param $productId
+     * @throws Mage_Core_Exception
+     */
+    protected function updatePrice($object, $productId)
+    {
+        // Update Price
+        if (!property_exists($object, 'PricebookEntries') || $object->PricebookEntries->totalSize < 1) {
+            return;
+        }
+
+        $storeIds = array_keys(Mage::app()->getStores());
+        if (Mage::getStoreConfig(Mage_Catalog_Helper_Data::XML_PATH_PRICE_SCOPE) == Mage_Catalog_Helper_Data::PRICE_SCOPE_GLOBAL) {
+            $storeIds = array(Mage::app()->getWebsite(true)->getDefaultStore()->getId());
+        }
+
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        foreach (array_merge($storeIds, array((int)Mage::app()->getStore('admin')->getId())) as $storeId) {
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+
+            $currencyBase = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE)
+                : null;
+
+            $pricebookId = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::PRODUCT_PRICEBOOK);
+
+            $price = null;
+            foreach ($object->PricebookEntries->records as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
+                }
+
+                if ($_price->CurrencyIsoCode != $currencyBase) {
+                    continue;
+                }
+
+                $price = $_price->UnitPrice;
+                break;
+            }
+
+            if (!empty($price)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('price' => (float)$price), $storeId);
+            }
+
+            $currencyAllow = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? explode(',', Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_ALLOW))
+                : array(null);
+
+            $priceBook = array();
+            foreach ($object->PricebookEntries->records as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
+                }
+
+                if (!in_array($_price->CurrencyIsoCode, array_merge($currencyAllow, array($currencyBase)))) {
+                    continue;
+                }
+
+                $priceBook[] = implode(':', array_filter(array($_price->CurrencyIsoCode, $_price->Id)));
+            }
+
+            if (!empty($priceBook)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('salesforce_pricebook_id' => implode("\n", $priceBook)), $storeId);
+            }
+
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
     }
 
