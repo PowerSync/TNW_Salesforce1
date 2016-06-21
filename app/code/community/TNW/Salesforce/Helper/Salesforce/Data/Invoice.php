@@ -20,8 +20,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helpe
             $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
             $_fields    = array(
                 'Id', $_magentoId,
-                sprintf('(SELECT Id, Name, %s, %s, %s FROM %s)',
+                sprintf('(SELECT Id, Name, %s, %s, %s, %s FROM %s)',
                     TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c',
+                    TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c',
                     TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Product_Code__c',
                     TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Quantity__c',
                     $oiiTable

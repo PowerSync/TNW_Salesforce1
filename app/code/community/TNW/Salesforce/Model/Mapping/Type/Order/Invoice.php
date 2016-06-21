@@ -58,8 +58,8 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
         $lines[] = 'SKU, Qty, Name, Price, Tax, Subtotal, Net Total';
         $lines[] = $delimiter;
 
-        /** @var TNW_Salesforce_Helper_Salesforce_Invoice $_helperInvoice */
-        $_helperInvoice = Mage::helper('tnw_salesforce/salesforce_invoice');
+        /** @var TNW_Salesforce_Helper_Salesforce_Order_Invoice $_helperInvoice */
+        $_helperInvoice = Mage::helper('tnw_salesforce/salesforce_order_invoice');
 
         /** @var Mage_Sales_Model_Order_Invoice_Item $item */
         foreach ($_helperInvoice->getItems($_entity) as $itemId => $item) {
