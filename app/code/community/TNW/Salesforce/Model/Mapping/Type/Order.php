@@ -178,8 +178,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
     {
         if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
             $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_order_status');
-            return ($orderStatus)
-                ? $orderStatus : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+            return ($orderStatus) ? $orderStatus : Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
         }
         else {
             $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_opportunity_status_code');

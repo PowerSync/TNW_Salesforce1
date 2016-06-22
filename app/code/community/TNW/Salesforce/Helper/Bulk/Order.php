@@ -331,7 +331,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                             && array_key_exists($_oid, $this->_cache['ordersToUpsert'])
                             && property_exists($this->_cache['ordersToUpsert'][$_oid], 'Status')
                         ? $this->_cache['ordersToUpsert'][$_oid]->Status
-                        : TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+                        : Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
 
                     $_orderStatus = is_array( $this->_cache['orderLookup'])
                             && array_key_exists($_oid, $this->_cache['orderLookup'])
