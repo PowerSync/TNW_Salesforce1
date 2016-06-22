@@ -57,6 +57,15 @@ class TNW_Salesforce_Model_Api_Client
             }
         }
 
+        while (!$response->done) {
+            $response = $this->getClient()->queryMore($response->queryLocator);
+            if (isset($response->records) && !empty($response->records)) {
+                foreach ($response->records as $_row) {
+                    $result[] = (array)$_row;
+                }
+            }
+        }
+
         return $result;
     }
 
