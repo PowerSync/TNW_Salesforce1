@@ -49,6 +49,12 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         $_sOrderId    = (property_exists($object, $_sOrderIdKey) && $object->$_sOrderIdKey)
             ? $object->$_sOrderIdKey : null;
 
+        if (empty($_sOrderId)) {
+            $_sOpportunityIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . "Opportunity__c";
+            $_sOrderId    = (property_exists($object, $_sOpportunityIdKey) && $object->$_sOpportunityIdKey)
+                ? $object->$_sOpportunityIdKey : null;
+        }
+
         if (!$_sOrderId) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError("ERROR Object \"tnw_invoice__Invoice__c\" lost contact with the object \"Order\"");
@@ -104,14 +110,23 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
 
             $_iItemQuantityKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Quantity__c';
             $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c';
+            $_iItemOpportunityItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c';
 
             $savedQtys = array();
             foreach ($object->$_invoiceItemKey->records as $record) {
-                if (!property_exists($record, $_iItemOrderItemKey)) {
+                $_sItemId    = (property_exists($record, $_iItemOrderItemKey) && $record->$_iItemOrderItemKey)
+                    ? $record->$_iItemOrderItemKey : null;
+
+                if (empty($_sItemId)) {
+                    $_sItemId    = (property_exists($record, $_iItemOpportunityItemKey) && $record->$_iItemOpportunityItemKey)
+                        ? $record->$_iItemOpportunityItemKey : null;
+                }
+
+                if (empty($_sItemId)) {
                     continue;
                 }
 
-                $orderItemId = array_search($record->$_iItemOrderItemKey, $hasSalesforceId);
+                $orderItemId = array_search($_sItemId, $hasSalesforceId);
                 if (false === $orderItemId) {
                     continue;
                 }
@@ -178,12 +193,13 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
         $updateFieldsLog = array();
         /** @var $mapping TNW_Salesforce_Model_Mapping */
         foreach ($mappings as $mapping) {
-            //skip if cannot find field in object
-            if (!isset($object->{$mapping->getSfField()})) {
-                continue;
+            $newValue = property_exists($object, $mapping->getSfField())
+                ? $object->{$mapping->getSfField()} : null;
+
+            if (empty($newValue)) {
+                $newValue = $mapping->getDefaultValue();
             }
 
-            $newValue   = $object->{$mapping->getSfField()};
             $entityName = $mapping->getLocalFieldType();
             $field      = $mapping->getLocalFieldAttributeCode();
 
@@ -282,14 +298,14 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
                     continue;
                 }
 
-                //skip if cannot find field in object
-                if (!isset($record->{$mapping->getSfField()})) {
-                    continue;
+                $newValue = property_exists($record, $mapping->getSfField())
+                    ? $record->{$mapping->getSfField()} : null;
+
+                if (empty($newValue)) {
+                    $newValue = $mapping->getDefaultValue();
                 }
 
-                $newValue   = $record->{$mapping->getSfField()};
-                $field      = $mapping->getLocalFieldAttributeCode();
-
+                $field = $mapping->getLocalFieldAttributeCode();
                 if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
                     $entity->setData($field, $newValue);
                     $this->addEntityToSave(sprintf('Billing Item %s', $entity->getId()), $entity);

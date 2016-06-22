@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Custom extends TNW_Salesforce_Model_Mapp
      * @param $_entity
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $store = Mage::app()->getStore($_entity);
         switch ($this->_mapping->getLocalFieldAttributeCode()) {

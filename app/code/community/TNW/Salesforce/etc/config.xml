@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.08.0000</version>
+            <version>0.01.54.09.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -294,7 +294,7 @@
                 <observers>
                     <tnw_salesforce_notes_observer>
                         <class>tnw_salesforce/sale_notes_observer</class>
-                        <method>notesPush</method>
+                        <method>baseNotesPush</method>
                     </tnw_salesforce_notes_observer>
                 </observers>
             </tnw_salesforce_order_comments_save_after>
@@ -633,6 +633,7 @@
                 <customer_integration>0</customer_integration>
                 <lead_source>Web</lead_source>
                 <use_lead_source_filter>0</use_lead_source_filter>
+                <email_notification>0</email_notification>
             </lead_config>
             <contactus>
                 <customer_form_enable>0</customer_form_enable>
@@ -658,6 +659,7 @@
                 <notes_synchronize>1</notes_synchronize>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
+                <draft_order_status>Draft</draft_order_status>
             </general>
             <currency>
                 <multi_currency>0</multi_currency>

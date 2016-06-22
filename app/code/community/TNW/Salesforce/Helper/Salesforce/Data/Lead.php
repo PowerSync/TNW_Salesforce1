@@ -355,7 +355,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                 foreach ($leadsToConvertChunk as $_key => $_object) {
                     foreach ($_object as $key => $value) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveTrace("(" . $_key . ") Lead Conversion: " . $key . " = " . var_export($value, true) . "");
                     }
                 }
 
@@ -424,9 +425,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
         $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
 
-        $leadConvert->doNotCreateOpportunity = 'true';
-        $leadConvert->overwriteLeadSource = 'false';
-        $leadConvert->sendNotificationEmail = 'false';
+        $leadConvert->doNotCreateOpportunity = true;
+        $leadConvert->overwriteLeadSource = false;
+        $leadConvert->sendNotificationEmail = Mage::helper('tnw_salesforce/config_customer')
+            ->isLeadEmailNotification();
 
         $userHelper = Mage::helper('tnw_salesforce/salesforce_data_user');
 

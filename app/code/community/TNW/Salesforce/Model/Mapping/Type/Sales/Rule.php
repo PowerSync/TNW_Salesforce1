@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Sales_Rule extends TNW_Salesforce_Model_
      * @param $_entity Mage_Sales_Model_Quote
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $attribute = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attribute) {
@@ -16,7 +16,7 @@ class TNW_Salesforce_Model_Mapping_Type_Sales_Rule extends TNW_Salesforce_Model_
                 return $this->convertNumber($_entity);
         }
 
-        return parent::getValue($_entity);
+        return parent::_prepareValue($_entity);
     }
 
     /**
