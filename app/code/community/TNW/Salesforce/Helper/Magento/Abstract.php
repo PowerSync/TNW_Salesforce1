@@ -109,7 +109,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     }
 
     /**
-     * @param null $object
+     * @param stdClass $object
      * @return mixed
      */
     abstract public function syncFromSalesforce($object = null);
