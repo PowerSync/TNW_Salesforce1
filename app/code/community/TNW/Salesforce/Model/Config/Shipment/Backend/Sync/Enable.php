@@ -22,7 +22,7 @@ class TNW_Salesforce_Model_Config_Shipment_Backend_Sync_Enable extends Mage_Core
 
         $_orderType = $this->getData('groups/customer_opportunity/fields/order_or_opportunity/value');
         if (TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER == strtolower($_orderType)
-            && !$this->_checkFulfilmentObject()
+            && !$this->_checkShipmentObject()
         ) {
             $this->setValue(0);
             return parent::_beforeSave();
@@ -34,7 +34,7 @@ class TNW_Salesforce_Model_Config_Shipment_Backend_Sync_Enable extends Mage_Core
     /**
      * @return bool
      */
-    protected function _checkFulfilmentObject()
+    protected function _checkShipmentObject()
     {
         /** @var tnw_salesforce_model_connection $_connection */
         $_connection = Mage::getSingleton('tnw_salesforce/connection');
@@ -42,6 +42,6 @@ class TNW_Salesforce_Model_Config_Shipment_Backend_Sync_Enable extends Mage_Core
             return false;
         }
 
-        return $_connection->checkFulfilmentPackage();
+        return $_connection->checkShipmentPackage();
     }
 }

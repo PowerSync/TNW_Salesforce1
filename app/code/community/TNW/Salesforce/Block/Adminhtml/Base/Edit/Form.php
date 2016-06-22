@@ -125,18 +125,12 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
         $_isSystem = isset($formData['is_system'])
             ? (bool)$formData['is_system'] : false;
 
-        if (isset($formData['default_value']) && $formData['default_value']) {
-            $locAttr = explode(" : ", $formData['local_field']);
-            $formData['default_code'] = end($locAttr);
-            array_pop($locAttr);
-            array_push($locAttr, "field");
-            $formData['local_field'] = join(" : ", $locAttr);
-            Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))->setData($formData);
-        }
-
         $sfFields = array();
-        $helper = Mage::helper('tnw_salesforce/salesforce_data');
-        foreach ($helper->getAllFields($this->getSfEntity(true)) as $key => $field) {
+        $allFields = Mage::helper('tnw_salesforce/salesforce_data')
+            ->getAllFields($this->getSfEntity(true));
+
+        $allFields = !empty($allFields) ? $allFields : array();
+        foreach ($allFields as $key => $field) {
             if ($this->_hideField($key)) {
                 continue;
             }
@@ -172,14 +166,25 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'disabled' => $_isSystem
         ));
 
-        $fieldset->addField('local_field', 'select', array(
+        $localField = $fieldset->addField('local_field', 'select', array(
             'label' => $this->__('Local Name'),
             'class' => 'required-entry chosen-select',
             'note' => $this->__('Choose Magento field you wish to map to Salesforce API.'),
             'style' => 'width:400px',
             'name' => 'local_field',
             'values' => Mage::helper('tnw_salesforce/magento')->getMagentoAttributes($this->getTypeAttribute()),
-            'disabled' => $_isSystem
+        ));
+
+        $defaultCode = $fieldset->addField('default_code', 'text', array(
+            'label' => $this->__('Custom Code'),
+            'note' => $this->__('Unique attribute code.'),
+            'name' => 'default_code',
+        ));
+
+        $fieldset->addField('default_value', 'text', array(
+            'label' => $this->__('Default Value'),
+            'note' => $this->__('Value to be used when Object is created'),
+            'name' => 'default_value',
         ));
 
         /* Magento > SF */
@@ -228,25 +233,6 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
                 . 'Available for non-system mapping only.'),
         ));
 
-        /* Custom Value */
-        $fieldset = $form->addFieldset('contact_map_custom', array('legend' => $this->__('Custom Mapping')));
-
-        $fieldset->addField('default_code', 'text', array(
-            'label' => $this->__('Attribute Code'),
-            'note' => $this->__('Unique attribute code.'),
-            'style' => 'width:400px',
-            'name' => 'default_code',
-            'disabled' => $_isSystem
-        ));
-
-        $fieldset->addField('default_value', 'text', array(
-            'label' => $this->__('Attribute Value'),
-            'note' => $this->__('Value to be used when Object is created'),
-            'style' => 'width:400px',
-            'name' => 'default_value',
-            'disabled' => $_isSystem
-        ));
-
         /** @var mage_adminhtml_block_widget_form_element_dependence $_formElementDependence */
         $_formElementDependence = $this->getLayout()
             ->createBlock('adminhtml/widget_form_element_dependence');
@@ -260,6 +246,11 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             ->addFieldMap($_sfMagentoEnable->getId(), 'mg_enable')
             ->addFieldMap($_sfMagentoType->getId(), 'mg_type')
             ->addFieldDependence('mg_type', 'mg_enable', '1');
+
+        $_formElementDependence
+            ->addFieldMap($localField->getId(), 'local_field')
+            ->addFieldMap($defaultCode->getId(), 'custom_code')
+            ->addFieldDependence('custom_code', 'local_field', 'Custom : field');
 
         /*$_formElementDependence
             ->addConfigOptions(array('can_edit_price'=> false, 'levels_up'=> 1))*/;

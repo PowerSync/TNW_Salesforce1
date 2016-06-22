@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      * @param $_entity Mage_Customer_Model_Customer
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attributeCode) {
@@ -22,29 +22,26 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                 return $this->convertSfRecordType($_entity);
         }
 
-        /** @var mage_customer_model_resource_customer $_resource */
-        $_resource = Mage::getResourceSingleton('customer/customer');
-        $attribute = $_resource->getAttribute($attributeCode);
-        if ($attribute)
-        {
-            if(!$_entity->hasData($attributeCode)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('Attribute customer "%s" is missing. Customer email: "%s"', $attributeCode, $_entity->getEmail()));
-            }
+        return parent::_prepareValue($_entity);
+    }
 
-            $_value = $_entity->getData($attributeCode);
-            switch($attribute->getFrontend()->getInputType())
-            {
-                case 'select':
-                case 'multiselect':
-                    return $attribute->getSource()->getOptionText($_value);
+    /**
+     * @param $_entity Mage_Customer_Model_Customer
+     * @param $value
+     * @return mixed
+     */
+    protected function _prepareReverseValue($_entity, $value)
+    {
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        switch ($attributeCode) {
+            case 'website_id':
+                return $this->reverseConvertWebsite($value);
 
-                default:
-                    return $_value;
-            }
+            case 'website_ids':
+                return $this->reverseConvertWebsiteIds($value);
         }
 
-        return parent::getValue($_entity);
+        return parent::_prepareReverseValue($_entity, $value);
     }
 
     /**
@@ -59,6 +56,33 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
             ->getWebsite($_entity->getWebsiteId());
 
         return $websiteHelper->getWebsiteSfId($_website);
+    }
+
+    /**
+     * @param $value
+     * @return mixed|null
+     */
+    public function reverseConvertWebsite($value)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::app()->getWebsites(true) as $website) {
+            if ($website->getData('salesforce_id') !== $value) {
+                continue;
+            }
+
+            return $website->getId();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $value
+     * @return array
+     */
+    public function reverseConvertWebsiteIds($value)
+    {
+        return explode(',', $value);
     }
 
     /**

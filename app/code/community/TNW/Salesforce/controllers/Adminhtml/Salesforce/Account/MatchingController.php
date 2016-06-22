@@ -183,15 +183,9 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
             return;
         }
 
-        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-        $collection = Mage::getModel('tnw_salesforce_api_entity/account')->getCollection();
         try {
-            $data['account_name'] = '';
-            $toOptionHash = $collection->setFullIdMode(true)->toOptionHashCustom();
-            if ($toOptionHash[$data['account_id']]) {
-                $data['account_name'] = $toOptionHash[$data['account_id']];
-            }
-
+            $data['account_name'] = Mage::getModel('tnw_salesforce_api_entity/account')
+                ->load($data['account_id'])->getData('Name');
         } catch(Exception $e) {}
 
         /** @var TNW_Salesforce_Model_Account_Matching $model */
@@ -299,6 +293,54 @@ class TNW_Salesforce_Adminhtml_Salesforce_Account_MatchingController extends Mag
         }
 
         $this->_redirect('*/*/');
+    }
+
+    public function searchAction()
+    {
+        $query = $this->getRequest()->getQuery('q');
+        if (empty($query)) {
+            $this->_sendJson(array());
+            return;
+        }
+
+        $curPage = $this->getRequest()->getQuery('page', 1);
+
+        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
+        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
+            ->addFieldToFilter('Name', array('like' => "%$query%"))
+            ->setPageSize(TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE)
+            ->setCurPage($curPage);
+
+        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $collection->getSelect()
+                ->where('IsPersonAccount = false');
+        }
+
+        $result = array();
+        /** @var TNW_Salesforce_Model_Api_Entity_Account $item */
+        foreach ($collection as $item) {
+            $result[] = array(
+                'id'    => $item->getId(),
+                'text'  => $item->getData('Name'),
+            );
+        }
+
+        $this->_sendJson(array(
+            'totalRecords' => $collection->getSize(),
+            'items' => $result
+        ));
+        return;
+    }
+
+    /**
+     * @param $json
+     */
+    private function _sendJson($json)
+    {
+        $jsonData = Zend_Json::encode($json);
+        $this->getResponse()
+            ->setHeader('Content-type', 'application/json')
+            ->setBody($jsonData);
     }
 
     /**

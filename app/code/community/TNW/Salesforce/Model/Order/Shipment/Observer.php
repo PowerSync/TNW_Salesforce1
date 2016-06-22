@@ -109,8 +109,8 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
 
         if ($entity->getSalesforceId()) {
             // Process Notes
-            /** @var TNW_Salesforce_Helper_Salesforce_Shipment $syncHelper */
-            $syncHelper = Mage::helper('tnw_salesforce/salesforce_shipment');
+            /** @var TNW_Salesforce_Helper_Salesforce_Order_Shipment $syncHelper */
+            $syncHelper = Mage::helper('tnw_salesforce/salesforce_order_shipment');
             $syncHelper->reset();
             $syncHelper->_cache['orderShipmentLookup'] = Mage::helper('tnw_salesforce/salesforce_data_shipment')
                 ->lookup(array($entity->getIncrementId()));
