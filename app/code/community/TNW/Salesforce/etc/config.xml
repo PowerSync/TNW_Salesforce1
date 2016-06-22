@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.10.0000</version>
+            <version>0.01.54.11.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -616,13 +616,13 @@
                     <mysql.connect_timeout>180</mysql.connect_timeout>
                     <zend.enable_gc>1</zend.enable_gc>
                 </bulk>
-                <product_batch_size>150</product_batch_size>
-                <customer_batch_size>150</customer_batch_size>
-                <website_batch_size>150</website_batch_size>
-                <order_batch_size>150</order_batch_size>
-                <abandoned_batch_size>150</abandoned_batch_size>
-                <invoice_batch_size>150</invoice_batch_size>
-                <shipment_batch_size>150</shipment_batch_size>
+                <product_batch_size>500</product_batch_size>
+                <customer_batch_size>500</customer_batch_size>
+                <website_batch_size>500</website_batch_size>
+                <order_batch_size>500</order_batch_size>
+                <abandoned_batch_size>500</abandoned_batch_size>
+                <invoice_batch_size>500</invoice_batch_size>
+                <shipment_batch_size>500</shipment_batch_size>
 
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
@@ -636,7 +636,6 @@
                 <customer_sync_enable>0</customer_sync_enable>
                 <new_customer>1</new_customer>
                 <customer_groups_all>1</customer_groups_all>
-                <account_rename>1</account_rename>
                 <contact_asignee>0</contact_asignee>
             </sync>
             <lead_config>

@@ -20,6 +20,9 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
             case 'sf_record_type':
                 return $this->convertSfRecordType($_entity);
+
+            case 'sf_company':
+                return $this->convertSfCompany($_entity);
         }
 
         return parent::_prepareValue($_entity);
@@ -126,5 +129,30 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                         : TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE
                     );
         }
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    public function convertSfCompany($_entity)
+    {
+        $company = $_entity->getData('company');
+        if (!empty($company)) {
+            return $company;
+        }
+
+        $company = $_entity->getDefaultBillingAddress()
+            ? $_entity->getDefaultBillingAddress()->getData('company') : null;
+        if (!empty($company)) {
+            return $company;
+        }
+
+        $company = $_entity->getFirstname() . ' ' . $_entity->getLastname();
+        if (!empty($company)) {
+            return $company;
+        }
+
+        return '';
     }
 }
