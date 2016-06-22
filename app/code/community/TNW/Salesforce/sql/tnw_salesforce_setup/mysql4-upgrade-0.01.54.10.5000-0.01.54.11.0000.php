@@ -57,6 +57,123 @@ $data = array(
         'sf_object'         => 'Contact',
         'sf_magento_enable' => '0',
     ),
+
+    // Lead
+    array(
+        'local_field'       => 'Customer : id',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Lead',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Customer : email',
+        'sf_field'          => 'Email',
+        'sf_object'         => 'Lead',
+        '@attribute'        => 'customer:email',
+        'sf_magento_type'   => 'insert',
+    ),
+    array(
+        'local_field'       => 'Customer : sf_company',
+        'sf_field'          => 'Company',
+        'sf_object'         => 'Lead',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Order
+    array(
+        'local_field'       => 'Order : number',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Order',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Order Invoice
+    array(
+        'local_field'       => 'Invoice : number',
+        'sf_field'          => 'tnw_invoice__Magento_ID__c',
+        'sf_object'         => 'OrderInvoice',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Order Invoice Item
+    array(
+        'local_field'       => 'Billing Item : number',
+        'sf_field'          => 'tnw_invoice__Magento_ID__c',
+        'sf_object'         => 'OrderInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Order Shipment
+    array(
+        'local_field'       => 'Shipment : number',
+        'sf_field'          => 'tnw_shipment__Magento_ID__c',
+        'sf_object'         => 'OrderShipment',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Order Shipment Item
+    array(
+        'local_field'       => 'Shipment Item : number',
+        'sf_field'          => 'tnw_shipment__Magento_ID__c',
+        'sf_object'         => 'OrderShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Opportunity
+    array(
+        'local_field'       => 'Order : number',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Opportunity',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Opportunity Invoice
+    array(
+        'local_field'       => 'Invoice : number',
+        'sf_field'          => 'tnw_invoice__Magento_ID__c',
+        'sf_object'         => 'OpportunityInvoice',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Opportunity Invoice Item
+    array(
+        'local_field'       => 'Billing Item : number',
+        'sf_field'          => 'tnw_invoice__Magento_ID__c',
+        'sf_object'         => 'OpportunityInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Opportunity Shipment
+    array(
+        'local_field'       => 'Shipment : number',
+        'sf_field'          => 'tnw_shipment__Magento_ID__c',
+        'sf_object'         => 'OpportunityShipment',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Opportunity Shipment Item
+    array(
+        'local_field'       => 'Shipment Item : number',
+        'sf_field'          => 'tnw_shipment__Magento_ID__c',
+        'sf_object'         => 'OpportunityShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Abandoned
+    array(
+        'local_field'       => 'Cart : number',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'Abandoned',
+        'sf_magento_enable' => '0',
+    ),
+
+    // CampaignSalesRule
+    array(
+        'local_field'       => 'Shopping Cart Rule : number',
+        'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
+        'sf_object'         => 'CampaignSalesRule',
+        'sf_magento_enable' => '0',
+    ),
 );
 
 $mappingTable    = $installer->getTable('tnw_salesforce/mapping');
@@ -101,10 +218,19 @@ foreach ($data as $value) {
 }
 
 $installer->getConnection()->insertOnDuplicate($mappingTable, $uoiData);
-$installer->getConnection()->select()->from($mappingTable)
+
+$query = $installer->getConnection()->select()->from($mappingTable)
     ->where('local_field = ?', 'Billing : company')
     ->where('sf_field = ?', 'Name')
     ->where('sf_object = ?', 'Account')
     ->deleteFromSelect($mappingTable);
+$installer->getConnection()->query($query);
+
+$query = $installer->getConnection()->select()->from($mappingTable)
+    ->where('local_field = ?', 'Billing : company')
+    ->where('sf_field = ?', 'Company')
+    ->where('sf_object = ?', 'Lead')
+    ->deleteFromSelect($mappingTable);
+$installer->getConnection()->query($query);
 
 $installer->endSetup();

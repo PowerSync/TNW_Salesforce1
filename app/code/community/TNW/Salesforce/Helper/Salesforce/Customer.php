@@ -612,11 +612,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         // Add to queue
         if ($type == "Lead") {
-            $_issetCompany = property_exists($this->_obj, 'Company');
-            if (!$_issetCompany || ($_issetCompany && empty($this->_obj->Company))) {
-                $this->_obj->Company = $_customer->getName();
-            }
-
             $this->_cache['leadsToUpsert'][$_upsertOn][$_id] = $this->_obj;
         }
         else if ($type == "Contact") {
