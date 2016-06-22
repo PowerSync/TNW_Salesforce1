@@ -104,4 +104,20 @@ class TNW_Salesforce_Model_Product_Observer
     {
         Mage::getSingleton('core/session')->setFromSalesForce(false);
     }
+
+    /**
+     * @param $observer
+     */
+    public function editPrepareForm($observer)
+    {
+        /** @var Varien_Data_Form_Element_Text $campaignId */
+        $campaignId = $observer->getEvent()->getForm()
+            ->getElement('salesforce_campaign_id');
+
+        if ($campaignId) {
+            /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Campaign $renderer */
+            $renderer = Mage::getSingleton('core/layout')->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_campaign');
+            $campaignId->setRenderer($renderer);
+        }
+    }
 }
