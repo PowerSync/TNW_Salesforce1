@@ -48,8 +48,8 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Shipment extends TNW_Salesforce_Mo
         $lines[] = 'SKU, Qty, Name';
         $lines[] = $delimiter;
 
-        /** @var TNW_Salesforce_Helper_Salesforce_Shipment $_helperInvoice */
-        $_helperInvoice = Mage::helper('tnw_salesforce/salesforce_shipment');
+        /** @var TNW_Salesforce_Helper_Salesforce_Order_Shipment $_helperInvoice */
+        $_helperInvoice = Mage::helper('tnw_salesforce/salesforce_order_shipment');
 
         /** @var Mage_Sales_Model_Order_Shipment_Item $item */
         foreach ($_helperInvoice->getItems($_entity) as $itemId => $item) {
