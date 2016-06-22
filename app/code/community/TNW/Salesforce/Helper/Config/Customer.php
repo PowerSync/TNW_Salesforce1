@@ -13,6 +13,7 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     const CONFIG_ACCOUNT_SELECT = 'salesforce_customer/sync/single_account_select';
     const CONFIG_OPPORTUNITY_VIEW = 'salesforce_order/customer_view/opportunity_display';
     const CONFIG_OPPORTUNITY_FILTER = 'salesforce_order/customer_view/opportunity_filter';
+    const CONFIG_LEAD_EMAIL_NOTIFICATION = 'salesforce_customer/lead_config/email_notification';
 
     // Create new customers from Salesforce
     public function allowSalesforceToCreate()
@@ -88,5 +89,13 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
             'ajax'        => true,
             'content_url' => Mage::getSingleton('core/url')->getUrl('*/*/opportunities', array('_current' => true)),
         );
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLeadEmailNotification()
+    {
+        return (bool)$this->getStoreConfig(self::CONFIG_LEAD_EMAIL_NOTIFICATION);
     }
 }
