@@ -1367,4 +1367,135 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     {
         throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
+
+    /**
+     * @param array $customerData
+     * @return Mage_Customer_Model_Customer
+     */
+    protected function _generateCustomer(array $customerData)
+    {
+        $customerData = array_merge(array(
+            'customer_id'       => null,
+            'store_id'          => null,
+            'customer_email'    => null,
+            'first_name'        => null,
+            'last_name'         => null,
+            'created_at'        => null,
+            'billing_address'   => null,
+            'shipping_address'  => null,
+        ), $customerData);
+
+        $_customer = Mage::getModel("customer/customer");
+
+        if ($customerData['customer_id']) {
+            if (Mage::helper('tnw_salesforce')->getMagentoVersion() < 1500) {
+                $sql = "SELECT website_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $customerData['customer_id'] . "'";
+                $row = Mage::helper('tnw_salesforce')->getDbConnection()->query($sql)->fetch();
+                if (!$row) {
+                    $_customer->setWebsiteId($row['website_id']);
+                }
+            }
+
+            $_customer->load($customerData['customer_id']);
+        }
+        else {
+            $_websiteId = Mage::app()->getStore($customerData['store_id'])->getWebsiteId();
+            if ($_customer->getSharingConfig()->isWebsiteScope()) {
+                $_customer->setWebsiteId($_websiteId);
+            }
+
+            $_email = strtolower($customerData['customer_email']);
+            $_customer->loadByEmail($_email);
+
+            if (!$_customer->getId()) {
+                $_customer->setGroupId(0); // NOT LOGGED IN
+                $_customer->setFirstname($customerData['first_name']);
+                $_customer->setLastname($customerData['last_name']);
+                $_customer->setEmail($_email);
+                $_customer->setStoreId($customerData['store_id']);
+                if (isset($_websiteId)) {
+                    $_customer->setWebsiteId($_websiteId);
+                }
+
+                $_customer->setCreatedAt(gmdate(DATE_ATOM, strtotime($customerData['created_at'])));
+            }
+        }
+
+        if (
+            !$_customer->getDefaultBillingAddress()
+            && is_array($customerData['billing_address'])
+        ) {
+            $_billingAddress = Mage::getModel('customer/address');
+            $_billingAddress->setCustomerId(0)
+                ->setIsDefaultBilling('1')
+                ->setSaveInAddressBook('0')
+                ->addData($customerData['billing_address']);
+            $_customer->setBillingAddress($_billingAddress);
+        }
+
+        if (
+            !$_customer->getDefaultShippingAddress()
+            && is_array($customerData['shipping_address'])
+        ) {
+            $_shippingAddress = Mage::getModel('customer/address');
+            $_shippingAddress->setCustomerId(0)
+                ->setIsDefaultShipping('1')
+                ->setSaveInAddressBook('0')
+                ->addData($customerData['shipping_address']);
+            $_customer->setShippingAddress($_shippingAddress);
+        }
+
+        $_websiteId = Mage::app()->getStore($customerData['store_id'])->getWebsiteId();
+        if ($_customer->getSharingConfig()->isWebsiteScope()) {
+            $_customer->setWebsiteId($_websiteId);
+        }
+
+        // Set Company Name
+        if (!$_customer->getData('company') && isset($customerData['billing_address']['company'])) {
+            $_customer->setData('company', $customerData['billing_address']['company']);
+        } elseif (!$_customer->getData('company') && !Mage::helper('tnw_salesforce')->usePersonAccount()) {
+            $_customer->setData('company', $_customer->getFirstname() . ' ' . $_customer->getLastname());
+        }
+
+        return $_customer;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order|Mage_Sales_Model_Quote $order
+     * @return Mage_Customer_Model_Customer
+     */
+    protected function _generateCustomerByOrder($order)
+    {
+        $customer = $this->_generateCustomer(array(
+            'customer_id'       => $order->getCustomerId(),
+            'store_id'          => $order->getStoreId(),
+            'customer_email'    => $order->getCustomerEmail(),
+            'first_name'        => $order->getBillingAddress()->getFirstname(),
+            'last_name'         => $order->getBillingAddress()->getLastname(),
+            'created_at'        => $order->getCreatedAt(),
+            'billing_address'   => $order->getBillingAddress()->getData(),
+            'shipping_address'  => $order->getShippingAddress()->getData(),
+        ));
+
+        if ($customer->getId() && !$order->getCustomerId()) {
+            $sql = '';
+            //UPDATE order to record Customer Id
+            if ($order->getResource()->getMainTable()) {
+                $sql .= "UPDATE `" . $order->getResource()->getMainTable() . "` SET customer_id = " . $customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
+            }
+
+            if ($order->getResource()->getGridTable()) {
+                $sql .= "UPDATE `" . $order->getResource()->getGridTable() . "` SET customer_id = " . $customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
+            }
+
+            if ($order->getAddressesCollection()->getMainTable()) {
+                $sql .= "UPDATE `" . $order->getAddressesCollection()->getMainTable() . "` SET customer_id = " . $customer->getId() . " WHERE parent_id = " . $order->getId() . ";";
+            }
+
+            Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Guest user found in Magento, updating order #' . $order->getId() . ' attaching cusomter ID: ' . $customer->getId());
+        }
+
+        return $customer;
+    }
 }
