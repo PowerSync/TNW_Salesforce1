@@ -5,6 +5,13 @@
 $installer = $this;
 $installer->startSetup();
 
+$renameSelect = $installer->getConnection()->select()
+    ->from($installer->getTable('core/config_data'), array('value'))
+    ->where('path = ?', 'salesforce_customer/sync/account_rename')
+    ->limit(1);
+$isRenameReadonly = $installer->getConnection()->fetchOne($renameSelect);
+$isRenameReadonly = ($isRenameReadonly === false) ? true : $isRenameReadonly;
+
 $data = array(
     // Product
     array(
@@ -40,6 +47,7 @@ $data = array(
         'local_field'       => 'Customer : sf_company',
         'sf_field'          => 'Name',
         'sf_object'         => 'Account',
+        'magento_sf_type'   => $isRenameReadonly ? 'insert' : 'upsert',
         'sf_magento_enable' => '0',
     ),
 
@@ -87,6 +95,32 @@ $data = array(
         'sf_magento_enable' => '0',
     ),
 
+    // Order Item
+    array(
+        'local_field'       => 'Order Item : unit_price',
+        'sf_field'          => 'UnitPrice',
+        'sf_object'         => 'OrderItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Order Item : qty_ordered',
+        'sf_field'          => 'Quantity',
+        'sf_object'         => 'OrderItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Order Item : sf_product_options_html',
+        'sf_field'          => 'tnw_mage_basic__Product_Options__c',
+        'sf_object'         => 'OrderItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Order Item : sf_product_options_text',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'OrderItem',
+        'sf_magento_enable' => '0',
+    ),
+
     // Order Invoice
     array(
         'local_field'       => 'Invoice : number',
@@ -96,6 +130,42 @@ $data = array(
     ),
 
     // Order Invoice Item
+    array(
+        'local_field'       => 'Product : sku',
+        'sf_field'          => 'tnw_invoice__Product_Code__c',
+        'sf_object'         => 'OrderInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Product : name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OrderInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : qty',
+        'sf_field'          => 'tnw_invoice__Quantity__c',
+        'sf_object'         => 'OrderInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : unit_price',
+        'sf_field'          => 'tnw_invoice__Total__c',
+        'sf_object'         => 'OrderInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : sf_product_options_text',
+        'sf_field'          => 'tnw_invoice__Description__c',
+        'sf_object'         => 'OrderInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : sf_product_options_html',
+        'sf_field'          => 'tnw_invoice__Product_Options__c',
+        'sf_object'         => 'OrderInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
     array(
         'local_field'       => 'Billing Item : number',
         'sf_field'          => 'tnw_invoice__Magento_ID__c',
@@ -118,12 +188,68 @@ $data = array(
         'sf_object'         => 'OrderShipmentItem',
         'sf_magento_enable' => '0',
     ),
+    array(
+        'local_field'       => 'Product : sku',
+        'sf_field'          => 'tnw_shipment__Product_Code__c',
+        'sf_object'         => 'OrderShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Product : name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OrderShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : sf_product_options_text',
+        'sf_field'          => 'tnw_shipment__Description__c',
+        'sf_object'         => 'OrderShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : sf_product_options_html',
+        'sf_field'          => 'tnw_shipment__Product_Options__c',
+        'sf_object'         => 'OrderShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : qty',
+        'sf_field'          => 'tnw_shipment__Quantity__c',
+        'sf_object'         => 'OrderShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
 
     // Opportunity
     array(
         'local_field'       => 'Order : number',
         'sf_field'          => 'tnw_mage_basic__Magento_ID__c',
         'sf_object'         => 'Opportunity',
+        'sf_magento_enable' => '0',
+    ),
+
+    // Opportunity Item
+    array(
+        'local_field'       => 'Order Item : unit_price',
+        'sf_field'          => 'UnitPrice',
+        'sf_object'         => 'OpportunityLineItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Order Item : qty_ordered',
+        'sf_field'          => 'Quantity',
+        'sf_object'         => 'OpportunityLineItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Order Item : sf_product_options_html',
+        'sf_field'          => 'tnw_mage_basic__Product_Options__c',
+        'sf_object'         => 'OpportunityLineItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Order Item : sf_product_options_text',
+        'sf_field'          => 'Description',
+        'sf_object'         => 'OpportunityLineItem',
         'sf_magento_enable' => '0',
     ),
 
@@ -142,6 +268,42 @@ $data = array(
         'sf_object'         => 'OpportunityInvoiceItem',
         'sf_magento_enable' => '0',
     ),
+    array(
+        'local_field'       => 'Product : sku',
+        'sf_field'          => 'tnw_invoice__Product_Code__c',
+        'sf_object'         => 'OpportunityInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Product : name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OpportunityInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : qty',
+        'sf_field'          => 'tnw_invoice__Quantity__c',
+        'sf_object'         => 'OpportunityInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : unit_price',
+        'sf_field'          => 'tnw_invoice__Total__c',
+        'sf_object'         => 'OpportunityInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : sf_product_options_text',
+        'sf_field'          => 'tnw_invoice__Description__c',
+        'sf_object'         => 'OpportunityInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Billing Item : sf_product_options_html',
+        'sf_field'          => 'tnw_invoice__Product_Options__c',
+        'sf_object'         => 'OpportunityInvoiceItem',
+        'sf_magento_enable' => '0',
+    ),
 
     // Opportunity Shipment
     array(
@@ -155,6 +317,36 @@ $data = array(
     array(
         'local_field'       => 'Shipment Item : number',
         'sf_field'          => 'tnw_shipment__Magento_ID__c',
+        'sf_object'         => 'OpportunityShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Product : sku',
+        'sf_field'          => 'tnw_shipment__Product_Code__c',
+        'sf_object'         => 'OpportunityShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Product : name',
+        'sf_field'          => 'Name',
+        'sf_object'         => 'OpportunityShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : sf_product_options_text',
+        'sf_field'          => 'tnw_shipment__Description__c',
+        'sf_object'         => 'OpportunityShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : sf_product_options_html',
+        'sf_field'          => 'tnw_shipment__Product_Options__c',
+        'sf_object'         => 'OpportunityShipmentItem',
+        'sf_magento_enable' => '0',
+    ),
+    array(
+        'local_field'       => 'Shipment Item : qty',
+        'sf_field'          => 'tnw_shipment__Quantity__c',
         'sf_object'         => 'OpportunityShipmentItem',
         'sf_magento_enable' => '0',
     ),
