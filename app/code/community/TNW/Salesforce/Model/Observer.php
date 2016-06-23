@@ -424,8 +424,6 @@ class TNW_Salesforce_Model_Observer
      */
     public function pushOrder(Varien_Event_Observer $observer)
     {
-        $helper = Mage::helper('tnw_salesforce');
-
         $orderIds = $observer->getEvent()->getData('orderIds');
         //check that order has been already exported
         foreach ($orderIds as $key => $orderId) {
@@ -480,6 +478,11 @@ class TNW_Salesforce_Model_Observer
 
     public function pushInvoice(Varien_Event_Observer $observer)
     {
+        $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
+        if (!in_array(strtolower($orderObject), array(TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER, TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_OPPORTUNITY))) {
+            return; // Disabled
+        }
+
         $_invoiceIds = $observer->getEvent()->getData('invoiceIds');
         $_message    = $observer->getEvent()->getMessage();
         $_type       = $observer->getEvent()->getType();
@@ -491,8 +494,11 @@ class TNW_Salesforce_Model_Observer
             $_type = 'salesforce';
         }
 
+        $_objectType = strcasecmp(TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER, $orderObject) == 0
+            ? 'order' : 'opportunity';
+
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Invoice ... ');
-        $this->_processOrderPush($_invoiceIds, $_message, 'tnw_salesforce/' . $_type . '_invoice', $_queueIds);
+        $this->_processOrderPush($_invoiceIds, $_message, 'tnw_salesforce/' . $_type . '_' . $_objectType . '_invoice', $_queueIds);
     }
 
     public function pushCreditMemo(Varien_Event_Observer $observer)
@@ -514,6 +520,11 @@ class TNW_Salesforce_Model_Observer
 
     public function pushShipment(Varien_Event_Observer $observer)
     {
+        $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
+        if (!in_array(strtolower($orderObject), array(TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER, TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_OPPORTUNITY))) {
+            return; // Disabled
+        }
+
         $_shipmentIds = $observer->getEvent()->getData('shipmentIds');
         $_message     = $observer->getEvent()->getMessage();
         $_type        = $observer->getEvent()->getType();
@@ -525,8 +536,11 @@ class TNW_Salesforce_Model_Observer
             $_type = 'salesforce';
         }
 
+        $_objectType = strcasecmp(TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER, $orderObject) == 0
+            ? 'order' : 'opportunity';
+
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Shipment ... ');
-        $this->_processOrderPush($_shipmentIds, $_message, 'tnw_salesforce/' . $_type . '_shipment', $_queueIds);
+        $this->_processOrderPush($_shipmentIds, $_message, 'tnw_salesforce/' . $_type . '_' . $_objectType . '_shipment', $_queueIds);
     }
 
     protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds)
@@ -535,9 +549,6 @@ class TNW_Salesforce_Model_Observer
          * @var $manualSync TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity|TNW_Salesforce_Helper_Salesforce_Opportunity|TNW_Salesforce_Helper_Salesforce_Order
          */
         $manualSync = Mage::helper($_model);
-        $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-        $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
         $_ids = (count($_orderIds) == 1) ? $_orderIds[0] : $_orderIds;
 
         if ($manualSync->reset()) {

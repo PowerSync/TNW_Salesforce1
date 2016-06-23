@@ -158,6 +158,14 @@
         <update handle="tnw_salesforce_select2"/>
     </adminhtml_system_config_edit>
 
+    <adminhtml_catalog_product_edit>
+        <update handle="tnw_salesforce_select2"/>
+    </adminhtml_catalog_product_edit>
+
+    <adminhtml_promo_quote_edit>
+        <update handle="tnw_salesforce_select2"/>
+    </adminhtml_promo_quote_edit>
+
     <adminhtml_salesforce_abandoned_opportunity_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_abandoned_opportunity_edit>
@@ -182,25 +190,41 @@
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_opportunitylineitem_edit>
 
+    <adminhtml_salesforce_opportunity_invoice_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_invoice_edit>
+
+    <adminhtml_salesforce_opportunity_invoiceitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_invoiceitem_edit>
+
+    <adminhtml_salesforce_opportunity_shipment_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_shipment_edit>
+
+    <adminhtml_salesforce_opportunity_shipmentitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_shipmentitem_edit>
+
     <adminhtml_catalog_product_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_catalog_product_edit>
 
-    <adminhtml_salesforce_orderinvoice_edit>
+    <adminhtml_salesforce_order_invoice_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_orderinvoice_edit>
+    </adminhtml_salesforce_order_invoice_edit>
 
-    <adminhtml_salesforce_orderinvoiceitem_edit>
+    <adminhtml_salesforce_order_invoiceitem_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_orderinvoiceitem_edit>
+    </adminhtml_salesforce_order_invoiceitem_edit>
 
-    <adminhtml_salesforce_ordershipment_edit>
+    <adminhtml_salesforce_order_shipment_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_ordershipment_edit>
+    </adminhtml_salesforce_order_shipment_edit>
 
-    <adminhtml_salesforce_ordershipmentitem_edit>
+    <adminhtml_salesforce_order_shipmentitem_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_ordershipmentitem_edit>
+    </adminhtml_salesforce_order_shipmentitem_edit>
 
     <adminhtml_salesforce_ordercreditmemo_edit>
         <update handle="tnw_salesforce_chosen"/>

@@ -94,8 +94,10 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
          * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
          */
         $_currentStatus = $this->_obj->Status;
-        if ($_currentStatus != TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS) {
-            $this->_obj->Status = TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+        $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
+        if ($_currentStatus != $_draftStatus) {
+            $this->_obj->Status = $_draftStatus;
+
             $_toActivate = new stdClass();
             $_toActivate->Status = $_currentStatus;
             $_toActivate->Id = NULL;
@@ -303,9 +305,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         $_orderNumber   = $this->_cache['entitiesUpdating'][$_key];
         $_orderStatuses = $this->_cache['upsertedOrderStatuses'];
 
-        if (array_key_exists($_orderNumber, $_orderStatuses) &&
-            $_orderStatuses[$_orderNumber] != TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS
-        ){
+        $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
+        if (array_key_exists($_orderNumber, $_orderStatuses) && $_orderStatuses[$_orderNumber] != $_draftStatus) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, order is already Active!');
             return false;
         }

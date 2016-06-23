@@ -25,9 +25,10 @@ class TNW_Salesforce_Model_Api_Entity_Lead extends TNW_Salesforce_Model_Api_Enti
         $prepareData = array(
             'convertedStatus' => Mage::helper("tnw_salesforce")->getLeadConvertedStatus(),
             'leadId' => $this->getId(),
-            'doNotCreateOpportunity' => 'true',
-            'overwriteLeadSource' => 'false',
-            'sendNotificationEmail' => 'false',
+            'doNotCreateOpportunity' => true,
+            'overwriteLeadSource' => false,
+            'sendNotificationEmail' => Mage::helper('tnw_salesforce/config_customer')
+                ->isLeadEmailNotification(),
         );
 
         $response = Mage::getSingleton('tnw_salesforce/api_function')->convertLead($prepareData);

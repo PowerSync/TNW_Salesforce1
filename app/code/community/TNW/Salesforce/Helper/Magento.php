@@ -580,7 +580,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         $_additionalAttributes = array(
             'id'               => 'Id',
             'sf_record_type'   => 'Record Type',
-            'sf_email_opt_out' => 'Email Opt Out'
+            'sf_email_opt_out' => 'Email Opt Out',
+            'sf_company'       => 'Company'
         );
 
         foreach ($_additionalAttributes as $value => $label) {

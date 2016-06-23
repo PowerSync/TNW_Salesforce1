@@ -23,7 +23,7 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
      * @param $_entity Mage_Catalog_Model_Product
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attributeCode) {
@@ -37,51 +37,33 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
                 return $this->convertAttributeSetId($_entity);
         }
 
-        $attribute = $this->_getAttribute($_entity, $attributeCode);
-        if ($attribute) {
-            if($_entity->hasData($attributeCode)) {
-                return $this->_convertValueForAttribute($_entity, $attribute);
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice(sprintf('Attribute product "%s" is missing. Product sku: "%s"', $attributeCode, $_entity->getSku()));
-        }
-
-        return parent::getValue($_entity);
+        return parent::_prepareValue($_entity);
     }
 
     /**
-     * @param Mage_Catalog_Model_Product $entity
-     * @param string $value
-     * @return string
+     * @param $_entity Mage_Catalog_Model_Product
+     * @param $value
+     * @return mixed
      */
-    public function setValue($entity, $value)
+    protected function _prepareReverseValue($_entity, $value)
     {
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attributeCode) {
             case 'website_ids':
-                $value = $this->reverseConvertWebsiteIds($value);
-                break;
+                return $this->reverseConvertWebsiteIds($value);
 
             case 'status':
-                $value = $this->reverseConvertStatus($value);
-                break;
+                return $this->reverseConvertStatus($value);
 
             case 'type_id':
-                $value = $this->reverseConvertTypeId($value);
-                break;
+                return $this->reverseConvertTypeId($value);
 
             case 'attribute_set_id':
-                $value = $this->reverseConvertAttributeSetId($value);
-                break;
-        }
+                return $this->reverseConvertAttributeSetId($value);
 
-        $attribute = $this->_getAttribute($entity, $attributeCode);
-        if ($attribute) {
-            $value = $this->_reverseConvertValueForAttribute($attribute, $value);
+            default:
+                return parent::_prepareReverseValue($_entity, $value);
         }
-
-        parent::setValue($entity, $value);
     }
 
     /**

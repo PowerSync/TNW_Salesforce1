@@ -16,8 +16,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helpe
                 return false;
             }
 
-            $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c';
-            $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderInvoiceItem__r';
+            $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c';
+            $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
 
             $_results = array();
             foreach (array_chunk($ids, self::UPDATE_LIMIT) as $_ids) {
@@ -60,10 +60,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helpe
     {
         $_fields    = array(
             'Id', $_magentoId,
-            sprintf('(SELECT Id, Name, %s, %s, %s FROM %s)',
-                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c',
-                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Product_Code__c',
-                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c',
+            sprintf('(SELECT Id, Name, %s, %s, %s, %s FROM %s)',
+                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c',
+                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c',
+                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Product_Code__c',
+                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Quantity__c',
                 $oiiTable
             ),
             '(SELECT Id, Title, Body FROM Notes)'
