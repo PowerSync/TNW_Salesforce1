@@ -50,15 +50,21 @@ class TNW_Salesforce_Model_Mysql4_Mapping extends Mage_Core_Model_Mysql4_Abstrac
      */
     public function massUpdateEnable($activate, array $where)
     {
-        $where = array_map(function ($where) {
-            return '(' . implode(' AND ', array_map(function($key, $value) {
-                return "$key = '$value'";
-            }, array_keys($where), $where)) . ')';
-        }, $where);
+        $adapter = $this->_getWriteAdapter();
 
-        return $this->_getConnection('core_write')->update($this->getMainTable(), array(
+        $orWhere = array();
+        foreach ($where as $_where) {
+            $_andWhere = array();
+            foreach ($_where as $key => $value) {
+                $_andWhere[] = $adapter->quoteInto($key.'=?', $value);
+            }
+
+            $orWhere[] = '(' . implode(' AND ', $_andWhere) . ')';
+        }
+
+        return $adapter->update($this->getMainTable(), array(
             'magento_sf_enable' => $activate,
             'sf_magento_enable' => $activate
-        ), implode(' OR ', $where));
+        ), implode(' OR ', $orWhere));
     }
 }
