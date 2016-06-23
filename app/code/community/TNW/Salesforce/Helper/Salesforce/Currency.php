@@ -11,15 +11,6 @@ class TNW_Salesforce_Helper_Salesforce_Currency extends TNW_Salesforce_Helper_Sa
     {
         $this->_isCron  = $_isCron;
 
-        // test sf api connection
-        /** @var TNW_Salesforce_Model_Connection $_client */
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
-
-            return false;
-        }
-
         $this->_skippedEntity = array();
         try {
             $this->_cache['currencyLookupAll'] = Mage::helper('tnw_salesforce/salesforce_data_currency')

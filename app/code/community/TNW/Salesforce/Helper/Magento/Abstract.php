@@ -202,8 +202,6 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         $sfId = $website->getData('salesforce_id');
         if (empty($sfId)){
             $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::getSingleton('core/session')->getSalesforceSessionId());
 
             if ($manualSync->reset()) {
                 $manualSync->massAdd(array($website->getData('website_id')));

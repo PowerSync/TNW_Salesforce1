@@ -31,7 +31,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Campaign_Member extends TNW_Salesfor
 
                 if (empty($_results)) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Campaign Member lookup returned: no results...");
-                    return false;
+                    continue;
                 }
 
                 foreach ($_results as $result) {
@@ -42,7 +42,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Campaign_Member extends TNW_Salesfor
                         $tmp->LeadId = (property_exists($_item, "LeadId")) ? $_item->LeadId : null;
                         $tmp->CampaignId = (property_exists($_item, "CampaignId")) ? $_item->CampaignId : null;
 
-                        $returnArray[$_item->CampaignId][] = $tmp;
+                        $returnArray[Mage::helper('tnw_salesforce')->prepareId($_item->CampaignId)][] = $tmp;
                     }
                 }
             }

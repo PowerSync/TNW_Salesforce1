@@ -755,7 +755,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>LeadSource to be used for all Leads coming from Magento</comment>
+                            <comment>LeadSource to be used for all Leads coming from Magento (deprecated, use "Default value" field in the mapping instead)</comment>
                         </lead_source>
                         <use_lead_source_filter translate="label">
                             <label>Include into lookup</label>
