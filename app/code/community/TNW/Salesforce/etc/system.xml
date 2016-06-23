@@ -979,6 +979,29 @@
                             <show_in_store>0</show_in_store>
                             <comment>A number of decimal points for prices to be sent into Salesforce</comment>
                         </price_accuracy>
+                        <sync_type_all>
+                            <label>Sync all product types</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <comment />
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </sync_type_all>
+                        <sync_type_allow>
+                            <label>Sync product types</label>
+                            <frontend_type>multiselect</frontend_type>
+                            <source_model>tnw_salesforce/config_products_type</source_model>
+                            <comment />
+                            <sort_order>80</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <sync_type_all>0</sync_type_all>
+                            </depends>
+                        </sync_type_allow>
                     </fields>
                 </general>
             </groups>
