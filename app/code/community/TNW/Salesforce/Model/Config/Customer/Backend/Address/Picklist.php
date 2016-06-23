@@ -18,75 +18,35 @@ class TNW_Salesforce_Model_Config_Customer_Backend_Address_Picklist extends Mage
 
         $activatePicklist = $this->getValue();
 
-        $regularFields = array(
-            'Lead:State',
-            'Lead:Country',
-
-            'Contact:MailingState',
-            'Contact:MailingCountry',
-
-            'Contact:OtherState',
-            'Contact:OtherCountry',
-
-            'Order:BillingState',
-            'Order:BillingCountry',
-
-            'Order:ShippingState',
-            'Order:ShippingCountry',
-
-            'OrderCreditMemo:BillingState',
-            'OrderCreditMemo:BillingCountry',
-
-            'OrderCreditMemo:ShippingState',
-            'OrderCreditMemo:ShippingCountry',
+        $sfObject = array('Lead', 'Contact', 'Order', 'OrderCreditMemo');
+        $sfField  = array(
+            'State',         'Country',
+            'MailingState',  'MailingCountry',
+            'OtherState',    'OtherCountry',
+            'BillingState',  'BillingCountry',
+            'ShippingState', 'ShippingCountry'
         );
 
-        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $groupCollection */
-        $groupCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection();
-        $tableName = $groupCollection->getMainTable();
+        $sfFieldCode = array_map(function($field) {
+            return $field . 'Code';
+        }, $sfField);
 
-        $recordsToUpdate = array();
-
-        /**
-         *
-         */
-        foreach ($regularFields as $value) {
-
-            foreach ($groupCollection as $_mapping) {
-                $mappingId = $_mapping->getMappingId();
-                $_tmp = explode(':', $value);
-                $_objectName = $_tmp[0];
-                $_fieldName = $_tmp[1];
-
-                /**
-                 * change
-                 */
-                if ($_mapping->getSfField() == $_fieldName && $_mapping->getSfObject() == $_objectName) {
-                    $recordsToUpdate[!$activatePicklist][] = $mappingId;
-                } elseif ($_mapping->getSfField() == ($_fieldName . 'Code') && $_mapping->getSfObject() == $_objectName) {
-                    $recordsToUpdate[$activatePicklist][] = $mappingId;
-                }
-            }
-        }
-
-        /**
-         * Get the resource model
-         */
-        $resource = Mage::getSingleton('core/resource');
+        $tableName = Mage::getResourceModel('tnw_salesforce/mapping')->getMainTable();
 
         /**
          * Retrieve the write connection
          */
-        $writeConnection = $resource->getConnection('core_write');
+        $writeConnection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
-        foreach ($recordsToUpdate as $activateFlag => $ids) {
+        $writeConnection->update($tableName, array(
+            'magento_sf_enable' => !$activatePicklist,
+            'sf_magento_enable' => !$activatePicklist
+        ), array('sf_field IN(?)' => $sfField, 'sf_object IN(?)' => $sfObject));
 
-            $writeConnection->update(
-                $tableName,
-                array('magento_sf_enable'=>$activateFlag, 'sf_magento_enable'=>$activateFlag),
-                array('mapping_id IN(?)'=>$ids)
-            );
-        }
+        $writeConnection->update($tableName, array(
+            'magento_sf_enable' => $activatePicklist,
+            'sf_magento_enable' => $activatePicklist
+        ), array('sf_field IN(?)' => $sfFieldCode, 'sf_object IN(?)' => $sfObject));
 
         return $this;
     }
