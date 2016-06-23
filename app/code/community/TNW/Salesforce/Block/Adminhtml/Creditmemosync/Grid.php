@@ -29,6 +29,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
     {
         /** @var Mage_Sales_Model_Resource_Order_Creditmemo_Grid_Collection $collection */
         $collection = Mage::getResourceModel($this->_getCollectionClass())
+            ->addFieldToSelect('entity_id')
             ->addFieldToSelect('increment_id')
             ->addFieldToSelect('created_at')
             ->addFieldToSelect('order_increment_id')
@@ -130,7 +131,8 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
                     array(
                         'caption' => Mage::helper('sales')->__('Sync'),
                         'url' => array('base' => '*/*/sync'),
-                        'field' => 'creditmemo_id'
+                        'field' => 'creditmemo_id',
+                        'getter' => 'getId',
                     )
                 ),
                 'filter' => false,
