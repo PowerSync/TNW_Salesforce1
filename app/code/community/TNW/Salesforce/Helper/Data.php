@@ -673,6 +673,13 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     {
         return (class_exists('SoapClient')) ? true : false;
     }
+
+    public function isMbstringEnabled()
+    {
+        return extension_loaded('mbstring');
+    }
+
+
     // Customer is Person Account Enabled
     // @deprecated
 
