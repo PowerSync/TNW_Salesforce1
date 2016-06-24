@@ -13,8 +13,26 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     public function getValue($_entity)
     {
-        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $value = $this->_prepareValue($_entity);
+        $value = $this->_prepareDefaultValue($value);
 
+        return $value;
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
+     * @return mixed
+     */
+    protected function _prepareValue($_entity)
+    {
+        //For Attribute
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute && $_entity->hasData($attributeCode)) {
+            return $this->_convertValueForAttribute($_entity, $attribute);
+        }
+
+        // Other
         $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
         $value = call_user_func(array($_entity, $method));
 
@@ -41,12 +59,40 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     public function setValue($_entity, $value)
     {
-        if (empty($value) && $_entity->isObjectNew()) {
+        $value = $this->_prepareDefaultValue($value);
+        $value = $this->_prepareReverseValue($_entity, $value);
+
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $_entity->setData($attributeCode, $value);
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    protected function _prepareDefaultValue($value)
+    {
+        if (empty($value)) {
             $value = $this->_mapping->getDefaultValue();
         }
 
-        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
-        $_entity->setData($attributeCode, $value);
+        return $value;
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
+     * @param $value
+     * @return mixed
+     */
+    protected function _prepareReverseValue($_entity, $value)
+    {
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute) {
+            $value = $this->_reverseConvertValueForAttribute($attribute, $value);
+        }
+
+        return $value;
     }
 
     /**

@@ -264,7 +264,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function lookupByCriterias($criterias, $hashField = 'Id', $field = 'Name')
     {
-        $criterias = array_chunk($criterias, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT, true);
+        $criterias = array_chunk($criterias, self::UPDATE_LIMIT);
 
         $result = array();
 

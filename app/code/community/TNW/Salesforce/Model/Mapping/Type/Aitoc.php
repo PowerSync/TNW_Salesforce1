@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Aitoc extends TNW_Salesforce_Model_Mappi
      * @param $_entity
      * @return string
      */
-    public function getValue($_entity)
+    protected function _prepareValue($_entity)
     {
         $value = NULL;
         foreach ($_entity as $_type => $_object) {

@@ -291,11 +291,10 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($this->_mapCollection as $_mapping) {
-                $_value = NULL;
-                if (strpos($_mapping->getLocalField(), 'Customer : ') === 0) {
-                    $value = property_exists($this->_salesforceObject, $_mapping->getSfField())
-                        ? $this->_salesforceObject->{$_mapping->getSfField()} : null;
+                $value = property_exists($this->_salesforceObject, $_mapping->getSfField())
+                    ? $this->_salesforceObject->{$_mapping->getSfField()} : null;
 
+                if (strpos($_mapping->getLocalField(), 'Customer : ') === 0) {
                     Mage::getSingleton('tnw_salesforce/mapping_type_customer')
                         ->setMapping($_mapping)
                         ->setValue($_entity, $value);
@@ -304,34 +303,39 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         ->saveTrace('Customer: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_entity->getData($_mapping->getLocalFieldAttributeCode()), true));
                 } elseif (strpos($_mapping->getLocalField(), 'Shipping : ') === 0) {
                     // Shipping Address
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
                     $_magentoFieldName = str_replace('Shipping : ', '', $_mapping->getLocalField());
-                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
-                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
-                        if ($_value) {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $_value);
-                            $_additional['shipping'][$_magentoFieldName] = $_value;
-                        } else {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
-                        }
+                    if ($value) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $value);
+                        $_additional['shipping'][$_magentoFieldName] = $value;
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Billing : ') === 0) {
                     // Billing Address
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
                     $_magentoFieldName = str_replace('Billing : ', '', $_mapping->getLocalField());
-                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
-                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
-                        if ($_value) {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $_value);
-                            $_additional['billing'][$_magentoFieldName] = $_value;
-                        } else {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
-                        }
+                    if ($value) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $value);
+                        $_additional['billing'][$_magentoFieldName] = $value;
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Customer Group : ') === 0) {
                     // Do we need to sync this?
-                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
-                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
+                    if ($value) {
                         $targetGroup = Mage::getModel('customer/group');
-                        $targetGroup->load($_value, 'customer_group_code');
+                        $targetGroup->load($value, 'customer_group_code');
                         if (is_object($targetGroup) && $targetGroup->getId()) {
                             $_entity->setData('group_id', $targetGroup->getId());
                         }

@@ -87,7 +87,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /* Customer Config */
     const CUSTOMER_CREATE_AS_LEAD = 'salesforce_customer/lead_config/customer_integration';
-    const ACCOUNT_RENAME = 'salesforce_customer/sync/account_rename';
     const CUSTOMER_SYNC = 'salesforce_customer/sync/customer_sync_enable';
     const CUSTOMER_ALL_GROUPS = 'salesforce_customer/sync/customer_groups_all';
     const CUSTOMER_GROUPS = 'salesforce_customer/sync/customer_groups';
@@ -510,13 +509,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function isCustomerAsLead()
     {
         return $this->getStoreConfig(self::CUSTOMER_CREATE_AS_LEAD);
-    }
-
-    // Customer default taska signee
-
-    public function canRenameAccount()
-    {
-        return !$this->getStoreConfig(self::ACCOUNT_RENAME);
     }
 
     // Customer integration type

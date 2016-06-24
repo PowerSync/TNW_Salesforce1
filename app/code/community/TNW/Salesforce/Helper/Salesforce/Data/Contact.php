@@ -102,7 +102,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @return tnw_salesforce_model_api_entity_resource_contact_collection
+     * @return TNW_Salesforce_Model_Api_Entity_Resource_Contact_Collection
      */
     protected function _generateDuplicatesCollection()
     {
@@ -238,8 +238,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
      */
     public function getContactsByEmails($customers)
     {
-        $_howMany = 35;
-
         $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $_extra = NULL;
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -254,7 +252,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         }
 
         $_results = array();
-        foreach (array_chunk($customers, $_howMany, true) as $_customers) {
+        foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
             $_results[] = $this->_queryContacts($_magentoId, $_extra, $_customers);
         }
 

@@ -118,13 +118,15 @@ class TNW_Salesforce_Model_Import_Order
             ->addFilterTypeSM(true)
             ->firstSystem();
 
+        /** @var TNW_Salesforce_Model_Mapping $mapping */
         foreach ($mappings as $mapping) {
-            //skip if cannot find field in object
-            if (!isset($this->getObject()->{$mapping->getSfField()})) {
-                continue;
+            $newValue = property_exists($this->getObject(), $mapping->getSfField())
+                ? $this->getObject()->{$mapping->getSfField()} : null;
+
+            if (empty($newValue)) {
+                $newValue = $mapping->getDefaultValue();
             }
-            $newValue = $this->getObject()->{$mapping->getSfField()};
-            /** @var $mapping TNW_Salesforce_Model_Mapping */
+
             $entityName = $mapping->getLocalFieldType();
             $field = $mapping->getLocalFieldAttributeCode();
             $entity = $this->getEntity($entityName);

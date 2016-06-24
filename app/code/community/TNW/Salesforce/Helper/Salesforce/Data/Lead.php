@@ -61,7 +61,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $websiteFieldKey = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
         $_results = array();
-        foreach (array_chunk($customers, 35, true) as $_customers) {
+        foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
             $result = $this->_queryLeads($_magentoId, $_customers, $leadSource, $idPrefix);
             if (empty($result) || $result->size < 1) {
                 continue;
@@ -414,7 +414,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
                 foreach ($leadsToConvertChunk as $_key => $_object) {
                     foreach ($_object as $key => $value) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("(" . $_key . ") Lead Conversion: " . $key . " = '" . $value . "'");
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveTrace("(" . $_key . ") Lead Conversion: " . $key . " = " . var_export($value, true) . "");
                     }
                 }
 
@@ -483,9 +484,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
         $leadConvert->convertedStatus = Mage::helper("tnw_salesforce")->getLeadConvertedStatus();
 
-        $leadConvert->doNotCreateOpportunity = 'true';
-        $leadConvert->overwriteLeadSource = 'false';
-        $leadConvert->sendNotificationEmail = 'false';
+        $leadConvert->doNotCreateOpportunity = true;
+        $leadConvert->overwriteLeadSource = false;
+        $leadConvert->sendNotificationEmail = Mage::helper('tnw_salesforce/config_customer')
+            ->isLeadEmailNotification();
 
         $userHelper = Mage::helper('tnw_salesforce/salesforce_data_user');
 

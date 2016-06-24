@@ -15,12 +15,12 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             ? $object->Id : null;
 
         if (!$_sShipmentId) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting shipment into Magento: tnw_fulfilment__OrderShipment__c ID is missing");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting shipment into Magento: tnw_shipment__Shipment__c ID is missing");
             $this->_addError('Could not upsert Shipment into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
 
-        $_msIncrementIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Magento_ID__c";
+        $_msIncrementIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . "Magento_ID__c";
         $_msIncrementId    = (property_exists($object, $_msIncrementIdKey) && $object->$_msIncrementIdKey)
             ? $object->$_msIncrementIdKey : null;
 
@@ -47,13 +47,19 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             }
         }
 
-        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . "Order__c";
+        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . "Order__c";
         $_sOrderId    = (property_exists($object, $_sOrderIdKey) && $object->$_sOrderIdKey)
             ? $object->$_sOrderIdKey : null;
 
+        if (empty($_sOrderId)) {
+            $_sOpportunityIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . "Opportunity__c";
+            $_sOrderId    = (property_exists($object, $_sOpportunityIdKey) && $object->$_sOpportunityIdKey)
+                ? $object->$_sOpportunityIdKey : null;
+        }
+
         if (!$_sOrderId) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError("ERROR Object \"tnw_fulfilment__OrderShipment__c\" lost contact with the object \"Order\"");
+                ->saveError("ERROR Object \"tnw_shipment__Shipment__c\" lost contact with the object \"Order\"");
             return false;
         }
 
@@ -99,7 +105,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
                 return false;
             }
 
-            $_shipmentItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentItem__r';
+            $_shipmentItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentItem__r';
             if (!property_exists($object, $_shipmentItemKey)) {
                 return false;
             }
@@ -111,16 +117,25 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             $hasSalesforceId = $order->getItemsCollection()
                 ->walk('getSalesforceId');
 
-            $_iItemQuantityKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Quantity__c';
-            $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
+            $_iItemQuantityKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Quantity__c';
+            $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
+            $_iItemOpportunityItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c';
 
             $savedQtys = array();
             foreach ($object->$_shipmentItemKey->records as $record) {
-                if (!property_exists($record, $_iItemOrderItemKey)) {
+                $_sItemId    = (property_exists($record, $_iItemOrderItemKey) && $record->$_iItemOrderItemKey)
+                    ? $record->$_iItemOrderItemKey : null;
+
+                if (empty($_sItemId)) {
+                    $_sItemId    = (property_exists($record, $_iItemOpportunityItemKey) && $record->$_iItemOpportunityItemKey)
+                        ? $record->$_iItemOpportunityItemKey : null;
+                }
+
+                if (empty($_sItemId)) {
                     continue;
                 }
 
-                $orderItemId = array_search($record->$_iItemOrderItemKey, $hasSalesforceId);
+                $orderItemId = array_search($_sItemId, $hasSalesforceId);
                 if (false === $orderItemId) {
                     continue;
                 }
@@ -144,13 +159,13 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             ->setData('sf_insync', 1);
         $this->addEntityToSave('Shipment', $shipment);
 
-        $_shipmentTrackingKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentTracking__r';
+        $_shipmentTrackingKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentTracking__r';
         if (property_exists($object, $_shipmentTrackingKey) && $object->$_shipmentTrackingKey->totalSize > 0) {
             $hasNumber = $shipment->getTracksCollection()
                 ->walk('getNumber');
 
-            $_sTrackingCarrierKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Carrier__c';
-            $_sTrackingNumberKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Number__c';
+            $_sTrackingCarrierKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Carrier__c';
+            $_sTrackingNumberKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Number__c';
             foreach ($object->$_shipmentTrackingKey->records as $record) {
                 if (false !== array_search($record->$_sTrackingNumberKey, $hasNumber)) {
                     continue;
@@ -194,12 +209,13 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
         $updateFieldsLog = array();
         /** @var $mapping TNW_Salesforce_Model_Mapping */
         foreach ($mappings as $mapping) {
-            //skip if cannot find field in object
-            if (!isset($object->{$mapping->getSfField()})) {
-                continue;
+            $newValue = property_exists($object, $mapping->getSfField())
+                ? $object->{$mapping->getSfField()} : null;
+
+            if (empty($newValue)) {
+                $newValue = $mapping->getDefaultValue();
             }
 
-            $newValue   = $object->{$mapping->getSfField()};
             $entityName = $mapping->getLocalFieldType();
             $field      = $mapping->getLocalFieldAttributeCode();
 
@@ -210,7 +226,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
                     $method = sprintf('get%sAddress', $entityName);
                     $entity = $shipment->$method();
 
-                    $keyState = sprintf('tnw_fulfilment__%s_Country__c', $entityName);
+                    $keyState = sprintf('tnw_shipment__%s_Country__c', $entityName);
                     if (($field == 'region') && property_exists($object, $keyState)) {
                         foreach(Mage::getModel('directory/region_api')->items($object->$keyState) as $_region) {
                             if (!in_array($newValue, $_region)) {
@@ -269,8 +285,8 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
         $hasOrderId = $_shipmentItemCollection
             ->walk('getOrderItemId');
 
-        $_shipmentItemKey   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'OrderShipmentItem__r';
-        $_sItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Order_Item__c';
+        $_shipmentItemKey   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentItem__r';
+        $_sItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
         foreach ($object->$_shipmentItemKey->records as $record) {
             $orderItemId = array_search($record->$_sItemOrderItemKey, $hasSalesforceId);
             if (false === $orderItemId) {
@@ -298,14 +314,14 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
                     continue;
                 }
 
-                //skip if cannot find field in object
-                if (!isset($record->{$mapping->getSfField()})) {
-                    continue;
+                $newValue = property_exists($record, $mapping->getSfField())
+                    ? $record->{$mapping->getSfField()} : null;
+
+                if (empty($newValue)) {
+                    $newValue = $mapping->getDefaultValue();
                 }
 
-                $newValue   = $record->{$mapping->getSfField()};
-                $field      = $mapping->getLocalFieldAttributeCode();
-
+                $field = $mapping->getLocalFieldAttributeCode();
                 if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
                     $entity->setData($field, $newValue);
                     $this->addEntityToSave(sprintf('Shipment Item %s', $entity->getId()), $entity);
@@ -333,8 +349,8 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
     {
         $_obj = new stdClass();
         $_obj->Id = $_data['salesforce_id'];
-        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'Magento_ID__c'} = $_data['magento_id'];
-        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_FULFILMENT . 'disableMagentoSync__c'} = true;
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Magento_ID__c'} = $_data['magento_id'];
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'disableMagentoSync__c'} = true;
 
         return $_obj;
     }

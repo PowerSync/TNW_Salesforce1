@@ -461,6 +461,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
 
+        $campaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
+        if (empty($campaignId)) {
+            return;
+        }
+
         $customers = array();
         $chunks = array_chunk($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
         foreach ($chunks as $chunk) {
@@ -481,7 +486,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
 
-        $campaignId = strval(Mage::helper('tnw_salesforce')->getCutomerCampaignId());
         $this->_cache['subscriberToUpsert'] = array($campaignId => $customers);
     }
 
@@ -608,11 +612,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         // Add to queue
         if ($type == "Lead") {
-            $_issetCompany = property_exists($this->_obj, 'Company');
-            if (!$_issetCompany || ($_issetCompany && empty($this->_obj->Company))) {
-                $this->_obj->Company = $_customer->getName();
-            }
-
             $this->_cache['leadsToUpsert'][$_upsertOn][$_id] = $this->_obj;
         }
         else if ($type == "Contact") {
@@ -674,34 +673,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
-            }
-
-            // Check if Account Name is empty
-            $_issetName = property_exists($this->_obj, 'Name');
-            if (
-                !$this->_isPerson
-                && (($_issetName && empty($this->_obj->Name)) || !$_issetName)
-            ) {
-                if ($_customer->getData('company')) {
-                    $this->_obj->Name = $_customer->getData('company');
-                } else if ($_customer->getFirstname() || $_customer->getLastname()) {
-                    $this->_obj->Name = $_customer->getName();
-                }
-            }
-
-            /**
-             * remove account name if renaming not allowed
-             */
-            if (
-                !$this->_isPerson
-                && !Mage::helper('tnw_salesforce')->canRenameAccount()
-                && property_exists($this->_obj, 'Id')
-                && $this->_obj->Id
-            ) {
-                if (property_exists($this->_obj, 'Name')) {
-                    // Remove Name since Account exists in Salesforce and we should not rename it
-                    unset($this->_obj->Name);
-                }
             }
 
             //Unset Record Type if blank
