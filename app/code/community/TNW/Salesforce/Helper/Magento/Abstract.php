@@ -205,7 +205,9 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         $sfId = $website->getData('salesforce_id');
         if (empty($sfId)){
             $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-            if ($manualSync->reset() && $manualSync->massAdd(array($website->getData('website_id')))) {
+
+            if ($manualSync->reset()) {
+                $manualSync->massAdd(array($website->getData('website_id')));
                 $manualSync->process();
                 $newWebsite = Mage::getModel('core/website')->load($website->getData('website_id'));
                 $sfId = $newWebsite->getData('salesforce_id');

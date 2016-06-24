@@ -83,14 +83,10 @@ class TNW_Salesforce_Model_Product_Observer
             }
 
             $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
             if ($manualSync->reset() && $manualSync->massAdd(array($_product->getId()))) {
                 $manualSync->process();
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product (sku: ' . $_product->getSku() . ') is successfully synchronized'));
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce Connection failed!');
             }
         }
     }

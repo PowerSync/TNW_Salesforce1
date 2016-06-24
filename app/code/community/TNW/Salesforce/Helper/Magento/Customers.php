@@ -666,66 +666,73 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             }
         }
 
+        $entityTable = Mage::helper('tnw_salesforce')->getTable('customer_entity');
+        $entityVarcharTable = Mage::helper('tnw_salesforce')->getTable('customer_entity_varchar');
+
+        $mMagentoId = $mGroupId = null;
+
         // Magneto ID provided
         if ($this->_magentoId) {
             //Test if user exists
-            $sql = "SELECT entity_id, group_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $this->_magentoId . "'";
+            $sql = "SELECT entity_id, group_id  FROM `$entityTable` WHERE entity_id = '{$this->_magentoId}'";
             $row = $this->_write->query($sql)->fetch();
-            if (!$row) {
-                // Magento ID exists in Salesforce, user must have been deleted. Will re-create with the same ID
-                $this->_isNew = true;
-            } else {
-                $this->_groupId = $row['group_id'];
-            }
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('------------------');
-        if ($this->_magentoId && !$this->_isNew) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer Loaded by using Magento ID: " . $this->_magentoId);
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Possibly a New Customer');
-            // No Magento ID
-            if ($this->_salesforceId && !$this->_magentoId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Find by SF Id');
-                // Try to find the user by SF Id
-                $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity_varchar') . "` WHERE value = '" . $this->_salesforceId . "' AND attribute_id = '" . $this->_attributes['salesforce_id'] . "' AND entity_type_id = '1'";
-                $row = $this->_write->query($sql)->fetch();
-                $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
-            }
+            if ($row) {
+                $mMagentoId = $row['entity_id'];
+                $mGroupId   = $row['group_id'];
 
-            if ($this->_magentoId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $this->_magentoId . " Loaded by using Salesforce ID: " . $this->_salesforceId);
-                $sql = "SELECT entity_id, group_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $this->_magentoId . "'";
-                $row = $this->_write->query($sql)->fetch();
-                $this->_groupId = ($row) ? $row['group_id'] : NULL;
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Find by email');
-                //Last reserve, try to find by email
-                $sql = "SELECT entity_id, group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $this->_email . "'";
-                if ($this->_websiteId && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
-                    $sql .= " AND website_id = '" . $this->_websiteId . "'";
-                }
-
-                $row = $this->_write->query($sql)->fetch();
-                $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MID by email: ' . $this->_magentoId);
-                if ($this->_magentoId) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $this->_magentoId . " Loaded by using Email: " . $this->_email);
-                    $this->_groupId = $row['group_id'];
-                } else {
-                    //Brand new user
-                    $this->_isNew = true;
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("New Customer. Creating!");
-                }
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Customer Loaded by using Magento ID: " . $this->_magentoId);
             }
         }
 
+        if (empty($mMagentoId) && $this->_salesforceId) {
+            // Try to find the user by SF Id
+            $sql = "SELECT entity.entity_id, entity.group_id FROM `$entityVarcharTable` as attr "
+                ."INNER JOIN `$entityTable` as entity ON attr.entity_id = entity.entity_id "
+                ."WHERE attr.value = '{$this->_salesforceId}' "
+                    ."AND attr.attribute_id = '{$this->_attributes['salesforce_id']}' "
+                    ."AND attr.entity_type_id = '1'";
+
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $mMagentoId = $row['entity_id'];
+                $mGroupId   = $row['group_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Customer #$mMagentoId Loaded by using Salesforce ID: {$this->_salesforceId}");
+            }
+        }
+
+        if (empty($mMagentoId) && $this->_email) {
+            $sql = "SELECT entity_id, group_id FROM `$entityTable` WHERE email = '{$this->_email}'";
+            if ($this->_websiteId && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $sql .= " AND website_id = '" . $this->_websiteId . "'";
+            }
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $mMagentoId = $row['entity_id'];
+                $mGroupId   = $row['group_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Customer #$mMagentoId Loaded by using Email: {$this->_email}");
+            }
+        }
+
+        $this->_isNew = is_null($mMagentoId);
         if ($this->_isNew) {
-            // Try to find Group from mappings
-            $this->_groupId = $this->_getCustomerGroupFromSalesforce();
-        }
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("New Customer. Creating!");
 
-        if ($this->_isNew && !Mage::helper('tnw_salesforce/config_customer')->allowSalesforceToCreate()) {
-            $this->_skip = true;
+            // Try to find Group from mappings
+            $this->_groupId   = $this->_getCustomerGroupFromSalesforce();
+            $this->_magentoId = null;
+
+            if (!Mage::helper('tnw_salesforce/config_customer')->allowSalesforceToCreate()) {
+                $this->_skip = true;
+            }
+        }
+        else {
+            $this->_magentoId = $mMagentoId;
+            $this->_groupId   = $mGroupId;
         }
     }
 

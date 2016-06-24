@@ -400,15 +400,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             return false;
         }
 
-        // test sf api connection
-        /** @var TNW_Salesforce_Model_Connection $_client */
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
-
-            return false;
-        }
-
         $this->_skippedEntity = array();
         try {
             $this->_massAddBefore($_ids);
