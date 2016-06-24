@@ -49,8 +49,6 @@ class TNW_Salesforce_Model_Website_Observer
         }
 
         $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-        $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-        $manualSync->setSalesforceSessionId(Mage::getSingleton('core/session')->getSalesforceSessionId());
 
         if ($manualSync->reset()) {
             $manualSync->massAdd(array($_webstieId));
