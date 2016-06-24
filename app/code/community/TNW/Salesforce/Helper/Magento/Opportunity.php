@@ -60,9 +60,9 @@ class TNW_Salesforce_Helper_Magento_Opportunity extends TNW_Salesforce_Helper_Ma
     protected function _updateMagento($object, $_moIncrementId, $_sOpportunityId)
     {
         /** @var Mage_Sales_Model_Order $order */
-        $order = Mage::getModel('sales/order')->load($_moIncrementId);
+        $order = Mage::getModel('sales/order')
+            ->loadByIncrementId($_moIncrementId);
 
-        $this->addEntityToSave('Order', $order);
         $order->addData(array(
             'salesforce_id' => $_sOpportunityId,
             'sf_insync'     => 1
@@ -99,45 +99,37 @@ class TNW_Salesforce_Helper_Magento_Opportunity extends TNW_Salesforce_Helper_Ma
             }
 
             $entityName = $mapping->getLocalFieldType();
-            $field      = $mapping->getLocalFieldAttributeCode();
-
-            $entity = false;
             switch ($entityName) {
                 case 'Shipping':
                 case 'Billing':
                     $method = sprintf('get%sAddress', $entityName);
                     $entity = $order->$method();
+                    Mage::getModel('tnw_salesforce/mapping_type_address')
+                        ->setMapping($mapping)
+                        ->setValue($entity, $newValue);
 
-                    $keyState = sprintf('tnw_invoice__%s_Country__c', $entityName);
-                    if (($field == 'region') && property_exists($object, $keyState)) {
-                        foreach(Mage::getModel('directory/region_api')->items($object->$keyState) as $_region) {
-                            if (!in_array($newValue, $_region)) {
-                                continue;
-                            }
-
-                            $field    = 'region_id';
-                            $newValue = $_region['region_id'];
-                            break;
-                        }
-                    }
+                    $this->addEntityToSave($entityName, $entity);
                     break;
 
                 case 'Order':
                     $entity = $order;
+                    Mage::getModel('tnw_salesforce/mapping_type_order')
+                        ->setMapping($mapping)
+                        ->setValue($entity, $newValue);
+
+                    $this->addEntityToSave($entityName, $entity);
                     break;
+
+                default:
+                    continue 2;
             }
 
-            if (!$entity) {
-                continue;
-            }
-
-            if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
-                $entity->setData($field, $newValue);
-                $this->addEntityToSave($entityName, $entity);
+            $field = $mapping->getLocalFieldAttributeCode();
+            if (!is_null($entity->getOrigData($field)) && $entity->getOrigData($field) != $entity->getData($field)) {
 
                 //add info about updated field to order comment
                 $updateFieldsLog[] = sprintf('%s - from "%s" to "%s"',
-                    $mapping->getLocalField(), $entity->getOrigData($field), $newValue);
+                    $mapping->getLocalField(), $entity->getOrigData($field), $entity->getData($field));
             }
         }
 
