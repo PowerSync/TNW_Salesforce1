@@ -312,8 +312,8 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     {
         $this->_prepare();
 
-        $_typeId = TNW_Salesforce_Model_Config_Products_Type::TYPE_UNKNOWN;
-        $_mMagentoId = $_mTypeId = null;
+        $_mTypeId = TNW_Salesforce_Model_Config_Products_Type::TYPE_UNKNOWN;
+        $_mMagentoId = null;
 
         $_sSku          = (!empty($object->ProductCode)) ? $object->ProductCode : null;
         $_sSalesforceId = (!empty($object->Id)) ? $object->Id : null;
@@ -388,7 +388,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
 
         if (!in_array($_mTypeId, Mage::helper('tnw_salesforce/config_product')->getSyncTypesAllow())) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice('SKIPPING: Sync for product type "' . $_typeId . '" is disabled!');
+                ->saveNotice('SKIPPING: Sync for product type "' . $_mTypeId . '" is disabled!');
 
             return false;
         }
