@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
+class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Campaign
     extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
     protected function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
@@ -12,8 +12,8 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
         $aIdVal = array();
         $value = $element->getData('value');
         if (!empty($value)) {
-            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
+            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection $collection */
+            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
                 ->addFieldToFilter('Id', array('eq' => $value));
 
             $aIdVal = $collection->setFullIdMode(true)->getAllOptions();
@@ -24,7 +24,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
             ->getBlockSingleton('core/template')
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'url'       => $this->getUrl('*/salesforce_search/account'),
+                'url'       => $this->getUrl('*/salesforce_search/campaign'),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
             ));
 

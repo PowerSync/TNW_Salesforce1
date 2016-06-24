@@ -250,25 +250,27 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 /**
                  * @comment try to take object from our package
                  */
-                $salesforceWebsiteDescr = $this
-                    ->_client
-                    ->describeSObject(
-                        Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
-                    );
+                $this->_client->describeSObject(
+                    Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()
+                );
 
                 $this->_packageAvailable = true;
 
-            } catch (Exception $e) {
-
+            }
+            catch (Exception $e) {
                 $this->_loggedIn = null;
                 $this->_connection = null;
 
-                $errorMessage = Mage::helper('tnw_salesforce')->__('PowerSync managed package in Salesforce is either not installed or license is expired.<br />');
-                $errorMessage .= Mage::helper('tnw_salesforce')->__('Please contact <a href="https://technweb.atlassian.net/servicedesk/customer/portal/2">Powersync Support</a> for more information');
-                $this->_errorMessage = $errorMessage;
+                $errorMessage = $e->getMessage();
+                if ($e instanceof SoapFault && $e->faultcode == 'sf:INVALID_TYPE') {
+                    $errorMessage = Mage::helper('tnw_salesforce')->__('PowerSync managed package in Salesforce is either not installed or license is expired.<br />');
+                    $errorMessage .= Mage::helper('tnw_salesforce')->__('Please contact <a href="https://technweb.atlassian.net/servicedesk/customer/portal/2">Powersync Support</a> for more information');
+                }
 
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($errorMessage);
-                unset($e);
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($errorMessage);
+
+                $this->_errorMessage = $errorMessage;
                 $this->_packageAvailable = false;
             }
         }
