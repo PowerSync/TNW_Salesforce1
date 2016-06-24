@@ -430,8 +430,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 return false;
             }
 
-            $this->resetEntity(array_diff($_ids, $this->_skippedEntity));
             $this->_massAddAfter();
+            $this->resetEntity(array_diff($_ids, $this->_skippedEntity));
 
             return !empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         } catch (Exception $e) {
