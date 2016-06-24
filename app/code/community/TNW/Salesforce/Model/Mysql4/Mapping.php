@@ -41,4 +41,30 @@ class TNW_Salesforce_Model_Mysql4_Mapping extends Mage_Core_Model_Mysql4_Abstrac
         $object->unsetData('is_system');
         return $this;
     }
+
+    /**
+     * @param $activate
+     * @param array $where
+     * @return int
+     * @throws Zend_Db_Adapter_Exception
+     */
+    public function massUpdateEnable($activate, array $where)
+    {
+        $adapter = $this->_getWriteAdapter();
+
+        $orWhere = array();
+        foreach ($where as $_where) {
+            $_andWhere = array();
+            foreach ($_where as $key => $value) {
+                $_andWhere[] = $adapter->quoteInto($key.'=?', $value);
+            }
+
+            $orWhere[] = '(' . implode(' AND ', $_andWhere) . ')';
+        }
+
+        return $adapter->update($this->getMainTable(), array(
+            'magento_sf_enable' => $activate,
+            'sf_magento_enable' => $activate
+        ), implode(' OR ', $orWhere));
+    }
 }

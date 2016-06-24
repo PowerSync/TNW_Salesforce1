@@ -71,6 +71,18 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 $entityType = 'order';
                 break;
 
+            case 'creditmemo':
+                if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Credit Memo synchronization disabled');
+                    return; // Disabled
+                }
+
+                /** @var Mage_Sales_Model_Order_Creditmemo $entity */
+                $entity = Mage::getModel('sales/order_creditmemo')
+                    ->load($event->getOid());
+
+                break;
+
             default:
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Unknown type of comment');
                 return; // Disabled

@@ -61,6 +61,10 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
             case 'Product2':
                 return Mage::helper('tnw_salesforce/magento_products');
             case 'Order':
+                if ($this->getObjectProperty('IsReductionOrder') && $this->getObjectProperty('OriginalOrderId')) {
+                    return Mage::helper('tnw_salesforce/magento_creditmemo');
+                }
+
                 return Mage::getModel('tnw_salesforce/import_order');
             case TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT:
                 return Mage::helper('tnw_salesforce/magento_invoice');

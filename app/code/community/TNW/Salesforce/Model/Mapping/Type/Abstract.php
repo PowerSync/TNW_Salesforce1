@@ -46,7 +46,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 return implode(' ', $value);
 
             case in_array($attributeType, array('date', 'datetime', 'timestamp')):
-                return gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($value)));
+                return $this->_prepareDateTime($value)->format('c');
 
             default:
                 return $value;
@@ -217,7 +217,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         {
             case 'date':
             case 'datetime':
-                $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($value));
+                $value = $this->_prepareDateTime($value)->format('c');
                 break;
 
             case 'multiselect':
@@ -278,5 +278,15 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         }
 
         return $value;
+    }
+
+    /**
+     * @param string $date
+     * @return DateTime
+     */
+    protected function _prepareDateTime($date)
+    {
+        $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+        return new \DateTime(date('Y-m-d H:i:s', strtotime($date)), new \DateTimeZone($timezone));
     }
 }

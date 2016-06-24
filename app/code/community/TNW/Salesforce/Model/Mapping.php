@@ -27,6 +27,8 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         'billing item'      => 'order_invoice_item',
         'shipment'          => 'order_shipment',
         'shipment item'     => 'order_shipment_item',
+        'credit memo'       => 'order_creditmemo',
+        'credit memo item'  => 'order_creditmemo_item',
         'billing'           => 'address_billing',
         'shipping'          => 'address_shipping',
         'shopping cart rule'=> 'sales_rule',

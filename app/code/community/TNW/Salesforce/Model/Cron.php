@@ -337,6 +337,9 @@ class TNW_Salesforce_Model_Cron
         // Sync shipment
         $this->syncShipment();
 
+        // Sync shipment
+        $this->syncCreditMemo();
+
         // Sync SalesRule
         $this->syncSalesRule();
 
@@ -404,6 +407,9 @@ class TNW_Salesforce_Model_Cron
                 break;
             case 'shipment':
                 $batchSize = $_configHelper->getShipmentBatchSize();
+                break;
+            case 'creditmemo':
+                $batchSize = $_configHelper->getCreditMemoBatchSize();
                 break;
             case 'campaign_salesrule':
                 $batchSize = $_configHelper->getSalesRuleBatchSize();
@@ -570,6 +576,7 @@ class TNW_Salesforce_Model_Cron
                             'abandoned',
                             'invoice',
                             'shipment',
+                            'creditmemo',
                         );
 
                         if (in_array($type, $eventTypes)) {
@@ -589,6 +596,10 @@ class TNW_Salesforce_Model_Cron
                                 case 'shipment':
                                     $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
                                     $_prefix = 'shipment';
+                                    break;
+                                case 'creditmemo':
+                                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getCreditmemoObject());
+                                    $_prefix = 'creditmemo';
                                     break;
                                 default:
                                     $_syncType = $type;
@@ -726,6 +737,23 @@ class TNW_Salesforce_Model_Cron
             $this->syncEntity('shipment');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: shipment not synced: %s", $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch credit memo ids from local storage and sync with sf
+     *
+     * @return bool
+     */
+    public function syncCreditMemo()
+    {
+        try {
+            $this->syncEntity('creditmemo');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: creditmemo not synced: %s", $e->getMessage()));
             return false;
         }
 

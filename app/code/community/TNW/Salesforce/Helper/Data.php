@@ -322,6 +322,22 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $object->getData('object_type');
     }
 
+    /**
+     * Get Shipment Object
+     *
+     * @return string
+     */
+    public function getCreditmemoObject()
+    {
+        // Allow Powersync to overwite fired event for customizations
+        $object = new Varien_Object(array(
+            'object_type' => TNW_Salesforce_Model_Order_Creditmemo_Observer::OBJECT_TYPE
+        ));
+
+        Mage::dispatchEvent('tnw_salesforce_creditmemo_set_object', array('sf_object' => $object));
+        return $object->getData('object_type');
+    }
+
     public function isLogEnabled()
     {
         return $this->getStoreConfig(self::API_LOG);
