@@ -69,7 +69,7 @@ class TNW_Salesforce_Helper_Test extends TNW_Salesforce_Helper_Abstract
      */
     public function getAvailableTestClasses()
     {
-        $myTests = array('version', 'soap', 'wsdl', 'openssl', 'connection', 'login', 'license', 'website');
+        $myTests = array('version', 'soap', 'mbstring', 'wsdl', 'openssl', 'connection', 'login', 'license', 'website');
         #$myTests = array('version','wsdl','connection','login','website');
         if (Mage::helper('tnw_salesforce')->isLogEnabled()) {
             $myTests[] = 'log';
