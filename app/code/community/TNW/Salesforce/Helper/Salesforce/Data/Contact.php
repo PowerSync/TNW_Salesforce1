@@ -102,7 +102,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @param array $_emailsArray
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Contact_Collection
      */
     protected function _generateDuplicatesCollection()
