@@ -43,29 +43,16 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     public function __construct()
     {
         parent::__construct();
-        $this->prepare();
+        $this->_prepare();
     }
 
-    protected function prepare()
+    protected function _prepare()
     {
+        parent::_prepare();
+
         if (empty($this->_attributes)) {
             $resource = Mage::getResourceModel('eav/entity_attribute');
             $this->_attributes['salesforce_id'] = $resource->getIdByCode('catalog_product', 'salesforce_id');
-            $this->_attributes['salesforce_pricebook_id'] = $resource->getIdByCode('catalog_product', 'salesforce_pricebook_id');
-            $this->_attributes['sku'] = $resource->getIdByCode('catalog_product', 'sku');
-            $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
-        }
-
-        $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-            ->addObjectToFilter('Product2')
-            ->addFieldToFilter('sf_magento_enable', 1)
-            ->firstSystem();
-
-        if (!$this->_product) {
-            $this->_product = Mage::getModel('catalog/product');
-        }
-        if (!$this->_write) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
         }
 
         if ($this->_isMultiSync === null) {
@@ -318,69 +305,94 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     /**
      * Accepts a single customer object and upserts a contact into the DB
      *
-     * @param null $object
+     * @param stdClass $object
      * @return bool|false|Mage_Core_Model_Abstract
      */
     public function syncFromSalesforce($object = null)
     {
-        $this->prepare();
+        $this->_prepare();
 
-        $_isNew = false;
+        $_mTypeId = TNW_Salesforce_Model_Config_Products_Type::TYPE_UNKNOWN;
+        $_mMagentoId = null;
 
-        $_sku = (property_exists($object, "ProductCode") && $object->ProductCode) ? $object->ProductCode : null;
-        $_salesforceId = (property_exists($object, "Id") && $object->Id) ? $object->Id : null;
+        $_sSku          = (!empty($object->ProductCode)) ? $object->ProductCode : null;
+        $_sSalesforceId = (!empty($object->Id)) ? $object->Id : null;
+        $_sMagentoId    = (!empty($object->{$this->_magentoIdField})) ? $object->{$this->_magentoIdField} : null;
 
-        $_magentoId = (property_exists($object, $this->_magentoIdField) && $object->{$this->_magentoIdField}) ? $object->{$this->_magentoIdField} : null;
-
-        if (!$_salesforceId) {
+        if (!$_sSalesforceId) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: Product2 ID is missing");
             $this->_addError('Could not upsert Product into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
-        if (!$_sku && !$_magentoId) {
+        if (!$_sSku && !$_sMagentoId) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: Email and Magento ID are missing");
             $this->_addError('Error upserting product into Magento: Email and Magento ID are missing', 'SKU_AND_MAGENTO_ID_MISSING');
             return false;
         }
 
+        $entityTable = Mage::helper('tnw_salesforce')->getTable('catalog_product_entity');
+
         // Lookup product by Magento Id
-        if ($_magentoId) {
+        if (!empty($_sMagentoId)) {
             //Test if user exists
-            $sql = "SELECT entity_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity') . "` WHERE entity_id = '" . $_magentoId . "'";
+            $sql = "SELECT entity_id, type_id  FROM `$entityTable` WHERE entity_id = '$_sMagentoId'";
             $row = $this->_write->query($sql)->fetch();
-            if (!$row) {
-                // Magento ID exists in Salesforce, user must have been deleted. Will re-create with the same ID
-                $_isNew = true;
-            }
-        }
-        if ($_magentoId && !$_isNew) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product loaded using Magento ID: " . $_magentoId);
-        } else {
-            // No Magento ID
-            if ($_salesforceId) {
-                // Try to find the user by SF Id
-                $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` WHERE value = '" . $_salesforceId . "' AND attribute_id = '" . $this->_attributes['salesforce_id'] . "' AND entity_type_id = '" . $this->_productEntityTypeId . "'";
-                $row = $this->_write->query($sql)->fetch();
-                $_magentoId = ($row) ? $row['entity_id'] : null;
-            }
+            if ($row) {
+                $_mMagentoId = $row['entity_id'];
+                $_mTypeId    = $row['type_id'];
 
-            if ($_magentoId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $_magentoId . " Loaded by using Salesforce ID: " . $_salesforceId);
-            } else {
-                //Last reserve, try to find by SKU
-                $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` WHERE value = '" . $_sku . "' AND attribute_id = '" . $this->_attributes['sku'] . "' AND entity_type_id = '" . $this->_productEntityTypeId . "'";
-                $row = $this->_write->query($sql)->fetch();
-                $_magentoId = ($row) ? $row['entity_id'] : null;
-
-                if ($_magentoId) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $_magentoId . " Loaded by using SKU: " . $_sku);
-                } else {
-                    //Brand new user
-                    $_isNew = true;
-                }
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Product loaded using Magento ID: " . $_sMagentoId);
             }
         }
 
-        return $this->_updateMagento($object, $_magentoId, $_sku, $_salesforceId, $_isNew);
+        // Lookup product by Salesforce Id
+        if (is_null($_mMagentoId) && !empty($_sSalesforceId)) {
+            $entityVarcharTable = Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar');
+            // Try to find the user by SF Id
+            $sql = "SELECT entity.entity_id, entity.type_id FROM `$entityVarcharTable` as attr "
+                ."INNER JOIN `$entityTable` as entity "
+                    ."ON attr.entity_id = entity.entity_id "
+                ."WHERE attr.value = '$_sSalesforceId ' "
+                    ."AND attr.attribute_id = '{$this->_attributes['salesforce_id']}' "
+                    ."AND attr.entity_type_id = '{$this->_productEntityTypeId}'";
+
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $_mMagentoId = $row['entity_id'];
+                $_mTypeId    = $row['type_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Product #".$_mMagentoId." loaded using Salesforce ID: " . $_sSalesforceId);
+            }
+        }
+
+        // Lookup product by SKU
+        if (is_null($_mMagentoId) && !empty($_sSku)) {
+            //Last reserve, try to find by SKU
+            $sql = "SELECT entity_id, type_id  FROM `$entityTable` WHERE sku = '$_sSku'";
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $_mMagentoId = $row['entity_id'];
+                $_mTypeId    = $row['type_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Product #" . $_mMagentoId . " Loaded by using SKU: " . $_sSku);
+            }
+        }
+
+        $_isNew = is_null($_mMagentoId);
+        if ($_isNew && !empty($object->tnw_mage_basic__Product_Type__c)) {
+            $_mTypeId = $this->getProductTypeId($object->tnw_mage_basic__Product_Type__c);
+        }
+
+        if (!in_array($_mTypeId, Mage::helper('tnw_salesforce/config_product')->getSyncTypesAllow())) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice('SKIPPING: Sync for product type "' . $_mTypeId . '" is disabled!');
+
+            return false;
+        }
+
+        return $this->_updateMagento($object, $_mMagentoId, $_sSku, $_sSalesforceId, $_isNew);
     }
 }

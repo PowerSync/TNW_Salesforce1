@@ -160,11 +160,16 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 }
 
                 if (!$product->getSku()) {
-                    $message = 'SKIPPING: Product #' . $product->getId() . ', product sku is missing!';
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
-                    if ($this->canDisplayErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addNotice($message);
-                    }
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveNotice('SKIPPING: Product #' . $product->getId() . ', product sku is missing!');
+
+                    $this->_skippedEntity[] = $product->getId();
+                    continue;
+                }
+
+                if (!in_array($product->getTypeId(), Mage::helper('tnw_salesforce/config_product')->getSyncTypesAllow())) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveNotice('SKIPPING: Sync for product type "' . $product->getTypeId() . '" is disabled!');
 
                     $this->_skippedEntity[] = $product->getId();
                     continue;
