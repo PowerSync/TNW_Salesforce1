@@ -66,7 +66,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         $value = $this->_prepareDefaultValue($value);
         $value = $this->_prepareReverseValue($_entity, $value);
 
-        if (null === $value || '' === trim($value)) {
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
             return;
         }
 
@@ -80,7 +80,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _prepareDefaultValue($value)
     {
-        if (null === $value || '' === trim($value)) {
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
             $value = $this->_mapping->getDefaultValue();
         }
 
