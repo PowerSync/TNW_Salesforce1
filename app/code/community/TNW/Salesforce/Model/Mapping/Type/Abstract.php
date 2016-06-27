@@ -303,7 +303,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _prepareDateTime($date)
     {
-        $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $timezone = !in_array($attributeCode, array('created_at', 'updated_at'))
+            ? Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE)
+            : 'UTC';
+
         return new \DateTime(date('Y-m-d H:i:s', strtotime($date)), new \DateTimeZone($timezone));
     }
 
@@ -313,7 +317,12 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _reversePrepareDateTime($date)
     {
-        $timezone       = new \DateTimeZone(Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE));
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $timezone = !in_array($attributeCode, array('created_at', 'updated_at'))
+            ? Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE)
+            : 'UTC';
+
+        $timezone       = new \DateTimeZone($timezone);
         $timezoneForce  = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? $timezone : null;
 
         $dateTime = new \DateTime($date, $timezoneForce);
