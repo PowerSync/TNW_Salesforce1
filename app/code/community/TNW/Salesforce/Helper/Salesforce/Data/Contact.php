@@ -253,7 +253,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
         $_results = array();
         foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
-            $_results[] = $this->_queryContacts($_magentoId, $_extra, $_customers);
+            /** @var stdClass $_result */
+            $_result = $this->_queryContacts($_magentoId, $_extra, $_customers);
+            if (!is_object($_result) || ($_result->size < 1)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Contact lookup returned: no results...");
+
+                continue;
+            }
+
+            $_results[] = $_result;
         }
 
         return $_results;
@@ -270,7 +279,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 return array();
             }
 
-            return $this->customLookup($customers, array($this, 'prepareRecord'));
+            $returnArray = array();
+            foreach ($this->customLookup($customers) as $item) {
+                $returnArray = array_merge($returnArray, $this->prepareRecord($item['customer'], $item['record']));
+            }
+
+            return $returnArray;
         }
         catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -288,24 +302,22 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
     /**
      * @param $customers Mage_Customer_Model_Customer[]
-     * @param $callableResult
      * @return array
      * @throws Mage_Core_Exception
      */
-    public function customLookup($customers, $callableResult)
+    public function customLookup($customers)
     {
         $_magentoId         = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $_personMagentoId   = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
         $websiteFieldKey    = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
         $_results = $this->getContactsByEmails($customers);
-        if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contact lookup returned: no results...");
+        $records  = $this->mergeRecords($_results);
+        if (empty($records)) {
             return array();
         }
 
         $recordsEmail = $recordsMagentoId = array();
-        $records = $this->mergeRecords($_results);
         foreach ($records as $key => $record) {
             // Index Email
             $recordsEmail[$key] = null;
@@ -350,12 +362,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                     }
 
                     if (empty($records[$recordsId]->$websiteFieldKey)) {
-                        $record = &$records[$recordsId];
+                        $record = $records[$recordsId];
                         continue;
                     }
 
                     if ($records[$recordsId]->$websiteFieldKey == $_websiteKey) {
-                        $record = &$records[$recordsId];
+                        $record = $records[$recordsId];
                         break;
                     }
                 }
@@ -369,9 +381,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 continue;
             }
 
-            $callback    = array_slice($callableResult, 0, 2);
-            $customData  = isset($callableResult[2]) ? $callableResult[2] : array();
-            $returnArray = array_merge_recursive($returnArray, call_user_func($callback, $customer, $record, $customData));
+            $returnArray[] = array(
+                'customer' => $customer,
+                'record'   => $record
+            );
         }
 
         return $returnArray;
@@ -380,11 +393,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     /**
      * @param $customer Mage_Customer_Model_Customer
      * @param $record stdClass
-     * @param $customData array
      * @return array
      * @throws Mage_Core_Exception
      */
-    public function prepareRecord($customer, $record, $customData)
+    public function prepareRecord($customer, $record)
     {
         $_magentoId         = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $_personMagentoId   = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";

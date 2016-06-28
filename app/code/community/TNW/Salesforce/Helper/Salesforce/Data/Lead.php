@@ -34,7 +34,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 return array();
             }
 
-            return $this->customLookup($customers, array($this, 'prepareRecord'), $leadSource, $idPrefix);
+            $returnArray = array();
+            foreach ($this->customLookup($customers, $leadSource, $idPrefix) as $item) {
+                $returnArray = array_merge($returnArray, $this->prepareRecord($item['customer'], $item['record']));
+            }
+
+            return $returnArray;
         }
         catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -49,13 +54,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
     /**
      * @param $customers Mage_Customer_Model_Customer[]
-     * @param $callableResult
      * @param string $leadSource
      * @param string $idPrefix
      * @return array|bool
      * @throws Mage_Core_Exception
      */
-    public function customLookup($customers, $callableResult, $leadSource = '', $idPrefix = '')
+    public function customLookup($customers, $leadSource = '', $idPrefix = '')
     {
         $_magentoId      = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $websiteFieldKey = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
@@ -109,12 +113,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                     }
 
                     if (empty($records[$recordsId]->$websiteFieldKey)) {
-                        $record = &$records[$recordsId];
+                        $record = $records[$recordsId];
                         continue;
                     }
 
                     if ($records[$recordsId]->$websiteFieldKey == $_websiteKey) {
-                        $record = &$records[$recordsId];
+                        $record = $records[$recordsId];
                         break;
                     }
                 }
@@ -128,9 +132,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 continue;
             }
 
-            $callback    = array_slice($callableResult, 0, 2);
-            $customData  = isset($callableResult[2]) ? $callableResult[2] : array();
-            $returnArray = array_merge_recursive($returnArray, call_user_func($callback, $customer, $record, $customData));
+            $returnArray[] = array(
+                'customer' => $customer,
+                'record'   => $record
+            );
         }
 
         return $returnArray;
@@ -139,11 +144,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     /**
      * @param $customer Mage_Customer_Model_Customer
      * @param $record stdClass
-     * @param $customData array
      * @return array
      * @throws Mage_Core_Exception
      */
-    public function prepareRecord($customer, $record, $customData)
+    public function prepareRecord($customer, $record)
     {
         $_magentoId  = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
@@ -977,10 +981,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
         //set from domains
         if (!$company) {
-            $lookupByDomain = Mage::helper('tnw_salesforce/salesforce_data_account')->lookupByEmailDomain(
-                array($customer->getEmail() => $customer->getEmail()));
-            if (!empty($lookupByDomain) && isset($lookupByDomain[$customer->getEmail()]->Name)) {
-                $company = $lookupByDomain[$customer->getEmail()]->Name;
+            $lookupByDomain = Mage::helper('tnw_salesforce/salesforce_data_account')
+                ->lookupByEmailDomain(array($customer));
+            if (!empty($lookupByDomain) && isset($lookupByDomain['_'.$customer->getId()]->Name)) {
+                $company = $lookupByDomain['_'.$customer->getId()]->Name;
             }
         }
 
