@@ -321,14 +321,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _reversePrepareDateTime($date)
     {
         $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-
-        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
-        $timezone = !in_array($attributeCode, array('created_at', 'updated_at'))
-            ? $currentTimezone
-            : 'UTC';
-
-        $timezone       = new DateTimeZone($timezone);
-        $timezoneForce  = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? $timezone : null;
+        $timezoneForce  = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
 
         $dateTime = new DateTime($date, $timezoneForce);
         return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
