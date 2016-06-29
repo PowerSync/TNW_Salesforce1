@@ -94,10 +94,22 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _prepareReverseValue($_entity, $value)
     {
+        // For Attribute
         $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
         $attribute      = $this->_getAttribute($_entity, $attributeCode);
         if ($attribute) {
             $value = $this->_reverseConvertValueForAttribute($attribute, $value);
+        }
+
+        // Other
+        $attributeType = $this->_mapping->getBackendType();
+        if (empty($attributeType)) {
+            $attributeType = $this->_dataType($_entity, $attributeCode);
+        }
+
+        switch(true) {
+            case in_array($attributeType, array('date', 'datetime', 'timestamp')):
+                $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
         }
 
         return $value;
@@ -257,6 +269,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     {
         switch ($attribute->getFrontend()->getConfigField('input'))
         {
+            case 'date':
+            case 'datetime':
+                $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
+                break;
+
             case 'select':
                 $source = $attribute->getSource();
                 if (!$source) {
@@ -299,7 +316,27 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _prepareDateTime($date)
     {
-        $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-        return new \DateTime(date('Y-m-d H:i:s', strtotime($date)), new \DateTimeZone($timezone));
+        $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $timezone = !in_array($attributeCode, array('created_at', 'updated_at'))
+            ? $currentTimezone
+            : 'UTC';
+
+        $dateTime = new DateTime(date('Y-m-d H:i:s', strtotime($date)), new DateTimeZone($timezone));
+        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
+    }
+
+    /**
+     * @param string $date
+     * @return DateTime
+     */
+    protected function _reversePrepareDateTime($date)
+    {
+        $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+        $timezoneForce  = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
+
+        $dateTime = new DateTime($date, $timezoneForce);
+        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
     }
 }
