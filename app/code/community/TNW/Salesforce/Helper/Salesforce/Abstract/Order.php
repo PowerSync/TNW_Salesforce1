@@ -761,6 +761,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->syncEntityCustomers();
         }
 
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
+            $entity         = $this->_loadEntityByCache($key, $number);
+            $entityNumber   = $this->_getEntityNumber($entity);
+            $lookupKey      = sprintf('%sLookup', $this->_salesforceEntityName);
+
+            if (isset($this->_cache[$lookupKey][$entityNumber])
+                && property_exists($this->_cache[$lookupKey][$entityNumber], 'hasReductionOrder')
+                && $this->_cache[$lookupKey][$entityNumber]->hasReductionOrder
+            ) {
+                // Something is wrong, could not create / find Magento customer in SalesForce
+                $this->logNotice('NOTICE: Skipping, cannot syn order with reduction orders. Order #'.$number);
+                $this->_skippedEntity[$key] = $key;
+            }
+        }
+
         /**
          * define Salesforce data for order customers
          */

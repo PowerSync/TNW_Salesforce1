@@ -46,7 +46,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 return implode(' ', $value);
 
             case in_array($attributeType, array('date', 'datetime', 'timestamp')):
-                return gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($value)));
+                if (empty($value)) {
+                    return null;
+                }
+
+                return $this->_prepareDateTime($value)->format('c');
 
             default:
                 return $value;
@@ -62,6 +66,10 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         $value = $this->_prepareDefaultValue($value);
         $value = $this->_prepareReverseValue($_entity, $value);
 
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
+            return;
+        }
+
         $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
         $_entity->setData($attributeCode, $value);
     }
@@ -72,7 +80,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _prepareDefaultValue($value)
     {
-        if (empty($value)) {
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
             $value = $this->_mapping->getDefaultValue();
         }
 
@@ -86,10 +94,22 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _prepareReverseValue($_entity, $value)
     {
+        // For Attribute
         $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
         $attribute      = $this->_getAttribute($_entity, $attributeCode);
         if ($attribute) {
             $value = $this->_reverseConvertValueForAttribute($attribute, $value);
+        }
+
+        // Other
+        $attributeType = $this->_mapping->getBackendType();
+        if (empty($attributeType)) {
+            $attributeType = $this->_dataType($_entity, $attributeCode);
+        }
+
+        switch(true) {
+            case in_array($attributeType, array('date', 'datetime', 'timestamp')):
+                $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
         }
 
         return $value;
@@ -217,7 +237,12 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         {
             case 'date':
             case 'datetime':
-                $value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp($value));
+                if (empty($value)) {
+                    $value = null;
+                    break;
+                }
+
+                $value = $this->_prepareDateTime($value)->format('c');
                 break;
 
             case 'multiselect':
@@ -244,6 +269,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     {
         switch ($attribute->getFrontend()->getConfigField('input'))
         {
+            case 'date':
+            case 'datetime':
+                $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
+                break;
+
             case 'select':
                 $source = $attribute->getSource();
                 if (!$source) {
@@ -278,5 +308,35 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         }
 
         return $value;
+    }
+
+    /**
+     * @param string $date
+     * @return DateTime
+     */
+    protected function _prepareDateTime($date)
+    {
+        $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $timezone = !in_array($attributeCode, array('created_at', 'updated_at'))
+            ? $currentTimezone
+            : 'UTC';
+
+        $dateTime = new DateTime(date('Y-m-d H:i:s', strtotime($date)), new DateTimeZone($timezone));
+        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
+    }
+
+    /**
+     * @param string $date
+     * @return DateTime
+     */
+    protected function _reversePrepareDateTime($date)
+    {
+        $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+        $timezoneForce  = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
+
+        $dateTime = new DateTime($date, $timezoneForce);
+        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
     }
 }

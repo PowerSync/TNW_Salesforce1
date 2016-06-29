@@ -9,6 +9,7 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     const BULK_ABANDONED_PATH = 'salesforce/development_and_debugging/abandoned_batch_size';
     const BULK_INVOICE_PATH = 'salesforce/development_and_debugging/invoice_batch_size';
     const BULK_SHIPMENT_PATH = 'salesforce/development_and_debugging/shipment_batch_size';
+    const BULK_CREDIT_MEMO_PATH = 'salesforce/development_and_debugging/creditmemo_batch_size';
 
     /**
      * @return array
@@ -67,6 +68,12 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     public function getShipmentBatchSize()
     {
         return $this->getStoreConfig(self::BULK_SHIPMENT_PATH);
+    }
+
+    // Get Credit Memo batch size
+    public function getCreditMemoBatchSize()
+    {
+        return $this->getStoreConfig(self::BULK_CREDIT_MEMO_PATH);
     }
 
     // Get Invoice batch size

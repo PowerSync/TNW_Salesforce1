@@ -81,11 +81,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
                     $sync = Mage::helper('tnw_salesforce/salesforce_product');
                     if ($sync->reset()) {
 
-                        $sync->setSalesforceServerDomain(
-                            Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                        $sync->setSalesforceSessionId(
-                            Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
-
                         if ($sync->massAdd(array($this->getRequest()->getParam('product_id')))){
                             $sync->process();
                         }
@@ -136,8 +131,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
                 } else {
                     $manualSync = Mage::helper('tnw_salesforce/bulk_product');
                     if ($manualSync->reset()) {
-                        $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-                        $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
                         if ($manualSync->massAdd($itemIds)){
                             $manualSync->process();
