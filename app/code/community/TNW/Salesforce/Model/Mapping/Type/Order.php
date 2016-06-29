@@ -41,6 +41,24 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
     }
 
     /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @param $value
+     * @return mixed|null|string
+     */
+    protected function _prepareReverseValue($_entity, $value)
+    {
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        switch ($attributeCode) {
+            case 'sf_status':
+                $this->_mapping->setLocalFieldAttributeCode('status');
+                $orderStatus = $this->reverseConvertSfStatus($value);
+                return empty($orderStatus) ? $_entity->getStatus() : $orderStatus;
+        }
+
+        return parent::_prepareReverseValue($_entity, $value);
+    }
+
+    /**
      * @param Mage_Sales_Model_Order $order
      * @return string
      */
@@ -184,6 +202,26 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
             $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_opportunity_status_code');
             return ($orderStatus)
                 ? $orderStatus : 'Committed';
+        }
+    }
+
+    /**
+     * @param string $value
+     * @return mixed|null|string
+     */
+    public function reverseConvertSfStatus($value)
+    {
+        if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
+            $matchedStatuses = Mage::getResourceModel('tnw_salesforce/order_status_collection')
+                ->addFieldToFilter('sf_order_status', $value);
+
+            return $matchedStatuses->getFirstItem()->getData('status');
+        }
+        else {
+            $matchedStatuses = Mage::getResourceModel('tnw_salesforce/order_status_collection')
+                ->addFieldToFilter('sf_opportunity_status_code', $value);
+
+            return $matchedStatuses->getFirstItem()->getData('status');
         }
     }
 
