@@ -707,8 +707,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         }
 
         $this->_cache['orderCustomers'][$_entityNumber] = $customer;
-        $this->_cache['orderToCustomerId'][$_entityNumber] = $_customerId;
-        $this->_cache['orderToEmail'][$_entityNumber] = $_orderEmail;
+        $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber] = $_customerId;
+        $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber] = $_orderEmail;
 
         // Check if customer from this group is allowed to be synchronized
         $_customerGroup = $_entity->getData('customer_group_id');
@@ -786,7 +786,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $customerEmail  = strtolower($customer->getEmail());
 
             if (!empty($this->_cache['accountsLookup'][0][$customerEmail])) {
-                $_websiteId = $this->_websites[$this->_cache['orderToCustomerId'][$number]];
+                $_websiteId = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
 
                 $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customerEmail]->Id);
 
