@@ -134,7 +134,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             //Defaults
             $_product->setSku($_sku);
             $_product->setSalesforceId($_salesforceId);
-            $_product->setInSync(1);
+            $_product->setSfInsync(1);
 
             $_stock = array();
 

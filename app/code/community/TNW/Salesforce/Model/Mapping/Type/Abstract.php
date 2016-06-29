@@ -46,6 +46,10 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 return implode(' ', $value);
 
             case in_array($attributeType, array('date', 'datetime', 'timestamp')):
+                if (empty($value)) {
+                    return null;
+                }
+
                 return $this->_prepareDateTime($value)->format('c');
 
             default:
@@ -62,6 +66,10 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         $value = $this->_prepareDefaultValue($value);
         $value = $this->_prepareReverseValue($_entity, $value);
 
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
+            return;
+        }
+
         $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
         $_entity->setData($attributeCode, $value);
     }
@@ -72,7 +80,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _prepareDefaultValue($value)
     {
-        if (empty($value)) {
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
             $value = $this->_mapping->getDefaultValue();
         }
 
@@ -229,6 +237,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         {
             case 'date':
             case 'datetime':
+                if (empty($value)) {
+                    $value = null;
+                    break;
+                }
+
                 $value = $this->_prepareDateTime($value)->format('c');
                 break;
 

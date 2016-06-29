@@ -121,7 +121,20 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
         $form->setUseContainer(true);
         $this->setForm($form);
 
-        $formData = Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))->getData();
+        $formData = array();
+        if (Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data')) {
+            $formData = Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data');
+            Mage::getSingleton('adminhtml/session')->setData($this->getSfEntity() . '_data', null);
+        } elseif (Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))) {
+            $formData = Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))->getData();
+        }
+
+        $matches = array();
+        if (isset($formData['local_field']) && preg_match('/Custom : (.+)/i', $formData['local_field'], $matches)) {
+            $formData['local_field'] = 'Custom : field';
+            $formData['default_code'] = $matches[1];
+        }
+
         $_isSystem = isset($formData['is_system'])
             ? (bool)$formData['is_system'] : false;
 
@@ -257,12 +270,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
 
         $this->setChild('form_after', $_formElementDependence);
 
-        if (Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data')) {
-            $form->setValues(Mage::getSingleton('adminhtml/session')->getData($this->getSfEntity() . '_data'));
-            Mage::getSingleton('adminhtml/session')->setData($this->getSfEntity() . '_data', null);
-        } elseif (Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))) {
-            $form->setValues(Mage::registry(sprintf('salesforce_%s_data', $this->getSfEntity()))->getData());
-        }
+        $form->setValues($formData);
         return parent::_prepareForm();
     }
 

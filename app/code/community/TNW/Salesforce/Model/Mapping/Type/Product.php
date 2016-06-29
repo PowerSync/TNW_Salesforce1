@@ -72,7 +72,7 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
      */
     public function reverseConvertStatus($value)
     {
-        return ($value === 1 || $value === true) ? 'Enabled' : 'Disabled';
+        return ($value === 1 || $value === true) ? 1 : 2;
     }
 
     /**

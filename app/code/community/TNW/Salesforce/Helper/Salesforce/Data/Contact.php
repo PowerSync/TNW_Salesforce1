@@ -6,11 +6,6 @@
 
 class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helper_Salesforce_Data
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
      * @param $duplicateData
      * @return $this
@@ -107,49 +102,32 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @param array $_emailsArray
      * @return TNW_Salesforce_Model_Api_Entity_Resource_Contact_Collection
      */
-    public function getDuplicates($_emailsArray = array())
+    protected function _generateDuplicatesCollection()
     {
-        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-
+        /** @var tnw_salesforce_model_api_entity_resource_contact_collection $collection */
         $collection = Mage::getModel('tnw_salesforce_api_entity/contact')->getCollection();
-
-        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS);
-        $collection->getSelect()->columns('Email');
-        $collection->getSelect()->columns('COUNT(Id) items_count');
+        $collection->getSelect()->reset(Varien_Db_Select::COLUMNS)
+            ->columns('COUNT(Id) items_count')
+            ->having('COUNT(Id) > ?', 1);
 
         /**
          * special option, define limitation for queries with sql expression
          */
         $collection->useExpressionLimit(true);
 
-        $collection->getSelect()->where("Email != ''");
-
-        $collection->getSelect()->group('Email');
-
-        $collection->getSelect()->having('COUNT(Id) > ?', 1);
-
-        if (!empty($_emailsArray)) {
-
-            $whereEmail = "Email = '" . implode("' OR Email = '", $_emailsArray) . "'";
-            $whereCustomerId = "$_magentoId = '" . implode("' OR $_magentoId = '", array_keys($_emailsArray)) . "'";
-            $collection->getSelect()->where("($whereEmail OR  $whereCustomerId)");
-        }
-
         if (Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
-            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
-
-            $collection->getSelect()->columns($websiteField);
-            $collection->getSelect()->group($websiteField);
-            /**
-             * records with empty websiteId - are duplicates potentially
-             */
-            $collection->getSelect()->orHaving("$websiteField = '' ");
+            $websiteField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+                . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
             $order = new Zend_Db_Expr($websiteField . ' ASC NULLS LAST');
-            $collection->getSelect()->order($order);
+
+            $collection->getSelect()
+                ->columns($websiteField)
+                ->group($websiteField)
+                ->orHaving("$websiteField = '' ")
+                ->order($order);
         }
 
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -160,24 +138,56 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
+     * @param $customers Mage_Customer_Model_Customer[]
+     * @return TNW_Salesforce_Model_Api_Entity_Contact[]
+     */
+    public function getDuplicates($customers = array())
+    {
+        $collection = $this->_generateDuplicatesCollection();
+        $collection->getSelect()
+            ->columns('Email')
+            ->where("Email != ''")
+            ->group('Email');
+
+        if (!empty($customers)) {
+            $emails = $iDs = array();
+            foreach ($customers as $customer) {
+                $iDs[]      = $customer->getId();
+                $emails[]   = $customer->getEmail();
+            }
+
+            $collection->getSelect()
+                ->where('Email IN(?)', $emails);
+        }
+
+        return $collection->getItems();
+    }
+
+    /**
      * @param $_magentoId
      * @param $_extra
-     * @param $_emails
-     * @param $_websites
+     * @param $customers Mage_Customer_Model_Customer[]
      * @return array
      */
-    protected function _queryContacts($_magentoId, $_extra, $_emails, $_websites)
+    protected function _queryContacts($_magentoId, $_extra, $customers)
     {
-        if (empty($_emails)) {
-            return false;
+        if (empty($customers)) {
+            return array();
         }
         $query = "SELECT ID, FirstName, LastName, Email, AccountId, OwnerId, " . $_magentoId . $_extra . " FROM Contact WHERE ";
 
         $_lookup = array();
-        foreach ($_emails as $_id => $_email) {
-            if (empty($_email)) {
+        foreach ($customers as $customer) {
+            if (!$customer instanceof Mage_Customer_Model_Customer) {
                 continue;
             }
+
+            $_id      = $customer->getId();
+            $_email   = strtolower($customer->getEmail());
+            $_website = $customer->getWebsiteId()
+                ? Mage::app()->getWebsite($customer->getWebsiteId())->getData('salesforce_id')
+                : null;
+
             $tmp = "(((";
             $tmp .= "Email='" . addslashes($_email) . "'";
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -185,10 +195,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             }
             $tmp .= ")";
 
-            if (
-                !empty($_id)
-                && $_id != 0
-            ) {
+            if (is_numeric($_id)) {
                 $tmp .= " OR " . $_magentoId . "='" . $_id . "'";
             }
 
@@ -198,9 +205,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             $tmp .= ")";
             if (
                 Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
-                && array_key_exists($_id, $_websites)
+                && !empty($_website)
             ) {
-                $tmp .= " AND (" . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '" . $_websites[$_id] . "' OR " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " = '')";
+                $websiteFieldName = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+                    . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+                $tmp .= " AND ($websiteFieldName = '$_website' OR $websiteFieldName = '')";
             }
             $tmp .= ")";
             $_lookup[] = $tmp;
@@ -223,11 +233,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @param null $email
-     * @param array $_websites
+     * @param Mage_Customer_Model_Customer[] $customers
      * @return array
      */
-    public function getContactsByEmails($email = NULL, $_websites = array())
+    public function getContactsByEmails($customers)
     {
         $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
         $_extra = NULL;
@@ -243,133 +252,182 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         }
 
         $_results = array();
-        $_emailChunk = array_chunk($email, self::UPDATE_LIMIT);
-        foreach ($_emailChunk as $_emails) {
-            $_results[] = $this->_queryContacts($_magentoId, $_extra, $_emails, $_websites);
+        foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
+            $_results[] = $this->_queryContacts($_magentoId, $_extra, $_customers);
         }
 
         return $_results;
     }
 
     /**
-     * @param null $email
-     * @param array $_websites
+     * @param Mage_Customer_Model_Customer[] $customers
      * @return array|bool
      */
-    public function lookup($email = NULL, $_websites = array())
+    public function lookup($customers)
     {
         try {
             if (!is_object($this->getClient())) {
-                return false;
-            }
-            $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-
-            if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                $_personMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
+                return array();
             }
 
-            $_results = $this->getContactsByEmails($email, $_websites);
+            return $this->customLookup($customers, array($this, 'prepareRecord'));
+        }
+        catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
 
-            unset($query);
-            if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contact lookup returned: no results...");
-                return false;
+            $email = array_map(function ($customer) {
+                return $customer->getEmail();
+            }, $customers);
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("Could not find a contact by Magento Email #" . implode(", ", $email));
+
+            return array();
+        }
+    }
+
+    /**
+     * @param $customers Mage_Customer_Model_Customer[]
+     * @param $callableResult
+     * @return array
+     * @throws Mage_Core_Exception
+     */
+    public function customLookup($customers, $callableResult)
+    {
+        $_magentoId         = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+        $_personMagentoId   = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
+        $websiteFieldKey    = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+        $_results = $this->getContactsByEmails($customers);
+        if (empty($_results) || !$_results[0] || $_results[0]->size < 1) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Contact lookup returned: no results...");
+            return array();
+        }
+
+        $recordsEmail = $recordsMagentoId = array();
+        $records = $this->mergeRecords($_results);
+        foreach ($records as $key => $record) {
+            // Index Email
+            $recordsEmail[$key] = null;
+            if (!empty($record->Account->PersonEmail)) {
+                $recordsEmail[$key] = $record->Account->PersonEmail;
             }
 
-            $returnArray = array();
-            foreach ($_results as $result) {
-                foreach ($result->records as $_item) {
-                    $tmp = new stdClass();
-                    $tmp->Id = $_item->Id;
-                    $tmp->Email = (property_exists($_item, 'Email') && $_item->Email) ? strtolower($_item->Email) : NULL;
-                    if ($tmp->Email === NULL) {
-                        $tmp->Email = (
-                            property_exists($_item, 'Account')
-                            && is_object($_item->Account)
-                            && property_exists($_item->Account, 'PersonEmail')
-                        ) ? strtolower($_item->Account->PersonEmail) : NULL;
+            if (!empty($record->Email)) {
+                $recordsEmail[$key] = $record->Email;
+            }
+
+            // Index MagentoId
+            $recordsMagentoId[$key] = null;
+            if (!empty($record->Account->$_personMagentoId)) {
+                $recordsMagentoId[$key] = $record->Account->$_personMagentoId;
+            }
+
+            if (!empty($record->Account->$_magentoId)) {
+                $recordsMagentoId[$key] = $record->Account->$_magentoId;
+            }
+
+            if (!empty($record->$_magentoId)) {
+                $recordsMagentoId[$key] = $record->$_magentoId;
+            }
+        }
+
+        $returnArray = array();
+        foreach ($customers as $customer) {
+            $_websiteKey = Mage::app()
+                ->getWebsite($customer->getWebsiteId())
+                ->getData('salesforce_id');
+
+            $recordsIds = array();
+            $recordsIds[] = array_keys($recordsMagentoId, $customer->getId());
+            $recordsIds[] = array_keys($recordsEmail, strtolower($customer->getEmail()));
+
+            $record = null;
+            foreach ($recordsIds as $_recordsIds) {
+                foreach ($_recordsIds as $recordsId) {
+                    if (!isset($records[$recordsId])) {
+                        continue;
                     }
 
-                    $tmp->OwnerId = (property_exists($_item, 'OwnerId')) ? $_item->OwnerId : NULL;
-                    $tmp->FirstName = (property_exists($_item, 'FirstName')) ? $_item->FirstName : NULL;
-                    $tmp->LastName = (property_exists($_item, 'LastName')) ? $_item->LastName : NULL;
-                    $tmp->AccountId = (property_exists($_item, 'AccountId')) ? $_item->AccountId : NULL;
-                    $tmp->AccountName = (property_exists($_item, 'Account') && property_exists($_item->Account, 'Name') && $_item->Account->Name) ? $_item->Account->Name : NULL;
-                    $tmp->RecordTypeId = (property_exists($_item, 'Account') && property_exists($_item->Account, 'RecordTypeId') && $_item->Account->RecordTypeId) ? $_item->Account->RecordTypeId : NULL;
-                    $tmp->AccountOwnerId = (property_exists($_item, 'Account') && property_exists($_item->Account, 'OwnerId') && $_item->Account->OwnerId) ? $_item->Account->OwnerId : NULL;
-                    if (
-                        Mage::helper('tnw_salesforce')->usePersonAccount()
-                        && property_exists($_item, 'Account')
-                        && property_exists($_item->Account, 'IsPersonAccount')
-                        && $_item->Account->IsPersonAccount
-                    ) {
-                        $tmp->IsPersonAccount = $_item->Account->IsPersonAccount;
-                        $tmp->PersonEmail = (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) ? strtolower($_item->PersonEmail) : $tmp->Email;
+                    if (empty($records[$recordsId]->$websiteFieldKey)) {
+                        $record = &$records[$recordsId];
+                        continue;
                     }
 
-                    $tmp->MagentoId = (property_exists($_item, $_magentoId)) ? $_item->{$_magentoId} : NULL;
-                    if (!$tmp->MagentoId && property_exists($_item, 'Account') && property_exists($_item->Account, $_magentoId)) {
-                        $tmp->MagentoId = $_item->Account->{$_magentoId};
-                    }
-                    if (
-                        !$tmp->MagentoId
-                        && Mage::helper('tnw_salesforce')->usePersonAccount()
-                        && property_exists($_item, $_personMagentoId)
-                    ) {
-                        $tmp->MagentoId = $_item->Account->{$_personMagentoId};
-                    }
-
-                    if (property_exists($_item, 'Email') && $tmp->Email) {
-                        $_key = strtolower($tmp->Email);
-                    } elseif (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) {
-                        $_key = strtolower($tmp->PersonEmail);
-                    } elseif (property_exists($_item, 'MagentoId') && $_item->MagentoId) {
-                        $_key = $_item->MagentoId;
-                    }
-                    if (property_exists($_item, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
-                        $_websiteKey = $_item->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
-                    } else {
-                        $_websiteKey = 0;
-                        if ($tmp->MagentoId && array_key_exists($tmp->MagentoId, $_websites)) {
-                            $_websiteKey = $_websites[$tmp->MagentoId];
-                        }
-                        if (!$_websiteKey) {
-                            // Guest, grab the first record (create other records if Magento customer scope is not global)
-                            $_personEmail = (property_exists($_item, 'PersonEmail') && $_item->PersonEmail) ? strtolower($tmp->PersonEmail) : strtolower($tmp->Email);
-                            $_customerId = array_search($_personEmail, $email);
-                            if ($_customerId !== FALSE) {
-                                $_websiteKey = $_websites[$_customerId];
-                            }
-                        }
-                    }
-
-                    $_websiteKey = $this->prepareId($_websiteKey);
-
-                    /**
-                     * get item if no other results or if MagentoId is same: matching by MagentoId should has the highest priority
-                     */
-                    if (
-                        !isset($returnArray[$_websiteKey][$_key])
-                        || ($tmp->MagentoId && !empty($email[$tmp->MagentoId]))
-                    ) {
-
-                        /**
-                         * if record was found by MagentoId and has different email - use email from Magento system
-                         */
-                        if (!empty($email[$tmp->MagentoId])) {
-                            $_key = $email[$tmp->MagentoId];
-                        }
-
-                        $returnArray[$_websiteKey][$_key] = $tmp;
+                    if ($records[$recordsId]->$websiteFieldKey == $_websiteKey) {
+                        $record = &$records[$recordsId];
+                        break;
                     }
                 }
+
+                if (!empty($record)) {
+                    break;
+                }
             }
-            return $returnArray;
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by Magento Email #" . implode(",", $email));
-            unset($email);
-            return false;
+
+            if (empty($record)) {
+                continue;
+            }
+
+            $callback    = array_slice($callableResult, 0, 2);
+            $customData  = isset($callableResult[2]) ? $callableResult[2] : array();
+            $returnArray = array_merge_recursive($returnArray, call_user_func($callback, $customer, $record, $customData));
         }
+
+        return $returnArray;
+    }
+
+    /**
+     * @param $customer Mage_Customer_Model_Customer
+     * @param $record stdClass
+     * @param $customData array
+     * @return array
+     * @throws Mage_Core_Exception
+     */
+    public function prepareRecord($customer, $record, $customData)
+    {
+        $_magentoId         = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
+        $_personMagentoId   = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__pc";
+
+        $_websiteKey = Mage::app()
+            ->getWebsite($customer->getWebsiteId())
+            ->getData('salesforce_id');
+
+        $tmp = new stdClass();
+        $tmp->Id    = $record->Id;
+        $tmp->Email = !empty($record->Email) ? strtolower($record->Email) : null;
+        if (null === $tmp->Email) {
+            $tmp->Email = !empty($record->Account->PersonEmail) ? strtolower($record->Account->PersonEmail) : null;
+        }
+
+        $tmp->OwnerId        = !empty($record->OwnerId) ? $record->OwnerId : null;
+        $tmp->FirstName      = !empty($record->FirstName) ? $record->FirstName : null;
+        $tmp->LastName       = !empty($record->LastName) ? $record->LastName : null;
+        $tmp->AccountId      = !empty($record->AccountId) ? $record->AccountId : null;
+        $tmp->AccountName    = !empty($record->Account->Name) ? $record->Account->Name : null;
+        $tmp->RecordTypeId   = !empty($record->Account->RecordTypeId) ? $record->Account->RecordTypeId : null;
+        $tmp->AccountOwnerId = !empty($record->Account->OwnerId) ? $record->Account->OwnerId : null;
+
+        if (
+            Mage::helper('tnw_salesforce')->usePersonAccount()
+            && !empty($record->Account->IsPersonAccount)
+        ) {
+            $tmp->IsPersonAccount = $record->Account->IsPersonAccount;
+            $tmp->PersonEmail = !empty($record->PersonEmail) ? strtolower($record->PersonEmail) : $tmp->Email;
+        }
+
+        $tmp->MagentoId = (property_exists($record, $_magentoId)) ? $record->{$_magentoId} : NULL;
+        if (!$tmp->MagentoId && isset($record->Account->{$_magentoId})) {
+            $tmp->MagentoId = $record->Account->{$_magentoId};
+        }
+        if (
+            !$tmp->MagentoId
+            && Mage::helper('tnw_salesforce')->usePersonAccount()
+            && isset($record->Account->{$_personMagentoId})
+        ) {
+            $tmp->MagentoId = $record->Account->{$_personMagentoId};
+        }
+
+        return array($this->prepareId($_websiteKey) => array($customer->getEmail() => $tmp));
     }
 }
