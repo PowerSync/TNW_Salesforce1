@@ -231,15 +231,12 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $storeIds = array(Mage::app()->getWebsite(true)->getDefaultStore()->getId());
         }
 
-        $appEmulation = Mage::getSingleton('core/app_emulation');
         foreach (array_merge($storeIds, array((int)Mage::app()->getStore('admin')->getId())) as $storeId) {
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
-
             $currencyBase = Mage::helper('tnw_salesforce')->isMultiCurrency()
-                ? Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE)
+                ? Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE, $storeId)
                 : null;
 
-            $pricebookId = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::PRODUCT_PRICEBOOK);
+            $pricebookId = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::PRODUCT_PRICEBOOK, $storeId);
 
             $price = null;
             foreach ($object->PricebookEntries->records as $_price) {
@@ -269,7 +266,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             }
 
             $currencyAllow = Mage::helper('tnw_salesforce')->isMultiCurrency()
-                ? explode(',', Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_ALLOW))
+                ? explode(',', Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_ALLOW, $storeId))
                 : array(null);
 
             $priceBook = array();
@@ -297,8 +294,6 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                 Mage::getSingleton('catalog/product_action')
                     ->updateAttributes(array($productId), array('salesforce_pricebook_id' => implode("\n", $priceBook)), $storeId);
             }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
     }
 
