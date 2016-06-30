@@ -24,6 +24,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Campaign
             ->getBlockSingleton('core/template')
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
+                'selector'  => '.tnw-ajax-find-select-campaign',
                 'url'       => $this->getUrl('*/salesforce_search/campaign'),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
             ));

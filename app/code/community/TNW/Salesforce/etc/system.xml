@@ -598,7 +598,7 @@
                         <single_account_select translate="label">
                             <label>Single Account</label>
                             <frontend_type>select</frontend_type>
-                            <frontend_class>tnw-ajax-find-select</frontend_class>
+                            <frontend_class>tnw-ajax-find-select-account</frontend_class>
                             <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_account</frontend_model>
                             <sort_order>23</sort_order>
                             <show_in_default>1</show_in_default>
@@ -925,7 +925,7 @@
                         <customer_newletter_campaign_id translate="label">
                             <label>Campaign</label>
                             <frontend_type>select</frontend_type>
-                            <frontend_class>tnw-ajax-find-select</frontend_class>
+                            <frontend_class>tnw-ajax-find-select-campaign</frontend_class>
                             <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_campaign</frontend_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
