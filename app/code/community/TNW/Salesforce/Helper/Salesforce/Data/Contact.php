@@ -197,11 +197,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
             if (is_numeric($_id)) {
                 $tmp .= " OR " . $_magentoId . "='" . $_id . "'";
+
+                if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+                    $tmp .= " OR Account." . str_replace('__c', '__pc', $_magentoId) . "='" . $_id . "'";
+                }
             }
 
-            if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                $tmp .= " OR Account." . str_replace('__c', '__pc', $_magentoId) . "='" . $_id . "'";
-            }
             $tmp .= ")";
             if (
                 Mage::helper('tnw_salesforce')->getCustomerScope() == "1"

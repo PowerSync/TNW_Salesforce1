@@ -609,8 +609,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $_records[] = $record->records;
         }
 
-        if (count($_records) <= 1) {
-            return $_records;
+        if (count($_records) == 0) {
+            return array();
         }
 
         return call_user_func_array('array_merge', $_records);
