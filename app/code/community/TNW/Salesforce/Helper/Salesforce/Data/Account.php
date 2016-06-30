@@ -181,40 +181,27 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function lookup($_customers)
     {
-
-        $_companies = array();
-        $_emails = array();
-        foreach ($_customers as $_customer) {
-            $key            = '_' . $_customer->getId();
-            $_emails[$key]  = strtolower($_customer->getEmail());
-
-            $_companyName = $this->getCompanyByCustomer($_customer);
-            if (!empty($_companyName)) {
-                $_companies[$key] = $_companyName;
-            }
-        }
-
         /**
          * @comment find accounts by the Company name, domain and existing contacts
          */
-        $_accountsByCompany = (!empty($_companies)) ? $this->lookupByCompanies($_companies, 'CustomIndex') : array();
-
-        $_accountsForce = $this->lookupForce($_emails);
-
-        $_accountsByDomain = $this->lookupByEmailDomain($_emails, 'id');
-
+        $_accountsByCompany  = $this->lookupByCompanies($_customers);
+        $_accountsForce      = $this->lookupForce($_customers);
+        $_accountsByDomain   = $this->lookupByEmailDomain($_customers);
         $_accountsByContacts = $this->lookupByContact($_customers);
 
         $_accounts = array_merge($_accountsByCompany, $_accountsForce, $_accountsByDomain, $_accountsByContacts);
 
         $_accountsLookup = array();
+        foreach ($_customers as $_customer) {
+            if (empty($_accounts['_'.$_customer->getId()])) {
+                continue;
+            }
 
-        foreach ($_accounts as $_id => $_account) {
             /**
              * @comment accounts are not splitted by websites, so, we define 0 for cache array compatibility
              */
-            $_email = $_emails[$_id];
-            $_accountsLookup[0][$_email] = $_account;
+            $_accountsLookup[0][strtolower($_customer->getEmail())]
+                = $_accounts['_'.$_customer->getId()];
         }
 
         return $_accountsLookup;
@@ -228,17 +215,25 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function lookupByContact($_customers, $field = 'id')
     {
-        return Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->customLookup($_customers, array($this, 'prepareContactRecord', array('field' => $field)));
+        $customLookup = Mage::helper('tnw_salesforce/salesforce_data_contact')
+            ->customLookup($_customers);
+
+        $returnArray = array();
+        foreach ($customLookup as $item) {
+            $returnArray = array_merge($returnArray,
+                $this->prepareContactRecord($item['customer'], $item['record'], $field));
+        }
+
+        return $returnArray;
     }
 
     /**
      * @param $customer Mage_Customer_Model_Customer
      * @param $record
-     * @param $customData
+     * @param $field
      * @return array
      */
-    public function prepareContactRecord($customer, $record, $customData)
+    public function prepareContactRecord($customer, $record, $field = 'id')
     {
         if (!property_exists($record, 'Account')) {
             return array();
@@ -249,7 +244,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $tmp->RecordTypeId = property_exists($record->Account, 'RecordTypeId') ? $record->Account->RecordTypeId : null;
         $tmp->IsPersonAccount = property_exists($record->Account, 'IsPersonAccount') ? $record->Account->IsPersonAccount : false;
 
-        $key = (isset($customData['field']) && $customData['field'] == 'email')
+        $key = ($field == 'email')
             ? $customer->getEmail() : '_'.$customer->getId();
 
         return array($key => $tmp);
@@ -264,16 +259,14 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      */
     public function lookupByCriterias($criterias, $hashField = 'Id', $field = 'Name')
     {
-        $criterias = array_chunk($criterias, self::UPDATE_LIMIT);
-
         $result = array();
-
-        foreach ($criterias as $criteriasChunk) {
+        foreach (array_chunk($criterias, self::UPDATE_LIMIT, true) as $criteriasChunk) {
             $lookupResults = $this->lookupByCriteria($criteriasChunk, $hashField, $field);
-            if (is_array($lookupResults)) {
-                $result = array_merge($result, $lookupResults);
-                break;
+            if (!is_array($lookupResults)) {
+                continue;
             }
+
+            $result = array_merge($result, $lookupResults);
         }
 
         return $result;
@@ -281,12 +274,17 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
     /**
      * @comment find account by domain name
-     * @param array $emails
+     * @param Mage_Customer_Model_Customer[] $_customers
      * @return array
      */
-    public function lookupByEmailDomain($emails = array(), $_hashKey = 'email')
+    public function lookupByEmailDomain($_customers)
     {
-        $accountIds  = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($emails);
+        $_emails = array();
+        foreach ($_customers as $_customer) {
+            $_emails['_' . $_customer->getId()] = strtolower($_customer->getEmail());
+        }
+
+        $accountIds  = Mage::helper('tnw_salesforce/salesforce_data')->accountLookupByEmailDomain($_emails);
         $accountObjs = $this->lookupByCriterias($accountIds, 'CustomIndex', 'Id');
 
         $return = array();
@@ -304,10 +302,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
     /**
      * @comment find account force
-     * @param array $emails
+     * @param Mage_Customer_Model_Customer[] $_customers
      * @return array
      */
-    public function lookupForce($emails = array())
+    public function lookupForce($_customers)
     {
         /** @var TNW_Salesforce_Helper_Config_Customer $_hCustomer */
         $_hCustomer = Mage::helper('tnw_salesforce/config_customer');
@@ -319,8 +317,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $forceAccount   = $this->lookupByCriteria(array('forceAccount' => $forceAccountId), 'CustomIndex', 'Id');
 
         $accounts = array();
-        foreach (array_keys($emails) as $id) {
-            $accounts[$id] = $forceAccount['forceAccount'];
+        foreach ($_customers as $_customer) {
+            $accounts['_'.$_customer->getId()] = $forceAccount['forceAccount'];
         }
 
         return $accounts;
@@ -340,14 +338,25 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     /**
      * Find and return accounts by company names
      *
-     * @param array $companies
-     * @param string $hashField
+     * @param Mage_Customer_Model_Customer[] $_customers
      *
      * @return array
      */
-    public function lookupByCompanies(array $companies, $hashField = 'Id')
+    public function lookupByCompanies($_customers)
     {
-        return $this->lookupByCriterias($companies, $hashField);
+        $_companies = array();
+        foreach ($_customers as $_customer) {
+            $_companyName = $this->getCompanyByCustomer($_customer);
+            if (!empty($_companyName)) {
+                $_companies['_' . $_customer->getId()] = $_companyName;
+            }
+        }
+
+        if (empty($_companies)) {
+            return array();
+        }
+
+        return $this->lookupByCriterias($_companies, 'CustomIndex');
     }
 
     /**
@@ -441,7 +450,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find an account by criteria: " . var_export($criteria));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find an account by criteria: " . var_export($criteria, true));
 
             return false;
         }
