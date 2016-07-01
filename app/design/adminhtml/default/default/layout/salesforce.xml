@@ -276,4 +276,11 @@
             <block type="tnw_salesforce/adminhtml_customer_edit_tab_view_opportunities" name="admin.customer.opportunities"/>
         </block>
     </adminhtml_customer_opportunities>
+
+    <adminhtml_customer_edit>
+        <reference name="customer_edit_tabs">
+            <block type="tnw_salesforce/adminhtml_customer_edit_tab_salesforce" name="customer_edit_tab_salesforce" template="salesforce/customer/tab/salesforce.phtml" />
+            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>customer_edit_tab_salesforce</block><after>addresses</after></action>
+        </reference>
+    </adminhtml_customer_edit>
 </layout>
