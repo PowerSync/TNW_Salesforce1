@@ -1356,6 +1356,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             ? array($ids) : $ids;
 
         foreach ($ids as $id) {
+            /**
+             * skip guests
+             */
+            if (!is_numeric($id)) {
+                continue;
+            }
             $resetAttribute = array(
                 'salesforce_id'         => null,
                 'salesforce_account_id' => null,

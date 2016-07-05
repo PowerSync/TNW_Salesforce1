@@ -23,6 +23,14 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
             case 'sf_company':
                 return $this->convertSfCompany($_entity);
+            case 'id':
+                $value = $_entity->getId();
+                /**
+                 * skip guest id
+                 */
+                if (!is_numeric($value)) {
+                    return;
+                }
         }
 
         return parent::_prepareValue($_entity);

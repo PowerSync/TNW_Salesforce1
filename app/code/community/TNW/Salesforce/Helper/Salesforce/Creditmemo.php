@@ -98,7 +98,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_recordNumber] = $customer;
 
         // Associate order Number with a customer ID
-        $_customerId = ($customer->getId()) ? $customer->getId() : sprintf('guest-%d', $this->_guestCount++);
+        $_customerId = ($customer->getId()) ? $customer->getId() : sprintf('guest_%d', $this->_guestCount++);
         $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_recordNumber] = $_customerId;
 
         // Associate order Number with a customer Email
