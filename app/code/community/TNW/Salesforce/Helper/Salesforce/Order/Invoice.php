@@ -646,52 +646,73 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                 continue;
             }
 
+            $item = clone $item;
             if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
                 $items[] =  $item;
                 continue;
             }
 
+            $item
+                ->setRowTotalInclTax(null)
+                ->setBaseRowTotalInclTax(null)
+                ->setRowTotal(null)
+                ->setBaseRowTotal(null)
+                ->setDiscountAmount(null)
+                ->setBaseDiscountAmount(null);
+
             switch (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
                 case 0:
                     //Add parent
-                    $_items[] = $item;
+                    $items[] = $item;
 
                     /** @var Mage_Sales_Model_Order_Item $_orderItem */
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
                             continue;
                         }
 
-                        $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                        $item
+                            ->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                            ->setBaseRowTotalInclTax($item->getBaseRowTotalInclTax() + $_item->getBaseRowTotalInclTax())
                             ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
-                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+                            ->setBaseRowTotal($item->getBaseRowTotal() + $_item->getBaseRowTotal())
+                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount())
+                            ->setBaseDiscountAmount($item->getBaseDiscountAmount() + $_item->getBaseDiscountAmount());
                     }
                     break;
 
                 case 1:
                     //Add parent
-                    $_items[] = $item;
+                    $items[] = $item;
 
                     //Add children
                     /** @var Mage_Sales_Model_Order_Item $_orderItem */
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
                             continue;
                         }
 
-                        $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                        $item
+                            ->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                            ->setBaseRowTotalInclTax($item->getBaseRowTotalInclTax() + $_item->getBaseRowTotalInclTax())
                             ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
-                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+                            ->setBaseRowTotal($item->getBaseRowTotal() + $_item->getBaseRowTotal())
+                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount())
+                            ->setBaseDiscountAmount($item->getBaseDiscountAmount() + $_item->getBaseDiscountAmount());
 
-                        $_item->setRowTotalInclTax(null)
+                        $_item
+                            ->setRowTotalInclTax(null)
+                            ->setBaseRowTotalInclTax(null)
                             ->setRowTotal(null)
+                            ->setBaseRowTotal(null)
                             ->setDiscountAmount(null)
+                            ->setBaseDiscountAmount(null)
                             ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
                                 . $item->getSku());
 
@@ -705,7 +726,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
                             continue;
                         }

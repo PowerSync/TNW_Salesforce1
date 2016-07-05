@@ -738,46 +738,62 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                 continue;
             }
 
+            $item = clone $item;
             if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
                 $items[] =  $item;
                 continue;
             }
 
+            $item
+                ->setRowTotalInclTax(null)
+                ->setBaseRowTotalInclTax(null)
+                ->setRowTotal(null)
+                ->setBaseRowTotal(null)
+                ->setDiscountAmount(null)
+                ->setBaseDiscountAmount(null);
+            
             switch (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
                 case 0:
                     //Add parent
-                    $_items[] = $item;
+                    $items[] = $item;
 
                     /** @var Mage_Sales_Model_Order_Item $_orderItem */
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Shipment_Item) {
                             continue;
                         }
 
-                        $item->setRowTotal($item->getRowTotal() + $_item->getRowTotal());
+                        $item
+                            ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
+                            ->setBaseRowTotal($item->getBaseRowTotal() + $_item->getBaseRowTotal())
+                        ;
                     }
                     break;
 
                 case 1:
                     //Add parent
-                    $_items[] = $item;
+                    $items[] = $item;
 
                     //Add children
                     /** @var Mage_Sales_Model_Order_Item $_orderItem */
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Shipment_Item) {
                             continue;
                         }
 
                         $item->setRowTotal($item->getRowTotal() + $_item->getRowTotal());
 
-                        $_item->setRowTotal(null)
+                        $_item
+                            ->setRowTotal(null)
+                            ->setBaseRowTotal(null)
+                            ->setRowTotalInclTax(null)
+                            ->setBaseRowTotalInclTax(null)
                             ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
                                 . $item->getSku());
 
@@ -791,7 +807,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Shipment_Item) {
                             continue;
                         }
