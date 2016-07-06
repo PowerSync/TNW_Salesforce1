@@ -341,7 +341,12 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $_object->Id = $this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum];
 
                 // Check if at least 1 product was added to the order before we try to activate
-                if (empty($this->_cache['orderItemsProductsToSync'][$_object->Id])) {
+                if ((
+                        !($this->_cache['orderLookup'][$_orderNum])
+                        || !property_exists($this->_cache['orderLookup'][$_orderNum], 'OrderItems')
+                        || empty($this->_cache['orderLookup'][$_orderNum]->OrderItems))
+                    && (empty($this->_cache['responses']['orderItems'][$_orderNum]))
+                ) {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');
                     if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
