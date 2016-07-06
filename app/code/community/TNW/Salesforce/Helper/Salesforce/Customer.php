@@ -986,7 +986,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $this->_skippedEntity = array();
         try {
             $_existIds = array_filter(array_map(function(Mage_Customer_Model_Customer $_customer){
-                return $_customer->getId();
+                return is_numeric($_customer->getId())? $_customer->getId(): null;
             }, $_customers));
 
             $this->_massAddBefore($_existIds);
@@ -1009,8 +1009,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 return false;
             }
 
-            $this->resetEntity(array_diff($_existIds, $this->_skippedEntity));
             $this->_massAddAfter();
+            $this->resetEntity(array_diff($_existIds, $this->_skippedEntity));
 
             return !empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         } catch (Exception $e) {
@@ -1366,6 +1366,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             ? array($ids) : $ids;
 
         foreach ($ids as $id) {
+
             $resetAttribute = array(
                 'salesforce_id'         => null,
                 'salesforce_account_id' => null,

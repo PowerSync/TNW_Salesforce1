@@ -567,7 +567,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         // Associate quote Number with a customer ID
         $_customerId = ($customer->getId())
-            ? $customer->getId() : sprintf('guest-%d', $this->_guestCount++);
+            ? $customer->getId() : sprintf('guest_%d', $this->_guestCount++);
 
         $customer->setId($_customerId);
 

@@ -90,7 +90,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
 
         // Associate order Number with a customer ID
         $_customerId = ($customer->getId())
-            ? $customer->getId() : sprintf('guest-%d', $this->_guestCount++);
+            ? $customer->getId() : sprintf('guest_%d', $this->_guestCount++);
 
         $customer->setId($_customerId);
 
