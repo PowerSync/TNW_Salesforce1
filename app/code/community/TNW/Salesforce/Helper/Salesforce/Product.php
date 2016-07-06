@@ -138,7 +138,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         try {
             //get product collection
-            /** @var Mage_Catalog_Model_Product[] $productsCollection */
+            /** @var Mage_Catalog_Model_Resource_Product_Collection $productsCollection */
             $productsCollection = Mage::getModel('catalog/product')
                 ->getCollection()
                 ->addIdFilter($ids)
@@ -146,6 +146,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             Mage::register('product_sync_collection', $productsCollection);
 
             $this->_skippedEntity = $skuArray = array();
+            /** @var Mage_Catalog_Model_Product $product */
             foreach ($productsCollection as $product) {
                 // we check product type and skip synchronization if needed
                 if (intval($product->getData('salesforce_disable_sync')) == 1) {
@@ -178,6 +179,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $sku = trim($product->getSku());
                 $this->_cache['productIdToSku'][$product->getId()] = $sku;
                 $skuArray[$product->getId()] = $sku;
+            }
+
+            foreach ($this->_skippedEntity as $productId) {
+                $productsCollection->removeItemByKey($productId);
             }
 
             if (empty($skuArray)) {
@@ -263,6 +268,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
              * skip order fee products, these products don't exist in magento and use sku instead Id
              */
             if (!is_numeric($_magentoId)) {
+                continue;
+            }
+
+            if (in_array($_magentoId, $this->_skippedEntity)) {
                 continue;
             }
 

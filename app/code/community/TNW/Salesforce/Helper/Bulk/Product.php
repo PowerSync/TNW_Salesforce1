@@ -35,6 +35,11 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             if (!is_numeric($_magentoId)) {
                 continue;
             }
+
+            if (in_array($_magentoId, $this->_skippedEntity)) {
+                continue;
+            }
+
             $_product->salesforceId = (property_exists($_product, 'productId')) ? $_product->productId : NULL;
             $_product->pricebookEntityIds = (property_exists($_product, 'pricebookEntityIds')) ? $_product->pricebookEntityIds : array();
             $_product->SfInSync = (property_exists($_product, 'syncComplete')) ? $_product->syncComplete : 0;
