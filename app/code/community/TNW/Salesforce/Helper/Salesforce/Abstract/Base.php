@@ -1465,7 +1465,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             'last_name'         => $order->getBillingAddress()->getLastname(),
             'created_at'        => $order->getCreatedAt(),
             'billing_address'   => $order->getBillingAddress()->getData(),
-            'shipping_address'  => $order->getShippingAddress()->getData(),
+            'shipping_address'  => ($order->getShippingAddress())? $order->getShippingAddress()->getData(): new Varien_Object(),
         ));
 
         if ($customer->getId() && !$order->getCustomerId()) {

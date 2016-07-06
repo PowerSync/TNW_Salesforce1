@@ -250,7 +250,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
             $_shippingAddress->setCustomerId(0)
                 ->setIsDefaultShipping('1')
                 ->setSaveInAddressBook('0')
-                ->addData($order->getShippingAddress()->getData());
+                ->addData(
+                    ($order->getShippingAddress())?
+                        $order->getShippingAddress()->getData():
+                        array()
+                );
             $_customer->setShippingAddress($_shippingAddress);
         }
 
