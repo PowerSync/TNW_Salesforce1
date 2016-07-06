@@ -736,8 +736,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $_email = strtolower($_customer->getEmail());
 
         $_ownerID = NULL;
-        if (Mage::helper('tnw_salesforce')->getDefaultOwner()) {
-            $this->_obj->OwnerId = Mage::helper('tnw_salesforce')->getDefaultOwner();
+        switch ($type) {
+            case 'Lead':
+                $defaultOwner = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
+                break;
+
+            default:
+                $defaultOwner = Mage::helper('tnw_salesforce')->getDefaultOwner();
+                break;
+        }
+
+        if ($defaultOwner) {
+            $this->_obj->OwnerId = $defaultOwner;
         }
 
         $cacheType = strtolower($type);
@@ -797,7 +807,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " record already assigned to " . $_ownerID);
 
             } else {
-                $_ownerID = Mage::helper('tnw_salesforce')->getDefaultOwner();
+                $_ownerID = $defaultOwner;
             }
 
             $this->_obj->OwnerId = $_ownerID;
