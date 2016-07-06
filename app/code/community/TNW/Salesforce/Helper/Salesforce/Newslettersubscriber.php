@@ -432,7 +432,7 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
     {
         // Filter the records without registration
         $subscribers = array_filter($subscribers, function (Mage_Newsletter_Model_Subscriber $subscriber) {
-            $issetCustomer = (bool)$subscriber->getCustomerId();
+            $issetCustomer = is_numeric($subscriber->getCustomerId()) && (bool)$subscriber->getCustomerId();
             if (!$issetCustomer) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace(sprintf("Subscription synchronization skipped for subscriber (%s), customer is not registered.", $subscriber->getEmail()));
