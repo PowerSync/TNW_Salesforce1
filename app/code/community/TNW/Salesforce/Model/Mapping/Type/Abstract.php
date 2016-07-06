@@ -109,7 +109,13 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
         switch(true) {
             case in_array($attributeType, array('date', 'datetime', 'timestamp')):
+                if (empty($value)) {
+                    $value = null;
+                    break;
+                }
+
                 $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
+                break;
         }
 
         return $value;
@@ -271,6 +277,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         {
             case 'date':
             case 'datetime':
+                if (empty($value)) {
+                    $value = null;
+                    break;
+                }
+
                 $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
                 break;
 
