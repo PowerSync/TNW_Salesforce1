@@ -36,7 +36,17 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
             $returnArray = array();
             foreach ($this->customLookup($customers, $leadSource, $idPrefix) as $item) {
-                $returnArray = array_merge_recursive($returnArray, $this->prepareRecord($item['customer'], $item['record']));
+                $return = $this->prepareRecord($item['customer'], $item['record']);
+                if (empty($return)) {
+                    continue;
+                }
+
+                list($website, $entityData) = each($return);
+                if (!isset($returnArray[$website])) {
+                    $returnArray[$website] = array();
+                }
+
+                $returnArray[$website] = array_merge($returnArray[$website], $entityData);
             }
 
             return $returnArray;
