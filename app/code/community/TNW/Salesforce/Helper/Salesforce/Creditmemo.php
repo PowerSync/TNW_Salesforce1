@@ -280,10 +280,10 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     {
         // Salesforce lookup, find all contacts/accounts by email address
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->lookup($this->_emails, $this->_websites);
+            ->lookup($this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)]);
 
         $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
-            ->lookup($this->_emails, $this->_websites);
+            ->lookup($this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)]);
 
         $this->_massAddAfterCreditmemo();
 
@@ -810,10 +810,19 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                 continue;
             }
 
+            $item = clone $item;
             if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
                 $items[] =  $item;
                 continue;
             }
+
+            $item
+                ->setRowTotalInclTax(null)
+                ->setBaseRowTotalInclTax(null)
+                ->setRowTotal(null)
+                ->setBaseRowTotal(null)
+                ->setDiscountAmount(null)
+                ->setBaseDiscountAmount(null);
 
             switch (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
                 case 0:
@@ -823,14 +832,22 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        if (!$_itemId) {
+                            continue;
+                        }
+
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Creditmemo_Item) {
                             continue;
                         }
 
-                        $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                        $item
+                            ->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                            ->setBaseRowTotalInclTax($item->getBaseRowTotalInclTax() + $_item->getBaseRowTotalInclTax())
                             ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
-                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+                            ->setBaseRowTotal($item->getBaseRowTotal() + $_item->getBaseRowTotal())
+                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount())
+                            ->setBaseDiscountAmount($item->getBaseDiscountAmount() + $_item->getBaseDiscountAmount());
                     }
                     break;
 
@@ -841,18 +858,30 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        if (!$_itemId) {
+                            continue;
+                        }
+
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Creditmemo_Item) {
                             continue;
                         }
 
-                        $item->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                        $item
+                            ->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
+                            ->setBaseRowTotalInclTax($item->getBaseRowTotalInclTax() + $_item->getBaseRowTotalInclTax())
                             ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
-                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount());
+                            ->setBaseRowTotal($item->getBaseRowTotal() + $_item->getBaseRowTotal())
+                            ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount())
+                            ->setBaseDiscountAmount($item->getBaseDiscountAmount() + $_item->getBaseDiscountAmount());
 
-                        $_item->setRowTotalInclTax(null)
+                        $_item
+                            ->setRowTotalInclTax(null)
+                            ->setBaseRowTotalInclTax(null)
                             ->setRowTotal(null)
+                            ->setBaseRowTotal(null)
                             ->setDiscountAmount(null)
+                            ->setBaseDiscountAmount(null)
                             ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
                                 . $item->getSku());
 
@@ -865,7 +894,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
-                        $_item   = $_itemCollection->getItemById($_itemId);
+                        if (!$_itemId) {
+                            continue;
+                        }
+                        
+                        $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Creditmemo_Item) {
                             continue;
                         }
