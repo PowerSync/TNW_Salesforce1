@@ -1170,7 +1170,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             // Push Order
             $this->_pushEntity();
 
-            $this->_prepareRemaining();
             // Push Activated order
             $this->_pushRemainingCustomEntityData();
         }
