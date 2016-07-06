@@ -6,6 +6,8 @@
 
 class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 {
+    const MIN_LEN_SF_ID = 15;
+
     /**
      * @var null
      */
@@ -507,6 +509,6 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      */
     public function prepareId($id)
     {
-        return substr($id, 0, 15);
+        return substr($id, 0, self::MIN_LEN_SF_ID);
     }
 }
