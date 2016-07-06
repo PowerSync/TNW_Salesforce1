@@ -156,7 +156,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                         Mage::getSingleton('adminhtml/session')->addNotice($message);
                     }
 
-                    $productsCollection->removeItemByKey($product->getId());
                     $this->_skippedEntity[] = $product->getId();
                     continue;
                 }
@@ -165,7 +164,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveNotice('SKIPPING: Product #' . $product->getId() . ', product sku is missing!');
 
-                    $productsCollection->removeItemByKey($product->getId());
                     $this->_skippedEntity[] = $product->getId();
                     continue;
                 }
@@ -174,7 +172,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveNotice('SKIPPING: Sync for product type "' . $product->getTypeId() . '" is disabled!');
 
-                    $productsCollection->removeItemByKey($product->getId());
                     $this->_skippedEntity[] = $product->getId();
                     continue;
                 }
@@ -182,6 +179,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $sku = trim($product->getSku());
                 $this->_cache['productIdToSku'][$product->getId()] = $sku;
                 $skuArray[$product->getId()] = $sku;
+            }
+
+            foreach ($this->_skippedEntity as $productId) {
+                $productsCollection->removeItemByKey($productId);
             }
 
             if (empty($skuArray)) {
