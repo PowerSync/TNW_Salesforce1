@@ -761,6 +761,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
+                        if (!$_itemId) {
+                            continue;
+                        }
+
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Shipment_Item) {
                             continue;
@@ -782,6 +786,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
+                        if (!$_itemId) {
+                            continue;
+                        }
+                        
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Shipment_Item) {
                             continue;
@@ -806,6 +814,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                     /** @var Mage_Sales_Model_Order_Item $_orderItem */
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+
+                        if (!$_itemId) {
+                            continue;
+                        }
 
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Shipment_Item) {

@@ -828,6 +828,10 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
+                        if (!$_itemId) {
+                            continue;
+                        }
+
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Creditmemo_Item) {
                             continue;
@@ -849,6 +853,10 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                     /** @var Mage_Sales_Model_Order_Item $_orderItem */
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+
+                        if (!$_itemId) {
+                            continue;
+                        }
 
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Creditmemo_Item) {
@@ -882,6 +890,10 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
+                        if (!$_itemId) {
+                            continue;
+                        }
+                        
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Creditmemo_Item) {
                             continue;

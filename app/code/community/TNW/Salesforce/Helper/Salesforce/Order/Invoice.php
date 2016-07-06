@@ -669,6 +669,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
+                        if (!$_itemId) {
+                            continue;
+                        }
+
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
                             continue;
@@ -692,6 +696,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                     /** @var Mage_Sales_Model_Order_Item $_orderItem */
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
+
+                        if (!$_itemId) {
+                            continue;
+                        }
 
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
@@ -726,6 +734,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                     foreach ($item->getOrderItem()->getChildrenItems() as $_orderItem) {
                         $_itemId = array_search($_orderItem->getId(), $_hasOrderItemId);
 
+                        if (!$_itemId) {
+                            continue;
+                        }
+                        
                         $_item   = clone $_itemCollection->getItemById($_itemId);
                         if (!$_item instanceof Mage_Sales_Model_Order_Invoice_Item) {
                             continue;
