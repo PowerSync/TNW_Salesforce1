@@ -11,7 +11,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Campaign
     {
         $aIdVal = array();
         $value = $element->getData('value');
-        if (!empty($value) && strlen($value) > 14) {
+        if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
             /** @var TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection $collection */
             $collection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
                 ->addFieldToFilter('Id', array('eq' => $value));
