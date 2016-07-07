@@ -101,7 +101,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo extends TNW_Salesforce_
      */
     public function convertNumber($_entity)
     {
-        return $_entity->getIncrementId();
+        return 'cm_'.$_entity->getIncrementId();
     }
 
     /**
@@ -137,7 +137,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo extends TNW_Salesforce_
             return $mappingState[$stateId];
         }
 
-        return 'Draft';
+        return Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
     }
 
     /**
@@ -146,6 +146,6 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo extends TNW_Salesforce_
      */
     public function convertSfName($_entity)
     {
-        return $_entity->getIncrementId();
+        return "Magento Credit Memo #" . $_entity->getIncrementId();
     }
 }

@@ -21,7 +21,7 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
 
         $_miIncrementIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . "Magento_ID__c";
         $_miIncrementId    = (property_exists($object, $_miIncrementIdKey) && $object->$_miIncrementIdKey)
-            ? $object->$_miIncrementIdKey : null;
+            ? str_replace('cm_', '', $object->$_miIncrementIdKey) : null;
 
         if ($_miIncrementId) {
             //Test if user exists
@@ -362,7 +362,7 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
      */
     protected function _getEntityNumber($_entity)
     {
-        return $_entity->getIncrementId();
+        return 'cm_'.$_entity->getIncrementId();
     }
 
     /**

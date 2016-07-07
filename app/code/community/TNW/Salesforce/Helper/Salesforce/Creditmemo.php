@@ -59,7 +59,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
      */
     protected function _getEntityNumber($_entity)
     {
-        return $_entity->getIncrementId();
+        return 'cm_'.$_entity->getIncrementId();
     }
 
     /**
@@ -93,13 +93,13 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         $_recordNumber =  $this->_getEntityNumber($_entity);
 
         // Get Magento customer object
-        /** @var Mage_Customer_Model_Customer $customer */
-        $customer = $this->_getCustomer($_order);
-        $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_recordNumber] = $customer;
+        $customer = $this->_generateCustomerByOrder($_order);
 
         // Associate order Number with a customer ID
-        $_customerId = ($customer->getId()) ? $customer->getId() : sprintf('guest_%d', $this->_guestCount++);
-        $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_recordNumber] = $_customerId;
+        $_customerId = ($customer->getId())
+            ? $customer->getId() : sprintf('guest_%d', $this->_guestCount++);
+
+        $customer->setId($_customerId);
 
         // Associate order Number with a customer Email
         $email = strtolower($customer->getEmail());
@@ -117,27 +117,19 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
             return false;
         }
 
+        $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_recordNumber] = $_customerId;
         $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_recordNumber] = $email;
+        $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_recordNumber] = $customer;
 
         // Check if customer from this group is allowed to be synchronized
-        $_customerGroup = null;
-        $i = 1;
-        do {
-            switch ($i++) {
-                case 1:
-                    $_customerGroup = $_order->getData('customer_group_id');
-                    break;
-                case 2:
-                    $_customerGroup = $customer->getGroupId();
-                    break;
-                case 3:
-                    $_customerGroup = !$this->isFromCLI()
-                        ? Mage::getSingleton('customer/session')->getCustomerGroupId() : null;
-                    break;
-                default:
-                    break 2;
-            }
-        } while(empty($_customerGroup));
+        $_customerGroup = $_order->getData('customer_group_id');
+        if ($_customerGroup === NULL) {
+            $_customerGroup = $customer->getGroupId();
+        }
+
+        if ($_customerGroup === NULL && !$this->isFromCLI()) {
+            $_customerGroup = Mage::getSingleton('customer/session')->getCustomerGroupId();
+        }
 
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
@@ -166,111 +158,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
      */
     protected function _getCustomer($order)
     {
-        $customer_id = $order->getCustomerId();
-        if (!$customer_id && !$this->isFromCLI()) {
-            Mage::getSingleton('customer/session')->getCustomerId();
-        }
-
-        if ($customer_id) {
-            $_customer = Mage::getModel("customer/customer");
-            if (Mage::helper('tnw_salesforce')->getMagentoVersion() < 1500) {
-                $sql = "SELECT website_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $customer_id . "'";
-                $row = Mage::helper('tnw_salesforce')->getDbConnection()->query($sql)->fetch();
-                if (!$row) {
-                    $_customer->setWebsiteId($row['website_id']);
-                }
-            }
-            $_customer = $_customer->load($customer_id);
-            unset($customer_id);
-        } else {
-            // Guest most likely
-            $_customer = Mage::getModel('customer/customer');
-
-            $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
-            $_storeId = $order->getStoreId();
-            if ($_customer->getSharingConfig()->isWebsiteScope()) {
-                $_customer->setWebsiteId($_websiteId);
-            }
-            $_email = strtolower($order->getCustomerEmail());
-            $_customer->loadByEmail($_email);
-
-            if (!$_customer->getId()) {
-                //Guest
-                $_customer = Mage::getModel("customer/customer");
-                $_customer->setGroupId(0); // NOT LOGGED IN
-                $_customer->setFirstname($order->getBillingAddress()->getFirstname());
-                $_customer->setLastname($order->getBillingAddress()->getLastname());
-                $_customer->setEmail($_email);
-                $_customer->setStoreId($_storeId);
-                if (isset($_websiteId)) {
-                    $_customer->setWebsiteId($_websiteId);
-                }
-
-                $_customer->setCreatedAt(gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($order->getCreatedAt()))));
-                //TODO: Extract as much as we can from the order
-
-            } else {
-
-                $sql = '';
-                //UPDATE order to record Customer Id
-                if ($order->getResource()->getMainTable()) {
-
-                    $sql = "UPDATE `" . $order->getResource()->getMainTable() . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
-                }
-
-                if ($order->getResource()->getGridTable()) {
-                    $sql .= "UPDATE `" . $order->getResource()->getGridTable() . "` SET customer_id = " . $_customer->getId() . " WHERE entity_id = " . $order->getId() . ";";
-                }
-
-                if ($order->getAddressesCollection()->getMainTable()) {
-                    $sql .= "UPDATE `" . $order->getAddressesCollection()->getMainTable() . "` SET customer_id = " . $_customer->getId() . " WHERE parent_id = " . $order->getId() . ";";
-                }
-                Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-                Mage::helper("tnw_salesforce")->log('Guest user found in Magento, updating order #' . $order->getId() . ' attaching cusomter ID: ' . $_customer->getId());
-            }
-        }
-        if (
-            !$_customer->getDefaultBillingAddress()
-            && is_object($order->getBillingAddress())
-            && $order->getBillingAddress()->getData()
-        ) {
-            $_billingAddress = Mage::getModel('customer/address');
-            $_billingAddress->setCustomerId(0)
-                ->setIsDefaultBilling('1')
-                ->setSaveInAddressBook('0')
-                ->addData($order->getBillingAddress()->getData());
-            $_customer->setBillingAddress($_billingAddress);
-        }
-        if (
-            !$_customer->getDefaultShippingAddress()
-            && is_object($order->getShippingAddress())
-            && $order->getShippingAddress()->getData()
-        ) {
-            $_shippingAddress = Mage::getModel('customer/address');
-            $_shippingAddress->setCustomerId(0)
-                ->setIsDefaultShipping('1')
-                ->setSaveInAddressBook('0')
-                ->addData(
-                    ($order->getShippingAddress())?
-                        $order->getShippingAddress()->getData():
-                        array()
-                );
-            $_customer->setShippingAddress($_shippingAddress);
-        }
-
-        $_websiteId = Mage::app()->getStore($order->getStoreId())->getWebsiteId();
-        if ($_customer->getSharingConfig()->isWebsiteScope()) {
-            $_customer->setWebsiteId($_websiteId);
-        }
-
-        // Set Company Name
-        if (!$_customer->getData('company') && $order->getBillingAddress()->getData('company')) {
-            $_customer->setData('company', $order->getBillingAddress()->getData('company'));
-        } elseif (!$_customer->getData('company') && !Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $_customer->setData('company', $_customer->getFirstname() . ' ' . $_customer->getLastname());
-        }
-
-        return $_customer;
+        return $this->_generateCustomerByOrder($order);
     }
 
     /**
@@ -361,8 +249,9 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
          * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
          */
         $_currentStatus = $this->_obj->Status;
-        if ($_currentStatus != TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS) {
-            $this->_obj->Status = TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+        $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
+        if ($_currentStatus != $_draftStatus) {
+            $this->_obj->Status = $_draftStatus;
             $_toActivate = new stdClass();
             $_toActivate->Status = $_currentStatus;
             $_toActivate->Id = NULL;
@@ -709,15 +598,15 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach ($this->_cache['orderToActivate'] as $_orderNum => $_object) {
-                $salesforceOrderId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
-                if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
-                    $_object->Id = $salesforceOrderId;
+                if (!isset($this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum])) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('SKIPPING ACTIVATION: Credit Memo (' . $_orderNum . ') did not make it into Salesforce.');
+
+                    unset($this->_cache['orderToActivate'][$_orderNum]);
                     continue;
                 }
 
-                unset($this->_cache['orderToActivate'][$_orderNum]);
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+                $_object->Id = $this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum];
             }
 
             if (!empty($this->_cache['orderToActivate'])) {
