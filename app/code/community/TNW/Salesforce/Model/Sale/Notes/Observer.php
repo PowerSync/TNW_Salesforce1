@@ -71,16 +71,15 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 $entityType = 'order';
                 break;
 
-            case 'creditmemo':
+            case $note instanceof Mage_Sales_Model_Order_Creditmemo_Comment:
                 if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Credit Memo synchronization disabled');
                     return; // Disabled
                 }
 
                 /** @var Mage_Sales_Model_Order_Creditmemo $entity */
-                $entity = Mage::getModel('sales/order_creditmemo')
-                    ->load($event->getOid());
-
+                $entity     = $note->getCreditmemo();
+                $entityType = 'creditmemo';
                 break;
 
             default:
@@ -132,6 +131,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                     'order'     => 'tnw_salesforce/salesforce_order',
                     'invoice'   => 'tnw_salesforce/salesforce_order_invoice',
                     'shipment'  => 'tnw_salesforce/salesforce_order_shipment',
+                    'creditmemo'=> 'tnw_salesforce/salesforce_creditmemo',
                 );
                 break;
 
@@ -166,6 +166,9 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 break;
             case 'shipment':
                 $entityType = Mage::helper('tnw_salesforce')->getShipmentObject();
+                break;
+            case 'creditmemo':
+                $entityType = Mage::helper('tnw_salesforce')->getCreditmemoObject();
                 break;
         }
 

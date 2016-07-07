@@ -15,7 +15,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
             return; // Disabled
         }
 
-        if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditmemo()) {
+        if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Credit Memo synchronization disabled');
             return; // Disabled
         }
