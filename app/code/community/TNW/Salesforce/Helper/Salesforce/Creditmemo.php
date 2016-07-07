@@ -598,15 +598,15 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach ($this->_cache['orderToActivate'] as $_orderNum => $_object) {
-                $salesforceOrderId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
-                if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
-                    $_object->Id = $salesforceOrderId;
+                if (!isset($this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum])) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('SKIPPING ACTIVATION: Credit Memo (' . $_orderNum . ') did not make it into Salesforce.');
+
+                    unset($this->_cache['orderToActivate'][$_orderNum]);
                     continue;
                 }
 
-                unset($this->_cache['orderToActivate'][$_orderNum]);
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+                $_object->Id = $this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum];
             }
 
             if (!empty($this->_cache['orderToActivate'])) {
