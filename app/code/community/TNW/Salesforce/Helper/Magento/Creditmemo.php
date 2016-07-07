@@ -362,7 +362,7 @@ class TNW_Salesforce_Helper_Magento_Creditmemo extends TNW_Salesforce_Helper_Mag
      */
     protected function _getEntityNumber($_entity)
     {
-        return $_entity->getIncrementId();
+        return 'cm_'.$_entity->getIncrementId();
     }
 
     /**
