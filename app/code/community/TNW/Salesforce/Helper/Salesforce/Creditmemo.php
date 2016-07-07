@@ -59,7 +59,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
      */
     protected function _getEntityNumber($_entity)
     {
-        return $_entity->getIncrementId();
+        return 'cm_'.$_entity->getIncrementId();
     }
 
     /**
