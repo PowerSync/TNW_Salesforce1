@@ -168,7 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         $lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
 
         if (is_string($_entity)) {
-            list($campaignId, $entityNumber) = explode('_', $_entity);
+            list($campaignId, $entityNumber) = explode('_', $_entity, 2);
             $_entity = $this->getEntityCache($entityNumber);
             $campaignId = $this->prepareId($campaignId);
         } else {
