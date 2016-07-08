@@ -34,8 +34,30 @@ class TNW_Salesforce_Model_Config_Customer_Backend_Address_Picklist extends Mage
         }
 
         $mapping = Mage::getResourceModel('tnw_salesforce/mapping');
-        $mapping->massUpdateEnable(!$activatePicklist, $where);
-        $mapping->massUpdateEnable($activatePicklist, $whereCode);
+        $mapping->massUpdateEnable(array(
+            'magento_sf_enable' => !$activatePicklist,
+            'sf_magento_enable' => !$activatePicklist
+        ), $where);
+        $mapping->massUpdateEnable(array(
+            'magento_sf_enable' => $activatePicklist,
+            'sf_magento_enable' => $activatePicklist
+        ), $whereCode);
+
+        // CreditMemo Update
+        $cmWhere = $cmWhereCode = array();
+        foreach (array('BillingState', 'BillingCountry', 'ShippingState', 'ShippingCountry') as $field) {
+            $cmWhere[]        = array('sf_object'=>'OrderCreditMemo', 'sf_field'=>$field);
+            $cmWhereCode[]    = array('sf_object'=>'OrderCreditMemo', 'sf_field'=>$field.'Code');
+        }
+
+        $mapping->massUpdateEnable(array(
+            'magento_sf_enable' => !$activatePicklist,
+            'sf_magento_enable' => '0'
+        ), $cmWhere);
+        $mapping->massUpdateEnable(array(
+            'magento_sf_enable' => $activatePicklist,
+            'sf_magento_enable' => '0'
+        ), $cmWhereCode);
 
         return $this;
     }

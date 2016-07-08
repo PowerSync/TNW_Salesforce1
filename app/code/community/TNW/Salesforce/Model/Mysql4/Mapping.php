@@ -43,12 +43,12 @@ class TNW_Salesforce_Model_Mysql4_Mapping extends Mage_Core_Model_Mysql4_Abstrac
     }
 
     /**
-     * @param $activate
+     * @param array $bind
      * @param array $where
      * @return int
      * @throws Zend_Db_Adapter_Exception
      */
-    public function massUpdateEnable($activate, array $where)
+    public function massUpdateEnable(array $bind, array $where)
     {
         $adapter = $this->_getWriteAdapter();
 
@@ -62,9 +62,6 @@ class TNW_Salesforce_Model_Mysql4_Mapping extends Mage_Core_Model_Mysql4_Abstrac
             $orWhere[] = '(' . implode(' AND ', $_andWhere) . ')';
         }
 
-        return $adapter->update($this->getMainTable(), array(
-            'magento_sf_enable' => $activate,
-            'sf_magento_enable' => $activate
-        ), implode(' OR ', $orWhere));
+        return $adapter->update($this->getMainTable(), $bind, implode(' OR ', $orWhere));
     }
 }
