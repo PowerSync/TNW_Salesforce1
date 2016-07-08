@@ -672,7 +672,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
         /** @var Mage_Sales_Model_Quote_Item $_item */
         foreach ($parentEntity->getAllVisibleItems() as $_item) {
-            $_item = clone $_item;
+
             if ($_item->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
                 $_items[] = $_item;
                 continue;
@@ -687,7 +687,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                     $_items[] = $_item;
 
                     foreach ($_item->getChildren() as $_childItem) {
-                        $_childItem = clone $_childItem;
                         $_childItem
                             ->setRowTotalInclTax(null)
                             ->setBaseRowTotalInclTax(null)
@@ -704,8 +703,8 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                 case 2:
                     foreach ($_item->getChildren() as $_childItem) {
-                        $_childItem = clone $_childItem;
-                        $_childItem->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
+                        $_childItem
+                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
                             . $_item->getSku());
 
                         $_items[] = $_childItem;
