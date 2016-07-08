@@ -104,6 +104,11 @@
         <block type="tnw_salesforce/adminhtml_shipmentsync_grid" name="shipmentsync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_shipmentsync_grid>
 
+    <adminhtml_salesforcesync_creditmemosync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_creditmemosync_grid" name="creditmemosync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_creditmemosync_grid>
+
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
         <reference name="sales_order_tabs">
@@ -153,6 +158,14 @@
         <update handle="tnw_salesforce_select2"/>
     </adminhtml_system_config_edit>
 
+    <adminhtml_catalog_product_edit>
+        <update handle="tnw_salesforce_select2"/>
+    </adminhtml_catalog_product_edit>
+
+    <adminhtml_promo_quote_edit>
+        <update handle="tnw_salesforce_select2"/>
+    </adminhtml_promo_quote_edit>
+
     <adminhtml_salesforce_abandoned_opportunity_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_abandoned_opportunity_edit>
@@ -177,25 +190,49 @@
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_opportunitylineitem_edit>
 
+    <adminhtml_salesforce_opportunity_invoice_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_invoice_edit>
+
+    <adminhtml_salesforce_opportunity_invoiceitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_invoiceitem_edit>
+
+    <adminhtml_salesforce_opportunity_shipment_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_shipment_edit>
+
+    <adminhtml_salesforce_opportunity_shipmentitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_opportunity_shipmentitem_edit>
+
     <adminhtml_catalog_product_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_catalog_product_edit>
 
-    <adminhtml_salesforce_orderinvoice_edit>
+    <adminhtml_salesforce_order_invoice_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_orderinvoice_edit>
+    </adminhtml_salesforce_order_invoice_edit>
 
-    <adminhtml_salesforce_orderinvoiceitem_edit>
+    <adminhtml_salesforce_order_invoiceitem_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_orderinvoiceitem_edit>
+    </adminhtml_salesforce_order_invoiceitem_edit>
 
-    <adminhtml_salesforce_ordershipment_edit>
+    <adminhtml_salesforce_order_shipment_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_ordershipment_edit>
+    </adminhtml_salesforce_order_shipment_edit>
 
-    <adminhtml_salesforce_ordershipmentitem_edit>
+    <adminhtml_salesforce_order_shipmentitem_edit>
         <update handle="tnw_salesforce_chosen"/>
-    </adminhtml_salesforce_ordershipmentitem_edit>
+    </adminhtml_salesforce_order_shipmentitem_edit>
+
+    <adminhtml_salesforce_ordercreditmemo_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_ordercreditmemo_edit>
+
+    <adminhtml_salesforce_ordercreditmemoitem_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_ordercreditmemoitem_edit>
 
     <adminhtml_salesforce_campaign_catalogrule_edit>
         <update handle="tnw_salesforce_chosen"/>
@@ -239,4 +276,11 @@
             <block type="tnw_salesforce/adminhtml_customer_edit_tab_view_opportunities" name="admin.customer.opportunities"/>
         </block>
     </adminhtml_customer_opportunities>
+
+    <adminhtml_customer_edit>
+        <reference name="customer_edit_tabs">
+            <block type="tnw_salesforce/adminhtml_customer_edit_tab_salesforce" name="customer_edit_tab_salesforce" template="salesforce/customer/tab/salesforce.phtml" />
+            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>customer_edit_tab_salesforce</block><after>addresses</after></action>
+        </reference>
+    </adminhtml_customer_edit>
 </layout>

@@ -13,22 +13,142 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     public function getValue($_entity)
     {
-        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $value = $this->_prepareValue($_entity);
+        $value = $this->_prepareDefaultValue($value);
 
+        return $value;
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
+     * @return mixed
+     */
+    protected function _prepareValue($_entity)
+    {
+        //For Attribute
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute && $_entity->hasData($attributeCode)) {
+            return $this->_convertValueForAttribute($_entity, $attribute);
+        }
+
+        // Other
         $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
         $value = call_user_func(array($_entity, $method));
+
+        $attributeType = $this->_mapping->getBackendType();
+        if (empty($attributeType)) {
+            $attributeType = $this->_dataType($_entity, $attributeCode);
+        }
 
         switch(true) {
             case is_array($value):
                 return implode(' ', $value);
 
-            case in_array($this->_mapping->getBackendType(), array('datetime', 'timestamp')):
-            case $attributeCode == 'created_at':
-                return gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($value)));
+            case in_array($attributeType, array('date', 'datetime', 'timestamp')):
+                if (empty($value)) {
+                    return null;
+                }
+
+                return $this->_prepareDateTime($value)->format('c');
 
             default:
                 return $value;
         }
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
+     * @param $value string
+     */
+    public function setValue($_entity, $value)
+    {
+        $value = $this->_prepareDefaultValue($value);
+        $value = $this->_prepareReverseValue($_entity, $value);
+
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
+            return;
+        }
+
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $_entity->setData($attributeCode, $value);
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    protected function _prepareDefaultValue($value)
+    {
+        if (is_null($value) || (is_string($value) && '' === trim($value))) {
+            $value = $this->_mapping->getDefaultValue();
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
+     * @param $value
+     * @return mixed
+     */
+    protected function _prepareReverseValue($_entity, $value)
+    {
+        // For Attribute
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        if ($attribute) {
+            $value = $this->_reverseConvertValueForAttribute($attribute, $value);
+        }
+
+        // Other
+        $attributeType = $this->_mapping->getBackendType();
+        if (empty($attributeType)) {
+            $attributeType = $this->_dataType($_entity, $attributeCode);
+        }
+
+        switch(true) {
+            case in_array($attributeType, array('date', 'datetime', 'timestamp')):
+                if (empty($value)) {
+                    $value = null;
+                    break;
+                }
+
+                $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
+                break;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param $_entity Mage_Core_Model_Abstract
+     * @param $code
+     * @return null
+     */
+    protected function _dataType($_entity, $code)
+    {
+        $mainTable = null;
+
+        $resource = $_entity->getResource();
+        if ($resource instanceof Mage_Eav_Model_Entity_Abstract) {
+            $mainTable = $resource->getEntityTable();
+        }
+
+        if ($resource instanceof Mage_Core_Model_Resource_Db_Abstract) {
+            $mainTable = $resource->getMainTable();
+        }
+
+        if (empty($mainTable)) {
+            return null;
+        }
+
+        $describe = $resource->getReadConnection()->describeTable($mainTable);
+        if (!isset($describe[$code])) {
+            return null;
+        }
+
+        return $describe[$code]['DATA_TYPE'];
     }
 
     /**
@@ -89,5 +209,145 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         }
 
         return $result;
+    }
+
+    /**
+     * @param $entity Mage_Core_Model_Abstract
+     * @param $code
+     * @return bool|Mage_Eav_Model_Entity_Attribute_Abstract
+     */
+    protected function _getAttribute($entity, $code)
+    {
+        $resource  = $entity->getResource();
+        if (!$resource instanceof Mage_Eav_Model_Entity_Abstract) {
+            return false;
+        }
+
+        $attribute = $resource->getAttribute($code);
+        if (!$attribute instanceof Mage_Eav_Model_Entity_Attribute_Abstract) {
+            return false;
+        }
+
+        return $attribute;
+    }
+
+    /**
+     * @param $entity Mage_Core_Model_Abstract
+     * @param $attribute Mage_Eav_Model_Entity_Attribute_Abstract
+     * @return bool|mixed|string|void
+     */
+    protected function _convertValueForAttribute($entity, $attribute)
+    {
+        $value = $entity->getData($attribute->getAttributeCode());
+        switch ($attribute->getFrontend()->getConfigField('input'))
+        {
+            case 'date':
+            case 'datetime':
+                if (empty($value)) {
+                    $value = null;
+                    break;
+                }
+
+                $value = $this->_prepareDateTime($value)->format('c');
+                break;
+
+            case 'multiselect':
+                $value = $attribute->getFrontend()->getOption($value);
+                if (is_array($value)) {
+                    $value = implode(';', $value);
+                }
+                break;
+
+            default:
+                $value = $attribute->getFrontend()->getValue($entity);
+                break;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param $attribute Mage_Eav_Model_Entity_Attribute_Abstract
+     * @param $value
+     * @return bool|mixed|string|void
+     */
+    protected function _reverseConvertValueForAttribute($attribute, $value)
+    {
+        switch ($attribute->getFrontend()->getConfigField('input'))
+        {
+            case 'date':
+            case 'datetime':
+                if (empty($value)) {
+                    $value = null;
+                    break;
+                }
+
+                $value = $this->_reversePrepareDateTime($value)->format('Y-m-d H:i:s');
+                break;
+
+            case 'select':
+                $source = $attribute->getSource();
+                if (!$source) {
+                    return null;
+                }
+
+                foreach ($source->getAllOptions() as $option) {
+                    if (mb_strtolower($option['label'], 'UTF-8') === mb_strtolower($value, 'UTF-8')) {
+                        return $option['value'];
+                    }
+                }
+
+                return null;
+
+            case 'multiselect':
+                $value = explode(';', $value);
+                $source = $attribute->getSource();
+                if (!$source) {
+                    return null;
+                }
+
+                foreach ($value as &$_value) {
+                    foreach ($source->getAllOptions() as $option) {
+                        if (mb_strtolower($option['label'], 'UTF-8') === mb_strtolower($_value, 'UTF-8')) {
+                            $_value = $option['value'];
+                            continue;
+                        }
+                    }
+                }
+
+                return $value;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param string $date
+     * @return DateTime
+     */
+    protected function _prepareDateTime($date)
+    {
+        $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $timezone = !in_array($attributeCode, array('created_at', 'updated_at'))
+            ? $currentTimezone
+            : 'UTC';
+
+        $dateTime = new DateTime(date('Y-m-d H:i:s', strtotime($date)), new DateTimeZone($timezone));
+        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
+    }
+
+    /**
+     * @param string $date
+     * @return DateTime
+     */
+    protected function _reversePrepareDateTime($date)
+    {
+        $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+        $timezoneForce  = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
+
+        $dateTime = new DateTime($date, $timezoneForce);
+        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
     }
 }

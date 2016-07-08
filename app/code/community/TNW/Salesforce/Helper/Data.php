@@ -87,7 +87,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /* Customer Config */
     const CUSTOMER_CREATE_AS_LEAD = 'salesforce_customer/lead_config/customer_integration';
-    const ACCOUNT_RENAME = 'salesforce_customer/sync/account_rename';
     const CUSTOMER_SYNC = 'salesforce_customer/sync/customer_sync_enable';
     const CUSTOMER_ALL_GROUPS = 'salesforce_customer/sync/customer_groups_all';
     const CUSTOMER_GROUPS = 'salesforce_customer/sync/customer_groups';
@@ -323,6 +322,22 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $object->getData('object_type');
     }
 
+    /**
+     * Get Shipment Object
+     *
+     * @return string
+     */
+    public function getCreditmemoObject()
+    {
+        // Allow Powersync to overwite fired event for customizations
+        $object = new Varien_Object(array(
+            'object_type' => TNW_Salesforce_Model_Order_Creditmemo_Observer::OBJECT_TYPE
+        ));
+
+        Mage::dispatchEvent('tnw_salesforce_creditmemo_set_object', array('sf_object' => $object));
+        return $object->getData('object_type');
+    }
+
     public function isLogEnabled()
     {
         return $this->getStoreConfig(self::API_LOG);
@@ -512,13 +527,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CUSTOMER_CREATE_AS_LEAD);
     }
 
-    // Customer default taska signee
-
-    public function canRenameAccount()
-    {
-        return !$this->getStoreConfig(self::ACCOUNT_RENAME);
-    }
-
     // Customer integration type
 
     public function usePersonAccount()
@@ -681,6 +689,13 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     {
         return (class_exists('SoapClient')) ? true : false;
     }
+
+    public function isMbstringEnabled()
+    {
+        return extension_loaded('mbstring');
+    }
+
+
     // Customer is Person Account Enabled
     // @deprecated
 

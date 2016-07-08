@@ -66,6 +66,14 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
             'width' => '50px',
             'index' => 'entity_id',
             'type' => 'number',
+            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+            'actions' => array(
+                array(
+                    'url' => array('base' => '*/customer/edit'),
+                    'field' => 'id',
+                    'getter' => 'getId',
+                )
+            ),
         ));
 
         $this->addColumn('name', array(

@@ -83,14 +83,10 @@ class TNW_Salesforce_Model_Product_Observer
             }
 
             $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
             if ($manualSync->reset() && $manualSync->massAdd(array($_product->getId()))) {
                 $manualSync->process();
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product (sku: ' . $_product->getSku() . ') is successfully synchronized'));
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Salesforce Connection failed!');
             }
         }
     }
@@ -103,5 +99,21 @@ class TNW_Salesforce_Model_Product_Observer
     public function afterImport()
     {
         Mage::getSingleton('core/session')->setFromSalesForce(false);
+    }
+
+    /**
+     * @param $observer
+     */
+    public function editPrepareForm($observer)
+    {
+        /** @var Varien_Data_Form_Element_Text $campaignId */
+        $campaignId = $observer->getEvent()->getForm()
+            ->getElement('salesforce_campaign_id');
+
+        if ($campaignId) {
+            /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Campaign $renderer */
+            $renderer = Mage::getSingleton('core/layout')->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_campaign');
+            $campaignId->setRenderer($renderer);
+        }
     }
 }

@@ -21,6 +21,7 @@ class TNW_Salesforce_Model_Config_Order_Bundleitem
     {
         $this->_bundleItemSyncOption[0] = 'Bundled product Only';
         $this->_bundleItemSyncOption[1] = 'Bundled product including all products from the bundle';
+        $this->_bundleItemSyncOption[2] = 'Subitems only from the bundle';
         return $this->_bundleItemSyncOption;
     }
 }

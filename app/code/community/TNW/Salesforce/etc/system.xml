@@ -480,6 +480,18 @@
                             </depends>
                         </shipment_batch_size>
 
+                        <creditmemo_batch_size translate="label">
+                            <label>Credit Memo Limit</label>
+                            <sort_order>170</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Credit Memo batch size limit]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </creditmemo_batch_size>
+
                         <!-- Bulk settings end -->
 
                         <!-- Tool settings start -->
@@ -573,16 +585,6 @@
                             <show_in_store>0</show_in_store>
                             <comment>Allow Salesforce to create new customers, if those do not exist in Magento</comment>
                         </new_customer>
-                        <account_rename translate="label">
-                            <label>Keep Account Name read only</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Keep Account Name in Salesforce read only</comment>
-                        </account_rename>
                         <single_account_sync_customer  translate="label">
                             <label>Force into a single Account</label>
                             <frontend_type>select</frontend_type>
@@ -596,7 +598,7 @@
                         <single_account_select translate="label">
                             <label>Single Account</label>
                             <frontend_type>select</frontend_type>
-                            <frontend_class>tnw-ajax-find-select</frontend_class>
+                            <frontend_class>tnw-ajax-find-select-account</frontend_class>
                             <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_account</frontend_model>
                             <sort_order>23</sort_order>
                             <show_in_default>1</show_in_default>
@@ -757,7 +759,6 @@
                             </depends>
                             <comment>This owner will be assigned to a Contact and Account when Lead is converted</comment>
                         </customer_lead_owner>
-
                         <lead_source translate="label">
                             <label>Magento LeadSource</label>
                             <frontend_type>select</frontend_type>
@@ -768,7 +769,6 @@
                             <show_in_store>0</show_in_store>
                             <comment>LeadSource to be used for all Leads coming from Magento</comment>
                         </lead_source>
-
                         <use_lead_source_filter translate="label">
                             <label>Include into lookup</label>
                             <frontend_type>select</frontend_type>
@@ -779,7 +779,16 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </use_lead_source_filter>
-
+                        <email_notification translate="label">
+                            <label>Email Notification</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_lead_notification</source_model>
+                            <sort_order>120</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Have Salesforce send an email notification when Lead is converted</comment>
+                        </email_notification>
                     </fields>
                 </lead_config>
                 <contactus translate="label" module="tnw_salesforce">
@@ -916,8 +925,8 @@
                         <customer_newletter_campaign_id translate="label">
                             <label>Campaign</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/api_entity_resource_campaign_collection</source_model>
-
+                            <frontend_class>tnw-ajax-find-select-campaign</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_campaign</frontend_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -925,7 +934,6 @@
                             <depends>
                                 <customer_newsletter_enable_sync>1</customer_newsletter_enable_sync>
                             </depends>
-                            <frontend_class>chosen-select</frontend_class>
                             <comment>Text field to capture campaign ID to Newsletter config section</comment>
                         </customer_newletter_campaign_id>
                     </fields>
@@ -983,6 +991,29 @@
                             <show_in_store>0</show_in_store>
                             <comment>A number of decimal points for prices to be sent into Salesforce</comment>
                         </price_accuracy>
+                        <sync_type_all>
+                            <label>Sync all product types</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <comment />
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </sync_type_all>
+                        <sync_type_allow>
+                            <label>Sync product types</label>
+                            <frontend_type>multiselect</frontend_type>
+                            <source_model>tnw_salesforce/config_products_type</source_model>
+                            <comment />
+                            <sort_order>80</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <sync_type_all>0</sync_type_all>
+                            </depends>
+                        </sync_type_allow>
                     </fields>
                 </general>
             </groups>
@@ -1109,10 +1140,10 @@
                         <multi_currency translate="label">
                             <label>Multi-Currency</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_currency</source_model>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
                                 Salesforce multi-currency support must be enabled as well.
@@ -1225,6 +1256,23 @@
                                 <order_or_opportunity>Opportunity</order_or_opportunity>
                             </depends>
                         </customer_integration_opp>
+
+                        <draft_order_status translate="label">
+                            <label>Draft Order Status</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_sync_order_status</source_model>
+                            <comment><![CDATA[
+                                Connector will place order in this status to make updates.<br />
+                                <span style="color:red;">IMPORTANT:</span> Status must be for "Draft" category and NOT in "Activated" status category.
+                            ]]></comment>
+                            <sort_order>94</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </draft_order_status>
 
                         <opportunity_to_order_status translate="label">
                             <label>Converted opportunity status</label>
@@ -1488,7 +1536,7 @@
                         <invoice_sync_enable translate="label">
                             <label>Enable Integration</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
                             <backend_model>tnw_salesforce/config_invoice_backend_sync_enable</backend_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
@@ -1508,7 +1556,7 @@
                         <sync_enabled translate="label comment" module="tnw_salesforce">
                             <label>Enable Integration</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
                             <backend_model>tnw_salesforce/config_shipment_backend_sync_enable</backend_model>
                             <sort_order>100</sort_order>
                             <show_in_default>1</show_in_default>
@@ -1518,6 +1566,25 @@
                         </sync_enabled>
                     </fields>
                 </shipment_configuration>
+                <creditmemo_configuration translate="label" module="tnw_salesforce">
+                    <label>Credit Memo Configuration</label>
+                    <sort_order>355</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enabled translate="label comment" module="tnw_salesforce">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <sort_order>100</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated Credit Memo synchronization</comment>
+                        </sync_enabled>
+                    </fields>
+                </creditmemo_configuration>
                 <salesforce_campaigns>
                     <label>Campaigns</label>
                     <sort_order>360</sort_order>

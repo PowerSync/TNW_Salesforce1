@@ -193,7 +193,6 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
                 }
 
                 unset($data['default_code']);
-                $data['default_value'] = NULL;
             }
 
             // Save

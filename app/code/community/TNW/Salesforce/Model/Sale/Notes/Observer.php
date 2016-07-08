@@ -7,81 +7,6 @@
 class TNW_Salesforce_Model_Sale_Notes_Observer
 {
     /**
-     * @param $observer
-     */
-    public function notesPush($observer)
-    {
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
-            return; // Disabled
-        }
-
-        if (!Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Notes synchronization disabled');
-            return; // Disabled
-        }
-
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING order notes sync');
-            return; // Disabled
-        }
-
-        $event = $observer->getEvent();
-        /** @var Mage_Sales_Model_Order $order */
-        $order = Mage::getModel('sales/order')->load($event->getOid());
-        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-
-        /** @var Mage_Sales_Model_Order_Status_History $note */
-        $note = $event->getNote();
-        $note->setOrder($order);
-
-        if ($note->getData('salesforce_id') || !$note->getData('comment')) {
-            return;
-        }
-
-        // check if queue sync setting is on - then save to database
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
-
-            // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Order could not be added to the queue');
-            }
-            return;
-        }
-
-        if (
-            !Mage::getSingleton('core/session')->getFromSalesForce()
-        ) {
-            if ($order->getSalesforceId()) {
-                // Process Notes
-                /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $syncHelper */
-                $syncHelper = Mage::helper('tnw_salesforce/salesforce_'.$_syncType);
-                $syncHelper->reset();
-                $syncHelper->createObjNones(array($note));
-                $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$order->getRealOrderId()] = $order->getSalesforceId();
-                $syncHelper->pushDataNotes();
-            } else {
-                // Never was synced, new order
-                Mage::dispatchEvent(
-                    sprintf('tnw_salesforce_%s_process', $_syncType),
-                    array(
-                        'orderIds'      => array($order->getId()),
-                        'message'       => NULL,
-                        'type'   => 'salesforce'
-                    )
-                );
-            }
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
-        }
-    }
-
-    /**
      * @param Varien_Event_Observer $observer
      */
     public function baseNotesPush(Varien_Event_Observer $observer)
@@ -101,35 +26,65 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             return; // Disabled
         }
 
-        $event      = $observer->getEvent();
-        $entityType = $event->getType();
-        switch ($entityType) {
-            case 'invoice':
-                if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoicesForOrder()) {
+        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SKIPPING NOTES SYNC.");
+            return; // Disabled
+        }
+
+        $event = $observer->getEvent();
+        $note  = $event->getNote();
+        if ($note->getData('salesforce_id') || !$note->getData('comment')) {
+            return;
+        }
+
+        switch (true) {
+            case $note instanceof Mage_Sales_Model_Order_Invoice_Comment:
+                if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Invoice synchronization disabled');
                     return; // Disabled
                 }
 
                 /** @var Mage_Sales_Model_Order_Invoice $entity */
-                $entity = Mage::getModel('sales/order_invoice')
-                    ->load($event->getOid());
-
+                $entity     = $note->getInvoice();
+                $entityType = 'invoice';
                 break;
 
-            case 'shipment':
-                if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipmentsForOrder()) {
+            case $note instanceof Mage_Sales_Model_Order_Shipment_Comment:
+                if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Shipment synchronization disabled');
                     return; // Disabled
                 }
 
                 /** @var Mage_Sales_Model_Order_Shipment $entity */
-                $entity = Mage::getModel('sales/order_shipment')
-                    ->load($event->getOid());
+                $entity     = $note->getShipment();
+                $entityType = 'shipment';
+                break;
 
+            case $note instanceof Mage_Sales_Model_Order_Status_History:
+                if (!Mage::helper('tnw_salesforce')->isEnabledOrderSync()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+                    return; // Disabled
+                }
+
+                /** @var Mage_Sales_Model_Order $entity */
+                $entity     = $note->getOrder();
+                $entityType = 'order';
+                break;
+
+            case $note instanceof Mage_Sales_Model_Order_Creditmemo_Comment:
+                if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Credit Memo synchronization disabled');
+                    return; // Disabled
+                }
+
+                /** @var Mage_Sales_Model_Order_Creditmemo $entity */
+                $entity     = $note->getCreditmemo();
+                $entityType = 'creditmemo';
                 break;
 
             default:
-                return;
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Unknown type of comment');
+                return; // Disabled
         }
 
         // check if queue sync setting is on - then save to database
@@ -142,32 +97,81 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             return;
         }
 
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace(sprintf("---- SKIPPING %s NOTES SYNC. ERRORS FOUND. PLEASE REFER TO LOG FILE ----", strtoupper($entityType)));
-
-            return;
-        }
-
         if ($entity->getSalesforceId()) {
             // Process Notes
-            /** @var TNW_Salesforce_Model_Order_Invoice_Comment $note */
-            $note = $event->getNote();
-            call_user_func(array($note, sprintf('set%s', ucfirst($entityType))), $entity);
-
-            /** @var TNW_Salesforce_Helper_Salesforce_Invoice $syncHelper */
-            $syncHelper = Mage::helper(sprintf('tnw_salesforce/salesforce_%s', $entityType));
+            /** @var TNW_Salesforce_Helper_Salesforce_Order_Invoice $syncHelper */
+            $syncHelper = Mage::helper($this->_syncHelperName($entityType));
             $syncHelper->reset();
             $syncHelper->createObjNones(array($note));
             $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$entity->getIncrementId()] = $entity->getSalesforceId();
             $syncHelper->pushDataNotes();
         }
         else {
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $entityType), array(
-                sprintf('%sIds', $entityType) => array($entity->getId()),
-                'message'    => NULL,
-                'type'       => 'salesforce'
+            Mage::dispatchEvent($this->_syncEventName($entityType), array(
+                "{$entityType}Ids"  => array($entity->getId()),
+                'message'           => NULL,
+                'type'              => 'salesforce'
             ));
         }
+    }
+
+    /**
+     * @param $entityType
+     * @return string
+     */
+    protected function _syncHelperName($entityType)
+    {
+        $entityType  = strtolower($entityType);
+        $map         = array();
+        $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
+
+        switch (0) {
+            case strcasecmp(TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER, $orderObject):
+                $map = array(
+                    'order'     => 'tnw_salesforce/salesforce_order',
+                    'invoice'   => 'tnw_salesforce/salesforce_order_invoice',
+                    'shipment'  => 'tnw_salesforce/salesforce_order_shipment',
+                    'creditmemo'=> 'tnw_salesforce/salesforce_creditmemo',
+                );
+                break;
+
+            case strcasecmp(TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_OPPORTUNITY, $orderObject):
+                $map = array(
+                    'order'     => 'tnw_salesforce/salesforce_opportunity',
+                    'invoice'   => 'tnw_salesforce/salesforce_opportunity_invoice',
+                    'shipment'  => 'tnw_salesforce/salesforce_opportunity_shipment',
+                );
+                break;
+        }
+
+        if (array_key_exists($entityType, $map)) {
+            return $map[$entityType];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $entityType
+     * @return string
+     */
+    protected function _syncEventName($entityType)
+    {
+        switch ($entityType) {
+            case 'order':
+                $entityType = Mage::helper('tnw_salesforce')->getOrderObject();
+                break;
+            case 'invoice':
+                $entityType = Mage::helper('tnw_salesforce')->getInvoiceObject();
+                break;
+            case 'shipment':
+                $entityType = Mage::helper('tnw_salesforce')->getShipmentObject();
+                break;
+            case 'creditmemo':
+                $entityType = Mage::helper('tnw_salesforce')->getCreditmemoObject();
+                break;
+        }
+
+        return sprintf('tnw_salesforce_%s_process', strtolower($entityType));
     }
 }

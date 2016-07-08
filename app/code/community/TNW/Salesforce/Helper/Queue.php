@@ -257,8 +257,6 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 $manualSync = Mage::helper($_module);
                 if ($manualSync->reset()) {
                     $manualSync->setIsCron(true);
-                    $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
                     $manualSync->massAdd($_objectIdSet);
@@ -328,8 +326,6 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                 $manualSync = Mage::helper($_module);
                 if ($manualSync->reset()) {
                     $manualSync->setIsCron(true);
-                    $manualSync->setSalesforceServerDomain(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url'));
-                    $manualSync->setSalesforceSessionId(Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id'));
 
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('################################## manual processing from queue for ' . $_type . ' started ##################################');
                     $manualSync->massAdd($_objectIdSet);

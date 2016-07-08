@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.54.05.0004</version>
+            <version>0.01.55.00.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -57,6 +57,9 @@
                     <order_status>
                         <table>tnw_salesforce_order_status</table>
                     </order_status>
+                    <order_creditmemo_status>
+                        <table>tnw_salesforce_order_creditmemo_status</table>
+                    </order_creditmemo_status>
                     <assignmentrule>
                         <table>tnw_salesforce_assignmentrule</table>
                     </assignmentrule>
@@ -197,6 +200,15 @@
                 </observers>
             </sales_order_shipment_save_commit_after>
 
+            <sales_order_creditmemo_save_commit_after>
+                <observers>
+                    <tnw_salesforce_order_creditmemo_save_after>
+                        <class>tnw_salesforce/order_creditmemo_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_order_creditmemo_save_after>
+                </observers>
+            </sales_order_creditmemo_save_commit_after>
+
             <sales_order_shipment_track_save_commit_after>
                 <observers>
                     <tnw_salesforce_order_shipment_track_save_after>
@@ -294,7 +306,7 @@
                 <observers>
                     <tnw_salesforce_notes_observer>
                         <class>tnw_salesforce/sale_notes_observer</class>
-                        <method>notesPush</method>
+                        <method>baseNotesPush</method>
                     </tnw_salesforce_notes_observer>
                 </observers>
             </tnw_salesforce_order_comments_save_after>
@@ -316,6 +328,15 @@
                     </tnw_salesforce_notes_observer>
                 </observers>
             </tnw_salesforce_shipment_comments_save_after>
+
+            <tnw_salesforce_creditmemo_comments_save_after>
+                <observers>
+                    <tnw_salesforce_notes_observer>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>baseNotesPush</method>
+                    </tnw_salesforce_notes_observer>
+                </observers>
+            </tnw_salesforce_creditmemo_comments_save_after>
 
             <!-- Product Save Event -->
             <catalog_product_save_commit_after>
@@ -415,6 +436,15 @@
                     </tnw_salesforce_push_shipment>
                 </observers>
             </tnw_salesforce_shipment_process>
+            <!-- Pushing creditmemo object into Salesforce post all validation -->
+            <tnw_salesforce_creditmemo_process>
+                <observers>
+                    <tnw_salesforce_push_creditmemo>
+                        <class>tnw_salesforce/observer</class>
+                        <method>pushCreditMemo</method>
+                    </tnw_salesforce_push_creditmemo>
+                </observers>
+            </tnw_salesforce_creditmemo_process>
             <!-- Update order status - Opportunity -->
             <tnw_salesforce_opportunity_status_update>
                 <observers>
@@ -522,6 +552,16 @@
                     </tnw_controller_sales_rule_prepare_save>
                 </observers>
             </adminhtml_controller_salesrule_prepare_save>
+
+            <adminhtml_catalog_product_edit_prepare_form>
+                <observers>
+                    <tnw_salesforce_catalog_product_edit_prepare_form>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>editPrepareForm</method>
+                    </tnw_salesforce_catalog_product_edit_prepare_form>
+                </observers>
+            </adminhtml_catalog_product_edit_prepare_form>
         </events>
     </adminhtml>
     <frontend>
@@ -606,13 +646,14 @@
                     <mysql.connect_timeout>180</mysql.connect_timeout>
                     <zend.enable_gc>1</zend.enable_gc>
                 </bulk>
-                <product_batch_size>150</product_batch_size>
-                <customer_batch_size>150</customer_batch_size>
-                <website_batch_size>150</website_batch_size>
-                <order_batch_size>150</order_batch_size>
-                <abandoned_batch_size>150</abandoned_batch_size>
-                <invoice_batch_size>150</invoice_batch_size>
-                <shipment_batch_size>150</shipment_batch_size>
+                <product_batch_size>500</product_batch_size>
+                <customer_batch_size>500</customer_batch_size>
+                <website_batch_size>500</website_batch_size>
+                <order_batch_size>500</order_batch_size>
+                <abandoned_batch_size>500</abandoned_batch_size>
+                <invoice_batch_size>500</invoice_batch_size>
+                <shipment_batch_size>500</shipment_batch_size>
+                <creditmemo_batch_size>500</creditmemo_batch_size>
 
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
@@ -626,13 +667,13 @@
                 <customer_sync_enable>0</customer_sync_enable>
                 <new_customer>1</new_customer>
                 <customer_groups_all>1</customer_groups_all>
-                <account_rename>1</account_rename>
                 <contact_asignee>0</contact_asignee>
             </sync>
             <lead_config>
                 <customer_integration>0</customer_integration>
                 <lead_source>Web</lead_source>
                 <use_lead_source_filter>0</use_lead_source_filter>
+                <email_notification>0</email_notification>
             </lead_config>
             <contactus>
                 <customer_form_enable>0</customer_form_enable>
@@ -648,6 +689,7 @@
             <general>
                 <product_enable>0</product_enable>
                 <price_accuracy>2</price_accuracy>
+                <sync_type_all>1</sync_type_all>
             </general>
         </salesforce_product>
         <salesforce_order>
@@ -658,6 +700,7 @@
                 <notes_synchronize>1</notes_synchronize>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
+                <draft_order_status>Draft</draft_order_status>
             </general>
             <currency>
                 <multi_currency>0</multi_currency>
@@ -679,10 +722,17 @@
             </opportunity_cart>
             <shopping_cart>
                 <use_product_campaign_assignment>0</use_product_campaign_assignment>
+                <orders_bundle_item_sync>0</orders_bundle_item_sync>
             </shopping_cart>
             <invoice_configuration>
                 <invoice_sync_enable>0</invoice_sync_enable>
             </invoice_configuration>
+            <shipment_configuration>
+                <sync_enabled>0</sync_enabled>
+            </shipment_configuration>
+            <creditmemo_configuration>
+                <sync_enabled>0</sync_enabled>
+            </creditmemo_configuration>
             <customer_view>
                 <opportunity_display>0</opportunity_display>
                 <opportunity_filter>customer</opportunity_filter>

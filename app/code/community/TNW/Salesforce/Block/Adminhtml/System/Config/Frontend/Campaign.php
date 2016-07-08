@@ -1,0 +1,39 @@
+<?php
+/**
+ * Copyright © 2016 TechNWeb, Inc. All rights reserved.
+ * See app/code/community/TNW/TNW_LICENSE.txt for license details.
+ */
+
+class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Campaign
+    extends Mage_Adminhtml_Block_System_Config_Form_Field
+{
+    protected function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
+    {
+        $aIdVal = array();
+        $value = $element->getData('value');
+        if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
+            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection $collection */
+            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
+                ->addFieldToFilter('Id', array('eq' => $value));
+
+            $aIdVal = $collection->setFullIdMode(true)->getAllOptions();
+        }
+
+        /** @var Mage_Core_Block_Template $block */
+        $block = $this->getLayout()
+            ->getBlockSingleton('core/template')
+            ->setTemplate('salesforce/select2ajax.phtml')
+            ->addData(array(
+                'selector'  => '.tnw-ajax-find-select-campaign',
+                'url'       => $this->getUrl('*/salesforce_search/campaign'),
+                'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
+            ));
+
+        $element->addData(array(
+            'values'                => $aIdVal,
+            'after_element_html'    => $block->toHtml(),
+        ));
+
+        return $element->getElementHtml();
+    }
+}

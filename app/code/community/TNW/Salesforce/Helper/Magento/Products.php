@@ -43,29 +43,16 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     public function __construct()
     {
         parent::__construct();
-        $this->prepare();
+        $this->_prepare();
     }
 
-    protected function prepare()
+    protected function _prepare()
     {
+        parent::_prepare();
+
         if (empty($this->_attributes)) {
             $resource = Mage::getResourceModel('eav/entity_attribute');
             $this->_attributes['salesforce_id'] = $resource->getIdByCode('catalog_product', 'salesforce_id');
-            $this->_attributes['salesforce_pricebook_id'] = $resource->getIdByCode('catalog_product', 'salesforce_pricebook_id');
-            $this->_attributes['sku'] = $resource->getIdByCode('catalog_product', 'sku');
-            $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
-        }
-
-        $this->_mapProductCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-            ->addObjectToFilter('Product2')
-            ->addFieldToFilter('sf_magento_enable', 1)
-            ->firstSystem();
-
-        if (!$this->_product) {
-            $this->_product = Mage::getModel('catalog/product');
-        }
-        if (!$this->_write) {
-            $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
         }
 
         if ($this->_isMultiSync === null) {
@@ -147,7 +134,7 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             //Defaults
             $_product->setSku($_sku);
             $_product->setSalesforceId($_salesforceId);
-            $_product->setInSync(1);
+            $_product->setSfInsync(1);
 
             $_stock = array();
 
@@ -156,80 +143,27 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                 ->addFilterTypeSM(!$_product->isObjectNew())
                 ->firstSystem();
 
-            // get attribute collection
+            /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($this->_mapProductCollection as $_mapping) {
+                $value = property_exists($object, $_mapping->getSfField())
+                    ? $object->{$_mapping->getSfField()} : null;
+
                 if (strpos($_mapping->getLocalField(), 'Product : ') === 0) {
-                    // Product
-                    $_magentoFieldName = str_replace('Product : ', '', $_mapping->getLocalField());
+                    Mage::getSingleton('tnw_salesforce/mapping_type_product')
+                        ->setMapping($_mapping)
+                        ->setValue($_product, $value);
 
-                    $_value = '';
-                    if (property_exists($object, $_mapping->getSfField())) {
-                        // get attribute object
-                        $localFieldAr = explode(":", $_mapping->getLocalField());
-                        $localField = trim(array_pop($localFieldAr));
-                        $attOb = Mage::getModel('eav/config')->getAttribute('catalog_product', $localField);
-
-                        // here we set value depending of the attr type
-                        if ($attOb->getFrontendInput() == 'select') {
-                            // it's drop down attr type
-                            $attOptionList = $attOb->getSource()->getAllOptions(true, true);
-                            $_value = false;
-                            foreach ($attOptionList as $key => $value) {
-
-                                // we compare sf value with mage default value or mage locate related value (if not english lang is set)
-                                $sfField = mb_strtolower($object->{$_mapping->getSfField()}, 'UTF-8');
-                                $mageAttValueDefault = mb_strtolower($value['label'], 'UTF-8');
-
-                                //if (in_array($sfField, array($mageAttValueDefault, $mageAttValueLocaleRelated))) {
-                                if (in_array($sfField, array($mageAttValueDefault))) {
-                                    $_value = $value['value'];
-                                }
-                            }
-                            // the product code not found, skipping
-                            if (empty($_value)) {
-                                $sfValue = $object->{$_mapping->getSfField()};
-                                Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: product code $sfValue not found in magento");
-                                continue;
-                            }
-                        } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
-                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(strtotime($object->{$_mapping->getSfField()})));
-                        } elseif ($_magentoFieldName == 'website_ids') {
-                            // websiteids hack
-                            $_value = explode(',', $object->{$_mapping->getSfField()});
-                        } elseif ($_magentoFieldName == 'status') {
-                            // status hack
-                            $_value = ($object->{$_mapping->getSfField()} === 1 || $object->{$_mapping->getSfField()} === true) ? 'Enabled' : 'Disabled';
-                        } elseif ($_magentoFieldName == 'type_id') {
-                            // status hack
-                            $_value = $object->{$_mapping->getSfField()};
-                            $_value = $this->getProductTypeId($_value);
-                        } elseif ($_magentoFieldName == 'attribute_set_id') {
-                            // attribute set hack
-                            $_value = $object->{$_mapping->getSfField()};
-                            $_value = Mage::getSingleton('catalog/config')
-                                ->getAttributeSetId(Mage_Catalog_Model_Product::ENTITY, $_value);
-                            if (!$_value) {
-                                $_value = $_product->getDefaultAttributeSetId();
-                            }
-                        } else {
-                            $_value = $object->{$_mapping->getSfField()};
-                        }
-                    } elseif ($_isNew && $_mapping->getDefaultValue()) {
-                        $_value = $_mapping->getDefaultValue();
-                    }
-                    if ($_value) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product: ' . $_magentoFieldName . ' = ' . $_value);
-                        $_product->setData($_magentoFieldName, $_value);
-                    } else {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Product: ' . $_magentoFieldName . ' - no value specified in Salesforce');
-                    }
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Product: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_product->getData($_mapping->getLocalFieldAttributeCode()), true));
                 } elseif (strpos($_mapping->getLocalField(), 'Product Inventory : ') === 0) {
                     // Inventory
-                    $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
-                    if (property_exists($object, $_mapping->getSfField())) {
-                        $_stock[$_magentoFieldName] = $object->{$_mapping->getSfField()};
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product Inventory: ' . $_magentoFieldName . ' = ' . $object->{$_mapping->getSfField()});
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
                     }
+
+                    $_magentoFieldName = str_replace('Product Inventory : ', '', $_mapping->getLocalField());
+                    $_stock[$_magentoFieldName] = $value;
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Product Inventory: ' . $_magentoFieldName . ' = ' . $value);
                 }
             }
 
@@ -262,6 +196,9 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             // Save Product
             $_product->save();
 
+            // Update Price
+            $this->updatePrice($object, $_product->getId());
+
             if ($_flag) {
                 Mage::getSingleton('core/session')->setFromSalesForce(false);
             }
@@ -278,71 +215,179 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
     }
 
     /**
+     * @param $object stdClass
+     * @param $productId
+     * @throws Mage_Core_Exception
+     */
+    protected function updatePrice($object, $productId)
+    {
+        // Update Price
+        if (!property_exists($object, 'PricebookEntries') || $object->PricebookEntries->totalSize < 1) {
+            return;
+        }
+
+        $storeIds = array_keys(Mage::app()->getStores());
+        if (Mage::getStoreConfig(Mage_Catalog_Helper_Data::XML_PATH_PRICE_SCOPE) == Mage_Catalog_Helper_Data::PRICE_SCOPE_GLOBAL) {
+            $storeIds = array(Mage::app()->getWebsite(true)->getDefaultStore()->getId());
+        }
+
+        foreach (array_merge($storeIds, array((int)Mage::app()->getStore('admin')->getId())) as $storeId) {
+            $currencyBase = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE, $storeId)
+                : null;
+
+            $pricebookId = Mage::getStoreConfig(TNW_Salesforce_Helper_Data::PRODUCT_PRICEBOOK, $storeId);
+
+            $price = null;
+            foreach ($object->PricebookEntries->records as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
+                }
+
+                if ($_price->CurrencyIsoCode != $currencyBase) {
+                    continue;
+                }
+
+                $price = $_price->UnitPrice;
+                break;
+            }
+
+            if (!empty($price)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('price' => (float)$price), $storeId);
+            }
+
+            $currencyAllow = Mage::helper('tnw_salesforce')->isMultiCurrency()
+                ? explode(',', Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_ALLOW, $storeId))
+                : array(null);
+
+            $priceBook = array();
+            foreach ($object->PricebookEntries->records as $_price) {
+                if (!$_price->IsActive) {
+                    continue;
+                }
+
+                if ($_price->Pricebook2Id != $pricebookId) {
+                    continue;
+                }
+
+                if (!property_exists($_price, 'CurrencyIsoCode')) {
+                    $_price->CurrencyIsoCode = null;
+                }
+
+                if (!in_array($_price->CurrencyIsoCode, array_merge($currencyAllow, array($currencyBase)))) {
+                    continue;
+                }
+
+                $priceBook[] = implode(':', array_filter(array($_price->CurrencyIsoCode, $_price->Id)));
+            }
+
+            if (!empty($priceBook)) {
+                Mage::getSingleton('catalog/product_action')
+                    ->updateAttributes(array($productId), array('salesforce_pricebook_id' => implode("\n", $priceBook)), $storeId);
+            }
+        }
+    }
+
+    /**
      * Accepts a single customer object and upserts a contact into the DB
      *
-     * @param null $object
+     * @param stdClass $object
      * @return bool|false|Mage_Core_Model_Abstract
      */
     public function syncFromSalesforce($object = null)
     {
-        $this->prepare();
+        $this->_prepare();
 
-        $_isNew = false;
+        $_mTypeId = TNW_Salesforce_Model_Config_Products_Type::TYPE_UNKNOWN;
+        $_mMagentoId = null;
 
-        $_sku = (property_exists($object, "ProductCode") && $object->ProductCode) ? $object->ProductCode : null;
-        $_salesforceId = (property_exists($object, "Id") && $object->Id) ? $object->Id : null;
+        $_sSku          = (!empty($object->ProductCode)) ? $object->ProductCode : null;
+        $_sSalesforceId = (!empty($object->Id)) ? $object->Id : null;
+        $_sMagentoId    = (!empty($object->{$this->_magentoIdField})) ? $object->{$this->_magentoIdField} : null;
 
-        $_magentoId = (property_exists($object, $this->_magentoIdField) && $object->{$this->_magentoIdField}) ? $object->{$this->_magentoIdField} : null;
-
-        if (!$_salesforceId) {
+        if (!$_sSalesforceId) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: Product2 ID is missing");
             $this->_addError('Could not upsert Product into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
-        if (!$_sku && !$_magentoId) {
+        if (!$_sSku && !$_sMagentoId) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: Email and Magento ID are missing");
             $this->_addError('Error upserting product into Magento: Email and Magento ID are missing', 'SKU_AND_MAGENTO_ID_MISSING');
             return false;
         }
 
+        $entityTable = Mage::helper('tnw_salesforce')->getTable('catalog_product_entity');
+
         // Lookup product by Magento Id
-        if ($_magentoId) {
+        if (!empty($_sMagentoId)) {
             //Test if user exists
-            $sql = "SELECT entity_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity') . "` WHERE entity_id = '" . $_magentoId . "'";
+            $sql = "SELECT entity_id, type_id  FROM `$entityTable` WHERE entity_id = '$_sMagentoId'";
             $row = $this->_write->query($sql)->fetch();
-            if (!$row) {
-                // Magento ID exists in Salesforce, user must have been deleted. Will re-create with the same ID
-                $_isNew = true;
-            }
-        }
-        if ($_magentoId && !$_isNew) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Product loaded using Magento ID: " . $_magentoId);
-        } else {
-            // No Magento ID
-            if ($_salesforceId) {
-                // Try to find the user by SF Id
-                $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` WHERE value = '" . $_salesforceId . "' AND attribute_id = '" . $this->_attributes['salesforce_id'] . "' AND entity_type_id = '" . $this->_productEntityTypeId . "'";
-                $row = $this->_write->query($sql)->fetch();
-                $_magentoId = ($row) ? $row['entity_id'] : null;
-            }
+            if ($row) {
+                $_mMagentoId = $row['entity_id'];
+                $_mTypeId    = $row['type_id'];
 
-            if ($_magentoId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $_magentoId . " Loaded by using Salesforce ID: " . $_salesforceId);
-            } else {
-                //Last reserve, try to find by SKU
-                $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar') . "` WHERE value = '" . $_sku . "' AND attribute_id = '" . $this->_attributes['sku'] . "' AND entity_type_id = '" . $this->_productEntityTypeId . "'";
-                $row = $this->_write->query($sql)->fetch();
-                $_magentoId = ($row) ? $row['entity_id'] : null;
-
-                if ($_magentoId) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $_magentoId . " Loaded by using SKU: " . $_sku);
-                } else {
-                    //Brand new user
-                    $_isNew = true;
-                }
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Product loaded using Magento ID: " . $_sMagentoId);
             }
         }
 
-        return $this->_updateMagento($object, $_magentoId, $_sku, $_salesforceId, $_isNew);
+        // Lookup product by Salesforce Id
+        if (is_null($_mMagentoId) && !empty($_sSalesforceId)) {
+            $entityVarcharTable = Mage::helper('tnw_salesforce')->getTable('catalog_product_entity_varchar');
+            // Try to find the user by SF Id
+            $sql = "SELECT entity.entity_id, entity.type_id FROM `$entityVarcharTable` as attr "
+                ."INNER JOIN `$entityTable` as entity "
+                    ."ON attr.entity_id = entity.entity_id "
+                ."WHERE attr.value = '$_sSalesforceId ' "
+                    ."AND attr.attribute_id = '{$this->_attributes['salesforce_id']}' "
+                    ."AND attr.entity_type_id = '{$this->_productEntityTypeId}'";
+
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $_mMagentoId = $row['entity_id'];
+                $_mTypeId    = $row['type_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Product #".$_mMagentoId." loaded using Salesforce ID: " . $_sSalesforceId);
+            }
+        }
+
+        // Lookup product by SKU
+        if (is_null($_mMagentoId) && !empty($_sSku)) {
+            //Last reserve, try to find by SKU
+            $sql = "SELECT entity_id, type_id  FROM `$entityTable` WHERE sku = '$_sSku'";
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $_mMagentoId = $row['entity_id'];
+                $_mTypeId    = $row['type_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Product #" . $_mMagentoId . " Loaded by using SKU: " . $_sSku);
+            }
+        }
+
+        $_isNew = is_null($_mMagentoId);
+        if ($_isNew && !empty($object->tnw_mage_basic__Product_Type__c)) {
+            $_mTypeId = $this->getProductTypeId($object->tnw_mage_basic__Product_Type__c);
+        }
+
+        if (!in_array($_mTypeId, Mage::helper('tnw_salesforce/config_product')->getSyncTypesAllow())) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice('SKIPPING: Sync for product type "' . $_mTypeId . '" is disabled!');
+
+            return false;
+        }
+
+        return $this->_updateMagento($object, $_mMagentoId, $_sSku, $_sSalesforceId, $_isNew);
     }
 }

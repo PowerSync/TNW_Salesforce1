@@ -32,7 +32,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
     protected $_isPersonAccount = false;
 
     /**
-     * @var null
+     * @var null|stdClass
      */
     protected $_salesforceObject = NULL;
 
@@ -104,13 +104,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $_entity = $this->syncFromSalesforce($this->_salesforceObject);
 
         if (!$this->_skip) {
-            // Update history orders and assigne to customer we just created
-            $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** finished upserting " . $_type . " #" . $this->_salesforceObject->Id . " **");
-
             // Handle success and fail
             if (is_object($_entity)) {
+                // Update history orders and assigne to customer we just created
+                $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
+
                 $this->_salesforceAssociation[$_type][] = array(
                     'salesforce_id' => $_entity->getData('salesforce_id'),
                     'magento_id'    => $_entity->getId()
@@ -291,87 +289,53 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 ->addFilterTypeSM(!$_entity->isObjectNew())
                 ->firstSystem();
 
-            // get attribute collection
+            /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($this->_mapCollection as $_mapping) {
-                $_value = NULL;
+                $value = property_exists($this->_salesforceObject, $_mapping->getSfField())
+                    ? $this->_salesforceObject->{$_mapping->getSfField()} : null;
+
                 if (strpos($_mapping->getLocalField(), 'Customer : ') === 0) {
-                    // Product
-                    $_magentoFieldName = str_replace('Customer : ', '', $_mapping->getLocalField());
+                    Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+                        ->setMapping($_mapping)
+                        ->setValue($_entity, $value);
 
-                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
-                        // get attribute object
-                        $localFieldAr = explode(":", $_mapping->getLocalField());
-                        $localField = trim(array_pop($localFieldAr));
-                        $attOb = Mage::getModel('eav/config')->getAttribute('customer', $localField);
-
-                        // here we set value depending of the attr type
-                        if ($attOb->getFrontendInput() == 'select') {
-                            // it's drop down attr type
-                            $attOptionList = $attOb->getSource()->getAllOptions(true, true);
-                            $_value = false;
-                            foreach ($attOptionList as $key => $value) {
-
-                                // we compare sf value with mage default value or mage locate related value (if not english lang is set)
-                                $sfField = mb_strtolower($this->_salesforceObject->{$_mapping->getSfField()}, 'UTF-8');
-                                $mageAttValueDefault = mb_strtolower($value['label'], 'UTF-8');
-
-                                if (in_array($sfField, array($mageAttValueDefault))) {
-                                    $_value = $value['value'];
-                                }
-                            }
-                            // the product code not found, skipping
-                            if (empty($_value)) {
-                                $sfValue = $this->_salesforceObject->{$_mapping->getSfField()};
-                                Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: customer code $sfValue not found in magento");
-                                continue;
-                            }
-                        } elseif ($_mapping->getBackendType() == "datetime" || $_magentoFieldName == 'created_at' || $_magentoFieldName == 'updated_at' || $_mapping->getBackendType() == "date") {
-                            $_value = gmdate(DATE_ATOM, Mage::getModel('core/date')->gmtTimestamp(strtotime($this->_salesforceObject->{$_mapping->getSfField()})));
-                        } elseif ($_magentoFieldName == 'website_ids') {
-                            // website ids hack
-                            $_value = explode(',', $this->_salesforceObject->{$_mapping->getSfField()});
-                        } else {
-                            $_value = $this->_salesforceObject->{$_mapping->getSfField()};
-                        }
-                    } elseif ($this->_isNew && $_mapping->getDefaultValue()) {
-                        $_value = $_mapping->getDefaultValue();
-                    }
-                    if ($_value) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer: ' . $_magentoFieldName . ' = ' . $_value);
-                        $_entity->setData($_magentoFieldName, $_value);
-                    } else {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer: ' . $_magentoFieldName . ' - no value specified in Salesforce');
-                    }
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Customer: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_entity->getData($_mapping->getLocalFieldAttributeCode()), true));
                 } elseif (strpos($_mapping->getLocalField(), 'Shipping : ') === 0) {
                     // Shipping Address
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
                     $_magentoFieldName = str_replace('Shipping : ', '', $_mapping->getLocalField());
-                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
-                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
-                        if ($_value) {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $_value);
-                            $_additional['shipping'][$_magentoFieldName] = $_value;
-                        } else {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
-                        }
+                    if ($value) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $value);
+                        $_additional['shipping'][$_magentoFieldName] = $value;
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Billing : ') === 0) {
                     // Billing Address
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
                     $_magentoFieldName = str_replace('Billing : ', '', $_mapping->getLocalField());
-                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
-                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
-                        if ($_value) {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $_value);
-                            $_additional['billing'][$_magentoFieldName] = $_value;
-                        } else {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
-                        }
+                    if ($value) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $value);
+                        $_additional['billing'][$_magentoFieldName] = $value;
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
                 } elseif (strpos($_mapping->getLocalField(), 'Customer Group : ') === 0) {
                     // Do we need to sync this?
-                    if (property_exists($this->_salesforceObject, $_mapping->getSfField())) {
-                        $_value = $this->_salesforceObject->{$_mapping->getSfField()};
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
+                    if ($value) {
                         $targetGroup = Mage::getModel('customer/group');
-                        $targetGroup->load($_value, 'customer_group_code');
+                        $targetGroup->load($value, 'customer_group_code');
                         if (is_object($targetGroup) && $targetGroup->getId()) {
                             $_entity->setData('group_id', $targetGroup->getId());
                         }
@@ -689,76 +653,86 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         return $this->_updateMagento();
     }
 
-    protected function _findMagentoCustomer() {
-        if (property_exists($this->_salesforceObject, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject())) {
-            $_websiteSfId = $this->_salesforceObject->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject()};
-            $_websiteSfId = Mage::helper('tnw_salesforce')->prepareId($_websiteSfId);
+    protected function _findMagentoCustomer()
+    {
+        $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+        if (property_exists($this->_salesforceObject, $_websiteSfField)) {
+            $_websiteSfId = Mage::helper('tnw_salesforce')
+                ->prepareId($this->_salesforceObject->{$_websiteSfField});
+
             $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-            if ($_websiteId) {
+            if ($_websiteId !== false) {
                 $this->_websiteId = $_websiteId;
             }
         }
 
+        $entityTable = Mage::helper('tnw_salesforce')->getTable('customer_entity');
+        $entityVarcharTable = Mage::helper('tnw_salesforce')->getTable('customer_entity_varchar');
+
+        $mMagentoId = $mGroupId = null;
+
         // Magneto ID provided
         if ($this->_magentoId) {
             //Test if user exists
-            $sql = "SELECT entity_id, group_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $this->_magentoId . "'";
+            $sql = "SELECT entity_id, group_id  FROM `$entityTable` WHERE entity_id = '{$this->_magentoId}'";
             $row = $this->_write->query($sql)->fetch();
-            if (!$row) {
-                // Magento ID exists in Salesforce, user must have been deleted. Will re-create with the same ID
-                $this->_isNew = true;
-            } else {
-                $this->_groupId = $row['group_id'];
-            }
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('------------------');
-        if ($this->_magentoId && !$this->_isNew) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer Loaded by using Magento ID: " . $this->_magentoId);
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Possibly a New Customer');
-            // No Magento ID
-            if ($this->_salesforceId && !$this->_magentoId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Find by SF Id');
-                // Try to find the user by SF Id
-                $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity_varchar') . "` WHERE value = '" . $this->_salesforceId . "' AND attribute_id = '" . $this->_attributes['salesforce_id'] . "' AND entity_type_id = '1'";
-                $row = $this->_write->query($sql)->fetch();
-                $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
-            }
+            if ($row) {
+                $mMagentoId = $row['entity_id'];
+                $mGroupId   = $row['group_id'];
 
-            if ($this->_magentoId) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $this->_magentoId . " Loaded by using Salesforce ID: " . $this->_salesforceId);
-                $sql = "SELECT entity_id, group_id  FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE entity_id = '" . $this->_magentoId . "'";
-                $row = $this->_write->query($sql)->fetch();
-                $this->_groupId = ($row) ? $row['group_id'] : NULL;
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Find by email');
-                //Last reserve, try to find by email
-                $sql = "SELECT entity_id, group_id FROM `" . Mage::helper('tnw_salesforce')->getTable('customer_entity') . "` WHERE email = '" . $this->_email . "'";
-                if ($this->_websiteId && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
-                    $sql .= " AND website_id = '" . $this->_websiteId . "'";
-                }
-
-                $row = $this->_write->query($sql)->fetch();
-                $this->_magentoId = ($row) ? $row['entity_id'] : NULL;
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MID by email: ' . $this->_magentoId);
-                if ($this->_magentoId) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Customer #" . $this->_magentoId . " Loaded by using Email: " . $this->_email);
-                    $this->_groupId = $row['group_id'];
-                } else {
-                    //Brand new user
-                    $this->_isNew = true;
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("New Customer. Creating!");
-                }
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Customer Loaded by using Magento ID: " . $this->_magentoId);
             }
         }
 
+        if (empty($mMagentoId) && $this->_salesforceId) {
+            // Try to find the user by SF Id
+            $sql = "SELECT entity.entity_id, entity.group_id FROM `$entityVarcharTable` as attr "
+                ."INNER JOIN `$entityTable` as entity ON attr.entity_id = entity.entity_id "
+                ."WHERE attr.value = '{$this->_salesforceId}' "
+                    ."AND attr.attribute_id = '{$this->_attributes['salesforce_id']}' "
+                    ."AND attr.entity_type_id = '1'";
+
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $mMagentoId = $row['entity_id'];
+                $mGroupId   = $row['group_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Customer #$mMagentoId Loaded by using Salesforce ID: {$this->_salesforceId}");
+            }
+        }
+
+        if (empty($mMagentoId) && $this->_email) {
+            $sql = "SELECT entity_id, group_id FROM `$entityTable` WHERE email = '{$this->_email}'";
+            if ($this->_websiteId && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $sql .= " AND website_id = '" . $this->_websiteId . "'";
+            }
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $mMagentoId = $row['entity_id'];
+                $mGroupId   = $row['group_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Customer #$mMagentoId Loaded by using Email: {$this->_email}");
+            }
+        }
+
+        $this->_isNew = is_null($mMagentoId);
         if ($this->_isNew) {
-            // Try to find Group from mappings
-            $this->_groupId = $this->_getCustomerGroupFromSalesforce();
-        }
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("New Customer. Creating!");
 
-        if (!Mage::helper('tnw_salesforce/config_customer')->allowSalesforceToCreate()) {
-            $this->_skip = true;
+            // Try to find Group from mappings
+            $this->_groupId   = $this->_getCustomerGroupFromSalesforce();
+            $this->_magentoId = null;
+
+            if (!Mage::helper('tnw_salesforce/config_customer')->allowSalesforceToCreate()) {
+                $this->_skip = true;
+            }
+        }
+        else {
+            $this->_magentoId = $mMagentoId;
+            $this->_groupId   = $mGroupId;
         }
     }
 

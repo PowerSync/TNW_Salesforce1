@@ -94,8 +94,10 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
          * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
          */
         $_currentStatus = $this->_obj->Status;
-        if ($_currentStatus != TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS) {
-            $this->_obj->Status = TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS;
+        $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
+        if ($_currentStatus != $_draftStatus) {
+            $this->_obj->Status = $_draftStatus;
+
             $_toActivate = new stdClass();
             $_toActivate->Status = $_currentStatus;
             $_toActivate->Id = NULL;
@@ -303,9 +305,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         $_orderNumber   = $this->_cache['entitiesUpdating'][$_key];
         $_orderStatuses = $this->_cache['upsertedOrderStatuses'];
 
-        if (array_key_exists($_orderNumber, $_orderStatuses) &&
-            $_orderStatuses[$_orderNumber] != TNW_Salesforce_Helper_Salesforce_Data_Order::DRAFT_STATUS
-        ){
+        $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
+        if (array_key_exists($_orderNumber, $_orderStatuses) && $_orderStatuses[$_orderNumber] != $_draftStatus) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, order is already Active!');
             return false;
         }
@@ -329,20 +330,22 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         // Activate orders
         if (!empty($this->_cache['orderToActivate'])) {
             foreach ($this->_cache['orderToActivate'] as $_orderNum => $_object) {
-                $salesforceOrderId = $this->_cache  ['upserted' . $this->getManyParentEntityType()][$_orderNum];
-                if (array_key_exists($_orderNum, $this->_cache  ['upserted' . $this->getManyParentEntityType()])) {
-                    $_object->Id = $salesforceOrderId;
-                } else {
+                if (!isset($this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum])) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+
                     unset($this->_cache['orderToActivate'][$_orderNum]);
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') did not make it into Salesforce.');
+                    continue;
                 }
+
+                $_object->Id = $this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum];
+
                 // Check if at least 1 product was added to the order before we try to activate
-                if (
-                    array_key_exists('orderItemsProductsToSync', $this->_cache)
-                    && (
-                        !array_key_exists($salesforceOrderId, $this->_cache['orderItemsProductsToSync'])
-                        || empty($this->_cache['orderItemsProductsToSync'][$salesforceOrderId])
-                    )
+                if ((
+                        !($this->_cache['orderLookup'][$_orderNum])
+                        || !property_exists($this->_cache['orderLookup'][$_orderNum], 'OrderItems')
+                        || empty($this->_cache['orderLookup'][$_orderNum]->OrderItems))
+                    && (empty($this->_cache['responses']['orderItems'][$_orderNum]))
                 ) {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');

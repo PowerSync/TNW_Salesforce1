@@ -4,6 +4,14 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
+/**
+ * @method string getSfField()
+ * @method string getLocalField()
+ * @method string getBackendType()
+ * @method string getLocalFieldType()
+ * @method string getLocalFieldAttributeCode()
+ * @method string getDefaultValue()
+ */
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {
     const SET_TYPE_UPSERT = 'upsert';
@@ -19,6 +27,8 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
         'billing item'      => 'order_invoice_item',
         'shipment'          => 'order_shipment',
         'shipment item'     => 'order_shipment_item',
+        'credit memo'       => 'order_creditmemo',
+        'credit memo item'  => 'order_creditmemo_item',
         'billing'           => 'address_billing',
         'shipping'          => 'address_shipping',
         'shopping cart rule'=> 'sales_rule',
@@ -36,6 +46,21 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
         return $this->getModelType()
             ->getValue($objectMappings[$this->getLocalFieldType()]);
+    }
+
+    /**
+     * @param $objectMappings Mage_Core_Model_Abstract[]
+     * @param $value string
+     * @return Mage_Core_Model_Abstract|null
+     */
+    public function setValue($objectMappings, $value)
+    {
+        if (!isset($objectMappings[$this->getLocalFieldType()])) {
+            return;
+        }
+
+        $this->getModelType()
+            ->setValue($objectMappings[$this->getLocalFieldType()], $value);
     }
 
     /**

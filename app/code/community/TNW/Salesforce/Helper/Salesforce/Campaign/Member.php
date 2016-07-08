@@ -36,14 +36,6 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     public function memberAdd(array $customers)
     {
-        // test sf api connection
-        /** @var TNW_Salesforce_Model_Connection $_client */
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
-
-            return false;
-        }
 
         try {
             $_existIds = array_filter(array_map(function (Mage_Customer_Model_Customer $_customer) {
@@ -54,6 +46,10 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
 
             $guestCount = 0;
             foreach ($customers as $campaignId => $_customers) {
+                if (empty($campaignId)) {
+                    continue;
+                }
+
                 /** @var Mage_Customer_Model_Customer $_customer */
                 foreach ($_customers as $_customer) {
                     if ($_customer->isObjectNew()) {
@@ -69,7 +65,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
                     }
 
                     // Associate order ID with order Number
-                    $this->_cache['entitiesCampaign'][$entityNumber][$this->prepareId($campaignId)] = $this->prepareId($campaignId);
+                    $this->_cache['entitiesCampaign'][$campaignId][] = $_customer;
                     $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$campaignId . '_' . $entityId] = $entityNumber;
                 }
             }
@@ -155,29 +151,9 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _massAddAfter()
     {
-        $contactIds = array();
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $prefix) {
-            $entity = $this->getEntityCache($prefix);
-            $entityNumber = $this->_getEntityNumber($entity);
-            $campaignIds = $this->_cache['entitiesCampaign'][$entityNumber];
-
-            foreach ($campaignIds as $campaignId) {
-                $contactIds[$campaignId][] = $entity;
-            }
-        }
-
-        // Salesforce lookup, find all orders by Magento order number
+        // Salesforce lookup, find Campaign Members
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_campaign_member')
-            ->lookup($contactIds);
-
-        foreach (array_keys($this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)]) as $_campaignId) {
-            $entityNumber = array_search(Mage::helper('tnw_salesforce')->prepareId($_campaignId), $this->_cache['entitiesCampaign']);
-            if (empty($entityNumber)) {
-                continue;
-            }
-
-            $this->_cache['entitiesCampaign'][$entityNumber] = $_campaignId;
-        }
+            ->lookup($this->_cache['entitiesCampaign']);
 
         return;
     }
@@ -192,14 +168,15 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         $lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
 
         if (is_string($_entity)) {
-            list($campaignId, $entityNumber) = explode('_', $_entity);
+            list($campaignId, $entityNumber) = explode('_', $_entity, 2);
             $_entity = $this->getEntityCache($entityNumber);
             $campaignId = $this->prepareId($campaignId);
-
         } else {
 
-            $entityNumber = $this->_getEntityNumber($_entity);
-            $campaignId = $this->_cache['entitiesCampaign'][$entityNumber];
+            /**
+             * can find campaignMemberId by ContactId/LeadId and CampaingId combination only.
+             */
+            return null;
         }
 
         if (!isset($this->_cache[$lookupKey][$campaignId])) {
@@ -266,7 +243,7 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
         $campaingId = str_replace('_' . $entityNumber, '', $key);
 
         if (!(property_exists($this->_obj, 'Id') && $this->_obj->Id)) {
-            $this->_obj->CampaignId = $this->_cache['entitiesCampaign'][$entityNumber][$this->prepareId($campaingId)];
+            $this->_obj->CampaignId = $this->prepareId($campaingId);
             //$this->_obj->HasResponded   = true;
 
             switch (true) {

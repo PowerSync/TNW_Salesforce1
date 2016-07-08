@@ -1,0 +1,19 @@
+<?php
+/** @var TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce $this */
+?>
+<!--Salesforce Info-->
+<div class="entry-edit">
+    <div class="entry-edit-head">
+        <h4 class="icon-head head-billing-address"><?php echo Mage::helper('tnw_salesforce')->__('Salesforce Information') ?></h4>
+    </div>
+    <fieldset>
+        <table cellspacing="0" class="form-list">
+            <?php foreach ($this->getSalesforceData() as $data): ?>
+                <tr>
+                    <td class="label"><label><?php echo $data['label'] ?></label></td>
+                    <td class="value"><strong><?php echo $data['value'] ?></strong></td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    </fieldset>
+</div>

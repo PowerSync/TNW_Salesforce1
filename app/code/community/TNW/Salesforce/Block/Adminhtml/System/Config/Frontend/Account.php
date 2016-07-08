@@ -11,7 +11,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
     {
         $aIdVal = array();
         $value = $element->getData('value');
-        if (!empty($value)) {
+        if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
             /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
             $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
                 ->addFieldToFilter('Id', array('eq' => $value));
@@ -24,7 +24,8 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
             ->getBlockSingleton('core/template')
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'url'       => $this->getUrl('*/salesforce_account_matching/search'),
+                'selector'  => '.tnw-ajax-find-select-account',
+                'url'       => $this->getUrl('*/salesforce_search/account'),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
             ));
 

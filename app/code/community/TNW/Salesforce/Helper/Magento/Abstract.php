@@ -109,7 +109,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     }
 
     /**
-     * @param null $object
+     * @param stdClass $object
      * @return mixed
      */
     abstract public function syncFromSalesforce($object = null);
@@ -165,7 +165,8 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
      * @param $_message
      * @param $_code
      */
-    protected function _addError($_message, $_code) {
+    protected function _addError($_message, $_code)
+    {
         if (!property_exists($this->_response, 'errors')) {
             $this->_response->errors = array();
         }
@@ -181,7 +182,8 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         $this->_setTime();
     }
 
-    protected function _prepare() {
+    protected function _prepare()
+    {
         if (!$this->_write) {
             $this->_write = Mage::getSingleton('core/resource')->getConnection('core_write');
         }
@@ -198,12 +200,11 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         }
     }
 
-    public function getWebsiteSfId($website){
+    public function getWebsiteSfId($website)
+    {
         $sfId = $website->getData('salesforce_id');
         if (empty($sfId)){
             $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-            $manualSync->setSalesforceServerDomain(Mage::getSingleton('core/session')->getSalesforceServerDomain());
-            $manualSync->setSalesforceSessionId(Mage::getSingleton('core/session')->getSalesforceSessionId());
 
             if ($manualSync->reset()) {
                 $manualSync->massAdd(array($website->getData('website_id')));
@@ -216,15 +217,19 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         return $sfId;
     }
 
-    protected function _getTime() {
+    protected function _getTime()
+    {
         if (!$this->_time) {
             $this->_setTime();
         }
+
         return $this->_time;
     }
 
-    protected function _setTime() {
+    protected function _setTime()
+    {
         $this->_time = gmdate(DATE_ATOM, Mage::getModel('core/date')->timestamp(time()));
+        return $this;
     }
 
     /**
@@ -251,5 +256,42 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         }
 
         return $this;
+    }
+
+    protected function findCountryId($name)
+    {
+        static $country = null;
+        if (is_null($country)) {
+            $country = Mage::getModel('directory/country_api')->items();
+        }
+
+        foreach($country as $_country) {
+            if (!in_array($name, $_country)) {
+                continue;
+            }
+
+            return $_country['country_id'];
+        }
+
+        return null;
+    }
+
+    protected function findRegionId($countryCode, $region)
+    {
+        static $regions = array();
+        if (empty($regions[$countryCode])) {
+            $regions[$countryCode] = Mage::getModel('directory/region_api')
+                ->items($countryCode);
+        }
+
+        foreach($regions[$countryCode] as $_region) {
+            if (!in_array($region, $_region)) {
+                continue;
+            }
+
+            return $_region['region_id'];
+        }
+
+        return null;
     }
 }
