@@ -49,16 +49,12 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
     public function editAction()
     {
         $statusId = $this->getRequest()->getParam('status_id');
-        if (empty($statusId)) {
-            $this->_redirect('*/*/');
-            return;
-        }
-
+        
         /** @var TNW_Salesforce_Model_Order_Creditmemo_Status $model */
         $model = Mage::getModel('tnw_salesforce/order_creditmemo_status')
             ->load($statusId);
 
-        if (!$model->getId()) {
+        if (!$model->getId() && $statusId !== NULL) {
             Mage::getSingleton('adminhtml/session')->addError($this->__('Item does not exist'));
             $this->_redirect('*/*/');
             return;
