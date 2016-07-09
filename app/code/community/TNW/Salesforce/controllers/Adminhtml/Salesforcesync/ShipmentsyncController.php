@@ -124,7 +124,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
                 } else {
                     $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'invoiceIds' => $itemIds,
+                        'shipmentIds' => $itemIds,
                         'message'    => Mage::helper('adminhtml')->__('Total of %d records(s) were synchronized', count($itemIds)),
                         'type'       => 'bulk'
                     ));
