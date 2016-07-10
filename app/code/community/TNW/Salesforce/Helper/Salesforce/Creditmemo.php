@@ -36,8 +36,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     /**
      * @var array
      */
-    protected $_availableFees = array();
-
+    protected $_availableFees = array(
+        'tax',
+        'shipping',
+        'discount'
+    );
     /**
      * @var int
      */
@@ -224,6 +227,29 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_creditmemo')
             ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
+
+        $ordersUpdating = array();
+        foreach (array_chunk(array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), 1) as $ids) {
+
+            $ordersCollection = Mage::getModel('sales/order_creditmemo')->getCollection();
+
+            $ordersCollection->getSelect()->reset(Varien_Db_Select::COLUMNS);
+
+            $ordersCollection->addFieldToFilter('main_table.entity_id', array('in' => $ids));
+
+            $ordersCollection
+                ->join(
+                    array('order_table' => 'sales/order'),
+                    'main_table.order_id = order_table.entity_id',
+                    array('order_table.entity_id', 'order_table.increment_id')
+                );
+            $lookupResult = Mage::helper('tnw_salesforce')->getDbConnection('read')->fetchPairs($ordersCollection->getSelect());
+            foreach ($lookupResult as $k => $v) {
+                $ordersUpdating[$k] = $v;
+            }
+        }
+        $this->_cache['creditmemoOrderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')
+            ->lookup($ordersUpdating);
     }
 
     /**
@@ -439,6 +465,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         }
 
         foreach ($this->_cache[$lookupKey][$_entityNumber]->Items->records as $_cartItem) {
+
             if ($_cartItem->OriginalOrderItemId != $_sOrderItemId) {
                 continue;
             }
@@ -836,6 +863,40 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         // Logout
         $this->reset();
         $this->clearMemory();
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order
+     */
+    protected function _prepareEntityItemAfter($_entity)
+    {
+        $this->_applyAdditionalFees($_entity);
+    }
+
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order_Invoice
+     * @param $item Varien_Object
+     */
+    protected function _prepareAdditionalFees($_entity, $item)
+    {
+        /** @var Mage_Sales_Model_Order_Item $_orderItem */
+        $_orderItem           = Mage::getModel('sales/order_item');
+
+        $orderLookup = @$this->_cache['creditmemoOrderLookup'][$_entity->getOrder()->getRealOrderId()];
+        if ($orderLookup && property_exists($orderLookup, 'OrderItems') && $orderLookup->OrderItems) {
+            foreach ($orderLookup->OrderItems->records as $record) {
+                if ($record->PricebookEntry->Product2Id != $item->getData('Id')) {
+                    continue;
+                }
+
+                $_orderItem->setData('salesforce_id', $record->Id);
+                break;
+            }
+        }
+
+        //FIX: $item->getOrderItem()->getData('salesforce_id')
+        $item->setData('order_item', $_orderItem);
     }
 
     /**
