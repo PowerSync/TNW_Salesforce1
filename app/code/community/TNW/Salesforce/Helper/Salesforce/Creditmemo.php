@@ -228,7 +228,8 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_creditmemo')
             ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
 
-        foreach (array_chunk(array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), TNW_Salesforce_Helper_Salesforce_Data::UPDATE_LIMIT) as $ids) {
+        $ordersUpdating = array();
+        foreach (array_chunk(array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), 1) as $ids) {
 
             $ordersCollection = Mage::getModel('sales/order_creditmemo')->getCollection();
 
@@ -242,10 +243,13 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                     'main_table.order_id = order_table.entity_id',
                     array('order_table.entity_id', 'order_table.increment_id')
                 );
-            $ordersUpdating = Mage::helper('tnw_salesforce')->getDbConnection('read')->fetchPairs($ordersCollection->getSelect());
-            $this->_cache['creditmemoOrderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')
-                ->lookup($ordersUpdating);
+            $lookupResult = Mage::helper('tnw_salesforce')->getDbConnection('read')->fetchPairs($ordersCollection->getSelect());
+            foreach ($lookupResult as $k => $v) {
+                $ordersUpdating[$k] = $v;
+            }
         }
+        $this->_cache['creditmemoOrderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')
+            ->lookup($ordersUpdating);
     }
 
     /**
