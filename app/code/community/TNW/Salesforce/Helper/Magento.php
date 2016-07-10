@@ -240,7 +240,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_order');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_order'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -290,7 +290,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_invoice');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -447,7 +447,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_quote');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_quote'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento order schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -495,7 +495,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_order_payment');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_order_payment'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento payment schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -699,7 +699,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_order_item');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_order_item'));
         }
         catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento cart items schema...");
@@ -745,7 +745,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_quote_item');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_quote_item'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -790,7 +790,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_invoice_item');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice_item'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -836,7 +836,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_shipment_item');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_shipment_item'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -881,7 +881,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('sales_flat_creditmemo_item');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('sales_flat_creditmemo_item'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -981,7 +981,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             );
 
             $collection = $this->getDbConnection('read')
-                ->describeTable('cataloginventory_stock_item');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('cataloginventory_stock_item'));
 
             foreach ($collection as $one) {
                 $this->_cache[$type]['inventory']['value'][] = array(
@@ -998,7 +998,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('catalogrule');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('catalogrule'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
@@ -1041,7 +1041,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $collection = $this->getDbConnection('read')
-                ->describeTable('salesrule');
+                ->describeTable(Mage::helper('tnw_salesforce')->getTable('salesrule'));
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
