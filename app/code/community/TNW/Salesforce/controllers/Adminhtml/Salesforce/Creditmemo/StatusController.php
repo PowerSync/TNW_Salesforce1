@@ -49,7 +49,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
     public function editAction()
     {
         $statusId = $this->getRequest()->getParam('status_id');
-        
+
         /** @var TNW_Salesforce_Model_Order_Creditmemo_Status $model */
         $model = Mage::getModel('tnw_salesforce/order_creditmemo_status')
             ->load($statusId);
@@ -100,6 +100,31 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
             ->setId($statusId);
 
         try {
+
+            $select = $model
+                ->getResource()
+                ->getReadConnection()
+                ->select()
+                ->from($model->getResource()->getMainTable(), array('COUNT(*)'))
+                ->where("(magento_stage = :magento_stage OR salesforce_status = :salesforce_status) AND status_id != :status_id")
+            ;
+
+            $bind = array(
+                'magento_stage' => $model->getMagentoStage(),
+                'salesforce_status' => $model->getSalesforceStatus(),
+                'status_id' => (int)$model->getId(),
+            );
+
+            $isDuplicate = $model
+                ->getResource()
+                ->getReadConnection()
+                ->fetchAll($select, $bind);
+
+            if ($isDuplicate) {
+                throw new Exception($this->__('Mapping with the same Magento Stage or Salesforce Status already exists.'));
+            }
+
+
             $model->save();
 
             Mage::getSingleton('adminhtml/session')
@@ -113,8 +138,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
 
             $this->_redirect('*/*/');
             return;
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             Mage::getSingleton('adminhtml/session')
                 ->addError($e->getMessage())
                 ->setCreditMemoStatusMappingData($data);
@@ -127,7 +151,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
     public function massDeleteAction()
     {
         $statusIds = $this->getRequest()->getParam('status_ids');
-        if(!is_array($statusIds)) {
+        if (!is_array($statusIds)) {
             Mage::getSingleton('adminhtml/session')
                 ->addError($this->__('Please select item(s)'));
 
@@ -144,8 +168,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
 
             Mage::getSingleton('adminhtml/session')->addSuccess(
                 $this->__('Total of %d record(s) were successfully deleted', count($statusIds)));
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
         }
 
