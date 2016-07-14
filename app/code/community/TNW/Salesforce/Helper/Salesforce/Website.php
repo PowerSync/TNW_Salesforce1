@@ -116,7 +116,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
                 $this->_cache['toSaveInMagento'][$_websiteIds[$_key]]->salesforce_id = $_result->id;
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Websites: " . $_websiteIds[$_key] . " - ID: " . $_result->id);
             } else {
-                $this->_processErrors($_result, 'website', $this->_cache['websitesToUpsert'][$_websiteIds[$_key]]);
+                $this->_processErrors($_result, 'website', $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'][$_websiteIds[$_key]]);
             }
         }
 
