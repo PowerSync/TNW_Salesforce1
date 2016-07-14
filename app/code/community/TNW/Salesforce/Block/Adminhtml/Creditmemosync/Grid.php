@@ -65,6 +65,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
         $this->addColumn('increment_id', array(
             'header'    => Mage::helper('sales')->__('Credit Memo #'),
             'index'     => 'increment_id',
+            'filter_index' => 'main_table.increment_id',
             'type'      => 'text',
             'renderer'  => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
             'actions'   => array(
@@ -79,6 +80,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
         $this->addColumn('created_at', array(
             'header'    => Mage::helper('sales')->__('Created At'),
             'index'     => 'created_at',
+            'filter_index' => 'main_table.created_at',
             'type'      => 'datetime',
         ));
 
@@ -117,6 +119,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
         $this->addColumn('grand_total', array(
             'header'    => Mage::helper('customer')->__('Refunded'),
             'index'     => 'grand_total',
+            'filter_index' => 'main_table.grand_total',
             'type'      => 'currency',
             'align'     => 'right',
             'currency'  => 'order_currency_code',
