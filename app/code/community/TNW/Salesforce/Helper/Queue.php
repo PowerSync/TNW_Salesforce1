@@ -34,6 +34,8 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
                 $this->_processInvoices();
 
+                $this->_processShipments();
+
                 $this->_processCustomObjects();
             } else {
                 $this->_itemIds = $itemIds;
@@ -88,6 +90,33 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
         // Allow Powersync to overwite fired event for customizations
         $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
         Mage::dispatchEvent('tnw_salesforce_invoice_set_object', array('sf_object' => $_object));
+
+        $_module = 'tnw_salesforce/bulk_' . $_object->getObjectType();
+
+        $total = Mage::getModel('tnw_salesforce/localstorage')->countObjectBySfType(array(
+            'Product',
+            'Customer',
+            'Website',
+            'Order',
+        ));
+
+        if ($total > 0) {
+            Mage::getSingleton('adminhtml/session')->addNotice(Mage::helper("tnw_salesforce")->__("SKIPPING INVOICES: Not all dependencies are synchronized"));
+            return false;
+        }
+
+        $this->_synchronize($_type, $_module);
+    }
+
+    /**
+     * Process Order
+     */
+    protected function _processShipments()
+    {
+        $_type = 'Invoice';
+        // Allow Powersync to overwite fired event for customizations
+        $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
+        Mage::dispatchEvent('tnw_salesforce_shipment_set_object', array('sf_object' => $_object));
 
         $_module = 'tnw_salesforce/bulk_' . $_object->getObjectType();
 
@@ -209,7 +238,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
             // set status to 'sync_running'
             Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($_idSet);
 
-            if ($_type == 'Order' || $_type == 'Invoice') {
+            if ($_type == 'Order' || $_type == 'Invoice'|| $_type == 'Shipment') {
                 if ($_type == 'Invoice') {
                     // Allow Powersync to overwite fired event for customizations
                     $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Invoice_Observer::OBJECT_TYPE));
@@ -217,6 +246,13 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 
                     $_syncType = $_object->getObjectType();
                     $_idPrefix = 'invoice';
+                } elseif ($_type == 'Shipment') {
+                    // Allow Powersync to overwite fired event for customizations
+                    $_object = new Varien_Object(array('object_type' => TNW_Salesforce_Model_Order_Shipment_Observer::OBJECT_TYPE));
+                    Mage::dispatchEvent('tnw_salesforce_shipment_set_object', array('sf_object' => $_object));
+
+                    $_syncType = $_object->getObjectType();
+                    $_idPrefix = 'shipment';
                 } else {
                     $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
                     $_idPrefix = 'order';
@@ -232,7 +268,7 @@ class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
                         'queueIds' => $_idSet
                     )
                 );
-            } elseif ($_type == 'Invoice') {
+            } elseif ($_type == 'Invoice' || $_type == 'Shipment') {
                 $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
                 Mage::dispatchEvent(
