@@ -39,8 +39,12 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                     && $appropriatedField->length
                     && $appropriatedField->length < strlen($value)
                 ) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncate too long field value. ' . $this->_mapping->getSfObject(). ': ' . $this->_mapping->getSfField());
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Limit is ' . $appropriatedField->length . ' value length is ' . strlen($value));
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Initial value: ' . $value);
                     $limit = $appropriatedField->length;
                     $value = substr($value, 0, $limit - 3) . '...';
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncated value: ' . $value);
                 }
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
