@@ -14,6 +14,39 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     public function getValue($_entity)
     {
         $value = $this->_prepareValue($_entity);
+
+        $fields = Mage::helper('tnw_salesforce/salesforce_data')
+            ->describeTable($this->_mapping->getSfObject());
+
+        /**
+         * try to find SF field
+         */
+        $appropriatedField = false;
+        foreach ($fields as $field) {
+            if (strtolower($field->name) == strtolower($this->_mapping->getSfField())) {
+                $appropriatedField = $field;
+                break;
+            }
+        }
+
+        /**
+         * apply field limits
+         */
+        if ($appropriatedField) {
+            try {
+                if (
+                    is_string($value)
+                    && $appropriatedField->length
+                    && $appropriatedField->length < strlen($value)
+                ) {
+                    $limit = $appropriatedField->length;
+                    $value = substr($value, 0, $limit - 3) . '...';
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
+            }
+        }
+
         $value = $this->_prepareDefaultValue($value);
 
         return $value;
