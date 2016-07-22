@@ -20,6 +20,11 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     /**
      * @var array
      */
+    protected $_tableDescription = array();
+
+    /**
+     * @var array
+     */
     protected $_noConnectionArray = array();
 
     public function __construct()
@@ -664,6 +669,74 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             }
 
             return $_data;
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $field . " Object");
+            unset($e);
+            return false;
+        }
+    }
+
+
+    /**
+     * @param null $field
+     * @return array|bool|mixed
+     */
+    public function describeTable($table = NULL)
+    {
+        try {
+            $_useCache = Mage::app()->useCache('tnw_salesforce');
+            $cache = Mage::app()->getCache();
+
+            switch ($table) {
+                case 'Abandoned':
+                    $table = 'Opportunity';
+                    break;
+                case 'AbandonedItem':
+                    $table = 'OpportunityLineItem';
+                    break;
+                case 'OrderInvoice':
+                case 'OpportunityInvoice':
+                    $table = 'tnw_invoice__Invoice__c';
+                    break;
+                case 'OrderInvoiceItem':
+                case 'OpportunityInvoiceItem':
+                    $table = 'tnw_invoice__InvoiceItem__c';
+                    break;
+                case 'OrderShipment':
+                case 'OpportunityShipment':
+                    $table = 'tnw_shipment__Shipment__c';
+                    break;
+                case 'OrderShipmentItem':
+                case 'OpportunityShipmentItem':
+                    $table = 'tnw_shipment__ShipmentItem__c';
+                    break;
+                case 'OrderCreditMemo':
+                    $table = 'Order';
+                    break;
+                case 'OrderCreditMemoItem':
+                    $table = 'OrderItem';
+                    break;
+            }
+
+            if (!$this->_tableDescription[$table]) {
+                if ($cache->load("tnw_salesforce_descsribe_" . strtolower($table) . "_fields")) {
+                    $columns = unserialize($cache->load("tnw_salesforce_describe_" . strtolower($table) . "_fields"));
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $table . " object...");
+
+                    $columns = Mage::getResourceSingleton('tnw_salesforce_api_entity/account')
+                        ->getReadConnection()
+                        ->describeTable($table);
+
+                    if ($_useCache) {
+                        $cache->save(serialize($columns), "tnw_salesforce_" . strtolower($table) . "_fields", array("TNW_SALESFORCE"));
+                    }
+                }
+                $this->_tableDescription[$table] = $columns;
+            }
+
+            return $this->_tableDescription[$table];
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $field . " Object");
