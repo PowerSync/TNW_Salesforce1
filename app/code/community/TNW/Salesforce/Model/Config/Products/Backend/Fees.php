@@ -21,12 +21,12 @@ class TNW_Salesforce_Model_Config_Products_Backend_Fees extends Mage_Core_Model_
                 break;
 
             case 'shipping':
-                $enablePath = 'groups/opportunity_cart/fields/use_tax_product/value';
+                $enablePath = 'groups/opportunity_cart/fields/use_shipping_product/value';
                 $createProduct = array((object)array('Name'=>'Shipping Fee', 'ProductCode'=>'fee_shipping'));
                 break;
 
             case 'discount':
-                $enablePath = 'groups/opportunity_cart/fields/use_tax_product/value';
+                $enablePath = 'groups/opportunity_cart/fields/use_discount_product/value';
                 $createProduct = array((object)array('Name'=>'Discount Fee', 'ProductCode'=>'fee_discount'));
                 break;
 
