@@ -1479,6 +1479,17 @@
                                 Product name must contain the word 'Discount' and must be added to the Default Pricebook you set under <b>System : Salesforce API : Integration Setup : Product Configuration</b>.
                             ]]></comment>
                         </discount_product_pricebook>
+                        <create_products_in_salesforce>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_fees_synchronize</frontend_model>
+                            <frontend_type>button</frontend_type>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                By the clicking button above "fee products" will be created in Salesforce automatically and saved in Magento settings. The fee products sync will be activated.
+                            ]]></comment>
+                        </create_products_in_salesforce>
                     </fields>
                 </opportunity_cart>
                 <shopping_cart translate="label" module="tnw_salesforce">
