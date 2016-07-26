@@ -12,8 +12,8 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     const CONFIG_ACCOUNT_SYNC_CUSTOMER = 'salesforce_customer/sync/single_account_sync_customer';
     const CONFIG_ACCOUNT_SELECT = 'salesforce_customer/sync/single_account_select';
     const CONFIG_ACCOUNT_PICKLIST = 'salesforce_customer/sync/use_address_picklist';
-    const CONFIG_OPPORTUNITY_VIEW = 'salesforce_order/customer_view/opportunity_display';
-    const CONFIG_OPPORTUNITY_FILTER = 'salesforce_order/customer_view/opportunity_filter';
+    const CONFIG_OPPORTUNITY_VIEW = 'salesforce_customer/customer_view/opportunity_display';
+    const CONFIG_OPPORTUNITY_FILTER = 'salesforce_customer/customer_view/opportunity_filter';
     const CONFIG_LEAD_EMAIL_NOTIFICATION = 'salesforce_customer/lead_config/email_notification';
 
     // Create new customers from Salesforce
@@ -94,7 +94,7 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     public function getAccordionConfig()
     {
         return array(
-            'title'       => $this->__('Customer Opportunity'),
+            'title'       => $this->__('Customer Opportunities'),
             'ajax'        => true,
             'content_url' => Mage::getSingleton('core/url')->getUrl('*/*/opportunities', array('_current' => true)),
         );

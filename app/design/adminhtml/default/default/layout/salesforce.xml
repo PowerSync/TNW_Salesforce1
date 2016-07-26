@@ -264,7 +264,7 @@
 
     <adminhtml_customer_edit>
         <reference name="accordion">
-            <action method="addItem" ifconfig="salesforce_order/customer_view/opportunity_display">
+            <action method="addItem" ifconfig="salesforce_customer/customer_view/opportunity_display">
                 <itemId>opportunity</itemId>
                 <config helper="tnw_salesforce/config_customer/getAccordionConfig"/>
             </action>

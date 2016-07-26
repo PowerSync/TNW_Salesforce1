@@ -886,25 +886,6 @@
                         </customer_person_account>
                     </fields>
                 </contact>
-                <account_catchall translate="label" module="tnw_salesforce">
-                    <label>Advanced Lookup</label>
-                    <sort_order>155</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <domains translate="label">
-                            <label>Account Matching Rules</label>
-                            <frontend_type>select</frontend_type>
-                            <frontend_model>tnw_salesforce/adminhtml_domains</frontend_model>
-                            <backend_model>adminhtml/system_config_backend_serialized</backend_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                        </domains>
-                    </fields>
-                </account_catchall>
                 <newsletter_config translate="label" module="tnw_salesforce">
                     <label>Newsletter Subscribers</label>
                     <sort_order>300</sort_order>
@@ -938,6 +919,39 @@
                         </customer_newletter_campaign_id>
                     </fields>
                 </newsletter_config>
+                <customer_view>
+                    <label>Customer Dashboard</label>
+                    <sort_order>310</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <opportunity_display>
+                            <label>Opportunity Display</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Show / Hide Opportunities linked to a customer on the Magento Admin > Customer Detail page</comment>
+                        </opportunity_display>
+                        <opportunity_filter>
+                            <label>Opportunity Filter</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_opportunity_filter</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[<b>a Customer</b> - only Opportunities linked to this customer will be displayed<br>
+                            <b>an Account</b> - all Opportunities from an Account will be displayed]]></comment>
+                            <depends>
+                                <opportunity_display>1</opportunity_display>
+                            </depends>
+                        </opportunity_filter>
+                    </fields>
+                </customer_view>
             </groups>
         </salesforce_customer>
         <salesforce_product translate="label" module="tnw_salesforce">
@@ -1644,39 +1658,6 @@
                         </create_campaign_automatic>
                     </fields>
                 </salesforce_campaigns>
-                <customer_view>
-                    <label>Customer View</label>
-                    <sort_order>370</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <opportunity_display>
-                            <label>Opportunity Display</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Show / Hide Opportunities linked to a customer on the Magento Admin > Customer Detail page</comment>
-                        </opportunity_display>
-                        <opportunity_filter>
-                            <label>Opportunity Filter</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_opportunity_filter</source_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[<b>a Customer</b> - only Opportunities linked to this customer will be displayed<br>
-                            <b>an Account</b> - all Opportunities from an Account will be displayed]]></comment>
-                            <depends>
-                                <opportunity_display>1</opportunity_display>
-                            </depends>
-                        </opportunity_filter>
-                    </fields>
-                </customer_view>
             </groups>
         </salesforce_order>
     </sections>
