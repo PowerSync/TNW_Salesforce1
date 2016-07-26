@@ -111,6 +111,14 @@
 
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
+        <reference name="sales_order_edit">
+            <action method="addButton">
+                <id>sdf</id>
+                <data helper="tnw_salesforce/config_sales_order/getSyncButtonData"/>
+                <level>0</level>
+                <sortOrder>2</sortOrder>
+            </action>
+        </reference>
         <reference name="sales_order_tabs">
             <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce"
                    template="salesforce/sales/order/view/tab/salesforce.phtml">
