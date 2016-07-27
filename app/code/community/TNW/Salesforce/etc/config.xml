@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.56.01.0000</version>
+            <version>0.01.56.03.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -667,7 +667,6 @@
                 <customer_sync_enable>0</customer_sync_enable>
                 <new_customer>1</new_customer>
                 <customer_groups_all>1</customer_groups_all>
-                <contact_asignee>0</contact_asignee>
             </sync>
             <lead_config>
                 <customer_integration>0</customer_integration>
@@ -675,10 +674,8 @@
                 <use_lead_source_filter>0</use_lead_source_filter>
                 <email_notification>0</email_notification>
             </lead_config>
-            <contactus>
-                <customer_form_enable>0</customer_form_enable>
-            </contactus>
             <contact>
+                <contact_asignee>0</contact_asignee>
                 <customer_person>0</customer_person>
             </contact>
             <newsletter_config>
@@ -738,5 +735,10 @@
                 <opportunity_filter>customer</opportunity_filter>
             </customer_view>
         </salesforce_order>
+        <salesforce_contactus>
+            <general>
+                <customer_form_enable>0</customer_form_enable>
+            </general>
+        </salesforce_contactus>
     </default>
 </config>

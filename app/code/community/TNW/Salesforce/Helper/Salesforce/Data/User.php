@@ -118,7 +118,20 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
      */
     public function processDuplicates($customers)
     {
-        foreach (array('lead', 'account', 'contact') as $sfEntityType) {
+        $duplicatesEntity = array();
+        if (Mage::helper('tnw_salesforce/config_customer')->mergeAccountDuplicates()) {
+            $duplicatesEntity[] = 'account';
+        }
+
+        if (Mage::helper('tnw_salesforce/config_customer')->mergeContactDuplicates()) {
+            $duplicatesEntity[] = 'contact';
+        }
+
+        if (Mage::helper('tnw_salesforce/config_customer')->mergeLeadDuplicates()) {
+            $duplicatesEntity[] = 'lead';
+        }
+
+        foreach ($duplicatesEntity as $sfEntityType) {
 
             $duplicates = array();
             /**
