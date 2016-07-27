@@ -80,7 +80,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
             else {
                 $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
                 if ($campaignMember->reset() && $campaignMember->massAdd(array($salesruleId)) && $campaignMember->process()) {
-                    $this->_getSession()->addSuccess($this->__('Rule was successfully synchronized'));
+                    $this->_getSession()->addSuccess(Mage::helper('tnw_salesforce')->__('Rule was successfully synchronized'));
                 }
             }
         } catch (Exception $e) {
