@@ -112,7 +112,7 @@
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
         <reference name="sales_order_edit">
-            <action method="addButton">
+            <action method="addButton" ifconfig="salesforce_order/general/order_sync_enable">
                 <id>sdf</id>
                 <data helper="tnw_salesforce/config_sales_order/getSyncButtonData"/>
                 <level>0</level>
