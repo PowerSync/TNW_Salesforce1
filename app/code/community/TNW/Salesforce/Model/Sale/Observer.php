@@ -187,6 +187,14 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function triggerSalesforceEvent($observer)
     {
+        if (
+            !Mage::helper('tnw_salesforce')->isEnabled()
+            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
+        ) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+            return; // Disabled
+        }
+
         if (!Mage::helper('tnw_salesforce')->canPush()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
