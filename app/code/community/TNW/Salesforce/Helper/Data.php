@@ -465,6 +465,18 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CAMPAIGNS_SYNC);
     }
 
+    public function getSyncOrderRulesButtonData()
+    {
+        /** @var Mage_SalesRule_Model_Rule $rule */
+        $rule  = Mage::registry('current_promo_quote_rule');
+        $url   = Mage::getModel('adminhtml/url')->getUrl('*/salesforcesync_campaign_salesrulesync/sync', array('salesrule_id' => $rule->getId()));
+
+        return array(
+            'label'   => Mage::helper('tnw_salesforce')->__('Synchronize w/ Salesforce'),
+            'onclick' => "setLocation('$url')",
+        );
+    }
+
     public function isCampaignsCreateAutomate()
     {
         return $this->getStoreConfig(self::CAMPAIGNS_CREATE_AUTOMATE);

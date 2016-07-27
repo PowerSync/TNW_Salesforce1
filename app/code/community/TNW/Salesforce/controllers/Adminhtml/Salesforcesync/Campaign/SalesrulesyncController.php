@@ -73,14 +73,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
                 }
                 else if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
                     Mage::getSingleton('adminhtml/session')->addSuccess(
-                        Mage::helper('adminhtml')->__('Order was added to the queue!')
+                        Mage::helper('adminhtml')->__('Rule was added to the queue!')
                     );
                 }
             }
             else {
                 $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
-                if ($campaignMember->reset() && $campaignMember->massAdd(array($salesruleId))) {
-                    $campaignMember->process();
+                if ($campaignMember->reset() && $campaignMember->massAdd(array($salesruleId)) && $campaignMember->process()) {
+                    $this->_getSession()->addSuccess($this->__('Rule was successfully synchronized'));
                 }
             }
         } catch (Exception $e) {
@@ -88,7 +88,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
                 ->addError($e->getMessage());
         }
 
-        $this->_redirect('*/*/');
+        $this->_redirectReferer();
     }
 
     public function massSyncAction()
