@@ -137,6 +137,7 @@
             </tnw_salesforce>
             <adminhtml>
                 <rewrite>
+                    <catalog_product_edit>TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit</catalog_product_edit>
                     <system_store_store>TNW_Salesforce_Block_Adminhtml_System_Store</system_store_store>
                     <system_currency>TNW_Salesforce_Block_Adminhtml_System_Currency</system_currency>
                     <sales_order_status_grid>TNW_Salesforce_Block_Sales_Order_Status_Grid</sales_order_status_grid>
