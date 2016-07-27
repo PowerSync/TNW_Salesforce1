@@ -941,7 +941,7 @@
             </groups>
         </salesforce_customer>
         <salesforce_product translate="label" module="tnw_salesforce">
-            <label>Product Configuration</label>
+            <label>Products</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
             <sort_order>300</sort_order>
