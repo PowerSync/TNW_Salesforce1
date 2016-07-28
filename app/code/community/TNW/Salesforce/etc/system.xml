@@ -95,6 +95,8 @@
                         <api_wsdl translate="label">
                             <label>WSDL File</label>
                             <frontend_type>text</frontend_type>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_wsdl</frontend_model>
+                            <backend_model>tnw_salesforce/system_config_backend_wsdl</backend_model>
                             <sort_order>50</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
