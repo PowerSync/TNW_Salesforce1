@@ -1023,7 +1023,7 @@
             </groups>
         </salesforce_product>
         <salesforce_order translate="label" module="tnw_salesforce">
-            <label>Sales Configuration</label>
+            <label>Sales</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
             <sort_order>400</sort_order>
@@ -1292,7 +1292,18 @@
                             </depends>
                             <comment><![CDATA[ When order is placed for an existing Opportunity, change opportunity Stage Name to the one selected ]]></comment>
                         </opportunity_to_order_status>
-
+                    </fields>
+                </customer_opportunity>
+                <abandoned_carts>
+                    <label>Abandoned Carts</label>
+                    <sort_order>140</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <comment><![CDATA[
+                        <strong style="color: red;">IMPORTANT:</strong> Abandoned cart sync feature is available for Order-to-Order sync types.
+                    ]]></comment>
+                    <fields>
                         <abandoned_cart_enabled translate="label">
                             <label>Capture Abandoned Carts</label>
                             <frontend_type>select</frontend_type>
@@ -1302,7 +1313,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                             </depends>
                             <comment><![CDATA[ Capture Abandoned Carts in Magento for registered customers ]]></comment>
                         </abandoned_cart_enabled>
@@ -1316,7 +1330,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1332,7 +1349,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1350,7 +1370,10 @@
                             <show_in_store>0</show_in_store>
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1368,7 +1391,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1389,12 +1415,15 @@
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <abandoned_customer_opportunity_role_enable>1</abandoned_customer_opportunity_role_enable>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                         </abandoned_customer_integration_opp>
                     </fields>
-                </customer_opportunity>
+                </abandoned_carts>
                 <opportunity_cart translate="label" module="tnw_salesforce">
                     <label>Order Fees</label>
                     <sort_order>150</sort_order>
@@ -1530,124 +1559,6 @@
 
                     </fields>
                 </shopping_cart>
-                <invoice_configuration translate="label" module="tnw_salesforce">
-                    <label>Invoice Configuration</label>
-                    <sort_order>250</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <invoice_sync_enable translate="label">
-                            <label>Enable Integration</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <backend_model>tnw_salesforce/config_invoice_backend_sync_enable</backend_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable automated invoice synchronization</comment>
-                        </invoice_sync_enable>
-                    </fields>
-                </invoice_configuration>
-                <shipment_configuration translate="label" module="tnw_salesforce">
-                    <label>Shipment Configuration</label>
-                    <sort_order>350</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <sync_enabled translate="label comment" module="tnw_salesforce">
-                            <label>Enable Integration</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <backend_model>tnw_salesforce/config_shipment_backend_sync_enable</backend_model>
-                            <sort_order>100</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable automated shipment synchronization</comment>
-                        </sync_enabled>
-                    </fields>
-                </shipment_configuration>
-                <creditmemo_configuration translate="label" module="tnw_salesforce">
-                    <label>Credit Memo Configuration</label>
-                    <sort_order>355</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <sync_enabled translate="label comment" module="tnw_salesforce">
-                            <label>Enable Integration</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <sort_order>100</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable automated Credit Memo synchronization</comment>
-                        </sync_enabled>
-                    </fields>
-                </creditmemo_configuration>
-                <salesforce_campaigns>
-                    <label>Campaigns</label>
-                    <sort_order>360</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <sync_enabled translate="label comment" module="tnw_salesforce">
-                            <label>Enable Integration</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>100</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Integrate Shopping Cart Price Rules with Salesforce Campaigns</comment>
-                        </sync_enabled>
-                        <default_status>
-                            <label>Default Status</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_campaign_status</source_model>
-                            <sort_order>110</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Default campaign status</comment>
-                        </default_status>
-                        <default_type>
-                            <label>Default Type</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_campaign_type</source_model>
-                            <sort_order>120</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Default campaign type</comment>
-                        </default_type>
-                        <default_owner>
-                            <label>Default Owner</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
-                            <frontend_class>chosen-select</frontend_class>
-                            <sort_order>130</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Default Campaign Owner</comment>
-                        </default_owner>
-                        <create_campaign_automatic>
-                            <label>Create new Campaign automatic</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>140</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                        </create_campaign_automatic>
-                    </fields>
-                </salesforce_campaigns>
                 <customer_view>
                     <label>Customer View</label>
                     <sort_order>370</sort_order>
@@ -1729,5 +1640,197 @@
                 </general>
             </groups>
         </salesforce_contactus>
+        <salesforce_promotion>
+            <label>Promotions</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>600</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <salesforce_campaigns>
+                    <label>Shopping Cart Price Rules</label>
+                    <sort_order>360</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enabled translate="label comment" module="tnw_salesforce">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>100</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Integrate Shopping Cart Price Rules with Salesforce Campaigns</comment>
+                        </sync_enabled>
+                        <default_status>
+                            <label>Default Status</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_campaign_status</source_model>
+                            <sort_order>110</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default campaign status</comment>
+                        </default_status>
+                        <default_type>
+                            <label>Default Type</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_campaign_type</source_model>
+                            <sort_order>120</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default campaign type</comment>
+                        </default_type>
+                        <default_owner>
+                            <label>Default Owner</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>chosen-select</frontend_class>
+                            <sort_order>130</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default Campaign Owner</comment>
+                        </default_owner>
+                        <create_campaign_automatic>
+                            <label>Create new Campaign automatic</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>140</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </create_campaign_automatic>
+                    </fields>
+                </salesforce_campaigns>
+            </groups>
+        </salesforce_promotion>
+        <salesforce_invoice>
+            <label>Invoices</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>700</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <invoice_configuration translate="label" module="tnw_salesforce">
+                    <label>General</label>
+                    <sort_order>250</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enable translate="label">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <backend_model>tnw_salesforce/config_invoice_backend_sync_enable</backend_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated invoice synchronization</comment>
+                        </sync_enable>
+                        <notes_synchronize>
+                            <label>Synchronize Notes</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable the ability to synchronize invoice notes with Salesforce</comment>
+                        </notes_synchronize>
+                    </fields>
+                </invoice_configuration>
+            </groups>
+        </salesforce_invoice>
+        <salesforce_shipment>
+            <label>Shipments</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>700</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <shipment_configuration translate="label" module="tnw_salesforce">
+                    <label>General</label>
+                    <sort_order>350</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enabled translate="label comment" module="tnw_salesforce">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <backend_model>tnw_salesforce/config_shipment_backend_sync_enable</backend_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated shipment synchronization</comment>
+                        </sync_enabled>
+                        <notes_synchronize>
+                            <label>Synchronize Notes</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable the ability to synchronize shipment notes with Salesforce</comment>
+                        </notes_synchronize>
+                    </fields>
+                </shipment_configuration>
+            </groups>
+        </salesforce_shipment>
+        <salesforce_creditmemo>
+            <label>Credit Memos</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>800</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <creditmemo_configuration translate="label" module="tnw_salesforce">
+                    <label>General</label>
+                    <sort_order>355</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enabled translate="label comment" module="tnw_salesforce">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated Credit Memo synchronization</comment>
+                        </sync_enabled>
+                        <notes_synchronize>
+                            <label>Synchronize Notes</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable the ability to synchronize credit memo notes with Salesforce</comment>
+                        </notes_synchronize>
+                    </fields>
+                </creditmemo_configuration>
+            </groups>
+        </salesforce_creditmemo>
     </sections>
 </config>
