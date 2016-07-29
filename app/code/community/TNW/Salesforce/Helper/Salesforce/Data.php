@@ -183,6 +183,32 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
+     * @param $entity
+     * @return array
+     */
+    public function getRecordTypeByEntity($entity)
+    {
+        try {
+            if (!is_object($this->getClient())) {
+                return $this->_noConnectionArray;
+            }
+
+            $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='$entity'";
+            $allRules = $this->getClient()->query(($query));
+
+            if ($allRules && property_exists($allRules, 'done') && $allRules->done) {
+                if (!property_exists($allRules, 'records') || $allRules->size < 1) {
+                    return array();
+                }
+            }
+
+            return $allRules->records;
+        } catch (Exception $e) {
+            return array();
+        }
+    }
+
+    /**
      * @param string $type
      * @return array|bool
      */
@@ -719,7 +745,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            if (!$this->_tableDescription[$table]) {
+            if (empty($this->_tableDescription[$table])) {
                 if ($cache->load("tnw_salesforce_descsribe_" . strtolower($table) . "_fields")) {
                     $columns = unserialize($cache->load("tnw_salesforce_describe_" . strtolower($table) . "_fields"));
                 } else {

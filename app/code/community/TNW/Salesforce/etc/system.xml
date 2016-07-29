@@ -1261,6 +1261,20 @@
                             </depends>
                         </customer_integration_opp>
 
+                        <opportunity_default_record_type>
+                            <label>Default Record Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_opportunity</source_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Opportunity</order_or_opportunity>
+                            </depends>
+                        </opportunity_default_record_type>
+
                         <draft_order_status translate="label">
                             <label>Draft Order Status</label>
                             <frontend_type>select</frontend_type>
@@ -1269,7 +1283,7 @@
                                 Connector will place order in this status to make updates.<br />
                                 <span style="color:red;">IMPORTANT:</span> Status must be for "Draft" category and NOT in "Activated" status category.
                             ]]></comment>
-                            <sort_order>94</sort_order>
+                            <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
@@ -1283,7 +1297,7 @@
                             <frontend_type>select</frontend_type>
                             <frontend_class>chosen-select</frontend_class>
                             <source_model>tnw_salesforce/config_opportunity_state</source_model>
-                            <sort_order>95</sort_order>
+                            <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
@@ -1292,6 +1306,20 @@
                             </depends>
                             <comment><![CDATA[ When order is placed for an existing Opportunity, change opportunity Stage Name to the one selected ]]></comment>
                         </opportunity_to_order_status>
+
+                        <order_default_record_type>
+                            <label>Default Record Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_order</source_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </order_default_record_type>
                     </fields>
                 </customer_opportunity>
                 <abandoned_carts>
@@ -1828,6 +1856,16 @@
                             <show_in_store>0</show_in_store>
                             <comment>Enable / Disable the ability to synchronize credit memo notes with Salesforce</comment>
                         </notes_synchronize>
+                        <default_record_type>
+                            <label>Default Record Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_order</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </default_record_type>
                     </fields>
                 </creditmemo_configuration>
             </groups>
