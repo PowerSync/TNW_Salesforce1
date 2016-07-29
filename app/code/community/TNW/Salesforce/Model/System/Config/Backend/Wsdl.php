@@ -9,7 +9,7 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
      */
     protected function _beforeSave()
     {
-        if ($_FILES['groups']['tmp_name'][$this->getGroupId()]['fields'][$this->getField()]['value']){
+        if (!empty($_FILES['groups']['tmp_name'][$this->getGroupId()]['fields'][$this->getField()]['value'])){
 
             $uploadDir = $this->_getUploadDir();
 
