@@ -12,7 +12,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     const CONNECTION_TIME_LIMIT = 60;
 
     /**
-     * @var Salesforce_SforceEnterpriseClient
+     * @var TNW_Salesforce_Model_Sforce_Client
      */
     protected $_client = NULL;
 
@@ -97,7 +97,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         ini_set('soap.wsdl_cache_enabled', 0);
         if (!$this->_client) {
             # instantiate a new Salesforce object
-            $this->_client = new Salesforce_SforceEnterpriseClient();
+            $this->_client = new TNW_Salesforce_Model_Sforce_Client();
         } else {
             Mage::getSingleton('adminhtml/session')->addNotice("Salesforce API connectivity issue, sync is disabled. Check API configuration and try manual synchronization.");
         }
