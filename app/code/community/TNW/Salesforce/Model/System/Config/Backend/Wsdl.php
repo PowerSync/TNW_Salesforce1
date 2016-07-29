@@ -29,6 +29,10 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
                 Mage::throwException($e->getMessage());
             }
 
+            // Clear Cache
+            Mage::app()->getCacheInstance()
+                ->cleanType('tnw_salesforce');
+
             $filename = $result['file'];
             if ($filename) {
                 if ($this->_addWhetherScopeInfo()) {
