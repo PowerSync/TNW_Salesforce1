@@ -9,13 +9,13 @@ class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper
     protected $_limitsHash = array();
 
     /* Abandoned Cart */
-    const ABANDONED_CLOSE_TIME_AFTER        = 'salesforce_order/customer_opportunity/abandoned_close_time_after';
-    const ABANDONED_CART_ENABLED            = 'salesforce_order/customer_opportunity/abandoned_cart_enabled';
-    const DEFAULT_STATE_ABANDONED           = 'salesforce_order/customer_opportunity/abandoned_cart_state';
-    const ABANDONED_CUSTOMER_ROLE_ENABLED   = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
-    const ABANDONED_SYNC                    = 'salesforce_order/customer_opportunity/abandoned_cart_limit';
-    const ABANDONED_CUSTOMER_ROLE           = 'salesforce_order/customer_opportunity/abandoned_customer_integration_opp';
-    const ABANDONED_CUSTOMER_ROLE_FALLBACK  = 'salesforce_order/customer_opportunity/customer_integration_opp';
+    const ABANDONED_CLOSE_TIME_AFTER        = 'salesforce_order/abandoned_carts/abandoned_close_time_after';
+    const ABANDONED_CART_ENABLED            = 'salesforce_order/abandoned_carts/abandoned_cart_enabled';
+    const DEFAULT_STATE_ABANDONED           = 'salesforce_order/abandoned_carts/abandoned_cart_state';
+    const ABANDONED_SYNC                    = 'salesforce_order/abandoned_carts/abandoned_cart_limit';
+
+    const CUSTOMER_ROLE_ENABLED             = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
+    const CUSTOMER_ROLE                     = 'salesforce_order/customer_opportunity/customer_integration_opp';
 
     const NOW           = -1;
     const THREE_HOURS   = 1;
@@ -81,14 +81,14 @@ class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper
     // is Customer Opportunity Role Enabled
     public function isEnabledCustomerRole()
     {
-        return $this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE_ENABLED);
+        return $this->getStoreConfig(self::CUSTOMER_ROLE_ENABLED);
     }
 
 
     // Default Customer Opportunity Role
     public function getDefaultCustomerRole()
     {
-        return ($this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE)) ? $this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE) : $this->getStoreConfig(self::ABANDONED_CUSTOMER_ROLE_FALLBACK);
+        return $this->getStoreConfig(self::CUSTOMER_ROLE);
     }
 
 
