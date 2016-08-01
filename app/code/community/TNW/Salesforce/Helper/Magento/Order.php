@@ -72,6 +72,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                     continue;
                 }
 
+                if ($product->getTypeId() != Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
+                    continue;
+                }
+
                 $items[$product->getId()] = array('qty'=>$record->Quantity);
                 $buyRequest = new Varien_Object($items[$product->getId()]);
                 $params = array('files_prefix' => 'item_' . $product->getId() . '_');
