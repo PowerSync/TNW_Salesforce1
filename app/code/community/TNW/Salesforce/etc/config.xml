@@ -150,6 +150,24 @@
                 <class>TNW_Salesforce_Helper</class>
             </tnw_salesforce>
         </helpers>
+        <template>
+            <email>
+                <salesforce_developer_template module="tnw_salesforce" translate="label">
+                    <label>Notification</label>
+                    <file>tnw_salesforce/notification.html</file>
+                    <type>html</type>
+                </salesforce_developer_template>
+            </email>
+        </template>
+        <translate>
+            <modules>
+                <TNW_Salesforce>
+                    <files>
+                        <default>TNW_Salesforce.csv</default>
+                    </files>
+                </TNW_Salesforce>
+            </modules>
+        </translate>
         <events>
             <!-- Contact Us form event -->
             <controller_action_postdispatch_contacts>
@@ -631,7 +649,10 @@
                 <api_enable>0</api_enable>
             </api_config>
             <developer>
-                <log_enable>1</log_enable>
+                <enabled>0</enabled>
+                <template>salesforce_developer_template</template>
+                <identity>general</identity>
+                <copy_method>bcc</copy_method>
                 <email_prefix>LIVE</email_prefix>
             </developer>
             <syncronization>
