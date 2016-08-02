@@ -103,8 +103,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CUSTOMER_PERSON_ACCOUNT = 'salesforce_customer/contact/customer_person';
     const PERSON_RECORD_TYPE = 'salesforce_customer/contact/customer_person_account';
 
-    const CUSTOMER_CATCHALL_ACCOUNT = 'salesforce_customer/account_catchall/domains'; // Deprecated
-
     /* Leads */
     const LEAD_CONVERTED_STATUS = 'salesforce_customer/lead_config/customer_lead_status';
     const LEAD_CONVERTED_OWNER = 'salesforce_customer/lead_config/customer_lead_owner';
