@@ -31,7 +31,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $sql = "SELECT increment_id  FROM `$orderTable` WHERE increment_id = '$_sMagentoId'";
             $row = $this->_write->query($sql)->fetch();
             if ($row) {
-                //$_mMagentoId = $row['increment_id'];
+                $_mMagentoId = $row['increment_id'];
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace("Order loaded using Magento ID: " . $_mMagentoId);
@@ -43,7 +43,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $sql = "SELECT increment_id FROM `$orderTable` WHERE salesforce_id = '$_sSalesforceId'";
             $row = $this->_write->query($sql)->fetch();
             if ($row) {
-                //$_mMagentoId = $row['increment_id'];
+                $_mMagentoId = $row['increment_id'];
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace("Order #" . $_mMagentoId . " Loaded by using Salesforce ID: " . $_sSalesforceId);
