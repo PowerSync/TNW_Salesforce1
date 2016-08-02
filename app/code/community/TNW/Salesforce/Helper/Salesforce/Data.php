@@ -719,7 +719,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            if (!$this->_tableDescription[$table]) {
+            if (empty($this->_tableDescription[$table])) {
                 if ($cache->load("tnw_salesforce_descsribe_" . strtolower($table) . "_fields")) {
                     $columns = unserialize($cache->load("tnw_salesforce_describe_" . strtolower($table) . "_fields"));
                 } else {
@@ -739,7 +739,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return $this->_tableDescription[$table];
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $field . " Object");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $table . " Object");
             unset($e);
             return false;
         }

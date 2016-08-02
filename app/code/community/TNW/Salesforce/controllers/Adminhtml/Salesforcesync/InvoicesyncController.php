@@ -86,10 +86,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
                 }
             } catch (Exception $e) {
                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-                $this->_redirect('*/*/');
             }
         }
-        $this->_redirect('*/*/');
+
+        $this->_redirectReferer();
     }
 
     public function massSyncForceAction()

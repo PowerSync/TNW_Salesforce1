@@ -1035,7 +1035,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function logNotice($message)
     {
-        return Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
+        return Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice($message);
     }
 
     /**

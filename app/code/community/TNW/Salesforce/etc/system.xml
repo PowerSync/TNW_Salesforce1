@@ -95,6 +95,9 @@
                         <api_wsdl translate="label">
                             <label>WSDL File</label>
                             <frontend_type>text</frontend_type>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_form_wsdl</frontend_model>
+                            <backend_model>tnw_salesforce/system_config_backend_wsdl</backend_model>
+                            <upload_dir config="system/filesystem/var" scope_info="1">salesforce/wsdl</upload_dir>
                             <sort_order>50</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -886,25 +889,6 @@
                         </customer_person_account>
                     </fields>
                 </contact>
-                <account_catchall translate="label" module="tnw_salesforce">
-                    <label>Advanced Lookup</label>
-                    <sort_order>155</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <domains translate="label">
-                            <label>Account Matching Rules</label>
-                            <frontend_type>select</frontend_type>
-                            <frontend_model>tnw_salesforce/adminhtml_domains</frontend_model>
-                            <backend_model>adminhtml/system_config_backend_serialized</backend_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                        </domains>
-                    </fields>
-                </account_catchall>
                 <newsletter_config translate="label" module="tnw_salesforce">
                     <label>Newsletter Subscribers</label>
                     <sort_order>300</sort_order>
@@ -938,10 +922,43 @@
                         </customer_newletter_campaign_id>
                     </fields>
                 </newsletter_config>
+                <customer_view>
+                    <label>Customer Dashboard</label>
+                    <sort_order>310</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <opportunity_display>
+                            <label>Opportunity Display</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Show / Hide Opportunities linked to a customer on the Magento Admin > Customer Detail page</comment>
+                        </opportunity_display>
+                        <opportunity_filter>
+                            <label>Opportunity Filter</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_opportunity_filter</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[<b>a Customer</b> - only Opportunities linked to this customer will be displayed<br>
+                            <b>an Account</b> - all Opportunities from an Account will be displayed]]></comment>
+                            <depends>
+                                <opportunity_display>1</opportunity_display>
+                            </depends>
+                        </opportunity_filter>
+                    </fields>
+                </customer_view>
             </groups>
         </salesforce_customer>
         <salesforce_product translate="label" module="tnw_salesforce">
-            <label>Product Configuration</label>
+            <label>Products</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
             <sort_order>300</sort_order>
@@ -1404,7 +1421,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Tax Fee
@@ -1414,9 +1431,11 @@
                             <label>Tax Product</label>
                             <frontend_type>select</frontend_type>
                             <source_model>tnw_salesforce/config_products_tax</source_model>
+                            <backend_model>tnw_salesforce/config_products_backend_fees</backend_model>
+                            <product_type>tax</product_type>
                             <sort_order>15</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_tax_product>1</use_tax_product>
@@ -1431,7 +1450,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Shipping Fee
@@ -1440,10 +1459,12 @@
                         <shipping_product_pricebook translate="label">
                             <label>Shipping Product</label>
                             <frontend_type>select</frontend_type>
+                            <backend_model>tnw_salesforce/config_products_backend_fees</backend_model>
                             <source_model>tnw_salesforce/config_products_shipping</source_model>
+                            <product_type>shipping</product_type>
                             <sort_order>25</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_shipping_product>1</use_shipping_product>
@@ -1458,7 +1479,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Discount Fee
@@ -1467,10 +1488,12 @@
                         <discount_product_pricebook translate="label">
                             <label>Discount Product</label>
                             <frontend_type>select</frontend_type>
+                            <backend_model>tnw_salesforce/config_products_backend_fees</backend_model>
                             <source_model>tnw_salesforce/config_products_discount</source_model>
+                            <product_type>discount</product_type>
                             <sort_order>35</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_discount_product>1</use_discount_product>
@@ -1644,39 +1667,6 @@
                         </create_campaign_automatic>
                     </fields>
                 </salesforce_campaigns>
-                <customer_view>
-                    <label>Customer View</label>
-                    <sort_order>370</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <opportunity_display>
-                            <label>Opportunity Display</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Show / Hide Opportunities linked to a customer on the Magento Admin > Customer Detail page</comment>
-                        </opportunity_display>
-                        <opportunity_filter>
-                            <label>Opportunity Filter</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_opportunity_filter</source_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[<b>a Customer</b> - only Opportunities linked to this customer will be displayed<br>
-                            <b>an Account</b> - all Opportunities from an Account will be displayed]]></comment>
-                            <depends>
-                                <opportunity_display>1</opportunity_display>
-                            </depends>
-                        </opportunity_filter>
-                    </fields>
-                </customer_view>
             </groups>
         </salesforce_order>
     </sections>
