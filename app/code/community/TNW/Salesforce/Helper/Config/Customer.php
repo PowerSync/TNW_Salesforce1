@@ -107,4 +107,16 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     {
         return (bool)$this->getStoreConfig(self::CONFIG_LEAD_EMAIL_NOTIFICATION);
     }
+
+    public function getSyncButtonData()
+    {
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = Mage::registry('current_customer');
+        $url      = Mage::getModel('adminhtml/url')->getUrl('*/salesforcesync_customersync/sync', array('customer_id' => $customer->getId()));
+
+        return array(
+            'label'   => Mage::helper('tnw_salesforce')->__('Synchronize w/ Salesforce'),
+            'onclick' => "setLocation('$url')",
+        );
+    }
 }

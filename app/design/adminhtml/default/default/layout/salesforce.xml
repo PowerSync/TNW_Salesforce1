@@ -271,6 +271,14 @@
     </adminhtml_promo_quote_edit>
 
     <adminhtml_customer_edit>
+        <reference name="customer_edit">
+            <action method="addButton" ifconfig="salesforce_customer/sync/customer_sync_enable">
+                <id>sf_sync</id>
+                <data helper="tnw_salesforce/config_customer/getSyncButtonData"/>
+                <level>0</level>
+                <sortOrder>2</sortOrder>
+            </action>
+        </reference>
         <reference name="accordion">
             <action method="addItem" ifconfig="salesforce_customer/customer_view/opportunity_display">
                 <itemId>opportunity</itemId>
