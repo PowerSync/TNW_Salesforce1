@@ -99,7 +99,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
                 ->addError($e->getMessage());
         }
 
-        $this->_redirect('*/*/');
+        $this->_redirectReferer();
     }
 
     public function massSyncForceAction()

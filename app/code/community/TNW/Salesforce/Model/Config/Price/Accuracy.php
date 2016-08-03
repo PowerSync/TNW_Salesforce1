@@ -40,13 +40,18 @@ class TNW_Salesforce_Model_Config_Price_Accuracy
     protected function _getOptions()
     {
         if (!$this->_options) {
-            for ($i = 2; $i <= 4; $i++) {
-                $this->_options[] = array(
-                    'value' => $i,
-                    'label'=> Mage::helper('tnw_salesforce')->__('%d', $i)
-                );
-            }
-
+            $this->_options[] = array(
+                'value' => 2,
+                'label'=> '$100.17'
+            );
+            $this->_options[] = array(
+                'value' => 3,
+                'label'=> '$100.169'
+            );
+            $this->_options[] = array(
+                'value' => 4,
+                'label'=> '$100.1691'
+            );
         }
         return $this->_options;
     }

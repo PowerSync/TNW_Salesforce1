@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.56.01.0000</version>
+            <version>0.01.56.02.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -137,11 +137,15 @@
             </tnw_salesforce>
             <adminhtml>
                 <rewrite>
+                    <catalog_product_edit>TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit</catalog_product_edit>
                     <system_store_store>TNW_Salesforce_Block_Adminhtml_System_Store</system_store_store>
                     <system_currency>TNW_Salesforce_Block_Adminhtml_System_Currency</system_currency>
                     <sales_order_status_grid>TNW_Salesforce_Block_Sales_Order_Status_Grid</sales_order_status_grid>
                     <sales_order_status_new_form>TNW_Salesforce_Block_Sales_Order_Status_New_Form</sales_order_status_new_form>
                     <sales_order_status_edit_form>TNW_Salesforce_Block_Sales_Order_Status_Edit_Form</sales_order_status_edit_form>
+                    <sales_order_view_tab_shipments>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Shipments</sales_order_view_tab_shipments>
+                    <sales_order_view_tab_invoices>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Invoices</sales_order_view_tab_invoices>
+                    <sales_order_view_tab_creditmemos>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Creditmemos</sales_order_view_tab_creditmemos>
                 </rewrite>
             </adminhtml>
         </blocks>

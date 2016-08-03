@@ -93,9 +93,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         /**
          * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
          */
+        $lookupKey      = sprintf('%sLookup', $this->_salesforceEntityName);
+        $hasReductionOrder = !empty($this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder)
+            ? $this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder : false;
+
         $_currentStatus = $this->_obj->Status;
         $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
-        if ($_currentStatus != $_draftStatus) {
+        if (!$hasReductionOrder && $_currentStatus != $_draftStatus) {
             $this->_obj->Status = $_draftStatus;
 
             $_toActivate = new stdClass();

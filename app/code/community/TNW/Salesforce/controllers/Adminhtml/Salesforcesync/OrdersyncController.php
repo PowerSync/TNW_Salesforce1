@@ -65,17 +65,19 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
      */
     public function syncAction()
     {
-        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
         if (!Mage::helper('tnw_salesforce')->isEnabled()) {
             Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
         }
+
+        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
         if (!$_syncType) {
             Mage::getSingleton('adminhtml/session')->addError("Integration Type is not set.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce_order')));
-            Mage::app()->getResponse()->sendResponse();
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce_order'));
+            return;
         }
+
         if ($this->getRequest()->getParam('order_id') > 0) {
             try {
                 $itemIds = array($this->getRequest()->getParam('order_id'));
@@ -115,6 +117,119 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
             }
         }
         $this->_redirect('*/*/');
+    }
+
+    /**
+     * Sync All
+     */
+    public function syncAllAction()
+    {
+        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
+        }
+
+        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+        if (!$_syncType) {
+            Mage::getSingleton('adminhtml/session')->addError("Integration Type is not set.");
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce_order'));
+            return;
+        }
+
+        if ($this->getRequest()->getParam('order_id') > 0) {
+            try {
+                $itemIds = array($this->getRequest()->getParam('order_id'));
+                /** @var Mage_Sales_Model_Order $order */
+                $order = Mage::getModel('sales/order')->load($this->getRequest()->getParam('order_id'));
+
+                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+                    $_productIds = Mage::helper('tnw_salesforce/salesforce_order')->getProductIdsFromEntity($order);
+                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
+                    if (!$res) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Products from the order were not added to the queue');
+                    }
+
+                    // pass data to local storage
+                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObject($itemIds, 'Order', 'order');
+                    if (!$res) {
+                        Mage::getSingleton('adminhtml/session')->addError('Could not add order to the queue!');
+                    }
+                    else {
+                        $invoiceIds = $order->getInvoiceCollection()->walk('getId');
+                        if (Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices() && count($invoiceIds) > 0) {
+                            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array_values($invoiceIds), 'Invoice', 'invoice');
+                            if (!$res) {
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Invoice from the order were not added to the queue');
+                            }
+                        }
+
+                        $shipmentIds = $order->getShipmentsCollection()->walk('getId');
+                        if (Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments() && count($shipmentIds) > 0) {
+                            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array_values($shipmentIds), 'Shipment', 'shipment');
+                            if (!$res) {
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Shipment from the order were not added to the queue');
+                            }
+                        }
+
+                        $creditMemoIds = $order->getCreditmemosCollection()->walk('getId');
+                        if (Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemo() && count($creditMemoIds) > 0) {
+                            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array_values($creditMemoIds), 'Creditmemo', 'creditmemo');
+                            if (!$res) {
+                                Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Creditmemo from the order were not added to the queue');
+                            }
+                        }
+
+                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
+                            Mage::getSingleton('adminhtml/session')->addSuccess(
+                                Mage::helper('adminhtml')->__('Order was added to the queue!')
+                            );
+                        }
+                    }
+                }
+                else {
+                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                        'orderIds' => $itemIds,
+                        'message'  => Mage::helper('adminhtml')->__('Order: total of %d record(s) were successfully synchronized', count($itemIds)),
+                        'type'     => 'salesforce'
+                    ));
+
+                    $invoiceIds = $order->getInvoiceCollection()->walk('getId');
+                    if (Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices() && count($invoiceIds) > 0) {
+                        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
+                        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                            'invoiceIds' => array_values($invoiceIds),
+                            'message'    => $this->__('Invoice: total of %d record(s) were successfully synchronized', count($invoiceIds)),
+                            'type'       => 'salesforce'
+                        ));
+                    }
+
+                    $shipmentIds = $order->getShipmentsCollection()->walk('getId');
+                    if (Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments() && count($shipmentIds) > 0) {
+                        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
+                        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                            'shipmentIds' => array_values($shipmentIds),
+                            'message'     => $this->__('Shipment: total of %d record(s) were successfully synchronized', count($shipmentIds)),
+                            'type'        => 'salesforce'
+                        ));
+                    }
+
+                    $creditMemoIds = $order->getCreditmemosCollection()->walk('getId');
+                    if (Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemo() && count($creditMemoIds) > 0) {
+                        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getCreditmemoObject());
+                        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                            'creditmemoIds' => array_values($creditMemoIds),
+                            'message'       => $this->__('Credit Memo: total of %d record(s) were successfully synchronized', count($creditMemoIds)),
+                            'type'          => 'salesforce'
+                        ));
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+            }
+        }
+
+        $this->_redirectReferer();
     }
 
     public function massSyncForceAction()
