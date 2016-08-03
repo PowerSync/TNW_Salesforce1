@@ -107,12 +107,16 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 }
             }
 
+            $storeId = is_null($_websiteId)
+                ? Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId()
+                : Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+
             /**
              * Identify customer
              */
             $orderCreate->getSession()
                 ->setCustomerId((int) $customer->getId())
-                ->setStoreId((int) Mage::app()->getWebsite($_websiteId)->getDefaultStore()->getId());
+                ->setStoreId((int) $storeId);
 
             $orderCreate->setRecollect(true);
 
