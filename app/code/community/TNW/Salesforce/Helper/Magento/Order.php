@@ -61,6 +61,12 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      */
     protected function _updateMagento($object, $_mMagentoId, $_sSalesforceId)
     {
+        //Get Address
+        $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter('Order')
+            ->addFilterTypeSM((bool) $_mMagentoId)
+            ->firstSystem();
+
         if ($_mMagentoId) {
             /** @var Mage_Sales_Model_Order $order */
             $order = Mage::getModel('sales/order')
@@ -69,7 +75,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         else {
             /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
             $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
-                ->setIsValidate(true);
+                ->setIsValidate(false);
             /* @var $productHelper Mage_Catalog_Helper_Product */
             $productHelper = Mage::helper('catalog/product');
 
@@ -104,11 +110,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $orderCreate->setRecollect(true);
 
             //Get Address
-            $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-                ->addObjectToFilter('Order')
-                ->addFilterTypeSM(false)
-                ->firstSystem();
-
             $address = array(
                 'Shipping' => array(),
                 'Billing'  => array(),
@@ -185,24 +186,25 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 Mage::throwException('Empty products');
             }
 
-            // Products
             $orderCreate->addProducts($items);
 
             // Billing Address
             $orderCreate->setBillingAddress(array_merge(array(
-                'save_in_address_book'  => 0,
-                'firstname'             => $customer->getData('firstname'),
-                'lastname'              => $customer->getData('lastname'),
-                'telephone'             => '123321',
+                'save_in_address_book'      => 0,
+                'firstname'                 => $customer->getData('firstname'),
+                'lastname'                  => $customer->getData('lastname'),
+                'telephone'                 => '',
+                'should_ignore_validation'  => true,
             ), $address['Billing']));
 
             // Shipping Address
             $orderCreate
                 ->setShippingAddress(array_merge(array(
-                    'save_in_address_book'  => 0,
-                    'firstname'             => $customer->getData('firstname'),
-                    'lastname'              => $customer->getData('lastname'),
-                    'telephone'             => '123213',
+                    'save_in_address_book'      => 0,
+                    'firstname'                 => $customer->getData('firstname'),
+                    'lastname'                  => $customer->getData('lastname'),
+                    'telephone'                 => '',
+                    'should_ignore_validation'  => true,
                 ), $address['Shipping']));
 
             // Add Shipping Rate
@@ -227,21 +229,170 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
             // Payment
             $orderCreate->setPaymentData(array(
-                'method' => 'cashondelivery'
+                'method' => 'tnw_import'
             ));
 
-            try {
-                $order = $orderCreate->createOrder();
-            } catch (Exception $e) {
-                //$orderCreate->getSession();
-            }
+            $order = $orderCreate->createOrder();
         }
 
         $order->addData(array(
-            'salesforce_id' => $_sSalesforceId
+            'salesforce_id' => $_sSalesforceId,
+            'sf_insync'     => 1
         ));
 
+        $this->_updateMappedEntityFields($object, $order, $mappings)
+            ->_updateStatus($object, $order)
+            ->saveEntities();
+
         return $order;
+    }
+
+    /**
+     * @param $object stdClass
+     * @param $order Mage_Sales_Model_Order
+     * @param $mappings
+     * @return $this
+     */
+    protected function _updateMappedEntityFields($object, $order, $mappings)
+    {
+        $entities = array(
+            'Order'     => $order,
+            'Shipping'  => $order->getShippingAddress(),
+            'Billing'   => $order->getBillingAddress(),
+            'Payment'   => $order->getPayment(),
+            'Customer'  => Mage::getModel('customer/customer')->load($order->getCustomerId()),
+        );
+
+        //clear log fields before update
+        $updateFieldsLog = array();
+
+        $additional = array();
+
+        /** @var TNW_Salesforce_Model_Mapping $mapping */
+        foreach ($mappings as $mapping) {
+            $newValue = property_exists($object, $mapping->getSfField())
+                ? $object->{$mapping->getSfField()} : null;
+
+            if (empty($newValue)) {
+                $newValue = $mapping->getDefaultValue();
+            }
+
+            $entityName = $mapping->getLocalFieldType();
+            $field = $mapping->getLocalFieldAttributeCode();
+            if (!isset($entities[$entityName])) {
+                continue;
+            }
+
+            $entity = $entities[$entityName];
+            if ($entity instanceof Mage_Sales_Model_Order_Address) {
+                $additional[$entityName][$field] = $newValue;
+            }
+
+            if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
+                $entity->setData($field, $newValue);
+                $this->addEntityToSave($entityName, $entity);
+
+                //add info about updated field to order comment
+                $updateFieldsLog[] = sprintf('%s - from "%s" to "%s"',
+                    $mapping->getLocalField(), $entity->getOrigData($field), $newValue);
+            }
+        }
+
+        foreach ($additional as $entityName => $address) {
+            if (!isset($entities[$entityName])) {
+                continue;
+            }
+
+            $entity = $entities[$entityName];
+            if (!$entity instanceof Mage_Sales_Model_Order_Address) {
+                continue;
+            }
+
+            $_countryCode = $this->_getCountryId($address['country_id']);
+            $_regionCode  = null;
+            if ($_countryCode) {
+                foreach (array('region_id', 'region') as $_regionField) {
+                    if (!isset($address[$_regionField])) {
+                        continue;
+                    }
+
+                    $_regionCode = $this->_getRegionId($address[$_regionField], $_countryCode);
+                    if (!empty($_regionCode)) {
+                        break;
+                    }
+                }
+            }
+
+            $entity->addData(array(
+                'country_id' => $_countryCode,
+                'region_id'  => $_regionCode,
+            ));
+
+            $this->addEntityToSave($entityName, $entity);
+        }
+
+        //add comment about all updated fields
+        if (!empty($updateFieldsLog)) {
+            $order->addStatusHistoryComment(
+                "Fields are updated by salesforce:\n"
+                . implode("\n", $updateFieldsLog)
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param $object
+     * @param $order Mage_Sales_Model_Order
+     * @return $this
+     */
+    protected function _updateStatus($object, $order)
+    {
+        if (!isset($object->Status) || !$object->Status) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order status is not avaialble');
+            return $this;
+        }
+
+        $matchedStatuses = Mage::getModel('tnw_salesforce/order_status')
+            ->getCollection()
+            ->addFieldToFilter('sf_order_status', $object->Status);
+
+        if (count($matchedStatuses) === 1) {
+            foreach ($matchedStatuses as $_status) {
+                if ($order->getStatus() != $_status->getStatus()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Order status updated to ' . $_status->getStatus());
+                    $oldStatusLabel = $order->getStatusLabel();
+                    $order->setStatus($_status->getStatus());
+                    $order->addStatusHistoryComment(
+                        sprintf("Update from salesforce: status is updated from %s to %s",
+                            $oldStatusLabel, $order->getStatusLabel()),
+                        $order->getStatus()
+                    );
+                    $this->addEntityToSave('Order', $order);
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Order status is in sync');
+                }
+                break;
+            }
+        } elseif (count($matchedStatuses) > 1) {
+            $log = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId());
+            $log .= ' Mapped Salesforce status matches multiple Magento Order statuses';
+            $log .= ' - not sure which one should be selected';
+            $order->addStatusHistoryComment($log);
+            $this->addEntityToSave('Order', $order);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: ' . $log);
+        } else {
+            $message = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
+                . ' Mapped Salesforce status does not match any Magento Order status';
+            $order->addStatusHistoryComment(
+                $message
+            );
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: ' . $message);
+            $this->addEntityToSave('Order', $order);
+        }
+
+        return $this;
     }
 
     /**

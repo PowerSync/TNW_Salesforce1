@@ -742,5 +742,15 @@
                 <opportunity_filter>customer</opportunity_filter>
             </customer_view>
         </salesforce_order>
+        <payment>
+            <tnw_import>
+                <active>0</active>
+                <model>tnw_salesforce/order_payment_method_import</model>
+                <order_status>pending</order_status>
+                <title>TNW Import</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </tnw_import>
+        </payment>
     </default>
 </config>
