@@ -699,6 +699,7 @@
         <salesforce_order>
             <general>
                 <order_sync_enable>0</order_sync_enable>
+                <order_create_reverse_sync>0</order_create_reverse_sync>
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
                 <notes_synchronize>1</notes_synchronize>

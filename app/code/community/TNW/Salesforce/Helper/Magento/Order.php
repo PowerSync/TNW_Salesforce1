@@ -57,7 +57,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param $object stdClass
      * @param $_mMagentoId
      * @param $_sSalesforceId
-     * @return Mage_Sales_Model_Order
+     * @return Mage_Sales_Model_Order|bool
      */
     protected function _updateMagento($object, $_mMagentoId, $_sSalesforceId)
     {
@@ -73,6 +73,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 ->load($_mMagentoId, 'increment_id');
         }
         else {
+            if (!Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('Creating orders with reverse sync disabled');
+
+                return false;
+            }
+
             /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
             $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
                 ->setIsValidate(false);
@@ -85,7 +92,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('Customer Not Found');
 
-                Mage::throwException('Customer Not Found');
+                return false;
             }
 
             $_websiteId = null;
@@ -167,6 +174,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 if ($product->getTypeId() != Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveNotice('Product (sku:'.$record->PricebookEntry->Product2->ProductCode.') skipping');
+
                     continue;
                 }
 
@@ -183,7 +191,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('Empty products');
 
-                Mage::throwException('Empty products');
+                return false;
             }
 
             $orderCreate->addProducts($items);
@@ -232,7 +240,24 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 'method' => 'tnw_import'
             ));
 
-            $order = $orderCreate->createOrder();
+            try {
+                $order = $orderCreate->createOrder();
+            } catch (Exception $e) {
+                $message = $e->getMessage();
+                if (empty($message)) {
+                    $messages = $orderCreate->getSession()->getMessages(true);
+                    if ($messages->count() > 0) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError($messages->toString());
+                    }
+                }
+                else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError($message);
+                }
+
+                return false;
+            }
         }
 
         $order->addData(array(

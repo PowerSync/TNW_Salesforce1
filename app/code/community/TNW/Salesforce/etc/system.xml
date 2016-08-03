@@ -1062,6 +1062,17 @@
                             <comment>Enable / Disable automated order synchronization</comment>
                         </order_sync_enable>
 
+                        <order_create_reverse_sync translate="label">
+                            <label>Create order when the reverse synchronization</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>12</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable create order when the reverse synchronization</comment>
+                        </order_create_reverse_sync>
+
                         <zero_order_sync_enable translate="label">
                             <label>Zero Total</label>
                             <frontend_type>select</frontend_type>
