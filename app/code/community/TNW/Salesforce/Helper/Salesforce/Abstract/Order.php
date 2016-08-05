@@ -1093,7 +1093,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      *
      * @param Mage_Sales_Model_Order_Item $_item
      */
-    protected function _prepareStoreId(Mage_Sales_Model_Order_Item $_item)
+    protected function _prepareStoreId($_item)
     {
         $itemId = $this->getProductIdFromCart($_item);
         $_order = $_item->getOrder();
