@@ -179,7 +179,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
          * check converted condition
          */
         if (!$tmp->IsConverted || ($tmp->ConvertedAccountId && $tmp->ConvertedContactId)) {
-            return array($this->prepareId($_websiteKey) => array($customer->getEmail() => $tmp));
+            return array($this->prepareId($_websiteKey) => array(strtolower($customer->getEmail()) => $tmp));
         }
 
         return array();
