@@ -53,6 +53,13 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
         $value = $this->_prepareDefaultValue($value);
 
+        //For Attribute
+        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        if (is_null($value) && $attribute && $attribute->getFrontend()->getConfigField('input') == 'multiselect') {
+            $value = ' ';
+        }
+
         return $value;
     }
 
