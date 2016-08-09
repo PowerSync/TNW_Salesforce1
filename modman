@@ -2,6 +2,8 @@ app/code/community/TNW/Salesforce app/code/community/TNW/Salesforce
 app/design/adminhtml/default/default/layout/salesforce.xml app/design/adminhtml/default/default/layout/salesforce.xml
 app/design/adminhtml/default/default/template/salesforce app/design/adminhtml/default/default/template/salesforce
 app/etc/modules/TNW_Salesforce.xml app/etc/modules/TNW_Salesforce.xml
+app/locale/en_US/TNW_Salesforce.csv app/locale/en_US/TNW_Salesforce.csv
+app/locale/en_US/template/email/tnw_salesforce app/locale/en_US/template/email/tnw_salesforce
 js/tnw-salesforce js/tnw-salesforce
 lib/Salesforce lib/Salesforce
 powersync/bulk-sync.php powersync/bulk-sync.php
