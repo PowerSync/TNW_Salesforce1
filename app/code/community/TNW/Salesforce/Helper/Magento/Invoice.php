@@ -339,4 +339,18 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
 
         return $_obj;
     }
+
+    /**
+     * @param $_object stdClass
+     * @return string
+     */
+    protected function _getSfMagentoId($_object)
+    {
+        $magentoIsField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c';
+        if (!property_exists($_object, $magentoIsField)) {
+            return '';
+        }
+
+        return $_object->{$magentoIsField};
+    }
 }
