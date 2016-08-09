@@ -647,8 +647,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $_data = array();
 
             $cache = $cache->load("tnw_salesforce_" . strtolower($field) . "_fields");
-            if (empty($cache)) {
-                $_data = unserialize($cache->load("tnw_salesforce_" . strtolower($field) . "_fields"));
+            if (!empty($cache)) {
+                $_data = unserialize($cache);
             }
 
             if (empty($_data)) {
