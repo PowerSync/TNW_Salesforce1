@@ -976,7 +976,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      *
      * @return string
      */
-    public function getCompanyByCustomer(Mage_Customer_Model_Customer $customer)
+    public function getCompanyByCustomer($customer)
     {
         //company from customer
         $company = $customer->getCompany();
