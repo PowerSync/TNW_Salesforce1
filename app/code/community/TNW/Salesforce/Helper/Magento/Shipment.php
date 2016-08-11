@@ -2,6 +2,10 @@
 
 class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magento_Abstract
 {
+    /**
+     * @var bool
+     */
+    protected $isOrder = true;
 
     /**
      * @param null $object
@@ -55,6 +59,8 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             $_sOpportunityIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . "Opportunity__c";
             $_sOrderId    = (property_exists($object, $_sOpportunityIdKey) && $object->$_sOpportunityIdKey)
                 ? $object->$_sOpportunityIdKey : null;
+
+            $this->isOrder = false;
         }
 
         if (!$_sOrderId) {
@@ -200,6 +206,10 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
      */
     protected function _updateMappedEntityFields($object, $shipment)
     {
+        $sfObject = $this->isOrder
+            ? 'OrderShipment'
+            : 'OpportunityShipment';
+
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
         $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter('OrderShipment')
@@ -289,17 +299,9 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
         $_sItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
         $_sItemOpportunityItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c';
         foreach ($object->$_shipmentItemKey->records as $record) {
-            $_sItemId    = (property_exists($record, $_sItemOrderItemKey) && $record->$_sItemOrderItemKey)
-                ? $record->$_sItemOrderItemKey : null;
-
-            if (empty($_sItemId)) {
-                $_sItemId    = (property_exists($record, $_sItemOpportunityItemKey) && $record->$_sItemOpportunityItemKey)
-                    ? $record->$_sItemOpportunityItemKey : null;
-            }
-
-            if (empty($_sItemId)) {
-                continue;
-            }
+            $_sItemId = $this->isOrder
+                ? $record->$_sItemOrderItemKey
+                : $record->$_sItemOpportunityItemKey;
 
             $orderItemId = array_search($_sItemId, $hasSalesforceId);
             if (false === $orderItemId) {
@@ -314,9 +316,13 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             /** @var Mage_Sales_Model_Order_Invoice_Item $entity */
             $entity = $_shipmentItemCollection->getItemById($shipmentItemId);
 
+            $sfObject = $this->isOrder
+                ? 'OrderShipmentItem'
+                : 'OpportunityShipmentItem';
+
             /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
             $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-                ->addObjectToFilter('OrderShipmentItem')
+                ->addObjectToFilter($sfObject)
                 ->addFilterTypeSM(!$entity->isObjectNew())
                 ->firstSystem();
 
