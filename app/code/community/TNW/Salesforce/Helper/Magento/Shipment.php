@@ -287,8 +287,21 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
 
         $_shipmentItemKey   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentItem__r';
         $_sItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
+        $_sItemOpportunityItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c';
         foreach ($object->$_shipmentItemKey->records as $record) {
-            $orderItemId = array_search($record->$_sItemOrderItemKey, $hasSalesforceId);
+            $_sItemId    = (property_exists($record, $_sItemOrderItemKey) && $record->$_sItemOrderItemKey)
+                ? $record->$_sItemOrderItemKey : null;
+
+            if (empty($_sItemId)) {
+                $_sItemId    = (property_exists($record, $_sItemOpportunityItemKey) && $record->$_sItemOpportunityItemKey)
+                    ? $record->$_sItemOpportunityItemKey : null;
+            }
+
+            if (empty($_sItemId)) {
+                continue;
+            }
+
+            $orderItemId = array_search($_sItemId, $hasSalesforceId);
             if (false === $orderItemId) {
                 continue;
             }

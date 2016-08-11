@@ -271,8 +271,21 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
 
         $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
         $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c';
+        $_iItemOpportunityItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c';
         foreach ($object->$_invoiceItemKey->records as $record) {
-            $orderItemId = array_search($record->$_iItemOrderItemKey, $hasSalesforceId);
+            $_sItemId    = (property_exists($record, $_iItemOrderItemKey) && $record->$_iItemOrderItemKey)
+                ? $record->$_iItemOrderItemKey : null;
+
+            if (empty($orderItemId)) {
+                $_sItemId    = (property_exists($record, $_iItemOpportunityItemKey) && $record->$_iItemOpportunityItemKey)
+                    ? $record->$_iItemOpportunityItemKey : null;
+            }
+
+            if (empty($_sItemId)) {
+                continue;
+            }
+
+            $orderItemId = array_search($_sItemId, $hasSalesforceId);
             if (false === $orderItemId) {
                 continue;
             }
