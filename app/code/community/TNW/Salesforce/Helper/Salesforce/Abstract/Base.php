@@ -732,6 +732,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
+            $_mapping->getModelType()->setObj($this->_obj);
             $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
         }
 
@@ -890,6 +891,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
+            $_mapping->getModelType()->setObj($this->_obj);
             $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
         }
 
