@@ -307,4 +307,11 @@
             <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>customer_edit_tab_salesforce</block><after>addresses</after></action>
         </reference>
     </adminhtml_customer_edit>
+
+    <adminhtml_catalog_product_edit>
+        <reference name="product_tabs">
+            <block type="tnw_salesforce/adminhtml_catalog_product_edit_tab_salesforce" name="product_edit_tab_salesforce" />
+            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>product_edit_tab_salesforce</block><after>inventory</after></action>
+        </reference>
+    </adminhtml_catalog_product_edit>
 </layout>
