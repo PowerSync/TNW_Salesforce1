@@ -92,9 +92,6 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
     protected function _pushEntity()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
-            // assign owner id to opportunity
-            $this->_assignOwnerIdToOpp();
-
             if (!$this->_cache['bulkJobs']['opportunity']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['opportunity']['Id'] = $this->_createJob('Opportunity', 'upsert', 'Id');

@@ -100,33 +100,4 @@ class TNW_Salesforce_Model_Product_Observer
     {
         Mage::getSingleton('core/session')->setFromSalesForce(false);
     }
-
-    /**
-     * @param $observer
-     */
-    public function editPrepareForm($observer)
-    {
-        $replaceRenderer = array(
-            'salesforce_campaign_id'  => 'tnw_salesforce/adminhtml_catalog_product_renderer_campaign',
-            'salesforce_id'           => 'tnw_salesforce/adminhtml_catalog_product_renderer_product2',
-            'salesforce_pricebook_id' => 'tnw_salesforce/adminhtml_catalog_product_renderer_pricebooks',
-            'sf_insync'               => 'tnw_salesforce/adminhtml_catalog_product_renderer_inSync',
-        );
-
-        foreach ($replaceRenderer as $elementId => $renderBlock) {
-            /** @var Varien_Data_Form_Element_Text $element */
-            $element = $observer->getEvent()->getForm()
-                ->getElement($elementId);
-
-            if (!$element) {
-                continue;
-            }
-
-            /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Campaign $renderer */
-            $renderer = Mage::getSingleton('core/layout')
-                ->createBlock($renderBlock);
-
-            $element->setRenderer($renderer);
-        }
-    }
 }

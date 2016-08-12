@@ -111,6 +111,7 @@
 
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
+        <update handle="tnw_salesforce_select2"/>
         <reference name="sales_order_edit">
             <action method="addButton" ifconfig="salesforce_order/general/order_sync_enable">
                 <id>sdf</id>
@@ -120,16 +121,8 @@
             </action>
         </reference>
         <reference name="sales_order_tabs">
-            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce"
-                   template="salesforce/sales/order/view/tab/salesforce.phtml">
-                <block type="tnw_salesforce/sales_order_view_tab_salesforce_info" name="salesforce_info"
-                       template="salesforce/sales/order/view/tab/salesforce/info.phtml"></block>
-                <block type="tnw_salesforce/sales_order_view_tab_salesforce_form" name="salesforce_form"></block>
-            </block>
-            <action method="addTab">
-                <name>order_salesforce</name>
-                <block>order_tab_salesforce</block>
-            </action>
+            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce" />
+            <action method="addTab"><name>order_salesforce</name><block>order_tab_salesforce</block></action>
         </reference>
     </adminhtml_sales_order_view>
 
@@ -279,6 +272,7 @@
     </adminhtml_promo_quote_edit>
 
     <adminhtml_customer_edit>
+        <update handle="tnw_salesforce_select2"/>
         <reference name="customer_edit">
             <action method="addButton" ifconfig="salesforce_customer/sync/customer_sync_enable">
                 <id>sf_sync</id>
@@ -293,6 +287,10 @@
                 <config helper="tnw_salesforce/config_customer/getAccordionConfig"/>
             </action>
         </reference>
+        <reference name="customer_edit_tabs">
+            <block type="tnw_salesforce/adminhtml_customer_edit_tab_salesforce" name="customer_edit_tab_salesforce" />
+            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>customer_edit_tab_salesforce</block><after>addresses</after></action>
+        </reference>
     </adminhtml_customer_edit>
 
     <adminhtml_customer_opportunities>
@@ -301,14 +299,8 @@
         </block>
     </adminhtml_customer_opportunities>
 
-    <adminhtml_customer_edit>
-        <reference name="customer_edit_tabs">
-            <block type="tnw_salesforce/adminhtml_customer_edit_tab_salesforce" name="customer_edit_tab_salesforce" template="salesforce/customer/tab/salesforce.phtml" />
-            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>customer_edit_tab_salesforce</block><after>addresses</after></action>
-        </reference>
-    </adminhtml_customer_edit>
-
     <adminhtml_catalog_product_edit>
+        <update handle="tnw_salesforce_select2"/>
         <reference name="product_tabs">
             <block type="tnw_salesforce/adminhtml_catalog_product_edit_tab_salesforce" name="product_edit_tab_salesforce" />
             <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>product_edit_tab_salesforce</block><after>inventory</after></action>

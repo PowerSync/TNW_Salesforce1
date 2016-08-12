@@ -15,31 +15,60 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit_Tab_Salesforce
             'legend'    => Mage::helper('tnw_salesforce')->__('Salesforce')
         ));
 
-        $fieldset->addField('salesforce_id', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Salesforce ID'),
-            'name'  => 'salesforce_id',
+        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_SalesforceId $renderer */
+        $renderer = Mage::getSingleton('core/layout')
+            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_salesforceId');
+
+        $fieldset
+            ->addField('salesforce_id', 'text', array(
+                'label'     => Mage::helper('tnw_salesforce')->__('Salesforce ID'),
+                'name'      => 'salesforce_id',
+            ))
+            ->setRenderer($renderer);
+
+        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Pricebooks $renderer */
+        $renderer = Mage::getSingleton('core/layout')
+            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_pricebooks');
+
+        $fieldset
+            ->addField('salesforce_pricebook_id', 'text', array(
+                'label'     => Mage::helper('tnw_salesforce')->__('Salesforce Pricebook ID'),
+                'name'      => 'salesforce_pricebook_id',
+            ))
+            ->setRenderer($renderer);
+
+        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_InSync $renderer */
+        $renderer = Mage::getSingleton('core/layout')
+            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_inSync');
+
+        $fieldset
+            ->addField('sf_insync', 'text', array(
+                'label'     => Mage::helper('tnw_salesforce')->__('In Sync'),
+                'name'      => 'sf_insync',
+            ))
+            ->setRenderer($renderer);
+
+        $fieldset->addField('salesforce_disable_sync', 'select', array(
+            'label'     => Mage::helper('tnw_salesforce')->__('Disable Synchronization'),
+            'name'      => 'salesforce_disable_sync',
+            'options'   => array(
+                '1' => Mage::helper('checkout')->__('Yes'),
+                '0' => Mage::helper('checkout')->__('No'),
+            ),
         ));
 
-        $fieldset->addField('salesforce_pricebook_id', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Salesforce Pricebook ID'),
-            'name'  => 'salesforce_pricebook_id',
-        ));
+        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Campaign $renderer */
+        $renderer = Mage::getSingleton('core/layout')
+            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_campaign');
 
-        $fieldset->addField('in_sync', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('In Sync'),
-            'name'  => 'in_sync',
-        ));
+        $fieldset
+            ->addField('salesforce_campaign_id', 'text', array(
+                'label'     => Mage::helper('tnw_salesforce')->__('Salesforce Campaign'),
+                'name'      => 'salesforce_campaign_id',
+            ))
+            ->setRenderer($renderer);
 
-        $fieldset->addField('salesforce_disable_sync', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Disable Synchronization'),
-            'name'  => 'salesforce_disable_sync',
-        ));
-
-        $fieldset->addField('salesforce_campaign_id', 'text', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Salesforce Campaign'),
-            'name'  => 'salesforce_campaign_id',
-        ));
-
+        $form->setValues(Mage::registry('current_product')->getData());
         $this->setForm($form);
     }
 

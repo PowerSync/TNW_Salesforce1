@@ -292,10 +292,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             if ($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
                 $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->ConvertedContactId;
             }
-        } else {
-
-            $this->_assignOwner($fakeCustomer, 'Lead', $this->_websiteSfIds[$_websiteId]);
-
+        }
+        else {
             /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
             $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
                 ->addObjectToFilter('Lead')
@@ -583,8 +581,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_upsertOn = 'Id';
         }
 
-        $this->_assignOwner($_customer, $type, $_sfWebsite);
-
         /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
         $_mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addObjectToFilter($type)
@@ -625,6 +621,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 // Set Conjoint AccountId
                 if (isset($this->_cache['accountLookup'][0][$_email])) {
                     $this->_obj->AccountId = $this->_cache['accountLookup'][0][$_email]->Id;
+
+                    if (empty($this->_obj->Id) && Mage::helper('tnw_salesforce/config_customer')->useAccountOwner()) {
+                        $_ownerID       = $this->_cache['accountLookup'][0][$_email]->OwnerId;
+                        $defaultOwner   = Mage::helper('tnw_salesforce')->getDefaultOwner();
+                        if ($_ownerID && $this->_isUserActive($_ownerID)) {
+                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " record already assigned to " . $_ownerID);
+                        } else {
+                            $_ownerID = $defaultOwner;
+                        }
+
+                        $this->_obj->OwnerId = $_ownerID;
+                    }
                 }
 
                 $this->_cache['contactsToUpsert'][$_upsertOn][$_id] = $this->_obj;
@@ -723,96 +731,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
 
         return $_object;
-    }
-
-    /**
-     * @comment define Lead/Account/Contact owner
-     * @param $_customer
-     * @param $type
-     * @param $_sfWebsite
-     */
-    protected function _assignOwner($_customer, $type, $_sfWebsite)
-    {
-        $_email = strtolower($_customer->getEmail());
-
-        $_ownerID = NULL;
-        switch ($type) {
-            case 'Lead':
-                $defaultOwner = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-                break;
-
-            default:
-                $defaultOwner = Mage::helper('tnw_salesforce')->getDefaultOwner();
-                break;
-        }
-
-        if ($defaultOwner) {
-            $this->_obj->OwnerId = $defaultOwner;
-        }
-
-        $cacheType = strtolower($type);
-
-        /**
-         * @comment hack, contact has the "contactsLookup" cache name
-         */
-        if ($type == 'Contact') {
-            $cacheType = 'contacts';
-        } elseif ($type == 'Account') {
-            /**
-             * @comment accounts are not splitted by websites, so, we define 0 for cache array compatibility
-             */
-            $_sfWebsite = 0;
-        }
-
-        /**
-         * @comment contactsLookup|leadLookup
-         */
-        $cacheKey = $cacheType . 'Lookup';
-        if (
-            is_array($this->_cache[$cacheKey])
-            && array_key_exists($_sfWebsite, $this->_cache[$cacheKey])
-            && (
-                array_key_exists($_email, $this->_cache[$cacheKey][$_sfWebsite])
-                || array_key_exists($_customer->getId(), $this->_cache[$cacheKey][$_sfWebsite])
-            )
-        ) {
-            /**
-             * @comment get Contact|Account|Lead object
-             */
-            if (array_key_exists($_email, $this->_cache[$cacheKey][$_sfWebsite])) {
-                $entity = $this->_cache[$cacheKey][$_sfWebsite][$_email];
-            } elseif (array_key_exists($_customer->getId(), $this->_cache[$cacheKey][$_sfWebsite])) {
-                $entity = $this->_cache[$cacheKey][$_sfWebsite][$_customer->getId()];
-            }
-
-            if (is_object($entity)) {
-                $_ownerID = property_exists($entity, 'OwnerId') ? $entity->OwnerId : null;
-
-                if (
-                    $cacheType == 'contacts'
-                    && property_exists($entity, 'Account')
-                    && !$_ownerID
-                ) {
-                    /**
-                     * @comment get account object
-                     */
-                    $entity = $entity->Account;
-                    $_ownerID = (property_exists($entity, 'OwnerId') && !Mage::helper('tnw_salesforce/config_customer')->useDefaultOwner()) ?
-                        $entity->OwnerId :
-                        null;
-                }
-            }
-
-            if ($_ownerID && $this->_isUserActive($_ownerID)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " record already assigned to " . $_ownerID);
-
-            } else {
-                $_ownerID = $defaultOwner;
-            }
-
-            $this->_obj->OwnerId = $_ownerID;
-        }
-
     }
 
     protected function _fixPersonAccountFields($object)
@@ -1992,25 +1910,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected function _prepareOwnerId($ownerId)
     {
-        static $users = null;
-
-        if (is_null($users)) {
-            $users = array();
-            $result = $this->getClient()
-                ->query("SELECT Id, Name FROM User WHERE IsActive = true AND UserType != 'CsnOnly'");
-
-            if ($result && $result->size >= 1) {
-                /** @var stdClass $_user */
-                foreach ($result->records as $_user) {
-                    $users[$_user->Id] = $_user->Name;
-                }
-            }
-        }
-
-        if (empty($users[$ownerId])) {
-            return $ownerId;
-        }
-
-        return sprintf('%s:%s', $users[$ownerId], $ownerId);
+        return $ownerId;
     }
 }

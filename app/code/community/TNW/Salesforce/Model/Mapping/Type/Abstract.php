@@ -400,4 +400,15 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         $dateTime = new DateTime($date, $timezoneForce);
         return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
     }
+
+    /**
+     * Read from cache or pull from Salesforce Active users
+     * Accept $_sfUserId parameter and check if its in the array of active users
+     * @param null $_sfUserId
+     * @return bool
+     */
+    protected function _isUserActive($_sfUserId = NULL)
+    {
+        return Mage::helper('tnw_salesforce/salesforce_data_user')->isUserActive($_sfUserId);
+    }
 }

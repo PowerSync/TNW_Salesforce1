@@ -161,4 +161,34 @@ class TNW_Salesforce_Model_Customer_Observer
     {
         Mage::getSingleton('core/session')->setFromSalesForce(false);
     }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     */
+    public function afterSave($observer)
+    {
+        $saveAttributes = array(
+            'salesforce_contact_owner_id',
+            'salesforce_account_owner_id',
+            'salesforce_lead_owner_id',
+        );
+
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = $observer->getData('customer');
+        $account  = $observer->getData('request')->getPost('account', array());
+
+        foreach ($saveAttributes as $saveAttribute) {
+            if (!array_key_exists($saveAttribute, $account)) {
+                continue;
+            }
+
+            $value = $account[$saveAttribute];
+            if (empty($value)) {
+                continue;
+            }
+
+            $customer->setData($saveAttribute, $value);
+            $customer->getResource()->saveAttribute($customer, $saveAttribute);
+        }
+    }
 }

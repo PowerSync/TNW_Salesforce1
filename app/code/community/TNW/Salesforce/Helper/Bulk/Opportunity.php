@@ -181,9 +181,6 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
     protected function _pushEntity()
     {
         if (!empty($this->_cache['opportunitiesToUpsert'])) {
-            // assign owner id to opportunity
-            $this->_assignOwnerIdToOpp();
-
             if (!$this->_cache['bulkJobs']['opportunity']['Id']) {
                 // Create Job
                 $this->_cache['bulkJobs']['opportunity']['Id'] = $this->_createJob('Opportunity', 'upsert', 'Id');
@@ -339,7 +336,8 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         'contact_salesforce_id' => $_customer->getData('salesforce_id'),
                         'account_salesforce_id' => $_customer->getData('salesforce_account_id'),
                         'salesforce_id'         => (string)$_item->id,
-                        'sf_insync'             => 1
+                        'sf_insync'             => 1,
+                        'owner_salesforce_id'   => $this->_cache['opportunitiesToUpsert'][$_oid]->OwnerId
                     ));
                     $_order->getResource()->save($_order);
 
