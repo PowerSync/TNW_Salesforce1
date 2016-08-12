@@ -153,7 +153,16 @@ class TNW_Salesforce_Model_Sale_Observer
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
-        if ($order->getData('status') == $order->getOrigData('status')) {
+        /**
+         * is it order address save event
+         */
+        if ($address = $observer->getEvent()->getAddress()) {
+            if ($address instanceof Mage_Sales_Model_Order_Address) {
+                $order = $address->getOrder();
+            }
+        }
+
+        if (!$address && $order->getData('status') == $order->getOrigData('status')) {
             return; // Disabled
         }
 
