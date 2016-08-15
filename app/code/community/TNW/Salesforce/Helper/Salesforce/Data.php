@@ -590,8 +590,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 ? trim($customer->getBillingAddress()->getCompany()) : null;
         }
 
-        /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
-        if (empty($_companyName) && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+        if (empty($_companyName)) {
             $_companyName = trim($customer->getFirstname() . ' ' . $customer->getLastname());
         }
 
