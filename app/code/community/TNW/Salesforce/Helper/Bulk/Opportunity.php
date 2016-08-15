@@ -337,7 +337,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                         'account_salesforce_id' => $_customer->getData('salesforce_account_id'),
                         'salesforce_id'         => (string)$_item->id,
                         'sf_insync'             => 1,
-                        'owner_salesforce_id'   => $this->_cache['opportunitiesToUpsert'][$_oid]->OwnerId
+                        'owner_salesforce_id'   => $_batch[$_oid]->OwnerId
                     ));
                     $_order->getResource()->save($_order);
 

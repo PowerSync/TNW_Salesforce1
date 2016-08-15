@@ -324,7 +324,7 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
                         'account_salesforce_id' => $contact->getData('salesforce_account_id'),
                         'salesforce_id'         => (string)$_item->id,
                         'sf_insync'             => 1,
-                        'owner_salesforce_id'   => $this->_cache['ordersToUpsert'][$_oid]->OwnerId
+                        'owner_salesforce_id'   => $_batch[$_oid]->OwnerId
                     ));
                     $entity->getResource()->save($entity);
 
