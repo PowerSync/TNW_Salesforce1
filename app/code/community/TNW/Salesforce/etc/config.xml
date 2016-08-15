@@ -263,6 +263,16 @@
                 </observers>
             </sales_order_save_commit_after>
 
+            <!-- Order Address Save Event -->
+            <sales_order_address_save_commit_after>
+                <observers>
+                    <tnw_salesforce_sale_observer>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>orderStatusUpdateTrigger</method>
+                    </tnw_salesforce_sale_observer>
+                </observers>
+            </sales_order_address_save_commit_after>
+
             <tnw_salesforce_order_save_form>
                 <observers>
                     <tnw_salesforce_order_observer>

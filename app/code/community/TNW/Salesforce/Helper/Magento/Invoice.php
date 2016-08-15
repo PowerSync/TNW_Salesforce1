@@ -3,6 +3,11 @@
 class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magento_Abstract
 {
     /**
+     * @var bool
+     */
+    protected $isOrder = true;
+
+    /**
      * @param null $object
      * @return mixed
      */
@@ -53,6 +58,8 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             $_sOpportunityIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . "Opportunity__c";
             $_sOrderId    = (property_exists($object, $_sOpportunityIdKey) && $object->$_sOpportunityIdKey)
                 ? $object->$_sOpportunityIdKey : null;
+
+            $this->isOrder = false;
         }
 
         if (!$_sOrderId) {
@@ -184,9 +191,13 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
      */
     protected function _updateMappedEntityFields($object, $invoice)
     {
+        $sfObject = $this->isOrder
+            ? 'OrderInvoice'
+            : 'OpportunityInvoice';
+
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
         $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-            ->addObjectToFilter('OrderInvoice')
+            ->addObjectToFilter($sfObject)
             ->addFilterTypeSM(!$invoice->isObjectNew())
             ->firstSystem();
 
@@ -271,8 +282,13 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
 
         $_invoiceItemKey    = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
         $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c';
+        $_iItemOpportunityItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c';
         foreach ($object->$_invoiceItemKey->records as $record) {
-            $orderItemId = array_search($record->$_iItemOrderItemKey, $hasSalesforceId);
+            $_sItemId = $this->isOrder
+                ? $record->$_iItemOrderItemKey
+                : $record->$_iItemOpportunityItemKey;
+
+            $orderItemId = array_search($_sItemId, $hasSalesforceId);
             if (false === $orderItemId) {
                 continue;
             }
@@ -285,9 +301,13 @@ class TNW_Salesforce_Helper_Magento_Invoice extends TNW_Salesforce_Helper_Magent
             /** @var Mage_Sales_Model_Order_Invoice_Item $entity */
             $entity = $_invoiceItemCollection->getItemById($invoiceItemId);
 
+            $sfObject = $this->isOrder
+                ? 'OrderInvoiceItem'
+                : 'OpportunityInvoiceItem';
+
             /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
             $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-                ->addObjectToFilter('OrderInvoiceItem')
+                ->addObjectToFilter($sfObject)
                 ->addFilterTypeSM(!$entity->isObjectNew())
                 ->firstSystem();
 
