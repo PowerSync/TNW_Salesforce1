@@ -643,9 +643,14 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            if ($cache->load("tnw_salesforce_" . strtolower($field) . "_fields")) {
-                $_data = unserialize($cache->load("tnw_salesforce_" . strtolower($field) . "_fields"));
-            } else {
+            $_data = array();
+
+            $serializeData = $cache->load("tnw_salesforce_" . strtolower($field) . "_fields");
+            if (!empty($serializeData)) {
+                $_data = unserialize($serializeData);
+            }
+
+            if (empty($_data)) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $field . " object...");
                 if (!is_object($this->getClient())) {
                     return $this->_noConnectionArray;
