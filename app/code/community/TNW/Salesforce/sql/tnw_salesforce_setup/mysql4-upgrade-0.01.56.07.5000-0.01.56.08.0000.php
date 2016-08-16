@@ -37,11 +37,51 @@ $data = array(
         'sf_object'         => 'Order',
     ),
 
+    // OrderInvoice
+    array(
+        'local_field'       => 'Order : owner_salesforce_id',
+        'sf_field'          => 'OwnerId',
+        'sf_object'         => 'OrderInvoice',
+        'sf_magento_enable' => '0',
+    ),
+
+    // OrderShipment
+    array(
+        'local_field'       => 'Order : owner_salesforce_id',
+        'sf_field'          => 'OwnerId',
+        'sf_object'         => 'OrderShipment',
+        'sf_magento_enable' => '0',
+    ),
+
+    // OrderCreditMemo
+    array(
+        'local_field'       => 'Order : owner_salesforce_id',
+        'sf_field'          => 'OwnerId',
+        'sf_object'         => 'OrderCreditMemo',
+        'sf_magento_enable' => '0',
+    ),
+
     // Opportunity
     array(
         'local_field'       => 'Order : owner_salesforce_id',
         'sf_field'          => 'OwnerId',
         'sf_object'         => 'Opportunity',
+    ),
+
+    // OpportunityInvoice
+    array(
+        'local_field'       => 'Order : owner_salesforce_id',
+        'sf_field'          => 'OwnerId',
+        'sf_object'         => 'OpportunityInvoice',
+        'sf_magento_enable' => '0',
+    ),
+
+    // OpportunityShipment
+    array(
+        'local_field'       => 'Order : owner_salesforce_id',
+        'sf_field'          => 'OwnerId',
+        'sf_object'         => 'OpportunityShipment',
+        'sf_magento_enable' => '0',
     ),
 
     // Contact

@@ -33,6 +33,8 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Owner
                 'selector'  => sprintf('.%s', $selector)
             ));
 
+        $sfLink = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url');
+
         $field = new TNW_Salesforce_Block_Adminhtml_Catalog_Product_Helper_Chosen($this->getElement()->getData());
         $field->setId($this->getElement()->getId())
             ->setForm($this->getElement()->getForm())
@@ -41,9 +43,12 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Owner
                 'no_span'            => true,
                 'values'             => $cIdVal,
                 'class'              => $selector,
+                'onchange'           => "document.getElementById('{$this->getElement()->getId()}-link').href = '{$sfLink}/'+this.value",
                 'after_element_html' => $block->toHtml()
             ));
 
-        return $field->toHtml();
+        $value = $this->getElement()->getValue();
+        $currentLink = !empty($value) ? sprintf('%s/%s', $sfLink, $value) : '#';
+        return sprintf('<div style="position: relative;">%s<div style="position: absolute; right: -100px; top: 4px;"><a target="_blank" id="%s-link" href="%s">%s</a></div></div>', $field->toHtml(), $field->getId(), $currentLink, $this->__('View in Salesforce'));
     }
 }
