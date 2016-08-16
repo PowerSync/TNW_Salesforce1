@@ -71,6 +71,10 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
         // Other
         $value = $_entity->getData($attributeCode);
+        if (!$value) {
+            $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+            $value = call_user_func(array($_entity, $method));
+        }
         if (is_object($value)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Value of the ' . $attributeCode . ' is object, cannot be used for sync process.');
             $value = null;
