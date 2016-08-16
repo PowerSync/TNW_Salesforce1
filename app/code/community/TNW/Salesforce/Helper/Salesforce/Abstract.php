@@ -421,6 +421,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId())
             ->setRawData($_data);
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Bulk. Sent a request to url: %s \nData: %s", $_client->getUri(true), $_data));
+
         try {
             $response = $_client->request()->getBody();
             $_batchInfo = simplexml_load_string($response);
