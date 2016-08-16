@@ -399,17 +399,14 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $_batchId = NULL;
 
         $_data = '<?xml version="1.0" encoding="UTF-8"?>
-            <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">';
+<sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">'."\n";
 
         foreach ($chunk as $_item) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("+++++ Start " . ucwords($_batchType) . " Object +++++");
-            $_data .= '<sObject>';
+            $_data .= "\t<sObject>";
             foreach ($_item as $_tag => $_value) {
-                $_data .= '<' . $_tag . '><![CDATA[' . $_value . ']]></' . $_tag . '>';
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . " - " . $_tag . " : " . $_value);
+                $_data .= '<' . $_tag . '>' . htmlspecialchars($_value, ENT_XML1) . '</' . $_tag . '>';
             }
-            $_data .= '</sObject>';
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("+++++ End " . ucwords($_batchType) . " Object +++++");
+            $_data .= "</sObject>\n";
         }
 
         $_data .= '</sObjects>';
@@ -422,7 +419,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             ->setRawData($_data);
 
         Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace(sprintf("Bulk. Sent a request to url: %s \nData: %s", $_client->getUri(true), $_data));
+            ->saveTrace(sprintf("Bulk. Object: '%s' . Sent a request to url: %s \nData: %s", $_batchType, $_client->getUri(true), $_data));
 
         try {
             $response = $_client->request()->getBody();
@@ -508,12 +505,13 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 ->setHeaders('Content-Type: text/csv')
                 ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
 
-            $response = simplexml_load_string($client->request()->getBody());
+            $response = $client->request()->getBody();
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace(sprintf("Bulk. Reply received on url: %s \nData: %s", $client->getUri(true), $response));
+
+            $response = simplexml_load_string($response);
             foreach ($response as $_responseRow) {
                 if (property_exists($_responseRow, 'state')) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: State: ' . $_responseRow->state);
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Batch ID: ' . $_responseRow->id);
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: RecordsProcessed: ' . $_responseRow->numberRecordsProcessed);
                     if ('Failed' == $_responseRow->state) {
                         $completed = 'exception';
                         break;
