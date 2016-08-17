@@ -32,9 +32,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     }
 
     /**
+     * @param string $type
      * @return bool
      */
-    public function process()
+    public function process($type = 'soft')
     {
         try {
             if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {

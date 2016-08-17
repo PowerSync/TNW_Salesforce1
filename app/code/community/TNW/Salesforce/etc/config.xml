@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.56.03.0000</version>
+            <version>0.01.56.06.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -137,11 +137,15 @@
             </tnw_salesforce>
             <adminhtml>
                 <rewrite>
+                    <catalog_product_edit>TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit</catalog_product_edit>
                     <system_store_store>TNW_Salesforce_Block_Adminhtml_System_Store</system_store_store>
                     <system_currency>TNW_Salesforce_Block_Adminhtml_System_Currency</system_currency>
                     <sales_order_status_grid>TNW_Salesforce_Block_Sales_Order_Status_Grid</sales_order_status_grid>
                     <sales_order_status_new_form>TNW_Salesforce_Block_Sales_Order_Status_New_Form</sales_order_status_new_form>
                     <sales_order_status_edit_form>TNW_Salesforce_Block_Sales_Order_Status_Edit_Form</sales_order_status_edit_form>
+                    <sales_order_view_tab_shipments>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Shipments</sales_order_view_tab_shipments>
+                    <sales_order_view_tab_invoices>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Invoices</sales_order_view_tab_invoices>
+                    <sales_order_view_tab_creditmemos>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Creditmemos</sales_order_view_tab_creditmemos>
                 </rewrite>
             </adminhtml>
         </blocks>
@@ -150,6 +154,24 @@
                 <class>TNW_Salesforce_Helper</class>
             </tnw_salesforce>
         </helpers>
+        <template>
+            <email>
+                <salesforce_developer_template module="tnw_salesforce" translate="label">
+                    <label>Notification</label>
+                    <file>tnw_salesforce/notification.html</file>
+                    <type>html</type>
+                </salesforce_developer_template>
+            </email>
+        </template>
+        <translate>
+            <modules>
+                <TNW_Salesforce>
+                    <files>
+                        <default>TNW_Salesforce.csv</default>
+                    </files>
+                </TNW_Salesforce>
+            </modules>
+        </translate>
         <events>
             <!-- Contact Us form event -->
             <controller_action_postdispatch_contacts>
@@ -237,6 +259,16 @@
                     </tnw_salesforce_sale_observer>
                 </observers>
             </sales_order_save_commit_after>
+
+            <!-- Order Address Save Event -->
+            <sales_order_address_save_commit_after>
+                <observers>
+                    <tnw_salesforce_sale_observer>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>orderStatusUpdateTrigger</method>
+                    </tnw_salesforce_sale_observer>
+                </observers>
+            </sales_order_address_save_commit_after>
 
             <tnw_salesforce_order_save_form>
                 <observers>
@@ -631,7 +663,10 @@
                 <api_enable>0</api_enable>
             </api_config>
             <developer>
-                <log_enable>1</log_enable>
+                <enabled>0</enabled>
+                <template>salesforce_developer_template</template>
+                <identity>general</identity>
+                <copy_method>bcc</copy_method>
                 <email_prefix>LIVE</email_prefix>
             </developer>
             <syncronization>

@@ -74,10 +74,15 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
 
         // Handle success and fail
         if (is_object($_entity)) {
-            $this->_salesforceAssociation[$_type][] = array(
-                'salesforce_id' => $_entity->getData('salesforce_id'),
-                'magento_id'    => $this->_getEntityNumber($_entity)
-            );
+            $sfMagentoId = $this->_getSfMagentoId($_object);
+            $magentoId   = $this->_getEntityNumber($_entity);
+
+            if ($sfMagentoId != $magentoId) {
+                $this->_salesforceAssociation[$_type][] = array(
+                    'salesforce_id' => $_entity->getData('salesforce_id'),
+                    'magento_id'    => $magentoId
+                );
+            }
 
             $this->_response->success = true;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $_object->Id . " upserted!");
@@ -106,6 +111,20 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     protected function _getEntityNumber($_entity)
     {
         return $_entity->getId();
+    }
+
+    /**
+     * @param $_object stdClass
+     * @return string
+     */
+    protected function _getSfMagentoId($_object)
+    {
+        $magentoIsField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c';
+        if (!property_exists($_object, $magentoIsField)) {
+            return '';
+        }
+
+        return $_object->{$magentoIsField};
     }
 
     /**

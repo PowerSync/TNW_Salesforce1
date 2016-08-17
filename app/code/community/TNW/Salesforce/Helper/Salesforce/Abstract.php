@@ -800,9 +800,10 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * input paremeter: salesforceId or string type1:salesforceId1;type2:salesforceId2;
      * @param $_field
+     * @param bool $showName
      * @return string
      */
-    public function generateLinkToSalesforce($_field)
+    public function generateLinkToSalesforce($_field, $showName = false)
     {
         $_data = null;
 
@@ -813,8 +814,12 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 $currency = '';
                 if (strpos($value, ':') !== false) {
                     $tmp = explode(':', $value);
-                    $currency = $tmp[0] . ': ';
-                    $_field = $tmp[1];
+                    if ($showName) {
+                        $_field = $tmp[0];
+                    } else {
+                        $currency = $tmp[0] . ': ';
+                        $_field = $tmp[1];
+                    }
                     $value = $tmp[1];
                 }
 
@@ -1030,7 +1035,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function logNotice($message)
     {
-        return Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($message);
+        return Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice($message);
     }
 
     /**

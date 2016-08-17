@@ -17,6 +17,9 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
             'salesforce_lead_id'    =>  'Lead',
             'salesforce_id'         =>  'Contact',
             'salesforce_account_id' =>  'Account',
+            'salesforce_lead_owner_id'    =>  'Lead Owner',
+            'salesforce_contact_owner_id' =>  'Contact Owner',
+            'salesforce_account_owner_id' =>  'Account Owner',
         );
         $sfData = array();
         foreach ($_labels as $_field => $_label) {
@@ -24,7 +27,7 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
             if ($_value) {
                 $sfData[] = array(
                     'label' => $_label,
-                    'value' => Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($this->escapeHtml($_value, array('br')))
+                    'value' => Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($_value, true)
                 );
             }
         }
