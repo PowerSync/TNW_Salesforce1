@@ -91,9 +91,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
             "Status",
             $_magentoId,
             "(SELECT $orderItemFieldsToSelect FROM OrderItems)",
-            "(SELECT Id FROM Orders)",
             "(SELECT Id, Title, Body FROM Notes)"
         );
+
+        if (!Mage::helper('tnw_salesforce/data')->isProfessionalSalesforceVersionType()) {
+            $_selectFields[] = "(SELECT Id FROM Orders)";
+        }
 
         $query = "SELECT " . implode(',', $_selectFields) . " FROM Order WHERE " . $_magentoId . " IN ('" . implode("','", $ids) . "')";
 
