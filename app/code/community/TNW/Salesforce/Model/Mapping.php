@@ -36,16 +36,17 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 
     /**
      * @param array $objectMappings
+     * @param $additional mixed
      * @return null|string
      */
-    public function getValue(array $objectMappings = array())
+    public function getValue(array $objectMappings, $additional = null)
     {
         if (!isset($objectMappings[$this->getLocalFieldType()])) {
             return null;
         }
 
         return $this->getModelType()
-            ->getValue($objectMappings[$this->getLocalFieldType()]);
+            ->getValue($objectMappings[$this->getLocalFieldType()], $additional);
     }
 
     /**

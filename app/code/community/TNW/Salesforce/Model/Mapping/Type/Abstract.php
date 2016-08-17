@@ -8,37 +8,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected $_mapping = null;
 
     /**
-     * @var stdClass Salesforce object
-     */
-    protected $_obj = null;
-
-    /**
-     * @param $obj
-     * @return $this
-     */
-    public function setObj($obj)
-    {
-        if (empty($obj)) {
-            $obj = new StdClass();
-        }
-        $this->_obj = $obj;
-
-        return $this;
-    }
-
-    /**
-     * @return stdClass
-     */
-    public function getObj()
-    {
-        return $this->_obj;
-    }
-
-    /**
      * @param $_entity Mage_Core_Model_Abstract
+     * @param $additional mixed
      * @return string
      */
-    public function getValue($_entity)
+    public function getValue($_entity, $additional = null)
     {
         $value = $this->_prepareValue($_entity);
 
@@ -62,11 +36,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         if ($appropriatedField) {
             try {
 
-                if (!$appropriatedField->createable && !$this->getObj()->Id) {
+                if (!$appropriatedField->createable && ($additional instanceof stdClass) && !$additional->Id) {
                    throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not creatable, value sync skipped');
                 }
 
-                if (!$appropriatedField->updateable && $this->getObj()->Id) {
+                if (!$appropriatedField->updateable && ($additional instanceof stdClass) && $additional->Id) {
                     throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not updateable, value sync skipped');
                 }
 
