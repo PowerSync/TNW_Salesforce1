@@ -309,7 +309,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             /** @var tnw_salesforce_model_mapping $_mapping */
             foreach ($_mappingCollection as $_mapping) {
-                $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+                $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
             }
 
             // Unset attribute
@@ -598,7 +598,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
-            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
         }
 
         // Unset attribute
@@ -1293,12 +1293,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $customers[] = $this->getEntityCache($id);
         }
 
-        if (Mage::helper('tnw_salesforce/config_customer')->mergeDuplicates()) {
-            foreach (array_chunk($customers, TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT) as $_customers) {
-                Mage::helper('tnw_salesforce/salesforce_data_user')
-                    ->setCache($this->_cache)
-                    ->processDuplicates($_customers);
-            }
+        foreach (array_chunk($customers, TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT) as $_customers) {
+            Mage::helper('tnw_salesforce/salesforce_data_user')
+                ->setCache($this->_cache)
+                ->processDuplicates($_customers);
         }
 
         $this->_cache['customerToWebsite'] = $this->_websites;
@@ -1452,7 +1450,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     'salesforce_account_id' => (property_exists($_data, 'AccountId')) ? $_data->AccountId : null,
                     'salesforce_lead_id'    => (property_exists($_data, 'LeadId')) ? $_data->LeadId : null,
                     'salesforce_is_person'  => (property_exists($_data, 'IsPersonAccount')) ? $_data->IsPersonAccount : null,
-                    'sf_insync'             => (property_exists($_data, 'SfInSync')) ? $_data->SfInSync : null
+                    'sf_insync'             => (property_exists($_data, 'SfInSync')) ? $_data->SfInSync : null,
+                    'salesforce_contact_owner_id' =>  (property_exists($_data, 'ContactOwnerId')) ? $_data->ContactOwnerId : null,
+                    'salesforce_account_owner_id' =>  (property_exists($_data, 'AccountOwnerId')) ? $_data->AccountOwnerId : null,
+                    'salesforce_lead_owner_id'    =>  (property_exists($_data, 'LeadOwnerId')) ? $_data->LeadOwnerId : null,
                 ));
 
                 $_customer = $this->getEntityCache($_data->MagentoId)
@@ -1605,6 +1606,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     }
 
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $_result->id;
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountOwnerId
+                        = $this->_prepareOwnerId($this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
 
                     /**
                      * Update lookup for lead convertation
@@ -1688,6 +1691,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $_websiteId = $this->_getWebsiteIdByCustomerId($_contactIds[$_key]);
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $contactId;
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
+                        = $this->_prepareOwnerId($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
 
                     if (
                         !property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId') ||
@@ -1777,6 +1782,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $_email = $this->_cache['entitiesUpdating'][$customerId];
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $_result->id;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
+                        = $this->_prepareOwnerId($this->_cache['contactsToUpsert'][$this->_magentoId][$_contactIds[$_key]]->OwnerId);
 
                     /**
                      * Update lookup for lead convertation
@@ -1844,6 +1851,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $_email = $this->_cache['entitiesUpdating'][$_contactIds[$_key]];
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = $_result->id;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
+                        = $this->_prepareOwnerId($this->_cache['leadsToUpsert'][$this->_magentoId][$_contactIds[$_key]]->OwnerId);
 
                     $_customer = $this->getEntityCache($_contactIds[$_key]);
                     $_customer->setSalesforceLeadId($_result->id);
@@ -1920,6 +1929,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $_email = $this->_cache['entitiesUpdating'][$_contactIds[$_key]];
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = $_result->id;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
+                        = $this->_prepareOwnerId($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
 
                     $_customer = $this->getEntityCache($_contactIds[$_key]);
                     $_customer->setSalesforceLeadId($_result->id);
@@ -1973,4 +1984,31 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         Mage::helper('tnw_salesforce/salesforce_data_lead')->setParent($this)->convertLeadsSimple();
     }
 
+    /**
+     * @param $ownerId
+     * @return string
+     */
+    protected function _prepareOwnerId($ownerId)
+    {
+        static $users = null;
+
+        if (is_null($users)) {
+            $users = array();
+            $result = $this->getClient()
+                ->query("SELECT Id, Name FROM User WHERE IsActive = true AND UserType != 'CsnOnly'");
+
+            if ($result && $result->size >= 1) {
+                /** @var stdClass $_user */
+                foreach ($result->records as $_user) {
+                    $users[$_user->Id] = $_user->Name;
+                }
+            }
+        }
+
+        if (empty($users[$ownerId])) {
+            return $ownerId;
+        }
+
+        return sprintf('%s:%s', $users[$ownerId], $ownerId);
+    }
 }

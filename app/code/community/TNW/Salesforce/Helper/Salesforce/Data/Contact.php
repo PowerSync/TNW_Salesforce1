@@ -451,6 +451,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             $tmp->MagentoId = $record->Account->{$_personMagentoId};
         }
 
-        return array($this->prepareId($_websiteKey) => array($customer->getEmail() => $tmp));
+        return array($this->prepareId($_websiteKey) => array(strtolower($customer->getEmail()) => $tmp));
     }
 }

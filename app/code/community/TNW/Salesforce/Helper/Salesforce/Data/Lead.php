@@ -179,7 +179,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
          * check converted condition
          */
         if (!$tmp->IsConverted || ($tmp->ConvertedAccountId && $tmp->ConvertedContactId)) {
-            return array($this->prepareId($_websiteKey) => array($customer->getEmail() => $tmp));
+            return array($this->prepareId($_websiteKey) => array(strtolower($customer->getEmail()) => $tmp));
         }
 
         return array();
@@ -976,7 +976,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      *
      * @return string
      */
-    public function getCompanyByCustomer(Mage_Customer_Model_Customer $customer)
+    public function getCompanyByCustomer($customer)
     {
         //company from customer
         $company = $customer->getCompany();

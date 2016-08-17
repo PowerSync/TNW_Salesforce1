@@ -319,6 +319,14 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
             $this->_addError('Could not upsert Product into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
             return false;
         }
+
+        if ($this->isProductFee($_sSalesforceId)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("NOTICE. Detected product fee. Skipped");
+
+            return false;
+        }
+
         if (!$_sSku && !$_sMagentoId) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting product into Magento: Email and Magento ID are missing");
             $this->_addError('Error upserting product into Magento: Email and Magento ID are missing', 'SKU_AND_MAGENTO_ID_MISSING');
@@ -389,5 +397,31 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
         }
 
         return $this->_updateMagento($object, $_mMagentoId, $_sSku, $_sSalesforceId, $_isNew);
+    }
+
+    /**
+     * @param $salesforceId
+     * @return bool
+     */
+    protected function isProductFee($salesforceId)
+    {
+        static $fees = null;
+        if (is_null($fees)) {
+            $fees = array_filter(array_map('unserialize', array_filter(array(
+                Mage::helper('tnw_salesforce')->getTaxProduct(),
+                Mage::helper('tnw_salesforce')->getShippingProduct(),
+                Mage::helper('tnw_salesforce')->getDiscountProduct(),
+            ))));
+
+            $fees = array_map(function ($product) {
+                if (empty($product['Id'])) {
+                    return null;
+                }
+
+                return $product['Id'];
+            }, $fees);
+        }
+
+        return in_array($salesforceId, $fees);
     }
 }

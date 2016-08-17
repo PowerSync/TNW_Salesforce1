@@ -9,9 +9,10 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
     /**
      * @param $_entity Mage_Core_Model_Abstract
+     * @param $additional mixed
      * @return string
      */
-    public function getValue($_entity)
+    public function getValue($_entity, $additional = null)
     {
         $value = $this->_prepareValue($_entity);
 
@@ -34,24 +35,42 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
          */
         if ($appropriatedField) {
             try {
+
+                if (!$appropriatedField->createable && ($additional instanceof stdClass) && !$additional->Id) {
+                   throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not creatable, value sync skipped');
+                }
+
+                if (!$appropriatedField->updateable && ($additional instanceof stdClass) && $additional->Id) {
+                    throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not updateable, value sync skipped');
+                }
+
                 if (
                     is_string($value)
                     && $appropriatedField->length
                     && $appropriatedField->length < strlen($value)
                 ) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncating a long value for an ' . $this->_mapping->getSfObject(). ': ' . $this->_mapping->getSfField());
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncating a long value for an ' . $this->_mapping->getSfObject() . ': ' . $this->_mapping->getSfField());
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Limit is ' . $appropriatedField->length . ' value length is ' . strlen($value));
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Initial value: ' . $value);
                     $limit = $appropriatedField->length;
                     $value = substr($value, 0, $limit - 3) . '...';
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncated value: ' . $value);
                 }
+
+                $value = $this->_prepareDefaultValue($value);
+
+                //For Attribute
+                $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+                $attribute = $this->_getAttribute($_entity, $attributeCode);
+                if (is_null($value) && $attribute && $attribute->getFrontend()->getConfigField('input') == 'multiselect') {
+                    $value = ' ';
+                }
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
+                $value = null;
             }
         }
 
-        $value = $this->_prepareDefaultValue($value);
 
         return $value;
     }
@@ -63,22 +82,29 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _prepareValue($_entity)
     {
         //For Attribute
-        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
-        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute = $this->_getAttribute($_entity, $attributeCode);
         if ($attribute && $_entity->hasData($attributeCode)) {
             return $this->_convertValueForAttribute($_entity, $attribute);
         }
 
         // Other
-        $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
-        $value = call_user_func(array($_entity, $method));
+        $value = $_entity->getData($attributeCode);
+        if (!$value) {
+            $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+            $value = call_user_func(array($_entity, $method));
+        }
+        if (is_object($value)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Value of the ' . $attributeCode . ' is object, cannot be used for sync process.');
+            $value = null;
+        }
 
         $attributeType = $this->_mapping->getBackendType();
         if (empty($attributeType)) {
             $attributeType = $this->_dataType($_entity, $attributeCode);
         }
 
-        switch(true) {
+        switch (true) {
             case is_array($value):
                 return implode(' ', $value);
 
@@ -107,7 +133,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
             return;
         }
 
-        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         $_entity->setData($attributeCode, $value);
     }
 
@@ -132,8 +158,8 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _prepareReverseValue($_entity, $value)
     {
         // For Attribute
-        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
-        $attribute      = $this->_getAttribute($_entity, $attributeCode);
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $attribute = $this->_getAttribute($_entity, $attributeCode);
         if ($attribute) {
             $value = $this->_reverseConvertValueForAttribute($attribute, $value);
         }
@@ -144,7 +170,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
             $attributeType = $this->_dataType($_entity, $attributeCode);
         }
 
-        switch(true) {
+        switch (true) {
             case in_array($attributeType, array('date', 'datetime', 'timestamp')):
                 if (empty($value)) {
                     $value = null;
@@ -255,7 +281,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _getAttribute($entity, $code)
     {
-        $resource  = $entity->getResource();
+        $resource = $entity->getResource();
         if (!$resource instanceof Mage_Eav_Model_Entity_Abstract) {
             return false;
         }
@@ -276,8 +302,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _convertValueForAttribute($entity, $attribute)
     {
         $value = $entity->getData($attribute->getAttributeCode());
-        switch ($attribute->getFrontend()->getConfigField('input'))
-        {
+        switch ($attribute->getFrontend()->getConfigField('input')) {
             case 'date':
             case 'datetime':
                 if (empty($value)) {
@@ -290,8 +315,14 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
             case 'multiselect':
                 $value = $attribute->getFrontend()->getOption($value);
-                if (is_array($value)) {
-                    $value = implode(';', $value);
+                switch (true) {
+                    case (false === $value):
+                        $value = null;
+                        break 2;
+
+                    case is_array($value):
+                        $value = implode(';', $value);
+                        break 2;
                 }
                 break;
 
@@ -310,8 +341,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _reverseConvertValueForAttribute($attribute, $value)
     {
-        switch ($attribute->getFrontend()->getConfigField('input'))
-        {
+        switch ($attribute->getFrontend()->getConfigField('input')) {
             case 'date':
             case 'datetime':
                 if (empty($value)) {
@@ -366,7 +396,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     {
         $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
 
-        $attributeCode  = $this->_mapping->getLocalFieldAttributeCode();
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         $timezone = !in_array($attributeCode, array('created_at', 'updated_at'))
             ? $currentTimezone
             : 'UTC';
@@ -382,7 +412,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _reversePrepareDateTime($date)
     {
         $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-        $timezoneForce  = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
+        $timezoneForce = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
 
         $dateTime = new DateTime($date, $timezoneForce);
         return $dateTime->setTimezone(new DateTimeZone($currentTimezone));

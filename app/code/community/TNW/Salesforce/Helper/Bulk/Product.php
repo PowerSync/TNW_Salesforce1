@@ -436,7 +436,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
         return $this->check();
     }
 
-    public function process()
+    public function process($type = 'soft')
     {
 
         /**
