@@ -88,10 +88,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
                 }
             } catch (Exception $e) {
                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-                $this->_redirect('*/*/');
             }
         }
-        $this->_redirect('*/*/');
+
+        $this->_redirectReferer($this->getUrl('*/*/index', array('_current' => true)));
     }
 
     public function massSyncAction()

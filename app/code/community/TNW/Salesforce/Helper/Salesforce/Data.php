@@ -590,8 +590,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 ? trim($customer->getBillingAddress()->getCompany()) : null;
         }
 
-        /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
-        if (empty($_companyName) && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+        if (empty($_companyName)) {
             $_companyName = trim($customer->getFirstname() . ' ' . $customer->getLastname());
         }
 
@@ -644,9 +643,14 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            if ($cache->load("tnw_salesforce_" . strtolower($field) . "_fields")) {
-                $_data = unserialize($cache->load("tnw_salesforce_" . strtolower($field) . "_fields"));
-            } else {
+            $_data = array();
+
+            $serializeData = $cache->load("tnw_salesforce_" . strtolower($field) . "_fields");
+            if (!empty($serializeData)) {
+                $_data = unserialize($serializeData);
+            }
+
+            if (empty($_data)) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $field . " object...");
                 if (!is_object($this->getClient())) {
                     return $this->_noConnectionArray;
@@ -719,7 +723,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            if (!$this->_tableDescription[$table]) {
+            if (empty($this->_tableDescription[$table])) {
                 if ($cache->load("tnw_salesforce_descsribe_" . strtolower($table) . "_fields")) {
                     $columns = unserialize($cache->load("tnw_salesforce_describe_" . strtolower($table) . "_fields"));
                 } else {
@@ -739,7 +743,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return $this->_tableDescription[$table];
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $field . " Object");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $table . " Object");
             unset($e);
             return false;
         }

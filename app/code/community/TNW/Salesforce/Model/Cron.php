@@ -316,6 +316,8 @@ class TNW_Salesforce_Model_Cron
 
     protected function _syncObjectForBulkMode()
     {
+        Mage::dispatchEvent('tnw_salesforce_cron_sync_object_bulk_before', array('cron_object' => $this));
+
         // Sync Products
         $this->syncProduct();
 
@@ -348,15 +350,21 @@ class TNW_Salesforce_Model_Cron
 
         // Sync custom objects
         $this->_syncCustomObjects();
+
+        Mage::dispatchEvent('tnw_salesforce_cron_sync_object_bulk_after', array('cron_object' => $this));
     }
 
     protected function _syncObjectForRealTimeMode()
     {
+        Mage::dispatchEvent('tnw_salesforce_cron_sync_object_real_time_before', array('cron_object' => $this));
+
         // Sync Products
         $this->syncProduct();
 
         // Sync abandoned
         $this->syncAbandoned();
+
+        Mage::dispatchEvent('tnw_salesforce_cron_sync_object_real_time_after', array('cron_object' => $this));
     }
 
     public function _syncCustomObjects()
@@ -418,7 +426,13 @@ class TNW_Salesforce_Model_Cron
                 $batchSize = $_configHelper->getCatalogRuleBatchSize();
                 break;
             default:
-                throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
+                $transport = new Varien_Object(array('batch_size' => null));
+                Mage::dispatchEvent(sprintf('tnw_salesforce_%s_batch_size', $type), array('transport' => $transport));
+
+                $batchSize = $transport->getData('batch_size');
+                if (is_null($batchSize)) {
+                    throw new Exception('Incorrect entity type, no batch size for "' . $type . '" type');
+                }
         }
 
         return $batchSize;

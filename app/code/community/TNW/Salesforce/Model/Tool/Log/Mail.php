@@ -8,12 +8,19 @@
  */
 class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
 {
+    const XML_PATH_EMAIL_TEMPLATE    = 'salesforce/developer/template';
+    const XML_PATH_EMAIL_IDENTITY    = 'salesforce/developer/identity';
+    const XML_PATH_EMAIL_RECIPIENT   = 'salesforce/developer/fail_order';
+    const XML_PATH_EMAIL_COPY_TO     = 'salesforce/developer/copy_to';
+    const XML_PATH_EMAIL_COPY_METHOD = 'salesforce/developer/copy_method';
+    const XML_PATH_EMAIL_ENABLED     = 'salesforce/developer/enabled';
+
     /**
      * @comment send Email with error message
      */
     public function send()
     {
-        if (Mage::helper('tnw_salesforce/config')->getFailEmail()) {
+        if (Mage::getStoreConfigFlag(self::XML_PATH_EMAIL_ENABLED) && Mage::helper('tnw_salesforce/config')->getFailEmail()) {
             $filename = Mage::getBaseDir('log') . DS . Mage::getModel('tnw_salesforce/tool_log_file')->prepareFilename(null, Zend_Log::CRIT);
 
             if (!file_exists($filename) || filesize($filename) == 0) {
@@ -23,44 +30,50 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
                 return false;
             }
 
+            // Get the destination email addresses to send copies to
+            $copyTo = $this->_getEmails(self::XML_PATH_EMAIL_COPY_TO);
+            $copyMethod = Mage::getStoreConfig(self::XML_PATH_EMAIL_COPY_METHOD);
 
-            $_storeName = Mage::getStoreConfig('general/store_information/name');
-            # Cannot connect to SF, execute email
-
-
-            $mail = new Zend_Mail();
-            $body = "<p><b>Alert:</b> " . $_storeName . " experienced the following problem while trying to post data to SalesForce.com</p>";
-            $body .= "<p><b>Error:</b> Unable to push the request</p>";
-            $body .= "<p><b>Record Information:</b><br /><br />";
-
-            $body .= "</p>";
-            $body .= "<p><b>SalesForce Error:</b><br/>";
-            $body .= file_get_contents($filename);
-            $body .= "</p>";
-
-            $body .= "<p>To incorporate this information into SalesForce.com you can key in the data referenced above.</p>";
-            $body .= "<p>If you have any questions, please contact the support staff of " . $_storeName . ".</p>";
-
-            $mail->setBodyHtml($body);
-            unset($body);
-            $mail->setFrom(Mage::getStoreConfig('trans_email/ident_general/email'), Mage::getStoreConfig('trans_email/ident_general/name'));
-            $emails = explode(",", Mage::helper('tnw_salesforce/config')->getFailEmail());
-            foreach ($emails as $email) {
-                $mail->addTo($email, $email);
+            /** @var $mailer Mage_Core_Model_Email_Template_Mailer */
+            $mailer = Mage::getModel('core/email_template_mailer');
+            /** @var $emailInfo Mage_Core_Model_Email_Info */
+            $emailInfo = Mage::getModel('core/email_info');
+            $emailInfo->addTo(Mage::helper('tnw_salesforce/config')->getFailEmail());
+            if ($copyTo && $copyMethod == 'bcc') {
+                // Add bcc to customer email
+                foreach ($copyTo as $email) {
+                    $emailInfo->addBcc($email);
+                }
             }
-            unset($emails, $email);
-            $subject = "";
-            if (Mage::helper('tnw_salesforce/config')->getFailEmailPrefix()) {
-                $subject = Mage::helper('tnw_salesforce/config')->getFailEmailPrefix() . " - ";
+            $mailer->addEmailInfo($emailInfo);
+
+            // Email copies are sent as separated emails if their copy method is 'copy'
+            if ($copyTo && $copyMethod == 'copy') {
+                foreach ($copyTo as $email) {
+                    $emailInfo = Mage::getModel('core/email_info')
+                        ->addTo($email);
+
+                    $mailer->addEmailInfo($emailInfo);
+                }
             }
-            $subject .= "Unable to push update from " . $_storeName . " into SalesForce";
-            if ($mail->getSubject() !== null) {
-                $mail->clearSubject();
-            }
-            $mail->setSubject($subject);
+
+            // Set all required params and send emails
+            $mailer
+                ->setSender(Mage::getStoreConfig(self::XML_PATH_EMAIL_IDENTITY))
+                ->setTemplateId(Mage::getStoreConfig(self::XML_PATH_EMAIL_TEMPLATE))
+                ->setTemplateParams(array(
+                    'prefix'  => Mage::helper('tnw_salesforce/config')->getFailEmailPrefix(),
+                    'content' => file_get_contents($filename)
+                ));
+
+            /** @var $emailQueue Mage_Core_Model_Email_Queue */
+            $emailQueue = Mage::getModel('core/email_queue');
+            $emailQueue->setEntityId(null)
+                ->setEntityType('salesforce_notification')
+                ->setEventType('new_salesforce_notification');
 
             try {
-                $mail->send();
+                $mailer->setQueue($emailQueue)->send();
                 $ioAdapter = Mage::getModel('tnw_salesforce/varien_io_file');
                 $ioAdapter->rm($filename);
 
@@ -71,6 +84,20 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
                 );
             }
         }
+
+        return true;
     }
 
+    /**
+     * @param $configPath
+     * @return array|bool
+     */
+    protected function _getEmails($configPath)
+    {
+        $data = Mage::getStoreConfig($configPath);
+        if (!empty($data)) {
+            return explode(',', $data);
+        }
+        return false;
+    }
 }

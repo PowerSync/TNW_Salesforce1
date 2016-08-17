@@ -399,6 +399,7 @@ class TNW_Salesforce_Helper_Bulk_Creditmemo extends TNW_Salesforce_Helper_Salesf
         $this->_cache['bulkJobs'] = array(
             $this->_magentoEntityName       => array('Id' => NULL),
             lcfirst($this->getItemsField()) => array('Id' => NULL),
+            'orderToActivate'               => array('Id' => NULL),
             'notes'                         => array('Id' => NULL),
         );
 
