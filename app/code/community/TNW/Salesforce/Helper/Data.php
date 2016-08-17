@@ -93,8 +93,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const DEFAULT_ENTITY_OWNER = 'salesforce_customer/sync/default_owner';
 
     /* Contact Us Config */
-    const CUSTOMER_INTEGRATION_FORM = 'salesforce_customer/contactus/customer_form_enable';
-    const CUSTOMER_TASK_ASSIGNEE = 'salesforce_customer/contactus/customer_form_assigned';
+    const CUSTOMER_INTEGRATION_FORM = 'salesforce_contactus/general/customer_form_enable';
+    const CUSTOMER_TASK_ASSIGNEE = 'salesforce_contactus/general/customer_form_assigned';
 
     /* Contacts & Accounts */
     const CUSTOMER_DEFAULT_ACCOUNT = 'salesforce_customer/contact/customer_account'; // Deprecated
