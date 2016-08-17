@@ -603,6 +603,14 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
     }
 
     /**
+     * @return bool
+     */
+    protected function isNotesEnabled()
+    {
+        return Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoiceNotes();
+    }
+
+    /**
      * @param $notes Mage_Sales_Model_Order_Invoice_Comment
      * @throws Exception
      */

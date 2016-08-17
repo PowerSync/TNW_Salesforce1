@@ -598,7 +598,7 @@
             </groups>
         </salesforce>
         <salesforce_customer translate="label" module="tnw_salesforce">
-            <label>Customer Configuration</label>
+            <label>Customers</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
             <sort_order>200</sort_order>
@@ -607,7 +607,7 @@
             <show_in_store>1</show_in_store>
             <groups>
                 <sync translate="label" module="tnw_salesforce">
-                    <label>Contacts &amp; Accounts Integration</label>
+                    <label>General</label>
                     <sort_order>10</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
@@ -633,30 +633,6 @@
                             <show_in_store>0</show_in_store>
                             <comment>Allow Salesforce to create new customers, if those do not exist in Magento</comment>
                         </new_customer>
-                        <single_account_sync_customer  translate="label">
-                            <label>Force into a single Account</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>22</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[ Force Magento to assign all Contacts to a single Account in Salesforce ]]></comment>
-                        </single_account_sync_customer>
-                        <single_account_select translate="label">
-                            <label>Single Account</label>
-                            <frontend_type>select</frontend_type>
-                            <frontend_class>tnw-ajax-find-select-account</frontend_class>
-                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_account</frontend_model>
-                            <sort_order>23</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <depends>
-                                <single_account_sync_customer>1</single_account_sync_customer>
-                            </depends>
-                            <comment><![CDATA[ Account for synchronization ]]></comment>
-                        </single_account_select>
                         <customer_groups_all translate="label">
                             <label>Sync all groups</label>
                             <frontend_type>select</frontend_type>
@@ -697,37 +673,6 @@
                                 created
                             </comment>
                         </default_owner>
-
-                        <contact_asignee>
-                            <label>Contact Asignee</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_contact_asignee</source_model>
-                            <sort_order>50</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>How Magento should handle ownership of a Contact, if a new Contact is created in Salesforce for an existing Account</comment>
-                        </contact_asignee>
-
-                        <merge_duplicates>
-                            <label>Automated merge (BETA)</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>60</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[
-                                PowerSync will attempt to merge duplicate contact/account/lead records automatically
-                                <br />
-                                <strong style="color: red;">IMPORTANT!</strong>
-                                Don't enable this feature if you plan use a lot of Salesforce leads or contacts non-related to the Magento customers.
-                                In this case synchronization productivity can be too low!
-                                ]]></comment>
-                            <tooltip>Limitation described for this field related to the restrictions of Salesforce API query</tooltip>
-                        </merge_duplicates>
-
-
                         <use_address_picklist translate="label">
                             <label>Use Country/State picklist data</label>
                             <frontend_type>select</frontend_type>
@@ -746,8 +691,145 @@
 
                     </fields>
                 </sync>
+                <account>
+                    <label>Salesforce Accounts</label>
+                    <sort_order>20</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <single_account_sync_customer  translate="label">
+                            <label>Force into a single Account</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>22</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[ Force Magento to assign all Contacts to a single Account in Salesforce ]]></comment>
+                        </single_account_sync_customer>
+                        <single_account_select translate="label">
+                            <label>Single Account</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>tnw-ajax-find-select-account</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_account</frontend_model>
+                            <sort_order>23</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <single_account_sync_customer>1</single_account_sync_customer>
+                            </depends>
+                            <comment><![CDATA[ Account for synchronization ]]></comment>
+                        </single_account_select>
+                        <merge_duplicates>
+                            <label>Automated merge (BETA)</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                PowerSync will attempt to merge duplicate account records automatically
+                                <br />
+                                <strong style="color: red;">IMPORTANT!</strong>
+                                Don't enable this feature if you plan use a lot of Salesforce leads or contacts non-related to the Magento customers.
+                                In this case synchronization productivity can be too low!
+                                ]]></comment>
+                            <tooltip>Limitation described for this field related to the restrictions of Salesforce API query</tooltip>
+                        </merge_duplicates>
+                    </fields>
+                </account>
+                <contact>
+                    <label>Salesforce Contacts</label>
+                    <sort_order>30</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <customer_single_record_type translate="label">
+                            <label>Record Types</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_account_recordtypes</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                If you wish to force all your customers from your store to a single record type, pick the default one to use. By default PowerSync will try to establish customer type automatically and will use both record types.
+                            ]]></comment>
+                        </customer_single_record_type>
+                        <customer_account translate="label">
+                            <label>Default B2B Account Type</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_account_business</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Please select appropriate business account record type, contact your Salesforce rep
+                                if you don't know!
+                            </comment>
+                        </customer_account>
+                        <customer_person translate="label">
+                            <label>Use Person Accounts</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                Does your Salesforce allow you to create Person Accounts [<a href="https://na14.salesforce.com/help/doc/en/account_person.htm" target="_blank">?</a>]
+                            ]]></comment>
+                        </customer_person>
+                        <customer_person_account translate="label">
+                            <label>Default B2C Account Type</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_account_person</source_model>
+                            <depends>
+                                <customer_person>1</customer_person>
+                            </depends>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                <strong style="color: red;">IMPORTANT!</strong> Only enabled if your Salesforce supports Person Accounts, contact your Salesforce representative for more information
+                            ]]></comment>
+                        </customer_person_account>
+                        <contact_asignee>
+                            <label>Contact Asignee</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_contact_asignee</source_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>How Magento should handle ownership of a Contact, if a new Contact is created in Salesforce for an existing Account</comment>
+                        </contact_asignee>
+                        <merge_duplicates>
+                            <label>Automated merge (BETA)</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                PowerSync will attempt to merge duplicate contact records automatically
+                                <br />
+                                <strong style="color: red;">IMPORTANT!</strong>
+                                Don't enable this feature if you plan use a lot of Salesforce leads or contacts non-related to the Magento customers.
+                                In this case synchronization productivity can be too low!
+                                ]]></comment>
+                            <tooltip>Limitation described for this field related to the restrictions of Salesforce API query</tooltip>
+                        </merge_duplicates>
+                    </fields>
+                </contact>
                 <lead_config translate="label" module="tnw_salesforce">
-                    <label>Leads Integration</label>
+                    <label>Salesforce Leads</label>
                     <sort_order>50</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
@@ -837,103 +919,44 @@
                             <show_in_store>0</show_in_store>
                             <comment>Have Salesforce send an email notification when Lead is converted</comment>
                         </email_notification>
-                    </fields>
-                </lead_config>
-                <contactus translate="label" module="tnw_salesforce">
-                    <label>Contact Us Form</label>
-                    <sort_order>100</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <customer_form_enable translate="label">
-                            <label>Enable contact form integration</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_contactus</source_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Create a Salesforce task when contacts form is submitted</comment>
-                        </customer_form_enable>
-                        <customer_form_assigned translate="label">
-                            <label>Task Assignee</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
-                            <depends>
-                                <customer_form_enable>1</customer_form_enable>
-                            </depends>
-                            <comment><![CDATA[
-                                Default assignee of the task
-                            ]]></comment>
-                        </customer_form_assigned>
-                    </fields>
-                </contactus>
-                <contact translate="label" module="tnw_salesforce">
-                    <label>B2B &amp; B2C Account Configuration</label>
-                    <sort_order>150</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <customer_single_record_type translate="label">
-                            <label>Record Types</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_recordtypes</source_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[
-                                If you wish to force all your customers from your store to a single record type, pick the default one to use. By default PowerSync will try to establish customer type automatically and will use both record types.
-                            ]]></comment>
-                        </customer_single_record_type>
-                        <customer_account translate="label">
-                            <label>Default B2B Account Type</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_business</source_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Please select appropriate business account record type, contact your Salesforce rep
-                                if you don't know!
-                            </comment>
-                        </customer_account>
-                        <customer_person translate="label">
-                            <label>Use Person Accounts</label>
+                        <merge_duplicates>
+                            <label>Automated merge (BETA)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>30</sort_order>
+                            <sort_order>110</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
-                                Does your Salesforce allow you to create Person Accounts [<a href="https://na14.salesforce.com/help/doc/en/account_person.htm" target="_blank">?</a>]
-                            ]]></comment>
-                        </customer_person>
-                        <customer_person_account translate="label">
-                            <label>Default B2C Account Type</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_person</source_model>
-                            <depends>
-                                <customer_person>1</customer_person>
-                            </depends>
-                            <sort_order>40</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[
-                                <strong style="color: red;">IMPORTANT!</strong> Only enabled if your Salesforce supports Person Accounts, contact your Salesforce representative for more information
-                            ]]></comment>
-                        </customer_person_account>
+                                PowerSync will attempt to merge duplicate lead records automatically
+                                <br />
+                                <strong style="color: red;">IMPORTANT!</strong>
+                                Don't enable this feature if you plan use a lot of Salesforce leads or contacts non-related to the Magento customers.
+                                In this case synchronization productivity can be too low!
+                                ]]></comment>
+                            <tooltip>Limitation described for this field related to the restrictions of Salesforce API query</tooltip>
+                        </merge_duplicates>
                     </fields>
-                </contact>
+                </lead_config>
+                <account_catchall translate="label" module="tnw_salesforce">
+                    <label>Advanced Lookup</label>
+                    <sort_order>155</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <domains translate="label">
+                            <label>Account Matching Rules</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_model>tnw_salesforce/adminhtml_domains</frontend_model>
+                            <backend_model>adminhtml/system_config_backend_serialized</backend_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </domains>
+                    </fields>
+                </account_catchall>
                 <newsletter_config translate="label" module="tnw_salesforce">
                     <label>Newsletter Subscribers</label>
                     <sort_order>300</sort_order>
@@ -1081,7 +1104,7 @@
             </groups>
         </salesforce_product>
         <salesforce_order translate="label" module="tnw_salesforce">
-            <label>Sales Configuration</label>
+            <label>Sales</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
             <sort_order>400</sort_order>
@@ -1361,7 +1384,18 @@
                             </depends>
                             <comment><![CDATA[ When order is placed for an existing Opportunity, change opportunity Stage Name to the one selected ]]></comment>
                         </opportunity_to_order_status>
-
+                    </fields>
+                </customer_opportunity>
+                <abandoned_carts>
+                    <label>Abandoned Carts</label>
+                    <sort_order>140</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <comment><![CDATA[
+                        <strong style="color: red;">IMPORTANT:</strong> Abandoned cart sync feature is available for Order-to-Order sync types.
+                    ]]></comment>
+                    <fields>
                         <abandoned_cart_enabled translate="label">
                             <label>Capture Abandoned Carts</label>
                             <frontend_type>select</frontend_type>
@@ -1371,7 +1405,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                             </depends>
                             <comment><![CDATA[ Capture Abandoned Carts in Magento for registered customers ]]></comment>
                         </abandoned_cart_enabled>
@@ -1385,7 +1422,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1401,7 +1441,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1419,7 +1462,10 @@
                             <show_in_store>0</show_in_store>
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1437,7 +1483,10 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1458,12 +1507,15 @@
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <abandoned_customer_opportunity_role_enable>1</abandoned_customer_opportunity_role_enable>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <order_or_opportunity separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>Order</value>
+                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                         </abandoned_customer_integration_opp>
                     </fields>
-                </customer_opportunity>
+                </abandoned_carts>
                 <opportunity_cart translate="label" module="tnw_salesforce">
                     <label>Order Fees</label>
                     <sort_order>150</sort_order>
@@ -1605,67 +1657,98 @@
 
                     </fields>
                 </shopping_cart>
-                <invoice_configuration translate="label" module="tnw_salesforce">
-                    <label>Invoice Configuration</label>
-                    <sort_order>250</sort_order>
+                <customer_view>
+                    <label>Customer View</label>
+                    <sort_order>370</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>0</show_in_store>
                     <fields>
-                        <invoice_sync_enable translate="label">
-                            <label>Enable Integration</label>
+                        <opportunity_display>
+                            <label>Opportunity Display</label>
                             <frontend_type>select</frontend_type>
                             <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <backend_model>tnw_salesforce/config_invoice_backend_sync_enable</backend_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable automated invoice synchronization</comment>
-                        </invoice_sync_enable>
+                            <comment>Show / Hide Opportunities linked to a customer on the Magento Admin > Customer Detail page</comment>
+                        </opportunity_display>
+                        <opportunity_filter>
+                            <label>Opportunity Filter</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_opportunity_filter</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[<b>a Customer</b> - only Opportunities linked to this customer will be displayed<br>
+                            <b>an Account</b> - all Opportunities from an Account will be displayed]]></comment>
+                            <depends>
+                                <opportunity_display>1</opportunity_display>
+                            </depends>
+                        </opportunity_filter>
                     </fields>
-                </invoice_configuration>
-                <shipment_configuration translate="label" module="tnw_salesforce">
-                    <label>Shipment Configuration</label>
-                    <sort_order>350</sort_order>
+                </customer_view>
+            </groups>
+        </salesforce_order>
+        <salesforce_contactus translate="label" module="tnw_salesforce">
+            <label>Contact Us</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>500</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <general translate="label" module="tnw_salesforce">
+                    <label>General</label>
+                    <sort_order>100</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>0</show_in_store>
                     <fields>
-                        <sync_enabled translate="label comment" module="tnw_salesforce">
-                            <label>Enable Integration</label>
+                        <customer_form_enable translate="label">
+                            <label>Enable contact form integration</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <backend_model>tnw_salesforce/config_shipment_backend_sync_enable</backend_model>
-                            <sort_order>100</sort_order>
+                            <source_model>tnw_salesforce/config_contactus</source_model>
+                            <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable automated shipment synchronization</comment>
-                        </sync_enabled>
-                    </fields>
-                </shipment_configuration>
-                <creditmemo_configuration translate="label" module="tnw_salesforce">
-                    <label>Credit Memo Configuration</label>
-                    <sort_order>355</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <sync_enabled translate="label comment" module="tnw_salesforce">
-                            <label>Enable Integration</label>
+                            <comment>Create a Salesforce task when contacts form is submitted</comment>
+                        </customer_form_enable>
+                        <customer_form_assigned translate="label">
+                            <label>Task Assignee</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <sort_order>100</sort_order>
+                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable automated Credit Memo synchronization</comment>
-                        </sync_enabled>
+                            <frontend_class>chosen-select</frontend_class>
+                            <depends>
+                                <customer_form_enable>1</customer_form_enable>
+                            </depends>
+                            <comment><![CDATA[
+                                Default assignee of the task
+                            ]]></comment>
+                        </customer_form_assigned>
                     </fields>
-                </creditmemo_configuration>
+                </general>
+            </groups>
+        </salesforce_contactus>
+        <salesforce_promotion>
+            <label>Promotions</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>600</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
                 <salesforce_campaigns>
-                    <label>Campaigns</label>
+                    <label>Shopping Cart Price Rules</label>
                     <sort_order>360</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
@@ -1724,6 +1807,128 @@
                     </fields>
                 </salesforce_campaigns>
             </groups>
-        </salesforce_order>
+        </salesforce_promotion>
+        <salesforce_invoice>
+            <label>Invoices</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>700</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <invoice_configuration translate="label" module="tnw_salesforce">
+                    <label>General</label>
+                    <sort_order>250</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enable translate="label">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <backend_model>tnw_salesforce/config_invoice_backend_sync_enable</backend_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated invoice synchronization</comment>
+                        </sync_enable>
+                        <notes_synchronize>
+                            <label>Synchronize Notes</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable the ability to synchronize invoice notes with Salesforce</comment>
+                        </notes_synchronize>
+                    </fields>
+                </invoice_configuration>
+            </groups>
+        </salesforce_invoice>
+        <salesforce_shipment>
+            <label>Shipments</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>700</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <shipment_configuration translate="label" module="tnw_salesforce">
+                    <label>General</label>
+                    <sort_order>350</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enabled translate="label comment" module="tnw_salesforce">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <backend_model>tnw_salesforce/config_shipment_backend_sync_enable</backend_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated shipment synchronization</comment>
+                        </sync_enabled>
+                        <notes_synchronize>
+                            <label>Synchronize Notes</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable the ability to synchronize shipment notes with Salesforce</comment>
+                        </notes_synchronize>
+                    </fields>
+                </shipment_configuration>
+            </groups>
+        </salesforce_shipment>
+        <salesforce_creditmemo>
+            <label>Credit Memos</label>
+            <tab>tnw</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>800</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <creditmemo_configuration translate="label" module="tnw_salesforce">
+                    <label>General</label>
+                    <sort_order>355</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enabled translate="label comment" module="tnw_salesforce">
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated Credit Memo synchronization</comment>
+                        </sync_enabled>
+                        <notes_synchronize>
+                            <label>Synchronize Notes</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable the ability to synchronize credit memo notes with Salesforce</comment>
+                        </notes_synchronize>
+                    </fields>
+                </creditmemo_configuration>
+            </groups>
+        </salesforce_creditmemo>
     </sections>
 </config>

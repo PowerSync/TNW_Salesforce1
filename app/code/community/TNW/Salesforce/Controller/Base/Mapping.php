@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Author: Tech-N-Web, LLC (dba PowerSync)
  * Email: support@powersync.biz
@@ -6,7 +7,6 @@
  * Date: 30.11.15
  * Time: 15:36
  */
-
 class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_Action
 {
     /**
@@ -194,13 +194,53 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
                 unset($data['default_code']);
             }
-
-            // Save
-            $model = Mage::getModel('tnw_salesforce/mapping');
-            $model->setData($data)
-                ->setId($this->getRequest()->getParam('mapping_id'));
-
             try {
+
+                // Save
+                $model = Mage::getModel('tnw_salesforce/mapping');
+                $model->setData($data)
+                    ->setId($this->getRequest()->getParam('mapping_id'));
+
+                $fields = Mage::helper('tnw_salesforce/salesforce_data')
+                    ->describeTable($model->getSfObject());
+
+                /**
+                 * try to find SF field
+                 */
+                $appropriatedField = false;
+                foreach ($fields as $field) {
+                    if (strtolower($field->name) == strtolower($model->getSfField())) {
+                        $appropriatedField = $field;
+                        break;
+                    }
+                }
+                if ($appropriatedField) {
+                    $errors = array();
+                    if (
+                        !$appropriatedField->createable
+                        && (
+                            $model->getMagentoSfType() == TNW_Salesforce_Model_Mapping::SET_TYPE_INSERT
+                            || $model->getMagentoSfType() == TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT
+                        )
+                    ) {
+                        $errors[] = ($model->getSfField() . ' Salesforce field is not creatable. Cannot be used for Magento-to-Salesforce UPSERT/INSERT actions');
+                    }
+
+                    if (
+                        !$appropriatedField->updateable
+                        && (
+                            $model->getMagentoSfType() == TNW_Salesforce_Model_Mapping::SET_TYPE_UPDATE
+                            || $model->getMagentoSfType() == TNW_Salesforce_Model_Mapping::SET_TYPE_UPSERT
+                        )
+                    ) {
+                        $errors[] = ($model->getSfField() . ' Salesforce field is not updatable. Cannot be used for Magento-to-Salesforce UPSERT/UPDATE actions');
+                    }
+
+                    if (!empty($errors)) {
+                        throw new Exception(implode("<br/>", $errors));
+                    }
+                }
+
                 $model->save();
 
                 Mage::getSingleton('adminhtml/session')
@@ -214,8 +254,7 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
 
                 $this->_redirect('*/*/');
                 return;
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $message = ($e instanceof Zend_Db_Statement_Exception && $e->getCode() == 23000)
                     ? 'Attribute Code must be unique' : $e->getMessage();
 
