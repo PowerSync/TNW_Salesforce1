@@ -568,9 +568,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         if (Mage::helper('tnw_salesforce')->doPushShoppingCart()) {
             $this->_prepareEntityItems();
         }
-        if (Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
+
+        if ($this->isNotesEnabled()) {
             $this->_prepareNotes();
         }
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isNotesEnabled()
+    {
+        return Mage::helper('tnw_salesforce')->isOrderNotesEnabled();
     }
 
     protected function _prepareEntity()
@@ -732,7 +741,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
-            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
         }
 
         // Unset attribute
@@ -890,7 +899,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
-            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
         }
 
         // Unset attribute

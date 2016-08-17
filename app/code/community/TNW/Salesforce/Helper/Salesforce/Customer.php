@@ -307,7 +307,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             /** @var tnw_salesforce_model_mapping $_mapping */
             foreach ($_mappingCollection as $_mapping) {
-                $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+                $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
             }
 
             // Unset attribute
@@ -594,7 +594,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
-            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
         }
 
         // Unset attribute
@@ -1211,12 +1211,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $customers[] = $this->getEntityCache($id);
         }
 
-        if (Mage::helper('tnw_salesforce/config_customer')->mergeDuplicates()) {
-            foreach (array_chunk($customers, TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT) as $_customers) {
-                Mage::helper('tnw_salesforce/salesforce_data_user')
-                    ->setCache($this->_cache)
-                    ->processDuplicates($_customers);
-            }
+        foreach (array_chunk($customers, TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT) as $_customers) {
+            Mage::helper('tnw_salesforce/salesforce_data_user')
+                ->setCache($this->_cache)
+                ->processDuplicates($_customers);
         }
 
         $this->_cache['customerToWebsite'] = $this->_websites;

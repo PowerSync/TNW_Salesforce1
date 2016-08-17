@@ -7,10 +7,12 @@
 class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
 {
     const NEW_CUSTOMER = 'salesforce_customer/sync/new_customer';
-    const CONFIG_CONTACT_ASIGNEE = 'salesforce_customer/sync/contact_asignee';
-    const CONFIG_MERGE_DUPLICATES = 'salesforce_customer/sync/merge_duplicates';
-    const CONFIG_ACCOUNT_SYNC_CUSTOMER = 'salesforce_customer/sync/single_account_sync_customer';
-    const CONFIG_ACCOUNT_SELECT = 'salesforce_customer/sync/single_account_select';
+    const CONFIG_CONTACT_ASIGNEE = 'salesforce_customer/contact/contact_asignee';
+    const CONFIG_MERGE_ACCOUNT_DUPLICATES = 'salesforce_customer/account/merge_duplicates';
+    const CONFIG_MERGE_CONTACT_DUPLICATES = 'salesforce_customer/contact/merge_duplicates';
+    const CONFIG_MERGE_LEAD_DUPLICATES = 'salesforce_customer/lead_config/merge_duplicates';
+    const CONFIG_ACCOUNT_SYNC_CUSTOMER = 'salesforce_customer/account/single_account_sync_customer';
+    const CONFIG_ACCOUNT_SELECT = 'salesforce_customer/account/single_account_select';
     const CONFIG_ACCOUNT_PICKLIST = 'salesforce_customer/sync/use_address_picklist';
     const CONFIG_OPPORTUNITY_VIEW = 'salesforce_customer/customer_view/opportunity_display';
     const CONFIG_OPPORTUNITY_FILTER = 'salesforce_customer/customer_view/opportunity_filter';
@@ -49,11 +51,27 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     }
 
     /**
-     * @return mixed
+     * @return bool
      */
-    public function mergeDuplicates()
+    public function mergeAccountDuplicates()
     {
-        return $this->getStoreConfig(self::CONFIG_MERGE_DUPLICATES);
+        return $this->getStoreConfig(self::CONFIG_MERGE_ACCOUNT_DUPLICATES);
+    }
+
+    /**
+     * @return bool
+     */
+    public function mergeContactDuplicates()
+    {
+        return $this->getStoreConfig(self::CONFIG_MERGE_CONTACT_DUPLICATES);
+    }
+
+    /**
+     * @return bool
+     */
+    public function mergeLeadDuplicates()
+    {
+        return $this->getStoreConfig(self::CONFIG_MERGE_LEAD_DUPLICATES);
     }
 
     /**

@@ -705,7 +705,6 @@
                 <customer_sync_enable>0</customer_sync_enable>
                 <new_customer>1</new_customer>
                 <customer_groups_all>1</customer_groups_all>
-                <contact_asignee>0</contact_asignee>
             </sync>
             <lead_config>
                 <customer_integration>0</customer_integration>
@@ -713,10 +712,8 @@
                 <use_lead_source_filter>0</use_lead_source_filter>
                 <email_notification>0</email_notification>
             </lead_config>
-            <contactus>
-                <customer_form_enable>0</customer_form_enable>
-            </contactus>
             <contact>
+                <contact_asignee>0</contact_asignee>
                 <customer_person>0</customer_person>
             </contact>
             <newsletter_config>
@@ -747,12 +744,14 @@
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
-                <abandoned_cart_enabled>0</abandoned_cart_enabled>
-                <abandoned_close_time_after>14</abandoned_close_time_after>
-                <abandoned_cart_state>Committed</abandoned_cart_state>
                 <order_opportunity_status>Closed Won</order_opportunity_status>
                 <opportunity_to_order_status>Closed Won</opportunity_to_order_status>
             </customer_opportunity>
+            <abandoned_carts>
+                <abandoned_cart_enabled>0</abandoned_cart_enabled>
+                <abandoned_close_time_after>14</abandoned_close_time_after>
+                <abandoned_cart_state>Committed</abandoned_cart_state>
+            </abandoned_carts>
             <opportunity_cart>
                 <use_tax_product>0</use_tax_product>
                 <use_shipping_product>0</use_shipping_product>
@@ -762,19 +761,30 @@
                 <use_product_campaign_assignment>0</use_product_campaign_assignment>
                 <orders_bundle_item_sync>0</orders_bundle_item_sync>
             </shopping_cart>
-            <invoice_configuration>
-                <invoice_sync_enable>0</invoice_sync_enable>
-            </invoice_configuration>
-            <shipment_configuration>
-                <sync_enabled>0</sync_enabled>
-            </shipment_configuration>
-            <creditmemo_configuration>
-                <sync_enabled>0</sync_enabled>
-            </creditmemo_configuration>
             <customer_view>
                 <opportunity_display>0</opportunity_display>
                 <opportunity_filter>customer</opportunity_filter>
             </customer_view>
         </salesforce_order>
+        <salesforce_contactus>
+            <general>
+                <customer_form_enable>0</customer_form_enable>
+            </general>
+        </salesforce_contactus>
+        <salesforce_invoice>
+            <invoice_configuration>
+                <sync_enable>0</sync_enable>
+            </invoice_configuration>
+        </salesforce_invoice>
+        <salesforce_shipment>
+            <shipment_configuration>
+                <sync_enabled>0</sync_enabled>
+            </shipment_configuration>
+        </salesforce_shipment>
+        <salesforce_creditmemo>
+            <creditmemo_configuration>
+                <sync_enabled>0</sync_enabled>
+            </creditmemo_configuration>
+        </salesforce_creditmemo>
     </default>
 </config>
