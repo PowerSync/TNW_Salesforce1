@@ -730,6 +730,7 @@
         <salesforce_order>
             <general>
                 <order_sync_enable>0</order_sync_enable>
+                <order_create_reverse_sync>0</order_create_reverse_sync>
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
                 <notes_synchronize>1</notes_synchronize>
@@ -773,5 +774,15 @@
                 <opportunity_filter>customer</opportunity_filter>
             </customer_view>
         </salesforce_order>
+        <payment>
+            <tnw_import>
+                <active>0</active>
+                <model>tnw_salesforce/order_payment_method_import</model>
+                <order_status>pending</order_status>
+                <title>TNW Import</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </tnw_import>
+        </payment>
     </default>
 </config>

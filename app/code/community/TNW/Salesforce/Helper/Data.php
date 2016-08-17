@@ -43,6 +43,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /* Order Config */
     const ORDER_SYNC = 'salesforce_order/general/order_sync_enable';
+    const ORDER_CREATE_REVERSE_SYNC = 'salesforce_order/general/order_create_reverse_sync';
     const ORDER_PRODUCT_SYNC = 'salesforce_order/general/order_product_enable';
     const ORDER_MULTI_CURRENCY = 'salesforce_order/currency/multi_currency';
     const ORDER_STATUS_ALL = 'salesforce_order/general/order_status_all';
@@ -367,6 +368,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function isEnabledOrderSync()
     {
         return $this->getStoreConfig(self::ORDER_SYNC);
+    }
+
+    public function isOrderCreateReverseSync()
+    {
+        return $this->getStoreConfig(self::ORDER_CREATE_REVERSE_SYNC);
     }
 
     // Is order synchronization enabled
