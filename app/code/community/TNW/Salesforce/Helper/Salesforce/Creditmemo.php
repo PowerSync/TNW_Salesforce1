@@ -683,6 +683,14 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     }
 
     /**
+     * @return bool
+     */
+    protected function isNotesEnabled()
+    {
+        return Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoNotes();
+    }
+
+    /**
      * @param $notes Mage_Sales_Model_Order_Creditmemo_Comment
      * @throws Exception
      */

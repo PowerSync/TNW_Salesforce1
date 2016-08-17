@@ -268,10 +268,35 @@
                             <action>adminhtml/system_config/edit/section/salesforce_order</action>
                             <sort_order>40</sort_order>
                         </order_config>
+                        <contactus>
+                            <title>Contact Us Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_contactus</action>
+                            <sort_order>50</sort_order>
+                        </contactus>
+                        <promotion translate="title" module="tnw_salesforce">
+                            <title>Promotions Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_promotion</action>
+                            <sort_order>60</sort_order>
+                        </promotion>
+                        <invoice translate="title" module="tnw_salesforce">
+                            <title>Invoices Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_invoice</action>
+                            <sort_order>70</sort_order>
+                        </invoice>
+                        <shipment translate="title" module="tnw_salesforce">
+                            <title>Shipments Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_shipment</action>
+                            <sort_order>80</sort_order>
+                        </shipment>
+                        <creditmemo translate="title" module="tnw_salesforce">
+                            <title>Credit Memos Configuration</title>
+                            <action>adminhtml/system_config/edit/section/salesforce_creditmemo</action>
+                            <sort_order>90</sort_order>
+                        </creditmemo>
                         <account_matching>
                             <title>Account Matching Rules</title>
                             <action>adminhtml/salesforce_account_matching</action>
-                            <sort_order>50</sort_order>
+                            <sort_order>100</sort_order>
                         </account_matching>
                     </children>
                 </setup>
@@ -936,6 +961,26 @@
                                         <title>Salesforce Sales Configuration</title>
                                         <sort_order>10400</sort_order>
                                     </salesforce_order>
+                                    <salesforce_contactus translate="title" module="tnw_salesforce">
+                                        <title>Contact Us Configuration</title>
+                                        <sort_order>10500</sort_order>
+                                    </salesforce_contactus>
+                                    <salesforce_promotion translate="title" module="tnw_salesforce">
+                                        <title>Promotions Configuration</title>
+                                        <sort_order>10600</sort_order>
+                                    </salesforce_promotion>
+                                    <salesforce_invoice translate="title" module="tnw_salesforce">
+                                        <title>Invoices Configuration</title>
+                                        <sort_order>10700</sort_order>
+                                    </salesforce_invoice>
+                                    <salesforce_shipment translate="title" module="tnw_salesforce">
+                                        <title>Shipments Configuration</title>
+                                        <sort_order>10800</sort_order>
+                                    </salesforce_shipment>
+                                    <salesforce_creditmemo translate="title" module="tnw_salesforce">
+                                        <title>Credit Memos Configuration</title>
+                                        <sort_order>10900</sort_order>
+                                    </salesforce_creditmemo>
                                 </children>
                             </config>
                         </children>

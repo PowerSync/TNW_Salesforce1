@@ -100,4 +100,23 @@ class TNW_Salesforce_Helper_Bulk_Campaign_Catalogrule extends TNW_Salesforce_Hel
             "result" => $this->_cache['responses'][strtolower($this->getManyParentEntityType())]
         ));
     }
+
+    /**
+     * @return bool
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        $this->_cache['bulkJobs'] = array(
+            $this->_magentoEntityName       => array('Id' => NULL),
+            lcfirst($this->getItemsField()) => array('Id' => NULL),
+            'notes'                         => array('Id' => NULL),
+        );
+
+        $this->_cache['batch'] = array();
+        $this->_cache['batchCache'] = array();
+
+        return $this->check();
+    }
 }
