@@ -6,8 +6,8 @@
 
 class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
 {
-    const CARRIER_MATCHING = 'salesforce_order/shipment_configuration/carrier_matching';
-    const SYNC_SHIPMENT_ENABLED = 'salesforce_order/shipment_configuration/sync_enabled';
+    const CARRIER_MATCHING = 'salesforce_shipment/shipment_configuration/carrier_matching';
+    const SYNC_SHIPMENT_ENABLED = 'salesforce_shipment/shipment_configuration/sync_enabled';
 
     protected $_mySforceConnection = NULL;
     protected $_oli = NULL;

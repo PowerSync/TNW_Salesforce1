@@ -568,9 +568,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         if (Mage::helper('tnw_salesforce')->doPushShoppingCart()) {
             $this->_prepareEntityItems();
         }
-        if (Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
+
+        if ($this->isNotesEnabled()) {
             $this->_prepareNotes();
         }
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isNotesEnabled()
+    {
+        return Mage::helper('tnw_salesforce')->isOrderNotesEnabled();
     }
 
     protected function _prepareEntity()
