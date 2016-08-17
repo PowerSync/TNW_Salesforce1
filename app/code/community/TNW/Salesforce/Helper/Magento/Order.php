@@ -270,6 +270,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         ));
 
         $this->_updateMappedEntityFields($object, $order, $mappings)
+            ->_updateNotes($object, $order)
             ->_updateStatus($object, $order)
             ->saveEntities();
 
@@ -421,6 +422,48 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $this->addEntityToSave('Order', $order);
         }
 
+        return $this;
+    }
+
+    /**
+     * @param $object
+     * @param $order Mage_Sales_Model_Order
+     * @return $this
+     */
+    protected function _updateNotes($object, $order)
+    {
+        if (!property_exists($object, 'Notes')) {
+            return $this;
+        }
+
+        if (empty($object->Notes->records)) {
+            return $this;
+        }
+
+        $salesforceIds = $order->getStatusHistoryCollection()->walk('getSalesforceId');
+        foreach ($object->Notes->records as $record) {
+            if (empty($record->Body)) {
+                continue;
+            }
+
+            $noteId = array_search($record->Id, $salesforceIds);
+            if ($noteId === false) {
+                $history = Mage::getModel('sales/order_status_history')
+                    ->setStatus($order->getStatus())
+                    ->setComment($record->Body)
+                    ->setSalesforceId($record->Id)
+                    ->setEntityName(Mage_Sales_Model_Order::HISTORY_ENTITY_NAME);
+
+                $order->addStatusHistory($history);
+            }
+            else {
+                $order->getStatusHistoryCollection()
+                    ->getItemById($noteId)
+                    ->setComment($record->Body);
+            }
+        }
+
+        $this->addEntityToSave('Order', $order);
         return $this;
     }
 
