@@ -549,6 +549,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         /** @var Mage_Catalog_Model_Product $product */
         $product       = $this->_getObjectByEntityItemType($_entityItem, 'Product');
 
+        $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
+        $hasReductionOrder = !empty($this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder)
+            ? $this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder : false;
+        if (empty($this->_obj->Id) && $hasReductionOrder) {
+            $this->logNotice('Product SKU ('.$product->getSku().') was skipped and not attached to the order. Please remove all Reduction orders from Salesforce manually, then manually re-sync this Order followed by all Credit Memos for this Order.');
+            return;
+        }
+
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($_entityNumber);
 
         $_isDescription = property_exists($this->_obj, 'Description');
@@ -766,21 +774,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          */
         if ($this->getUpdateCustomer()) {
             $this->syncEntityCustomers();
-        }
-
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
-            $entity         = $this->_loadEntityByCache($key, $number);
-            $entityNumber   = $this->_getEntityNumber($entity);
-            $lookupKey      = sprintf('%sLookup', $this->_salesforceEntityName);
-
-            if (isset($this->_cache[$lookupKey][$entityNumber])
-                && property_exists($this->_cache[$lookupKey][$entityNumber], 'hasReductionOrder')
-                && $this->_cache[$lookupKey][$entityNumber]->hasReductionOrder
-            ) {
-                // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logNotice('NOTICE: Skipping, cannot syn order with reduction orders. Order #'.$number);
-                $this->_skippedEntity[$key] = $key;
-            }
         }
 
         /**
@@ -1100,7 +1093,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      *
      * @param Mage_Sales_Model_Order_Item $_item
      */
-    protected function _prepareStoreId(Mage_Sales_Model_Order_Item $_item)
+    protected function _prepareStoreId($_item)
     {
         $itemId = $this->getProductIdFromCart($_item);
         $_order = $_item->getOrder();

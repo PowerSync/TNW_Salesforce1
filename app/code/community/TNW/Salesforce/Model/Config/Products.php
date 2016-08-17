@@ -15,23 +15,25 @@ class TNW_Salesforce_Model_Config_Products
             if (Mage::helper('tnw_salesforce')->isWorking()) {
                 $this->_getProducts($type);
             }
-            if (!$this->_product && !empty($this->_productsLookup)) {
-                $this->_product = array();
+
+            $this->_product = array();
+            $this->_product[] = array(
+                'label' => 'Generate new product',
+                'value' => 0
+            );
+
+            if (!empty($this->_productsLookup)) {
                 foreach ($this->_productsLookup as $key => $_obj) {
                     $this->_product[] = array(
                         'label' => $_obj,
                         'value' => $key
                     );
                 }
-            } else if (empty($this->_productsLookup)) {
-                $this->_product[] = array(
-                    'label' => 'No products found',
-                    'value' => 0
-                );
             }
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
         }
+
         return $this->_product;
     }
 

@@ -8,27 +8,57 @@ class TNW_Salesforce_Model_Newsletter_Observer
 {
     /**
      * @param $observer
-     * @return bool
      */
     public function triggerCreateEvent($observer)
     {
+        /** @var Mage_Newsletter_Model_Subscriber $subscriber */
         $subscriber = $observer->getSubscriber();
-        /** @var TNW_Salesforce_Helper_Salesforce_Newslettersubscriber  $manualSync */
-        $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
-        $manualSync->newsletterSubscription(array($subscriber));
+
+        $this->_syncSubscriber($subscriber);
     }
 
     /**
      * @param $observer
-     * @return bool
      */
     public function triggerDeleteEvent($observer)
     {
         /** @var Mage_Newsletter_Model_Subscriber $subscriber */
         $subscriber = $observer->getSubscriber();
         $subscriber->setSubscriberStatus(Mage_Newsletter_Model_Subscriber::STATUS_UNSUBSCRIBED);
-        /** @var TNW_Salesforce_Helper_Salesforce_Newslettersubscriber  $manualSync */
+
+        $this->_syncSubscriber($subscriber);
+    }
+
+    /**
+     * @param $subscriber Mage_Newsletter_Model_Subscriber
+     * @return bool|mixed
+     */
+    protected function _syncSubscriber($subscriber)
+    {
+        /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber */
         $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
-        $manualSync->newsletterSubscription(array($subscriber));
+        if (!$manualSync->validateSync()) {
+            return false;
+        }
+
+        $issetCustomer = is_numeric($subscriber->getCustomerId()) && (bool)$subscriber->getCustomerId();
+        if (!$issetCustomer) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace(sprintf("Subscription synchronization skipped for subscriber (%s), customer is not registered.", $subscriber->getEmail()));
+
+            return false;
+        }
+
+        /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Customer */
+        $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
+        if (!$manualSync->reset()) {
+            return false;
+        }
+
+        if (!$manualSync->massAdd(array($subscriber->getCustomerId()))) {
+            return false;
+        }
+
+        return $manualSync->process();
     }
 }

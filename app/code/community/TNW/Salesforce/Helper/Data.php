@@ -103,8 +103,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CUSTOMER_PERSON_ACCOUNT = 'salesforce_customer/contact/customer_person';
     const PERSON_RECORD_TYPE = 'salesforce_customer/contact/customer_person_account';
 
-    const CUSTOMER_CATCHALL_ACCOUNT = 'salesforce_customer/account_catchall/domains'; // Deprecated
-
     /* Leads */
     const LEAD_CONVERTED_STATUS = 'salesforce_customer/lead_config/customer_lead_status';
     const LEAD_CONVERTED_OWNER = 'salesforce_customer/lead_config/customer_lead_owner';
@@ -463,6 +461,18 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function isOrderRulesEnabled()
     {
         return $this->getStoreConfig(self::CAMPAIGNS_SYNC);
+    }
+
+    public function getSyncOrderRulesButtonData()
+    {
+        /** @var Mage_SalesRule_Model_Rule $rule */
+        $rule  = Mage::registry('current_promo_quote_rule');
+        $url   = Mage::getModel('adminhtml/url')->getUrl('*/salesforcesync_campaign_salesrulesync/sync', array('salesrule_id' => $rule->getId()));
+
+        return array(
+            'label'   => Mage::helper('tnw_salesforce')->__('Synchronize w/ Salesforce'),
+            'onclick' => "setLocation('$url')",
+        );
     }
 
     public function isCampaignsCreateAutomate()

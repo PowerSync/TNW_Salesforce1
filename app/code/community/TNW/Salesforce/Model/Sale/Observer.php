@@ -153,7 +153,16 @@ class TNW_Salesforce_Model_Sale_Observer
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
-        if ($order->getData('status') == $order->getOrigData('status')) {
+        /**
+         * is it order address save event
+         */
+        if ($address = $observer->getEvent()->getAddress()) {
+            if ($address instanceof Mage_Sales_Model_Order_Address) {
+                $order = $address->getOrder();
+            }
+        }
+
+        if (!$address && $order->getData('status') == $order->getOrigData('status')) {
             return; // Disabled
         }
 
@@ -187,6 +196,14 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function triggerSalesforceEvent($observer)
     {
+        if (
+            !Mage::helper('tnw_salesforce')->isEnabled()
+            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
+        ) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+            return; // Disabled
+        }
+
         if (!Mage::helper('tnw_salesforce')->canPush()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled

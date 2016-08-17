@@ -238,7 +238,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     /**
      * Prepare Store Id for upsert
      *
-     * @param Mage_Sales_Model_Quote $_item
+     * @param Mage_Sales_Model_Quote_Item $_item
      */
     protected function _prepareStoreId($_item) {
         $itemId = $this->getProductIdFromCart($_item);
