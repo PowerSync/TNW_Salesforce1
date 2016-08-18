@@ -189,20 +189,29 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getRecordTypeByEntity($entity)
     {
         try {
-            if (!is_object($this->getClient())) {
-                return $this->_noConnectionArray;
+            $_useCache = Mage::app()->useCache('tnw_salesforce');
+            $cache = Mage::app()->getCache();
+
+            $_data = array();
+            $serializeData = $cache->load("tnw_salesforce_" . strtolower($entity) . "_record_type");
+            if (!empty($serializeData)) {
+                $_data = unserialize($serializeData);
             }
 
-            $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='$entity'";
-            $allRules = $this->getClient()->query(($query));
+            if (empty($_data)) {
+                $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='$entity'";
+                $allRules = $this->getClient()->query($query);
 
-            if ($allRules && property_exists($allRules, 'done') && $allRules->done) {
-                if (!property_exists($allRules, 'records') || $allRules->size < 1) {
-                    return array();
+                if ($allRules && property_exists($allRules, 'records') && $allRules->size >= 1) {
+                    $_data = $allRules->records;
+                }
+
+                if ($_useCache) {
+                    $cache->save(serialize($_data), "tnw_salesforce_" . strtolower($entity) . "_record_type", array("TNW_SALESFORCE"));
                 }
             }
 
-            return $allRules->records;
+            return $_data;
         } catch (Exception $e) {
             return array();
         }
