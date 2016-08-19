@@ -43,7 +43,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /* Order Config */
     const ORDER_SYNC = 'salesforce_order/general/order_sync_enable';
-    const ORDER_CREATE_REVERSE_SYNC = 'salesforce_order/general/order_create_reverse_sync';
     const ORDER_PRODUCT_SYNC = 'salesforce_order/general/order_product_enable';
     const ORDER_MULTI_CURRENCY = 'salesforce_order/currency/multi_currency';
     const ORDER_STATUS_ALL = 'salesforce_order/general/order_status_all';
@@ -59,6 +58,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /* Order Customer Role */
     const ORDER_OBJECT = 'salesforce_order/customer_opportunity/order_or_opportunity';
+    const ORDER_CREATE_REVERSE_SYNC = 'salesforce_order/customer_opportunity/order_create_reverse_sync';
     const CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
     const CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/customer_integration_opp';
 
