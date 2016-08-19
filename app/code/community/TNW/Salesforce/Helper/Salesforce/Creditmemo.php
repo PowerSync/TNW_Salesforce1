@@ -874,11 +874,16 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     }
 
     /**
-     * @param $_entity Mage_Sales_Model_Order
+     * @param $_entity Mage_Sales_Model_Order_Creditmemo
      */
     protected function _prepareEntityItemAfter($_entity)
     {
-        $this->_applyAdditionalFees($_entity);
+        $iDs = array_values($_entity->getOrder()->getCreditmemosCollection()->walk('getId'));
+        sort($iDs, SORT_NUMERIC);
+
+        if (array_search($_entity->getId(), $iDs) === 0) {
+            $this->_applyAdditionalFees($_entity);
+        }
     }
 
 
