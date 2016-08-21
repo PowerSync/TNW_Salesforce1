@@ -1337,6 +1337,20 @@
                             </depends>
                         </opportunity_default_record_type>
 
+                        <order_create_reverse_sync translate="label">
+                            <label>Create order when the reverse synchronization</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>90</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable create order when the reverse synchronization</comment>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </order_create_reverse_sync>
+
                         <draft_order_status translate="label">
                             <label>Draft Order Status</label>
                             <frontend_type>select</frontend_type>
