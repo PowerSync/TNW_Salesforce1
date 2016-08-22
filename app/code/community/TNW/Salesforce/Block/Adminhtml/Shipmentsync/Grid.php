@@ -88,6 +88,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
         $this->addColumn('created_at', array(
             'header'    => Mage::helper('sales')->__('Date Shipped'),
             'index'     => 'created_at',
+            'filter_index' => 'main_table.created_at',
             'type'      => 'datetime',
         ));
 
@@ -111,6 +112,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
         $this->addColumn('total_qty', array(
             'header' => Mage::helper('sales')->__('Total Qty'),
             'index' => 'total_qty',
+            'filter_index' => 'main_table.total_qty',
             'type'  => 'number',
         ));
 
@@ -140,7 +142,6 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
             $this->setMassactionIdField('entity_id');
             $this->getMassactionBlock()->setFormFieldName('shipment_ids');
-            $this->getMassactionBlock()->setUseSelectAll(false);
 
             $this->getMassactionBlock()->addItem('sync', array(
                 'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
