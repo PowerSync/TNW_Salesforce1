@@ -588,15 +588,15 @@
                 </observers>
             </adminhtml_controller_salesrule_prepare_save>
 
-            <adminhtml_customer_save_after>
+            <adminhtml_customer_prepare_save>
                 <observers>
                     <tnw_salesforce_customer_prepare_save>
                         <type>singleton</type>
                         <class>tnw_salesforce/customer_observer</class>
-                        <method>afterSave</method>
+                        <method>prepareSave</method>
                     </tnw_salesforce_customer_prepare_save>
                 </observers>
-            </adminhtml_customer_save_after>
+            </adminhtml_customer_prepare_save>
         </events>
     </adminhtml>
     <frontend>

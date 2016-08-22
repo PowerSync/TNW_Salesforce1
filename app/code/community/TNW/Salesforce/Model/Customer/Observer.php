@@ -165,7 +165,7 @@ class TNW_Salesforce_Model_Customer_Observer
     /**
      * @param Varien_Event_Observer $observer
      */
-    public function afterSave($observer)
+    public function prepareSave($observer)
     {
         $saveAttributes = array(
             'salesforce_contact_owner_id',
@@ -188,7 +188,6 @@ class TNW_Salesforce_Model_Customer_Observer
             }
 
             $customer->setData($saveAttribute, $value);
-            $customer->getResource()->saveAttribute($customer, $saveAttribute);
         }
     }
 }
