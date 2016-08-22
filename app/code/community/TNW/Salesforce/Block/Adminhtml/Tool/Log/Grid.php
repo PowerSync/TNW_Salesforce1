@@ -103,4 +103,15 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
         ));
         return $this;
     }
+
+    /**
+     * Return row url for js event handlers
+     *
+     * @param Mage_Catalog_Model_Product|Varien_Object
+     * @return string
+     */
+    public function getRowUrl($item)
+    {
+        return '';
+    }
 }
