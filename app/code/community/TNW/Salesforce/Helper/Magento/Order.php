@@ -420,11 +420,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                     $newValue = $mapping->getDefaultValue();
                 }
 
-                $field = $mapping->getLocalFieldAttributeCode();
-                if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
-                    $entity->setData($field, $newValue);
-                    $this->addEntityToSave(sprintf('Order Item %s', $entity->getId()), $entity);
-                }
+                $entity->setData($mapping->getLocalFieldAttributeCode(), $newValue);
+                $this->addEntityToSave(sprintf('Order Item %s', $entity->getId()), $entity);
             }
         }
 
