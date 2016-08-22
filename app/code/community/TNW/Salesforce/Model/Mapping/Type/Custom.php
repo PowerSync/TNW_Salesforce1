@@ -61,6 +61,8 @@ class TNW_Salesforce_Model_Mapping_Type_Custom extends TNW_Salesforce_Model_Mapp
                  * Is it config path
                  */
                 if (substr_count($value, '/') > 1) {
+                    // Clear Default Value
+                    $this->_mapping->setDefaultValue(null);
                     $value = Mage::getStoreConfig($value);
                 }
 

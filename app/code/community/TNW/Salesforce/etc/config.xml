@@ -744,6 +744,7 @@
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
+                <order_create_reverse_sync>0</order_create_reverse_sync>
                 <order_opportunity_status>Closed Won</order_opportunity_status>
                 <opportunity_to_order_status>Closed Won</opportunity_to_order_status>
             </customer_opportunity>
@@ -786,5 +787,15 @@
                 <sync_enabled>0</sync_enabled>
             </creditmemo_configuration>
         </salesforce_creditmemo>
+        <payment>
+            <tnw_import>
+                <active>0</active>
+                <model>tnw_salesforce/order_payment_method_import</model>
+                <order_status>pending</order_status>
+                <title>TNW Import</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </tnw_import>
+        </payment>
     </default>
 </config>

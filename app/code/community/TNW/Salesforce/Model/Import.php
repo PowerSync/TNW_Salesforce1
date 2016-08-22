@@ -68,7 +68,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
                     return Mage::helper('tnw_salesforce/magento_creditmemo');
                 }
 
-                return Mage::getModel('tnw_salesforce/import_order');
+                return Mage::helper('tnw_salesforce/magento_order');
             case TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT:
                 return Mage::helper('tnw_salesforce/magento_invoice');
             case TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT:
@@ -87,14 +87,12 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
     {
         $_association = array();
         $importProcessor = $this->getProcessor();
-        if ($importProcessor) {
+        if ($importProcessor instanceof TNW_Salesforce_Helper_Magento_Abstract) {
             Mage::getSingleton('core/session')->setFromSalesForce(true);
-            if ($importProcessor instanceof TNW_Salesforce_Helper_Magento_Abstract) {
-                $importProcessor->process($this->getObject());
-                $_association = $importProcessor->getSalesforceAssociationAndClean();
-            } else {
-                $importProcessor->setObject($this->getObject())->process();
-            }
+
+            $importProcessor->process($this->getObject());
+            $_association = $importProcessor->getSalesforceAssociationAndClean();
+
             Mage::getSingleton('core/session')->setFromSalesForce(false);
         }
 
