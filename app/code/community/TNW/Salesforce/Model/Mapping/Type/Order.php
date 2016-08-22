@@ -35,6 +35,9 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
 
             case 'price_book':
                 return $this->convertPriceBook($_entity);
+
+            case 'owner_salesforce_id':
+                return $this->convertOwnerSalesforceId($_entity);
         }
 
         return parent::_prepareValue($_entity);
@@ -277,5 +280,18 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         }
 
         return $pricebook2Id;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return string
+     */
+    public function convertOwnerSalesforceId($_entity)
+    {
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner();
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $currentOwner  = $_entity->getData($attributeCode);
+
+        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
     }
 }

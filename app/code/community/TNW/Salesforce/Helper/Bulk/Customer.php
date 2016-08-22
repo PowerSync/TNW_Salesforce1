@@ -339,7 +339,17 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
         $_email = $this->_cache['entitiesUpdating'][$_cid];
         if ((string)$_item->success == "true") {
+            $accountToUpsert = $this->_getAccountToUpsert($_cid);
+            if (empty($accountToUpsert)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Account upsert not found!');
+
+                return false;
+            }
+
             $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = (string)$_item->id;
+            $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountOwnerId
+                = $this->_prepareOwnerId($accountToUpsert->OwnerId);
 
             if (!property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'LeadId')) {
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = NULL;
@@ -352,10 +362,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 0;
             $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount = 0;
 
-            if (
-                array_key_exists($_cid, $this->_cache['accountsToUpsert']['Id'])
-                && property_exists($this->_cache['accountsToUpsert']['Id'][$_cid], 'PersonEmail')
-            ) {
+            if (property_exists($accountToUpsert, 'PersonEmail')) {
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = (string)$_item->id;
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount = 1;
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
@@ -368,16 +375,15 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = ' ';
                     }
                 }
-            } elseif (array_key_exists($_cid, $this->_cache['accountsToUpsert']['Id'])
-                && !property_exists($this->_cache['accountsToUpsert']['Id'][$_cid], 'PersonEmail')
-            ) {
+            }
+            else {
                 /**
                  * If lead has not Company name - set Account name for correct converting
                  */
                 foreach ($this->_cache['leadsToUpsert'] as $_upsertOn => $_objects) {
                     if (array_key_exists($_cid, $_objects)) {
                         if (!property_exists($_objects[$_cid], 'Company')) {
-                            $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = $this->_cache['accountsToUpsert']['Id'][$_cid]->Name;
+                            $this->_cache['leadsToUpsert'][$_upsertOn][$_cid]->Company = $accountToUpsert->Name;
                         }
                     }
                 }
@@ -395,10 +401,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 && !$this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount
             ) {
                 $this->_cache['contactsToUpsert'][$this->_magentoId][$_cid]->AccountId = (string)$_item->id;
-            } else if (
-                array_key_exists('Id', $this->_cache['accountsToUpsert'])
-                && array_key_exists($_cid, $this->_cache['accountsToUpsert']['Id'])
-            ) {
+            }
+            else {
                 // This is a Person Account
                 $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = (string)$_item->id;
                 if (!$this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
@@ -408,6 +412,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
 
             $_customer = $this->getEntityCache($_cid);
             $_customer->setSalesforceId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId);
+            $_customer->setSalesforceAccountOwnerId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountOwnerId);
             if (!$this->_cache['toSaveInMagento'][$_websiteId][$_email]->IsPersonAccount) {
                 $_customer->setSalesforceAccountId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId);
                 $_customer->setSalesforceIsPerson(true);
@@ -416,24 +421,21 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
             /**
              * Update lookup for lead convertation
              */
-            if (isset($this->_cache['accountsToUpsert']['Id'][$_cid])) {
+            $accountToUpsert->Id = (string)$_item->id;
+            $this->_cache['accountLookup'][0][$_email] = $accountToUpsert;
+            if (property_exists($this->_cache['accountLookup'][0][$_email], $this->_magentoId)) {
+                $this->_cache['accountLookup'][0][$_email]->MagentoId = $this->_cache['accountLookup'][0][$_email]->{$this->_magentoId};
+            } else {
+                $this->_cache['accountLookup'][0][$_email]->MagentoId = $_cid;
+            }
 
-                $this->_cache['accountsToUpsert']['Id'][$_cid]->Id = (string)$_item->id;
-                $this->_cache['accountLookup'][0][$_email] = $this->_cache['accountsToUpsert']['Id'][$_cid];
-                if (property_exists($this->_cache['accountLookup'][0][$_email], $this->_magentoId)) {
-                    $this->_cache['accountLookup'][0][$_email]->MagentoId = $this->_cache['accountLookup'][0][$_email]->{$this->_magentoId};
-                } else {
-                    $this->_cache['accountLookup'][0][$_email]->MagentoId = $_cid;
+            if (property_exists($accountToUpsert, 'PersonEmail')) {
+                if (!isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email])) {
+                    $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = new stdClass();
                 }
+                $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id = (string)$_item->id;
+                $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsPersonAccount = true;
 
-                if (property_exists($this->_cache['accountsToUpsert']['Id'][$_cid], 'PersonEmail')) {
-                    if (!isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email])) {
-                        $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email] = new stdClass();
-                    }
-                    $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id = (string)$_item->id;
-                    $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsPersonAccount = true;
-
-                }
             }
 
             return true;
@@ -501,6 +503,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 if ((string)$_item->success == "true") {
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = (string)$_item->id;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
+                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
+                        = $this->_prepareOwnerId($this->_cache['leadsToUpsert'][$_on][$_cid]->OwnerId);
 
                     $_customer = $this->getEntityCache($_cid);
                     $_customer->setSalesforceLeadId($this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId);
@@ -577,6 +581,9 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                         }
 
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $contactId;
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
+                            = $this->_prepareOwnerId($this->_cache['contactsToUpsert'][$_on][$_cid]->OwnerId);
+
                         if (
                             !(property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId')
                               && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId)
@@ -782,5 +789,28 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                 }
             }
         }
+    }
+
+    /**
+     * @param $customerId
+     * @return stdClass
+     */
+    protected function _getAccountToUpsert($customerId)
+    {
+        $accountToUpsert = isset($this->_cache['accountsToUpsert']['Id'][$customerId])
+            ? $this->_cache['accountsToUpsert']['Id'][$customerId]
+            : null;
+
+        if (empty($accountToUpsert)) {
+            foreach ($this->_cache['accountsToUpsertDuplicates'] as $_customerId=>$_customerIds) {
+                if (!in_array($customerId, $_customerIds)) {
+                    continue;
+                }
+
+                $accountToUpsert = $this->_cache['accountsToUpsert']['Id'][$_customerId];
+            }
+        }
+
+        return $accountToUpsert;
     }
 }

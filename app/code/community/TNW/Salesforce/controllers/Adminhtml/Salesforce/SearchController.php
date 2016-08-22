@@ -75,6 +75,37 @@ class TNW_Salesforce_Adminhtml_Salesforce_SearchController extends Mage_Adminhtm
             'items' => $result
         ));
     }
+
+    public function userAction()
+    {
+        $query = $this->getRequest()->getQuery('q');
+        if (empty($query)) {
+            $this->_sendJson(array());
+            return;
+        }
+
+        $curPage = $this->getRequest()->getQuery('page', 1);
+
+        /** @var TNW_Salesforce_Model_Api_Entity_Resource_User_Collection $collection */
+        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/user_collection')
+            ->addFieldToFilter('Name', array('like' => "%$query%"))
+            ->setPageSize(TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE)
+            ->setCurPage($curPage);
+
+        $result = array();
+        /** @var TNW_Salesforce_Model_Api_Entity_Account $item */
+        foreach ($collection as $item) {
+            $result[] = array(
+                'id'    => $item->getId(),
+                'text'  => $item->getData('Name'),
+            );
+        }
+
+        $this->_sendJson(array(
+            'totalRecords' => $collection->getSize(),
+            'items' => $result
+        ));
+    }
     
     /**
      * @param $json
