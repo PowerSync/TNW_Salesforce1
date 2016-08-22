@@ -182,7 +182,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                     continue;
                 }
 
-                $items[$product->getId()] = array('qty'=>$record->Quantity);
+                $items[$product->getId()] = array('qty'=>$record->Quantity, 'salesforce_id'=>$record->Id);
                 $buyRequest = new Varien_Object($items[$product->getId()]);
                 $params = array('files_prefix' => 'item_' . $product->getId() . '_');
                 $buyRequest = $productHelper->addParamsToBuyRequest($buyRequest, $params);
@@ -246,6 +246,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
             try {
                 $order = $orderCreate->createOrder();
+
+                /** @var Mage_Sales_Model_Order_Item $item */
+                foreach ($order->getItemsCollection() as $item) {
+                    $request = $item->getProductOptionByCode('info_buyRequest');
+                    $item->setData('salesforce_id', $request['salesforce_id']);
+                    $this->addEntityToSave(sprintf('Order Item %s', $item->getId()), $item);
+                }
             } catch (Exception $e) {
                 $message = $e->getMessage();
                 if (empty($message)) {
@@ -270,6 +277,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         ));
 
         $this->_updateMappedEntityFields($object, $order, $mappings)
+            ->_updateMappedEntityItemFields($object, $order, (bool) $_mMagentoId)
             ->_updateNotes($object, $order)
             ->_updateStatus($object, $order)
             ->saveEntities();
@@ -373,7 +381,58 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
-     * @param $object
+     * @param $object stdClass
+     * @param $order Mage_Sales_Model_Order
+     * @param bool $isUpdate
+     * @return $this
+     */
+    protected function _updateMappedEntityItemFields($object, $order, $isUpdate = true)
+    {
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
+        $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addObjectToFilter('OrderItem')
+            ->addFilterTypeSM($isUpdate)
+            ->firstSystem();
+
+        /** @var Mage_Sales_Model_Resource_Order_Item_Collection $_orderItemCollection */
+        $_orderItemCollection = $order->getItemsCollection();
+        $hasSalesforceId      = $_orderItemCollection->walk('getSalesforceId');
+
+        foreach ($object->OrderItems->records as $record) {
+            $orderItemId = array_search($record->Id, $hasSalesforceId);
+            if (false === $orderItemId) {
+                continue;
+            }
+
+            /** @var Mage_Sales_Model_Order_Item $entity */
+            $entity = $_orderItemCollection->getItemById($orderItemId);
+
+            /** @var $mapping TNW_Salesforce_Model_Mapping */
+            foreach ($mappings as $mapping) {
+                if ($mapping->getLocalFieldType() != 'Order Item') {
+                    continue;
+                }
+
+                $newValue = property_exists($record, $mapping->getSfField())
+                    ? $record->{$mapping->getSfField()} : null;
+
+                if (empty($newValue)) {
+                    $newValue = $mapping->getDefaultValue();
+                }
+
+                $field = $mapping->getLocalFieldAttributeCode();
+                if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
+                    $entity->setData($field, $newValue);
+                    $this->addEntityToSave(sprintf('Order Item %s', $entity->getId()), $entity);
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param $object stdClass
      * @param $order Mage_Sales_Model_Order
      * @return $this
      */
