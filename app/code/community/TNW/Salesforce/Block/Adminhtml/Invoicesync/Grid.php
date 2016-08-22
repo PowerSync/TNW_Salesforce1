@@ -156,7 +156,6 @@ class TNW_Salesforce_Block_Adminhtml_Invoicesync_Grid extends Mage_Adminhtml_Blo
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
             $this->setMassactionIdField('entity_id');
             $this->getMassactionBlock()->setFormFieldName('invoice_ids');
-            $this->getMassactionBlock()->setUseSelectAll(false);
 
             $this->getMassactionBlock()->addItem(
                 'sync', array(
