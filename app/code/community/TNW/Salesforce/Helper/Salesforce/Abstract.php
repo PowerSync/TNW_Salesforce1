@@ -460,7 +460,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             ->setHeaders('Content-Type: application/xml')
             ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
 
-        return simplexml_load_string($_client->request()->getBody());
+        $response = $_client->request()->getBody();
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Bulk. Processing result. Reply received on url: %s \nData: %s", $_client->getUri(true), $response));
+
+        return simplexml_load_string($response);
     }
 
     /**
@@ -480,7 +484,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             ->setHeaders('Content-Type: application/xml')
             ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId());
 
-        return simplexml_load_string($_client->request()->getBody());
+        $response = $_client->request()->getBody();
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Bulk. Processing result. Reply received on url: %s \nData: %s", $_client->getUri(true), $response));
+
+        return simplexml_load_string($response);
     }
 
     /**
