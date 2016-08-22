@@ -275,7 +275,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     'contact_salesforce_id' => $_customer->getData('salesforce_id'),
                     'account_salesforce_id' => $_customer->getData('salesforce_account_id'),
                     'sf_insync'             => 1,
-                    'salesforce_id'         => $_result->id
+                    'salesforce_id'         => $_result->id,
+                    'owner_salesforce_id'   => $this->_cache['ordersToUpsert'][$_orderNum]->OwnerId
                 ));
 
                 $_order->getResource()->save($_order);

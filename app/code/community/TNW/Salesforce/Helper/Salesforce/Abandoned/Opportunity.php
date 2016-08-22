@@ -162,9 +162,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
         }
 
-        // assign owner id to opportunity
-        $this->_assignOwnerIdToOpp();
-
         $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
         try {
             Mage::dispatchEvent("tnw_salesforce_opportunity_send_before", array(

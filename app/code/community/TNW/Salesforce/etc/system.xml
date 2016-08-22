@@ -938,25 +938,6 @@
                         </merge_duplicates>
                     </fields>
                 </lead_config>
-                <account_catchall translate="label" module="tnw_salesforce">
-                    <label>Advanced Lookup</label>
-                    <sort_order>155</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <domains translate="label">
-                            <label>Account Matching Rules</label>
-                            <frontend_type>select</frontend_type>
-                            <frontend_model>tnw_salesforce/adminhtml_domains</frontend_model>
-                            <backend_model>adminhtml/system_config_backend_serialized</backend_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                        </domains>
-                    </fields>
-                </account_catchall>
                 <newsletter_config translate="label" module="tnw_salesforce">
                     <label>Newsletter Subscribers</label>
                     <sort_order>300</sort_order>
@@ -968,6 +949,7 @@
                             <label>Enable Integration</label>
                             <frontend_type>select</frontend_type>
                             <source_model>tnw_salesforce/config_newslettersync</source_model>
+                            <backend_model>tnw_salesforce/config_customer_backend_newsletter_enable</backend_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -1129,17 +1111,6 @@
                             <show_in_store>0</show_in_store>
                             <comment>Enable / Disable automated order synchronization</comment>
                         </order_sync_enable>
-
-                        <order_create_reverse_sync translate="label">
-                            <label>Create order when the reverse synchronization</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>12</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable create order when the reverse synchronization</comment>
-                        </order_create_reverse_sync>
 
                         <zero_order_sync_enable translate="label">
                             <label>Zero Total</label>
@@ -1353,6 +1324,34 @@
                             </depends>
                         </customer_integration_opp>
 
+                        <opportunity_default_record_type>
+                            <label>Default Record Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_opportunity</source_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Opportunity</order_or_opportunity>
+                            </depends>
+                        </opportunity_default_record_type>
+
+                        <order_create_reverse_sync translate="label">
+                            <label>Create order when the reverse synchronization</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>90</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable create order when the reverse synchronization</comment>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </order_create_reverse_sync>
+
                         <draft_order_status translate="label">
                             <label>Draft Order Status</label>
                             <frontend_type>select</frontend_type>
@@ -1361,7 +1360,7 @@
                                 Connector will place order in this status to make updates.<br />
                                 <span style="color:red;">IMPORTANT:</span> Status must be for "Draft" category and NOT in "Activated" status category.
                             ]]></comment>
-                            <sort_order>94</sort_order>
+                            <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
@@ -1375,7 +1374,7 @@
                             <frontend_type>select</frontend_type>
                             <frontend_class>chosen-select</frontend_class>
                             <source_model>tnw_salesforce/config_opportunity_state</source_model>
-                            <sort_order>95</sort_order>
+                            <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
@@ -1384,6 +1383,20 @@
                             </depends>
                             <comment><![CDATA[ When order is placed for an existing Opportunity, change opportunity Stage Name to the one selected ]]></comment>
                         </opportunity_to_order_status>
+
+                        <order_default_record_type>
+                            <label>Default Record Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_order</source_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <order_or_opportunity>Order</order_or_opportunity>
+                            </depends>
+                        </order_default_record_type>
                     </fields>
                 </customer_opportunity>
                 <abandoned_carts>
@@ -1657,39 +1670,6 @@
 
                     </fields>
                 </shopping_cart>
-                <customer_view>
-                    <label>Customer View</label>
-                    <sort_order>370</sort_order>
-                    <show_in_default>1</show_in_default>
-                    <show_in_website>1</show_in_website>
-                    <show_in_store>0</show_in_store>
-                    <fields>
-                        <opportunity_display>
-                            <label>Opportunity Display</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_yesnopro</source_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment>Show / Hide Opportunities linked to a customer on the Magento Admin > Customer Detail page</comment>
-                        </opportunity_display>
-                        <opportunity_filter>
-                            <label>Opportunity Filter</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_opportunity_filter</source_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[<b>a Customer</b> - only Opportunities linked to this customer will be displayed<br>
-                            <b>an Account</b> - all Opportunities from an Account will be displayed]]></comment>
-                            <depends>
-                                <opportunity_display>1</opportunity_display>
-                            </depends>
-                        </opportunity_filter>
-                    </fields>
-                </customer_view>
             </groups>
         </salesforce_order>
         <salesforce_contactus translate="label" module="tnw_salesforce">
@@ -1926,6 +1906,16 @@
                             <show_in_store>0</show_in_store>
                             <comment>Enable / Disable the ability to synchronize credit memo notes with Salesforce</comment>
                         </notes_synchronize>
+                        <default_record_type>
+                            <label>Default Record Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_order</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </default_record_type>
                     </fields>
                 </creditmemo_configuration>
             </groups>

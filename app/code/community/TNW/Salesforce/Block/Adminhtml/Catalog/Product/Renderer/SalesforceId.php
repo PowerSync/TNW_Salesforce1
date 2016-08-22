@@ -3,7 +3,7 @@
 /**
  * @method Varien_Data_Form_Element_Text getElement()
  */
-class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Product2
+class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_SalesforceId
     extends Mage_Adminhtml_Block_Catalog_Form_Renderer_Fieldset_Element
 {
     /**

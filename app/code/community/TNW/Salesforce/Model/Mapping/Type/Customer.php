@@ -23,14 +23,23 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
             case 'sf_company':
                 return $this->convertSfCompany($_entity);
+
             case 'id':
                 $value = $_entity->getId();
                 /**
                  * skip guest id
                  */
                 if (!is_numeric($value)) {
-                    return;
+                    return null;
                 }
+                break;
+
+            case 'salesforce_contact_owner_id':
+            case 'salesforce_account_owner_id':
+                return $this->convertSalesforceOwnerId($_entity);
+
+            case 'salesforce_lead_owner_id':
+                return $this->convertSalesforceLeadOwnerId($_entity);
         }
 
         return parent::_prepareValue($_entity);
@@ -162,5 +171,31 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
         }
 
         return '';
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    public function convertSalesforceOwnerId($_entity)
+    {
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner();
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $currentOwner  = $_entity->getData($attributeCode);
+
+        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    public function convertSalesforceLeadOwnerId($_entity)
+    {
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $currentOwner  = $_entity->getData($attributeCode);
+
+        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
     }
 }
