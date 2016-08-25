@@ -176,15 +176,25 @@
             </modules>
         </translate>
         <events>
-            <!-- Contact Us form event -->
-            <controller_action_postdispatch_contacts>
+            <!-- Contact Us form event, new version Magento >= 1.9 -->
+            <controller_action_postdispatch_contacts_index_post>
                 <observers>
                     <tnw_salesforce_customer_observer>
                         <class>tnw_salesforce/customer_observer</class>
                         <method>triggerWebToLead</method>
                     </tnw_salesforce_customer_observer>
                 </observers>
-            </controller_action_postdispatch_contacts>
+            </controller_action_postdispatch_contacts_index_post>
+
+            <!-- Contact Us form event, old version Magento <= 1.7 -->
+            <controller_action_postdispatch_contacts_contacts_post>
+                <observers>
+                    <tnw_salesforce_customer_observer>
+                        <class>tnw_salesforce/customer_observer</class>
+                        <method>triggerWebToLead</method>
+                    </tnw_salesforce_customer_observer>
+                </observers>
+            </controller_action_postdispatch_contacts_contacts_post>
 
             <!-- Newsletter Subscription: Create -->
             <newsletter_subscriber_save_commit_after>
