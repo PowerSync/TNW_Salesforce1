@@ -11,6 +11,7 @@
  * @method saveNotice($message)
  * @method saveWarning($message)
  * @method saveError($message)
+ * @method saveInfo($message)
  *
  */
 class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
@@ -197,6 +198,9 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                             break;
                         case 'WARNING':
                             $level = Zend_Log::WARN;
+                            break;
+                        case 'INFO':
+                            $level = Zend_Log::INFO;
                             break;
                         default:
                             $level = Zend_Log::DEBUG;
