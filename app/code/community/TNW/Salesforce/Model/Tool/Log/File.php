@@ -170,6 +170,9 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
                 case Zend_Log::CRIT:
                     $file = 'sf-email';
                     break;
+                case Zend_Log::INFO:
+                    $file = 'sf-info';
+                    break;
                 case Zend_Log::WARN:
                 case Zend_Log::NOTICE:
                 case Zend_Log::DEBUG:

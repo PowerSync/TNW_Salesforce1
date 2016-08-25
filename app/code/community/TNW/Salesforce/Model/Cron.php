@@ -109,6 +109,8 @@ class TNW_Salesforce_Model_Cron
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ...");
         Mage::getModel('tnw_salesforce/imports_bulk')->process();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ... done");
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'backgroundProcess'));
+
     }
 
     /**
@@ -209,6 +211,8 @@ class TNW_Salesforce_Model_Cron
             sprintf("Powersync background process for store (%s) and website id (%s): abandoned added to the queue",
                 Mage::helper('tnw_salesforce')->getStoreId(), Mage::helper('tnw_salesforce')->getWebsiteId()));
 
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'addAbandonedToQueue'));
+
         return true;
     }
 
@@ -236,6 +240,7 @@ class TNW_Salesforce_Model_Cron
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError($e->getMessage());
         }
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'syncCurrency'));
     }
 
     /**
@@ -312,6 +317,8 @@ class TNW_Salesforce_Model_Cron
         } else {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
         }
+
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
     }
 
     protected function _syncObjectForBulkMode()

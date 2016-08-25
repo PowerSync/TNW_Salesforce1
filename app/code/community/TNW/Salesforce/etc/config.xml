@@ -176,6 +176,27 @@
             </modules>
         </translate>
         <events>
+
+            <tnw_salesforce_cron_after>
+                <observers>
+                    <tnw_salesforce_sync_after>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/tool_observer</class>
+                        <method>logAvailableAPICalls</method>
+                    </tnw_salesforce_sync_after>
+                </observers>
+            </tnw_salesforce_cron_after>
+
+            <controller_action_postdispatch>
+                <observers>
+                    <tnw_salesforce_sync_after>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/tool_observer</class>
+                        <method>logAvailableAPICalls</method>
+                    </tnw_salesforce_sync_after>
+                </observers>
+            </controller_action_postdispatch>
+
             <!-- Contact Us form event, new version Magento >= 1.9 -->
             <controller_action_postdispatch_contacts_index_post>
                 <observers>
@@ -706,6 +727,7 @@
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
                 <log_file_read_limit>50</log_file_read_limit>
+                <log_api_call_statistic>0</log_api_call_statistic>
 
             </development_and_debugging>
 
