@@ -52,3 +52,7 @@
     opacity: 0;
     filter: alpha(opacity=0);
 }
+
+#salesforce_edit_form select {
+    width: 280px;
+}

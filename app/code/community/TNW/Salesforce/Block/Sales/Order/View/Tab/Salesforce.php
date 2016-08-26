@@ -55,9 +55,9 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
             ))
             ->setRenderer($renderer);
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Owner $rendererOwner */
+        /** @var TNW_Salesforce_Block_Adminhtml_Widget_Form_Renderer_Fieldset_Owner $rendererOwner */
         $rendererOwner = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_owner');
+            ->createBlock('tnw_salesforce/adminhtml_widget_form_renderer_fieldset_owner');
 
         $fieldset
             ->addField('owner_salesforce_id', 'text', array(

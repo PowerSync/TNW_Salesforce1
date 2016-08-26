@@ -3,9 +3,15 @@
 /**
  * @method Varien_Data_Form_Element_Text getElement()
  */
-class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Owner
-    extends Mage_Adminhtml_Block_Catalog_Form_Renderer_Fieldset_Element
+class TNW_Salesforce_Block_Adminhtml_Widget_Form_Renderer_Fieldset_Owner
+    extends Mage_Adminhtml_Block_Widget_Form_Renderer_Fieldset_Element
 {
+    protected function _construct()
+    {
+        $this->setTemplate('salesforce/form/renderer/fieldset/element.phtml');
+        Mage_Core_Block_Template::_construct();
+    }
+
     /**
      * Retrieve element html
      *
@@ -49,6 +55,6 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Owner
 
         $value = $this->getElement()->getValue();
         $currentLink = !empty($value) ? sprintf('%s/%s', $sfLink, $value) : '#';
-        return sprintf('<div style="position: relative;">%s<div style="position: absolute; right: -100px; top: 4px;"><a target="_blank" id="%s-link" href="%s">%s</a></div></div>', $field->toHtml(), $field->getId(), $currentLink, $this->__('View in Salesforce'));
+        return sprintf('<span style="position: relative;">%s<div style="position: absolute; right: -108px; top: -2px;"><a target="_blank" id="%s-link" href="%s">%s</a></div></span>', $field->toHtml(), $field->getId(), $currentLink, $this->__('View in Salesforce'));
     }
 }
