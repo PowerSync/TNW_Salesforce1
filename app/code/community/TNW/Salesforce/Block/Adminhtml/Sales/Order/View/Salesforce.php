@@ -19,16 +19,12 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Salesforce extends Mage_Ad
         $form->setUseContainer(true);
         $form->setFieldNameSuffix('order');
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Widget_Form_Renderer_Fieldset_Owner $rendererOwner */
-        $rendererOwner = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_widget_form_renderer_fieldset_owner');
+        $form->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
-        $form
-            ->addField('owner_salesforce_id', 'text', array(
-                'name' => 'owner_salesforce_id',
-                'selector'  => 'tnw-ajax-find-select-owner-info'
-            ))
-            ->setRenderer($rendererOwner);
+        $form->addField('owner_salesforce_id', 'owner', array(
+            'name'      => 'owner_salesforce_id',
+            'selector'  => 'tnw-ajax-find-select-owner-info'
+        ));
 
         $form->setValues($this->getOrder()->getData());
         $this->setForm($form);

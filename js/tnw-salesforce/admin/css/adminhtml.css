@@ -56,3 +56,11 @@
 #salesforce_edit_form select {
     width: 280px;
 }
+
+.tnw-owner-wrapper {
+    position: relative;
+}
+
+.tnw-owner-wrapper .tnw-owner-link {
+    position: absolute; right: -108px; top: -2px;
+}
