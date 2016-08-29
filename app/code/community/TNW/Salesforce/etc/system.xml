@@ -1884,7 +1884,7 @@
             </groups>
         </salesforce_shipment>
         <salesforce_creditmemo>
-            <label>Credit Memos</label>
+            <label>Credit Memo (BETA)</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
             <sort_order>800</sort_order>
@@ -1907,7 +1907,10 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable automated Credit Memo synchronization</comment>
+                            <comment><![CDATA[
+                            Enable / Disable automated Credit Memo synchronization.<br />
+                                    <strong style="color: red;">IMPORTANT!</strong> There are a few known issues around Salesforce object, ask your integrator before enabling this setting.
+                            ]]></comment>
                         </sync_enabled>
                         <notes_synchronize>
                             <label>Synchronize Notes</label>
