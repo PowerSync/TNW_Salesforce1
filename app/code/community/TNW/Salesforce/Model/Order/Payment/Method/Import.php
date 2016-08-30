@@ -3,6 +3,9 @@
 class TNW_Salesforce_Model_Order_Payment_Method_Import extends Mage_Payment_Model_Method_Abstract
 {
 
+    protected $_canUseCheckout         = false;
+    protected $_canUseForMultishipping = false;
+
     /**
      * Payment method code
      *
