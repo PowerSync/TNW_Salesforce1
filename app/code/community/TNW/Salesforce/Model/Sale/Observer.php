@@ -481,6 +481,10 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function quoteSubmitBefore($observer)
     {
+        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()) {
+            return; // Disabled
+        }
+
         $postOrder = Mage::app()->getRequest()->getPost('order');
         if (!$postOrder || empty($postOrder['owner_salesforce_id'])) {
             return;
