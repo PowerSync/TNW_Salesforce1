@@ -22,7 +22,6 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
 
         $this->addData(array(
             'label'    => null,
-            'no_span'  => true,
             'values'   => $cIdVal,
             'class'    => $this->getData('selector'),
             'onchange' => "document.getElementById('{$this->getId()}-link').href = '{$sfLink}/'+this.value",
