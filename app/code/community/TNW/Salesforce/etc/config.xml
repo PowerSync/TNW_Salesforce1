@@ -672,14 +672,14 @@
     </admin>
     <crontab>
         <jobs>
-            <tnw_salesforce_queue>
+            <tnw_m2sf_queue>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::processQueue</model></run>
-            </tnw_salesforce_queue>
-            <tnw_salesforce_m2sf>
+            </tnw_m2sf_queue>
+            <tnw_sf2m_bulk_queue>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::backgroundProcess</model></run>
-            </tnw_salesforce_m2sf>
+            </tnw_sf2m_bulk_queue>
 
             <tnw_salesforce_abandoned>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
