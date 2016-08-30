@@ -824,7 +824,7 @@
                 <active>0</active>
                 <model>tnw_salesforce/order_payment_method_import</model>
                 <order_status>pending</order_status>
-                <title>TNW Import</title>
+                <title>Captured in Salesforce</title>
                 <allowspecific>0</allowspecific>
                 <group>offline</group>
             </tnw_import>
