@@ -53,7 +53,7 @@
     filter: alpha(opacity=0);
 }
 
-#salesforce_edit_form select {
+.tnw-entry-salesforce select {
     width: 280px;
 }
 

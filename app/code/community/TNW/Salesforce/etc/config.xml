@@ -629,6 +629,15 @@
                     </tnw_salesforce_customer_prepare_save>
                 </observers>
             </adminhtml_customer_prepare_save>
+
+            <sales_model_service_quote_submit_before>
+                <observers>
+                    <tnw_salesforce_quote_submit_before>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>quoteSubmitBefore</method>
+                    </tnw_salesforce_quote_submit_before>
+                </observers>
+            </sales_model_service_quote_submit_before>
         </events>
     </adminhtml>
     <frontend>

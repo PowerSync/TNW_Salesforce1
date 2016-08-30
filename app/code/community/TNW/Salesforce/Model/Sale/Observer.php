@@ -475,4 +475,19 @@ class TNW_Salesforce_Model_Sale_Observer
         $request = $observer->getEvent()->getRequest();
         $this->assignToCampaign = $request->getParam('assign_to_campaign');
     }
+
+    /**
+     * @param $observer
+     */
+    public function quoteSubmitBefore($observer)
+    {
+        $postOrder = Mage::app()->getRequest()->getPost('order');
+        if (!$postOrder || empty($postOrder['owner_salesforce_id'])) {
+            return;
+        }
+
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $observer->getData('order');
+        $order->setData('owner_salesforce_id',  $postOrder['owner_salesforce_id']);
+    }
 }
