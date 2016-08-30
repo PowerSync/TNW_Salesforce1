@@ -8,6 +8,11 @@ class TNW_Salesforce_Model_Cron
     const CRON_LAST_RUN_TIMESTAMP_PATH = 'salesforce/syncronization/cron_last_run_timestamp';
 
     /**
+     * @var null
+     */
+    protected $_lockFile = null;
+
+    /**
      * @var array
      */
     protected $_productIds = array();
@@ -319,6 +324,80 @@ class TNW_Salesforce_Model_Cron
         }
 
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
+    }
+
+    /**
+     *
+     */
+    public function processBulkQueue()
+    {
+        set_time_limit(0);
+        @define('PHP_SAPI', 'cli');
+
+        /** @var TNW_Salesforce_Helper_Data $_helperData */
+        $_helperData = Mage::helper('tnw_salesforce');
+        if (!$_helperData->isEnabled()) {
+            return;
+        }
+
+        // Force SF connection if session is expired or not found
+        $_urlArray = explode('/', Mage::app()->getStore($_helperData->getStoreId())->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
+        $this->_serverName = (array_key_exists('2', $_urlArray)) ? $_urlArray[2] : NULL;
+        if (!$this->_serverName) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
+            return;
+        }
+
+        if (
+            !Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')
+            || !Mage::getSingleton('core/session')->getSalesforceUrl()
+        ) {
+            $_license = Mage::getSingleton('tnw_salesforce/license')->forceTest($this->_serverName);
+            if ($_license) {
+                /** @var TNW_Salesforce_Model_Connection $_client */
+                $_client = Mage::getSingleton('tnw_salesforce/connection');
+
+                // try to connect
+                if (!$_client->initConnection()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
+                    return;
+                }
+            }
+        }
+
+        $this->processLock();
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync Bulk background process for store (%s) and website id (%s) ...",
+            $_helperData->getStoreId(), $_helperData->getWebsiteId()));
+
+        $this->_syncObjectForBulkMode();
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processBulkQueue'));
+        $this->processUnlock();
+    }
+
+    /**
+     *
+     */
+    protected function processLock()
+    {
+        $file = Mage::getBaseDir('var') . DS . 'tnw_process.lock';
+        $this->_lockFile = fopen($file, 'w+');
+        if (!flock($this->_lockFile, LOCK_EX)) {
+            @fclose($this->_lockFile);
+            Mage::throwException(sprintf('The file "%s" blocked', $file));
+        }
+    }
+
+    /**
+     *
+     */
+    protected function processUnlock()
+    {
+        if (!is_resource($this->_lockFile)) {
+            return;
+        }
+
+        @flock($this->_lockFile, LOCK_UN);
+        @fclose($this->_lockFile);
     }
 
     protected function _syncObjectForBulkMode()
