@@ -1453,8 +1453,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         // Set Company Name
         if (!$_customer->getData('company') && isset($customerData['billing_address']['company'])) {
             $_customer->setData('company', $customerData['billing_address']['company']);
-        } elseif (!$_customer->getData('company') && !Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $_customer->setData('company', $_customer->getFirstname() . ' ' . $_customer->getLastname());
         }
 
         return $_customer;
