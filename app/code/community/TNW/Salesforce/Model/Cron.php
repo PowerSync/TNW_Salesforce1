@@ -5,12 +5,14 @@
  */
 class TNW_Salesforce_Model_Cron
 {
+    const SYNC_TYPE_OUTGOING           = 'outgoing';
+    const SYNC_TYPE_BULK               = 'bulk';
     const CRON_LAST_RUN_TIMESTAMP_PATH = 'salesforce/syncronization/cron_last_run_timestamp';
 
     /**
-     * @var null
+     * @var string
      */
-    protected $_lockFile = null;
+    protected $_syncType = self::SYNC_TYPE_OUTGOING;
 
     /**
      * @var array
@@ -250,17 +252,15 @@ class TNW_Salesforce_Model_Cron
 
     /**
      * this method is called instantly from cron script
-     *
-     * @return bool
      */
     public function processQueue()
     {
-        /** @var TNW_Salesforce_Helper_Data $_helperData */
-        $_helperData = Mage::helper('tnw_salesforce');
-
         set_time_limit(0);
         @define('PHP_SAPI', 'cli');
+        $this->_syncType = self::SYNC_TYPE_OUTGOING;
 
+        /** @var TNW_Salesforce_Helper_Data $_helperData */
+        $_helperData = Mage::helper('tnw_salesforce');
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync background process for store (%s) and website id (%s) ...",
             $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
@@ -333,6 +333,7 @@ class TNW_Salesforce_Model_Cron
     {
         set_time_limit(0);
         @define('PHP_SAPI', 'cli');
+        $this->_syncType = self::SYNC_TYPE_BULK;
 
         /** @var TNW_Salesforce_Helper_Data $_helperData */
         $_helperData = Mage::helper('tnw_salesforce');
@@ -365,39 +366,11 @@ class TNW_Salesforce_Model_Cron
             }
         }
 
-        $this->processLock();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync Bulk background process for store (%s) and website id (%s) ...",
             $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
         $this->_syncObjectForBulkMode();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processBulkQueue'));
-        $this->processUnlock();
-    }
-
-    /**
-     *
-     */
-    protected function processLock()
-    {
-        $file = Mage::getBaseDir('var') . DS . 'tnw_process.lock';
-        $this->_lockFile = fopen($file, 'w+');
-        if (!flock($this->_lockFile, LOCK_EX)) {
-            @fclose($this->_lockFile);
-            Mage::throwException(sprintf('The file "%s" blocked', $file));
-        }
-    }
-
-    /**
-     *
-     */
-    protected function processUnlock()
-    {
-        if (!is_resource($this->_lockFile)) {
-            return;
-        }
-
-        @flock($this->_lockFile, LOCK_UN);
-        @fclose($this->_lockFile);
     }
 
     protected function _syncObjectForBulkMode()
@@ -599,11 +572,12 @@ class TNW_Salesforce_Model_Cron
 
         // get entity id list from local storage
         /** @var TNW_Salesforce_Model_Mysql4_Queue_Storage_Collection $list */
-        $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
+        $list = Mage::getResourceModel('tnw_salesforce/queue_storage_collection')
             ->addSftypeToFilter($type)
             ->addSyncAttemptToFilter()
             ->addStatusNoToFilter('sync_running')
             ->addStatusNoToFilter('success')
+            ->addFieldToFilter('sync_type', array('eq' => $this->_syncType))
             ->setOrder('status', 'ASC')    // Leave 'error' at the end of the collection
         ;
 

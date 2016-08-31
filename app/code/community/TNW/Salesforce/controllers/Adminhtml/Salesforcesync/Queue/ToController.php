@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_Adminhtml_Controller_Action
+class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Adminhtml_Controller_Action
 {
     /**
      * Array of actions which can be processed without secret key validation
@@ -31,16 +31,18 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_QueuesyncController extends Mage_A
     public function indexAction()
     {
         if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')->addError("Please upgrade Powersync module to the enterprise version in order to use queue.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
+            Mage::getSingleton('adminhtml/session')
+                ->addError("Please upgrade Powersync module to the enterprise version in order to use queue.");
+
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
         }
         if (Mage::getModel('tnw_salesforce/queue')->getCollection()->count() > 0) {
             Mage::getSingleton('adminhtml/session')->addNotice("One or more records are still pending to be added to the synchronization queue. Check back later if you don't see records you are looking for...");
         }
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('Manual Sync'))->_title($this->__('Queue Objects Synchronization'));
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_queuesync'));
+            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_queue_to'));
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
 
         $this->renderLayout();

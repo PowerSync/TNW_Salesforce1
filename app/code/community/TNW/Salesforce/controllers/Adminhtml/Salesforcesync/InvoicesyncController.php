@@ -113,7 +113,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
                     $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
                     unset($itemIds, $_chunk);
                     foreach($_chunks as $_chunk) {
-                        Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Invoice', 'invoice');
+                        Mage::getModel('tnw_salesforce/localstorage')
+                            ->addObject($_chunk, 'Invoice', 'invoice', (count($_chunk) > 1));
                     }
 
                     if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {

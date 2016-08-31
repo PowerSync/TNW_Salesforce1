@@ -239,9 +239,10 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      * @param array $idSet
      * @param $sfObType
      * @param $mageObType
+     * @param bool $syncBulk
      * @return bool
      */
-    public function addObject(array $idSet = array(), $sfObType, $mageObType)
+    public function addObject(array $idSet = array(), $sfObType, $mageObType, $syncBulk = false)
     {
         // TODO: Need to rewrite to use insertMultiple
         // TODO: (Trello) https://trello.com/c/mJkQlYv3/144-performance-rewrite-addobject-to-insert-multiple-rows-with-1-query-to-optimize-performance
@@ -270,11 +271,16 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 $select = $collection->getSelect();
                 $select->reset(Zend_Db_Select::COLUMNS);
 
+                $syncType = $syncBulk
+                    ? TNW_Salesforce_Model_Cron::SYNC_TYPE_BULK
+                    : TNW_Salesforce_Model_Cron::SYNC_TYPE_OUTGOING;
+
                 $columns = array(
-                    'object_id' => $entityModel->getIdFieldName(),
-                    'mage_object_type' => new Zend_Db_Expr('"' . $entityModelAlias . '"'),
-                    'sf_object_type' => new Zend_Db_Expr('"' . $sfObType . '"'),
-                    'date_created' => new Zend_Db_Expr('"' . Mage::helper('tnw_salesforce')->getDate() . '"')
+                    'object_id'         => $entityModel->getIdFieldName(),
+                    'mage_object_type'  => new Zend_Db_Expr('"' . $entityModelAlias . '"'),
+                    'sf_object_type'    => new Zend_Db_Expr('"' . $sfObType . '"'),
+                    'date_created'      => new Zend_Db_Expr('"' . Mage::helper('tnw_salesforce')->getDate() . '"'),
+                    'sync_type'         => new Zend_Db_Expr('"' . $syncType . '"'),
                 );
 
                 $select->columns($columns);
@@ -301,9 +307,10 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      * @param array $idSet
      * @param $sfObType
      * @param $mageObType
+     * @param bool $syncBulk
      * @return bool
      */
-    public function addObjectProduct(array $idSet = array(), $sfObType, $mageObType)
+    public function addObjectProduct(array $idSet = array(), $sfObType, $mageObType, $syncBulk = false)
     {
         // we filter grouped and configurable products
         $productsCollection = Mage::getModel('catalog/product')
@@ -321,6 +328,6 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
         $idSetFiltered = $productsCollection->getAllIds();
 
-        return $this->addObject($idSetFiltered, $sfObType, $mageObType);
+        return $this->addObject($idSetFiltered, $sfObType, $mageObType, $syncBulk);
     }
 }

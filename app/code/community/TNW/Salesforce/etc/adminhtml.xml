@@ -241,8 +241,24 @@
                 </mappings>
                 <queue_sync translate="title" module="tnw_salesforce">
                     <title>Sync Queue</title>
-                    <action>adminhtml/salesforcesync_queuesync</action>
                     <sort_order>400</sort_order>
+                    <children>
+                        <from_salesforce translate="title" module="tnw_salesforce">
+                            <title>FROM Salesforce</title>
+                            <action>adminhtml/salesforcesync_queue_from</action>
+                            <sort_order>10</sort_order>
+                        </from_salesforce>
+                        <to_salesforce translate="title" module="tnw_salesforce">
+                            <title>TO Salesforce</title>
+                            <action>adminhtml/salesforcesync_queue_to/index/filter/c3luY190eXBlPW91dGdvaW5n</action>
+                            <sort_order>20</sort_order>
+                        </to_salesforce>
+                        <to_salesforce_background translate="title" module="tnw_salesforce">
+                            <title>TO Salesforce (background)</title>
+                            <action>adminhtml/salesforcesync_queue_to/index/filter/c3luY190eXBlPWJ1bGs=</action>
+                            <sort_order>30</sort_order>
+                        </to_salesforce_background>
+                    </children>
                 </queue_sync>
                 <setup translate="title" module="tnw_salesforce">
                     <title>Integration Setup</title>
