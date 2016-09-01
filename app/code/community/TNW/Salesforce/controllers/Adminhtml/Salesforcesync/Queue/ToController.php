@@ -128,14 +128,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
         $this->_redirect($this->_getRedirectUrl());
     }
 
-    public function processallAction()
-    {
-        if (Mage::helper("tnw_salesforce/queue")->processItems()){
-            Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper("tnw_salesforce")->__("Items where processed"));
-        }
-        $this->_redirect($this->_getRedirectUrl());
-    }
-
     /**
      * returns redirect url with correct store Id
      *
