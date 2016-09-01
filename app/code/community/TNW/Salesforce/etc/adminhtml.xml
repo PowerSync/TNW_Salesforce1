@@ -928,6 +928,20 @@
                             <queue_sync>
                                 <title>Synchronization Queue</title>
                                 <sort_order>300</sort_order>
+                                <children>
+                                    <from_salesforce>
+                                        <title>FROM Salesforce</title>
+                                        <sort_order>10</sort_order>
+                                    </from_salesforce>
+                                    <to_salesforce>
+                                        <title>TO Salesforce</title>
+                                        <sort_order>20</sort_order>
+                                    </to_salesforce>
+                                    <to_salesforce_background>
+                                        <title>TO Salesforce (background)</title>
+                                        <sort_order>30</sort_order>
+                                    </to_salesforce_background>
+                                </children>
                             </queue_sync>
                             <setup>
                                 <title>Integration Setup</title>
