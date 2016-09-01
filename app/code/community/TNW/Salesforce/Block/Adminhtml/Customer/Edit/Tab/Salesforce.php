@@ -42,40 +42,6 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
             ))
             ->setRenderer($renderer);
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Owner $renderer */
-        $renderer = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_owner');
-
-        if (!empty($data['salesforce_contact_owner_id'])) {
-            $fieldset
-                ->addField('salesforce_contact_owner_id', 'text', array(
-                    'label' => Mage::helper('tnw_salesforce')->__('Contact Owner'),
-                    'name' => 'salesforce_contact_owner_id',
-                    'selector'  => 'tnw-ajax-find-select-contact-owner'
-                ))
-                ->setRenderer($renderer);
-        }
-
-        if (!empty($data['salesforce_account_owner_id'])) {
-            $fieldset
-                ->addField('salesforce_account_owner_id', 'text', array(
-                    'label' => Mage::helper('tnw_salesforce')->__('Account Owner'),
-                    'name' => 'salesforce_account_owner_id',
-                    'selector'  => 'tnw-ajax-find-select-account-owner'
-                ))
-                ->setRenderer($renderer);
-        }
-
-        if (!empty($data['salesforce_lead_owner_id'])) {
-            $fieldset
-                    ->addField('salesforce_lead_owner_id', 'text', array(
-                    'label'     => Mage::helper('tnw_salesforce')->__('Lead Owner'),
-                    'name'      => 'salesforce_lead_owner_id',
-                    'selector'  => 'tnw-ajax-find-select-lead-owner'
-                ))
-                ->setRenderer($renderer);
-        }
-
         $form->setValues($data);
         $this->setForm($form);
     }

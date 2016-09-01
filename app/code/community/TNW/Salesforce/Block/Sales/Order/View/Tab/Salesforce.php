@@ -55,17 +55,13 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
             ))
             ->setRenderer($renderer);
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Owner $rendererOwner */
-        $rendererOwner = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_owner');
+        $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
-        $fieldset
-            ->addField('owner_salesforce_id', 'text', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Owner'),
-                'name' => 'owner_salesforce_id',
-                'selector'  => 'tnw-ajax-find-select-owner'
-            ))
-            ->setRenderer($rendererOwner);
+        $fieldset->addField('owner_salesforce_id', 'owner', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Owner'),
+            'name' => 'owner_salesforce_id',
+            'selector'  => 'tnw-ajax-find-select-owner'
+        ));
 
         if (Mage::helper('tnw_salesforce')->getOrderObject() != TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT) {
             $fieldset->addField('opportunity_id', 'text', array(

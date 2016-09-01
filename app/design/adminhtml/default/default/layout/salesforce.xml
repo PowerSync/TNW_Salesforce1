@@ -129,7 +129,17 @@
             <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce" />
             <action method="addTab"><name>order_salesforce</name><block>order_tab_salesforce</block></action>
         </reference>
+        <reference name="content">
+            <block type="tnw_salesforce/adminhtml_sales_order_view_salesforce" name="order_salesforce" template="salesforce/sales/order/view/salesforce.phtml" />
+        </reference>
     </adminhtml_sales_order_view>
+
+    <adminhtml_sales_order_create_index>
+        <update handle="tnw_salesforce_select2"/>
+        <reference name="customer">
+            <block type="tnw_salesforce/adminhtml_sales_order_create_salesforce" name="order_salesforce" template="salesforce/sales/order/create/salesforce.phtml" />
+        </reference>
+    </adminhtml_sales_order_create_index>
 
     <!-- Disable Cache -->
     <reference name="tnw_salesforce.test.results">

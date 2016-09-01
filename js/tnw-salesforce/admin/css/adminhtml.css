@@ -52,3 +52,15 @@
     opacity: 0;
     filter: alpha(opacity=0);
 }
+
+.tnw-entry-salesforce select {
+    width: 280px;
+}
+
+.tnw-owner-wrapper {
+    position: relative;
+}
+
+.tnw-owner-wrapper .tnw-owner-link {
+    position: absolute; right: -108px; top: -2px;
+}

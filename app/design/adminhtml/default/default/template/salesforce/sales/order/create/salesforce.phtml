@@ -1,0 +1,25 @@
+<?php
+/** @var TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce $this */
+?>
+<div id="tnw-order-info-block" style="display: none">
+    <div class="box-right entry-edit tnw-entry-salesforce">
+        <div class="entry-edit-head"><h4><?php echo Mage::helper('tnw_salesforce')->__('Sales Person') ?></h4></div>
+        <fieldset><?php echo $this->getFormHtml();?></fieldset>
+    </div>
+    <script type="application/javascript">
+        (function ($) {
+            function moveElement() {
+                $('#order-data:visible .order-totals')
+                    .parent('.box-right')
+                    .before($('#tnw-order-info-block > div'));
+            }
+
+            $(document).ready(moveElement);
+            $(document).on("DOMNodeInserted", function (e) {
+                if ($(e.target).parent().attr('id') == 'order-data') {
+                    moveElement();
+                }
+            });
+        })(jQuery);
+    </script>
+</div>
