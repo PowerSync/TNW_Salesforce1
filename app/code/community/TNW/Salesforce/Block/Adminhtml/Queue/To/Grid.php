@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     protected function _construct()
     {
@@ -94,6 +94,18 @@ class TNW_Salesforce_Block_Adminhtml_Queuesync_Grid extends Mage_Adminhtml_Block
             'type' => 'text',
             'index' => 'message',
             'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Queuemessage'
+        ));
+
+        $this->addColumn('sync_type', array(
+            'header'    => Mage::helper('tnw_salesforce')->__('Queue Type'),
+            'sortable'  => true,
+            'index'     => 'sync_type',
+            'type'      => 'options',
+            'width'     => '100px',
+            'options'   => array(
+                TNW_Salesforce_Model_Cron::SYNC_TYPE_OUTGOING   => Mage::helper('tnw_salesforce')->__('Outgoing Queue'),
+                TNW_Salesforce_Model_Cron::SYNC_TYPE_BULK       => Mage::helper('tnw_salesforce')->__('Bulk Queue'),
+            )
         ));
 
         $this->addColumn('singleAction',

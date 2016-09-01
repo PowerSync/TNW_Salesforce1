@@ -114,7 +114,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
                     $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
                     unset($itemIds);
                     foreach($_chunks as $_chunk) {
-                        Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Customer', 'customer');
+                        Mage::getModel('tnw_salesforce/localstorage')
+                            ->addObject($_chunk, 'Customer', 'customer', (count($_chunk) > 1));
                     }
 
                     if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
