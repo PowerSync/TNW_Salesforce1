@@ -44,6 +44,17 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
             'index' => 'object_type'
         ));
 
+        $this->addColumn('is_processing', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Is processing'),
+            'type' => 'options',
+            'options' => array(
+                '1' => Mage::helper('catalog')->__('Yes'),
+                '0' => Mage::helper('catalog')->__('No'),
+            ),
+            'index' => 'is_processing',
+            'align' => 'center',
+        ));
+
         $this->addColumn('json', array(
             'header'    => Mage::helper('tnw_salesforce')->__('JSON'),
             'index'     => 'json',
