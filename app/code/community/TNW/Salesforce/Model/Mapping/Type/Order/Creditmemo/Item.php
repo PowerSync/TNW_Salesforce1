@@ -8,7 +8,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo_Item extends TNW_Salesf
      * @param $_entity Mage_Sales_Model_Order_Creditmemo_Item
      * @return string
      */
-    public function getValue($_entity)
+    public function getValue($_entity, $additional = null)
     {
         $attribute = $this->_mapping->getLocalFieldAttributeCode();
         switch ($attribute) {
