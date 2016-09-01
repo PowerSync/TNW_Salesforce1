@@ -241,8 +241,24 @@
                 </mappings>
                 <queue_sync translate="title" module="tnw_salesforce">
                     <title>Sync Queue</title>
-                    <action>adminhtml/salesforcesync_queuesync</action>
                     <sort_order>400</sort_order>
+                    <children>
+                        <from_salesforce translate="title" module="tnw_salesforce">
+                            <title>FROM Salesforce</title>
+                            <action>adminhtml/salesforcesync_queue_from</action>
+                            <sort_order>10</sort_order>
+                        </from_salesforce>
+                        <to_salesforce translate="title" module="tnw_salesforce">
+                            <title>TO Salesforce</title>
+                            <action>adminhtml/salesforcesync_queue_to/index/filter/c3luY190eXBlPW91dGdvaW5n</action>
+                            <sort_order>20</sort_order>
+                        </to_salesforce>
+                        <to_salesforce_background translate="title" module="tnw_salesforce">
+                            <title>TO Salesforce (background)</title>
+                            <action>adminhtml/salesforcesync_queue_to/index/filter/c3luY190eXBlPWJ1bGs=</action>
+                            <sort_order>30</sort_order>
+                        </to_salesforce_background>
+                    </children>
                 </queue_sync>
                 <setup translate="title" module="tnw_salesforce">
                     <title>Integration Setup</title>
@@ -289,7 +305,7 @@
                             <sort_order>80</sort_order>
                         </shipment>
                         <creditmemo translate="title" module="tnw_salesforce">
-                            <title>Credit Memos Configuration</title>
+                            <title>Credit Memo Configuration (BETA)</title>
                             <action>adminhtml/system_config/edit/section/salesforce_creditmemo</action>
                             <sort_order>90</sort_order>
                         </creditmemo>
@@ -912,6 +928,20 @@
                             <queue_sync>
                                 <title>Synchronization Queue</title>
                                 <sort_order>300</sort_order>
+                                <children>
+                                    <from_salesforce>
+                                        <title>FROM Salesforce</title>
+                                        <sort_order>10</sort_order>
+                                    </from_salesforce>
+                                    <to_salesforce>
+                                        <title>TO Salesforce</title>
+                                        <sort_order>20</sort_order>
+                                    </to_salesforce>
+                                    <to_salesforce_background>
+                                        <title>TO Salesforce (background)</title>
+                                        <sort_order>30</sort_order>
+                                    </to_salesforce_background>
+                                </children>
                             </queue_sync>
                             <setup>
                                 <title>Integration Setup</title>

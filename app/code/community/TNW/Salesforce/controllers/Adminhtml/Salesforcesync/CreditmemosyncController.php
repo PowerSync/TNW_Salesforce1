@@ -141,7 +141,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
         try {
             if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
                 $addSuccess = Mage::getModel('tnw_salesforce/localstorage')
-                    ->addObject($itemIds, 'Creditmemo', 'creditmemo');
+                    ->addObject($itemIds, 'Creditmemo', 'creditmemo', (count($itemIds) > 1));
 
                 if ($addSuccess) {
                     Mage::getSingleton('adminhtml/session')

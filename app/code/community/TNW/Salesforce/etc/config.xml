@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.56.09.0000</version>
+            <version>0.01.56.10.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -682,14 +682,14 @@
     </admin>
     <crontab>
         <jobs>
-            <tnw_salesforce_queue>
+            <tnw_m2sf_queue>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::processQueue</model></run>
-            </tnw_salesforce_queue>
-            <tnw_salesforce_m2sf>
+            </tnw_m2sf_queue>
+            <tnw_sf2m_bulk_queue>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::backgroundProcess</model></run>
-            </tnw_salesforce_m2sf>
+            </tnw_sf2m_bulk_queue>
 
             <tnw_salesforce_abandoned>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
@@ -834,7 +834,7 @@
                 <active>0</active>
                 <model>tnw_salesforce/order_payment_method_import</model>
                 <order_status>pending</order_status>
-                <title>TNW Import</title>
+                <title>Captured in Salesforce</title>
                 <allowspecific>0</allowspecific>
                 <group>offline</group>
             </tnw_import>

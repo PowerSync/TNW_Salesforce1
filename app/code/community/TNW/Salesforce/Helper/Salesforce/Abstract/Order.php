@@ -760,11 +760,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_findAbandonedCart($this->_quotes);
 
         $_cacheCustomersKey = sprintf('%sCustomers', $this->_magentoEntityName);
+        $this->_cache['leadsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
+            ->lookup($this->_cache[$_cacheCustomersKey]);
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
             ->lookup($this->_cache[$_cacheCustomersKey]);
         $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
-            ->lookup($this->_cache[$_cacheCustomersKey]);
-        $this->_cache['leadsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
             ->lookup($this->_cache[$_cacheCustomersKey]);
 
         $this->_prepareOrderLookup();

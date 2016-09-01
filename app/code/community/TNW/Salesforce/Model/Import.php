@@ -5,7 +5,7 @@
  */
 
 /**
- * @method $this setObject($value)
+ * @method $this setIsProcessing($value)
  */
 class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
 {
@@ -20,7 +20,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
      *
      * @return string
      */
-    protected function getObjectType()
+    public function getObjectType()
     {
         $object = $this->getObject();
 
@@ -29,12 +29,57 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
     }
 
     /**
+     * @return mixed
+     */
+    public function getObject()
+    {
+        return json_decode($this->getData('json'));
+    }
+
+    /**
+     * @param $object stdClass
+     * @return $this
+     */
+    public function setObject($object)
+    {
+        return $this->setData('json', json_encode($object));
+    }
+
+    /**
+     * @param stdClass $object
+     * @return $this
+     */
+    public function importObject(stdClass $object)
+    {
+        if (!property_exists($object, 'Id')) {
+            Mage::throwException('Invalid object');
+        }
+
+        $objectId = $object->Id;
+        $this->getResource()->load($this, $objectId, 'object_id');
+
+        $data = array(
+            'object_id'     => $objectId,
+            'object_type'   => !empty($object->attributes->type) ? $object->attributes->type : '',
+        );
+
+        if ($this->getData('is_processing')) {
+            $this->setData($data);
+        }
+        else {
+            $this->addData($data);
+        }
+
+        return $this->setObject($object);
+    }
+
+    /**
      * Get Object property
      *
      * @param string $key
      * @return mixed
      */
-    protected function getObjectProperty($key)
+    public function getObjectProperty($key)
     {
         return isset($this->getObject()->$key) ? $this->getObject()->$key : null;
     }
@@ -42,7 +87,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
     /**
      * Get import processor
      *
-     * @return bool|TNW_Salesforce_Helper_Magento_Abstract|TNW_Salesforce_Model_Import_Order
+     * @return bool|TNW_Salesforce_Helper_Magento_Abstract
      */
     protected function getProcessor()
     {

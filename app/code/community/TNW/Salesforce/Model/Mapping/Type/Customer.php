@@ -40,6 +40,8 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
             case 'salesforce_lead_owner_id':
                 return $this->convertSalesforceLeadOwnerId($_entity);
+            case 'disable_auto_group_change':
+                return $_entity->getData($attributeCode);
         }
 
         return parent::_prepareValue($_entity);
@@ -155,22 +157,17 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     public function convertSfCompany($_entity)
     {
         $company = $_entity->getData('company');
-        if (!empty($company)) {
-            return $company;
+
+        if (empty($company)) {
+            $company = $_entity->getDefaultBillingAddress()
+                ? $_entity->getDefaultBillingAddress()->getData('company') : null;
         }
 
-        $company = $_entity->getDefaultBillingAddress()
-            ? $_entity->getDefaultBillingAddress()->getData('company') : null;
-        if (!empty($company)) {
-            return $company;
+        if (empty($company)) {
+            $company = $_entity->getFirstname() . ' ' . $_entity->getLastname();
         }
 
-        $company = $_entity->getFirstname() . ' ' . $_entity->getLastname();
-        if (!empty($company)) {
-            return $company;
-        }
-
-        return '';
+        return $company;
     }
 
     /**

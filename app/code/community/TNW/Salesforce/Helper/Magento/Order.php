@@ -578,4 +578,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
         return NULL;
     }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order
+     * @return mixed
+     */
+    protected function _getEntityNumber($_entity)
+    {
+        return $_entity->getIncrementId();
+    }
 }

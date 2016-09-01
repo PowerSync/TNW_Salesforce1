@@ -5,7 +5,14 @@
  */
 class TNW_Salesforce_Model_Cron
 {
+    const SYNC_TYPE_OUTGOING           = 'outgoing';
+    const SYNC_TYPE_BULK               = 'bulk';
     const CRON_LAST_RUN_TIMESTAMP_PATH = 'salesforce/syncronization/cron_last_run_timestamp';
+
+    /**
+     * @var string
+     */
+    protected $_syncType = self::SYNC_TYPE_OUTGOING;
 
     /**
      * @var array
@@ -245,17 +252,15 @@ class TNW_Salesforce_Model_Cron
 
     /**
      * this method is called instantly from cron script
-     *
-     * @return bool
      */
     public function processQueue()
     {
-        /** @var TNW_Salesforce_Helper_Data $_helperData */
-        $_helperData = Mage::helper('tnw_salesforce');
-
         set_time_limit(0);
         @define('PHP_SAPI', 'cli');
+        $this->_syncType = self::SYNC_TYPE_OUTGOING;
 
+        /** @var TNW_Salesforce_Helper_Data $_helperData */
+        $_helperData = Mage::helper('tnw_salesforce');
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync background process for store (%s) and website id (%s) ...",
             $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
@@ -319,6 +324,53 @@ class TNW_Salesforce_Model_Cron
         }
 
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
+    }
+
+    /**
+     *
+     */
+    public function processBulkQueue()
+    {
+        set_time_limit(0);
+        @define('PHP_SAPI', 'cli');
+        $this->_syncType = self::SYNC_TYPE_BULK;
+
+        /** @var TNW_Salesforce_Helper_Data $_helperData */
+        $_helperData = Mage::helper('tnw_salesforce');
+        if (!$_helperData->isEnabled()) {
+            return;
+        }
+
+        // Force SF connection if session is expired or not found
+        $_urlArray = explode('/', Mage::app()->getStore($_helperData->getStoreId())->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
+        $this->_serverName = (array_key_exists('2', $_urlArray)) ? $_urlArray[2] : NULL;
+        if (!$this->_serverName) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
+            return;
+        }
+
+        if (
+            !Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')
+            || !Mage::getSingleton('core/session')->getSalesforceUrl()
+        ) {
+            $_license = Mage::getSingleton('tnw_salesforce/license')->forceTest($this->_serverName);
+            if ($_license) {
+                /** @var TNW_Salesforce_Model_Connection $_client */
+                $_client = Mage::getSingleton('tnw_salesforce/connection');
+
+                // try to connect
+                if (!$_client->initConnection()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
+                    return;
+                }
+            }
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync Bulk background process for store (%s) and website id (%s) ...",
+            $_helperData->getStoreId(), $_helperData->getWebsiteId()));
+
+        $this->_syncObjectForBulkMode();
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processBulkQueue'));
     }
 
     protected function _syncObjectForBulkMode()
@@ -520,11 +572,12 @@ class TNW_Salesforce_Model_Cron
 
         // get entity id list from local storage
         /** @var TNW_Salesforce_Model_Mysql4_Queue_Storage_Collection $list */
-        $list = Mage::getModel('tnw_salesforce/queue_storage')->getCollection()
+        $list = Mage::getResourceModel('tnw_salesforce/queue_storage_collection')
             ->addSftypeToFilter($type)
             ->addSyncAttemptToFilter()
             ->addStatusNoToFilter('sync_running')
             ->addStatusNoToFilter('success')
+            ->addFieldToFilter('sync_type', array('eq' => $this->_syncType))
             ->setOrder('status', 'ASC')    // Leave 'error' at the end of the collection
         ;
 

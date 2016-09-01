@@ -36,11 +36,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         if ($appropriatedField) {
             try {
 
-                if (!$appropriatedField->createable && ($additional instanceof stdClass) && !$additional->Id) {
+                if (!$appropriatedField->createable && ($additional instanceof stdClass) && empty($additional->Id)) {
                    throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not creatable, value sync skipped');
                 }
 
-                if (!$appropriatedField->updateable && ($additional instanceof stdClass) && $additional->Id) {
+                if (!$appropriatedField->updateable && ($additional instanceof stdClass) && !empty($additional->Id)) {
                     throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not updateable, value sync skipped');
                 }
 

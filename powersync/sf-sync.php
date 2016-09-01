@@ -128,9 +128,12 @@ if (!$helper->isWorking()) {
                     // Add to Queue
                     /* Save into a db */
                     try {
-                        Mage::getModel('tnw_salesforce/import')
-                            ->setObject($fromSf)
-                            ->save();
+                        foreach ($objects as $object) {
+                            Mage::getModel('tnw_salesforce/import')
+                                ->importObject($object)
+                                ->save();
+                        }
+
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Import JSON accepted, pending Import");
                     } catch (Exception $e) {
                         $errorString = "Could not process JSON, Error: " . $e->getMessage();

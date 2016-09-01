@@ -130,7 +130,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
             if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
 
                 $res = Mage::getModel('tnw_salesforce/localstorage')
-                    ->addObject($itemIds, 'Campaign_CatalogRule', 'catalogrule');
+                    ->addObject($itemIds, 'Campaign_CatalogRule', 'catalogrule', (count($itemIds) > 1));
 
                 if (!$res) {
                     Mage::getSingleton('adminhtml/session')->addError('Could not add catalog rule(s) to the queue!');
