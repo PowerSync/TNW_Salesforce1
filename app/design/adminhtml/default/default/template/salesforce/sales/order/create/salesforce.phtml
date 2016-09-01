@@ -7,10 +7,19 @@
         <fieldset><?php echo $this->getFormHtml();?></fieldset>
     </div>
     <script type="application/javascript">
-        jQuery(document).ready(function() {
-            jQuery('.main-col .order-totals')
-                .parent('.box-right')
-                .before(jQuery('#tnw-order-info-block > div'));
-        });
+        (function ($) {
+            function moveElement() {
+                $('#order-data:visible .order-totals')
+                    .parent('.box-right')
+                    .before($('#tnw-order-info-block > div'));
+            }
+
+            $(document).ready(moveElement);
+            $(document).on("DOMNodeInserted", function (e) {
+                if ($(e.target).parent().attr('id') == 'order-data') {
+                    moveElement();
+                }
+            });
+        })(jQuery);
     </script>
 </div>
