@@ -26,12 +26,12 @@ class TNW_Salesforce_Model_Imports_Bulk
 
             try {
                 $_association = $item->process();
-                foreach($_association as $type=>$item) {
+                foreach($_association as $type=>$_item) {
                     if (!isset($association[$type])) {
                         $association[$type] = array();
                     }
 
-                    $association[$type] = array_merge($association[$type], $item);
+                    $association[$type] = array_merge($association[$type], $_item);
                 }
 
                 $item->delete();

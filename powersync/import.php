@@ -1,6 +1,6 @@
 <?php
 
-require_once '../shell/abstract.php';
+require_once dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'shell' . DIRECTORY_SEPARATOR . 'abstract.php';
 class Powersync_Shell_Import extends Mage_Shell_Abstract
 {
     const LOCK_INCOMING = 'incoming';
