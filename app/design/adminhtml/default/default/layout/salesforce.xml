@@ -93,7 +93,7 @@
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_queue_to_grid" name="queue.to.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_queue_to_grid>
-\
+
     <adminhtml_salesforcesync_queue_from_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_queue_from_grid" name="queue.from.grid" output="toHtml"></block>
