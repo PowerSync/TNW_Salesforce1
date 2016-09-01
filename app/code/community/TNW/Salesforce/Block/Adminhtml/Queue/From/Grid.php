@@ -12,6 +12,8 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
         $this->setId('tnw_salesforce_queuesync_grid');
         $this->setSaveParametersInSession(true);
         $this->setUseAjax(true);
+        $this->setDefaultSort('created_at');
+        $this->setDefaultDir('desc');
     }
 
     /**
@@ -30,6 +32,13 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
      */
     protected function _prepareColumns()
     {
+        $this->addColumn('created_at', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Date Created'),
+            'index' => 'created_at',
+            'type' => 'datetime',
+            'width' => '100px',
+        ));
+
         $this->addColumn('object_id', array(
             'header' => Mage::helper('tnw_salesforce')->__('Object Id'),
             'index' => 'object_id',

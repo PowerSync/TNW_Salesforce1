@@ -46,16 +46,31 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
     }
 
     /**
-     * @param $object
+     * @param stdClass $object
      * @return $this
      */
-    public function importObject($object)
+    public function importObject(stdClass $object)
     {
-        $this->setObject($object);
-        $this->setData('object_id', !empty($object->Id) ? $object->Id : '');
-        $this->setData('object_type', !empty($object->attributes->type) ? $object->attributes->type : '');
+        if (!property_exists($object, 'Id')) {
+            Mage::throwException('Invalid object');
+        }
 
-        return $this;
+        $objectId = $object->Id;
+        $this->getResource()->load($this, $objectId, 'object_id');
+
+        $data = array(
+            'object_id'     => $objectId,
+            'object_type'   => !empty($object->attributes->type) ? $object->attributes->type : '',
+        );
+
+        if ($this->getData('is_processing')) {
+            $this->setData($data);
+        }
+        else {
+            $this->addData($data);
+        }
+
+        return $this->setObject($object);
     }
 
     /**

@@ -11,6 +11,7 @@ $tableImport = $installer->getTable('tnw_salesforce/import');
 $connection->addColumn($installer->getTable('tnw_salesforce/queue_storage'), 'sync_type', 'varchar(50) DEFAULT \'outgoing\'');
 $connection->addColumn($tableImport, 'object_id', 'varchar(50)');
 $connection->addColumn($tableImport, 'object_type', 'varchar(50)');
+$connection->addColumn($tableImport, 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
 
 $select = $connection->select()
     ->from($tableImport);
@@ -18,7 +19,12 @@ $select = $connection->select()
 $items = $connection->fetchAll($select);
 if (is_array($items)) {
     foreach ($items as $item) {
-        $objects = json_decode(unserialize($item['json']));
+        $json = @unserialize($item['json']);
+        if (empty($json)) {
+            continue;
+        }
+
+        $objects = json_decode($json);
         if (is_null($objects)) {
             $connection->delete($tableImport, sprintf('import_id = "%s"', $item['import_id']));
             continue;
