@@ -132,6 +132,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = array();
+    protected $_objectSyncType = null;
 
     //const MODULE_TYPE = 'BASIC';
     /**
@@ -400,7 +401,17 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getObjectSyncType()
     {
+        if (!empty($this->_objectSyncType)) {
+            return $this->_objectSyncType;
+        }
+
         return $this->getStoreConfig(self::OBJECT_SYNC_TYPE);
+    }
+
+    public function setObjectSyncType($objectSyncType)
+    {
+        $this->_objectSyncType = $objectSyncType;
+        return $this;
     }
 
     // queue object sync type
