@@ -1496,4 +1496,22 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         return $customer;
     }
+
+    /**
+     * @return bool|void
+     * Prepare values for the synchroization
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        if (is_array($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
+            foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_orderNumber) {
+                $this->unsetEntityCache($_orderNumber);
+            }
+        }
+
+        return $this->check();
+    }
 }
