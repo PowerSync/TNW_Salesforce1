@@ -69,9 +69,9 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To extends Mage_Adminhtml_Block_Widge
     public function getHeaderText()
     {
         if ($this->getType() == self::TYPE_BULK) {
-            return Mage::helper('tnw_salesforce')->__('Bulk Queue');
+            return Mage::helper('tnw_salesforce')->__('TO Salesforce (background)');
         }
 
-        return Mage::helper('tnw_salesforce')->__('Outgoing Queue');
+        return Mage::helper('tnw_salesforce')->__('TO Salesforce');
     }
 }

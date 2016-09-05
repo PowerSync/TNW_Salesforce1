@@ -10,7 +10,7 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From extends Mage_Adminhtml_Block_Wid
     {
         $this->_blockGroup = 'tnw_salesforce';
         $this->_controller = 'adminhtml_queue_from';
-        $this->_headerText = Mage::helper('tnw_salesforce')->__('Incoming Queue');
+        $this->_headerText = Mage::helper('tnw_salesforce')->__('FROM Salesforce');
         parent::__construct();
         $this->removeButton('add');
     }
