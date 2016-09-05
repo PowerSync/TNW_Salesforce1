@@ -71,6 +71,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             /** @var Mage_Sales_Model_Order $order */
             $order = Mage::getModel('sales/order')
                 ->load($_mMagentoId, 'increment_id');
+
+            if ($this->isItemAdd($order, $object)) {
+                $order = $this->reorder($order, $object);
+            }
         }
         else {
             if (!Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
@@ -83,8 +87,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
             $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
                 ->setIsValidate(false);
-            /* @var $productHelper Mage_Catalog_Helper_Product */
-            $productHelper = Mage::helper('catalog/product');
 
             // Get Customer
             $customer = $this->_searchCustomer($object->BillToContactId);
@@ -165,40 +167,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             }
 
             // Get Product
-            $items = array();
-            foreach ($object->OrderItems->records as $record) {
-                $product = $this->_searchProduct($record->PricebookEntry->Product2Id);
-                if (is_null($product->getId())) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveNotice('Product (sku:'.$record->PricebookEntry->Product2->ProductCode.') not found');
-
-                    continue;
-                }
-
-                if ($product->getTypeId() != Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveNotice('Product (sku:'.$record->PricebookEntry->Product2->ProductCode.') skipping');
-
-                    continue;
-                }
-
-                $items[$product->getId()] = array('qty'=>$record->Quantity, 'salesforce_id'=>$record->Id);
-                $buyRequest = new Varien_Object($items[$product->getId()]);
-                $params = array('files_prefix' => 'item_' . $product->getId() . '_');
-                $buyRequest = $productHelper->addParamsToBuyRequest($buyRequest, $params);
-                if ($buyRequest->hasData()) {
-                    $items[$product->getId()] = $buyRequest->toArray();
-                }
-            }
-
-            if (empty($items)) {
+            $this->addProducts($orderCreate, $object->OrderItems->records);
+            if (!$orderCreate->getQuote()->hasItems()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('Empty products');
 
                 return false;
             }
-
-            $orderCreate->addProducts($items);
 
             // Billing Address
             $orderCreate->setBillingAddress(array_merge(array(
@@ -219,25 +194,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                     'should_ignore_validation'  => true,
                 ), $address['Shipping']));
 
-            // Add Shipping Rate
-            $shippingRate = new Mage_Shipping_Model_Rate_Result_Method(array(
-                'carrier'            => 'tnw',
-                'carrier_title'      => 'TNW',
-                'method'             => 'import',
-                'method_title'       => 'Import',
-                'method_description' => 'Custom method for Import',
-                'price'              => 0,
-            ));
-
-            $rate = Mage::getModel('sales/quote_address_rate')
-                ->importShippingRate($shippingRate);
-
-            $orderCreate->getQuote()
-                ->getShippingAddress()
-                ->addShippingRate($rate);
-
             // Shipping Method
-            $orderCreate->setShippingMethod('tnw_import');
+            $this->_setShippingMethod($orderCreate);
 
             // Payment
             $orderCreate->setPaymentData(array(
@@ -283,6 +241,161 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ->saveEntities();
 
         return $order;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @param stdClass $object
+     * @return bool
+     */
+    protected function isItemAdd($order, $object)
+    {
+        $hasSalesforceId = $order->getItemsCollection()->walk('getSalesforceId');
+        $salesforceIds = array();
+        foreach ($object->OrderItems->records as $record) {
+            $product = $this->_searchProduct($record->PricebookEntry->Product2Id);
+            if (is_null($product->getId())) {
+                continue;
+            }
+
+            if (!$this->isProductValidate($product)) {
+                continue;
+            }
+
+            $salesforceIds[] = $record->Id;
+        }
+
+        $result = array_diff($hasSalesforceId, $salesforceIds);
+        return !empty($result);
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @param stdClass $object
+     * @return Mage_Sales_Model_Order
+     */
+    protected function reorder($order, $object)
+    {
+        /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
+        $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
+            ->setIsValidate(false);
+
+        $orderCreate->initFromOrder($order);
+        $orderCreate->getQuote()->removeAllItems();
+        $orderCreate->setRecollect(true);
+
+        $this->addProducts($orderCreate, $object->OrderItems->records);
+
+        // Shipping Method
+        $this->_setShippingMethod($orderCreate);
+
+        try {
+            $order = $orderCreate->createOrder();
+
+            /** @var Mage_Sales_Model_Order_Item $item */
+            foreach ($order->getItemsCollection() as $item) {
+                $request = $item->getProductOptionByCode('info_buyRequest');
+                $item->setData('salesforce_id', $request['salesforce_id']);
+                $this->addEntityToSave(sprintf('Order Item %s', $item->getId()), $item);
+            }
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            if (empty($message)) {
+                $messages = $orderCreate->getSession()->getMessages(true);
+                if ($messages->count() > 0) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError($messages->toString());
+                }
+            }
+            else {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($message);
+            }
+        }
+
+        return $order;
+    }
+
+    /**
+     * @param Mage_Adminhtml_Model_Sales_Order_Create $orderCreate
+     */
+    protected function _setShippingMethod($orderCreate)
+    {
+        // Add Shipping Rate
+        $shippingRate = new Mage_Shipping_Model_Rate_Result_Method(array(
+            'carrier'            => 'tnw',
+            'carrier_title'      => 'TNW',
+            'method'             => 'import',
+            'method_title'       => 'Import',
+            'method_description' => 'Custom method for Import',
+            'price'              => 0,
+        ));
+
+        $rate = Mage::getModel('sales/quote_address_rate')
+            ->importShippingRate($shippingRate);
+
+        $orderCreate->getQuote()
+            ->getShippingAddress()
+            ->addShippingRate($rate);
+
+        // Shipping Method
+        $orderCreate->setShippingMethod('tnw_import');
+    }
+
+    /**
+     * @param Mage_Adminhtml_Model_Sales_Order_Create $orderCreate
+     * @param $records
+     */
+    protected function addProducts($orderCreate, $records)
+    {
+        foreach ($records as $record) {
+            $product = $this->_searchProduct($record->PricebookEntry->Product2Id);
+            if (is_null($product->getId())) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice('Product (sku:'.$record->PricebookEntry->Product2->ProductCode.') not found');
+
+                continue;
+            }
+
+            if (!$this->isProductValidate($product)) {
+                continue;
+            }
+
+            $orderCreate->addProduct($product, array('qty'=>$record->Quantity, 'salesforce_id'=>$record->Id));
+        }
+    }
+
+    /**
+     * @param Mage_Catalog_Model_Product $product
+     * @return bool
+     */
+    protected function isProductValidate($product)
+    {
+        $allowedProductType = array(
+            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
+            Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE,
+        );
+
+        if (!in_array($product->getTypeId(), $allowedProductType)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice('Product (sku:'.$product->getSku().') skipping. Product type "'.$product->getTypeId().'"');
+
+            return false;
+        }
+
+        $collection = Mage::getResourceModel('catalog/product_option_collection')
+            ->addFieldToFilter('product_id', $product->getId())
+            ->addRequiredFilter(1);
+
+        if ($collection->getSize() > 1) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice('Product (sku:'.$product->getSku().') skipping. Has custom option.');
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
