@@ -372,14 +372,6 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * this model method calls our facade pattern class method mageAdminLoginEvent()
-     */
-    public function mageLoginEventCall()
-    {
-        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
-    }
-
-    /**
      * Show sf status message on every admin page
      *
      * @param Varien_Event_Observer $observer
@@ -398,23 +390,17 @@ class TNW_Salesforce_Model_Observer
             && $controller->getRequest()->getActionName() == 'login';
 
         // skip if sf synchronization is disabled or we are on api config or login page
-        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isWorking()) {
+        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isEnabled()) {
             return;
         }
 
-        // show message
-        if (Mage::getSingleton('core/session')->getSfNotWorking()) {
-            $sfPApiUrl = Mage::helper('adminhtml')->getUrl('adminhtml/system_config/edit',
-                array('section' => 'salesforce'));
-            $message = 'IMPORTANT: Salesforce connection cannot be established or has expired.'
-                . ' Please visit API configuration page to re-establish the connection.'
-                . " <a href='$sfPApiUrl'>API configuration</a>";
-            Mage::getSingleton('adminhtml/session')->addWarning($message);
-        } else {
-            if (!Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')) {
-                Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
-            }
+        $isValidate = Mage::app()->getCache()->load('salesforce_license_validate');
+        if ($isValidate) {
+            return;
         }
+
+        Mage::app()->getCache()->save('1', 'salesforce_license_validate', array("TNW_SALESFORCE"), 86400);
+        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
     }
 
     /**
