@@ -250,7 +250,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      */
     protected function isItemChange($order, $object)
     {
-        $hasSalesforceId = $order->getItemsCollection()->walk('getSalesforceId');
+        $isChange = false;
+
+        $itemCollection = $order->getItemsCollection();
+        $hasSalesforceId = $itemCollection->walk('getSalesforceId');
         $salesforceIds = array();
         foreach ($object->OrderItems->records as $record) {
             $product = $this->_searchProduct($record->PricebookEntry->Product2Id);
@@ -262,11 +265,24 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 continue;
             }
 
+            $itemId = array_search($record->Id, $hasSalesforceId);
+            if (false == $itemId) {
+                $isChange = true;
+                break;
+            }
+
+            /** @var Mage_Sales_Model_Order_Item $item */
+            $item = $itemCollection->getItemById($itemId);
+            if (intval($item->getQtyOrdered()) != intval($record->Quantity)) {
+                $isChange = true;
+                break;
+            }
+
             $salesforceIds[] = $record->Id;
         }
 
         $result = array_diff($hasSalesforceId, $salesforceIds);
-        return !empty($result);
+        return $isChange || !empty($result);
     }
 
     /**
