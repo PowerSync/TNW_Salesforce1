@@ -40,7 +40,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
         if (is_null($_mMagentoId) && !empty($_sSalesforceId)) {
             // Try to find the user by SF Id
-            $sql = "SELECT increment_id FROM `$orderTable` WHERE salesforce_id = '$_sSalesforceId'";
+            $sql = "SELECT increment_id FROM `$orderTable` WHERE salesforce_id = '$_sSalesforceId' AND relation_child_id IS NULL";
             $row = $this->_write->query($sql)->fetch();
             if ($row) {
                 $_mMagentoId = $row['increment_id'];
@@ -72,7 +72,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $order = Mage::getModel('sales/order')
                 ->load($_mMagentoId, 'increment_id');
 
-            if ($this->isItemAdd($order, $object)) {
+            if ($this->isItemChange($order, $object)) {
                 $order = $this->reorder($order, $object);
             }
         }
@@ -248,7 +248,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param stdClass $object
      * @return bool
      */
-    protected function isItemAdd($order, $object)
+    protected function isItemChange($order, $object)
     {
         $hasSalesforceId = $order->getItemsCollection()->walk('getSalesforceId');
         $salesforceIds = array();
