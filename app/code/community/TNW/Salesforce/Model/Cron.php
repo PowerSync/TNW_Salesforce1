@@ -285,13 +285,6 @@ class TNW_Salesforce_Model_Cron
             ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
             ->save();
 
-        /** @var TNW_Salesforce_Model_Connection $_client */
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
-            return;
-        }
-
         if ($isRealtime) {
             $this->_syncObjectForRealTimeMode();
         }
@@ -315,13 +308,6 @@ class TNW_Salesforce_Model_Cron
         /** @var TNW_Salesforce_Helper_Data $_helperData */
         $_helperData = Mage::helper('tnw_salesforce');
         if (!$_helperData->isEnabled()) {
-            return;
-        }
-
-        /** @var TNW_Salesforce_Model_Connection $_client */
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
             return;
         }
 
