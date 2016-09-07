@@ -1,3 +1,3 @@
-jQuery(document).ready(function() {
-    jQuery(".select2-select").select2();
+$j(document).ready(function() {
+    $j(".select2-select").select2();
 });
