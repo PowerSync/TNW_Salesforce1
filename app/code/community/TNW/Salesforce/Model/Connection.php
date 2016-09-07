@@ -255,7 +255,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 );
 
                 $this->_packageAvailable = true;
-
+                TNW_Salesforce_Helper_Test_License::validateDateUpdate();
             }
             catch (Exception $e) {
                 $this->_loggedIn = null;
@@ -272,6 +272,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
 
                 $this->_errorMessage = $errorMessage;
                 $this->_packageAvailable = false;
+                TNW_Salesforce_Helper_Test_License::validateDateReset();
             }
         }
 

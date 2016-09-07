@@ -394,12 +394,10 @@ class TNW_Salesforce_Model_Observer
             return;
         }
 
-        $isValidate = Mage::app()->getCache()->load('salesforce_license_validate');
-        if ($isValidate) {
+        if (!TNW_Salesforce_Helper_Test_License::isValidate()) {
             return;
         }
 
-        Mage::app()->getCache()->save('1', 'salesforce_license_validate', array("TNW_SALESFORCE"), 86400);
         Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
     }
 
