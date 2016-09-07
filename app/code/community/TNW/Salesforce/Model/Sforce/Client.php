@@ -8,11 +8,10 @@ class TNW_Salesforce_Model_Sforce_Client extends Salesforce_SforceEnterpriseClie
      * Connect method to www.salesforce.com
      *
      * @param string $wsdl Salesforce.com Partner WSDL
+     * @return TNW_Salesforce_Model_Sforce_Soapclient
      */
     public function createConnection($wsdl, $proxy = null)
     {
-        $phpversion = substr(phpversion(), 0, strpos(phpversion(), '-'));
-
         $soapClientArray = array(
             'user_agent' => 'salesforce-toolkit-php/' . $this->version,
             'encoding' => 'utf-8',

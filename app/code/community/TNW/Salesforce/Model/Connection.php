@@ -173,7 +173,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     public function tryToLogin()
     {
         $success = true;
-        if (!is_object($this->_client)) {
+        if (!is_object($this->_connection)) {
             return false;
         }
 
@@ -242,7 +242,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
                 /**
                  * connection not exists or authorization failed
                  */
-                if (!$this->_client || !$this->_loggedIn) {
+                if (!$this->_connection || !$this->_loggedIn) {
                     $this->_packageAvailable = false;
                     return $this->_packageAvailable;
                 }
@@ -292,7 +292,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         /**
          * connection not exists or authorization failed
          */
-        if (!$this->_client || !$this->_loggedIn) {
+        if (!$this->_connection || !$this->_loggedIn) {
             $this->_packageShipmentAvailable = false;
             return $this->_packageShipmentAvailable;
         }
@@ -327,7 +327,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         /**
          * connection not exists or authorization failed
          */
-        if (!$this->_client || !$this->_loggedIn) {
+        if (!$this->_connection || !$this->_loggedIn) {
             $this->_packageInvoiceAvailable = false;
             return $this->_packageInvoiceAvailable;
         }
@@ -379,7 +379,8 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function getClient()
     {
-        return ($this->isConnected()) ? $this->_client : $this->initConnection();
+        $this->getConnection();
+        return $this->_client;
     }
 
     public function isWsdlFound()
@@ -387,7 +388,25 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         return $this->_wsdl;
     }
 
+    /**
+     * @return null|SoapClient
+     */
     public function isConnected()
+    {
+        try {
+            $this->getConnection();
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Connection Failure: " . $e->getMessage());
+        }
+
+        return $this->_connection;
+    }
+
+    /**
+     * @return null|SoapClient
+     * @throws Exception
+     */
+    public function getConnection()
     {
         $currentTime = time();
         if ($currentTime - (int)$this->getPreviousTime() > self::CONNECTION_TIME_LIMIT) {
@@ -395,8 +414,20 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             $this->_connection = null;
             $this->_loggedIn = null;
 
-            if ($this->tryWsdl() && $this->tryToConnect() && $this->tryToLogin() && TNW_Salesforce_Helper_Test_License::isValidate()) {
-                $this->checkPackage();
+            if (!$this->tryWsdl()) {
+                throw new Exception('The "Wsdl" test failed');
+            }
+
+            if (!$this->tryToConnect()) {
+                throw new Exception('The "Connection" test failed');
+            }
+
+            if (!$this->tryToLogin()) {
+                throw new Exception('The "Login" test failed');
+            }
+
+            if (TNW_Salesforce_Helper_Test_License::isValidate() && !$this->checkPackage()) {
+                throw new Exception('The "License" test failed');
             }
         }
 
