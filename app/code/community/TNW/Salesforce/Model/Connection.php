@@ -390,17 +390,12 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     public function isConnected()
     {
         $currentTime = time();
-        if (
-            !$this->getPreviousTime()
-            || $currentTime - $this->getPreviousTime() > self::CONNECTION_TIME_LIMIT
-        ) {
+        if ($currentTime - (int)$this->getPreviousTime() > self::CONNECTION_TIME_LIMIT) {
             $this->setPreviousTime($currentTime);
             $this->_connection = null;
             $this->_loggedIn = null;
 
-            if ($this->tryWsdl()) {
-                $this->tryToConnect();
-                $this->tryToLogin();
+            if ($this->tryWsdl() && $this->tryToConnect() && $this->tryToLogin() && TNW_Salesforce_Helper_Test_License::isValidate()) {
                 $this->checkPackage();
             }
         }
