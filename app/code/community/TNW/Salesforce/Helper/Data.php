@@ -32,6 +32,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const FAIL_EMAIL = 'salesforce/developer/fail_order';
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
     const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
+    const REAL_TIME_SYNC_MAX_COUNT = 'salesforce/development_and_debugging/real_time_sync_max_count';
 
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
@@ -229,6 +230,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return self::MODULE_TYPE;
     }
 
+    /**
+     * @return bool
+     */
+    final public function isProfessionalEdition()
+    {
+        return $this->getType() == 'PRO';
+    }
+
     // License Email
     public function getLicenseEmail()
     {
@@ -395,6 +404,22 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getDefaultCustomerRole()
     {
         return $this->getStoreConfig(self::CUSTOMER_ROLE);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRealTimeType()
+    {
+        return $this->getObjectSyncType() == 'sync_type_realtime';
+    }
+
+    /**
+     * @return int
+     */
+    public function getRealTimeSyncMaxCount()
+    {
+        return $this->getStoreConfig(self::REAL_TIME_SYNC_MAX_COUNT);
     }
 
     // Default Customer Opportunity Role

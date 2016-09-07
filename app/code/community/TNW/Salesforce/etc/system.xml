@@ -605,6 +605,18 @@
                             </depends>
                         </log_api_call_statistic>
 
+                        <real_time_sync_max_count>
+                            <label>Realtime sync max count</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>310</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </real_time_sync_max_count>
+
                         <!-- Tool settings end -->
                     </fields>
                 </development_and_debugging>
