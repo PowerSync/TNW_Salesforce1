@@ -94,7 +94,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
             }
         }
-        $this->_redirect($this->_getRedirectUrl());
+
+        $this->_redirectReferer();
     }
 
     public function massDeleteAction()
@@ -112,7 +113,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
             }
         }
-        $this->_redirect($this->_getRedirectUrl());
+
+        $this->_redirectReferer();
     }
 
     public function massResyncAction()
@@ -130,7 +132,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
             }
         }
-        $this->_redirect($this->_getRedirectUrl());
+
+        $this->_redirectReferer();
     }
 
     public function processAction()
@@ -140,33 +143,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper("tnw_salesforce")->__("Item where processed"));
             }
         }
-        $this->_redirect($this->_getRedirectUrl());
-    }
 
-    public function massProcessAction()
-    {
-        $itemIds = $this->getRequest()->getParam('queue');
-        if (!is_array($itemIds)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select item(s) in the queue'));
-        } else {
-            if (Mage::helper("tnw_salesforce/queue")->processItems($itemIds)){
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper("tnw_salesforce")->__("Items where processed"));
-            }
-        }
-        $this->_redirect($this->_getRedirectUrl());
-    }
-
-    /**
-     * returns redirect url with correct store Id
-     *
-     * @return string
-     */
-    protected function _getRedirectUrl()
-    {
-        $url = '*/*/index';
-        if (Mage::helper('tnw_salesforce')->getStoreId() != 0) {
-            $url .= '/store/' . Mage::helper('tnw_salesforce')->getStoreId();
-        }
-        return $url;
+        $this->_redirectReferer();
     }
 }
