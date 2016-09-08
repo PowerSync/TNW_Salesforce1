@@ -299,13 +299,27 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ->setIsValidate(false);
 
         $orderCreate->initFromOrder($order);
-        $orderCreate->getQuote()->removeAllItems();
-        $orderCreate->setRecollect(true);
 
+        $orderCreate->getQuote()->removeAllItems();
         $this->addProducts($orderCreate, $object->OrderItems->records);
 
-        // Shipping Method
-        $this->_setShippingMethod($orderCreate);
+        //Unset address cached
+        foreach ($orderCreate->getQuote()->getAllAddresses() as $item) {
+            $item
+                ->unsetData('cached_items_all')
+                ->unsetData('cached_items_nominal')
+                ->unsetData('cached_items_nonnominal');
+        }
+
+        $isVirtual = $orderCreate->getQuote()->isVirtual();
+        if (!$isVirtual) {
+            $orderCreate->getQuote()->getShippingAddress()->setCollectShippingRates(true);
+        }
+
+        $orderCreate->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
+        if (!$isVirtual && !$orderCreate->getQuote()->getShippingAddress()->requestShippingRates()) {
+            $this->_setShippingMethod($orderCreate);
+        }
 
         try {
             $order = $orderCreate->createOrder();
@@ -379,7 +393,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 continue;
             }
 
-            $orderCreate->addProduct($product, array('qty'=>$record->Quantity, 'salesforce_id'=>$record->Id));
+            $orderCreate->addProduct($product->getId(), array('qty'=>$record->Quantity, 'salesforce_id'=>$record->Id, 'reset_count'=>true));
         }
     }
 
@@ -426,11 +440,14 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     {
         $entities = array(
             'Order'     => $order,
-            'Shipping'  => $order->getShippingAddress(),
             'Billing'   => $order->getBillingAddress(),
             'Payment'   => $order->getPayment(),
             'Customer'  => Mage::getModel('customer/customer')->load($order->getCustomerId()),
         );
+
+        if (!$order->getIsVirtual()) {
+            $entities['Shipping'] = $order->getShippingAddress();
+        }
 
         //clear log fields before update
         $updateFieldsLog = array();
@@ -457,7 +474,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 $additional[$entityName][$field] = $newValue;
             }
 
-            if ($entity->hasData($field) && $entity->getData($field) != $newValue) {
+            if ($entity->getData($field) != $newValue) {
                 $entity->setData($field, $newValue);
                 $this->addEntityToSave($entityName, $entity);
 
