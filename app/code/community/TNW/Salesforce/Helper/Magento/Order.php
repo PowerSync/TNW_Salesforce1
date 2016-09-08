@@ -472,7 +472,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         $allowedProductType = array(
             Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
             Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
-            Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE,
         );
 
         if (!in_array($product->getTypeId(), $allowedProductType)) {
