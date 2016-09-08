@@ -13,19 +13,8 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
         $this->setDefaultSort('date_created');
         $this->setDefaultDir('DESC');
         $this->setSaveParametersInSession(true);
-        $this->setUseAjax(true);
+        $this->setUseAjax(false);
         $this->setVarNameFilter('filter');
-    }
-
-    /**
-     * @return Mage_Adminhtml_Block_Widget_Grid
-     */
-    protected function _prepareCollection()
-    {
-        $collection = Mage::getModel('tnw_salesforce/queue_storage')->getCollection();
-        $this->setCollection($collection);
-
-        return parent::_prepareCollection();
     }
 
     /**
@@ -96,18 +85,6 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
             'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Queuemessage'
         ));
 
-        $this->addColumn('sync_type', array(
-            'header'    => Mage::helper('tnw_salesforce')->__('Queue Type'),
-            'sortable'  => true,
-            'index'     => 'sync_type',
-            'type'      => 'options',
-            'width'     => '100px',
-            'options'   => array(
-                TNW_Salesforce_Model_Cron::SYNC_TYPE_OUTGOING   => Mage::helper('tnw_salesforce')->__('Outgoing Queue'),
-                TNW_Salesforce_Model_Cron::SYNC_TYPE_BULK       => Mage::helper('tnw_salesforce')->__('Bulk Queue'),
-            )
-        ));
-
         $this->addColumn('singleAction',
             array(
                 'header' => Mage::helper('sales')->__('Action'),
@@ -167,10 +144,13 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
     }
 
     /**
+     * Return row url for js event handlers
+     *
+     * @param Mage_Catalog_Model_Product|Varien_Object
      * @return string
      */
-    public function getGridUrl()
+    public function getRowUrl($item)
     {
-        return $this->getUrl('*/*/grid', array('_current' => true));
+        return '';
     }
 }

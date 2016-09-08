@@ -250,12 +250,12 @@
                         </from_salesforce>
                         <to_salesforce translate="title" module="tnw_salesforce">
                             <title>TO Salesforce</title>
-                            <action>adminhtml/salesforcesync_queue_to/index/filter/c3luY190eXBlPW91dGdvaW5n</action>
+                            <action>adminhtml/salesforcesync_queue_to/outgoing</action>
                             <sort_order>20</sort_order>
                         </to_salesforce>
                         <to_salesforce_background translate="title" module="tnw_salesforce">
                             <title>TO Salesforce (background)</title>
-                            <action>adminhtml/salesforcesync_queue_to/index/filter/c3luY190eXBlPWJ1bGs=</action>
+                            <action>adminhtml/salesforcesync_queue_to/bulk</action>
                             <sort_order>30</sort_order>
                         </to_salesforce_background>
                     </children>
