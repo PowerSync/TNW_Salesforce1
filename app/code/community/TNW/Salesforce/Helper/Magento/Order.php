@@ -57,7 +57,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param $object stdClass
      * @param $_mMagentoId
      * @param $_sSalesforceId
-     * @return Mage_Sales_Model_Order|bool
+     * @return bool|Mage_Sales_Model_Order
+     * @throws Exception
      */
     protected function _updateMagento($object, $_mMagentoId, $_sSalesforceId)
     {
@@ -203,6 +204,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ));
 
             try {
+                $orderCreate->getSession()->unsetData('order_id');
                 $order = $orderCreate->createOrder();
 
                 /** @var Mage_Sales_Model_Order_Item $item */
@@ -225,7 +227,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                         ->saveError($message);
                 }
 
-                return false;
+                throw $e;
             }
         }
 
@@ -291,6 +293,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param Mage_Sales_Model_Order $order
      * @param stdClass $object
      * @return Mage_Sales_Model_Order
+     * @throws Exception
      */
     protected function reorder($order, $object)
     {
@@ -330,6 +333,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 $item->setData('salesforce_id', $request['salesforce_id']);
                 $this->addEntityToSave(sprintf('Order Item %s', $item->getId()), $item);
             }
+
+            $orderCreate->getSession()->unsetData('order_id');
         } catch (Exception $e) {
             $message = $e->getMessage();
             if (empty($message)) {
@@ -343,6 +348,9 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError($message);
             }
+
+            $orderCreate->getSession()->unsetData('order_id');
+            throw $e;
         }
 
         return $order;
