@@ -301,10 +301,68 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
             ->setIsValidate(false);
 
-        $orderCreate->initFromOrder($order);
+        /** @var Mage_Sales_Model_Order_Item $item */
+        foreach ($order->getAllVisibleItems() as $item) {
+            $options = $item->getProductOptions();
+            $options['info_buyRequest']['salesforce_id'] = $item->getData('salesforce_id');
+            $item->setProductOptions($options);
+        }
 
         $orderCreate->getQuote()->removeAllItems();
-        $this->addProducts($orderCreate, $object->OrderItems->records);
+        $orderCreate->initFromOrder($order);
+
+        $sfItems = array();
+        /** @var stdClass $record */
+        foreach ($object->OrderItems->records as $record) {
+            $sfItems[$record->Id] = $record;
+        }
+
+        $updateItems = $removeItems = array();
+
+        /** @var Mage_Sales_Model_Quote_Item $item */
+        foreach ($orderCreate->getQuote()->getItemsCollection() as $itemId => $item) {
+            if ($item->isDeleted() || $item->getParentItemId()) {
+                continue;
+            }
+
+            $value = $item->getOptionByCode('info_buyRequest')->getValue();
+            $value = @unserialize($value);
+            $salesforceId = $value['salesforce_id'];
+            if (isset($sfItems[$salesforceId])) {
+                $updateItems[$itemId] = array(
+                    'qty' => $sfItems[$salesforceId]->Quantity
+                );
+
+                unset($sfItems[$salesforceId]);
+            } else {
+                $removeItems[] = $itemId;
+            }
+        }
+
+        // Update Item
+        $orderCreate->updateQuoteItems($updateItems);
+
+        // Remove Item
+        foreach ($removeItems as $removeItem) {
+            $orderCreate->removeQuoteItem($removeItem);
+        }
+
+        // Add Item
+        foreach ($sfItems as $record) {
+            $product = $this->_searchProduct($record->PricebookEntry->Product2Id);
+            if (is_null($product->getId())) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice('Product (sku:'.$record->PricebookEntry->Product2->ProductCode.') not found');
+
+                continue;
+            }
+
+            if (!$this->isProductValidate($product)) {
+                continue;
+            }
+
+            $orderCreate->addProduct($product->getId(), array('qty'=>$record->Quantity, 'salesforce_id'=>$record->Id));
+        }
 
         //Unset address cached
         foreach ($orderCreate->getQuote()->getAllAddresses() as $item) {
