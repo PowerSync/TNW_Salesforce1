@@ -15,6 +15,7 @@ class TNW_Salesforce_Model_Sforce_Soapclient extends SoapClient
      * @param int $version
      * @param int $one_way
      * @return string
+     * @throws Exception
      */
     public function __doRequest($request, $location, $action, $version, $one_way = 0)
     {
@@ -29,6 +30,22 @@ class TNW_Salesforce_Model_Sforce_Soapclient extends SoapClient
         }
 
         return parent::__doRequest($request, $location, $action, $version, $one_way);
+    }
+
+    /**
+     * @param string $function_name
+     * @param string $arguments
+     * @return mixed
+     * @throws SoapFault
+     */
+    public function __call($function_name, $arguments)
+    {
+        try {
+            return parent::__call($function_name, $arguments);
+        } catch (SoapFault $e) {
+            TNW_Salesforce_Helper_Test_License::validateDateReset();
+            throw $e;
+        }
     }
 
 

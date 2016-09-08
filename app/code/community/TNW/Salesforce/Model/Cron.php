@@ -285,44 +285,14 @@ class TNW_Salesforce_Model_Cron
             ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
             ->save();
 
-        // Force SF connection if session is expired or not found
-        $_urlArray = explode('/', Mage::app()->getStore($_helperData->getStoreId())->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
-        $this->_serverName = (array_key_exists('2', $_urlArray)) ? $_urlArray[2] : NULL;
-        if ($this->_serverName) {
-            if (
-                !Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')
-                || !Mage::getSingleton('core/session')->getSalesforceUrl()
-            ) {
-                $_license = Mage::getSingleton('tnw_salesforce/license')->forceTest($this->_serverName);
-                if ($_license) {
-                    /** @var TNW_Salesforce_Model_Connection $_client */
-                    $_client = Mage::getSingleton('tnw_salesforce/connection');
-
-                    // try to connect
-                    if (
-                        !$_client->initConnection()
-                    ) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
-                        return;
-                    }
-                    else {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: login to salesforce api - OK");
-                    }
-                }
-            }
-
-            if ($isRealtime) {
-                $this->_syncObjectForRealTimeMode();
-            }
-            else {
-                $this->_syncObjectForBulkMode();
-            }
-
-            $this->_deleteSuccessfulRecords();
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
+        if ($isRealtime) {
+            $this->_syncObjectForRealTimeMode();
+        }
+        else {
+            $this->_syncObjectForBulkMode();
         }
 
+        $this->_deleteSuccessfulRecords();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
     }
 
@@ -339,31 +309,6 @@ class TNW_Salesforce_Model_Cron
         $_helperData = Mage::helper('tnw_salesforce');
         if (!$_helperData->isEnabled()) {
             return;
-        }
-
-        // Force SF connection if session is expired or not found
-        $_urlArray = explode('/', Mage::app()->getStore($_helperData->getStoreId())->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
-        $this->_serverName = (array_key_exists('2', $_urlArray)) ? $_urlArray[2] : NULL;
-        if (!$this->_serverName) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: Server Name is undefined!");
-            return;
-        }
-
-        if (
-            !Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')
-            || !Mage::getSingleton('core/session')->getSalesforceUrl()
-        ) {
-            $_license = Mage::getSingleton('tnw_salesforce/license')->forceTest($this->_serverName);
-            if ($_license) {
-                /** @var TNW_Salesforce_Model_Connection $_client */
-                $_client = Mage::getSingleton('tnw_salesforce/connection');
-
-                // try to connect
-                if (!$_client->initConnection()) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: login to salesforce api failed, sync process skipped");
-                    return;
-                }
-            }
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync Bulk background process for store (%s) and website id (%s) ...",
