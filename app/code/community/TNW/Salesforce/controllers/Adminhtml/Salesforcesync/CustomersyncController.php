@@ -121,7 +121,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
                     if ($success) {
                         if ($syncBulk) {
                             $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                            $session->addSuccess($this->__('Selected records were added into synchronization queue and will be processed in the background.'));
+                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
                         }
                         else {
                             $session->addSuccess($this->__('Records are pending addition into the queue!'));
