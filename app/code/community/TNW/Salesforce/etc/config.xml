@@ -336,11 +336,6 @@
             <!-- admin login success -->
             <admin_session_user_login_success>
                 <observers>
-                    <tnw_salesforce_admin_login_observer>
-                        <type>singleton</type>
-                        <class>tnw_salesforce/observer</class>
-                        <method>mageLoginEventCall</method>
-                    </tnw_salesforce_admin_login_observer>
                     <tnw_salesforce_fix_acl>
                         <type>singleton</type>
                         <class>tnw_salesforce/observer</class>
@@ -598,17 +593,6 @@
                     </tnw_salesforce_block_load_observer>
                 </observers>
             </controller_action_layout_generate_xml_before>
-
-            <!-- Blocks for admin panel: update adminhtml/sales_order_view_info html if module enabled -->
-            <core_block_abstract_to_html_after>
-                <observers>
-                    <tnw_salesforce_block_observer>
-                        <type>model</type>
-                        <class>tnw_salesforce/blocks_observer</class>
-                        <method>updateBlocks</method>
-                    </tnw_salesforce_block_observer>
-                </observers>
-            </core_block_abstract_to_html_after>
 
             <adminhtml_controller_salesrule_prepare_save>
                 <observers>

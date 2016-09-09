@@ -67,7 +67,7 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
         $this->addColumn('json', array(
             'header'    => Mage::helper('tnw_salesforce')->__('JSON'),
             'index'     => 'json',
-            'renderer'  => 'tnw_salesforce/adminhtml_tool_log_grid_column_renderer_message'
+            'renderer'  => 'tnw_salesforce/adminhtml_widget_grid_column_renderer_json'
         ));
 
         return parent::_prepareColumns();
@@ -79,5 +79,16 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
     public function getGridUrl()
     {
         return $this->getUrl('*/*/grid', array('_current' => true));
+    }
+
+    /**
+     * Return row url for js event handlers
+     *
+     * @param Mage_Catalog_Model_Product|Varien_Object
+     * @return string
+     */
+    public function getRowUrl($item)
+    {
+        return '';
     }
 }

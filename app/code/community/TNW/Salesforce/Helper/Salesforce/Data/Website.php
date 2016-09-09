@@ -10,7 +10,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helpe
 
     public function __construct()
     {
-        parent::__construct();
 
         $this->_fields = array(
             'name'          =>  'Name',
