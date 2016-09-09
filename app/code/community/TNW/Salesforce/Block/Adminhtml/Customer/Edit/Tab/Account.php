@@ -18,6 +18,9 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Account extends Mage_Admi
             return $this;
         }
 
+        $baseFieldset->removeField('salesforce_account_owner_id');
+        $baseFieldset->removeField('salesforce_lead_owner_id');
+
         if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce')->isEnabledCustomerSync()) {
             foreach ($this->fields as $field) {
                 $baseFieldset->removeField($field);
