@@ -212,7 +212,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
 
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
         $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-            ->addObjectToFilter('OrderShipment')
+            ->addObjectToFilter($sfObject)
             ->addFilterTypeSM(!$shipment->isObjectNew())
             ->firstSystem();
 
