@@ -6,17 +6,19 @@
 
 class TNW_Salesforce_Model_License
 {
-
-    public function getStatus() {
-
-        $_model = Mage::getSingleton('tnw_salesforce/connection');
-        Mage::getSingleton('tnw_salesforce/connection')->initConnection();
-        return $_model->checkPackage();
+    /**
+     * @return bool
+     */
+    public function getStatus()
+    {
+        return (bool)Mage::getSingleton('tnw_salesforce/connection')
+            ->isConnected();
     }
 
     /**
      * @param $_server
      * @return bool
+     * @deprecated
      */
     public function forceTest($_server = null)
     {

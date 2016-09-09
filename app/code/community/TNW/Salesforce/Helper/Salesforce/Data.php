@@ -27,11 +27,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     protected $_noConnectionArray = array();
 
-    public function __construct()
-    {
-        $this->connect();
-    }
-
     /**
      * @return null
      */

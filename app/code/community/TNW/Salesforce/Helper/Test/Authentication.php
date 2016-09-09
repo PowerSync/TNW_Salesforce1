@@ -86,14 +86,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
      */
     public function validateLicense()
     {
-        // check local storage
-        $sfSessionId = $this->getStorage('salesforce_session_id');
-        if (!empty($sfSessionId)) {
-
-            return true;
-        }
-
-        foreach (array('wsdl', 'connection', 'login') as $testName) {
+        foreach (array('wsdl', 'connection', 'login', 'license') as $testName) {
             if ($this->_checkTest($testName)) {
                 continue;
             }
