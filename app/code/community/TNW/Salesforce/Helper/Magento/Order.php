@@ -72,6 +72,22 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $order = Mage::getModel('sales/order')
                 ->load($_mMagentoId, 'increment_id');
 
+            //Fix: Delete bundle product
+            $itemsCollection = $order->getItemsCollection();
+            /** @var Mage_Sales_Model_Order_Item $item */
+            foreach ($itemsCollection as $item) {
+                if ($item->getProductType() != 'bundle') {
+                    continue;
+                }
+
+                /** @var Mage_Sales_Model_Order_Item $_item */
+                foreach ($item->getChildrenItems() as $_item) {
+                    $itemsCollection->removeItemByKey($_item->getId());
+                }
+
+                $itemsCollection->removeItemByKey($item->getId());
+            }
+
             if ($this->isItemChange($order, $object)) {
                 $order->addData(array(
                     'salesforce_id' => $_sSalesforceId,
