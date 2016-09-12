@@ -40,7 +40,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
         if (is_null($_mMagentoId) && !empty($_sSalesforceId)) {
             // Try to find the user by SF Id
-            $sql = "SELECT increment_id FROM `$orderTable` WHERE salesforce_id = '$_sSalesforceId' AND relation_child_id IS NULL";
+            $sql = "SELECT increment_id FROM `$orderTable` WHERE salesforce_id = '$_sSalesforceId'";
             $row = $this->_write->query($sql)->fetch();
             if ($row) {
                 $_mMagentoId = $row['increment_id'];
@@ -58,7 +58,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param $_mMagentoId
      * @param $_sSalesforceId
      * @return bool|Mage_Sales_Model_Order
-     * @throws Exception
      */
     protected function _updateMagento($object, $_mMagentoId, $_sSalesforceId)
     {
@@ -74,7 +73,60 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 ->load($_mMagentoId, 'increment_id');
 
             if ($this->isItemChange($order, $object)) {
-                $order = $this->reorder($order, $object);
+                $order->addData(array(
+                    'salesforce_id' => $_sSalesforceId,
+                    'sf_insync'     => 1
+                ));
+
+                $this
+                    ->_updateMappedEntityFields($object, $order, $mappings)
+                    ->_updateMappedEntityItemFields($object, $order)
+                    ->_updateNotes($object, $order)
+                    ->saveEntities();
+
+                if (!Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Creating orders with reverse sync disabled');
+
+                    return $order;
+                }
+
+                if ($order->getRelationChildId()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('Child order is already exists');
+
+                    return $order;
+                }
+
+                // Create new order
+                $newOrder = $this->reorder($order, $object);
+                $order = Mage::getSingleton('adminhtml/sales_order_create')->getSession()
+                    ->getOrder();
+
+                $this
+                    ->_updateMappedEntityFields($object, $newOrder, $mappings)
+                    ->_updateMappedEntityItemFields($object, $newOrder)
+                    ->_updateNotes($object, $newOrder)
+                    ->_updateStatus($object, $newOrder);
+
+                $this->saveEntities();
+
+                //Sync Orders
+                Mage::getSingleton('core/session')->setFromSalesForce(false);
+
+                $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
+                Mage::dispatchEvent(sprintf('tnw_salesforce_%s_status_update', $_syncType), array(
+                    'order' => $order
+                ));
+
+                Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                    'orderIds' => array($newOrder->getId()),
+                    'message'  => "SUCCESS: Upserting Order #" . $newOrder->getRealOrderId(),
+                    'type'     => 'salesforce'
+                ));
+
+                Mage::getSingleton('core/session')->setFromSalesForce(true);
+                return $order;
             }
         }
         else {
@@ -85,150 +137,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 return false;
             }
 
-            /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
-            $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
-                ->setIsValidate(false);
-
-            // Get Customer
-            $customer = $this->_searchCustomer($object->BillToContactId);
-            if (is_null($customer->getId())) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('Customer Not Found');
-
-                return false;
-            }
-
-            $_websiteId = null;
-            $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
-            if (property_exists($object, $_websiteSfField)) {
-                $_websiteSfId = Mage::helper('tnw_salesforce')
-                    ->prepareId($object->{$_websiteSfField});
-
-                $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-                if ($_websiteId === false) {
-                    $_websiteId = null;
-                }
-            }
-
-            $storeId = is_null($_websiteId)
-                ? Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId()
-                : Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
-
-            /**
-             * Identify customer
-             */
-            $orderCreate->getSession()
-                ->setCustomerId((int) $customer->getId())
-                ->setStoreId((int) $storeId);
-
-            $orderCreate->setRecollect(true);
-
-            //Get Address
-            $address = array(
-                'Shipping' => array(),
-                'Billing'  => array(),
-            );
-
-            /** @var TNW_Salesforce_Model_Mapping $mapping */
-            foreach ($mappings as $mapping) {
-                $value = property_exists($object, $mapping->getSfField())
-                    ? $object->{$mapping->getSfField()} : null;
-
-                if (empty($value)) {
-                    $value = $mapping->getDefaultValue();
-                }
-
-                $entityName = $mapping->getLocalFieldType();
-                if (!isset($address[$entityName])) {
-                    continue;
-                }
-
-                $field = $mapping->getLocalFieldAttributeCode();
-                $address[$entityName][$field] = $value;
-            }
-
-            foreach ($address as &$_address) {
-                $_countryCode = $this->_getCountryId($_address['country_id']);
-                $_regionCode  = null;
-                if ($_countryCode) {
-                    foreach (array('region_id', 'region') as $_regionField) {
-                        if (!isset($_address[$_regionField])) {
-                            continue;
-                        }
-
-                        $_regionCode = $this->_getRegionId($_address[$_regionField], $_countryCode);
-                        if (!empty($_regionCode)) {
-                            break;
-                        }
-                    }
-                }
-
-                $_address['country_id'] = $_countryCode;
-                $_address['region_id']  = $_regionCode;
-            }
-
-            // Get Product
-            $this->addProducts($orderCreate, $object->OrderItems->records);
-            if (!$orderCreate->getQuote()->hasItems()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('Empty products');
-
-                return false;
-            }
-
-            // Billing Address
-            $orderCreate->setBillingAddress(array_merge(array(
-                'save_in_address_book'      => 0,
-                'firstname'                 => $customer->getData('firstname'),
-                'lastname'                  => $customer->getData('lastname'),
-                'telephone'                 => '',
-                'should_ignore_validation'  => true,
-            ), $address['Billing']));
-
-            // Shipping Address
-            $orderCreate
-                ->setShippingAddress(array_merge(array(
-                    'save_in_address_book'      => 0,
-                    'firstname'                 => $customer->getData('firstname'),
-                    'lastname'                  => $customer->getData('lastname'),
-                    'telephone'                 => '',
-                    'should_ignore_validation'  => true,
-                ), $address['Shipping']));
-
-            // Shipping Method
-            $this->_setShippingMethod($orderCreate);
-
-            // Payment
-            $orderCreate->setPaymentData(array(
-                'method' => 'tnw_import'
-            ));
-
-            try {
-                $orderCreate->getSession()->unsetData('order_id');
-                $order = $orderCreate->createOrder();
-
-                /** @var Mage_Sales_Model_Order_Item $item */
-                foreach ($order->getItemsCollection() as $item) {
-                    $request = $item->getProductOptionByCode('info_buyRequest');
-                    $item->setData('salesforce_id', $request['salesforce_id']);
-                    $this->addEntityToSave(sprintf('Order Item %s', $item->getId()), $item);
-                }
-            } catch (Exception $e) {
-                $message = $e->getMessage();
-                if (empty($message)) {
-                    $messages = $orderCreate->getSession()->getMessages(true);
-                    if ($messages->count() > 0) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveError($messages->toString());
-                    }
-                }
-                else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveError($message);
-                }
-
-                throw $e;
-            }
+            // Create new order
+            $order = $this->create($object, $mappings);
         }
 
         $order->addData(array(
@@ -236,7 +146,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             'sf_insync'     => 1
         ));
 
-        $this->_updateMappedEntityFields($object, $order, $mappings)
+        $this
+            ->_updateMappedEntityFields($object, $order, $mappings)
             ->_updateMappedEntityItemFields($object, $order, (bool) $_mMagentoId)
             ->_updateNotes($object, $order)
             ->_updateStatus($object, $order)
@@ -281,12 +192,194 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 break;
             }
 
+            if (floatval($item->getPrice()) != floatval($record->UnitPrice)) {
+                $isChange = true;
+                break;
+            }
+
             $salesforceIds[] = $record->Id;
         }
 
         //Check remove element
         $result = array_diff($hasSalesforceId, $salesforceIds);
         return $isChange || !empty($result);
+    }
+
+    /**
+     * @param $object
+     * @param $mappings
+     * @return Mage_Sales_Model_Order
+     * @throws Exception
+     */
+    protected function create($object, $mappings)
+    {
+        /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
+        $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
+            ->setIsValidate(false);
+
+        // Get Customer
+        $customer = $this->_searchCustomer($object->BillToContactId);
+        if (is_null($customer->getId())) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('Customer Not Found');
+
+            throw new Exception('Customer Not Found');
+        }
+
+        $_websiteId = null;
+        $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+        if (property_exists($object, $_websiteSfField)) {
+            $_websiteSfId = Mage::helper('tnw_salesforce')
+                ->prepareId($object->{$_websiteSfField});
+
+            $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
+            if ($_websiteId === false) {
+                $_websiteId = null;
+            }
+        }
+
+        $storeId = is_null($_websiteId)
+            ? Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId()
+            : Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+
+        /**
+         * Identify customer
+         */
+        $orderCreate->getSession()
+            ->setCustomerId((int) $customer->getId())
+            ->setStoreId((int) $storeId);
+
+        $orderCreate->setRecollect(true);
+
+        //Get Address
+        $address = array(
+            'Shipping' => array(),
+            'Billing'  => array(),
+        );
+
+        /** @var TNW_Salesforce_Model_Mapping $mapping */
+        foreach ($mappings as $mapping) {
+            $value = property_exists($object, $mapping->getSfField())
+                ? $object->{$mapping->getSfField()} : null;
+
+            if (empty($value)) {
+                $value = $mapping->getDefaultValue();
+            }
+
+            $entityName = $mapping->getLocalFieldType();
+            if (!isset($address[$entityName])) {
+                continue;
+            }
+
+            $field = $mapping->getLocalFieldAttributeCode();
+            $address[$entityName][$field] = $value;
+        }
+
+        foreach ($address as &$_address) {
+            $_countryCode = $this->_getCountryId($_address['country_id']);
+            $_regionCode  = null;
+            if ($_countryCode) {
+                foreach (array('region_id', 'region') as $_regionField) {
+                    if (!isset($_address[$_regionField])) {
+                        continue;
+                    }
+
+                    $_regionCode = $this->_getRegionId($_address[$_regionField], $_countryCode);
+                    if (!empty($_regionCode)) {
+                        break;
+                    }
+                }
+            }
+
+            $_address['country_id'] = $_countryCode;
+            $_address['region_id']  = $_regionCode;
+        }
+
+        // Get Product
+        $this->addProducts($orderCreate, $object->OrderItems->records);
+        if (!$orderCreate->getQuote()->hasItems()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('Empty products');
+
+            throw new Exception('Empty products');
+        }
+
+        $updateItems = array();
+        /** @var Mage_Sales_Model_Quote_Item $item */
+        foreach ($orderCreate->getQuote()->getItemsCollection() as $itemId => $item) {
+            if ($item->isDeleted() || $item->getParentItemId()) {
+                continue;
+            }
+
+            $value = $item->getOptionByCode('info_buyRequest')->getValue();
+            $value = @unserialize($value);
+            $salesforceId = $value['salesforce_id'];
+            if (isset($sfItems[$salesforceId])) {
+                $updateItems[$itemId] = array(
+                    'qty'           => $sfItems[$salesforceId]->Quantity,
+                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice,
+                );
+            }
+        }
+
+        // Update Item
+        $orderCreate->updateQuoteItems($updateItems);
+
+        // Billing Address
+        $orderCreate->setBillingAddress(array_merge(array(
+            'save_in_address_book'      => 0,
+            'firstname'                 => $customer->getData('firstname'),
+            'lastname'                  => $customer->getData('lastname'),
+            'telephone'                 => '',
+            'should_ignore_validation'  => true,
+        ), $address['Billing']));
+
+        // Shipping Address
+        $orderCreate
+            ->setShippingAddress(array_merge(array(
+                'save_in_address_book'      => 0,
+                'firstname'                 => $customer->getData('firstname'),
+                'lastname'                  => $customer->getData('lastname'),
+                'telephone'                 => '',
+                'should_ignore_validation'  => true,
+            ), $address['Shipping']));
+
+        // Shipping Method
+        $this->_setShippingMethod($orderCreate);
+
+        // Payment
+        $orderCreate->setPaymentData(array(
+            'method' => 'tnw_import'
+        ));
+
+        try {
+            $orderCreate->getSession()->unsetData('order_id');
+            $order = $orderCreate->createOrder();
+
+            /** @var Mage_Sales_Model_Order_Item $item */
+            foreach ($order->getItemsCollection() as $item) {
+                $request = $item->getProductOptionByCode('info_buyRequest');
+                $item->setData('salesforce_id', $request['salesforce_id']);
+                $this->addEntityToSave(sprintf('Order Item %s', $item->getId()), $item);
+            }
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            if (empty($message)) {
+                $messages = $orderCreate->getSession()->getMessages(true);
+                if ($messages->count() > 0) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError($messages->toString());
+                }
+            }
+            else {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($message);
+            }
+
+            throw $e;
+        }
+
+        return $order;
     }
 
     /**
@@ -330,7 +423,9 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $salesforceId = $value['salesforce_id'];
             if (isset($sfItems[$salesforceId])) {
                 $updateItems[$itemId] = array(
-                    'qty' => $sfItems[$salesforceId]->Quantity
+                    'qty'           => $sfItems[$salesforceId]->Quantity,
+                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice,
+                    'use_discount'  => true,
                 );
 
                 unset($sfItems[$salesforceId]);
@@ -338,9 +433,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 $removeItems[] = $itemId;
             }
         }
-
-        // Update Item
-        $orderCreate->updateQuoteItems($updateItems);
 
         // Remove Item
         foreach ($removeItems as $removeItem) {
@@ -364,6 +456,27 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $orderCreate->addProduct($product->getId(), array('qty'=>$record->Quantity, 'salesforce_id'=>$record->Id));
         }
 
+        /** @var Mage_Sales_Model_Quote_Item $item */
+        foreach ($orderCreate->getQuote()->getItemsCollection() as $itemId => $item) {
+            if ($item->isDeleted() || $item->getParentItemId()) {
+                continue;
+            }
+
+            $value = $item->getOptionByCode('info_buyRequest')->getValue();
+            $value = @unserialize($value);
+            $salesforceId = $value['salesforce_id'];
+            if (isset($sfItems[$salesforceId])) {
+                $updateItems[$itemId] = array(
+                    'qty'           => $sfItems[$salesforceId]->Quantity,
+                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice,
+                    'use_discount'  => true,
+                );
+            }
+        }
+
+        // Update Item
+        $orderCreate->updateQuoteItems($updateItems);
+
         //Unset address cached
         foreach ($orderCreate->getQuote()->getAllAddresses() as $item) {
             $item
@@ -383,10 +496,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         }
 
         try {
-            $order = $orderCreate->createOrder();
+            $newOrder = $orderCreate->createOrder();
 
             /** @var Mage_Sales_Model_Order_Item $item */
-            foreach ($order->getItemsCollection() as $item) {
+            foreach ($newOrder->getItemsCollection() as $item) {
                 $request = $item->getProductOptionByCode('info_buyRequest');
                 $item->setData('salesforce_id', $request['salesforce_id']);
                 $this->addEntityToSave(sprintf('Order Item %s', $item->getId()), $item);
@@ -411,7 +524,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             throw $e;
         }
 
-        return $order;
+        return $newOrder;
     }
 
     /**

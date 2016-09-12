@@ -267,13 +267,14 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     protected function saveEntities()
     {
         if (!empty($this->_entitiesToSave)) {
-            $transaction = Mage::getSingleton('core/resource_transaction');
+            $transaction = Mage::getModel('core/resource_transaction');
             foreach ($this->_entitiesToSave as $key => $entityToSave) {
                 $transaction->addObject($entityToSave);
             }
             $transaction->save();
         }
 
+        $this->_entitiesToSave = array();
         return $this;
     }
 
