@@ -130,12 +130,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                 if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
                     $syncBulk = (count($itemIds) > 1);
 
-                    $_collection = Mage::getResourceModel('sales/quote_item_collection')
+                    /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
+                    $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
                         ->addFieldToFilter('quote_id', array('in' => $itemIds));
 
-                    $productIds = $_collection->walk(array(
-                        Mage::helper('tnw_salesforce/salesforce_abandoned_opportunity'), 'getProductIdFromCart'
-                    ));
+                    $productIds = $_collection->walk('getProductId');
 
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);

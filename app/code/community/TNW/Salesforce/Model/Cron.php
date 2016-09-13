@@ -134,12 +134,11 @@ class TNW_Salesforce_Model_Cron
             return false;
         }
 
-        $_collection = Mage::getResourceModel('sales/quote_item_collection')
+        /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
+        $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
             ->addFieldToFilter('quote_id', array('in' => $itemIds));
 
-        $productIds = $_collection->walk(array(
-            Mage::helper('tnw_salesforce/salesforce_abandoned_opportunity'), 'getProductIdFromCart'
-        ));
+        $productIds = $_collection->walk('getProductId');
 
         /** @var TNW_Salesforce_Model_Localstorage $localstorage */
         $localstorage = Mage::getModel('tnw_salesforce/localstorage');
