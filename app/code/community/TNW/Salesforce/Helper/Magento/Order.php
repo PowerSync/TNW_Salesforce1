@@ -100,21 +100,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
                 $this->saveEntities();
 
-                //Fix: Delete bundle product
-                /** @var Mage_Sales_Model_Order_Item $item */
-                foreach ($order->getAllVisibleItems() as $item) {
-                    if ($item->getProductType() != 'bundle') {
-                        continue;
-                    }
-
-                    /** @var Mage_Sales_Model_Order_Item $_item */
-                    foreach ($item->getChildrenItems() as $_item) {
-                        $order->getItemsCollection()->removeItemByKey($_item->getId());
-                    }
-
-                    $order->getItemsCollection()->removeItemByKey($item->getId());
-                }
-
                 // Create new order
                 $newOrder = $this->reorder($order, $object);
                 $order = Mage::getSingleton('adminhtml/sales_order_create')->getSession()
@@ -418,8 +403,22 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
             ->setIsValidate(false);
 
+        //FIX: Bundle zero price
+        $bundleItems = array();
         /** @var Mage_Sales_Model_Order_Item $item */
         foreach ($order->getAllVisibleItems() as $item) {
+            //Fix: Delete bundle product
+            if ($item->getProductType() == 'bundle') {
+                /** @var Mage_Sales_Model_Order_Item $_item */
+                foreach ($item->getChildrenItems() as $_item) {
+                    $bundleItems[] = $_item->getData('salesforce_id');
+                    $order->getItemsCollection()->removeItemByKey($_item->getId());
+                }
+
+                $order->getItemsCollection()->removeItemByKey($item->getId());
+                continue;
+            }
+
             $options = $item->getProductOptions();
             $options['info_buyRequest']['salesforce_id'] = $item->getData('salesforce_id');
             $item->setProductOptions($options);
@@ -448,7 +447,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             if (isset($sfItems[$salesforceId])) {
                 $updateItems[$itemId] = array(
                     'qty'           => $sfItems[$salesforceId]->Quantity,
-                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice ? $sfItems[$salesforceId]->UnitPrice : null,
+                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice,
                     'use_discount'  => true,
                 );
 
@@ -490,9 +489,14 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $value = @unserialize($value);
             $salesforceId = $value['salesforce_id'];
             if (isset($sfItems[$salesforceId])) {
+                $customPrice = $sfItems[$salesforceId]->UnitPrice;
+                if (in_array($salesforceId, $bundleItems) && floatval($customPrice) == 0) {
+                    $customPrice = null;
+                }
+
                 $updateItems[$itemId] = array(
                     'qty'           => $sfItems[$salesforceId]->Quantity,
-                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice ? $sfItems[$salesforceId]->UnitPrice : null,
+                    'custom_price'  => $customPrice,
                     'use_discount'  => true,
                 );
             }
