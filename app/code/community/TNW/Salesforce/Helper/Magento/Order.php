@@ -58,6 +58,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param $_mMagentoId
      * @param $_sSalesforceId
      * @return bool|Mage_Sales_Model_Order
+     * @throws Exception
      */
     protected function _updateMagento($object, $_mMagentoId, $_sSalesforceId)
     {
@@ -72,23 +73,14 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $order = Mage::getModel('sales/order')
                 ->load($_mMagentoId, 'increment_id');
 
-            //Fix: Delete bundle product
-            $itemsCollection = $order->getItemsCollection();
-            /** @var Mage_Sales_Model_Order_Item $item */
-            foreach ($itemsCollection as $item) {
-                if ($item->getProductType() != 'bundle') {
-                    continue;
-                }
+            if ($order->getRelationChildId()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('Child order is already exists');
 
-                /** @var Mage_Sales_Model_Order_Item $_item */
-                foreach ($item->getChildrenItems() as $_item) {
-                    $itemsCollection->removeItemByKey($_item->getId());
-                }
-
-                $itemsCollection->removeItemByKey($item->getId());
+                throw new Exception('Child order is already exists');
             }
 
-            if ($this->isItemChange($order, $object)) {
+            if ($this->isItemChange($order, $object) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
                 $order->addData(array(
                     'salesforce_id' => $_sSalesforceId,
                     'sf_insync'     => 1
@@ -97,21 +89,23 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 $this
                     ->_updateMappedEntityFields($object, $order, $mappings)
                     ->_updateMappedEntityItemFields($object, $order)
-                    ->_updateNotes($object, $order)
-                    ->saveEntities();
+                    ->_updateNotes($object, $order);
 
-                if (!Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveTrace('Creating orders with reverse sync disabled');
+                $this->saveEntities();
 
-                    return $order;
-                }
+                //Fix: Delete bundle product
+                /** @var Mage_Sales_Model_Order_Item $item */
+                foreach ($order->getAllVisibleItems() as $item) {
+                    if ($item->getProductType() != 'bundle') {
+                        continue;
+                    }
 
-                if ($order->getRelationChildId()) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveError('Child order is already exists');
+                    /** @var Mage_Sales_Model_Order_Item $_item */
+                    foreach ($item->getChildrenItems() as $_item) {
+                        $order->getItemsCollection()->removeItemByKey($_item->getId());
+                    }
 
-                    return $order;
+                    $order->getItemsCollection()->removeItemByKey($item->getId());
                 }
 
                 // Create new order
@@ -122,7 +116,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 $this
                     ->_updateMappedEntityFields($object, $newOrder, $mappings)
                     ->_updateMappedEntityItemFields($object, $newOrder)
-                    ->_updateNotes($object, $newOrder)
                     ->_updateStatus($object, $newOrder);
 
                 $this->saveEntities();
@@ -166,9 +159,9 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ->_updateMappedEntityFields($object, $order, $mappings)
             ->_updateMappedEntityItemFields($object, $order, (bool) $_mMagentoId)
             ->_updateNotes($object, $order)
-            ->_updateStatus($object, $order)
-            ->saveEntities();
+            ->_updateStatus($object, $order);
 
+        $this->saveEntities();
         return $order;
     }
 
@@ -180,9 +173,17 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     protected function isItemChange($order, $object)
     {
         $isChange        = false;
-        $itemCollection  = $order->getItemsCollection();
-        $hasSalesforceId = $itemCollection->walk('getSalesforceId');
         $salesforceIds   = array();
+        $hasSalesforceId = array();
+
+        /** @var Mage_Sales_Model_Order_Item $item */
+        foreach ($order->getAllVisibleItems() as $item) {
+            if ($item->getProductType() == 'bundle') {
+                continue;
+            }
+
+            $hasSalesforceId[$item->getId()] = $item->getSalesforceId();
+        }
 
         //Check add element
         foreach ($object->OrderItems->records as $record) {
@@ -202,7 +203,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             }
 
             /** @var Mage_Sales_Model_Order_Item $item */
-            $item = $itemCollection->getItemById($itemId);
+            $item = $order->getItemsCollection()->getItemById($itemId);
             if (intval($item->getQtyOrdered()) != intval($record->Quantity)) {
                 $isChange = true;
                 break;
@@ -440,7 +441,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             if (isset($sfItems[$salesforceId])) {
                 $updateItems[$itemId] = array(
                     'qty'           => $sfItems[$salesforceId]->Quantity,
-                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice,
+                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice ? $sfItems[$salesforceId]->UnitPrice : null,
                     'use_discount'  => true,
                 );
 
@@ -484,7 +485,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             if (isset($sfItems[$salesforceId])) {
                 $updateItems[$itemId] = array(
                     'qty'           => $sfItems[$salesforceId]->Quantity,
-                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice,
+                    'custom_price'  => $sfItems[$salesforceId]->UnitPrice ? $sfItems[$salesforceId]->UnitPrice : null,
                     'use_discount'  => true,
                 );
             }
