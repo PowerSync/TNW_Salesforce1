@@ -1221,22 +1221,29 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param $_item
+     * @param $_item Mage_Sales_Model_Order_Item
      * @return int
      * Get product Id from the cart
      */
     public function getProductIdFromCart($_item)
     {
-        if (
-            $_item->getData('product_type') == 'bundle'
-            || (is_array($_options = unserialize($_item->getData('product_options'))) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        $productId = null;
+        switch ($_item->getProductType()) {
+            case Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE:
+                $children = $_item->getChildrenItems();
+                if (empty($children)) {
+                    $productId = null;
+                }
+
+                $productId = reset($children)->getProductId();
+                break;
+
+            default:
+                $productId = $_item->getProductId();
+                break;
         }
 
-        return $id;
+        return $productId;
     }
 
     /**
