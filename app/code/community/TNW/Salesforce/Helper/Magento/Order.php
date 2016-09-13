@@ -81,6 +81,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             }
 
             if ($this->isItemChange($order, $object) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
+                if (!$order->canEdit()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('Editing orders prohibited');
+
+                    throw new Exception('Editing orders prohibited');
+                }
+
                 $order->addData(array(
                     'salesforce_id' => $_sSalesforceId,
                     'sf_insync'     => 1
