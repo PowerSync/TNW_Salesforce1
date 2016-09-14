@@ -282,6 +282,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     $tmp->OpportunityLineItems = (property_exists($_item, "OpportunityLineItems")) ? $_item->OpportunityLineItems : NULL;
                     $tmp->Notes = (property_exists($_item, "Notes")) ? $_item->Notes : NULL;
                     $tmp->OwnerId = (property_exists($_item, "OwnerId")) ? $_item->OwnerId : NULL;
+                    $tmp->StageName = (property_exists($_item, "StageName")) ? $_item->StageName : NULL;
 
                     $returnArray[$tmp->MagentoId] = $tmp;
                 }
@@ -290,7 +291,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
-            unset($email);
+
             return false;
         }
     }
@@ -307,6 +308,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             "AccountId",
             "Pricebook2Id",
             "OwnerId",
+            "StageName",
             $_magentoId,
             "(SELECT Id, ContactId, Role FROM OpportunityContactRoles)",
             "(SELECT Id, Quantity, ServiceDate, UnitPrice, PricebookEntry.ProductCode, PricebookEntry.Product2Id, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OpportunityLineItems)",
