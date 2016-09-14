@@ -146,9 +146,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 ->addAttributeToSelect('salesforce_disable_sync');
             Mage::register('product_sync_collection', $productsCollection);
 
-            $this->_skippedEntity = $skuArray = array();
+            $this->_skippedEntity = $skuArray = $addedIds = array();
             /** @var Mage_Catalog_Model_Product $product */
             foreach ($productsCollection as $product) {
+                $addedIds[] = $product->getId();
                 // we check product type and skip synchronization if needed
                 if (intval($product->getData('salesforce_disable_sync')) == 1) {
                     $message = 'SKIPPING: Product (ID: ' . $product->getId() . ') is excluded from synchronization';
@@ -184,6 +185,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
             foreach ($this->_skippedEntity as $productId) {
                 $productsCollection->removeItemByKey($productId);
+            }
+
+            foreach (array_diff($ids, $addedIds) as $deletedId) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice('SKIPPING: Entity not found ' . $deletedId);
+                $this->_skippedEntity[] = $deletedId;
             }
 
             if (empty($skuArray)) {
