@@ -180,9 +180,6 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
         }
 
         $_description = join(", ", $_summary);
-        if (strlen($_description) > 200) {
-            $_description = substr($_description, 0, 200) . '...';
-        }
 
         return $_description;
     }
