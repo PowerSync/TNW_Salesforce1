@@ -262,20 +262,23 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             return false;
         }
 
-        /** @var Mage_Catalog_Helper_Product_Configuration $configuration */
-        $configuration = Mage::helper('catalog/product_configuration');
-        $custom = $configuration->getCustomOptions($_item);
+        $productId = null;
+        switch ($_item->getProductType()) {
+            case Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE:
+                $children = $_item->getChildren();
+                if (empty($children)) {
+                    $productId = null;
+                }
 
-        if (
-            $_item->getData('product_type') == 'bundle'
-            || (is_array($custom) && count($custom) > 0)
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+                $productId = reset($children)->getProductId();
+                break;
+
+            default:
+                $productId = $_item->getProductId();
+                break;
         }
 
-        return $id;
+        return $productId;
     }
 
     /**

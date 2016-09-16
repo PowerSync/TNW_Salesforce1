@@ -13,12 +13,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
      */
     protected $_publicActions = array('grid', 'index');
 
-    /**
-     * Array of product ID's from each order
-     * @var array
-     */
-    protected $_productIds = array();
-
     protected function _construct()
     {
         $this->setUsedModuleName('Mage_Sales');
@@ -254,18 +248,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                 if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
                     $syncBulk = count($itemIds) > 1;
 
-                    $_collection = Mage::getResourceModel('sales/order_item_collection');
-                    $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
-                        ->columns(array('sku','order_id','product_id','product_type','product_options'))
-                        ->where(new Zend_Db_Expr('order_id IN (' . join(',', $itemIds) . ')'));
-
-                    Mage::getSingleton('core/resource_iterator')->walk(
-                        $_collection->getSelect(),
-                        array(array($this, 'cartItemsCallback'))
-                    );
+                    $_collection = Mage::getResourceModel('sales/order_item_collection')
+                        ->addFieldToFilter('order_id', array('in' => $itemIds));
+                    $productIds = $_collection->walk(array(
+                        Mage::helper('tnw_salesforce/salesforce_order'), 'getProductIdFromCart'
+                    ));
 
                     $success = Mage::getModel('tnw_salesforce/localstorage')
-                        ->addObjectProduct($this->_productIds, 'Product', 'product', $syncBulk);
+                        ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
 
                     $success = $success && Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($itemIds, 'Order', 'order', $syncBulk);
@@ -273,7 +263,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                     if ($success) {
                         if ($syncBulk) {
                             $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue<a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
                         }
                         else {
                             $session->addSuccess($this->__('Records are pending addition into the queue!'));
@@ -297,27 +287,5 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         }
 
         $this->_redirect('*/*/index');
-    }
-
-    public function cartItemsCallback($_args) {
-        $_product = Mage::getModel('catalog/product');
-        $_product->setData($_args['row']);
-        $_id = (int) $this->_getProductIdFromCart($_product);
-        if (!in_array($_id, $this->_productIds)) {
-            $this->_productIds[] = $_id;
-        }
-    }
-
-    protected function _getProductIdFromCart($_item) {
-        $_options = unserialize($_item->getData('product_options'));
-        if(
-            $_item->getData('product_type') == 'bundle'
-            || (is_array($_options) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int) Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
-        }
-        return $id;
     }
 }

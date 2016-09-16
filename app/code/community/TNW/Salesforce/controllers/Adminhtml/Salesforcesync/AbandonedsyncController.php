@@ -7,12 +7,6 @@
 class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Mage_Adminhtml_Controller_Action
 {
 
-    /**
-     * Array of product ID's from each order
-     * @var array
-     */
-    protected $_productIds = array();
-
     protected function _initLayout()
     {
         if (
@@ -136,18 +130,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
                 if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
                     $syncBulk = (count($itemIds) > 1);
 
-                    $_collection = Mage::getResourceModel('sales/quote_item_collection');
-                    $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
-                        ->columns(array('sku', 'quote_id', 'product_id', 'product_type'))
-                        ->where(new Zend_Db_Expr('quote_id IN (' . join(',', $itemIds) . ')'));
+                    /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
+                    $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
+                        ->addFieldToFilter('quote_id', array('in' => $itemIds));
 
-                    Mage::getSingleton('core/resource_iterator')->walk(
-                        $_collection->getSelect(),
-                        array(array($this, 'cartItemsCallback'))
-                    );
+                    $productIds = $_collection->walk('getProductId');
 
                     $success = Mage::getModel('tnw_salesforce/localstorage')
-                        ->addObjectProduct($this->_productIds, 'Product', 'product', $syncBulk);
+                        ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
 
                     $success = $success && Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($itemIds, 'Abandoned', 'abandoned', $syncBulk);
@@ -180,33 +170,5 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
         }
 
         $this->_redirect('*/*/index');
-    }
-
-    public function cartItemsCallback($_args)
-    {
-        $_product = Mage::getModel('catalog/product');
-        $_product->setData($_args['row']);
-        $_id = (int)$this->_getProductIdFromCart($_product);
-        if (!in_array($_id, $this->_productIds)) {
-            $this->_productIds[] = $_id;
-        }
-    }
-
-    /**
-     * @param $_item Mage_Sales_Model_Quote_Item
-     * @return int
-     */
-    protected function _getProductIdFromCart($_item)
-    {
-        $_options = unserialize($_item->getData('product_options'));
-        if (
-            $_item->getData('product_type') == 'bundle'
-            || (is_array($_options) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
-        }
-        return $id;
     }
 }
