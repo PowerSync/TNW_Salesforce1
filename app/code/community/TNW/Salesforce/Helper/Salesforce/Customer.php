@@ -208,16 +208,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $_websiteId = Mage::app()->getWebsite()->getId();
         $_storeId = Mage::app()->getStore()->getStoreId();
 
-        $_fullName = explode(' ', strip_tags($_data['name']));
-        if (count($_fullName) == 1) {
-            $_lastName = NULL;
-        } else if (count($_fullName) == 2) {
-            $_lastName = $_fullName[1];
-        } else {
-            unset($_fullName[0]);
-            $_lastName = join(' ', $_fullName);
-        }
-
         /**
          * prepare fake customer object to use it in lookup
          * @var Mage_Customer_Model_Customer $fakeCustomer
@@ -230,9 +220,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
         $fakeCustomer->addData($_data);
 
+        $_fullName = explode(' ', strip_tags(trim($_data['name'])), 2);
+        if (count($_fullName) > 1) {
+            list($firstName, $lastName) = $_fullName;
+        }
+        else {
+            $firstName = '';
+            $lastName = $_fullName[0];
+        }
 
-        $firstName = ($_lastName) ? $_fullName[0] : '';
-        $lastName = ($_lastName) ? $_lastName : $_fullName[0];
         $company = (array_key_exists('company', $_data))
             ? strip_tags($_data['company'])
             : implode(' ', $_fullName);
