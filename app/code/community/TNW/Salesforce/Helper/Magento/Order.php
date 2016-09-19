@@ -424,6 +424,9 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $item->setProductOptions($options);
         }
 
+        //FIX: Order store
+        $orderCreate->getQuote()->setStoreId($order->getStoreId());
+
         $orderCreate->getQuote()->removeAllItems();
         $orderCreate->initFromOrder($order);
 
