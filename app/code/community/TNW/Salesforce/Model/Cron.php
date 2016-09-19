@@ -15,11 +15,6 @@ class TNW_Salesforce_Model_Cron
     protected $_syncType = self::SYNC_TYPE_OUTGOING;
 
     /**
-     * @var array
-     */
-    protected $_productIds = array();
-
-    /**
      * @var null
      */
     protected $_serverName = NULL;
@@ -121,46 +116,6 @@ class TNW_Salesforce_Model_Cron
     }
 
     /**
-     * @param $_args
-     */
-    public function cartItemsCallback($_args)
-    {
-        /** @var Mage_Catalog_Model_Product $_product */
-        $_product = Mage::getModel('catalog/product');
-        $_product->setData($_args['row']);
-        $_id = (int)$this->_getProductIdFromCart($_product);
-        if (!in_array($_id, $this->_productIds)) {
-            $this->_productIds[] = $_id;
-        }
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getProductIds()
-    {
-        return $this->_productIds;
-    }
-
-    /**
-     * @param $_item Mage_Sales_Model_Quote_Item|Mage_Catalog_Model_Product
-     * @return int
-     */
-    protected function _getProductIdFromCart($_item)
-    {
-        $_options = unserialize($_item->getData('product_options'));
-        if (
-            $_item->getData('product_type') == 'bundle'
-            || (is_array($_options) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
-        }
-        return $id;
-    }
-
-    /**
      * @comment add Abandoned carts to quote for synchronization
      */
     public function addAbandonedToQueue()
@@ -179,27 +134,17 @@ class TNW_Salesforce_Model_Cron
             return false;
         }
 
-        $_collection = Mage::getResourceModel('sales/quote_item_collection');
-        $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
-            ->columns(array('sku', 'quote_id', 'product_id', 'product_type'))
-            ->where(new Zend_Db_Expr('quote_id IN (' . join(',', $itemIds) . ')'));
+        /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
+        $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
+            ->addFieldToFilter('quote_id', array('in' => $itemIds));
 
-        Mage::getSingleton('core/resource_iterator')->walk(
-            $_collection->getSelect(),
-            array(array($this, 'cartItemsCallback'))
-        );
+        $productIds = $_collection->walk('getProductId');
 
         /** @var TNW_Salesforce_Model_Localstorage $localstorage */
         $localstorage = Mage::getModel('tnw_salesforce/localstorage');
+        $localstorage->addObjectProduct(array_unique($productIds), 'Product', 'product');
 
-        $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
-        foreach ($_productChunks as $_chunk) {
-            $localstorage->addObjectProduct($_chunk, 'Product', 'product');
-        }
-
-        $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
-        unset($itemIds, $_chunk);
-        foreach ($_chunks as $_chunk) {
+        foreach (array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
             $localstorage->addObject($_chunk, 'Abandoned', 'abandoned');
             $bind = array(
                 'sf_sync_force' => 0
@@ -558,6 +503,7 @@ class TNW_Salesforce_Model_Cron
                         if ($type == 'order' || $type == 'abandoned') {
 
                             $_entityModel = $type == 'order' ? 'sales/order' : 'sales/quote';
+                            /** @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote $_entity */
                             $_entity = Mage::getModel($_entityModel)->load($item['object_id']);
 
                             //check dependencies
@@ -569,8 +515,12 @@ class TNW_Salesforce_Model_Cron
                             }
 
                             if (!$_skip && isset($_dependencies['Product'])) {
+                                /** @var Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item $_item */
                                 foreach ($_entity->getAllVisibleItems() as $_item) {
-                                    $id = $this->_getProductIdFromCart($_item);
+                                    $id = $_item instanceof Mage_Sales_Model_Order_Item
+                                        ? Mage::helper('tnw_salesforce/salesforce_order')->getProductIdFromCart($_item)
+                                        : Mage::helper('tnw_salesforce/salesforce_abandoned_opportunity')->getProductIdFromCart($_item);
+
                                     if (in_array($id, $_dependencies['Product'])) {
                                         $_skip = true;
                                         break;
@@ -578,6 +528,7 @@ class TNW_Salesforce_Model_Cron
                                 }
                             }
                         }
+
                         if (!$_skip) {
                             $idSet[] = $item['id'];
                             $objectIdSet[] = $item['object_id'];

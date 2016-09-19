@@ -7,12 +7,6 @@
 class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Mage_Adminhtml_Controller_Action
 {
 
-    /**
-     * Array of product ID's from each order
-     * @var array
-     */
-    protected $_productIds = array();
-
     protected function _initLayout()
     {
         if (
@@ -117,102 +111,64 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
 
     public function massSyncForceAction()
     {
-        set_time_limit(0);
-        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
+        $session = Mage::getSingleton('adminhtml/session');
+        $helper  = Mage::helper('tnw_salesforce');
+
+        if (!$helper->isEnabled()) {
+            $session->addError("API Integration is disabled.");
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
         }
-        if (!$_syncType) {
-            Mage::getSingleton('adminhtml/session')->addError("Integration Type is not set.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce_abandoned')));
-            Mage::app()->getResponse()->sendResponse();
-        }
+
         $itemIds = $this->getRequest()->getParam('abandoneds');
         if (!is_array($itemIds)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select abandoneds(s)'));
-        } elseif (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
-        } elseif (((Mage::helper('tnw_salesforce')->getObjectSyncType() == 'sync_type_realtime')) && (count($itemIds) > 50)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
+            $session->addError($helper->__('Please select abandoneds(s)'));
+        } elseif (!$helper->isProfessionalEdition()) {
+            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    $_collection = Mage::getResourceModel('sales/quote_item_collection');
-                    $_collection->getSelect()->reset(Zend_Db_Select::COLUMNS)
-                        ->columns(array('sku', 'quote_id', 'product_id', 'product_type'))
-                        ->where(new Zend_Db_Expr('quote_id IN (' . join(',', $itemIds) . ')'));
+                if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $syncBulk = (count($itemIds) > 1);
 
-                    Mage::getSingleton('core/resource_iterator')->walk(
-                        $_collection->getSelect(),
-                        array(array($this, 'cartItemsCallback'))
-                    );
+                    /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
+                    $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
+                        ->addFieldToFilter('quote_id', array('in' => $itemIds));
 
-                    $_productChunks = array_chunk($this->_productIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
+                    $productIds = $_collection->walk('getProductId');
 
-                    foreach ($_productChunks as $_chunk) {
-                        Mage::getModel('tnw_salesforce/localstorage')
-                            ->addObjectProduct($_chunk, 'Product', 'product', (count($_chunk) > 1));
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
+
+                    $success = $success && Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject($itemIds, 'Abandoned', 'abandoned', $syncBulk);
+
+                    if ($success) {
+                        if ($syncBulk) {
+                            $session->addNotice($this->__('ISSUE: Too many records selected.'));
+                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                        }
+                        else {
+                            $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                        }
                     }
-
-                    $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
-                    unset($itemIds, $_chunk);
-                    foreach ($_chunks as $_chunk) {
-                        Mage::getModel('tnw_salesforce/localstorage')
-                            ->addObject($_chunk, 'Abandoned', 'abandoned', (count($_chunk) > 1));
+                    else {
+                        $session->addError('Could not add to the queue!');
                     }
-
-                    if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addSuccess(
-                            Mage::helper('adminhtml')->__('Abandoneds were added to the queue!')
-                        );
-                    }
-
-                } else {
-                    Mage::dispatchEvent(
-                        sprintf('tnw_salesforce_%s_process', $_syncType),
-                        array(
-                            'orderIds' => $itemIds,
-                            'message' => Mage::helper('adminhtml')->__('Total of %d abandoned(s) were synchronized', count($itemIds)),
-                            'type' => 'bulk',
-                            'object_type' => 'abandoned'
-                        )
-                    );
+                }
+                else {
+                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                        'orderIds' => $itemIds,
+                        'message' => $this->__('Total of %d abandoned(s) were synchronized', count($itemIds)),
+                        'type' => 'bulk',
+                        'object_type' => 'abandoned'
+                    ));
                 }
             } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+                $session->addError($e->getMessage());
             }
         }
 
         $this->_redirect('*/*/index');
-    }
-
-    public function cartItemsCallback($_args)
-    {
-        $_product = Mage::getModel('catalog/product');
-        $_product->setData($_args['row']);
-        $_id = (int)$this->_getProductIdFromCart($_product);
-        if (!in_array($_id, $this->_productIds)) {
-            $this->_productIds[] = $_id;
-        }
-    }
-
-    /**
-     * @param $_item Mage_Sales_Model_Quote_Item
-     * @return int
-     */
-    protected function _getProductIdFromCart($_item)
-    {
-        $_options = unserialize($_item->getData('product_options'));
-        if (
-            $_item->getData('product_type') == 'bundle'
-            || (is_array($_options) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
-        }
-        return $id;
     }
 }

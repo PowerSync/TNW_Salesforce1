@@ -32,6 +32,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const FAIL_EMAIL = 'salesforce/developer/fail_order';
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
     const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
+    const REAL_TIME_SYNC_MAX_COUNT = 'salesforce/development_and_debugging/real_time_sync_max_count';
 
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
@@ -132,6 +133,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = array();
+    protected $_objectSyncType = null;
 
     //const MODULE_TYPE = 'BASIC';
     /**
@@ -226,6 +228,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     final public function getType()
     {
         return self::MODULE_TYPE;
+    }
+
+    /**
+     * @return bool
+     */
+    final public function isProfessionalEdition()
+    {
+        return $this->getType() == 'PRO';
     }
 
     // License Email
@@ -396,11 +406,37 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CUSTOMER_ROLE);
     }
 
+    /**
+     * @return bool
+     */
+    public function isRealTimeType()
+    {
+        return $this->getObjectSyncType() == 'sync_type_realtime';
+    }
+
+    /**
+     * @return int
+     */
+    public function getRealTimeSyncMaxCount()
+    {
+        return $this->getStoreConfig(self::REAL_TIME_SYNC_MAX_COUNT);
+    }
+
     // Default Customer Opportunity Role
 
     public function getObjectSyncType()
     {
+        if (!empty($this->_objectSyncType)) {
+            return $this->_objectSyncType;
+        }
+
         return $this->getStoreConfig(self::OBJECT_SYNC_TYPE);
+    }
+
+    public function setObjectSyncType($objectSyncType)
+    {
+        $this->_objectSyncType = $objectSyncType;
+        return $this;
     }
 
     // queue object sync type

@@ -49,16 +49,15 @@ class TNW_Salesforce_Model_Newsletter_Observer
             return false;
         }
 
-        /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Customer */
-        $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-        if (!$manualSync->reset()) {
-            return false;
+        $customerId = $subscriber->getCustomerId();
+        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+            return Mage::getModel('tnw_salesforce/localstorage')
+                ->addObject(array($customerId), 'Customer', 'customer');
         }
-
-        if (!$manualSync->massAdd(array($subscriber->getCustomerId()))) {
-            return false;
+        else {
+            /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Customer */
+            $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
+            return $manualSync->reset() && $manualSync->massAdd(array($customerId)) && $manualSync->process();
         }
-
-        return $manualSync->process();
     }
 }
