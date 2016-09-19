@@ -2,6 +2,8 @@
 
 class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_Abstract
 {
+    const SYNC_SUCCESS = 1;
+
     /**
      * @param stdClass $object
      * @return mixed
@@ -74,23 +76,23 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 ->load($_mMagentoId, 'increment_id');
 
             if ($order->getRelationChildId()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('Child order is already exists');
+                $message = Mage::helper('tnw_salesforce')
+                    ->__('Trying to edit an order which was previously edited, update your records and try updating the latest version of the edited order.');
 
-                throw new Exception('Child order is already exists');
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($message);
+                throw new Exception($message);
             }
 
             if ($this->isItemChange($order, $object) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
                 if (!$order->canEdit()) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveError('Editing orders prohibited');
-
-                    throw new Exception('Editing orders prohibited');
+                    $massage = Mage::helper('tnw_salesforce')->__('Order editing is prohibited');
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError($massage);
+                    throw new Exception($massage);
                 }
 
                 $order->addData(array(
                     'salesforce_id' => $_sSalesforceId,
-                    'sf_insync'     => 1
+                    'sf_insync'     => self::SYNC_SUCCESS
                 ));
 
                 $this
@@ -144,7 +146,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
         $order->addData(array(
             'salesforce_id' => $_sSalesforceId,
-            'sf_insync'     => 1
+            'sf_insync'     => self::SYNC_SUCCESS
         ));
 
         $this
@@ -229,10 +231,11 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         // Get Customer
         $customer = $this->_searchCustomer($object->BillToContactId);
         if (is_null($customer->getId())) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError('Customer Not Found');
+            $message = Mage::helper('tnw_salesforce')
+                ->__('Trying to create an order, customer not found');
 
-            throw new Exception('Customer Not Found');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($message);
+            throw new Exception($message);
         }
 
         $_websiteId = null;
@@ -242,9 +245,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 ->prepareId($object->{$_websiteSfField});
 
             $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-            if ($_websiteId === false) {
-                $_websiteId = null;
-            }
+            $_websiteId = ($_websiteId === false) ? null : $_websiteId;
         }
 
         $storeId = is_null($_websiteId)
