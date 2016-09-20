@@ -198,7 +198,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
             /** @var Mage_Sales_Model_Order_Item $item */
             $item = $order->getItemsCollection()->getItemById($itemId);
-            if (intval($item->getQtyOrdered()) != intval($record->Quantity)) {
+            if (floatval($item->getQtyOrdered()) != floatval($record->Quantity)) {
                 $isChange = true;
                 break;
             }
@@ -308,10 +308,11 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         // Get Product
         $this->addProducts($orderCreate, $object->OrderItems->records);
         if (!$orderCreate->getQuote()->hasItems()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError('Empty products');
+            $message = Mage::helper('tnw_salesforce')
+                ->__('The quote is empty. Could not move products to create an order.');
 
-            throw new Exception('Empty products');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($message);
+            throw new Exception($message);
         }
 
         $updateItems = array();
@@ -632,7 +633,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
         if ($collection->getSize() > 1) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice('Product (sku:'.$product->getSku().') skipping. Has custom option.');
+                ->saveNotice('Product (sku:'.$product->getSku().') was skipped. It sas custom option(s).');
 
             return false;
         }
