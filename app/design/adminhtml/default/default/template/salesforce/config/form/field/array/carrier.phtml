@@ -100,7 +100,7 @@ $_colspan = '';
     }
     ?>
     $$('#grid<?php echo $_htmlId ?> select').each(function (element) {
-        jQuery(element).select2({
+        $j(element).select2({
             ajax: {
                 url: "<?php echo $this->getUrl('*/salesforce_search/account') ?>",
                 dataType: 'json',
