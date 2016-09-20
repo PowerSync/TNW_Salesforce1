@@ -15,7 +15,7 @@ class TNW_Salesforce_Model_System_Config_Source_Recordtype_Order
         $_recordTypes = array(
             array(
                 'label' => 'Use Default',
-                'value' => ''
+                'value' => 'default'
             )
         );
 
