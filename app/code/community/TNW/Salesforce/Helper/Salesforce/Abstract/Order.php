@@ -607,11 +607,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
-        /* Dump OpportunityLineItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("Opportunity/Order Item Object: \n" . print_r($this->_obj, true));
 
         $key = $_entityItem->getId();
         // if it's fake product for order fee, has the same id's for all products

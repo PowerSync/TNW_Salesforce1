@@ -116,6 +116,19 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
+     * @param Mage_Sales_Model_Order_Item $_entityItem
+     */
+    protected function _prepareEntityItemObjCustom($_entityItem)
+    {
+        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $this->_obj->$disableSyncField = true;
+        }
+
+        parent::_prepareEntityItemObjCustom($_entityItem);
+    }
+
+    /**
      * @param $_entity Mage_Sales_Model_Order
      * @param $types string
      * @return mixed
