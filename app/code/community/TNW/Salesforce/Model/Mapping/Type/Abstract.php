@@ -274,7 +274,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
             $result = call_user_func(array($_entity, 'get' . $origPriceField));
         }
 
-        return $result;
+        return floatval($result);
     }
 
     /**
