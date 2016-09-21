@@ -22,6 +22,7 @@ class TNW_Salesforce_Model_Observer
     protected $_acl = NULL;
 
     protected $exportedOrders = array();
+    protected $exportedOpportunity = array();
 
     /**
      * @return array
@@ -437,19 +438,35 @@ class TNW_Salesforce_Model_Observer
 
     public function pushOpportunity(Varien_Event_Observer $observer)
     {
-
         $_objectType = strtolower($observer->getEvent()->getData('object_type'));
+        if (!isset($this->exportedOpportunity[$_objectType])) {
+            $this->exportedOpportunity[$_objectType] = array();
+        }
 
         $_orderIds = $observer->getEvent()->getData('orderIds');
-        $_message = $observer->getEvent()->getMessage();
+        //check that order has been already exported
+        foreach ($_orderIds as $key => $orderId) {
+            if (!in_array($orderId, $this->exportedOpportunity[$_objectType])) {
+                $this->exportedOpportunity[$_objectType][] = $orderId;
+                continue;
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Skipping export opportunity ' . $orderId . '. Already exported.');
+            unset($_orderIds[$key]);
+        }
+
+        if (empty($_orderIds)) {
+            return;
+        }
+
         $_type = $observer->getEvent()->getType();
-        $_isQueue = $observer->getEvent()->getData('isQueue');
-
-        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
-
         if (count($_orderIds) == 1 && $_type == 'bulk') {
             $_type = 'salesforce';
         }
+
+        $_message = $observer->getEvent()->getMessage();
+        $_queueIds = $observer->getEvent()->getData('isQueue')
+            ? $observer->getEvent()->getData('queueIds') : array();
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Opportunities ... ');
 
