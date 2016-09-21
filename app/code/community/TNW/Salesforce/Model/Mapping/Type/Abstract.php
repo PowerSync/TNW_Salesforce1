@@ -231,15 +231,18 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     protected function _calculateItemPrice($item, $qty = 1)
     {
-        $rowTotalField = (Mage::helper('tnw_salesforce')->useTaxFeeProduct())
-            ? 'RowTotal' : 'RowTotalInclTax';
-        $netTotal = $this->getEntityPrice($item, $rowTotalField);
+        $rowTotal = $this->getEntityPrice($item, 'RowTotal');
 
-        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
-            $netTotal = ($netTotal - $this->getEntityPrice($item, 'DiscountAmount'));
+        if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+            $rowTotal += $this->getEntityPrice($item, 'TaxAmount');
+            $rowTotal += $this->getEntityPrice($item, 'HiddenTaxAmount');
         }
 
-        return $netTotal / (int)$qty;
+        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+            $rowTotal -= $this->getEntityPrice($item, 'DiscountAmount');
+        }
+
+        return $rowTotal / (int)$qty;
     }
 
     /**
@@ -271,7 +274,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
             $result = call_user_func(array($_entity, 'get' . $origPriceField));
         }
 
-        return $result;
+        return floatval($result);
     }
 
     /**
