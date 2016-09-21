@@ -273,7 +273,7 @@
     <adminhtml_promo_quote_edit>
         <update handle="tnw_salesforce_chosen"/>
         <reference name="promo_quote_edit">
-            <action method="addButton" ifconfig="salesforce_order/salesforce_campaigns/sync_enabled">
+            <action method="addButton" ifconfig="salesforce_promotion/salesforce_campaigns/sync_enabled">
                 <id>sf_sync</id>
                 <data helper="tnw_salesforce/data/getSyncOrderRulesButtonData"/>
                 <level>0</level>
