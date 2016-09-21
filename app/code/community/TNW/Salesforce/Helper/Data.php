@@ -54,8 +54,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const NONES_SYNC = 'salesforce_order/general/notes_synchronize';
 
     // Campaigns Config
-    const CAMPAIGNS_SYNC = 'salesforce_promotions/salesforce_campaigns/sync_enabled';
-    const CAMPAIGNS_CREATE_AUTOMATE = 'salesforce_promotions/salesforce_campaigns/create_campaign_automatic';
+    const CAMPAIGNS_SYNC = 'salesforce_promotion/salesforce_campaigns/sync_enabled';
+    const CAMPAIGNS_CREATE_AUTOMATE = 'salesforce_promotion/salesforce_campaigns/create_campaign_automatic';
 
     /* Order Customer Role */
     const ORDER_OBJECT = 'salesforce_order/customer_opportunity/order_or_opportunity';
