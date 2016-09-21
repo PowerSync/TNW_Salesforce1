@@ -109,6 +109,11 @@
         <block type="tnw_salesforce/adminhtml_creditmemosync_grid" name="creditmemosync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_creditmemosync_grid>
 
+    <adminhtml_salesforcesync_campaign_salesrulesync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_campaign_salesrulesync_grid" name="salesrulesync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_campaign_salesrulesync_grid>
+
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
         <update handle="tnw_salesforce_select2"/>
