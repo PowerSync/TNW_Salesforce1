@@ -49,11 +49,16 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
      */
     public function syncAction()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')
-                ->addError("API Integration is disabled.");
-
+        $helper = Mage::helper('tnw_salesforce');
+        if (!$helper->isEnabled()) {
+            $this->_getSession()->addError("API Integration is disabled.");
             $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
+        }
+
+        if (!$helper->isOrderRulesEnabled()) {
+            $this->_getSession()->addError("API Integration is disabled.");
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce_promotion'));
             return;
         }
 
@@ -80,7 +85,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
             else {
                 $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
                 if ($campaignMember->reset() && $campaignMember->massAdd(array($salesruleId)) && $campaignMember->process()) {
-                    $this->_getSession()->addSuccess(Mage::helper('tnw_salesforce')->__('Rule was successfully synchronized'));
+                    $this->_getSession()->addSuccess($helper->__('Rule was successfully synchronized'));
                 }
             }
         } catch (Exception $e) {
@@ -93,12 +98,16 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
 
     public function massSyncAction()
     {
-        $session = Mage::getSingleton('adminhtml/session');
-        $helper  = Mage::helper('tnw_salesforce');
-
+        $helper = Mage::helper('tnw_salesforce');
         if (!$helper->isEnabled()) {
-            $session->addError("API Integration is disabled.");
+            $this->_getSession()->addError("API Integration is disabled.");
             $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
+        }
+
+        if (!$helper->isOrderRulesEnabled()) {
+            $this->_getSession()->addError("API Integration is disabled.");
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce_promotion'));
             return;
         }
 
@@ -112,7 +121,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
         }
 
         if (!$helper->isProfessionalEdition()) {
-            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
+            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
             $this->_redirect('*/*/index');
             return;
         }
@@ -126,21 +135,21 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
 
                 if ($success) {
                     if ($syncBulk) {
-                        $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                        $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                        $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
+                        $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
                     }
                     else {
-                        $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                        $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
                     }
                 }
                 else {
-                    $session->addError('Could not add catalog rule(s) to the queue!');
+                    $this->_getSession()->addError('Could not add catalog rule(s) to the queue!');
                 }
             }
             else {
                 $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
                 if ($campaignMember->reset() && $campaignMember->massAdd($itemIds) && $campaignMember->process()) {
-                    $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($itemIds)));
+                    $this->_getSession()->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($itemIds)));
                 }
             }
         } catch (Exception $e) {
