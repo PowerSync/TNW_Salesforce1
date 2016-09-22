@@ -1233,6 +1233,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 $children = $_item->getChildrenItems();
                 if (empty($children)) {
                     $productId = null;
+                    break;
                 }
 
                 $productId = reset($children)->getProductId();

@@ -268,6 +268,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $children = $_item->getChildren();
                 if (empty($children)) {
                     $productId = null;
+                    break;
                 }
 
                 $productId = reset($children)->getProductId();
