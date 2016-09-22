@@ -26,6 +26,9 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
 
             case 'sf_name':
                 return $this->convertSfName($_entity);
+
+            case 'grand_total':
+                return $this->convertGrandTotal($_entity);
         }
 
         return parent::_prepareValue($_entity);
@@ -135,5 +138,16 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Invoice extends TNW_Salesforce_Mod
     public function convertSfName($_entity)
     {
         return $_entity->getIncrementId();
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order_Invoice $_entity
+     * @return mixed
+     */
+    public function convertGrandTotal($_entity)
+    {
+        return Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency() && !Mage::helper('tnw_salesforce/config_sales')->isMultiCurrency()
+            ? $_entity->getBaseGrandTotal()
+            : $_entity->getGrandTotal();
     }
 }
