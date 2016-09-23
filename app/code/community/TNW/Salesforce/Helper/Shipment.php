@@ -204,6 +204,10 @@ class TNW_Salesforce_Helper_Shipment extends TNW_Salesforce_Helper_Abstract
     public function getAccountByCarrier($carrier)
     {
         $config = unserialize(Mage::getStoreConfig(self::CARRIER_MATCHING));
+        if (empty($config)) {
+            return null;
+        }
+
         foreach ($config as $configRow) {
             if (isset($configRow['carrier']) && $configRow['carrier'] == $carrier) {
                 return isset($configRow['account']) ? (string)$configRow['account'] : null;
