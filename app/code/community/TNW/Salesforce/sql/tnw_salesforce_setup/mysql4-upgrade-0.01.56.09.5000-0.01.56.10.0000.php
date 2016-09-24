@@ -11,7 +11,12 @@ $tableImport = $installer->getTable('tnw_salesforce/import');
 $connection->addColumn($installer->getTable('tnw_salesforce/queue_storage'), 'sync_type', 'varchar(50) DEFAULT \'outgoing\'');
 $connection->addColumn($tableImport, 'object_id', 'varchar(50)');
 $connection->addColumn($tableImport, 'object_type', 'varchar(50)');
-$connection->addColumn($tableImport, 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+// Need a better solution for older MySQL version. Need to create a triger for this table?
+//$connection->addColumn($tableImport, 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+$connection->addColumn($tableImport, 'created_at', 'DATETIME NOT NULL');
+
+//$installer->run("CREATE TRIGGER `insert_import_trigger` BEFORE INSERT ON `" . $installer->getTable('tnw_salesforce/queue_storage') . "` FOR EACH ROW SET NEW.created_at = NOW();");
+
 
 $select = $connection->select()
     ->from($tableImport);
