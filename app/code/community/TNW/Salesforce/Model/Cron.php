@@ -37,8 +37,8 @@ class TNW_Salesforce_Model_Cron
         /** @var TNW_Salesforce_Helper_Data $_helperData */
         $_helperData = Mage::helper('tnw_salesforce');
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('========================= cron method _isTimeToRun() started =========================');
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('cron time (it differs from php timezone) %s', $_helperData->getDate(NULL, false)));
+        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('========================= cron method _isTimeToRun() started =========================');
+        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('cron time (it differs from php timezone) %s', $_helperData->getDate(NULL, false)));
 
         $lastRunTime = (int)Mage::getStoreConfig(self::CRON_LAST_RUN_TIMESTAMP_PATH);
 
@@ -110,10 +110,12 @@ class TNW_Salesforce_Model_Cron
 
         // Only process if module is enabled
         if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Salesforce 2 Magento queue START ===");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ...");
             Mage::getModel('tnw_salesforce/imports_bulk')->process();
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ... done");
             Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'backgroundProcess'));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Salesforce 2 Magento queue END ===");
         }
     }
 
@@ -135,6 +137,8 @@ class TNW_Salesforce_Model_Cron
         if (empty($itemIds)) {
             return false;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento Abandoned Cart queue preparation START ===");
 
         /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
         $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
@@ -166,7 +170,7 @@ class TNW_Salesforce_Model_Cron
                 Mage::helper('tnw_salesforce')->getStoreId(), Mage::helper('tnw_salesforce')->getWebsiteId()));
 
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'addAbandonedToQueue'));
-
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento Abandoned Cart queue preparation END ===");
         return true;
     }
 
@@ -180,6 +184,8 @@ class TNW_Salesforce_Model_Cron
         if (!$_helperData->isEnabled() || !$_helperData->isMultiCurrency()) {
             return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce currency sync START ===");
 
         $currencies = Mage::getModel('directory/currency')
             ->getConfigAllowCurrencies();
@@ -195,6 +201,7 @@ class TNW_Salesforce_Model_Cron
                 ->saveError($e->getMessage());
         }
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'syncCurrency'));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce currency sync END ===");
     }
 
     /**
@@ -216,14 +223,16 @@ class TNW_Salesforce_Model_Cron
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync background process for store (%s) and website id (%s) ...",
             $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updating ...");
+        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updating ...");
         $this->_updateQueue();
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
+        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
 
         $isRealtime = ($_helperData->getObjectSyncType() == 'sync_type_realtime');
         if (!$isRealtime && !$this->_isTimeToRun()) {
             return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce queue START ===");
 
         // cron is running now, thus save last cron run timestamp
         Mage::getModel('core/config_data')
@@ -242,6 +251,7 @@ class TNW_Salesforce_Model_Cron
 
         $this->_deleteSuccessfulRecords();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce queue END ===");
     }
 
     /**
@@ -259,11 +269,13 @@ class TNW_Salesforce_Model_Cron
             return;
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce BULK queue START ===");
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync Bulk background process for store (%s) and website id (%s) ...",
             $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
         $this->_syncObjectForBulkMode();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processBulkQueue'));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce BULK queue END ===");
     }
 
     protected function _syncObjectForBulkMode()
@@ -398,7 +410,7 @@ class TNW_Salesforce_Model_Cron
     {
         $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
         Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
+        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
     }
 
     protected function _resetStuckRecords()
@@ -420,7 +432,7 @@ class TNW_Salesforce_Model_Cron
 
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < '" . Mage::helper('tnw_salesforce')->getDate($_whenToReset) . "';";
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");
+        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");
     }
 
     /**
