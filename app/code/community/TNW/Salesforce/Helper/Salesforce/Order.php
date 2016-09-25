@@ -627,4 +627,30 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         return $customers;
     }
+
+    /**
+     * Try to find order in SF and save in local cache
+     */
+    protected function _prepareOrderLookup()
+    {
+        parent::_prepareOrderLookup();
+
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
+            $entity = $this->_loadEntityByCache($key, $number);
+            $owner  = $entity->getData('owner_salesforce_id');
+            if (!empty($owner)) {
+                continue;
+            }
+
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer      = $this->_getObjectByEntityType($entity, 'Customer');
+            $customerEmail = strtolower($customer->getEmail());
+            $_websiteId    = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
+            if (empty($this->_cache['contactsLookup'][$_websiteId][$customerEmail])) {
+                continue;
+            }
+
+            $entity->setData('owner_salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customerEmail]->OwnerId);
+        }
+    }
 }
