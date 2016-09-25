@@ -14,7 +14,15 @@
                     .before($('#tnw-order-info-block > div'));
             }
 
-            $(document).ready(moveElement);
+            $(document).ready(function() {
+                order.parentDataLoaded = order.dataLoaded;
+                order.dataLoaded = function() {
+                    this.parentDataLoaded();
+                    moveElement();
+                }
+                moveElement();
+            });
+
             $(document).on("DOMNodeInserted", function (e) {
                 if ($(e.target).parent().attr('id') == 'order-data') {
                     moveElement();
