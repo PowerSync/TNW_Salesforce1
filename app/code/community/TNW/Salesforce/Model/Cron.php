@@ -232,6 +232,7 @@ class TNW_Salesforce_Model_Cron
             ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
             ->save();
 
+        // TODO: (Igor:s@eermolaev) will this ever run in real time?
         if ($isRealtime) {
             $this->_syncObjectForRealTimeMode();
         }
