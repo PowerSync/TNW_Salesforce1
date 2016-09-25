@@ -207,7 +207,12 @@ class TNW_Salesforce_Model_Cron
         $this->_syncType = self::SYNC_TYPE_OUTGOING;
 
         /** @var TNW_Salesforce_Helper_Data $_helperData */
+        // Do not process the queue if extension is disabled
         $_helperData = Mage::helper('tnw_salesforce');
+        if (!$_helperData->isEnabled()) {
+            return;
+        }
+
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync background process for store (%s) and website id (%s) ...",
             $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
