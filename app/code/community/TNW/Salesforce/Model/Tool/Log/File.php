@@ -184,9 +184,30 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
             $file .= '-' . Mage::app()->getWebsite()->getId() . '-' . Mage::app()->getStore()->getId() . '.log';
         }
 
-        $file = $this->getSalesforceLogDirName() . DS . $file;
+        return sprintf('%s%s%s',
+            $this->getSalesforceLogDirName(),
+            $this->checkSalesforceDir() ? DS : '-',
+            $file
+        );
+    }
 
-        return $file;
+    /**
+     * @return bool
+     */
+    protected function checkSalesforceDir()
+    {
+        static $checkWrite = null;
+        if (is_null($checkWrite)) {
+            $logDir  = Mage::getBaseDir('log') . DS . $this->getSalesforceLogDirName();
+            if (!is_dir($logDir)) {
+                mkdir($logDir);
+                chmod($logDir, 0750);
+            }
+
+            $checkWrite = is_writable($logDir);
+        }
+
+        return $checkWrite;
     }
 
     /**
