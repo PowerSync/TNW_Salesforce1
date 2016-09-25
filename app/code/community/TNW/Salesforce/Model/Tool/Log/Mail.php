@@ -68,21 +68,26 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
 
             /** @var $emailQueue Mage_Core_Model_Email_Queue */
             $emailQueue = Mage::getModel('core/email_queue');
-            $emailQueue->setEntityId(null)
-                ->setEntityType('salesforce_notification')
-                ->setEventType('new_salesforce_notification');
+            if (!is_bool($emailQueue)) {
+                $emailQueue->setEntityId(null)
+                    ->setEntityType('salesforce_notification')
+                    ->setEventType('new_salesforce_notification');
 
-            try {
-                $mailer->setQueue($emailQueue)->send();
-                $ioAdapter = Mage::getModel('tnw_salesforce/varien_io_file');
-                $ioAdapter->rm($filename);
+                try {
+                    $mailer->setQueue($emailQueue)->send();
+                    $ioAdapter = Mage::getModel('tnw_salesforce/varien_io_file');
+                    $ioAdapter->rm($filename);
 
-            } catch (Exception $e) {
-                Mage::getModel('tnw_salesforce/tool_log_file')->write(
-                    sprintf('Could not send an email containing the error. Error from email: %s', $e->getMessage()),
-                    Zend_Log::ERR
-                );
+                } catch (Exception $e) {
+                    Mage::getModel('tnw_salesforce/tool_log_file')->write(
+                        sprintf('Could not send an email containing the error. Error from email: %s', $e->getMessage()),
+                        Zend_Log::ERR
+                    );
+                }
+            } else {
+                // TODO: part of PCMI-1302
             }
+
         }
 
         return true;

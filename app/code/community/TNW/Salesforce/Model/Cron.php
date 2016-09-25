@@ -109,7 +109,7 @@ class TNW_Salesforce_Model_Cron
         Mage::getModel('tnw_salesforce/feed')->checkUpdate();
 
         // Only process if module is enabled
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+        if (Mage::helper('tnw_salesforce')->isEnabled()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Salesforce 2 Magento queue START ===");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ...");
             Mage::getModel('tnw_salesforce/imports_bulk')->process();
