@@ -108,11 +108,13 @@ class TNW_Salesforce_Model_Cron
         set_time_limit(0);
         Mage::getModel('tnw_salesforce/feed')->checkUpdate();
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ...");
-        Mage::getModel('tnw_salesforce/imports_bulk')->process();
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ... done");
-        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'backgroundProcess'));
-
+        // Only process if module is enabled
+        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ...");
+            Mage::getModel('tnw_salesforce/imports_bulk')->process();
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Check Salesforce to Magento queue ... done");
+            Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'backgroundProcess'));
+        }
     }
 
     /**
