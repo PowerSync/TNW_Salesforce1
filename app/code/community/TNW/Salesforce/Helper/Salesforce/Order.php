@@ -629,11 +629,11 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
-     * Try to find order in SF and save in local cache
+     *
      */
-    protected function _prepareOrderLookup()
+    protected function _massAddAfter()
     {
-        parent::_prepareOrderLookup();
+        parent::_massAddAfter();
 
         foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
             $entity = $this->_loadEntityByCache($key, $number);
