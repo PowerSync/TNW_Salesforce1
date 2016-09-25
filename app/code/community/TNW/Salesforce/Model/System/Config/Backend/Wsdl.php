@@ -11,7 +11,10 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
     {
         if (!empty($_FILES['groups']['tmp_name'][$this->getGroupId()]['fields'][$this->getField()]['value'])){
 
-            $uploadDir = $this->_getUploadDir();
+            $uploadDir = Mage::getBaseDir('base') . DS . 'var/salesforce';
+            if ($this->_addWhetherScopeInfo()) {
+                $uploadDir = $this->_prependScopeInfo($uploadDir);
+            }
 
             try {
                 $file = array();
@@ -39,10 +42,10 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
                     $filename = $this->_prependScopeInfo($filename);
                 }
 
-                $fieldConfig = $this->getFieldConfig();
+                //$fieldConfig = $this->getFieldConfig();
                 /* @var $fieldConfig Varien_Simplexml_Element */
-                $uploadDir = (string)$fieldConfig->upload_dir;
-                $this->setValue('var/'.$uploadDir.'/'.$filename);
+                //$uploadDir = (string)$fieldConfig->upload_dir;
+                $this->setValue('var/salesforce/'.$filename);
             }
         }
 
