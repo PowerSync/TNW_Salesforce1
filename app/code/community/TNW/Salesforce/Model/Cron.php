@@ -220,11 +220,6 @@ class TNW_Salesforce_Model_Cron
         $this->_updateQueue();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
 
-        // check if it's time to run cron
-        if (!$_helperData->isEnabled()) {
-            return;
-        }
-
         $isRealtime = ($_helperData->getObjectSyncType() == 'sync_type_realtime');
         if (!$isRealtime && !$this->_isTimeToRun()) {
             return;
