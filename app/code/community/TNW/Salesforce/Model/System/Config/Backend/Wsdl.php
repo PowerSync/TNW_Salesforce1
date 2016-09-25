@@ -13,7 +13,13 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
 
             $uploadDir = Mage::getBaseDir('base') . DS . 'var/salesforce';
             if ($this->_addWhetherScopeInfo()) {
-                $uploadDir = $this->_prependScopeInfo($uploadDir);
+                $uploadDir = $this->_appendScopeInfo($uploadDir);
+            }
+
+            // Create directory if does not exist
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir);
+                chmod($uploadDir, 0750);
             }
 
             try {
