@@ -6,7 +6,7 @@ $selector = $this->hasData('selector')
 ?>
 <script type="application/javascript">
     (function($) {
-        $(document).ready(function() {
+        var select2 = function() {
             $("<?php echo $selector ?>").select2({
                 ajax: {
                     url: "<?php echo $this->getData('url') ?>",
@@ -32,6 +32,9 @@ $selector = $this->hasData('selector')
                 },
                 minimumInputLength: 4
             });
-        });
+        };
+
+        select2();
+        $(document).ready(select2);
     })($j);
 </script>
