@@ -666,15 +666,10 @@
     </admin>
     <crontab>
         <jobs>
-            <tnw_m2sf_queue>
-                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
-                <run><model>tnw_salesforce/cron::processQueue</model></run>
-            </tnw_m2sf_queue>
             <tnw_salesforce_abandoned>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::addAbandonedToQueue</model></run>
             </tnw_salesforce_abandoned>
-
             <tnw_salesforce_currency>
                 <run><model>tnw_salesforce/cron::syncCurrency</model></run>
             </tnw_salesforce_currency>
