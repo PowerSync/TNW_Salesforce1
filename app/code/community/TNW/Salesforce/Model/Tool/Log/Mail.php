@@ -66,9 +66,13 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
                     'content' => file_get_contents($filename)
                 ));
 
-            if (version_compare(Mage::getVersion(), '1.9.0.0', '>=')) {
+            $emailQueue = false;
+            try {
                 /** @var $emailQueue Mage_Core_Model_Email_Queue */
                 $emailQueue = Mage::getModel('core/email_queue');
+            } catch (Exception $e) {}
+
+            if ($emailQueue instanceof Mage_Core_Model_Abstract) {
                 $emailQueue->setEntityId(null)
                     ->setEntityType('salesforce_notification')
                     ->setEventType('new_salesforce_notification');
