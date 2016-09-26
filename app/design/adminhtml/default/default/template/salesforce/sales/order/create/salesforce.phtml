@@ -9,20 +9,16 @@
     <script type="application/javascript">
         (function ($) {
             function moveElement() {
-                $('#order-data:visible .order-totals')
-                    .parent('.box-right')
-                    .before($('#tnw-order-info-block > div'));
+                var copy = $('#tnw-order-info-block > div');
+                $('.select2-container', copy).remove();
+                copy.clone().insertBefore($('#order-data .order-totals').parent('.box-right'));
+
+                $('script', copy).each(function(index, value){
+                    eval(value.innerHTML);
+                });
             }
 
-            $(document).ready(function() {
-                order.parentDataLoaded = order.dataLoaded;
-                order.dataLoaded = function() {
-                    this.parentDataLoaded();
-                    moveElement();
-                }
-                moveElement();
-            });
-
+            $(document).ready(moveElement);
             $(document).on("DOMNodeInserted", function (e) {
                 if ($(e.target).parent().attr('id') == 'order-data') {
                     moveElement();
