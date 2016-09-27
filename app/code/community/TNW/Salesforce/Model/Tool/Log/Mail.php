@@ -66,7 +66,7 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
                     'content' => file_get_contents($filename)
                 ));
 
-            if (version_compare(Mage::getVersion(), '1.9.0.0', '>=')) {
+            if ($this->_checkVersion()) {
                 /** @var $emailQueue Mage_Core_Model_Email_Queue */
                 $emailQueue = Mage::getModel('core/email_queue');
                 $emailQueue->setEntityId(null)
@@ -103,5 +103,26 @@ class TNW_Salesforce_Model_Tool_Log_Mail  extends Varien_Object
             return explode(',', $data);
         }
         return false;
+    }
+
+    /**
+     * Checks if the version is 1.9.0 or higher
+     */
+    protected function _checkVersion()
+    {
+        if(method_exists('Mage', 'getEdition')) {
+            switch (Mage::getEdition()) {
+                case "Community":
+                    return version_compare(Mage::getVersion(), '1.9.0.0', '>=');
+                case "Enterprise":
+                    return version_compare(Mage::getVersion(), '1.14.0.0', '>=');
+            }
+        }
+        else {
+            //version is below v1.7.0.0
+            return false;
+        }
+
+        return null;
     }
 }
