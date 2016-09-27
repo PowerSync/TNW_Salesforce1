@@ -2,37 +2,28 @@
 
 class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Account extends Mage_Adminhtml_Block_Customer_Edit_Tab_Account
 {
-    protected $fields = array(
-        'salesforce_id'         => 'salesforce_contact_owner_id',
-        'salesforce_account_id' => 'salesforce_account_owner_id',
-        'salesforce_lead_id'    => 'salesforce_lead_owner_id'
-    );
-
     public function initForm()
     {
         parent::initForm();
 
-        /** @var Varien_Data_Form_Element_Fieldset $baseFieldset */
-        $baseFieldset = $this->getForm()->getElement('base_fieldset');
-        if (!$baseFieldset) {
+        /** @var Varien_Data_Form_Element_Fieldset $baseFieldSet */
+        $baseFieldSet = $this->getForm()->getElement('base_fieldset');
+        if (!$baseFieldSet) {
             return $this;
         }
 
-        $baseFieldset->removeField('salesforce_account_owner_id');
-        $baseFieldset->removeField('salesforce_lead_owner_id');
+        if (Mage::helper('tnw_salesforce')->isEnabled() && Mage::helper('tnw_salesforce')->isEnabledCustomerSync()) {
+            $fields = array(
+                'salesforce_id'         => 'salesforce_contact_owner_id',
+                'salesforce_lead_id'    => 'salesforce_lead_owner_id'
+            );
 
-        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce')->isEnabledCustomerSync()) {
-            foreach ($this->fields as $field) {
-                $baseFieldset->removeField($field);
-            }
-        }
-        else {
+            $value = '';
             /** @var Mage_Customer_Model_Customer $customer */
             $customer = Mage::registry('current_customer');
-
-            foreach ($this->fields as $check => $field) {
+            foreach ($fields as $check => $field) {
                 if (!$customer->getData($check)) {
-                    $baseFieldset->removeField($field);
+                    continue;
                 }
 
                 /** @var Varien_Data_Form_Element_Text $element */
@@ -41,31 +32,22 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Account extends Mage_Admi
                     continue;
                 }
 
-                $element->setData('selector', 'tnw_field_'.$field);
+                $value = $element->getValue();
+                break;
             }
+
+            $baseFieldSet->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
+            $baseFieldSet->addField('salesforce_sales_person', 'owner', array(
+                'label'    => Mage::helper('customer')->__('Sales Person'),
+                'name'     => 'salesforce_sales_person',
+                'selector' => 'tnw-sales-person',
+                'value'    => $value,
+            ));
         }
 
+        $baseFieldSet->removeField('salesforce_contact_owner_id');
+        $baseFieldSet->removeField('salesforce_account_owner_id');
+        $baseFieldSet->removeField('salesforce_lead_owner_id');
         return $this;
     }
-
-    /**
-     * @param Mage_Customer_Model_Attribute[] $attributes
-     * @param Varien_Data_Form_Element_Fieldset $fieldset
-     * @param array $exclude
-     */
-    protected function _setFieldset($attributes, $fieldset, $exclude = array())
-    {
-        foreach ($this->fields as $field) {
-            if (empty($attributes[$field])) {
-                continue;
-            }
-
-            $attributes[$field]
-                ->setData('frontend_input_renderer', 'tnw_salesforce/adminhtml_widget_form_element_owner');
-        }
-
-        parent::_setFieldset($attributes, $fieldset, $exclude);
-    }
-
-
 }
