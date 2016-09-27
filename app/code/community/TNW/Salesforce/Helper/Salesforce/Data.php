@@ -766,7 +766,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                         ->describeTable($table);
 
                     if ($_useCache) {
-                        $cache->save(serialize($columns), "tnw_salesforce_" . strtolower($table) . "_fields", array("TNW_SALESFORCE"));
+                        $cache->save(serialize($columns), "tnw_salesforce_describe_" . strtolower($table) . "_fields", array("TNW_SALESFORCE"));
                     }
                 }
                 $this->_tableDescription[$table] = $columns;
