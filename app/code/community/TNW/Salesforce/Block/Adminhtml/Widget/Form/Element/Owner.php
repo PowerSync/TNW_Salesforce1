@@ -24,13 +24,14 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
             'label'    => null,
             'values'   => $cIdVal,
             'class'    => $this->getData('selector'),
-            'onchange' => "document.getElementById('{$this->getId()}-link').href = '{$sfLink}/'+this.value",
+            'onchange' => "$$('.{$this->getId()}-link').each((function(e){e.href = '{$sfLink}/'+this.value; e.style.display = 'inline';}).bind(this));",
         ));
 
-        return sprintf('<span class="tnw-owner-wrapper">%s<a class="tnw-owner-link" target="_blank" id="%s-link" href="%s">%s</a></span>',
+        return sprintf('<span class="tnw-owner-wrapper">%s<a class="tnw-owner-link %s-link" target="_blank" href="%s" style="display: %s">%s</a></span>',
             parent::getElementHtml(),
             $this->getId(),
             !empty($ownerId) ? sprintf('%s/%s', $sfLink, $ownerId) : '#',
+            !empty($ownerId) ? 'inline' : 'none',
             Mage::helper('tnw_salesforce')->__('View in Salesforce')
         );
     }
