@@ -5,6 +5,8 @@
  */
 class TNW_Salesforce_Model_Cron
 {
+    // Buffer 1 hour to identify stuck records
+    const INTERVAL_BUFFER              = 3600;
     const SYNC_TYPE_OUTGOING           = 'outgoing';
     const SYNC_TYPE_BULK               = 'bulk';
     const CRON_LAST_RUN_TIMESTAMP_PATH = 'salesforce/syncronization/cron_last_run_timestamp';
@@ -18,90 +20,6 @@ class TNW_Salesforce_Model_Cron
      * @var null
      */
     protected $_serverName = NULL;
-
-    /**
-     * cron run interval in minutes value
-     * by default it's 5 minutes
-     *
-     * @var int
-     */
-    private $_cronRunIntervalMinute = 5;
-
-    /**
-     * we check sf sync type settings and decide if it's time to run cron
-     *
-     * @return bool
-     */
-    public function _isTimeToRun()
-    {
-        /** @var TNW_Salesforce_Helper_Data $_helperData */
-        $_helperData = Mage::helper('tnw_salesforce');
-
-        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('========================= cron method _isTimeToRun() started =========================');
-        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('cron time (it differs from php timezone) %s', $_helperData->getDate(NULL, false)));
-
-        $lastRunTime = (int)Mage::getStoreConfig(self::CRON_LAST_RUN_TIMESTAMP_PATH);
-
-        $syncType = $_helperData->getObjectSyncType();
-        switch ($syncType) {
-            case 'sync_type_queue_interval':
-                $configIntervalSeconds = (int)$_helperData->getObjectSyncIntervalValue();
-                return ($_helperData->getTime() - $lastRunTime) >= ($configIntervalSeconds - 60);
-
-            case 'sync_type_spectime':
-                /**
-                 * here we check if Frequency period passed,
-                 * then if time hour == current hour,
-                 * then if module diff between time minute and current minute less then 5 mins
-                 * and then start cron.
-                 * the cron start time inaccuracy is between 1 - 5 minutes
-                 */
-                $configFrequencySeconds = $_helperData->getObjectSyncSpectimeFreq();
-                $configTimeHour         = (int)$_helperData->getObjectSpectimeHour();
-                $configTimeMinute       = (int)$_helperData->getObjectSpectimeMinute();
-
-                // log some help info in case we have claim from customer regarding cron job
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(($_helperData->getTime() - $lastRunTime) >= $configFrequencySeconds - 60);
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(intval(date("H")) == intval($configTimeHour));
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(abs(intval(date("i")) - intval($configTimeMinute)) < $this->_cronRunIntervalMinute);
-
-                if (($_helperData->getTime() - $lastRunTime) >= ($configFrequencySeconds - 60)
-                    && intval(date("H")) == intval($configTimeHour)
-                    && abs(intval(date("i")) - intval($configTimeMinute)) <= $this->_cronRunIntervalMinute
-                ) {
-                    // it's time for cron
-                    if ($configFrequencySeconds <= 60 * 60 * 24) {
-                        // daily
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('daily cron started');
-
-                        return true;
-                    } elseif ($configFrequencySeconds <= 60 * 60 * 24 * 7) {
-                        // weekly
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('weekly cron started');
-                        // check day of week
-                        $curWeekDay = $_helperData->getObjectSyncSpectimeFreqWeekday();
-                        $isTime = date("l", time()) == $curWeekDay ? true : false;
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("isTime = $isTime");
-
-                        return $isTime;
-                    } else {
-                        // monthly
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('monthly cron started');
-                        // check date (we run cron on 1st day of month)
-                        $curMonthDay = $_helperData->getObjectSyncSpectimeFreqMonthday();
-                        $isTime = intval(date("j", time())) == intval($curMonthDay) ? true : false;
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("isTime = $isTime");
-
-                        return $isTime;
-                    }
-                }
-
-                return false;
-
-            default:
-                return false;
-        }
-    }
 
     public function backgroundProcess()
     {
@@ -220,19 +138,11 @@ class TNW_Salesforce_Model_Cron
             return;
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce queue START ===");
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("PowerSync background process for store (%s) and website id (%s) ...",
             $_helperData->getStoreId(), $_helperData->getWebsiteId()));
 
-        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updating ...");
         $this->_updateQueue();
-        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Queue updated!");
-
-        $isRealtime = ($_helperData->getObjectSyncType() == 'sync_type_realtime');
-        if (!$isRealtime && !$this->_isTimeToRun()) {
-            return;
-        }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce queue START ===");
 
         // cron is running now, thus save last cron run timestamp
         Mage::getModel('core/config_data')
@@ -241,8 +151,7 @@ class TNW_Salesforce_Model_Cron
             ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
             ->save();
 
-        // TODO: (Igor:s@eermolaev) will this ever run in real time?
-        if ($isRealtime) {
+        if ($_helperData->getObjectSyncType() == 'sync_type_realtime') {
             $this->_syncObjectForRealTimeMode();
         }
         else {
@@ -415,21 +324,7 @@ class TNW_Salesforce_Model_Cron
 
     protected function _resetStuckRecords()
     {
-        $syncType = Mage::helper('tnw_salesforce')->getObjectSyncType();
-        $_whenToReset = 0;
-        switch ($syncType) {
-            case 'sync_type_queue_interval':
-                $configIntervalSeconds = (int)Mage::helper('tnw_salesforce')->getObjectSyncIntervalValue();
-                $_whenToReset = Mage::helper('tnw_salesforce')->getTime() - ($configIntervalSeconds + TNW_Salesforce_Model_Config_Frequency::INTERVAL_BUFFER);
-                break;
-            case 'sync_type_spectime':
-                // TODO: calculate when to reset the flag
-                $_whenToReset = 0;
-                break;
-            default:
-                break;
-        }
-
+        $_whenToReset = Mage::helper('tnw_salesforce')->getTime() - self::INTERVAL_BUFFER;
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < '" . Mage::helper('tnw_salesforce')->getDate($_whenToReset) . "';";
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
         //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");

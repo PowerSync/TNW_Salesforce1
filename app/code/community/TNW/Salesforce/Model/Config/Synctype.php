@@ -17,19 +17,24 @@ class TNW_Salesforce_Model_Config_Synctype
     protected $_types = array();
 
     /**
+     * TNW_Salesforce_Model_Config_Synctype constructor.
+     */
+    public function __construct()
+    {
+        $this->_syncType['sync_type_realtime'] = Mage::helper('tnw_salesforce')->__('Realtime');
+
+        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+            $this->_syncType['sync_type_system_scheduled'] = Mage::helper('tnw_salesforce')->__('System Scheduled');
+        }
+    }
+
+    /**
      * drop down list method
      *
      * @return mixed
      */
     public function toOptionArray()
     {
-        $this->_syncType['sync_type_realtime'] = 'Realtime';
-
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->_syncType['sync_type_queue_interval'] = 'Queue Interval';
-            $this->_syncType['sync_type_spectime'] = 'Specific Time';
-        }
-
         return $this->_getOptions();
     }
 
