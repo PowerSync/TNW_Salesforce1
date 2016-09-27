@@ -39,7 +39,7 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
         else if (isset($this->_args['outgoing'])) {
             try {
                 $this->processLock(self::LOCK_OUTGOING);
-                Mage::helper('tnw_salesforce')->setObjectSyncType('sync_type_queue_interval');
+                Mage::helper('tnw_salesforce')->setObjectSyncType('sync_type_system_scheduled');
                 Mage::getModel('tnw_salesforce/cron')->processQueue();
                 echo "Import successfully finished\n";
             } catch (Mage_Core_Exception $e) {
@@ -54,7 +54,7 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
         else if (isset($this->_args['bulk'])) {
             try {
                 $this->processLock(self::LOCK_BULK);
-                Mage::helper('tnw_salesforce')->setObjectSyncType('sync_type_queue_interval');
+                Mage::helper('tnw_salesforce')->setObjectSyncType('sync_type_system_scheduled');
                 Mage::getModel('tnw_salesforce/cron')->processBulkQueue();
                 echo "Import successfully finished\n";
             } catch (Mage_Core_Exception $e) {

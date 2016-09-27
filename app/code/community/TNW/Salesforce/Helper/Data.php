@@ -65,13 +65,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /* queue object sync settings */
     const OBJECT_SYNC_TYPE = 'salesforce/syncronization/sync_type_realtime';
-    const OBJECT_SYNC_INTERVAL_VALUE = 'salesforce/syncronization/sync_type_queueinterval_value';
-    const OBJECT_SYNC_SPECTIME = 'salesforce/syncronization/sync_type_spectime';
-    const OBJECT_SYNC_SPECTIME_FREQUENCY_WEEKLY = 'salesforce/syncronization/sync_type_spectime_frequency_weekly';
-    const OBJECT_SYNC_SPECTIME_FREQUENCY_MONTH_DAY = 'salesforce/syncronization/sync_type_spectime_month_day';
-    const OBJECT_SYNC_SPECTIME_FREQ = 'salesforce/syncronization/sync_type_spectime_frequency';
-    const OBJECT_SYNC_SPECTIME_HOUR = 'salesforce/syncronization/sync_type_spectime_hour';
-    const OBJECT_SYNC_SPECTIME_MINUTE = 'salesforce/syncronization/sync_type_spectime_minute';
 
     // last cron run time
     const CRON_LAST_RUN_TIMESTAMP = 'salesforce/syncronization/cron_last_run_timestamp';
@@ -141,46 +134,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * @var null
      */
     protected $_magentoId = NULL;
-    /**
-     * sync frequency
-     *
-     * @var array
-     */
-    protected $_syncFrequency = array(
-        'Daily' => 86400, // 60 * 60 * 24
-        'Weekly' => 604800, // 60 * 60 * 24 * 7
-        'Monthly' => 2592000, // 30 days = 60 * 60 * 24 * 30
-    );
-
-    /**
-     * sync frequency week list
-     *
-     * @var array
-     */
-    protected $_syncFrequencyWeekList = array(
-        'Monday' => 'Monday',
-        'Tuesday' => 'Tuesday',
-        'Wednesday' => 'Wednesday',
-        'Thursday' => 'Thursday',
-        'Friday' => 'Friday',
-        'Saturday' => 'Saturday',
-        'Sunday' => 'Sunday',
-    );
-
-    /**
-     * cron run interval
-     *
-     * @var array
-     */
-    protected $_queueSyncInterval = array(
-        '5 minutes' => 300,
-        '15 minutes' => 900,
-        '30 minutes' => 1800,
-        '1 hour' => 3600,
-        '3 hours' => 10800,
-        '6 hours' => 21600,
-        '12 hours' => 43200,
-    );
 
     /**
      * package names and versions from wsdl file
@@ -444,53 +397,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getCronLastRunTimestamp()
     {
         return $this->getStoreConfig(self::CRON_LAST_RUN_TIMESTAMP);
-    }
-
-    // cron run last time
-
-    public function getObjectSyncSpectimeFreq()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQ);
-    }
-
-    // object sync spec time frequency
-
-    public function getObjectSyncSpectimeFreqWeekday()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_WEEKLY);
-    }
-
-    // get sync day of week
-
-    public function getObjectSyncSpectimeFreqMonthday()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_MONTH_DAY);
-    }
-
-    // get sync day of month
-
-    public function getObjectSyncIntervalValue()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_INTERVAL_VALUE);
-    }
-
-    public function getOrderSyncPeriod()
-    {
-        return $this->getStoreConfig(self::ORDER_SYNC_INTERVAL);
-    }
-
-    // order sync period
-
-    public function getObjectSpectimeHour()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_HOUR);
-    }
-
-    // spectime hour
-
-    public function getObjectSpectimeMinute()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_MINUTE);
     }
 
     // spectime minute
@@ -913,132 +819,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
             $res[] = array(
                 'label' => $item->label,
                 'value' => $item->value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync interval list
-     *
-     * @return array
-     */
-    public function queueInterval()
-    {
-        $res = array();
-        foreach ($this->_queueSyncInterval as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync frequency
-     *
-     * @return array
-     */
-    public function syncFrequency()
-    {
-        $res = array();
-        foreach ($this->_syncFrequency as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync frequency weeklist
-     *
-     * @return array
-     */
-    public function _syncFrequencyWeekList()
-    {
-        $res = array();
-        foreach ($this->_syncFrequencyWeekList as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * day list
-     *
-     * @return array
-     */
-    public function _syncFrequencyDayList()
-    {
-        $res = array();
-        for ($i = 1; $i <= 31; $i++) {
-            $res[] = array(
-                'label' => $i,
-                'value' => $i,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync time minute list
-     *
-     * @return array
-     */
-    public function syncTimeminute()
-    {
-        $res = array();
-        for ($i = 0; $i <= 55; $i += 5) {
-            $res[] = array(
-                'label' => "$i minute",
-                'value' => $i,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync time hour list
-     *
-     * @return array
-     */
-    public function syncTimehour()
-    {
-        $res = array();
-        for ($i = 0; $i <= 23; $i++) {
-            $res[] = array(
-                'label' => "$i hour",
-                'value' => $i,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * queue sync interval
-     *
-     * @return array
-     */
-    public function queueSyncIntervalDropdown()
-    {
-        $res = array();
-        foreach ($this->_queueSyncInterval as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
             );
         }
 
