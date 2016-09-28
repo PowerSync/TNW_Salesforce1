@@ -410,8 +410,11 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 switch (Mage::helper('tnw_salesforce/config_customer')->sendTypeEmailCustomer()) {
                     case TNW_Salesforce_Model_System_Config_Source_Customer_EmailNew::SEND_WELCOME;
                         $_entity->sendNewAccountEmail('registered', '', $_entity->getStoreId());
+                        break;
+
                     case TNW_Salesforce_Model_System_Config_Source_Customer_EmailNew::SEND_PASSWORD;
                         $_entity->sendPasswordReminderEmail();
+                        break;
                 }
             }
 
