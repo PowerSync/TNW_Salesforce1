@@ -403,6 +403,18 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
             // Save Customer
             $_entity->save();
 
+            //Send Welcome and Password
+            if ($this->_isNew) {
+                $_entity->changePassword($_entity->generatePassword());
+
+                switch (Mage::helper('tnw_salesforce/config_customer')->sendTypeEmailCustomer()) {
+                    case TNW_Salesforce_Model_System_Config_Source_Customer_EmailNew::SEND_WELCOME;
+                        $_entity->sendNewAccountEmail('registered', '', $_entity->getStoreId());
+                    case TNW_Salesforce_Model_System_Config_Source_Customer_EmailNew::SEND_PASSWORD;
+                        $_entity->sendPasswordReminderEmail();
+                }
+            }
+
             if (!$this->_magentoId) {
                 $this->_magentoId = $_entity->getId();
             }

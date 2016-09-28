@@ -7,6 +7,7 @@
 class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
 {
     const NEW_CUSTOMER = 'salesforce_customer/sync/new_customer';
+    const EMAIL_NEW_CUSTOMER = 'salesforce_customer/sync/email_new_customer';
     const CONFIG_CONTACT_ASIGNEE = 'salesforce_customer/contact/contact_asignee';
     const CONFIG_MERGE_ACCOUNT_DUPLICATES = 'salesforce_customer/account/merge_duplicates';
     const CONFIG_MERGE_CONTACT_DUPLICATES = 'salesforce_customer/contact/merge_duplicates';
@@ -22,6 +23,14 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     public function allowSalesforceToCreate()
     {
         return $this->getStoreConfig(self::NEW_CUSTOMER);
+    }
+
+    /**
+     * @return string
+     */
+    public function sendTypeEmailCustomer()
+    {
+        return $this->getStoreConfig(self::EMAIL_NEW_CUSTOMER);
     }
 
     /**
