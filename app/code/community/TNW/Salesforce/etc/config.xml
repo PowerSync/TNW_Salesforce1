@@ -721,6 +721,7 @@
             <sync>
                 <customer_sync_enable>0</customer_sync_enable>
                 <new_customer>1</new_customer>
+                <email_new_customer>send_password</email_new_customer>
                 <customer_groups_all>1</customer_groups_all>
             </sync>
             <lead_config>
