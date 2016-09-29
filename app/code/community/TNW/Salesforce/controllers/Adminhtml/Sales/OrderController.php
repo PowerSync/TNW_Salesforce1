@@ -128,4 +128,10 @@ class TNW_Salesforce_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Cont
 
     }
 
+    public function salesPersonAction()
+    {
+        /** @var TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce $block */
+        $block = $this->getLayout()->createBlock('tnw_salesforce/adminhtml_sales_order_create_salesforce');
+        $this->getResponse()->setBody($block->toHtml());
+    }
 }

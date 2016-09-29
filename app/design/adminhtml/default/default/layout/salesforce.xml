@@ -137,7 +137,7 @@
     <adminhtml_sales_order_create_index>
         <update handle="tnw_salesforce_select2"/>
         <reference name="customer">
-            <block type="tnw_salesforce/adminhtml_sales_order_create_salesforce" name="order_salesforce" template="salesforce/sales/order/create/salesforce.phtml" />
+            <block type="adminhtml/template" name="order_salesforce" template="salesforce/sales/order/create/salesforce.phtml" />
         </reference>
     </adminhtml_sales_order_create_index>
 
