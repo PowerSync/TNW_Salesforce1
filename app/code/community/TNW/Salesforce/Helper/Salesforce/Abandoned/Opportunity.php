@@ -689,8 +689,10 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
 
                     foreach ($_item->getChildren() as $_childItem) {
                         $_childItem
-                            ->setRowTotalInclTax(null)
-                            ->setBaseRowTotalInclTax(null)
+                            ->setTaxAmount(null)
+                            ->setBaseTaxAmount(null)
+                            ->setHiddenTaxAmount(null)
+                            ->setBaseHiddenTaxAmount(null)
                             ->setRowTotal(null)
                             ->setBaseRowTotal(null)
                             ->setDiscountAmount(null)

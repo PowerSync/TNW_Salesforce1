@@ -229,8 +229,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     foreach ($_item->getChildrenItems() as $_childItem) {
                         $_childItem = clone $_childItem;
                         $_childItem
-                            ->setRowTotalInclTax(null)
-                            ->setBaseRowTotalInclTax(null)
+                            ->setTaxAmount(null)
+                            ->setBaseTaxAmount(null)
+                            ->setHiddenTaxAmount(null)
+                            ->setBaseHiddenTaxAmount(null)
                             ->setRowTotal(null)
                             ->setBaseRowTotal(null)
                             ->setDiscountAmount(null)
