@@ -35,11 +35,14 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                 break;
 
             case 'salesforce_contact_owner_id':
+                return $this->convertSalesforceContactOwnerId($_entity);
+
             case 'salesforce_account_owner_id':
-                return $this->convertSalesforceOwnerId($_entity);
+                return $this->convertSalesforceAccountOwnerId($_entity);
 
             case 'salesforce_lead_owner_id':
                 return $this->convertSalesforceLeadOwnerId($_entity);
+
             case 'disable_auto_group_change':
                 return $_entity->getData($attributeCode);
         }
@@ -174,11 +177,22 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
      */
-    public function convertSalesforceOwnerId($_entity)
+    public function convertSalesforceContactOwnerId($_entity)
     {
         $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner();
-        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
-        $currentOwner  = $_entity->getData($attributeCode);
+        $currentOwner  = $_entity->getData('salesforce_contact_owner_id');
+
+        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    public function convertSalesforceAccountOwnerId($_entity)
+    {
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner();
+        $currentOwner  = $_entity->getData('salesforce_account_owner_id');
 
         return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
     }
@@ -190,8 +204,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     public function convertSalesforceLeadOwnerId($_entity)
     {
         $defaultOwner  = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
-        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
-        $currentOwner  = $_entity->getData($attributeCode);
+        $currentOwner  = $_entity->getData('salesforce_lead_owner_id');
 
         return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
     }
