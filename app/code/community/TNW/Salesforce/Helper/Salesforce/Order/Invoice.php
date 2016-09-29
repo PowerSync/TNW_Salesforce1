@@ -661,8 +661,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
             }
 
             $item
-                ->setRowTotalInclTax(null)
-                ->setBaseRowTotalInclTax(null)
+                ->setTaxAmount(null)
+                ->setBaseTaxAmount(null)
+                ->setHiddenTaxAmount(null)
+                ->setBaseHiddenTaxAmount(null)
                 ->setRowTotal(null)
                 ->setBaseRowTotal(null)
                 ->setDiscountAmount(null)
@@ -687,8 +689,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                         }
 
                         $item
-                            ->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
-                            ->setBaseRowTotalInclTax($item->getBaseRowTotalInclTax() + $_item->getBaseRowTotalInclTax())
+                            ->setTaxAmount($item->getTaxAmount() + $_item->getTaxAmount())
+                            ->setBaseTaxAmount($item->getBaseTaxAmount() + $_item->getBaseTaxAmount())
+                            ->setHiddenTaxAmount($item->getHiddenTaxAmount() + $_item->getHiddenTaxAmount())
+                            ->setBaseHiddenTaxAmount($item->getBaseHiddenTaxAmount() + $_item->getBaseHiddenTaxAmount())
                             ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
                             ->setBaseRowTotal($item->getBaseRowTotal() + $_item->getBaseRowTotal())
                             ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount())
@@ -715,16 +719,20 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                         }
 
                         $item
-                            ->setRowTotalInclTax($item->getRowTotalInclTax() + $_item->getRowTotalInclTax())
-                            ->setBaseRowTotalInclTax($item->getBaseRowTotalInclTax() + $_item->getBaseRowTotalInclTax())
+                            ->setTaxAmount($item->getTaxAmount() + $_item->getTaxAmount())
+                            ->setBaseTaxAmount($item->getBaseTaxAmount() + $_item->getBaseTaxAmount())
+                            ->setHiddenTaxAmount($item->getHiddenTaxAmount() + $_item->getHiddenTaxAmount())
+                            ->setBaseHiddenTaxAmount($item->getBaseHiddenTaxAmount() + $_item->getBaseHiddenTaxAmount())
                             ->setRowTotal($item->getRowTotal() + $_item->getRowTotal())
                             ->setBaseRowTotal($item->getBaseRowTotal() + $_item->getBaseRowTotal())
                             ->setDiscountAmount($item->getDiscountAmount() + $_item->getDiscountAmount())
                             ->setBaseDiscountAmount($item->getBaseDiscountAmount() + $_item->getBaseDiscountAmount());
 
                         $_item
-                            ->setRowTotalInclTax(null)
-                            ->setBaseRowTotalInclTax(null)
+                            ->setTaxAmount(null)
+                            ->setBaseTaxAmount(null)
+                            ->setHiddenTaxAmount(null)
+                            ->setBaseHiddenTaxAmount(null)
                             ->setRowTotal(null)
                             ->setBaseRowTotal(null)
                             ->setDiscountAmount(null)

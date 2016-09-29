@@ -753,8 +753,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
             }
 
             $item
-                ->setRowTotalInclTax(null)
-                ->setBaseRowTotalInclTax(null)
+                ->setTaxAmount(null)
+                ->setBaseTaxAmount(null)
+                ->setHiddenTaxAmount(null)
+                ->setBaseHiddenTaxAmount(null)
                 ->setRowTotal(null)
                 ->setBaseRowTotal(null)
                 ->setDiscountAmount(null)
@@ -808,8 +810,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                         $_item
                             ->setRowTotal(null)
                             ->setBaseRowTotal(null)
-                            ->setRowTotalInclTax(null)
-                            ->setBaseRowTotalInclTax(null)
+                            ->setTaxAmount(null)
+                            ->setBaseTaxAmount(null)
+                            ->setHiddenTaxAmount(null)
+                            ->setBaseHiddenTaxAmount(null)
                             ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
                                 . $item->getSku());
 
