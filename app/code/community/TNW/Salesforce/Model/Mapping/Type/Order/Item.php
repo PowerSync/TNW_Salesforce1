@@ -121,6 +121,22 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
             $opt[] = '</tbody></table>';
         }
 
+        if (
+            is_array($options)
+            && $_entity->getData('product_type') == 'downloadable'
+            && array_key_exists('links', $options)
+        ) {
+            $purchasedItem = Mage::getModel('downloadable/link_purchased_item')->getCollection()
+                ->addFieldToFilter('order_item_id', $_entity->getId());
+
+            $opt[] = '<table><thead><tr><th align="left">Links</th></tr><tbody>';
+            /** @var Mage_Downloadable_Model_Link_Purchased_Item $item */
+            foreach ($purchasedItem as $item) {
+                $opt[] = '<tr><td align="left">' . sprintf('%s (%s / %s)', $item->getLinkTitle(), $item->getNumberOfDownloadsUsed(), $item->getNumberOfDownloadsBought()?$item->getNumberOfDownloadsBought():Mage::helper('downloadable')->__('U'))  . '</td></tr>';
+            }
+            $opt[] = '</tbody></table>';
+        }
+
         return implode('', $opt);
     }
 
@@ -179,11 +195,20 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
             }
         }
 
-        $_description = join(", ", $_summary);
-        if (strlen($_description) > 200) {
-            $_description = substr($_description, 0, 200) . '...';
+        if (
+            is_array($options)
+            && $_entity->getData('product_type') == 'downloadable'
+            && array_key_exists('links', $options)
+        ) {
+            $purchasedItem = Mage::getModel('downloadable/link_purchased_item')->getCollection()
+                ->addFieldToFilter('order_item_id', $_entity->getId());
+
+            /** @var Mage_Downloadable_Model_Link_Purchased_Item $item */
+            foreach ($purchasedItem as $item) {
+                $_summary[] = sprintf('%s (%s / %s)', $item->getLinkTitle(), $item->getNumberOfDownloadsUsed(), $item->getNumberOfDownloadsBought()?$item->getNumberOfDownloadsBought():Mage::helper('downloadable')->__('U'));
+            }
         }
 
-        return $_description;
+        return join(", ", $_summary);
     }
 }

@@ -568,9 +568,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         if (Mage::helper('tnw_salesforce')->doPushShoppingCart()) {
             $this->_prepareEntityItems();
         }
-        if (Mage::helper('tnw_salesforce')->isOrderNotesEnabled()) {
+
+        if ($this->isNotesEnabled()) {
             $this->_prepareNotes();
         }
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isNotesEnabled()
+    {
+        return Mage::helper('tnw_salesforce')->isOrderNotesEnabled();
     }
 
     protected function _prepareEntity()
@@ -732,7 +741,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
-            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
         }
 
         // Unset attribute
@@ -890,7 +899,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         /** @var tnw_salesforce_model_mapping $_mapping */
         foreach ($_mappingCollection as $_mapping) {
-            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings));
+            $this->_obj->{$_mapping->getSfField()} = $_mapping->getValue(array_filter($_objectMappings), $this->_obj);
         }
 
         // Unset attribute
@@ -1212,22 +1221,30 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param $_item
+     * @param $_item Mage_Sales_Model_Order_Item
      * @return int
      * Get product Id from the cart
      */
     public function getProductIdFromCart($_item)
     {
-        if (
-            $_item->getData('product_type') == 'bundle'
-            || (is_array($_options = unserialize($_item->getData('product_options'))) && array_key_exists('options', $_options))
-        ) {
-            $id = $_item->getData('product_id');
-        } else {
-            $id = (int)Mage::getModel('catalog/product')->getIdBySku($_item->getSku());
+        $productId = null;
+        switch ($_item->getProductType()) {
+            case Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE:
+                $children = $_item->getChildrenItems();
+                if (empty($children)) {
+                    $productId = null;
+                    break;
+                }
+
+                $productId = reset($children)->getProductId();
+                break;
+
+            default:
+                $productId = $_item->getProductId();
+                break;
         }
 
-        return $id;
+        return $productId;
     }
 
     /**
@@ -1444,8 +1461,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         // Set Company Name
         if (!$_customer->getData('company') && isset($customerData['billing_address']['company'])) {
             $_customer->setData('company', $customerData['billing_address']['company']);
-        } elseif (!$_customer->getData('company') && !Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $_customer->setData('company', $_customer->getFirstname() . ' ' . $_customer->getLastname());
         }
 
         return $_customer;

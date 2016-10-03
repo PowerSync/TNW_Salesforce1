@@ -6,10 +6,6 @@
 
 class TNW_Salesforce_Helper_Salesforce_Data_Queue extends TNW_Salesforce_Helper_Salesforce_Data
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     public function getAllQueues() {
         try {

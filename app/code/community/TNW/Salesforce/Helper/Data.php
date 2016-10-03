@@ -32,6 +32,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const FAIL_EMAIL = 'salesforce/developer/fail_order';
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
     const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
+    const REAL_TIME_SYNC_MAX_COUNT = 'salesforce/development_and_debugging/real_time_sync_max_count';
 
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
@@ -53,23 +54,17 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const NONES_SYNC = 'salesforce_order/general/notes_synchronize';
 
     // Campaigns Config
-    const CAMPAIGNS_SYNC = 'salesforce_order/salesforce_campaigns/sync_enabled';
-    const CAMPAIGNS_CREATE_AUTOMATE = 'salesforce_order/salesforce_campaigns/create_campaign_automatic';
+    const CAMPAIGNS_SYNC = 'salesforce_promotion/salesforce_campaigns/sync_enabled';
+    const CAMPAIGNS_CREATE_AUTOMATE = 'salesforce_promotion/salesforce_campaigns/create_campaign_automatic';
 
     /* Order Customer Role */
     const ORDER_OBJECT = 'salesforce_order/customer_opportunity/order_or_opportunity';
+    const ORDER_CREATE_REVERSE_SYNC = 'salesforce_order/customer_opportunity/order_create_reverse_sync';
     const CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
     const CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/customer_integration_opp';
 
     /* queue object sync settings */
     const OBJECT_SYNC_TYPE = 'salesforce/syncronization/sync_type_realtime';
-    const OBJECT_SYNC_INTERVAL_VALUE = 'salesforce/syncronization/sync_type_queueinterval_value';
-    const OBJECT_SYNC_SPECTIME = 'salesforce/syncronization/sync_type_spectime';
-    const OBJECT_SYNC_SPECTIME_FREQUENCY_WEEKLY = 'salesforce/syncronization/sync_type_spectime_frequency_weekly';
-    const OBJECT_SYNC_SPECTIME_FREQUENCY_MONTH_DAY = 'salesforce/syncronization/sync_type_spectime_month_day';
-    const OBJECT_SYNC_SPECTIME_FREQ = 'salesforce/syncronization/sync_type_spectime_frequency';
-    const OBJECT_SYNC_SPECTIME_HOUR = 'salesforce/syncronization/sync_type_spectime_hour';
-    const OBJECT_SYNC_SPECTIME_MINUTE = 'salesforce/syncronization/sync_type_spectime_minute';
 
     // last cron run time
     const CRON_LAST_RUN_TIMESTAMP = 'salesforce/syncronization/cron_last_run_timestamp';
@@ -93,8 +88,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const DEFAULT_ENTITY_OWNER = 'salesforce_customer/sync/default_owner';
 
     /* Contact Us Config */
-    const CUSTOMER_INTEGRATION_FORM = 'salesforce_customer/contactus/customer_form_enable';
-    const CUSTOMER_TASK_ASSIGNEE = 'salesforce_customer/contactus/customer_form_assigned';
+    const CUSTOMER_INTEGRATION_FORM = 'salesforce_contactus/general/customer_form_enable';
+    const CUSTOMER_TASK_ASSIGNEE = 'salesforce_contactus/general/customer_form_assigned';
 
     /* Contacts & Accounts */
     const CUSTOMER_DEFAULT_ACCOUNT = 'salesforce_customer/contact/customer_account'; // Deprecated
@@ -102,8 +97,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const BUSINESS_RECORD_TYPE = 'salesforce_customer/contact/customer_account';
     const CUSTOMER_PERSON_ACCOUNT = 'salesforce_customer/contact/customer_person';
     const PERSON_RECORD_TYPE = 'salesforce_customer/contact/customer_person_account';
-
-    const CUSTOMER_CATCHALL_ACCOUNT = 'salesforce_customer/account_catchall/domains'; // Deprecated
 
     /* Leads */
     const LEAD_CONVERTED_STATUS = 'salesforce_customer/lead_config/customer_lead_status';
@@ -133,6 +126,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = array();
+    protected $_objectSyncType = null;
 
     //const MODULE_TYPE = 'BASIC';
     /**
@@ -140,46 +134,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * @var null
      */
     protected $_magentoId = NULL;
-    /**
-     * sync frequency
-     *
-     * @var array
-     */
-    protected $_syncFrequency = array(
-        'Daily' => 86400, // 60 * 60 * 24
-        'Weekly' => 604800, // 60 * 60 * 24 * 7
-        'Monthly' => 2592000, // 30 days = 60 * 60 * 24 * 30
-    );
-
-    /**
-     * sync frequency week list
-     *
-     * @var array
-     */
-    protected $_syncFrequencyWeekList = array(
-        'Monday' => 'Monday',
-        'Tuesday' => 'Tuesday',
-        'Wednesday' => 'Wednesday',
-        'Thursday' => 'Thursday',
-        'Friday' => 'Friday',
-        'Saturday' => 'Saturday',
-        'Sunday' => 'Sunday',
-    );
-
-    /**
-     * cron run interval
-     *
-     * @var array
-     */
-    protected $_queueSyncInterval = array(
-        '5 minutes' => 300,
-        '15 minutes' => 900,
-        '30 minutes' => 1800,
-        '1 hour' => 3600,
-        '3 hours' => 10800,
-        '6 hours' => 21600,
-        '12 hours' => 43200,
-    );
 
     /**
      * package names and versions from wsdl file
@@ -227,6 +181,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     final public function getType()
     {
         return self::MODULE_TYPE;
+    }
+
+    /**
+     * @return bool
+     */
+    final public function isProfessionalEdition()
+    {
+        return $this->getType() == 'PRO';
     }
 
     // License Email
@@ -371,6 +333,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::ORDER_SYNC);
     }
 
+    public function isOrderCreateReverseSync()
+    {
+        return $this->getStoreConfig(self::ORDER_CREATE_REVERSE_SYNC);
+    }
+
     // Is order synchronization enabled
 
     public function doPushShoppingCart()
@@ -392,11 +359,37 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CUSTOMER_ROLE);
     }
 
+    /**
+     * @return bool
+     */
+    public function isRealTimeType()
+    {
+        return $this->getObjectSyncType() == 'sync_type_realtime';
+    }
+
+    /**
+     * @return int
+     */
+    public function getRealTimeSyncMaxCount()
+    {
+        return $this->getStoreConfig(self::REAL_TIME_SYNC_MAX_COUNT);
+    }
+
     // Default Customer Opportunity Role
 
     public function getObjectSyncType()
     {
+        if (!empty($this->_objectSyncType)) {
+            return $this->_objectSyncType;
+        }
+
         return $this->getStoreConfig(self::OBJECT_SYNC_TYPE);
+    }
+
+    public function setObjectSyncType($objectSyncType)
+    {
+        $this->_objectSyncType = $objectSyncType;
+        return $this;
     }
 
     // queue object sync type
@@ -404,53 +397,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getCronLastRunTimestamp()
     {
         return $this->getStoreConfig(self::CRON_LAST_RUN_TIMESTAMP);
-    }
-
-    // cron run last time
-
-    public function getObjectSyncSpectimeFreq()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQ);
-    }
-
-    // object sync spec time frequency
-
-    public function getObjectSyncSpectimeFreqWeekday()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_WEEKLY);
-    }
-
-    // get sync day of week
-
-    public function getObjectSyncSpectimeFreqMonthday()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_FREQUENCY_MONTH_DAY);
-    }
-
-    // get sync day of month
-
-    public function getObjectSyncIntervalValue()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_INTERVAL_VALUE);
-    }
-
-    public function getOrderSyncPeriod()
-    {
-        return $this->getStoreConfig(self::ORDER_SYNC_INTERVAL);
-    }
-
-    // order sync period
-
-    public function getObjectSpectimeHour()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_HOUR);
-    }
-
-    // spectime hour
-
-    public function getObjectSpectimeMinute()
-    {
-        return $this->getStoreConfig(self::OBJECT_SYNC_SPECTIME_MINUTE);
     }
 
     // spectime minute
@@ -463,6 +409,18 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function isOrderRulesEnabled()
     {
         return $this->getStoreConfig(self::CAMPAIGNS_SYNC);
+    }
+
+    public function getSyncOrderRulesButtonData()
+    {
+        /** @var Mage_SalesRule_Model_Rule $rule */
+        $rule  = Mage::registry('current_promo_quote_rule');
+        $url   = Mage::getModel('adminhtml/url')->getUrl('*/salesforcesync_campaign_salesrulesync/sync', array('salesrule_id' => $rule->getId()));
+
+        return array(
+            'label'   => Mage::helper('tnw_salesforce')->__('Synchronize w/ Salesforce'),
+            'onclick' => "setLocation('$url')",
+        );
     }
 
     public function isCampaignsCreateAutomate()
@@ -861,132 +819,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
             $res[] = array(
                 'label' => $item->label,
                 'value' => $item->value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync interval list
-     *
-     * @return array
-     */
-    public function queueInterval()
-    {
-        $res = array();
-        foreach ($this->_queueSyncInterval as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync frequency
-     *
-     * @return array
-     */
-    public function syncFrequency()
-    {
-        $res = array();
-        foreach ($this->_syncFrequency as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync frequency weeklist
-     *
-     * @return array
-     */
-    public function _syncFrequencyWeekList()
-    {
-        $res = array();
-        foreach ($this->_syncFrequencyWeekList as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * day list
-     *
-     * @return array
-     */
-    public function _syncFrequencyDayList()
-    {
-        $res = array();
-        for ($i = 1; $i <= 31; $i++) {
-            $res[] = array(
-                'label' => $i,
-                'value' => $i,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync time minute list
-     *
-     * @return array
-     */
-    public function syncTimeminute()
-    {
-        $res = array();
-        for ($i = 0; $i <= 55; $i += 5) {
-            $res[] = array(
-                'label' => "$i minute",
-                'value' => $i,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * sync time hour list
-     *
-     * @return array
-     */
-    public function syncTimehour()
-    {
-        $res = array();
-        for ($i = 0; $i <= 23; $i++) {
-            $res[] = array(
-                'label' => "$i hour",
-                'value' => $i,
-            );
-        }
-
-        return $res;
-    }
-
-    /**
-     * queue sync interval
-     *
-     * @return array
-     */
-    public function queueSyncIntervalDropdown()
-    {
-        $res = array();
-        foreach ($this->_queueSyncInterval as $key => $value) {
-            $res[] = array(
-                'label' => $key,
-                'value' => $value,
             );
         }
 

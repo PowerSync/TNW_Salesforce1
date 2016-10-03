@@ -86,51 +86,59 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
                 }
             } catch (Exception $e) {
                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-                $this->_redirect('*/*/');
             }
         }
-        $this->_redirect('*/*/');
+
+        $this->_redirectReferer();
     }
 
     public function massSyncForceAction()
     {
-        set_time_limit(0);
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
+        $session = Mage::getSingleton('adminhtml/session');
+        $helper  = Mage::helper('tnw_salesforce');
+
+        if (!$helper->isEnabled()) {
+            $session->addError("API Integration is disabled.");
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
         }
+
         $itemIds = $this->getRequest()->getParam('invoice_ids');
         if (!is_array($itemIds)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select orders(s)'));
-        } elseif (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
-        } elseif(((Mage::helper('tnw_salesforce')->getObjectSyncType() == 'sync_type_realtime')) && (count($itemIds) > 50)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
+            $session->addError($helper->__('Please select orders(s)'));
+        } elseif (!$helper->isProfessionalEdition()) {
+            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
-                    unset($itemIds, $_chunk);
-                    foreach($_chunks as $_chunk) {
-                        Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Invoice', 'invoice');
-                    }
+                if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $syncBulk = (count($itemIds) > 1);
 
-                    if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addSuccess(
-                            $this->__('Records are pending addition into the queue!')
-                        );
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject($itemIds, 'Invoice', 'invoice', $syncBulk);
+
+                    if ($success) {
+                        if ($syncBulk) {
+                            $session->addNotice($this->__('ISSUE: Too many records selected.'));
+                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                        }
+                        else {
+                            $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                        }
                     }
-                } else {
+                    else {
+                        $session->addError('Could not add to the queue!');
+                    }
+                }
+                else {
                     $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'invoiceIds' => $itemIds,
-                        'message'    => Mage::helper('adminhtml')->__('Total of %d records(s) were synchronized', count($itemIds)),
+                        'message'    => $this->__('Total of %d records(s) were synchronized', count($itemIds)),
                         'type'       => 'bulk'
                     ));
                 }
             } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+                $session->addError($e->getMessage());
             }
         }
 

@@ -88,57 +88,57 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
                 }
             } catch (Exception $e) {
                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-                $this->_redirect('*/*/');
             }
         }
-        $this->_redirect('*/*/');
+
+        $this->_redirectReferer($this->getUrl('*/*/index', array('_current' => true)));
     }
 
     public function massSyncAction()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
+        $session = Mage::getSingleton('adminhtml/session');
+        $helper  = Mage::helper('tnw_salesforce');
+
+        if (!$helper->isEnabled()) {
+            $session->addError("API Integration is disabled.");
+            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
+            return;
         }
+
         $itemIds = $this->getRequest()->getParam('customers');
         if (!is_array($itemIds)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Please select customer(s)'));
-        } elseif (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
-        } elseif(((Mage::helper('tnw_salesforce')->getObjectSyncType() == 'sync_type_realtime')) && (count($itemIds) > 50)) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
+            $session->addError($helper->__('Please select customer(s)'));
+        } elseif (!$helper->isProfessionalEdition()) {
+            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             try {
-                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    $_chunks = array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
-                    unset($itemIds);
-                    foreach($_chunks as $_chunk) {
-                        Mage::helper('tnw_salesforce/queue')->prepareRecordsToBeAddedToQueue($_chunk, 'Customer', 'customer');
-                    }
+                if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $syncBulk = (count($itemIds) > 1);
 
-                    if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                        Mage::getSingleton('adminhtml/session')->addSuccess(
-                            $this->__('Records are pending addition into the queue!')
-                        );
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject($itemIds, 'Customer', 'customer', $syncBulk);
+
+                    if ($success) {
+                        if ($syncBulk) {
+                            $session->addNotice($this->__('ISSUE: Too many records selected.'));
+                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                        }
+                        else {
+                            $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                        }
                     }
-                } else {
+                    else {
+                        $session->addError('Could not add to the queue!');
+                    }
+                }
+                else {
                     $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
-                    if ($manualSync->reset()) {
-
-                        if ($manualSync->massAdd($itemIds)){
-                            $manualSync->process();
-                        }
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()
-                            && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds))
-                            );
-                        }
+                    if ($manualSync->reset() && $manualSync->massAdd($itemIds) && $manualSync->process()) {
+                        $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($itemIds)));
                     }
                 }
             } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+                $session->addError($e->getMessage());
             }
         }
         $this->_redirect('*/*/index');

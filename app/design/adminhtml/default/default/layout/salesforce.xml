@@ -89,10 +89,10 @@
         <block type="tnw_salesforce/adminhtml_customersync_grid" name="customersync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_customersync_grid>
 
-    <adminhtml_salesforcesync_queuesync_grid>
+    <adminhtml_salesforcesync_queue_from_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_queuesync_grid" name="queuesync.grid" output="toHtml"></block>
-    </adminhtml_salesforcesync_queuesync_grid>
+        <block type="tnw_salesforce/adminhtml_queue_from_grid" name="queue.from.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_queue_from_grid>
 
     <adminhtml_salesforcesync_invoicesync_grid>
         <update handle="formkey"/>
@@ -109,21 +109,37 @@
         <block type="tnw_salesforce/adminhtml_creditmemosync_grid" name="creditmemosync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_creditmemosync_grid>
 
+    <adminhtml_salesforcesync_campaign_salesrulesync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_campaign_salesrulesync_grid" name="salesrulesync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_campaign_salesrulesync_grid>
+
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
-        <reference name="sales_order_tabs">
-            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce"
-                   template="salesforce/sales/order/view/tab/salesforce.phtml">
-                <block type="tnw_salesforce/sales_order_view_tab_salesforce_info" name="salesforce_info"
-                       template="salesforce/sales/order/view/tab/salesforce/info.phtml"></block>
-                <block type="tnw_salesforce/sales_order_view_tab_salesforce_form" name="salesforce_form"></block>
-            </block>
-            <action method="addTab">
-                <name>order_salesforce</name>
-                <block>order_tab_salesforce</block>
+        <update handle="tnw_salesforce_select2"/>
+        <reference name="sales_order_edit">
+            <action method="addButton" ifconfig="salesforce_order/general/order_sync_enable">
+                <id>sdf</id>
+                <data helper="tnw_salesforce/config_sales_order/getSyncButtonData"/>
+                <level>0</level>
+                <sortOrder>2</sortOrder>
             </action>
         </reference>
+        <reference name="sales_order_tabs">
+            <block type="tnw_salesforce/sales_order_view_tab_salesforce" name="order_tab_salesforce" />
+            <action method="addTab"><name>order_salesforce</name><block>order_tab_salesforce</block></action>
+        </reference>
+        <reference name="content">
+            <block type="tnw_salesforce/adminhtml_sales_order_view_salesforce" name="order_salesforce" template="salesforce/sales/order/view/salesforce.phtml" />
+        </reference>
     </adminhtml_sales_order_view>
+
+    <adminhtml_sales_order_create_index>
+        <update handle="tnw_salesforce_select2"/>
+        <reference name="customer">
+            <block type="adminhtml/template" name="order_salesforce" template="salesforce/sales/order/create/salesforce.phtml" />
+        </reference>
+    </adminhtml_sales_order_create_index>
 
     <!-- Disable Cache -->
     <reference name="tnw_salesforce.test.results">
@@ -256,6 +272,14 @@
 
     <adminhtml_promo_quote_edit>
         <update handle="tnw_salesforce_chosen"/>
+        <reference name="promo_quote_edit">
+            <action method="addButton" ifconfig="salesforce_promotion/salesforce_campaigns/sync_enabled">
+                <id>sf_sync</id>
+                <data helper="tnw_salesforce/data/getSyncOrderRulesButtonData"/>
+                <level>0</level>
+                <sortOrder>2</sortOrder>
+            </action>
+        </reference>
         <reference name="promo_quote_edit_tabs">
             <block type="tnw_salesforce/adminhtml_promo_edit_tab_main" name="promo_quote_edit_tab_salesforce" />
             <action method="addTab"><name>salesforce_section</name><block>promo_quote_edit_tab_salesforce</block></action>
@@ -263,11 +287,24 @@
     </adminhtml_promo_quote_edit>
 
     <adminhtml_customer_edit>
+        <update handle="tnw_salesforce_select2"/>
+        <reference name="customer_edit">
+            <action method="addButton" ifconfig="salesforce_customer/sync/customer_sync_enable">
+                <id>sf_sync</id>
+                <data helper="tnw_salesforce/config_customer/getSyncButtonData"/>
+                <level>0</level>
+                <sortOrder>2</sortOrder>
+            </action>
+        </reference>
         <reference name="accordion">
-            <action method="addItem" ifconfig="salesforce_order/customer_view/opportunity_display">
+            <action method="addItem" ifconfig="salesforce_customer/customer_view/opportunity_display">
                 <itemId>opportunity</itemId>
                 <config helper="tnw_salesforce/config_customer/getAccordionConfig"/>
             </action>
+        </reference>
+        <reference name="customer_edit_tabs">
+            <block type="tnw_salesforce/adminhtml_customer_edit_tab_salesforce" name="customer_edit_tab_salesforce" />
+            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>customer_edit_tab_salesforce</block><after>addresses</after></action>
         </reference>
     </adminhtml_customer_edit>
 
@@ -277,10 +314,11 @@
         </block>
     </adminhtml_customer_opportunities>
 
-    <adminhtml_customer_edit>
-        <reference name="customer_edit_tabs">
-            <block type="tnw_salesforce/adminhtml_customer_edit_tab_salesforce" name="customer_edit_tab_salesforce" template="salesforce/customer/tab/salesforce.phtml" />
-            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>customer_edit_tab_salesforce</block><after>addresses</after></action>
+    <adminhtml_catalog_product_edit>
+        <update handle="tnw_salesforce_select2"/>
+        <reference name="product_tabs">
+            <block type="tnw_salesforce/adminhtml_catalog_product_edit_tab_salesforce" name="product_edit_tab_salesforce" />
+            <action method="addTabAfter"><name>customer_edit_tab_salesforce</name><block>product_edit_tab_salesforce</block><after>inventory</after></action>
         </reference>
-    </adminhtml_customer_edit>
+    </adminhtml_catalog_product_edit>
 </layout>

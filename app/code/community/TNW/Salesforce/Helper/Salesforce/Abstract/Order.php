@@ -229,8 +229,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                     foreach ($_item->getChildrenItems() as $_childItem) {
                         $_childItem = clone $_childItem;
                         $_childItem
-                            ->setRowTotalInclTax(null)
-                            ->setBaseRowTotalInclTax(null)
+                            ->setTaxAmount(null)
+                            ->setBaseTaxAmount(null)
+                            ->setHiddenTaxAmount(null)
+                            ->setBaseHiddenTaxAmount(null)
                             ->setRowTotal(null)
                             ->setBaseRowTotal(null)
                             ->setDiscountAmount(null)
@@ -549,6 +551,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         /** @var Mage_Catalog_Model_Product $product */
         $product       = $this->_getObjectByEntityItemType($_entityItem, 'Product');
 
+        $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
+        $hasReductionOrder = !empty($this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder)
+            ? $this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder : false;
+        if (empty($this->_obj->Id) && $hasReductionOrder) {
+            $this->logNotice('Product SKU ('.$product->getSku().') was skipped and not attached to the order. Please remove all Reduction orders from Salesforce manually, then manually re-sync this Order followed by all Credit Memos for this Order.');
+            return;
+        }
+
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($_entityNumber);
 
         $_isDescription = property_exists($this->_obj, 'Description');
@@ -599,11 +609,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
-        /* Dump OpportunityLineItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity/Order Item Object: " . $key . " = '" . $_item . "'");
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("Opportunity/Order Item Object: \n" . print_r($this->_obj, true));
 
         $key = $_entityItem->getId();
         // if it's fake product for order fee, has the same id's for all products
@@ -752,11 +759,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_findAbandonedCart($this->_quotes);
 
         $_cacheCustomersKey = sprintf('%sCustomers', $this->_magentoEntityName);
+        $this->_cache['leadsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
+            ->lookup($this->_cache[$_cacheCustomersKey]);
         $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
             ->lookup($this->_cache[$_cacheCustomersKey]);
         $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
-            ->lookup($this->_cache[$_cacheCustomersKey]);
-        $this->_cache['leadsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
             ->lookup($this->_cache[$_cacheCustomersKey]);
 
         $this->_prepareOrderLookup();
@@ -766,21 +773,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          */
         if ($this->getUpdateCustomer()) {
             $this->syncEntityCustomers();
-        }
-
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
-            $entity         = $this->_loadEntityByCache($key, $number);
-            $entityNumber   = $this->_getEntityNumber($entity);
-            $lookupKey      = sprintf('%sLookup', $this->_salesforceEntityName);
-
-            if (isset($this->_cache[$lookupKey][$entityNumber])
-                && property_exists($this->_cache[$lookupKey][$entityNumber], 'hasReductionOrder')
-                && $this->_cache[$lookupKey][$entityNumber]->hasReductionOrder
-            ) {
-                // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logNotice('NOTICE: Skipping, cannot syn order with reduction orders. Order #'.$number);
-                $this->_skippedEntity[$key] = $key;
-            }
         }
 
         /**
@@ -1100,7 +1092,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      *
      * @param Mage_Sales_Model_Order_Item $_item
      */
-    protected function _prepareStoreId(Mage_Sales_Model_Order_Item $_item)
+    protected function _prepareStoreId($_item)
     {
         $itemId = $this->getProductIdFromCart($_item);
         $_order = $_item->getOrder();

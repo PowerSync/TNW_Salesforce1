@@ -93,9 +93,13 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         /**
          * Set 'Draft' status temporarry, it's necessary for order change with status from "Activated" group
          */
+        $lookupKey      = sprintf('%sLookup', $this->_salesforceEntityName);
+        $hasReductionOrder = !empty($this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder)
+            ? $this->_cache[$lookupKey][$_entityNumber]->hasReductionOrder : false;
+
         $_currentStatus = $this->_obj->Status;
         $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
-        if ($_currentStatus != $_draftStatus) {
+        if (!$hasReductionOrder && $_currentStatus != $_draftStatus) {
             $this->_obj->Status = $_draftStatus;
 
             $_toActivate = new stdClass();
@@ -109,6 +113,19 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
             $this->_cache['orderToActivate'][$_entityNumber] = $_toActivate;
         }
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order_Item $_entityItem
+     */
+    protected function _prepareEntityItemObjCustom($_entityItem)
+    {
+        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $this->_obj->$disableSyncField = true;
+        }
+
+        parent::_prepareEntityItemObjCustom($_entityItem);
     }
 
     /**
@@ -271,7 +288,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                     'contact_salesforce_id' => $_customer->getData('salesforce_id'),
                     'account_salesforce_id' => $_customer->getData('salesforce_account_id'),
                     'sf_insync'             => 1,
-                    'salesforce_id'         => $_result->id
+                    'salesforce_id'         => $_result->id,
+                    'owner_salesforce_id'   => $this->_cache['ordersToUpsert'][$_orderNum]->OwnerId
                 ));
 
                 $_order->getResource()->save($_order);
@@ -608,5 +626,31 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         }*/
 
         return $customers;
+    }
+
+    /**
+     *
+     */
+    protected function _massAddAfter()
+    {
+        parent::_massAddAfter();
+
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
+            $entity = $this->_loadEntityByCache($key, $number);
+            $owner  = $entity->getData('owner_salesforce_id');
+            if (!empty($owner)) {
+                continue;
+            }
+
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer      = $this->_getObjectByEntityType($entity, 'Customer');
+            $customerEmail = strtolower($customer->getEmail());
+            $_websiteId    = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
+            if (empty($this->_cache['contactsLookup'][$_websiteId][$customerEmail])) {
+                continue;
+            }
+
+            $entity->setData('owner_salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customerEmail]->OwnerId);
+        }
     }
 }

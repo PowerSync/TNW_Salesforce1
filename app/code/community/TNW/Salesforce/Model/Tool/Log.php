@@ -11,10 +11,13 @@
  * @method saveNotice($message)
  * @method saveWarning($message)
  * @method saveError($message)
+ * @method saveInfo($message)
  *
  */
 class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
 {
+    const MESSAGE_LIMIT_SIZE = 65000;
+
     /**
      * all available log message levels
      * @var array
@@ -120,10 +123,21 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
          * Add config first time only
          */
         if ($this->isNewTransaction()) {
-            $message = "******************** New Transaction:" .$this->getTransactionId(). " ************\n" . $this->getMessage();
-            $this->setMessage($message);
+            $log = new self;
+            $log->saveTrace("******************** New Transaction:{$this->getTransactionId()} ************");
         }
 
+        $message = $this->getMessage();
+        while (strlen($message) > self::MESSAGE_LIMIT_SIZE) {
+            $log = new self;
+            $log->setMessage(substr($message, 0, self::MESSAGE_LIMIT_SIZE));
+            $log->setLevel($this->getLevel());
+            $log->save();
+
+            $message = substr($message, self::MESSAGE_LIMIT_SIZE);
+        }
+
+        $this->setMessage($message);
         return parent::_beforeSave();
     }
 
@@ -184,6 +198,9 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                             break;
                         case 'WARNING':
                             $level = Zend_Log::WARN;
+                            break;
+                        case 'INFO':
+                            $level = Zend_Log::INFO;
                             break;
                         default:
                             $level = Zend_Log::DEBUG;

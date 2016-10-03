@@ -27,11 +27,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     protected $_noConnectionArray = array();
 
-    public function __construct()
-    {
-        $this->connect();
-    }
-
     /**
      * @return null
      */
@@ -183,6 +178,41 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
+     * @param $entity
+     * @return array
+     */
+    public function getRecordTypeByEntity($entity)
+    {
+        try {
+            $_useCache = Mage::app()->useCache('tnw_salesforce');
+            $cache = Mage::app()->getCache();
+
+            $_data = array();
+            $serializeData = $cache->load("tnw_salesforce_" . strtolower($entity) . "_record_type");
+            if (!empty($serializeData)) {
+                $_data = unserialize($serializeData);
+            }
+
+            if (empty($_data)) {
+                $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='$entity'";
+                $allRules = $this->getClient()->query($query);
+
+                if ($allRules && property_exists($allRules, 'records') && $allRules->size >= 1) {
+                    $_data = $allRules->records;
+                }
+
+                if ($_useCache) {
+                    $cache->save(serialize($_data), "tnw_salesforce_" . strtolower($entity) . "_record_type", array("TNW_SALESFORCE"));
+                }
+            }
+
+            return $_data;
+        } catch (Exception $e) {
+            return array();
+        }
+    }
+
+    /**
      * @param string $type
      * @return array|bool
      */
@@ -252,6 +282,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     $tmp->OpportunityLineItems = (property_exists($_item, "OpportunityLineItems")) ? $_item->OpportunityLineItems : NULL;
                     $tmp->Notes = (property_exists($_item, "Notes")) ? $_item->Notes : NULL;
                     $tmp->OwnerId = (property_exists($_item, "OwnerId")) ? $_item->OwnerId : NULL;
+                    $tmp->StageName = (property_exists($_item, "StageName")) ? $_item->StageName : NULL;
 
                     $returnArray[$tmp->MagentoId] = $tmp;
                 }
@@ -260,7 +291,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
-            unset($email);
+
             return false;
         }
     }
@@ -277,6 +308,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             "AccountId",
             "Pricebook2Id",
             "OwnerId",
+            "StageName",
             $_magentoId,
             "(SELECT Id, ContactId, Role FROM OpportunityContactRoles)",
             "(SELECT Id, Quantity, ServiceDate, UnitPrice, PricebookEntry.ProductCode, PricebookEntry.Product2Id, PricebookEntryId, Description, PricebookEntry.UnitPrice, PricebookEntry.Name FROM OpportunityLineItems)",
@@ -590,8 +622,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 ? trim($customer->getBillingAddress()->getCompany()) : null;
         }
 
-        /* Check if Person Accounts are enabled, if not default the Company name to first and last name */
-        if (empty($_companyName) && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+        if (empty($_companyName)) {
             $_companyName = trim($customer->getFirstname() . ' ' . $customer->getLastname());
         }
 
@@ -644,9 +675,14 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            if ($cache->load("tnw_salesforce_" . strtolower($field) . "_fields")) {
-                $_data = unserialize($cache->load("tnw_salesforce_" . strtolower($field) . "_fields"));
-            } else {
+            $_data = array();
+
+            $serializeData = $cache->load("tnw_salesforce_" . strtolower($field) . "_fields");
+            if (!empty($serializeData)) {
+                $_data = unserialize($serializeData);
+            }
+
+            if (empty($_data)) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $field . " object...");
                 if (!is_object($this->getClient())) {
                     return $this->_noConnectionArray;
@@ -655,7 +691,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 $list = $this->getClient()->describeSObject($field);
                 if ($list) {
                     foreach ($list->fields as $_field) {
-                        if ($_field->createable && $_field->updateable && !$_field->deprecatedAndHidden) {
+                        if (!$_field->deprecatedAndHidden) {
                             $sortedList[$_field->name] = $list->label . ' : ' . $_field->label;
                         }
                     }
@@ -719,7 +755,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            if (!$this->_tableDescription[$table]) {
+            if (empty($this->_tableDescription[$table])) {
                 if ($cache->load("tnw_salesforce_descsribe_" . strtolower($table) . "_fields")) {
                     $columns = unserialize($cache->load("tnw_salesforce_describe_" . strtolower($table) . "_fields"));
                 } else {
@@ -730,7 +766,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                         ->describeTable($table);
 
                     if ($_useCache) {
-                        $cache->save(serialize($columns), "tnw_salesforce_" . strtolower($table) . "_fields", array("TNW_SALESFORCE"));
+                        $cache->save(serialize($columns), "tnw_salesforce_describe_" . strtolower($table) . "_fields", array("TNW_SALESFORCE"));
                     }
                 }
                 $this->_tableDescription[$table] = $columns;
@@ -739,7 +775,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return $this->_tableDescription[$table];
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $field . " Object");
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $table . " Object");
             unset($e);
             return false;
         }

@@ -695,6 +695,14 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     }
 
     /**
+     * @return bool
+     */
+    protected function isNotesEnabled()
+    {
+        return Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipmentNotes();
+    }
+
+    /**
      * @param $notes Mage_Sales_Model_Order_Shipment_Comment
      * @throws Exception
      */
@@ -745,8 +753,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
             }
 
             $item
-                ->setRowTotalInclTax(null)
-                ->setBaseRowTotalInclTax(null)
+                ->setTaxAmount(null)
+                ->setBaseTaxAmount(null)
+                ->setHiddenTaxAmount(null)
+                ->setBaseHiddenTaxAmount(null)
                 ->setRowTotal(null)
                 ->setBaseRowTotal(null)
                 ->setDiscountAmount(null)
@@ -800,8 +810,10 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                         $_item
                             ->setRowTotal(null)
                             ->setBaseRowTotal(null)
-                            ->setRowTotalInclTax(null)
-                            ->setBaseRowTotalInclTax(null)
+                            ->setTaxAmount(null)
+                            ->setBaseTaxAmount(null)
+                            ->setHiddenTaxAmount(null)
+                            ->setBaseHiddenTaxAmount(null)
                             ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
                                 . $item->getSku());
 

@@ -22,6 +22,7 @@ class TNW_Salesforce_Model_Observer
     protected $_acl = NULL;
 
     protected $exportedOrders = array();
+    protected $exportedOpportunity = array();
 
     /**
      * @return array
@@ -372,14 +373,6 @@ class TNW_Salesforce_Model_Observer
     }
 
     /**
-     * this model method calls our facade pattern class method mageAdminLoginEvent()
-     */
-    public function mageLoginEventCall()
-    {
-        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
-    }
-
-    /**
      * Show sf status message on every admin page
      *
      * @param Varien_Event_Observer $observer
@@ -398,23 +391,15 @@ class TNW_Salesforce_Model_Observer
             && $controller->getRequest()->getActionName() == 'login';
 
         // skip if sf synchronization is disabled or we are on api config or login page
-        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isWorking()) {
+        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isEnabled()) {
             return;
         }
 
-        // show message
-        if (Mage::getSingleton('core/session')->getSfNotWorking()) {
-            $sfPApiUrl = Mage::helper('adminhtml')->getUrl('adminhtml/system_config/edit',
-                array('section' => 'salesforce'));
-            $message = 'IMPORTANT: Salesforce connection cannot be established or has expired.'
-                . ' Please visit API configuration page to re-establish the connection.'
-                . " <a href='$sfPApiUrl'>API configuration</a>";
-            Mage::getSingleton('adminhtml/session')->addWarning($message);
-        } else {
-            if (!Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_session_id')) {
-                Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
-            }
+        if (!TNW_Salesforce_Helper_Test_License::isValidate()) {
+            return;
         }
+
+        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
     }
 
     /**
@@ -453,19 +438,35 @@ class TNW_Salesforce_Model_Observer
 
     public function pushOpportunity(Varien_Event_Observer $observer)
     {
-
         $_objectType = strtolower($observer->getEvent()->getData('object_type'));
+        if (!isset($this->exportedOpportunity[$_objectType])) {
+            $this->exportedOpportunity[$_objectType] = array();
+        }
 
         $_orderIds = $observer->getEvent()->getData('orderIds');
-        $_message = $observer->getEvent()->getMessage();
+        //check that order has been already exported
+        foreach ($_orderIds as $key => $orderId) {
+            if (!in_array($orderId, $this->exportedOpportunity[$_objectType])) {
+                $this->exportedOpportunity[$_objectType][] = $orderId;
+                continue;
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Skipping export opportunity ' . $orderId . '. Already exported.');
+            unset($_orderIds[$key]);
+        }
+
+        if (empty($_orderIds)) {
+            return;
+        }
+
         $_type = $observer->getEvent()->getType();
-        $_isQueue = $observer->getEvent()->getData('isQueue');
-
-        $_queueIds = ($_isQueue) ? $observer->getEvent()->getData('queueIds') : array();
-
         if (count($_orderIds) == 1 && $_type == 'bulk') {
             $_type = 'salesforce';
         }
+
+        $_message = $observer->getEvent()->getMessage();
+        $_queueIds = $observer->getEvent()->getData('isQueue')
+            ? $observer->getEvent()->getData('queueIds') : array();
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Opportunities ... ');
 

@@ -175,6 +175,19 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         $tmp->MagentoId = (property_exists($record, $_magentoId)) ? $record->{$_magentoId} : null;
         $tmp->OwnerId = (property_exists($record, 'OwnerId')) ? $record->OwnerId : null;
 
+        if ($tmp->Company) {
+            $company = $customer->getData('company');
+
+            if (empty($company)) {
+                $company = $customer->getDefaultBillingAddress()
+                    ? $customer->getDefaultBillingAddress()->getData('company') : null;
+            }
+            if (!$company) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Company name "' . $tmp->Company . '" found in the Lead. Put it to customer data temporary for next mapping process.');
+                $customer->setData('company', $tmp->Company);
+            }
+        }
+
         /**
          * check converted condition
          */
@@ -976,7 +989,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      *
      * @return string
      */
-    public function getCompanyByCustomer(Mage_Customer_Model_Customer $customer)
+    public function getCompanyByCustomer($customer)
     {
         //company from customer
         $company = $customer->getCompany();

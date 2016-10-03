@@ -1,35 +1,58 @@
 <?php
 
 class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
-    extends Mage_Adminhtml_Block_Template
+    extends Mage_Adminhtml_Block_Widget_Form
     implements Mage_Adminhtml_Block_Widget_Tab_Interface
 {
 
-    /**
-     * Return array of additional account data
-     * Value is option style array
-     *
-     * @return array
-     */
-    public function getSalesforceData()
+    protected function _prepareForm()
     {
-        $_labels = array(
-            'salesforce_lead_id'    =>  'Lead',
-            'salesforce_id'         =>  'Contact',
-            'salesforce_account_id' =>  'Account',
-        );
-        $sfData = array();
-        foreach ($_labels as $_field => $_label) {
-            $_value = Mage::registry('current_customer')->getData($_field);
-            if ($_value) {
-                $sfData[] = array(
-                    'label' => $_label,
-                    'value' => Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($this->escapeHtml($_value, array('br')))
-                );
-            }
+        $form = new Varien_Data_Form();
+        $form->setUseContainer(false);
+        $form->setFieldNameSuffix('account');
+
+        $data = Mage::registry('current_customer')->getData();
+
+        $fieldset = $form->addFieldset('salesforce_fieldset', array(
+            'legend' => Mage::helper('tnw_salesforce')->__('Salesforce')
+        ));
+
+        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_SalesforceId $renderer */
+        $renderer = Mage::getSingleton('core/layout')
+            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_salesforceId');
+
+        $fieldset
+            ->addField('salesforce_id', 'text', array(
+                'label' => Mage::helper('tnw_salesforce')->__('Contact'),
+                'name' => 'salesforce_id',
+            ))
+            ->setRenderer($renderer);
+
+        $fieldset
+            ->addField('salesforce_account_id', 'text', array(
+                'label' => Mage::helper('tnw_salesforce')->__('Account'),
+                'name' => 'salesforce_account_id',
+            ))
+            ->setRenderer($renderer);
+
+        $fieldset
+            ->addField('salesforce_lead_id', 'text', array(
+                'label' => Mage::helper('tnw_salesforce')->__('Lead'),
+                'name' => 'salesforce_lead_id',
+            ))
+            ->setRenderer($renderer);
+
+        if (!empty($data['salesforce_account_owner_id']) && !empty($data['salesforce_account_id'])) {
+            $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
+            $fieldset->addField('salesforce_account_owner_id', 'owner', array(
+                'label' => Mage::helper('tnw_salesforce')->__('Account Owner'),
+                'name' => 'salesforce_account_owner_id',
+                'selector'  => 'tnw-ajax-find-select-account-owner'
+            ));
         }
 
-        return $sfData;
+        $form->setValues($data);
+        $this->setForm($form);
     }
 
     /**

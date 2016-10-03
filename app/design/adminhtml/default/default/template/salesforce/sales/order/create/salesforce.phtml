@@ -1,0 +1,29 @@
+<?php
+/** @var Mage_Adminhtml_Block_Template $this */
+?>
+<div id="tnw-order-info-block" style="display: none">
+    <div class="box-right entry-edit tnw-entry-salesforce">
+        <div class="entry-edit-head"><h4><?php echo Mage::helper('tnw_salesforce')->__('Sales Person') ?></h4></div>
+        <fieldset></fieldset>
+    </div>
+    <script type="application/javascript">
+        (function ($) {
+            function moveElement() {
+                new Ajax.Request('<?php echo $this->getUrl('*/sales_order/salesPerson') ?>', {
+                    onSuccess: function(response) {
+                        var infoBlock = $('#tnw-order-info-block > div').clone();
+                        $('fieldset', infoBlock).append(response.responseText);
+                        infoBlock.insertBefore($('#order-data .order-totals').parent('.box-right'));
+                    }
+                });
+            }
+
+            $(document).ready(moveElement);
+            $(document).on("DOMNodeInserted", function (e) {
+                if ($(e.target).parent().attr('id') == 'order-data') {
+                    moveElement();
+                }
+            });
+        })($j);
+    </script>
+</div>

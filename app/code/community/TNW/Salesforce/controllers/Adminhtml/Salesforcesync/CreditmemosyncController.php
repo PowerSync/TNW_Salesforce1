@@ -99,24 +99,22 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
                 ->addError($e->getMessage());
         }
 
-        $this->_redirect('*/*/');
+        $this->_redirectReferer();
     }
 
     public function massSyncForceAction()
     {
-        set_time_limit(0);
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')
-                ->addError("API Integration is disabled.");
+        $session = Mage::getSingleton('adminhtml/session');
+        $helper  = Mage::helper('tnw_salesforce');
 
+        if (!$helper->isEnabled()) {
+            $session->addError("API Integration is disabled.");
             $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
             return;
         }
 
-        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')
-                ->addError($this->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
-
+        if (!$helper->isProfessionalEdition()) {
+            $session->addError($this->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
             $this->_redirect('*/*/index');
             return;
         }
@@ -130,24 +128,27 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
             return;
         }
 
-        if((count($itemIds) > 50) && (Mage::helper('tnw_salesforce')->getObjectSyncType() == 'sync_type_realtime')) {
-            Mage::getSingleton('adminhtml/session')
-                ->addError($this->__('For history synchronization containing more than 50 records change configuration to use interval based synchronization.'));
-
-            $this->_redirect('*/*/index');
-            return;
-        }
-
         try {
-            if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                $addSuccess = Mage::getModel('tnw_salesforce/localstorage')
-                    ->addObject($itemIds, 'Creditmemo', 'creditmemo');
+            if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                $syncBulk = (count($itemIds) > 1);
 
-                if ($addSuccess) {
-                    Mage::getSingleton('adminhtml/session')
-                        ->addSuccess($this->__('Records are pending addition into the queue!'));
+                $success = Mage::getModel('tnw_salesforce/localstorage')
+                    ->addObject($itemIds, 'Creditmemo', 'creditmemo', $syncBulk);
+
+                if ($success) {
+                    if ($syncBulk) {
+                        $session->addNotice($this->__('ISSUE: Too many records selected.'));
+                        $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                    }
+                    else {
+                        $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                    }
                 }
-            } else {
+                else {
+                    $session->addError('Could not add to the queue!');
+                }
+            }
+            else {
                 $_syncType = strtolower(Mage::helper('tnw_salesforce')->getCreditmemoObject());
                 Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                     'creditmemoIds' => $itemIds,
@@ -156,8 +157,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
                 ));
             }
         } catch (Exception $e) {
-            Mage::getSingleton('adminhtml/session')
-                ->addError($e->getMessage());
+            $session->addError($e->getMessage());
         }
 
         $this->_redirect('*/*/index');

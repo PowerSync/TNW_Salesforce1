@@ -196,6 +196,14 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function triggerSalesforceEvent($observer)
     {
+        if (
+            !Mage::helper('tnw_salesforce')->isEnabled()
+            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
+        ) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
+            return; // Disabled
+        }
+
         if (!Mage::helper('tnw_salesforce')->canPush()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
             return; // Disabled
@@ -268,16 +276,6 @@ class TNW_Salesforce_Model_Sale_Observer
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: order not saved to local storage');
             }
             return;
-        }
-
-        $exportedOrders = Mage::getSingleton('tnw_salesforce/observer')->getExportedOrders();
-
-        if (
-            !Mage::getSingleton('core/session')->getFromSalesForce()
-            && !in_array($order->getId(), $exportedOrders)
-        ) {
-
-            Mage::helper('tnw_salesforce/salesforce_opportunity')->resetOrder($order->getId());
         }
 
         $_order = Mage::getModel('sales/order')->load($order->getId());
@@ -466,5 +464,24 @@ class TNW_Salesforce_Model_Sale_Observer
         /** @var Mage_Core_Controller_Request_Http $request */
         $request = $observer->getEvent()->getRequest();
         $this->assignToCampaign = $request->getParam('assign_to_campaign');
+    }
+
+    /**
+     * @param $observer
+     */
+    public function quoteSubmitBefore($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()) {
+            return; // Disabled
+        }
+
+        $postOrder = Mage::app()->getRequest()->getPost('order');
+        if (!$postOrder || empty($postOrder['owner_salesforce_id'])) {
+            return;
+        }
+
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $observer->getData('order');
+        $order->setData('owner_salesforce_id',  $postOrder['owner_salesforce_id']);
     }
 }

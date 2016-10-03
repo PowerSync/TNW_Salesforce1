@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.55.00.0005</version>
+            <version>0.01.56.11.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -102,6 +102,9 @@
                     <currency>
                         <table>CurrencyType</table>
                     </currency>
+                    <user>
+                        <table>User</table>
+                    </user>
                 </entities>
             </tnw_salesforce_api_entity_resource>
         </models>
@@ -137,11 +140,16 @@
             </tnw_salesforce>
             <adminhtml>
                 <rewrite>
+                    <catalog_product_edit>TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit</catalog_product_edit>
                     <system_store_store>TNW_Salesforce_Block_Adminhtml_System_Store</system_store_store>
                     <system_currency>TNW_Salesforce_Block_Adminhtml_System_Currency</system_currency>
                     <sales_order_status_grid>TNW_Salesforce_Block_Sales_Order_Status_Grid</sales_order_status_grid>
                     <sales_order_status_new_form>TNW_Salesforce_Block_Sales_Order_Status_New_Form</sales_order_status_new_form>
                     <sales_order_status_edit_form>TNW_Salesforce_Block_Sales_Order_Status_Edit_Form</sales_order_status_edit_form>
+                    <sales_order_view_tab_shipments>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Shipments</sales_order_view_tab_shipments>
+                    <sales_order_view_tab_invoices>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Invoices</sales_order_view_tab_invoices>
+                    <sales_order_view_tab_creditmemos>TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Creditmemos</sales_order_view_tab_creditmemos>
+                    <customer_edit_tab_account>TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Account</customer_edit_tab_account>
                 </rewrite>
             </adminhtml>
         </blocks>
@@ -150,16 +158,65 @@
                 <class>TNW_Salesforce_Helper</class>
             </tnw_salesforce>
         </helpers>
+        <template>
+            <email>
+                <salesforce_developer_template module="tnw_salesforce" translate="label">
+                    <label>Notification</label>
+                    <file>tnw_salesforce/notification.html</file>
+                    <type>html</type>
+                </salesforce_developer_template>
+            </email>
+        </template>
+        <translate>
+            <modules>
+                <TNW_Salesforce>
+                    <files>
+                        <default>TNW_Salesforce.csv</default>
+                    </files>
+                </TNW_Salesforce>
+            </modules>
+        </translate>
         <events>
-            <!-- Contact Us form event -->
-            <controller_action_postdispatch_contacts>
+
+            <tnw_salesforce_cron_after>
+                <observers>
+                    <tnw_salesforce_sync_after>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/tool_observer</class>
+                        <method>logAvailableAPICalls</method>
+                    </tnw_salesforce_sync_after>
+                </observers>
+            </tnw_salesforce_cron_after>
+
+            <controller_action_postdispatch>
+                <observers>
+                    <tnw_salesforce_sync_after>
+                        <type>singleton</type>
+                        <class>tnw_salesforce/tool_observer</class>
+                        <method>logAvailableAPICalls</method>
+                    </tnw_salesforce_sync_after>
+                </observers>
+            </controller_action_postdispatch>
+
+            <!-- Contact Us form event, new version Magento >= 1.9 -->
+            <controller_action_postdispatch_contacts_index_post>
                 <observers>
                     <tnw_salesforce_customer_observer>
                         <class>tnw_salesforce/customer_observer</class>
                         <method>triggerWebToLead</method>
                     </tnw_salesforce_customer_observer>
                 </observers>
-            </controller_action_postdispatch_contacts>
+            </controller_action_postdispatch_contacts_index_post>
+
+            <!-- Contact Us form event, old version Magento <= 1.7 -->
+            <controller_action_postdispatch_contacts_contacts_post>
+                <observers>
+                    <tnw_salesforce_customer_observer>
+                        <class>tnw_salesforce/customer_observer</class>
+                        <method>triggerWebToLead</method>
+                    </tnw_salesforce_customer_observer>
+                </observers>
+            </controller_action_postdispatch_contacts_contacts_post>
 
             <!-- Newsletter Subscription: Create -->
             <newsletter_subscriber_save_commit_after>
@@ -279,11 +336,6 @@
             <!-- admin login success -->
             <admin_session_user_login_success>
                 <observers>
-                    <tnw_salesforce_admin_login_observer>
-                        <type>singleton</type>
-                        <class>tnw_salesforce/observer</class>
-                        <method>mageLoginEventCall</method>
-                    </tnw_salesforce_admin_login_observer>
                     <tnw_salesforce_fix_acl>
                         <type>singleton</type>
                         <class>tnw_salesforce/observer</class>
@@ -542,17 +594,6 @@
                 </observers>
             </controller_action_layout_generate_xml_before>
 
-            <!-- Blocks for admin panel: update adminhtml/sales_order_view_info html if module enabled -->
-            <core_block_abstract_to_html_after>
-                <observers>
-                    <tnw_salesforce_block_observer>
-                        <type>model</type>
-                        <class>tnw_salesforce/blocks_observer</class>
-                        <method>updateBlocks</method>
-                    </tnw_salesforce_block_observer>
-                </observers>
-            </core_block_abstract_to_html_after>
-
             <adminhtml_controller_salesrule_prepare_save>
                 <observers>
                     <tnw_controller_sales_rule_prepare_save>
@@ -563,15 +604,24 @@
                 </observers>
             </adminhtml_controller_salesrule_prepare_save>
 
-            <adminhtml_catalog_product_edit_prepare_form>
+            <adminhtml_customer_prepare_save>
                 <observers>
-                    <tnw_salesforce_catalog_product_edit_prepare_form>
+                    <tnw_salesforce_customer_prepare_save>
                         <type>singleton</type>
-                        <class>tnw_salesforce/product_observer</class>
-                        <method>editPrepareForm</method>
-                    </tnw_salesforce_catalog_product_edit_prepare_form>
+                        <class>tnw_salesforce/customer_observer</class>
+                        <method>prepareSave</method>
+                    </tnw_salesforce_customer_prepare_save>
                 </observers>
-            </adminhtml_catalog_product_edit_prepare_form>
+            </adminhtml_customer_prepare_save>
+
+            <sales_model_service_quote_submit_before>
+                <observers>
+                    <tnw_salesforce_quote_submit_before>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>quoteSubmitBefore</method>
+                    </tnw_salesforce_quote_submit_before>
+                </observers>
+            </sales_model_service_quote_submit_before>
         </events>
     </adminhtml>
     <frontend>
@@ -616,20 +666,10 @@
     </admin>
     <crontab>
         <jobs>
-            <tnw_salesforce_queue>
-                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
-                <run><model>tnw_salesforce/cron::processQueue</model></run>
-            </tnw_salesforce_queue>
-            <tnw_salesforce_m2sf>
-                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
-                <run><model>tnw_salesforce/cron::backgroundProcess</model></run>
-            </tnw_salesforce_m2sf>
-
             <tnw_salesforce_abandoned>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::addAbandonedToQueue</model></run>
             </tnw_salesforce_abandoned>
-
             <tnw_salesforce_currency>
                 <run><model>tnw_salesforce/cron::syncCurrency</model></run>
             </tnw_salesforce_currency>
@@ -641,7 +681,10 @@
                 <api_enable>0</api_enable>
             </api_config>
             <developer>
-                <log_enable>1</log_enable>
+                <enabled>0</enabled>
+                <template>salesforce_developer_template</template>
+                <identity>general</identity>
+                <copy_method>bcc</copy_method>
                 <email_prefix>LIVE</email_prefix>
             </developer>
             <syncronization>
@@ -668,6 +711,8 @@
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
                 <log_file_read_limit>50</log_file_read_limit>
+                <log_api_call_statistic>0</log_api_call_statistic>
+                <real_time_sync_max_count>50</real_time_sync_max_count>
 
             </development_and_debugging>
 
@@ -676,8 +721,8 @@
             <sync>
                 <customer_sync_enable>0</customer_sync_enable>
                 <new_customer>1</new_customer>
+                <email_new_customer>send_password</email_new_customer>
                 <customer_groups_all>1</customer_groups_all>
-                <contact_asignee>0</contact_asignee>
             </sync>
             <lead_config>
                 <customer_integration>0</customer_integration>
@@ -685,10 +730,8 @@
                 <use_lead_source_filter>0</use_lead_source_filter>
                 <email_notification>0</email_notification>
             </lead_config>
-            <contactus>
-                <customer_form_enable>0</customer_form_enable>
-            </contactus>
             <contact>
+                <contact_asignee>0</contact_asignee>
                 <customer_person>0</customer_person>
             </contact>
             <newsletter_config>
@@ -719,12 +762,17 @@
             <customer_opportunity>
                 <order_or_opportunity>Order</order_or_opportunity>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
+                <order_create_reverse_sync>0</order_create_reverse_sync>
+                <order_opportunity_status>Closed Won</order_opportunity_status>
+                <opportunity_to_order_status>Closed Won</opportunity_to_order_status>
+                <order_default_record_type backend_model="tnw_salesforce/system_config_backend_recordType">default</order_default_record_type>
+                <opportunity_default_record_type backend_model="tnw_salesforce/system_config_backend_recordType">default</opportunity_default_record_type>
+            </customer_opportunity>
+            <abandoned_carts>
                 <abandoned_cart_enabled>0</abandoned_cart_enabled>
                 <abandoned_close_time_after>14</abandoned_close_time_after>
                 <abandoned_cart_state>Committed</abandoned_cart_state>
-                <order_opportunity_status>Closed Won</order_opportunity_status>
-                <opportunity_to_order_status>Closed Won</opportunity_to_order_status>
-            </customer_opportunity>
+            </abandoned_carts>
             <opportunity_cart>
                 <use_tax_product>0</use_tax_product>
                 <use_shipping_product>0</use_shipping_product>
@@ -734,19 +782,41 @@
                 <use_product_campaign_assignment>0</use_product_campaign_assignment>
                 <orders_bundle_item_sync>0</orders_bundle_item_sync>
             </shopping_cart>
-            <invoice_configuration>
-                <invoice_sync_enable>0</invoice_sync_enable>
-            </invoice_configuration>
-            <shipment_configuration>
-                <sync_enabled>0</sync_enabled>
-            </shipment_configuration>
-            <creditmemo_configuration>
-                <sync_enabled>0</sync_enabled>
-            </creditmemo_configuration>
             <customer_view>
                 <opportunity_display>0</opportunity_display>
                 <opportunity_filter>customer</opportunity_filter>
             </customer_view>
         </salesforce_order>
+        <salesforce_contactus>
+            <general>
+                <customer_form_enable>0</customer_form_enable>
+            </general>
+        </salesforce_contactus>
+        <salesforce_invoice>
+            <invoice_configuration>
+                <sync_enable>0</sync_enable>
+            </invoice_configuration>
+        </salesforce_invoice>
+        <salesforce_shipment>
+            <shipment_configuration>
+                <sync_enabled>0</sync_enabled>
+            </shipment_configuration>
+        </salesforce_shipment>
+        <salesforce_creditmemo>
+            <creditmemo_configuration>
+                <sync_enabled>0</sync_enabled>
+                <default_record_type backend_model="tnw_salesforce/system_config_backend_recordType">default</default_record_type>
+            </creditmemo_configuration>
+        </salesforce_creditmemo>
+        <payment>
+            <tnw_import>
+                <active>0</active>
+                <model>tnw_salesforce/order_payment_method_import</model>
+                <order_status>pending</order_status>
+                <title>Captured in Salesforce</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </tnw_import>
+        </payment>
     </default>
 </config>

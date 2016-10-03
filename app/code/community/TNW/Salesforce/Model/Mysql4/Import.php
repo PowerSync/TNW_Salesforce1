@@ -18,23 +18,25 @@ class TNW_Salesforce_Model_Mysql4_Import extends Mage_Core_Model_Mysql4_Abstract
         $this->_init('tnw_salesforce/import', 'import_id');
     }
 
+    /**
+     * @param Mage_Core_Model_Abstract $object
+     * @return $this
+     */
     protected function _beforeSave(Mage_Core_Model_Abstract $object)
     {
         //generate primary key
         if (!$object->getId()) {
-            $object->setId(uniqid("ctmr_", true));
+            $object->setId(self::generateId());
         }
-
-        //save object into json field
-        $object->setData('json', serialize($object->getObject()));
 
         return parent::_beforeSave($object);
     }
 
-    protected function _afterLoad(Mage_Core_Model_Abstract $object)
+    /**
+     * @return string
+     */
+    static public function generateId()
     {
-        $object->setObject(unserialize($object->getData('json')));
-
-        return parent::_afterLoad($object);
+        return uniqid("ctmr_", true);
     }
 }

@@ -1,0 +1,18 @@
+<?php
+/** @var TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Salesforce $this */
+?>
+<div id="tnw-order-info-block" style="display: none">
+    <div class="box-right entry-edit tnw-entry-salesforce">
+        <div class="entry-edit-head"><h4><?php echo Mage::helper('tnw_salesforce')->__('Sales Person') ?></h4></div>
+        <fieldset><?php echo $this->getFormHtml();?>
+            <div class="f-right">
+                <?php echo $this->getSaveButtonHtml() ?>
+            </div>
+        </fieldset>
+    </div>
+    <script type="application/javascript">
+        $j('#sales_order_view_tabs_order_info_content .order-totals')
+            .parent('.box-right')
+            .before($j('#tnw-order-info-block > div'));
+    </script>
+</div>
