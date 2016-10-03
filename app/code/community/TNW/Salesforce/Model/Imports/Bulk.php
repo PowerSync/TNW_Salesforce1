@@ -16,7 +16,9 @@ class TNW_Salesforce_Model_Imports_Bulk
         Mage::getResourceModel('tnw_salesforce/import_collection')
             ->filterEnding()->removeAll();
 
+        // Process ordered
         $orderedType = array(
+            Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField(),
             'Product2',
             'Account',
             'Contact',
@@ -27,9 +29,31 @@ class TNW_Salesforce_Model_Imports_Bulk
         );
 
         foreach ($orderedType as $type) {
-            $collection = Mage::getResourceModel('tnw_salesforce/import_collection')
-                ->filterPending()
-                ->filterObjectType($type);
+            $this->processType($type);
+        }
+
+        // Process other
+        $this->processType(null);
+        return true;
+    }
+
+    /**
+     * @param null|string $objectType
+     */
+    protected function processType($objectType)
+    {
+        $collection = Mage::getResourceModel('tnw_salesforce/import_collection')
+            ->filterPending();
+
+        if (null !== $objectType) {
+            $collection->filterObjectType($objectType);
+        }
+
+        $collection->setPageSize(self::PAGE_SIZE);
+        $lastPageNumber = $collection->getLastPageNumber();
+
+        for($i = 1; $i <= $lastPageNumber; $i++) {
+            $collection->clear()->setPageSize($i);
 
             $association = array();
             /** @var TNW_Salesforce_Model_Import $item */
@@ -70,7 +94,5 @@ class TNW_Salesforce_Model_Imports_Bulk
                 TNW_Salesforce_Helper_Magento_Abstract::sendMagentoIdToSalesforce($association);
             }
         }
-
-        return true;
     }
 }
