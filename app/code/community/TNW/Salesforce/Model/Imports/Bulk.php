@@ -13,41 +13,64 @@ class TNW_Salesforce_Model_Imports_Bulk
      */
     public function process()
     {
-        $collection = Mage::getResourceModel('tnw_salesforce/import_collection')
-            ->getOnlyPending()
-            ->setPageSize(self::PAGE_SIZE);
+        Mage::getResourceModel('tnw_salesforce/import_collection')
+            ->filterEnding()->removeAll();
 
-        $association = array();
-        /** @var TNW_Salesforce_Model_Import $item */
-        foreach ($collection as $item) {
-            $item
-                ->setIsProcessing(1)
-                ->save(); //Update status to prevent duplication
+        $orderedType = array(
+            'Product2',
+            'Account',
+            'Contact',
+            'Order',
+            'Opportunity',
+            TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
+            TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
+        );
 
-            try {
-                $_association = $item->process();
-                foreach($_association as $type=>$_item) {
-                    if (!isset($association[$type])) {
-                        $association[$type] = array();
+        foreach ($orderedType as $type) {
+            $collection = Mage::getResourceModel('tnw_salesforce/import_collection')
+                ->filterPending()
+                ->filterObjectType($type);
+
+            $association = array();
+            /** @var TNW_Salesforce_Model_Import $item */
+            foreach ($collection as $item) {
+                $item
+                    ->setStatus(TNW_Salesforce_Model_Import::STATUS_PROCESSING)
+                    ->save(); //Update status to prevent duplication
+
+                try {
+                    $_association = $item->process();
+                    foreach($_association as $type=>$_item) {
+                        if (!isset($association[$type])) {
+                            $association[$type] = array();
+                        }
+
+                        $association[$type] = array_merge($association[$type], $_item);
                     }
 
-                    $association[$type] = array_merge($association[$type], $_item);
+                    $item
+                        ->setStatus(TNW_Salesforce_Model_Import::STATUS_SUCCESS)
+                        ->save();
+                }
+                catch (Exception $e) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert a " . $item->getObjectType()
+                        . " #" . $item->getObjectProperty('Id') . ", please re-save or re-import it manually");
+
+                    $item
+                        ->setMessage($e->getMessage())
+                        ->setStatus(TNW_Salesforce_Model_Import::STATUS_ERROR)
+                        ->save();
                 }
 
-                $item->delete();
-            }
-            catch (Exception $e) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Error: " . $e->getMessage());
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Failed to upsert a " . $item->getObjectType()
-                    . " #" . $item->getObjectProperty('Id') . ", please re-save or re-import it manually");
+                set_time_limit(30); //Reset Script execution time limit
             }
 
-            set_time_limit(30); //Reset Script execution time limit
+            if (!empty($association)) {
+                TNW_Salesforce_Helper_Magento_Abstract::sendMagentoIdToSalesforce($association);
+            }
         }
 
-        if (!empty($association)) {
-            TNW_Salesforce_Helper_Magento_Abstract::sendMagentoIdToSalesforce($association);
-        }
         return true;
     }
 }

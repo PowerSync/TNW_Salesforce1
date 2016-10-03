@@ -5,10 +5,16 @@
  */
 
 /**
- * @method $this setIsProcessing($value)
+ * @method $this setStatus($value)
+ * @method $this setMessage($value)
  */
 class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
 {
+    const STATUS_NEW        = 'new';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_SUCCESS    = 'success';
+    const STATUS_ERROR      = 'error';
+
     protected function _construct()
     {
         parent::_construct();
@@ -86,17 +92,13 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
 
     /**
      * Get import processor
-     *
-     * @return bool|TNW_Salesforce_Helper_Magento_Abstract
+     * @return TNW_Salesforce_Helper_Magento_Abstract
+     * @throws Exception
      */
     protected function getProcessor()
     {
         switch ($this->getObjectType()) {
             case 'Account':
-                if ($this->getObjectProperty('IsPersonAccount') && $this->getObjectProperty('PersonEmail')) {
-                    return Mage::helper('tnw_salesforce/magento_customers');
-                }
-                break;
             case 'Contact':
                 if (($this->getObjectProperty('IsPersonAccount') && $this->getObjectProperty('PersonEmail'))
                     || $this->getObjectProperty('Email')
@@ -122,7 +124,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
                 return Mage::helper('tnw_salesforce/magento_opportunity');
         }
 
-        return false;
+        throw new Exception('Unknown record type');
     }
 
     /**
