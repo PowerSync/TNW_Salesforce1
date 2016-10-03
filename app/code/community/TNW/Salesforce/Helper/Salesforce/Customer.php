@@ -682,6 +682,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 unset($this->_obj->RecordTypeId);
             }
 
+            $nameCompare = !empty($this->_cache['accountLookup'][0][$_email]->Name)
+                ? strcasecmp($_customer->getFirstname() .' '.$_customer->getLastname(), trim($this->_cache['accountLookup'][0][$_email]->Name)) == 0
+                : false;
+
+            $company = $_customer->getDefaultBillingAddress()
+                ? $_customer->getDefaultBillingAddress()->getData('company')
+                : null;
+
+            if ($nameCompare && !empty($company)) {
+                $this->_obj->Name = $company;
+            }
+
             $this->_cache['accountsToUpsert']['Id'][$_id] = $this->_obj;
         }
     }
