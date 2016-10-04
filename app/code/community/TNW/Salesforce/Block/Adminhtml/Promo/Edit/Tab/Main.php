@@ -55,28 +55,14 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
             array('legend' => $this->__('Salesforce'))
         );
 
-        /** @var $campaignMemberCollection TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection */
-        $campaignMemberCollection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
-            ->addFieldToFilter('Id', array('eq' => $model->getData('salesforce_id')));
-
-        /** @var Mage_Core_Block_Template $block */
-        $block = $this->getLayout()
-            ->getBlockSingleton('core/template')
-            ->setTemplate('salesforce/select2ajax.phtml')
-            ->addData(array(
-                'url'       => $this->getUrl('*/salesforce_search/campaign/filter/rules'),
-                'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
-            ));
-
-        $fieldset->addField('assign_to_campaign', 'select', array(
-            'name'      => 'assign_to_campaign',
+        $fieldset->addType('campaign', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_campaign'));
+        $fieldset->addField('assign_to_campaign', 'campaign', array(
             'label'     => $this->__('Assign to Campaign'),
             'title'     => $this->__('Assign to Campaign'),
-            //'note'      => $this->__('Assign to Campaign'),
-            'class'     => 'tnw-ajax-find-select',
-            'options'   => $campaignMemberCollection->toOptionHashCustom(),
-            'after_element_html'    => $block->toHtml(),
-            'value'     => $model->getData('salesforce_id')
+            'name'      => 'assign_to_campaign',
+            'selector'  => 'tnw-ajax-find-select',
+            'value'     => $model->getData('salesforce_id'),
+            'searchUrl' => $this->getUrl('*/salesforce_search/campaign/filter/rules')
         ));
 
         $this->setForm($form);

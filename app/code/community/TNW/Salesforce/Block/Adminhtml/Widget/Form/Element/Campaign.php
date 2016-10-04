@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Data_Form_Element_Select
+class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Campaign extends Varien_Data_Form_Element_Select
 {
     /**
      * Return Form Element HTML
@@ -9,11 +9,11 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
      */
     public function getElementHtml()
     {
-        $cIdVal   = array();
+        $cIdVal     = array();
         $value  = $this->getValue();
         if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
-            /** @var TNW_Salesforce_Model_Api_Entity_Resource_User_Collection $collection */
-            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/user_collection')
+            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection $collection */
+            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
                 ->addFieldToFilter('Id', array('eq' => $value));
             $cIdVal = $collection->setFullIdMode(true)->getAllOptions();
         }
@@ -48,7 +48,9 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
         $block
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'url'       => $block->getUrl('*/salesforce_search/user'),
+                'url'       => $this->hasData('searchUrl')
+                    ? $this->getData('searchUrl')
+                    : $block->getUrl('*/salesforce_search/campaign'),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE,
                 'selector'  => sprintf('.%s', $this->getData('selector'))
             ));
