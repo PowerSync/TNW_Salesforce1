@@ -46,9 +46,7 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Campaign extends Varien
         $block
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'url'       => $this->hasData('searchUrl')
-                    ? $this->getData('searchUrl')
-                    : $block->getUrl('*/salesforce_search/campaign'),
+                'url'       => $block->getUrl('*/salesforce_search/campaign'),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE,
                 'selector'  => sprintf('.%s', $this->getData('selector'))
             ));

@@ -61,8 +61,7 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
             'title'     => $this->__('Assign to Campaign'),
             'name'      => 'assign_to_campaign',
             'selector'  => 'tnw-ajax-find-select',
-            'value'     => $model->getData('salesforce_id'),
-            'searchUrl' => $this->getUrl('*/salesforce_search/campaign/filter/rules')
+            'value'     => $model->getData('salesforce_id')
         ));
 
         $this->setForm($form);
