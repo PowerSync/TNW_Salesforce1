@@ -12,11 +12,8 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Campaign
         $aIdVal = array();
         $value = $element->getData('value');
         if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
-            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection $collection */
-            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
-                ->addFieldToFilter('Id', array('eq' => $value));
-
-            $aIdVal = $collection->setFullIdMode(true)->getAllOptions();
+            $aIdVal = Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->toArraySearchById($value, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_CAMPAIGN);
         }
 
         /** @var Mage_Core_Block_Template $block */

@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.56.11.0000</version>
+            <version>0.01.57.02.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -72,6 +72,9 @@
                     <check>
                         <!-- no DB -->
                     </check>
+                    <entity_cache>
+                        <table>tnw_salesforce_entity_cache</table>
+                    </entity_cache>
                 </entities>
             </tnw_salesforce_mysql4>
             <tnw_salesforce_api_entity>

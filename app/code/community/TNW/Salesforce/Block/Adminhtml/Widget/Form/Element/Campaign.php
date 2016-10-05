@@ -12,10 +12,8 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Campaign extends Varien
         $cIdVal     = array();
         $value  = $this->getValue();
         if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
-            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection $collection */
-            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
-                ->addFieldToFilter('Id', array('eq' => $value));
-            $cIdVal = $collection->setFullIdMode(true)->getAllOptions();
+            $cIdVal = Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->toArraySearchById($value, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_CAMPAIGN);
         }
 
         $sfLink = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url');
