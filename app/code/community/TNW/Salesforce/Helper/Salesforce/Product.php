@@ -712,12 +712,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $this->_standardPricebookId = Mage::helper('tnw_salesforce/salesforce_data')->getStandardPricebookId();
         $this->_defaultPriceBook = $this->getHelper()->getDefaultPricebook() ?: $this->_standardPricebookId;
 
-        $resource = Mage::getResourceModel('eav/entity_attribute');
-        $this->_attributes['salesforce_id'] = $resource->getIdByCode('catalog_product', 'salesforce_id');
-        $this->_attributes['salesforce_pricebook_id']
-            = $resource->getIdByCode('catalog_product', 'salesforce_pricebook_id');
-        $this->_attributes['sf_insync'] = $resource->getIdByCode('catalog_product', 'sf_insync');
-
         return $this->check();
     }
 
