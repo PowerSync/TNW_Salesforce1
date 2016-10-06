@@ -21,7 +21,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
             ->getBlockSingleton('core/template')
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'selector'  => '.tnw-ajax-find-select-account',
+                'selector'  => sprintf('.%s', $element->getData('class')),
                 'url'       => $this->getUrl('*/salesforce_search/account'),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
             ));
