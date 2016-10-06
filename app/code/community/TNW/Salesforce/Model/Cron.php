@@ -718,4 +718,18 @@ class TNW_Salesforce_Model_Cron
 
         return true;
     }
+
+    public function entityCacheFill()
+    {
+        /** @var TNW_Salesforce_Helper_Data $_helperData */
+        $_helperData = Mage::helper('tnw_salesforce');
+        if (!$_helperData->isEnabled()) {
+            return;
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Fill magento cache START ===");
+        Mage::getSingleton('tnw_salesforce/sforce_entity_cache')->importFromSalesforce();
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'entityCacheFill'));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Fill magento cache END ===");
+    }
 }

@@ -42,4 +42,23 @@ class TNW_Salesforce_Model_Mysql4_Entity_Cache extends Mage_Core_Model_Mysql4_Ab
             );
         }, $rowSet);
     }
+
+    /**
+     * @param array $columns
+     * @param array $data
+     * @return int
+     */
+    public function massImport(array $columns, array $data)
+    {
+        return $this->_getWriteAdapter()
+            ->insertArray($this->getMainTable(), $columns, $data);
+    }
+
+    /**
+     * @param $type
+     */
+    public function clearType($type)
+    {
+        $this->_getWriteAdapter()->delete($this->getMainTable(), array('object_type = ?'=>$type));
+    }
 }

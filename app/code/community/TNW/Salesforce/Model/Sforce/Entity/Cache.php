@@ -12,6 +12,17 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
     const CACHE_TYPE_CAMPAIGN = 'campaign';
     const CACHE_TYPE_USER     = 'user';
 
+    const IMPORT_PAGE_SIZE    = 300;
+
+    /**
+     * @var array
+     */
+    protected $cacheTypes = array(
+        self::CACHE_TYPE_ACCOUNT,
+        self::CACHE_TYPE_CAMPAIGN,
+        self::CACHE_TYPE_USER,
+    );
+
     protected function _construct()
     {
         parent::_construct();
@@ -65,7 +76,7 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
 
     /**
      * @param $type
-     * @return TNW_Salesforce_Model_Mysql4_Entity_Cache_Collection|TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
+     * @return TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract
      * @throws Exception
      */
     protected function generateCollectionByType($type)
@@ -96,5 +107,30 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
     public function toArraySearchById($id, $objectType)
     {
         return $this->getResource()->toArraySearchById($id, $objectType);
+    }
+
+    /**
+     *
+     */
+    public function importFromSalesforce()
+    {
+        foreach ($this->cacheTypes as $cacheType) {
+            $collection = $this->generateCollectionByType($cacheType)
+                ->setPageSize(self::IMPORT_PAGE_SIZE);
+
+            $lastPageNumber = $collection->getLastPageNumber();
+            $this->getResource()->clearType($cacheType);
+
+            for($i = 1; $i <= $lastPageNumber; $i++) {
+                $collection->clear()->setCurPage($i);
+                $data = array();
+                foreach ($collection as $item) {
+                    $data[] = array($item->getId(), $item->getData('Name'), $cacheType);
+                }
+
+                $this->getResource()
+                    ->massImport(array('id', 'name', 'object_type'), $data);
+            }
+        }
     }
 }

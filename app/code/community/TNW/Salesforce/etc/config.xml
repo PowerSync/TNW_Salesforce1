@@ -676,6 +676,10 @@
             <tnw_salesforce_currency>
                 <run><model>tnw_salesforce/cron::syncCurrency</model></run>
             </tnw_salesforce_currency>
+            <tnw_salesforce_cache_fill>
+                <schedule><cron_expr>0 0 * * *</cron_expr></schedule>
+                <run><model>tnw_salesforce/cron::entityCacheFill</model></run>
+            </tnw_salesforce_cache_fill>
         </jobs>
     </crontab>
     <default>
