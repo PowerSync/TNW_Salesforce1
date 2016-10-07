@@ -389,14 +389,10 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         if (empty($chunk)) {
             return false;
         }
-        if (
-            array_key_exists($_batchType, $this->_cache['batchCache'])
-            && array_key_exists($_batchNum, $this->_cache['batchCache'][$_batchType])
-            && !empty($this->_cache['batchCache'][$_batchType][$_batchNum])
-        ) {
+
+        if (!empty($this->_cache['batchCache'][$_batchType][$_batchNum])) {
             return true; // Already processed
         }
-        $_batchId = NULL;
 
         $_data = '<?xml version="1.0" encoding="UTF-8"?>
 <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">'."\n";

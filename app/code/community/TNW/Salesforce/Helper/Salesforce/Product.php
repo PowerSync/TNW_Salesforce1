@@ -288,16 +288,24 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 'sf_insync'               => isset($_product->SfInSync) ? $_product->SfInSync : 0
             );
 
+            $message = '';
             $entity->addData($resetAttribute);
-            foreach (array_keys($resetAttribute) as $code) {
-                foreach ($this->storesAvailable() as $storeId) {
-                    if (!empty($_product->pricebookEntryIds[$storeId])) {
-                        $entity->setData('salesforce_pricebook_id', $_product->pricebookEntryIds[$storeId]);
-                    }
+            foreach ($this->storesAvailable() as $storeId) {
+                if (!empty($_product->pricebookEntryIds[$storeId])) {
+                    $entity->setData('salesforce_pricebook_id', $_product->pricebookEntryIds[$storeId]);
+                }
 
+                foreach (array_keys($resetAttribute) as $code) {
                     $entity->getResource()->saveAttribute($entity->setData('store_id', $storeId), $code);
                 }
+
+                $message .= sprintf("\nfor Store \"%s\": %s",
+                    Mage::app()->getStore($storeId)->getCode(),
+                    print_r(array_intersect_key($entity->getData(), $resetAttribute), true)
+                );
             }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Save attribute (product: $_magentoSku)\n$message");
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
@@ -338,7 +346,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         $entity     = $this->getEntityCache($sku);
         $_magentoId = $this->_getEntityId($entity);
-        $_prod      = $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)][$sku];
+        $_prod      = isset($this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)][$sku])
+            ? $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)][$sku]
+            : null;
 
         // Is Multi Site Sync?
         if (!$this->isMultiSync()) {
@@ -557,7 +567,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $toUpsertKey = sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()));
         if (empty($this->_cache[$toUpsertKey])) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('No Orders found queued for the synchronization!');
+                ->saveTrace('No Product found queued for the synchronization!');
 
             return;
         }
@@ -637,7 +647,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         if (empty($this->_cache['pricebookEntryToSync'])) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('No Orders found queued for the synchronization!');
+                ->saveTrace('No PriceBook found queued for the synchronization!');
 
             return;
         }
@@ -657,7 +667,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
             list(, $_magentoId, $currencyCode) = explode(':::', $_keys[$_key], 3);
             $sku      = $this->_cache['productIdToSku'][$_magentoId];
-            $storeIds = array_unique($this->_cache['pricebookEntryKeyToStore'][$_keys[$_key]]);
 
             //Report Transaction
             $this->_cache['responses']['pricebooks'][$_keys[$_key]] = $_response;
@@ -675,14 +684,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds = array();
             }
 
-            foreach ($storeIds as $_storeId) {
-                $value = $currencyCode . ':' . (string)$_response->id . "\n";
-                if (array_key_exists($_storeId, $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds)) {
-                    $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId] .= $value;
+            foreach (array_unique($this->_cache['pricebookEntryKeyToStore'][$_keys[$_key]]) as $_storeId) {
+                if (!isset($this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId])) {
+                    $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId] = '';
                 }
-                else {
-                    $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId] = $value;
-                }
+
+                $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId] .= $currencyCode . ':' . (string)$_response->id . "\n";
             }
         }
     }
