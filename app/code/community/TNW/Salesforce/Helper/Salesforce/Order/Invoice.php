@@ -243,14 +243,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
     }
 
     /**
-     * @param $_entity Mage_Sales_Model_Order_Invoice
-     */
-    protected function _prepareEntityItemAfter($_entity)
-    {
-        $this->_applyAdditionalFees($_entity);
-    }
-
-    /**
      * @param $_entity
      * @param $key
      */
@@ -647,7 +639,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
         $_itemCollection = $_entity->getItemsCollection();
         $_hasOrderItemId = $_itemCollection->walk('getOrderItemId');
 
-        $items = array();
+        $items = parent::getItems($_entity);
         /** @var Mage_Sales_Model_Order_Invoice_Item $item */
         foreach ($_itemCollection as $item) {
             if ($item->isDeleted() || $item->getOrderItem()->getParentItem()) {

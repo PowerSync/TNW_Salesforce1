@@ -853,13 +853,60 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @comment return entity items
-     * @param $_entity
+     * @param $_entity Mage_Core_Model_Abstract
      * @return mixed
      * @throws Exception
      */
     public function getItems($_entity)
     {
-        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
+        if ($_entity->hasData('__cache_tnw_fee')) {
+            return $_entity->getData('__cache_tnw_fee');
+        }
+
+        $items = array();
+        /** @var TNW_Salesforce_Helper_Data $_helper */
+        $_helper = Mage::helper('tnw_salesforce');
+        foreach ($this->getAvailableFees() as $feeName) {
+            $ucFee = ucfirst($feeName);
+
+            // Push Fee As Product
+            if (!call_user_func(array($_helper, sprintf('use%sFeeProduct', $ucFee))) || $_entity->getData($feeName . '_amount') == 0) {
+                continue;
+            }
+
+            if (!call_user_func(array($_helper, sprintf('get%sProduct', $ucFee)))) {
+                continue;
+            }
+
+            $feeData = Mage::getStoreConfig($_helper->getFeeProduct($feeName), $_entity->getStoreId());
+            if (!$feeData) {
+                continue;
+            }
+
+            $feeData = @unserialize($feeData);
+            if (empty($feeData)) {
+                continue;
+            }
+
+            $item = Mage::getModel('sales/order_item')
+                ->addData(array(
+                    'name'                    => $feeData['Name'],
+                    'sku'                     => $feeData['ProductCode'],
+                    $this->getItemQtyField()  => 1,
+                    'description'             => $_helper->__($ucFee),
+                    'row_total'               => $this->getEntityPrice($_entity, $ucFee . 'Amount'),
+                    $this->_magentoEntityName => $_entity,
+                    'product_type'            => 'simple'
+                ));
+
+            $this->_prepareAdditionalFees($_entity, $item);
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
+            $items[] = $item;
+        }
+
+        $_entity->setData('__cache_tnw_fee', $items);
+        return $items;
     }
 
     /**
@@ -947,56 +994,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _prepareEntityItemAfter($_entity)
     {
         return;
-    }
-
-    /**
-     * @comment add Tax/Shipping/Discount to the order as different product
-     * @param $_entity Varien_Object
-     */
-    protected function _applyAdditionalFees($_entity)
-    {
-        /** @var TNW_Salesforce_Helper_Data $_helper */
-        $_helper = Mage::helper('tnw_salesforce');
-        foreach ($this->getAvailableFees() as $feeName) {
-            $ucFee = ucfirst($feeName);
-
-            // Push Fee As Product
-            if (!call_user_func(array($_helper, sprintf('use%sFeeProduct', $ucFee))) || $_entity->getData($feeName . '_amount') == 0) {
-                continue;
-            }
-
-            if (! call_user_func(array($_helper, sprintf('get%sProduct', $ucFee)))) {
-                continue;
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
-            $feeData = Mage::getStoreConfig($_helper->getFeeProduct($feeName), $_entity->getStoreId());
-            if (!$feeData) {
-                continue;
-            }
-
-            $feeData = @unserialize($feeData);
-            $item = new Varien_Object();
-            $item->setData($feeData);
-
-            /**
-             * add data in lower case too compatibility for
-             */
-            foreach ($feeData as $key => $value) {
-                $item->setData(strtolower($key), $value);
-            }
-
-            $item->addData(array(
-                $this->getItemQtyField()  => 1,
-                'description'             => $_helper->__($ucFee),
-                'row_total_incl_tax'      => $this->getEntityPrice($_entity, $ucFee . 'Amount'),
-                'row_total'               => $this->getEntityPrice($_entity, $ucFee . 'Amount'),
-                $this->_magentoEntityName => $_entity,
-            ));
-
-            $this->_prepareAdditionalFees($_entity, $item);
-            $this->_prepareEntityItemObj($_entity, $item);
-        }
     }
 
     /**

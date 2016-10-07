@@ -233,25 +233,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
-     * Prepare Store Id for upsert
-     *
-     * @param Mage_Sales_Model_Quote_Item $_item
-     */
-    protected function _prepareStoreId($_item) {
-        $itemId = $this->getProductIdFromCart($_item);
-        $_quote = $_item->getQuote();
-        $_storeId = $_quote->getStoreId();
-
-        if (!array_key_exists($_storeId, $this->_stockItems)) {
-            $this->_stockItems[$_storeId] = array();
-        }
-        // Item's stock needs to be updated in Salesforce
-        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
-            $this->_stockItems[$_storeId][] = $itemId;
-        }
-    }
-
-    /**
      * @param $_item Mage_Sales_Model_Quote_Item
      * @return int
      * Get product Id from the cart

@@ -273,23 +273,32 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
 
         foreach ($this->_cache['toSaveInMagento'] as $_magentoSku => $_product) {
-            $entity     = $this->getEntityCache($_magentoSku);
-            $_magentoId = $this->_getEntityId($entity);
+            $entity  = $this->getEntityCache($_magentoSku);
+            $storeId = $entity->getStoreId();
+
+            $resetAttribute = array(
+                'salesforce_id' => isset($_product->salesforceId)
+                    ? $_product->salesforceId : null,
+
+                'salesforce_pricebook_id' => !empty($_product->pricebookEntryIds[$storeId])
+                    ? $_product->pricebookEntryIds[$storeId] : null,
+
+                'sf_insync' => isset($_product->SfInSync)
+                    ? $_product->SfInSync : 0
+            );
+
+            $entity->addData($resetAttribute);
+
             /**
              * skip order fee products, these products don't exist in magento and use sku instead Id
              */
+            $_magentoId = $this->_getEntityId($entity);
             if (!is_numeric($_magentoId)) {
                 continue;
             }
 
-            $resetAttribute = array(
-                'salesforce_id'           => (isset($_product->salesforceId)) ? $_product->salesforceId : null,
-                'salesforce_pricebook_id' => null,
-                'sf_insync'               => isset($_product->SfInSync) ? $_product->SfInSync : 0
-            );
-
+            // Save Attribute
             $message = '';
-            $entity->addData($resetAttribute);
             foreach ($this->storesAvailable() as $storeId) {
                 if (!empty($_product->pricebookEntryIds[$storeId])) {
                     $entity->setData('salesforce_pricebook_id', $_product->pricebookEntryIds[$storeId]);

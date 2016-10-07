@@ -727,7 +727,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         $_itemCollection = $_entity->getItemsCollection();
         $_hasOrderItemId = $_itemCollection->walk('getOrderItemId');
 
-        $items = array();
+        $iDs = array_values($_entity->getOrder()->getCreditmemosCollection()->walk('getId'));
+        sort($iDs, SORT_NUMERIC);
+
+        $items = array_search($_entity->getId(), $iDs) === 0
+            ? parent::getItems($_entity) : array();
         /** @var Mage_Sales_Model_Order_Creditmemo_Item $item */
         foreach ($_itemCollection as $item) {
             if ($item->isDeleted() || $item->getOrderItem()->getParentItem()) {
@@ -879,19 +883,6 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
         // Logout
         $this->reset();
         $this->clearMemory();
-    }
-
-    /**
-     * @param $_entity Mage_Sales_Model_Order_Creditmemo
-     */
-    protected function _prepareEntityItemAfter($_entity)
-    {
-        $iDs = array_values($_entity->getOrder()->getCreditmemosCollection()->walk('getId'));
-        sort($iDs, SORT_NUMERIC);
-
-        if (array_search($_entity->getId(), $iDs) === 0) {
-            $this->_applyAdditionalFees($_entity);
-        }
     }
 
 

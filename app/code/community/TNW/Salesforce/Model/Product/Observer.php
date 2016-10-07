@@ -26,7 +26,6 @@ class TNW_Salesforce_Model_Product_Observer
 
     /**
      * @param $observer
-     * @return bool
      */
     public function salesforcePush($observer)
     {
@@ -63,30 +62,20 @@ class TNW_Salesforce_Model_Product_Observer
                 $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array(intval($_product->getData('entity_id'))), 'Product', 'product');
                 if (!$res) {
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError('error: product not saved to local storage');
-                    return false;
                 }
-                return true;
+
+                return;
             }
 
-            if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
-                /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
-                $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-                $manualSync->reset();
-                $manualSync->updateMagentoEntityValue($_product->getId(), NULL, 'sf_insync', 'catalog_product_entity_int', 0);
-                foreach (Mage::app()->getStores() as $_storeId => $_store) {
-                    $manualSync->updateMagentoEntityValue($_product->getId(), NULL, 'sf_insync', 'catalog_product_entity_int', $_storeId);
-                }
-                $manualSync->processSql();
-            } else {
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
                 // Skip, coming from Salesforce
                 return;
             }
 
             $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-
-            if ($manualSync->reset() && $manualSync->massAdd(array($_product->getId()))) {
-                $manualSync->process();
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product (sku: ' . $_product->getSku() . ') is successfully synchronized'));
+            if ($manualSync->reset() && $manualSync->massAdd(array($_product->getId())) && $manualSync->process()) {
+                Mage::getSingleton('adminhtml/session')
+                    ->addSuccess(Mage::helper('adminhtml')->__('Product (sku: ' . $_product->getSku() . ') is successfully synchronized'));
             }
         }
     }

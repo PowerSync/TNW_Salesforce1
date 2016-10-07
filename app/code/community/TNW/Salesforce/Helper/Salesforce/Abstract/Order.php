@@ -9,11 +9,6 @@
 abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
     /**
-     * @var array
-     */
-    protected $_stockItems = array();
-
-    /**
      * @comment magento entity model alias
      * @var array
      */
@@ -208,7 +203,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function getItems($parentEntity)
     {
-        $_items = array();
+        $_items = parent::getItems($parentEntity);
 
         /** @var Mage_Sales_Model_Order_Item $_item */
         foreach ($parentEntity->getAllVisibleItems() as $_item) {
@@ -261,15 +256,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
     /**
      * @param $_entity Mage_Sales_Model_Order
-     */
-    protected function _prepareEntityItemAfter($_entity)
-    {
-        $this->_applyAdditionalFees($_entity);
-    }
-
-    /**
-     * @param $_entity Mage_Sales_Model_Order
-     * @param $item Varien_Object
+     * @param $item Mage_Sales_Model_Order_Item
      */
     protected function _prepareAdditionalFees($_entity, $item)
     {
@@ -283,7 +270,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             && $this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}
         ) {
             foreach ($this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}->records as $_cartItem) {
-                if ($_cartItem->PricebookEntry->Product2Id != $item->getData('Id')) {
+                if ($_cartItem->PricebookEntry->Product2Id != $this->_getObjectByEntityItemType($item, 'Product')->getData('salesforce_id')) {
                     continue;
                 }
 
@@ -473,8 +460,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     /**
      * @param $_entityItem Mage_Sales_Model_Order_Item
      * @param $_type string
-     * @return null
-     * @throws Exception
+     * @return Varien_Object
      */
     protected function _getObjectByEntityItemType($_entityItem, $_type)
     {
@@ -489,37 +475,33 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 break;
 
             case 'Product':
-                // Load by product Id only if bundled OR simple with options
-                $_productId = $this->getProductIdFromCart($_entityItem);
-                $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
+                $sku = $_entityItem->getSku();
+                if (empty($this->_cache['products'][$sku])) {
+                    // Load by product Id only if bundled OR simple with options
+                    $_productId = $this->getProductIdFromCart($_entityItem);
+                    /** @var Mage_Core_Model_Store $store */
+                    $store      = $this->_getObjectByEntityItemType($_entityItem, 'Custom');
+                    /** @var Mage_Catalog_Model_Product $_product */
+                    $_product    = Mage::getModel('catalog/product')->setStoreId($store->getId())
+                        ->load($_productId);
 
-                /** @var Mage_Catalog_Model_Product $_product */
-                $_product   = Mage::getModel('catalog/product')
-                    ->setStoreId($storeId);
-
-                if ($_productId) {
-                    $_object = $_product->load($_productId);
-                    break;
-                }
-                else {
-                    $_entity        = $this->_getObjectByEntityItemType($_entityItem, 'Order');
-                    $pricebookId    = $this->_getPricebookIdToOrder($_entity);
-                    $_currencyCode  = $this->getCurrencyCode($_entity);
-                    $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')
-                        ->getProductPricebookEntry($_entityItem->getData('Id'), $pricebookId, $_currencyCode);
-
-                    if (!$pricebookEntry || !isset($pricebookEntry['Id'])) {
-                        throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getData('ProductCode') . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+                    if (is_null($_product->getId())) {
+                        // Generate Fake product
+                        $_product->addData(array(
+                            'name'      => $_entityItem->getName(),
+                            'sku'       => $_entityItem->getSku(),
+                            'price'     => $_entityItem->getBaseOriginalPrice(),
+                            'type_id'   => $_entityItem->getProductType(),
+                            'enabled'   => 1,
+                            'store_ids' => $store->getWebsite()->getStoreIds()
+                        ));
                     }
 
-                    $_object = $_product->addData(array(
-                        'name'                    => $_entityItem->getData('Name'),
-                        'sku'                     => $_entityItem->getData('ProductCode'),
-                        'salesforce_id'           => $_entityItem->getData('Id'),
-                        'salesforce_pricebook_id' => $pricebookEntry['Id'],
-                    ));
-                    break;
+                    $this->_cache['products'][$sku] = $_product;
                 }
+
+                $_object = $this->_cache['products'][$sku];
+                break;
 
             case 'Product Inventory':
                 $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
@@ -1046,18 +1028,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         return $_entity->getRealOrderId();
     }
 
+    /**
+     *
+     */
     protected function _prepareEntityItemsBefore()
     {
-        $failedKey    = sprintf('failed%s', $this->getManyParentEntityType());
-
-        // only sync all products if processing real time
-        if ($this->_isCron) {
-            return;
-        }
-
+        $syncProduct = array();
         // Get all products from each order and decide if all needs to me synced prior to inserting them
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache[$failedKey])) {
+            if (in_array($_orderNumber, $this->_cache['failed'. $this->getManyParentEntityType()])) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace(sprintf('%s (%s): Skipping, issues with upserting an %s!',
                         strtoupper($this->_magentoEntityName), $_orderNumber, $this->_salesforceEntityName));
@@ -1072,64 +1051,48 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             /** @var Mage_Sales_Model_Order $_order */
             $_order = $this->_loadEntityByCache($_key, $_orderNumber);
             foreach ($this->getItems($_order) as $_item) {
-                $this->_prepareStoreId($_item);
+                $product = $this->_getObjectByEntityItemType($_item, 'Product');
+                // only sync product if processing real time
+                if (!is_null($product->getId()) && $this->_isCron) {
+                    continue;
+                }
+
+                $syncProduct[] = $product;
             }
         }
 
         // Sync Products
-        if (!empty($this->_stockItems)) {
-            $this->syncProducts();
+        if (!empty($syncProduct)) {
+            $this->syncProducts($syncProduct);
         }
     }
 
+    /**
+     * @param $_key
+     * @return bool
+     */
     protected function _checkPrepareEntityItem($_key)
     {
         return true;
     }
 
     /**
-     * Prepare Store Id for upsert
-     *
-     * @param Mage_Sales_Model_Order_Item $_item
-     */
-    protected function _prepareStoreId($_item)
-    {
-        $itemId = $this->getProductIdFromCart($_item);
-        $_order = $_item->getOrder();
-        $_storeId = $_order->getStoreId();
-
-        if (!array_key_exists($_storeId, $this->_stockItems)) {
-            $this->_stockItems[$_storeId] = array();
-        }
-        // Item's stock needs to be updated in Salesforce
-        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
-            $this->_stockItems[$_storeId][] = $itemId;
-        }
-    }
-
-    /**
      * Mass sync products that are part of the order
+     * @param Mage_Catalog_Model_Product[] $products
      */
-    protected function syncProducts()
+    protected function syncProducts($products)
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
 
         /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
         $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-
-        foreach ($this->_stockItems as $_storeId => $_products) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Store Id: " . $_storeId);
-            $manualSync->setOrderStoreId($_storeId);
-            if ($manualSync->reset() && $manualSync->massAdd($this->_stockItems[$_storeId]) && $manualSync->process()) {
-                if (!$this->isFromCLI()) {
-                    Mage::getSingleton('adminhtml/session')
-                        ->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
-                }
-            }
-            else {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('WARNING: Salesforce Connection could not be established!');
-            }
+        if ($manualSync->reset() && $manualSync->forceAdd($products) && $manualSync->process()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('The products have been synchronized with Salesforce');
+        }
+        else {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('WARNING: Salesforce Connection could not be established!');
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: END ================");
@@ -1203,6 +1166,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             'accountsLookup' => array(),
             'productCampaignAssignment' => array(),
             'entitiesUpdating' => array(),
+            'products' => array(),
             sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
             sprintf('failed%s', $this->getManyParentEntityType()) => array(),
             sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
