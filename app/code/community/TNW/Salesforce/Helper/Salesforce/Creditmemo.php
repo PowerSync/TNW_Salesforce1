@@ -3,7 +3,7 @@
 /**
  * @method Mage_Sales_Model_Order_Creditmemo _loadEntityByCache($_entityId, $_entityNumber)
  */
-class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
+class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_Salesforce_Abstract_Sales
 {
     /**
      * @comment magento entity alias "convert from"
@@ -52,26 +52,12 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     protected $_emails = array();
 
     /**
-     * @var array
-     */
-    protected $_websites = array();
-
-    /**
      * @param $_entity Mage_Sales_Model_Order_Creditmemo
      * @return mixed
      */
     protected function _getEntityNumber($_entity)
     {
         return 'cm_'.$_entity->getIncrementId();
-    }
-
-    /**
-     * @param array $_ids
-     */
-    protected function _massAddBefore($_ids)
-    {
-        $this->_guestCount = 0;
-        $this->_emails = $this->_websites = array();
     }
 
     /**
@@ -154,75 +140,9 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     }
 
     /**
-     * Sync customer w/ SF before creating the order
-     *
-     * @param $order Mage_Core_Model_Abstract|Mage_Sales_Model_Order|Mage_Sales_Model_Quote
-     * @return false|Mage_Core_Model_Abstract
-     */
-    protected function _getCustomer($order)
-    {
-        return $this->_generateCustomerByOrder($order);
-    }
-
-    /**
      *
      */
-    protected function _massAddAfter()
-    {
-        // Salesforce lookup, find all contacts/accounts by email address
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->lookup($this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)]);
-
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
-            ->lookup($this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)]);
-
-        $this->_massAddAfterCreditmemo();
-
-        /**
-         * define Salesforce data for order customers
-         */
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
-            $entity         = $this->_loadEntityByCache($key, $number);
-            /** @var Mage_Customer_Model_Customer $customer */
-            $customer       = $this->_getObjectByEntityType($entity, 'Customer');
-            $customerEmail  = strtolower($customer->getEmail());
-
-            if (!empty($this->_cache['accountsLookup'][0][$customerEmail])) {
-                $_websiteId = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
-
-                $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customerEmail]->Id);
-
-                // Overwrite Contact Id for Person Account
-                if (property_exists($this->_cache['accountsLookup'][0][$customerEmail], 'PersonContactId')) {
-                    $customer->setData('salesforce_id', $this->_cache['accountsLookup'][0][$customerEmail]->PersonContactId);
-                }
-
-                // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$_websiteId][$customerEmail])) {
-                    $customer->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customerEmail]->Id);
-                }
-            }
-            else {
-                /**
-                 * No customers for this order in salesforce - error
-                 */
-                // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $customerEmail . ') could not be created / found!');
-                $this->_skippedEntity[$key] = $key;
-
-                continue;
-            }
-        }
-
-        foreach ($this->_skippedEntity as $_idToRemove) {
-            unset($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_idToRemove]);
-        }
-    }
-
-    /**
-     *
-     */
-    protected function _massAddAfterCreditmemo()
+    protected function _massAddAfterLookup()
     {
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_creditmemo')
@@ -362,7 +282,6 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
      * @param $_entityItem Mage_Sales_Model_Order_Creditmemo_Item
      * @param $_type
      * @return mixed
-     * @throws Exception
      */
     protected function _getObjectByEntityItemType($_entityItem, $_type)
     {
@@ -377,25 +296,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                 break;
 
             case 'Product':
-                $_productId = $this->getProductIdFromCart($_entityItem->getOrderItem());
-                $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
-
-                /** @var Mage_Catalog_Model_Product $_product */
-                $_product   = Mage::getModel('catalog/product')
-                    ->setStoreId($storeId);
-
-                if (!empty($_productId)) {
-                    $_object = $_product->load($_productId);
-                    break;
-                }
-                else {
-                    $_object = $_product->addData(array(
-                        'name'           => $_entityItem->getData('Name'),
-                        'sku'            => $_entityItem->getData('ProductCode'),
-                        'salesforce_id'  => $_entityItem->getData('Id'),
-                    ));
-                    break;
-                }
+                $_entityItem = !$this->isFeeEntityItem($_entityItem)
+                    ? $_entityItem->getOrderItem()
+                    : $_entityItem;
+                $_object = $this->getProductByEntityItem($_entityItem);
+                break;
 
             case 'Product Inventory':
                 $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
@@ -852,6 +757,27 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
     }
 
     /**
+     * @param Mage_Sales_Model_Order_Creditmemo $_entity
+     * @param string $feeName
+     * @param array $feeData
+     * @return Mage_Sales_Model_Order_Creditmemo_Item
+     */
+    protected function generateFeeEntityItem($_entity, $feeName, $feeData)
+    {
+        return Mage::getModel('sales/order_creditmemo_item')
+            ->setCreditmemo($_entity)
+            ->addData(array(
+                'name'                    => $feeData['Name'],
+                'sku'                     => $feeData['ProductCode'],
+                $this->getItemQtyField()  => 1,
+                'description'             => Mage::helper('tnw_salesforce')->__($feeName),
+                'row_total'               => $this->getEntityPrice($_entity, sprintf('%sAmount', ucfirst($feeName))),
+                'base_original_price'     => 0,
+                'product_type'            => 'simple'
+            ));
+    }
+
+    /**
      * Clean up all the data & memory
      */
     protected function _onComplete()
@@ -887,28 +813,29 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
 
 
     /**
-     * @param $_entity Mage_Sales_Model_Order_Invoice
-     * @param $item Varien_Object
+     * @param $_entity Mage_Sales_Model_Order_Creditmemo
+     * @param $item Mage_Sales_Model_Order_Creditmemo_Item
      */
     protected function _prepareAdditionalFees($_entity, $item)
     {
         /** @var Mage_Sales_Model_Order_Item $_orderItem */
         $_orderItem           = Mage::getModel('sales/order_item');
+        $productSalesforceId  = $this->_getObjectByEntityItemType($item, 'Product')->getData('salesforce_id');
 
-        $orderLookup = @$this->_cache['creditmemoOrderLookup'][$_entity->getOrder()->getRealOrderId()];
-        if ($orderLookup && property_exists($orderLookup, 'OrderItems') && $orderLookup->OrderItems) {
-            foreach ($orderLookup->OrderItems->records as $record) {
-                if ($record->PricebookEntry->Product2Id != $item->getData('Id')) {
-                    continue;
-                }
+        $records              = !empty($this->_cache['creditmemoOrderLookup'][$_entity->getOrder()->getRealOrderId()]->OrderItems)
+            ? $this->_cache['creditmemoOrderLookup'][$_entity->getOrder()->getRealOrderId()]->OrderItems->records : array();
 
-                $_orderItem->setData('salesforce_id', $record->Id);
-                break;
+        foreach ($records as $record) {
+            if ($record->PricebookEntry->Product2Id != $productSalesforceId) {
+                continue;
             }
+
+            $_orderItem->setData('salesforce_id', $record->Id);
+            break;
         }
 
         //FIX: $item->getOrderItem()->getData('salesforce_id')
-        $item->setData('order_item', $_orderItem);
+        $item->setOrderItem($_orderItem);
     }
 
     /**
@@ -917,25 +844,9 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
      */
     public function reset()
     {
-        parent::reset();
+        $return = parent::reset();
 
-        // Clean order cache
-        if (is_array($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
-            foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_key => $_orderNumber) {
-                $this->unsetEntityCache($_orderNumber);
-            }
-        }
-
-        $this->_cache = array(
-            'accountsLookup' => array(),
-            'entitiesUpdating' => array(),
-            'orderToActivate' => array(),
-            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
-            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
-            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
-            sprintf('%sToUpsert', strtolower($this->getManyParentEntityType())) => array(),
-        );
-
-        return $this->check();
+        $this->_cache['orderToActivate'] = array();
+        return $return;
     }
 }

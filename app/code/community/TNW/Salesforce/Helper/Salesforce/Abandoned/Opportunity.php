@@ -233,34 +233,30 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
-     * @param $_item Mage_Sales_Model_Quote_Item
-     * @return int
-     * Get product Id from the cart
+     * @param $entityItem Mage_Sales_Model_Quote_Item
+     * @param $fieldName
+     * @return null
      */
-    public function getProductIdFromCart($_item)
+    public function getFieldFromEntityItem($entityItem, $fieldName)
     {
-        if (!$_item instanceof Mage_Sales_Model_Quote_Item) {
-            return false;
-        }
-
-        $productId = null;
-        switch ($_item->getProductType()) {
+        $field = null;
+        switch ($entityItem->getProductType()) {
             case Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE:
-                $children = $_item->getChildren();
+                $children = $entityItem->getChildren();
                 if (empty($children)) {
                     $productId = null;
                     break;
                 }
 
-                $productId = reset($children)->getProductId();
+                $field = reset($children)->getData($fieldName);
                 break;
 
             default:
-                $productId = $_item->getProductId();
+                $field = $entityItem->getData($fieldName);
                 break;
         }
 
-        return $productId;
+        return $field;
     }
 
     /**
@@ -457,28 +453,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     protected function _checkSyncCustomer($_entityNumber)
     {
-        $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
-        if (false === $_entityId) {
-            return false;
-        }
-
-        $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
-        $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
-        $websiteSfId = $this->_websites[$customerId];
-
-        $syncCustomer = false;
-
-        if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-            || !isset($this->_cache['accountsLookup'][0][$email])
-            || (
-                isset($this->_cache['leadsLookup'][$websiteSfId][$email])
-                && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
-            )
-        ) {
-            $syncCustomer = true;
-        }
-
-        return $syncCustomer;
+        return TNW_Salesforce_Helper_Salesforce_Abstract_Sales::_checkSyncCustomer($_entityNumber);
     }
 
     /**
