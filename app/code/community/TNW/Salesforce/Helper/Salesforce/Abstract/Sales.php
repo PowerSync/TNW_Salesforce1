@@ -2,6 +2,8 @@
 
 abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
+    const ITEM_FEE_CHECK = '__tnw_fee_check';
+
     /**
      * @var array
      */
@@ -273,7 +275,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Add $feeName");
             $this->_cache['fee_entity_items'][$entityNumber][]
-                = $this->generateFeeEntityItem($_entity, $feeName, $feeData)->setData('__tnw_fee_check', true);
+                = $this->generateFeeEntityItem($_entity, $feeName, $feeData)->setData(self::ITEM_FEE_CHECK, true);
         }
 
         return $this->_cache['fee_entity_items'][$entityNumber];
@@ -285,7 +287,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
      */
     protected function isFeeEntityItem($entityItem)
     {
-        return $entityItem->hasData('__tnw_fee_check');
+        return (bool)$entityItem->getData(self::ITEM_FEE_CHECK);
     }
 
     /**
@@ -640,7 +642,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
                     'type_id'   => $entityItem->getProductType(),
                     'enabled'   => 1,
                     'store_ids' => $store->getWebsite()->getStoreIds(),
-                    '__tnw_fee' => $this->isFeeEntityItem($entityItem)
+                    TNW_Salesforce_Helper_Salesforce_Product::ENTITY_FEE_CHECK => $this->isFeeEntityItem($entityItem)
                 ));
             }
 

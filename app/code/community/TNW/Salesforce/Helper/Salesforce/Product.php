@@ -7,6 +7,8 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
+    const ENTITY_FEE_CHECK = '__tnw_fee';
+
     /**
      * @comment magento entity alias "convert from"
      * @var string
@@ -268,7 +270,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             return false;
         }
 
-        if (!in_array($_entity->getTypeId(), Mage::helper('tnw_salesforce/config_product')->getSyncTypesAllow())) {
+        $typesAllow = Mage::helper('tnw_salesforce/config_product')->getSyncTypesAllow();
+        if (!$this->isFeeEntity($_entity) && !in_array($_entity->getTypeId(), $typesAllow)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveNotice('SKIPPING: Sync for product type "' . $_entity->getTypeId() . '" is disabled!');
 
@@ -277,6 +280,15 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         $this->_cache['productIdToSku'][$this->_getEntityId($_entity)] = $this->_getEntityNumber($_entity);
         return true;
+    }
+
+    /**
+     * @param $_entity Mage_Catalog_Model_Product
+     * @return bool
+     */
+    protected function isFeeEntity($_entity)
+    {
+        return (bool)$_entity->getData(self::ENTITY_FEE_CHECK);
     }
 
     protected function _updateMagento()
