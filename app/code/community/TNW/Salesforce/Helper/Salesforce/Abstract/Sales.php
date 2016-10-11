@@ -285,7 +285,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
      * @param $entityItem
      * @return mixed
      */
-    protected function isFeeEntityItem($entityItem)
+    public function isFeeEntityItem($entityItem)
     {
         return (bool)$entityItem->getData(self::ITEM_FEE_CHECK);
     }
@@ -385,6 +385,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
      */
     protected function syncProducts($products)
     {
+        if (empty($products)) {
+            return;
+        }
+
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
 
         /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
@@ -613,18 +617,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
      */
     protected function getProductByEntityItem($entityItem)
     {
-        $productResource = Mage::getResourceModel('catalog/product');
-
-        // Load by product Id only if bundled OR simple with options
-        $_productId  = $this->getProductIdFromCart($entityItem);
-        if (is_numeric($_productId) && $productsSku = $productResource->getProductsSku(array($_productId)) && !empty($productsSku[0])) {
-            $productSku = $productsSku[0]['sku'];
-        }
-
-        if (empty($productSku)) {
-            $productSku  = $this->getFieldFromEntityItem($entityItem, 'sku');
-        }
-
+        $productSku = $this->searchSkuByEntityItem($entityItem);
         if (empty($this->_cache['products'][$productSku])) {
             /** @var Mage_Core_Model_Store $store */
             $store      = $this->_getObjectByEntityItemType($entityItem, 'Custom');
@@ -650,6 +643,43 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
         }
 
         return $this->_cache['products'][$productSku];
+    }
+
+    /**
+     * @param $entityItem
+     * @return null|string
+     */
+    protected function searchSkuByEntityItem($entityItem)
+    {
+        if ($this->isFeeEntityItem($entityItem)) {
+            return $entityItem->getSku();
+        }
+
+        // Load by product Id only if bundled OR simple with options
+        $_productId  = $this->getProductIdFromCart($entityItem);
+        if (is_numeric($_productId)) {
+            $productsSku = Mage::getResourceModel('catalog/product')->getProductsSku(array($_productId));
+            if (!empty($productsSku[0]['sku'])) {
+                return $productsSku[0]['sku'];
+            }
+        }
+
+        // Search SKU by Lookup
+        $entity       = $this->getEntityByItem($entityItem);
+        $entityNumber = $this->_getEntityNumber($entity);
+        $lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $records      = isset($this->_cache[$lookupKey][$entityNumber]->{$this->getItemsField()})
+            ? $this->_cache[$lookupKey][$entityNumber]->{$this->getItemsField()}->records : array();
+
+        foreach ($records as $_cartItem) {
+            if ($_cartItem->Id != $entityItem->getData('salesforce_id')) {
+                continue;
+            }
+
+            return $_cartItem->PricebookEntry->ProductCode;
+        }
+
+        return $this->getFieldFromEntityItem($entityItem, 'sku');
     }
 
     /**

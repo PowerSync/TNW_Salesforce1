@@ -50,9 +50,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected $_salesforceParentIdField = 'OpportunityId';
 
     /**
-     * @var null
+     * @var array
      */
-    protected $_read = null;
+    protected $_availableFees = array();
 
     /**
      * @param $id
@@ -111,22 +111,25 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
 
-        /* If existing Opportunity, delete products */
-        if (!empty($opportunitiesUpdate)) {
+        do {
+            if (empty($opportunitiesUpdate)) {
+                break;
+            }
 
-            // Delete Products
-            $oppItemSetId = array();
             $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunitiesUpdate);
+            if (empty($oppItemSet)) {
+                break;
+            }
+
+            $oppItemSetId = array();
             foreach ($oppItemSet as $item) {
                 $oppItemSetId[] = $item->Id;
             }
 
-            $oppItemSetIds = array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-            foreach ($oppItemSetIds as $oppItemSetId) {
+            foreach (array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $oppItemSetId) {
                 $this->getClient()->delete($oppItemSetId);
             }
-
-        }
+        } while(false);
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: End----------');
     }
@@ -154,14 +157,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
-        foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
-            foreach ($_opp as $_key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-        }
-
         $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
         try {
             Mage::dispatchEvent("tnw_salesforce_opportunity_send_before", array(
@@ -218,16 +213,23 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
 
-        if (!empty($_undeleteIds)) {
+        do {
+            if (empty($_undeleteIds)) {
+                break;
+            }
+
             $_deleted = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_undeleteIds);
+            if (empty($_deleted)) {
+                break;
+            }
+
             $_toUndelete = array();
             foreach ($_deleted as $_object) {
                 $_toUndelete[] = $_object->Id;
             }
-            if (!empty($_toUndelete)) {
-                $this->getClient()->undelete($_toUndelete);
-            }
-        }
+
+            $this->getClient()->undelete($_toUndelete);
+        } while(false);
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: End----------');
     }

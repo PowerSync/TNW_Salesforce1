@@ -752,9 +752,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $_orderNumber = $this->_cache['entitiesUpdating'][$_key];
 
         if (
-            is_array($this->_cache[$lookupKey])
-            && array_key_exists($_orderNumber, $this->_cache[$lookupKey])
-            && property_exists($this->_cache[$lookupKey][$_orderNumber], 'Pricebook2Id')
+            isset($this->_cache[$lookupKey][$_orderNumber]->Pricebook2Id)
             && $this->_obj->Pricebook2Id != $this->_cache[$lookupKey][$_orderNumber]->Pricebook2Id
         ){
             Mage::getSingleton('tnw_salesforce/tool_log')
