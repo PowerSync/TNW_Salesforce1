@@ -266,9 +266,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                 break;
 
             case 'Product':
-                $_entityItem = !$this->isFeeEntityItem($_entityItem)
-                    ? $_entityItem->getOrderItem()
-                    : $_entityItem;
                 $_object = $this->getProductByEntityItem($_entityItem);
                 break;
 
@@ -291,6 +288,71 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
         return $_object;
     }
 
+
+    /**
+     * @param $entityItem Mage_Sales_Model_Order_Invoice_Item
+     * @return Mage_Catalog_Model_Product
+     */
+    protected function getProductByEntityItem($entityItem)
+    {
+        $productSku = $this->searchSkuByEntityItem($entityItem);
+        if (empty($this->_cache['products'][$productSku])) {
+            /** @var Mage_Core_Model_Store $store */
+            $store      = $this->_getObjectByEntityItemType($entityItem, 'Custom');
+            /** @var Mage_Catalog_Model_Product $_product */
+            $_product   = Mage::getModel('catalog/product')
+                ->setStoreId($store->getId())
+                ->load(Mage::getResourceModel('catalog/product')->getIdBySku($productSku));
+
+            if (is_null($_product->getId())) {
+                // Generate Fake product
+                $_product->addData(array(
+                    'sku'       => $productSku,
+                    'name'      => $entityItem->getName(),
+                    'price'     => $this->isFeeEntityItem($entityItem)
+                        ? $entityItem->getBaseOriginalPrice()
+                        : $entityItem->getOrderItem()->getBaseOriginalPrice(),
+
+                    'type_id'   => $this->isFeeEntityItem($entityItem)
+                        ? $entityItem->getProductType()
+                        : $entityItem->getOrderItem()->getProductType(),
+
+                    'enabled'   => 1,
+                    'store_ids' => $store->getWebsite()->getStoreIds(),
+                    TNW_Salesforce_Helper_Salesforce_Product::ENTITY_FEE_CHECK => $this->isFeeEntityItem($entityItem)
+                ));
+            }
+
+            $this->_cache['products'][$productSku] = $_product;
+        }
+
+        return $this->_cache['products'][$productSku];
+    }
+
+    /**
+     * @param $entityItem
+     * @return null|string
+     */
+    protected function searchSkuByEntityItemInLookup($entityItem)
+    {
+        // Search SKU by Lookup
+        $entity       = $this->getEntityByItem($entityItem);
+        $entityNumber = $this->_getEntityNumber($entity);
+        $lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $records      = isset($this->_cache[$lookupKey][$entityNumber]->Items)
+            ? $this->_cache[$lookupKey][$entityNumber]->Items->records : array();
+
+        foreach ($records as $_cartItem) {
+            if ($_cartItem->Id != $entityItem->getData('salesforce_id')) {
+                continue;
+            }
+
+            return $_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Product_Code__c'};
+        }
+
+        return null;
+    }
+
     /**
      * @param $_entityItem Mage_Sales_Model_Order_Invoice_Item
      */
@@ -298,8 +360,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
     {
         $_entity       = $this->getEntityByItem($_entityItem);
         $_entityNumber = $this->_getEntityNumber($_entity);
-        /** @var Mage_Catalog_Model_Product $product */
-        $product       = $this->_getObjectByEntityItemType($_entityItem, 'Product');
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Invoice__c'}
             = $this->_getParentEntityId($_entityNumber);
@@ -314,19 +374,11 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
         }
 
-        /* Dump BillingItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Invoice Item Object: " . $key . " = '" . $_item . "'");
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
+        $key = empty($_entityItem->getId())
+            ? sprintf('%s_%s', $_entityNumber, count($this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]))
+            : $_entityItem->getId();
 
-        $key = $_entityItem->getId();
-        // if it's fake product for order fee, has the same id's for all products
-        if (!$product->getId()) {
-            $key .= '_' . $_entityNumber;
-        }
-
-        $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $key] = $this->_obj;
+        $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]['cart_' . $key] = $this->_obj;
     }
 
     /**

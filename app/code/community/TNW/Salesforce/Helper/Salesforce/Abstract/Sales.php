@@ -664,6 +664,20 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
             }
         }
 
+        $sku = $this->searchSkuByEntityItemInLookup($entityItem);
+        if (!empty($sku)) {
+            return $sku;
+        }
+
+        return $this->getFieldFromEntityItem($entityItem, 'sku');
+    }
+
+    /**
+     * @param $entityItem
+     * @return null|string
+     */
+    protected function searchSkuByEntityItemInLookup($entityItem)
+    {
         // Search SKU by Lookup
         $entity       = $this->getEntityByItem($entityItem);
         $entityNumber = $this->_getEntityNumber($entity);
@@ -679,7 +693,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
             return $_cartItem->PricebookEntry->ProductCode;
         }
 
-        return $this->getFieldFromEntityItem($entityItem, 'sku');
+        return null;
     }
 
     /**
@@ -701,6 +715,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
             'leadsLookup' => array(),
             'contactsLookup' => array(),
             'accountsLookup' => array(),
+            'products' => array(),
             self::CACHE_KEY_ENTITIES_UPDATING => array(),
             sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
             sprintf('failed%s', $this->getManyParentEntityType()) => array(),
