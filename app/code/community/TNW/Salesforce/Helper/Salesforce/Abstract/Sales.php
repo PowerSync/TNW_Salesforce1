@@ -349,7 +349,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
                 $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
                 if (!$product instanceof Mage_Catalog_Model_Product) {
                     Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveTrace('Entity Item skipping: product not exists anymore');
+                        ->saveTrace(sprintf('%s Item (Name: "%s") skipping: product not exists anymore',
+                            ucfirst($this->_magentoEntityName), $_entityItem->getName()));
 
                     continue 2;
                 }
