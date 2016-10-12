@@ -238,7 +238,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
      */
     protected function storesAvailable($entity)
     {
-        return $entity->getStoreIds();
+        return array_merge(array(Mage::app()->getStore('admin')->getId()), $entity->getStoreIds());
     }
 
     /**
@@ -301,14 +301,14 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         foreach ($this->_cache['toSaveInMagento'] as $_magentoSku => $_product) {
             $entity  = $this->getEntityCache($_magentoSku);
-            $storeId = $entity->getStoreId();
+            $originalStoreId = $entity->getStoreId();
 
             $resetAttribute = array(
                 'salesforce_id' => isset($_product->salesforceId)
                     ? $_product->salesforceId : null,
 
-                'salesforce_pricebook_id' => !empty($_product->pricebookEntryIds[$storeId])
-                    ? $_product->pricebookEntryIds[$storeId] : null,
+                'salesforce_pricebook_id' => !empty($_product->pricebookEntryIds[$originalStoreId])
+                    ? $_product->pricebookEntryIds[$originalStoreId] : null,
 
                 'sf_insync' => isset($_product->SfInSync)
                     ? $_product->SfInSync : 0
@@ -348,13 +348,13 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 }
 
                 $message .= sprintf("\nfor Store \"%s\": %s",
-                    Mage::app()->getStore($storeId)->getCode(),
+                    Mage::app()->getStore($_storeId)->getCode(),
                     print_r(array_intersect_key($entity->getData(), $resetAttribute), true)
                 );
             }
 
             // Overload attribute
-            $entity->setData('store_id', $storeId);
+            $entity->setData('store_id', $originalStoreId);
             $entity->addData($resetAttribute);
 
             Mage::getSingleton('tnw_salesforce/tool_log')
@@ -419,7 +419,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 }
             }
         } else {
-            $this->addPriceBookEntryToSync(0, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
+            $this->addPriceBookEntryToSync(Mage::app()->getStore('admin'), $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
 
             // Sync remaining Stores
             foreach ($entity->getStoreIds() as $_storeId) {
