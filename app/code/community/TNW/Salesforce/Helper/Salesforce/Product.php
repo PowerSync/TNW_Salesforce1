@@ -209,17 +209,22 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $resetAttribute = array(
                 'salesforce_id'           => null,
                 'salesforce_pricebook_id' => null,
-                'sf_insync'               => 0
+                'sf_insync'               => null
             );
 
-            $product = $this->getEntityCache($this->_cache['productIdToSku'][$id])
+            $entity = $this->getEntityCache($this->_cache['productIdToSku'][$id])
                 ->addData($resetAttribute);
 
-            foreach (array_keys($resetAttribute) as $code) {
-                foreach ($this->storesAvailable() as $storeId) {
-                    $product->getResource()->saveAttribute($product->setData('store_id', $storeId), $code);
+            $originalStoreId = $entity->getStoreId();
+            foreach ($this->storesAvailable($entity) as $storeId) {
+                $entity->setData('store_id', $storeId);
+
+                foreach (array_keys($resetAttribute) as $code) {
+                    $entity->getResource()->saveAttribute($entity, $code);
                 }
             }
+
+            $entity->setData('store_id', $originalStoreId);
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')
@@ -228,13 +233,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     }
 
     /**
+     * @param $entity Mage_Catalog_Model_Product
      * @return array
      */
-    protected function storesAvailable()
+    protected function storesAvailable($entity)
     {
-        return $this->isMultiSync()
-            ? array_keys(Mage::app()->getStores(true))
-            : array($this->getHelper()->getStoreId());
+        return $entity->getStoreIds();
     }
 
     /**
@@ -319,6 +323,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 $forceProduct->addData($resetAttribute);
             }
 
+            // Set attribute
             $entity->addData($resetAttribute);
 
             /**
@@ -331,13 +336,15 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
             // Save Attribute
             $message = '';
-            foreach ($this->storesAvailable() as $storeId) {
-                if (!empty($_product->pricebookEntryIds[$storeId])) {
-                    $entity->setData('salesforce_pricebook_id', $_product->pricebookEntryIds[$storeId]);
+            foreach ($this->storesAvailable($entity) as $_storeId) {
+                $entity->setData('store_id', $_storeId);
+
+                if (!empty($_product->pricebookEntryIds[$_storeId])) {
+                    $entity->setData('salesforce_pricebook_id', $_product->pricebookEntryIds[$_storeId]);
                 }
 
                 foreach (array_keys($resetAttribute) as $code) {
-                    $entity->getResource()->saveAttribute($entity->setData('store_id', $storeId), $code);
+                    $entity->getResource()->saveAttribute($entity, $code);
                 }
 
                 $message .= sprintf("\nfor Store \"%s\": %s",
@@ -346,7 +353,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 );
             }
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Save attribute (product: $_magentoSku)\n$message");
+            // Overload attribute
+            $entity->setData('store_id', $storeId);
+            $entity->addData($resetAttribute);
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("Save attribute (product: $_magentoSku)$message");
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($this->_cache['toSaveInMagento']) . " products!");
@@ -606,7 +618,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         foreach ($this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())] as $sku => $salesforceId) {
             $entity = $this->getEntityCache($sku);
-            foreach ($this->storesAvailable() as $storeId) {
+            foreach ($this->storesAvailable($entity) as $storeId) {
                 $productId = $this->_getEntityId($entity);
                 $price = is_numeric($productId)
                     ? $entity->getResource()->getAttributeRawValue($productId, 'price', $storeId)
