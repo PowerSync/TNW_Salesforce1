@@ -325,6 +325,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
      */
     protected function _prepareEntityItems()
     {
+
+
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace(sprintf('----------Prepare %s items: Start----------', $this->_magentoEntityName));
 
@@ -346,7 +348,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
             foreach ($this->getItems($_entity) as $_entityItem) {
                 $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
                 if (!$product instanceof Mage_Catalog_Model_Product) {
-                    continue;
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Entity Item skipping: product not exists anymore');
+
+                    continue 2;
                 }
 
                 // only sync product if processing real time
@@ -618,15 +623,19 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
     protected function getProductByEntityItem($entityItem)
     {
         $productSku = $this->searchSkuByEntityItem($entityItem);
-        if (empty($this->_cache['products'][$productSku])) {
+        if (!isset($this->_cache['products'][$productSku])) {
             /** @var Mage_Core_Model_Store $store */
             $store      = $this->_getObjectByEntityItemType($entityItem, 'Custom');
             /** @var Mage_Catalog_Model_Product $_product */
             $_product   = Mage::getModel('catalog/product')
-                ->setStoreId($store->getId())
-                ->load(Mage::getResourceModel('catalog/product')->getIdBySku($productSku));
+                ->setStoreId($store->getId());
 
-            if (is_null($_product->getId())) {
+            if (!$this->isFeeEntityItem($entityItem)) {
+                $_product->load(Mage::getResourceModel('catalog/product')->getIdBySku($productSku));
+            }
+
+            $isCreateProduct = Mage::helper('tnw_salesforce/config_product')->isCreateDeleteProduct();
+            if ($this->isFeeEntityItem($entityItem) || ($isCreateProduct && is_null($_product->getId()))) {
                 // Generate Fake product
                 $_product->addData(array(
                     'sku'       => $productSku,
@@ -639,7 +648,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
                 ));
             }
 
-            $this->_cache['products'][$productSku] = $_product;
+            $this->_cache['products'][$productSku] = $_product->getSku() ? $_product : null;
         }
 
         return $this->_cache['products'][$productSku];
