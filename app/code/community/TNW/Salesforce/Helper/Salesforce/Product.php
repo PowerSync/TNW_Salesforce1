@@ -132,7 +132,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
      */
     protected function _getEntityNumber($_entity)
     {
-        return strtolower($_entity->getSku());
+        return strtolower(trim($_entity->getSku()));
     }
 
     /**
