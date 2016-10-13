@@ -144,6 +144,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 ->getCollection()
                 ->addIdFilter($ids)
                 ->addAttributeToSelect('salesforce_disable_sync');
+
+            Mage::unregister('product_sync_collection');
             Mage::register('product_sync_collection', $productsCollection);
 
             $this->_skippedEntity = $skuArray = $addedIds = array();
@@ -194,6 +196,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             }
 
             if (empty($skuArray)) {
+                Mage::unregister('product_sync_collection');
                 return false;
             }
 
@@ -211,12 +214,14 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             } else {
                 $this->_syncStoreProducts($this->getHelper()->getStoreId());
             }
-            Mage::unregister('product_sync_collection');
 
+            Mage::unregister('product_sync_collection');
             return true;
         }
         catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
+
+            Mage::unregister('product_sync_collection');
             return false;
         }
     }
