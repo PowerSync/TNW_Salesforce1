@@ -69,7 +69,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
             'object_type'   => !empty($object->attributes->type) ? $object->attributes->type : '',
         );
 
-        if ($this->getData('is_processing')) {
+        if (in_array($this->getData('status'), array(self::STATUS_PROCESSING, self::STATUS_SUCCESS, self::STATUS_ERROR))) {
             $this->setData($data);
         }
         else {

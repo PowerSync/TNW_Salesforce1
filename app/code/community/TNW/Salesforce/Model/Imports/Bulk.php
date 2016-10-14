@@ -49,7 +49,7 @@ class TNW_Salesforce_Model_Imports_Bulk
             $collection->filterObjectType($objectType);
         }
 
-        $collection->setPageSize(self::PAGE_SIZE);
+        $collection->setPageSize(Mage::helper('tnw_salesforce/config_bulk')->getPageSizeFromSalesforce());
         $lastPageNumber = $collection->getLastPageNumber();
 
         for($i = 1; $i <= $lastPageNumber; $i++) {
