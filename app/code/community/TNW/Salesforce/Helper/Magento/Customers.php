@@ -109,10 +109,13 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 // Update history orders and assigne to customer we just created
                 $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
 
-                $this->_salesforceAssociation[$_type][] = array(
-                    'salesforce_id' => $_entity->getData('salesforce_id'),
-                    'magento_id'    => $_entity->getId()
-                );
+                $magentoId   = $this->_getEntityNumber($_entity);
+                if ($this->_getSfMagentoId($this->_salesforceObject) != $magentoId) {
+                    $this->_salesforceAssociation[$_type][] = array(
+                        'salesforce_id' => $_entity->getData('salesforce_id'),
+                        'magento_id'    => $magentoId
+                    );
+                }
 
                 $this->_response->success = true;
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
