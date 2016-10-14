@@ -83,7 +83,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 throw new Exception($message);
             }
 
-            if (false && $this->isItemChange($order, $object) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
+            if ($this->isItemChange($order, $object) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
                 if (!$order->canEdit()) {
                     $massage = Mage::helper('tnw_salesforce')->__('Order editing is prohibited');
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError($massage);
