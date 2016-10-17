@@ -149,65 +149,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             'sf_insync'     => self::SYNC_SUCCESS
         ));
 
-        //Set fee total
-        $feeIds = array(
-            'tax'      => Mage::helper('tnw_salesforce')->getTaxProduct(),
-            'shipping' => Mage::helper('tnw_salesforce')->getShippingProduct(),
-            'discount' => Mage::helper('tnw_salesforce')->getDiscountProduct(),
-        );
-
-        $feeIds = array_map(function ($feeData) {
-            if (empty($feeData)) {
-                return null;
-            }
-
-            $feeData = @unserialize($feeData);
-            if (empty($feeData)) {
-                return null;
-            }
-
-            return $feeData['Id'];
-        }, $feeIds);
-
-        foreach ($object->OrderItems->records as $record) {
-            $feeType = array_search($record->PricebookEntry->Product2Id, $feeIds);
-            if ($feeType === false){
-                continue;
-            }
-
-            if (empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode)) {
-                $_feeTotal     = $order->getBaseCurrency()->convert($record->UnitPrice, $order->getOrderCurrency());
-                $_baseFeeTotal = $record->UnitPrice;
-            }
-            else {
-                $_feeTotal     = $record->UnitPrice;
-                $_baseFeeTotal = $order->getOrderCurrency()->convert($record->UnitPrice, $order->getBaseCurrency());
-            }
-
-            switch ($feeType) {
-                case 'tax':
-                    $order->addData(array(
-                        'tax_amount'           => $_feeTotal,
-                        'base_tax_amount'      => $_baseFeeTotal
-                    ));
-                    break;
-
-                case 'shipping':
-                    $order->addData(array(
-                        'shipping_amount'      => $_feeTotal,
-                        'base_shipping_amount' => $_baseFeeTotal
-                    ));
-                    break;
-
-                case 'discount':
-                    $order->addData(array(
-                        'discount_amount'      => $_feeTotal,
-                        'base_discount_amount' => $_baseFeeTotal
-                    ));
-                    break;
-            }
-        }
-
         $this
             ->_updateMappedEntityFields($object, $order, $mappings)
             ->_updateMappedEntityItemFields($object, $order, (bool) $_mMagentoId)
@@ -262,7 +203,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 break;
             }
 
-            if (floatval($item->getPrice()) != floatval($record->UnitPrice)) {
+            if (round(floatval($item->getPrice()), 2) != floatval($record->UnitPrice)) {
                 $isChange = true;
                 break;
             }
@@ -317,6 +258,12 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         $orderCreate->getSession()
             ->setCustomerId((int) $customer->getId())
             ->setStoreId((int) $storeId);
+
+        // Set Currency
+        if (!empty($object->CurrencyIsoCode)) {
+            $orderCreate->getSession()
+                ->setCurrencyId($object->CurrencyIsoCode);
+        }
 
         $orderCreate->setRecollect(true);
 
@@ -785,6 +732,63 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ));
 
             $this->addEntityToSave($entityName, $entity);
+        }
+
+        //Set fee total
+        $feeIds = array_map(function ($feeData) {
+            if (empty($feeData)) {
+                return null;
+            }
+
+            $feeData = @unserialize($feeData);
+            if (empty($feeData)) {
+                return null;
+            }
+
+            return $feeData['Id'];
+        }, array(
+            'tax'      => Mage::helper('tnw_salesforce')->getTaxProduct(),
+            'shipping' => Mage::helper('tnw_salesforce')->getShippingProduct(),
+            'discount' => Mage::helper('tnw_salesforce')->getDiscountProduct(),
+        ));
+
+        foreach ($object->OrderItems->records as $record) {
+            $feeType = array_search($record->PricebookEntry->Product2Id, $feeIds);
+            if ($feeType === false) {
+                continue;
+            }
+
+            if (empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode)) {
+                $_feeTotal     = $order->getBaseCurrency()->convert($record->UnitPrice, $order->getOrderCurrency());
+                $_baseFeeTotal = $record->UnitPrice;
+            }
+            else {
+                $_feeTotal     = $record->UnitPrice;
+                $_baseFeeTotal = $order->getOrderCurrency()->convert($record->UnitPrice, $order->getBaseCurrency());
+            }
+
+            switch ($feeType) {
+                case 'tax':
+                    $order->addData(array(
+                        'tax_amount'           => $_feeTotal,
+                        'base_tax_amount'      => $_baseFeeTotal
+                    ));
+                    break;
+
+                case 'shipping':
+                    $order->addData(array(
+                        'shipping_amount'      => $_feeTotal,
+                        'base_shipping_amount' => $_baseFeeTotal
+                    ));
+                    break;
+
+                case 'discount':
+                    $order->addData(array(
+                        'discount_amount'      => $_feeTotal,
+                        'base_discount_amount' => $_baseFeeTotal
+                    ));
+                    break;
+            }
         }
 
         //add comment about all updated fields
