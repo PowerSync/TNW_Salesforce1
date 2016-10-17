@@ -73,12 +73,15 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     //const ORDER_USE_PRODUCTS = 'salesforce_order/opportunity_cart/use_products';
     const ORDER_USE_TAX_PRODUCT = 'salesforce_order/opportunity_cart/use_tax_product';
     const ORDER_TAX_PRODUCT = 'salesforce_order/opportunity_cart/tax_product_pricebook';
+    const ORDER_UPDATE_TAX_TOTAL = 'salesforce_order/opportunity_cart/update_tax_total';
 
     const ORDER_USE_SHIPPING_PRODUCT = 'salesforce_order/opportunity_cart/use_shipping_product';
     const ORDER_SHIPPING_PRODUCT = 'salesforce_order/opportunity_cart/shipping_product_pricebook';
+    const ORDER_UPDATE_SHIPPING_TOTAL = 'salesforce_order/opportunity_cart/update_shipping_total';
 
     const ORDER_USE_DISCOUNT_PRODUCT = 'salesforce_order/opportunity_cart/use_discount_product';
     const ORDER_DISCOUNT_PRODUCT = 'salesforce_order/opportunity_cart/discount_product_pricebook';
+    const ORDER_UPDATE_DISCOUNT_TOTAL = 'salesforce_order/opportunity_cart/update_discount_total';
 
     /* Customer Config */
     const CUSTOMER_CREATE_AS_LEAD = 'salesforce_customer/lead_config/customer_integration';
@@ -612,6 +615,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::ORDER_TAX_PRODUCT);
     }
 
+    /**
+     * @return bool
+     */
+    public function isUpdateTaxTotal()
+    {
+        return (bool)(int)$this->getStoreConfig(self::ORDER_UPDATE_TAX_TOTAL);
+    }
+
     // get a list of allowed order states for the sync
 
     public function getShippingProduct()
@@ -619,11 +630,27 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::ORDER_SHIPPING_PRODUCT);
     }
 
+    /**
+     * @return bool
+     */
+    public function isUpdateShippingTotal()
+    {
+        return (bool)(int)$this->getStoreConfig(self::ORDER_UPDATE_SHIPPING_TOTAL);
+    }
+
     // Tax Fee Product
 
     public function getDiscountProduct()
     {
         return $this->getStoreConfig(self::ORDER_DISCOUNT_PRODUCT);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUpdateDiscountTotal()
+    {
+        return (bool)(int)$this->getStoreConfig(self::ORDER_UPDATE_DISCOUNT_TOTAL);
     }
 
     // Shipping Fee Product

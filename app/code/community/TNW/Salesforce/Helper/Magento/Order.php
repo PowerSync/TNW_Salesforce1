@@ -5,11 +5,30 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     const SYNC_SUCCESS = 1;
 
     /**
+     * @var null
+     */
+    protected $_salesforceObject = null;
+
+    /**
+     * @see TNW_Salesforce_Model_Sale_Observer::quoteAddressCollectTotalsAfter
+     * @return null|stdClass
+     */
+    public function getSalesforceObject()
+    {
+        return $this->_salesforceObject;
+    }
+
+    /**
      * @param stdClass $object
      * @return mixed
      */
     public function syncFromSalesforce($object = null)
     {
+        /**
+         * @see TNW_Salesforce_Model_Sale_Observer::quoteAddressCollectTotalsAfter
+         */
+        $this->_salesforceObject = $object;
+
         $this->_prepare();
 
         $_mMagentoId = null;
@@ -83,7 +102,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 throw new Exception($message);
             }
 
-            if ($this->isItemChange($order, $object) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
+            if (($this->isItemChange($order, $object) || $this->isTotalChange($order, $object)) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
                 if (!$order->canEdit()) {
                     $massage = Mage::helper('tnw_salesforce')->__('Order editing is prohibited');
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError($massage);
@@ -104,7 +123,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
                 // Create new order
                 $newOrder = $this->reorder($order, $object);
-                $order = Mage::getSingleton('adminhtml/sales_order_create')->getSession()
+                $order = Mage::getSingleton('tnw_salesforce/sale_order_create')->getSession()
                     ->getOrder();
 
                 $this
@@ -203,7 +222,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 break;
             }
 
-            if (round(floatval($item->getPrice()), 2) != floatval($record->UnitPrice)) {
+            if (!$this->priceCompare($item->getPrice(), $record->UnitPrice)) {
                 $isChange = true;
                 break;
             }
@@ -217,6 +236,99 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
+     * @param $magentoPrice
+     * @param $salesforcePrice
+     * @return bool
+     */
+    protected function priceCompare($magentoPrice, $salesforcePrice)
+    {
+        return round(floatval($magentoPrice), 2) == floatval($salesforcePrice);
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @param stdClass $object
+     * @return bool
+     */
+    protected function isTotalChange($order, $object)
+    {
+        $feeIds   = $this->getFeeIds();
+        foreach ($object->OrderItems->records as $record) {
+            $feeType = array_search($record->PricebookEntry->Product2Id, $feeIds);
+            if ($feeType === false) {
+                continue;
+            }
+
+            $isBase = empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode);
+            switch ($feeType) {
+                case 'tax':
+                    if (!Mage::helper('tnw_salesforce')->isUpdateTaxTotal()) {
+                        $magentoPrice = $record->UnitPrice;
+                        break;
+                    }
+
+                    $magentoPrice = $isBase ? $order->getBaseTaxAmount() : $order->getTaxAmount();
+                    break;
+
+                case 'shipping':
+                    if (!Mage::helper('tnw_salesforce')->isUpdateShippingTotal()) {
+                        $magentoPrice = $record->UnitPrice;
+                        break;
+                    }
+
+                    $magentoPrice = $isBase ? $order->getBaseShippingAmount() : $order->getShippingAmount();
+                    break;
+
+                case 'discount':
+                    if (!Mage::helper('tnw_salesforce')->isUpdateDiscountTotal()) {
+                        $magentoPrice = $record->UnitPrice;
+                        break;
+                    }
+
+                    $magentoPrice = $isBase ? $order->getBaseDiscountAmount() : $order->getDiscountAmount();
+                    break;
+
+                default:
+                    continue 2;
+            }
+
+            if (!$this->priceCompare($magentoPrice, $record->UnitPrice)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array
+     */
+    public function getFeeIds()
+    {
+        static $feeIds = null;
+        if (is_null($feeIds)) {
+            $feeIds = array_map(function ($feeData) {
+                if (empty($feeData)) {
+                    return null;
+                }
+
+                $feeData = @unserialize($feeData);
+                if (empty($feeData)) {
+                    return null;
+                }
+
+                return $feeData['Id'];
+            }, array(
+                'tax'      => Mage::helper('tnw_salesforce')->getTaxProduct(),
+                'shipping' => Mage::helper('tnw_salesforce')->getShippingProduct(),
+                'discount' => Mage::helper('tnw_salesforce')->getDiscountProduct(),
+            ));
+        }
+
+        return $feeIds;
+    }
+
+    /**
      * @param $object
      * @param $mappings
      * @return Mage_Sales_Model_Order
@@ -224,8 +336,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      */
     protected function create($object, $mappings)
     {
-        /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
-        $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
+        /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
+        $orderCreate   = Mage::getSingleton('tnw_salesforce/sale_order_create')
             ->setIsValidate(false);
 
         // Get Customer
@@ -407,8 +519,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      */
     protected function reorder($order, $object)
     {
-        /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
-        $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
+        /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
+        $orderCreate   = Mage::getSingleton('tnw_salesforce/sale_order_create')
             ->setIsValidate(false);
 
         //FIX: Bundle zero price
@@ -519,6 +631,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         //Unset address cached
         foreach ($orderCreate->getQuote()->getAllAddresses() as $item) {
             $item
+                ->setData('should_ignore_validation', true)
                 ->unsetData('cached_items_all')
                 ->unsetData('cached_items_nominal')
                 ->unsetData('cached_items_nonnominal');
@@ -732,63 +845,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ));
 
             $this->addEntityToSave($entityName, $entity);
-        }
-
-        //Set fee total
-        $feeIds = array_map(function ($feeData) {
-            if (empty($feeData)) {
-                return null;
-            }
-
-            $feeData = @unserialize($feeData);
-            if (empty($feeData)) {
-                return null;
-            }
-
-            return $feeData['Id'];
-        }, array(
-            'tax'      => Mage::helper('tnw_salesforce')->getTaxProduct(),
-            'shipping' => Mage::helper('tnw_salesforce')->getShippingProduct(),
-            'discount' => Mage::helper('tnw_salesforce')->getDiscountProduct(),
-        ));
-
-        foreach ($object->OrderItems->records as $record) {
-            $feeType = array_search($record->PricebookEntry->Product2Id, $feeIds);
-            if ($feeType === false) {
-                continue;
-            }
-
-            if (empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode)) {
-                $_feeTotal     = $order->getBaseCurrency()->convert($record->UnitPrice, $order->getOrderCurrency());
-                $_baseFeeTotal = $record->UnitPrice;
-            }
-            else {
-                $_feeTotal     = $record->UnitPrice;
-                $_baseFeeTotal = $order->getOrderCurrency()->convert($record->UnitPrice, $order->getBaseCurrency());
-            }
-
-            switch ($feeType) {
-                case 'tax':
-                    $order->addData(array(
-                        'tax_amount'           => $_feeTotal,
-                        'base_tax_amount'      => $_baseFeeTotal
-                    ));
-                    break;
-
-                case 'shipping':
-                    $order->addData(array(
-                        'shipping_amount'      => $_feeTotal,
-                        'base_shipping_amount' => $_baseFeeTotal
-                    ));
-                    break;
-
-                case 'discount':
-                    $order->addData(array(
-                        'discount_amount'      => $_feeTotal,
-                        'base_discount_amount' => $_baseFeeTotal
-                    ));
-                    break;
-            }
         }
 
         //add comment about all updated fields
