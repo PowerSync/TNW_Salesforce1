@@ -5,19 +5,31 @@
 $installer = $this;
 $installer->startSetup();
 
+/** @comment В одном элементе может содержаться неограниченное число подэлементов */
+$pageSize = 5;
+
 $connection = $this->getConnection();
 
 $tableImport = $installer->getTable('tnw_salesforce/import');
+$connection->delete($tableImport, 'is_processing IS NOT NULL');
 $connection->addColumn($installer->getTable('tnw_salesforce/queue_storage'), 'sync_type', 'varchar(50) DEFAULT \'outgoing\'');
 $connection->addColumn($tableImport, 'object_id', 'varchar(50)');
 $connection->addColumn($tableImport, 'object_type', 'varchar(50)');
 $connection->addColumn($tableImport, 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
 
-$select = $connection->select()
-    ->from($tableImport);
+$select         = $connection->select()->from($tableImport);
+$selectSize     = $connection->select()->from($tableImport, array(new Zend_Db_Expr('count(*)')));
+$sizeAll        = (int)$connection->fetchOne($selectSize);
+$lastPageNumber = ceil($sizeAll/$pageSize);
 
-$items = $connection->fetchAll($select);
-if (is_array($items)) {
+for($i = 1;$i<=$lastPageNumber;$i++) {
+    $select->limitPage($i, $pageSize);
+
+    $items = $connection->fetchAll($select);
+    if (!is_array($items)) {
+        continue;
+    }
+
     foreach ($items as $item) {
         $json = @unserialize($item['json']);
         if (empty($json)) {
