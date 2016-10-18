@@ -715,16 +715,16 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
 
     /**
-     * @param null $field
+     * @param string $alias
      * @return array|bool|mixed
      */
-    public function describeTable($table = NULL)
+    public function describeTable($alias)
     {
         try {
             $_useCache = Mage::app()->useCache('tnw_salesforce');
             $cache = Mage::app()->getCache();
 
-            switch ($table) {
+            switch ($alias) {
                 case 'Abandoned':
                     $table = 'Opportunity';
                     break;
@@ -753,8 +753,22 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 case 'OrderCreditMemoItem':
                     $table = 'OrderItem';
                     break;
+                case 'CampaignSalesRule':
+                    $table = 'Campaign';
+                    break;
+
+                default:
+                    $table = $alias;
+                    break;
             }
 
+            $transport = new Varien_Object(array(
+                'object_name'   => $table,
+                'magento_alias' => $alias
+            ));
+            Mage::dispatchEvent('tnw_salesforce_describe_table', array('transport' => $transport, 'helper' => $this));
+
+            $table = $transport->getData('object_name');
             if (empty($this->_tableDescription[$table])) {
                 if ($cache->load("tnw_salesforce_descsribe_" . strtolower($table) . "_fields")) {
                     $columns = unserialize($cache->load("tnw_salesforce_describe_" . strtolower($table) . "_fields"));
@@ -775,8 +789,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return $this->_tableDescription[$table];
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $table . " Object");
-            unset($e);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $alias . " Object");
+
             return false;
         }
     }
