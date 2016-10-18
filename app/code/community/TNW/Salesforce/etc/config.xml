@@ -775,8 +775,11 @@
             </abandoned_carts>
             <opportunity_cart>
                 <use_tax_product>0</use_tax_product>
+                <update_tax_total>0</update_tax_total>
                 <use_shipping_product>0</use_shipping_product>
+                <update_shipping_total>0</update_shipping_total>
                 <use_discount_product>0</use_discount_product>
+                <update_discount_total>0</update_discount_total>
             </opportunity_cart>
             <shopping_cart>
                 <use_product_campaign_assignment>0</use_product_campaign_assignment>
