@@ -180,37 +180,23 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     static public function getCompanyByCustomer($_entity)
     {
-        $companyName = null;
-        for ($i = 1; empty($companyName); $i++) {
-            switch ($i) {
-                case 1:
-                    $companyName = trim($_entity->getCompany());
-                    break;
+        $companyName = $_entity->getCompany();
 
-                case 2:
-                    $address = $_entity->getDefaultBillingAddress();
-                    if (!$address instanceof Mage_Customer_Model_Address) {
-                        break;
-                    }
-
-                    $companyName = trim($address->getCompany());
-                    break;
-
-                case 3:
-                    $address = $_entity->getBillingAddress();
-                    if (!$address instanceof Mage_Customer_Model_Address) {
-                        break;
-                    }
-
-                    $companyName = trim($address->getCompany());
-                    break;
-
-                default:
-                    break 2;
+        if (empty($companyName)) {
+            $address = $_entity->getDefaultBillingAddress();
+            if (!$address instanceof Mage_Customer_Model_Address_Abstract) {
+                $companyName = $address->getCompany();
             }
         }
 
-        return $companyName;
+        if (empty($companyName)) {
+            $address = $_entity->getBillingAddress();
+            if (!$address instanceof Mage_Customer_Model_Address_Abstract) {
+                $companyName = $address->getCompany();
+            }
+        }
+
+        return trim($companyName);
     }
 
     /**
