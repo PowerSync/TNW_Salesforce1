@@ -184,14 +184,14 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
         if (empty($companyName)) {
             $address = $_entity->getDefaultBillingAddress();
-            if (!$address instanceof Mage_Customer_Model_Address_Abstract) {
+            if ($address instanceof Mage_Customer_Model_Address_Abstract) {
                 $companyName = $address->getCompany();
             }
         }
 
         if (empty($companyName)) {
             $address = $_entity->getBillingAddress();
-            if (!$address instanceof Mage_Customer_Model_Address_Abstract) {
+            if ($address instanceof Mage_Customer_Model_Address_Abstract) {
                 $companyName = $address->getCompany();
             }
         }
