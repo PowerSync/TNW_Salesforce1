@@ -53,15 +53,22 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
             'index' => 'object_type'
         ));
 
-        $this->addColumn('is_processing', array(
-            'header' => Mage::helper('tnw_salesforce')->__('Is processing'),
+        $this->addColumn('status', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Status'),
             'type' => 'options',
             'options' => array(
-                '1' => Mage::helper('catalog')->__('Yes'),
-                '0' => Mage::helper('catalog')->__('No'),
+                TNW_Salesforce_Model_Import::STATUS_NEW         => $this->__('New'),
+                TNW_Salesforce_Model_Import::STATUS_PROCESSING  => $this->__('Processing'),
+                TNW_Salesforce_Model_Import::STATUS_SUCCESS     => $this->__('Success'),
+                TNW_Salesforce_Model_Import::STATUS_ERROR       => $this->__('Error'),
             ),
-            'index' => 'is_processing',
-            'align' => 'center',
+            'index' => 'status',
+        ));
+
+        $this->addColumn('message', array(
+            'header' => Mage::helper('tnw_salesforce')->__('Message'),
+            'type' => 'text',
+            'index' => 'message',
         ));
 
         $this->addColumn('json', array(
