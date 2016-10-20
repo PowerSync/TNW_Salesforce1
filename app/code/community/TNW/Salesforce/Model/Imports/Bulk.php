@@ -53,7 +53,7 @@ class TNW_Salesforce_Model_Imports_Bulk
         $lastPageNumber = $collection->getLastPageNumber();
 
         for($i = 1; $i <= $lastPageNumber; $i++) {
-            $collection->clear()->setPageSize($i);
+            $collection->clear()->setCurPage($i);
 
             $association = array();
             /** @var TNW_Salesforce_Model_Import $item */
