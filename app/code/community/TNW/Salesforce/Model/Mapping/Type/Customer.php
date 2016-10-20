@@ -219,7 +219,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     static public function generateCompanyByCustomer($_entity)
     {
-        return sprintf('%s %s', trim($_entity->getFirstname()), trim($_entity->getLastname()));
+        return trim(sprintf('%s %s', trim($_entity->getFirstname()), trim($_entity->getLastname())));
     }
 
     /**
