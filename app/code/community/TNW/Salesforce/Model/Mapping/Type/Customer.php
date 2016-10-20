@@ -159,18 +159,67 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSfCompany($_entity)
     {
-        $company = $_entity->getData('company');
+        return self::companyByCustomer($_entity);
+    }
 
-        if (empty($company)) {
-            $company = $_entity->getDefaultBillingAddress()
-                ? $_entity->getDefaultBillingAddress()->getData('company') : null;
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    static public function companyByCustomer($_entity)
+    {
+        $company = self::getCompanyByCustomer($_entity);
+        return empty($company)
+            ? self::generateCompanyByCustomer($_entity)
+            : $company;
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    static public function getCompanyByCustomer($_entity)
+    {
+        $companyName = null;
+        for ($i = 1; empty($companyName); $i++) {
+            switch ($i) {
+                case 1:
+                    $companyName = trim($_entity->getCompany());
+                    break;
+
+                case 2:
+                    $address = $_entity->getDefaultBillingAddress();
+                    if (!$address instanceof Mage_Customer_Model_Address) {
+                        break;
+                    }
+
+                    $companyName = trim($address->getCompany());
+                    break;
+
+                case 3:
+                    $address = $_entity->getBillingAddress();
+                    if (!$address instanceof Mage_Customer_Model_Address) {
+                        break;
+                    }
+
+                    $companyName = trim($address->getCompany());
+                    break;
+
+                default:
+                    break 2;
+            }
         }
 
-        if (empty($company)) {
-            $company = $_entity->getFirstname() . ' ' . $_entity->getLastname();
-        }
+        return $companyName;
+    }
 
-        return $company;
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    static public function generateCompanyByCustomer($_entity)
+    {
+        return sprintf('%s %s', trim($_entity->getFirstname()), trim($_entity->getLastname()));
     }
 
     /**

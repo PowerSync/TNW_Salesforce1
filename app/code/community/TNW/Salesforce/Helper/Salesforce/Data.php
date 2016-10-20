@@ -610,23 +610,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     public function getCompanyByCustomer($customer)
     {
-        $_companyName = $customer->getCompany();
-        if (empty($_companyName)) {
-            $_companyName = $customer->getDefaultBillingAddress()
-                ? trim($customer->getDefaultBillingAddress()->getCompany()) : null;
-        }
-
-        //for guest get data from another path
-        if (empty($_companyName)) {
-            $_companyName = $customer->getBillingAddress()
-                ? trim($customer->getBillingAddress()->getCompany()) : null;
-        }
-
-        if (empty($_companyName)) {
-            $_companyName = trim($customer->getFirstname() . ' ' . $customer->getLastname());
-        }
-
-        return $_companyName;
+        return TNW_Salesforce_Model_Mapping_Type_Customer::companyByCustomer($customer);
     }
 
     /**
