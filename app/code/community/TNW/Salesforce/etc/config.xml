@@ -707,6 +707,7 @@
                 <invoice_batch_size>500</invoice_batch_size>
                 <shipment_batch_size>500</shipment_batch_size>
                 <creditmemo_batch_size>500</creditmemo_batch_size>
+                <page_size_from_salesforce>100</page_size_from_salesforce>
 
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>

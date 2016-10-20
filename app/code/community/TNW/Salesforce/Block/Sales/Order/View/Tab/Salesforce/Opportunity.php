@@ -52,7 +52,7 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce_Opportunity
         ));
         $form->setUseContainer(true);
 
-        $fieldset = $form->addFieldset('fields', array('legend' => Mage::helper('kpe_salesforce')->__('Salesforce order info')));
+        $fieldset = $form->addFieldset('fields', array('legend' => Mage::helper('tnw_salesforce')->__('Salesforce order info')));
 
         /**
          * Initialize product object as form property
@@ -69,7 +69,7 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce_Opportunity
             array(
                 'text' => $this->getLayout()->createBlock('adminhtml/widget_button')
                         ->setData(array(
-                            'label' => Mage::helper('kpe_salesforce')->__('Save'),
+                            'label' => Mage::helper('tnw_salesforce')->__('Save'),
                             'onclick' => 'this.form.submit();',
                             'class' => 'save'
                         ))
