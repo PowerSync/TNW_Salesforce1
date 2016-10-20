@@ -568,7 +568,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>Enable / Disable automated customer synchronization</comment>
                         </customer_sync_enable>
-                        <new_customer translate="label">
+                        <new_customer translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Create New Customers</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -680,7 +680,7 @@
                             </depends>
                             <comment><![CDATA[ Account for synchronization ]]></comment>
                         </single_account_select>
-                        <merge_duplicates>
+                        <merge_duplicates translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Automated merge (BETA)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -767,7 +767,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>How Magento should handle ownership of a Contact, if a new Contact is created in Salesforce for an existing Account</comment>
                         </contact_asignee>
-                        <merge_duplicates>
+                        <merge_duplicates translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Automated merge (BETA)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -877,7 +877,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>Have Salesforce send an email notification when Lead is converted</comment>
                         </email_notification>
-                        <merge_duplicates>
+                        <merge_duplicates translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Automated merge (BETA)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -1096,7 +1096,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>Attach Salesforce products to the Order in Salesforce</comment>
                         </order_product_enable>
-                        <notes_synchronize>
+                        <notes_synchronize translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Synchronize Notes</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -1676,7 +1676,7 @@
                 </general>
             </groups>
         </salesforce_contactus>
-        <salesforce_promotion>
+        <salesforce_promotion translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Promotions</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1711,6 +1711,9 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Default campaign status</comment>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </default_status>
                         <default_type>
                             <label>Default Type</label>
@@ -1721,6 +1724,9 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Default campaign type</comment>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </default_type>
                         <default_owner>
                             <label>Default Owner</label>
@@ -1732,6 +1738,9 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Default Campaign Owner</comment>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </default_owner>
                         <create_campaign_automatic>
                             <label>Create new Campaign automatic</label>
@@ -1741,12 +1750,15 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </create_campaign_automatic>
                     </fields>
                 </salesforce_campaigns>
             </groups>
         </salesforce_promotion>
-        <salesforce_invoice>
+        <salesforce_invoice translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Invoices</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1787,7 +1799,7 @@
                 </invoice_configuration>
             </groups>
         </salesforce_invoice>
-        <salesforce_shipment>
+        <salesforce_shipment translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Shipments</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1828,7 +1840,7 @@
                 </shipment_configuration>
             </groups>
         </salesforce_shipment>
-        <salesforce_creditmemo>
+        <salesforce_creditmemo translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Credit Memo (BETA)</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>

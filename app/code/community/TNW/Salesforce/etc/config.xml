@@ -622,6 +622,15 @@
                     </tnw_salesforce_quote_submit_before>
                 </observers>
             </sales_model_service_quote_submit_before>
+
+            <adminhtml_init_system_config>
+                <observers>
+                    <tnw_salesforce_init_system_config>
+                        <class>tnw_salesforce/observer</class>
+                        <method>loadConfig</method>
+                    </tnw_salesforce_init_system_config>
+                </observers>
+            </adminhtml_init_system_config>
         </events>
     </adminhtml>
     <frontend>
@@ -751,7 +760,7 @@
                 <order_sync_enable>0</order_sync_enable>
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
-                <notes_synchronize>1</notes_synchronize>
+                <notes_synchronize>0</notes_synchronize>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
                 <draft_order_status>Draft</draft_order_status>
