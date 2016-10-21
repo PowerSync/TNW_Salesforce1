@@ -22,10 +22,10 @@ $table = $installer->getConnection()
     ->addIndex(
         $installer->getIdxName(
             'tnw_salesforce/entity_cache',
-            array('id', 'search', 'object_type'),
+            array('id', 'name', 'object_type'),
             Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE
         ),
-        array('id', 'search', 'object_type'),
+        array('id', 'name', 'object_type'),
         array('type' => Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE)
     )
     ->setComment('Entity cache');
