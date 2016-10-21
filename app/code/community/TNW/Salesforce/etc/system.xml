@@ -627,9 +627,7 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <frontend_class>chosen-select</frontend_class>
-                            <comment>This default owner will be assigned to a Lead, Contact and/or Account when
-                                created
-                            </comment>
+                            <comment>This default owner will be assigned to synchronized entity</comment>
                         </default_owner>
                         <use_address_picklist translate="label">
                             <label>Use Country/State picklist data</label>
