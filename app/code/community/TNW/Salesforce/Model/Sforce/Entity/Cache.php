@@ -115,9 +115,11 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
     public function importFromSalesforce()
     {
         foreach ($this->cacheTypes as $cacheType) {
+            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract $collection */
             $collection = $this->generateCollectionByType($cacheType)
                 ->setPageSize(self::IMPORT_PAGE_SIZE);
 
+            $collection->getSelect()->order('Id ASC');
             $lastPageNumber = $collection->getLastPageNumber();
             $this->getResource()->clearType($cacheType);
 
@@ -125,11 +127,14 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
                 $collection->clear()->setCurPage($i);
                 $data = array();
                 foreach ($collection as $item) {
-                    $data[] = array($item->getId(), $item->getData('Name'), $cacheType);
+                    $data[] = array(
+                        'id'            => $item->getId(),
+                        'name'          => $item->getData('Name'),
+                        'object_type'   => $cacheType
+                    );
                 }
 
-                $this->getResource()
-                    ->massImport(array('id', 'name', 'object_type'), $data);
+                $this->getResource()->massImport($data);
             }
         }
     }

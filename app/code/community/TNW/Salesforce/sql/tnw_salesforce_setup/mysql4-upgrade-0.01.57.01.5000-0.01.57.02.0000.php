@@ -19,15 +19,8 @@ $table = $installer->getConnection()
         'nullable' => false,
         'default' => '',
     ), 'Salesforce Object Type')
-    ->addIndex(
-        $installer->getIdxName(
-            'tnw_salesforce/entity_cache',
-            array('id', 'name', 'object_type'),
-            Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE
-        ),
-        array('id', 'name', 'object_type'),
-        array('type' => Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE)
-    )
+    ->addIndex($installer->getIdxName('tnw_salesforce/entity_cache', 'id', Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE), 'id', array('type' => Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE))
+    ->addIndex($installer->getIdxName('tnw_salesforce/entity_cache', 'name'), 'name')
     ->setComment('Entity cache');
 
 $installer->getConnection()->createTable($table);

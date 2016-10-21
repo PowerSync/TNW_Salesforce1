@@ -44,14 +44,13 @@ class TNW_Salesforce_Model_Mysql4_Entity_Cache extends Mage_Core_Model_Mysql4_Ab
     }
 
     /**
-     * @param array $columns
      * @param array $data
      * @return int
      */
-    public function massImport(array $columns, array $data)
+    public function massImport(array $data)
     {
         return $this->_getWriteAdapter()
-            ->insertArray($this->getMainTable(), $columns, $data);
+            ->insertOnDuplicate($this->getMainTable(), $data, array('name'));
     }
 
     /**
