@@ -31,7 +31,7 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
      */
     public function canShowTab()
     {
-        return true;
+        return Mage::helper('tnw_salesforce')->isOrderRulesEnabled();
     }
 
     /**
