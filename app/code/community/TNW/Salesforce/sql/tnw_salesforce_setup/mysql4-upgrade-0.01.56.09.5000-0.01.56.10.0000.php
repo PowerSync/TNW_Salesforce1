@@ -17,28 +17,15 @@ $connection->addColumn($tableImport, 'object_id', 'varchar(50)');
 $connection->addColumn($tableImport, 'object_type', 'varchar(50)');
 $connection->addColumn($tableImport, 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
 
-$select         = $connection->select()->from($tableImport);
-$selectSize     = $connection->select()->from($tableImport, array(new Zend_Db_Expr('count(*)')));
-$sizeAll        = (int)$connection->fetchOne($selectSize);
-$lastPageNumber = ceil($sizeAll/$pageSize);
+$select = $connection->select()->from($tableImport, array('import_id'));
+foreach (array_chunk($connection->fetchCol($select), $pageSize) as $importIds) {
+    $connection->select()
+        ->from($tableImport, array('json'))
+        ->where($connection->prepareSqlCondition('import_id', array('in'=>$importIds)));
 
-for($i = 1;$i<=$lastPageNumber;$i++) {
-    $select->limitPage(1, $pageSize);
-
-    $items = $connection->fetchAll($select);
-    if (!is_array($items)) {
-        continue;
-    }
-
-    foreach ($items as $item) {
-        $json = @unserialize($item['json']);
-        if (empty($json)) {
-            continue;
-        }
-
-        $objects = json_decode($json);
-        if (is_null($objects)) {
-            $connection->delete($tableImport, sprintf('import_id = "%s"', $item['import_id']));
+    foreach ($connection->fetchCol($select) as $json) {
+        $objects = @json_decode($json);
+        if (empty($objects)) {
             continue;
         }
 
@@ -54,9 +41,9 @@ for($i = 1;$i<=$lastPageNumber;$i++) {
                 'json'        => json_encode($object),
             ));
         }
-
-        $connection->delete($tableImport, sprintf('import_id = "%s"', $item['import_id']));
     }
+
+    $connection->delete($tableImport, $connection->prepareSqlCondition('import_id', array('in'=>$importIds)));
 }
 
 $installer->endSetup();
