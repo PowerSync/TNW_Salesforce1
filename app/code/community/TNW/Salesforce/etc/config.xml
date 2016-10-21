@@ -622,6 +622,15 @@
                     </tnw_salesforce_quote_submit_before>
                 </observers>
             </sales_model_service_quote_submit_before>
+
+            <adminhtml_init_system_config>
+                <observers>
+                    <tnw_salesforce_init_system_config>
+                        <class>tnw_salesforce/observer</class>
+                        <method>loadConfig</method>
+                    </tnw_salesforce_init_system_config>
+                </observers>
+            </adminhtml_init_system_config>
         </events>
     </adminhtml>
     <frontend>
@@ -707,6 +716,7 @@
                 <invoice_batch_size>500</invoice_batch_size>
                 <shipment_batch_size>500</shipment_batch_size>
                 <creditmemo_batch_size>500</creditmemo_batch_size>
+                <page_size_from_salesforce>100</page_size_from_salesforce>
 
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
@@ -743,6 +753,7 @@
                 <product_enable>0</product_enable>
                 <price_accuracy>2</price_accuracy>
                 <sync_type_all>1</sync_type_all>
+                <create_delete_product>1</create_delete_product>
             </general>
         </salesforce_product>
         <salesforce_order>
@@ -750,7 +761,7 @@
                 <order_sync_enable>0</order_sync_enable>
                 <zero_order_sync_enable>1</zero_order_sync_enable>
                 <order_product_enable>1</order_product_enable>
-                <notes_synchronize>1</notes_synchronize>
+                <notes_synchronize>0</notes_synchronize>
                 <order_status_all>1</order_status_all>
                 <customer_address>0</customer_address>
                 <draft_order_status>Draft</draft_order_status>

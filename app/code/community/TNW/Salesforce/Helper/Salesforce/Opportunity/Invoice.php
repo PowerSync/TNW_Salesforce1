@@ -124,26 +124,27 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
 
     /**
      * @param $_entity Mage_Sales_Model_Order_Invoice
-     * @param $item Varien_Object
+     * @param $item Mage_Sales_Model_Order_Invoice_Item
      */
     protected function _prepareAdditionalFees($_entity, $item)
     {
         /** @var Mage_Sales_Model_Order_Item $_orderItem */
         $_orderItem           = Mage::getModel('sales/order_item');
+        $productSalesforceId  = $this->_getObjectByEntityItemType($item, 'Product')->getData('salesforce_id');
 
-        $opportunityLookup = @$this->_cache['opportunityLookup'][$_entity->getOrder()->getRealOrderId()];
-        if ($opportunityLookup && property_exists($opportunityLookup, 'OpportunityLineItems') && $opportunityLookup->OpportunityLineItems) {
-            foreach ($opportunityLookup->OpportunityLineItems->records as $record) {
-                if ($record->PricebookEntry->Product2Id != $item->getData('Id')) {
-                    continue;
-                }
+        $records              = !empty($this->_cache['opportunityLookup'][$_entity->getOrder()->getRealOrderId()]->OpportunityLineItems)
+            ? $this->_cache['opportunityLookup'][$_entity->getOrder()->getRealOrderId()]->OpportunityLineItems->records : array();
 
-                $_orderItem->setData('salesforce_id', $record->Id);
-                break;
+        foreach ($records as $record) {
+            if ($record->PricebookEntry->Product2Id != $productSalesforceId) {
+                continue;
             }
+
+            $_orderItem->setData('salesforce_id', $record->Id);
+            break;
         }
 
         //FIX: $item->getOrderItem()->getData('salesforce_id')
-        $item->setData('order_item', $_orderItem);
+        $item->setOrderItem($_orderItem);
     }
 }

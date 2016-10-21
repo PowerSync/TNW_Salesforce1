@@ -84,6 +84,17 @@ class TNW_Salesforce_Model_Observer
         return $this;
     }
 
+    /**
+     *
+     * @param Varien_Event_Observer $observer
+     * @return void
+     */
+    public function loadConfig(Varien_Event_Observer $observer)
+    {
+        $sections = $observer->getEvent()->getConfig()->getNode('sections');
+        $this->checkConfigCondition($sections);
+    }
+
     public function adjustMenu()
     {
         try {
