@@ -7,8 +7,9 @@ $installer->startSetup();
 
 $connection   = $installer->getConnection();
 
+$mappingTable = $installer->getTable('tnw_salesforce/mapping');
 $select = $connection->select()
-    ->from($installer->getTable('tnw_salesforce/mapping'))
+    ->from($mappingTable)
     ->where($connection->prepareSqlCondition('local_field', array('like'=>'%: unit_price')))
     ->where($connection->prepareSqlCondition('sf_object', array('in'=> array(
         'OpportunityInvoiceItem',
