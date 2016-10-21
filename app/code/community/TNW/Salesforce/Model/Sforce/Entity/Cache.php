@@ -138,4 +138,13 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
             }
         }
     }
+
+    /**
+     * @return $this
+     */
+    public function clearAll()
+    {
+        $this->getResource()->clearAll();
+        return $this;
+    }
 }

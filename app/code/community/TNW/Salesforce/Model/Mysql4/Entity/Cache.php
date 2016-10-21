@@ -60,4 +60,12 @@ class TNW_Salesforce_Model_Mysql4_Entity_Cache extends Mage_Core_Model_Mysql4_Ab
     {
         $this->_getWriteAdapter()->delete($this->getMainTable(), array('object_type = ?'=>$type));
     }
+
+    /**
+     *
+     */
+    public function clearAll()
+    {
+        $this->_getWriteAdapter()->truncateTable($this->getMainTable());
+    }
 }

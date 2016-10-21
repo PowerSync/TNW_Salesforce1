@@ -634,6 +634,24 @@
                     </tnw_salesforce_init_system_config>
                 </observers>
             </adminhtml_init_system_config>
+
+            <adminhtml_cache_flush_system>
+                <observers>
+                    <tnw_salesforce_cache_entity_clear>
+                        <class>tnw_salesforce/observer</class>
+                        <method>cacheEntityClear</method>
+                    </tnw_salesforce_cache_entity_clear>
+                </observers>
+            </adminhtml_cache_flush_system>
+
+            <adminhtml_cache_refresh_type>
+                <observers>
+                    <tnw_salesforce_cache_entity_clear>
+                        <class>tnw_salesforce/observer</class>
+                        <method>cacheEntityClear</method>
+                    </tnw_salesforce_cache_entity_clear>
+                </observers>
+            </adminhtml_cache_refresh_type>
         </events>
     </adminhtml>
     <frontend>
