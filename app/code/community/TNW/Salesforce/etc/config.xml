@@ -753,6 +753,7 @@
                 <product_enable>0</product_enable>
                 <price_accuracy>2</price_accuracy>
                 <sync_type_all>1</sync_type_all>
+                <create_delete_product>1</create_delete_product>
             </general>
         </salesforce_product>
         <salesforce_order>

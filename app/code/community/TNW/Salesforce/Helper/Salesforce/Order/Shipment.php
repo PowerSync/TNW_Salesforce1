@@ -5,7 +5,7 @@
  *
  * @method Mage_Sales_Model_Order_Shipment _loadEntityByCache($_entityId, $_entityNumber)
  */
-class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
+class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Helper_Salesforce_Abstract_Sales
 {
     /**
      * @comment magento entity alias "convert from"
@@ -34,35 +34,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
      * @var array
      */
     protected $_magentoEntityModel = 'sales/order_shipment';
-
-    /**
-     * @var array
-     */
-    protected $_availableFees = array();
-
-    /**
-     * @var int
-     */
-    protected $_guestCount = 0;
-
-    /**
-     * @var array
-     */
-    protected $_emails = array();
-
-    /**
-     * @var array
-     */
-    protected $_websites = array();
-
-    /**
-     * @param array $_ids
-     */
-    protected function _massAddBefore($_ids)
-    {
-        $this->_guestCount = 0;
-        $this->_emails = $this->_websites = array();
-    }
 
     /**
      * @param $_entity Mage_Sales_Model_Order_Shipment
@@ -158,64 +129,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     /**
      *
      */
-    protected function _massAddAfter()
-    {
-        // Salesforce lookup, find all contacts/accounts by email address
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->lookup($this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)]);
-
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
-            ->lookup($this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)]);
-
-        $this->_massAddAfterShipment();
-
-        /**
-         * define Salesforce data for order customers
-         */
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
-            $entity  = $this->_loadEntityByCache($key, $number);
-            /** @var Mage_Customer_Model_Customer $customer */
-            $customer = $this->_getObjectByEntityType($entity, 'Customer');
-            $customerEmail = strtolower($customer->getEmail());
-
-            if (isset($this->_cache['accountsLookup'][0][$customerEmail])
-                && !empty($this->_cache['accountsLookup'][0][$customerEmail])
-            ) {
-                $_websiteId = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
-
-                $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customerEmail]->Id);
-
-                // Overwrite Contact Id for Person Account
-                if (property_exists($this->_cache['accountsLookup'][0][$customerEmail], 'PersonContactId')) {
-                    $customer->setData('salesforce_id', $this->_cache['accountsLookup'][0][$customerEmail]->PersonContactId);
-                }
-
-                // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$_websiteId][$customerEmail])) {
-                    $customer->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customerEmail]->Id);
-                }
-            }
-            else {
-                /**
-                 * No customers for this order in salesforce - error
-                 */
-                // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $customerEmail . ') could not be created / found!');
-                $this->_skippedEntity[$key] = $key;
-
-                continue;
-            }
-        }
-
-        foreach ($this->_skippedEntity as $_idToRemove) {
-            unset($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_idToRemove]);
-        }
-    }
-
-    /**
-     *
-     */
-    protected function _massAddAfterShipment()
+    protected function _massAddAfterLookup()
     {
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_shipment')
@@ -354,7 +268,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
      * @param $_entityItem Mage_Sales_Model_Order_Shipment_Item
      * @param $_type
      * @return mixed
-     * @throws Exception
      */
     protected function _getObjectByEntityItemType($_entityItem, $_type)
     {
@@ -369,13 +282,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                 break;
 
             case 'Product':
-                $_productId    = $_entityItem->getOrderItem()
-                    ? $this->getProductIdFromCart($_entityItem->getOrderItem()) : false;
-                $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
-
-                $_object = Mage::getModel('catalog/product')
-                    ->setStoreId($storeId)
-                    ->load($_productId);
+                $_object = $this->getProductByEntityItem($_entityItem);
                 break;
 
             case 'Product Inventory':
@@ -398,6 +305,74 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     }
 
     /**
+     * @param $entityItem Mage_Sales_Model_Order_Shipment_Item
+     * @return Mage_Catalog_Model_Product
+     */
+    protected function getProductByEntityItem($entityItem)
+    {
+        $productSku = $this->searchSkuByEntityItem($entityItem);
+        if (!isset($this->_cache['products'][$productSku])) {
+            /** @var Mage_Core_Model_Store $store */
+            $store      = $this->_getObjectByEntityItemType($entityItem, 'Custom');
+            /** @var Mage_Catalog_Model_Product $_product */
+            $_product   = Mage::getModel('catalog/product')
+                ->setStoreId($store->getId());
+
+            if (!$this->isFeeEntityItem($entityItem)) {
+                $_product->load(Mage::getResourceModel('catalog/product')->getIdBySku($productSku));
+            }
+
+            $isCreateProduct = Mage::helper('tnw_salesforce/config_product')->isCreateDeleteProduct();
+            if ($this->isFeeEntityItem($entityItem) || ($isCreateProduct && is_null($_product->getId()))) {
+                // Generate Fake product
+                $_product->addData(array(
+                    'sku'       => $productSku,
+                    'name'      => $entityItem->getName(),
+                    'price'     => $this->isFeeEntityItem($entityItem)
+                        ? $entityItem->getBaseOriginalPrice()
+                        : $entityItem->getOrderItem()->getBaseOriginalPrice(),
+
+                    'type_id'   => $this->isFeeEntityItem($entityItem)
+                        ? $entityItem->getProductType()
+                        : $entityItem->getOrderItem()->getProductType(),
+
+                    'enabled'   => 1,
+                    'store_ids' => $store->getWebsite()->getStoreIds(),
+                    TNW_Salesforce_Helper_Salesforce_Product::ENTITY_FEE_CHECK => $this->isFeeEntityItem($entityItem)
+                ));
+            }
+
+            $this->_cache['products'][$productSku] = $_product->getSku() ? $_product : null;
+        }
+
+        return $this->_cache['products'][$productSku];
+    }
+
+    /**
+     * @param $entityItem
+     * @return null|string
+     */
+    protected function searchSkuByEntityItemInLookup($entityItem)
+    {
+        // Search SKU by Lookup
+        $entity       = $this->getEntityByItem($entityItem);
+        $entityNumber = $this->_getEntityNumber($entity);
+        $lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $records      = isset($this->_cache[$lookupKey][$entityNumber]->Items)
+            ? $this->_cache[$lookupKey][$entityNumber]->Items->records : array();
+
+        foreach ($records as $_cartItem) {
+            if ($_cartItem->Id != $entityItem->getData('salesforce_id')) {
+                continue;
+            }
+
+            return $_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Product_Code__c'};
+        }
+
+        return null;
+    }
+
+    /**
      * @param $_entityItem Mage_Sales_Model_Order_Shipment_Item
      */
     protected function _prepareEntityItemObjCustom($_entityItem)
@@ -413,12 +388,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'disableMagentoSync__c'}
             = true;
-
-        /* Dump BillingItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Shipment Item Object: " . $key . " = '" . $_item . "'");
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $_entityItem->getId()] = $this->_obj;
     }
@@ -884,32 +853,5 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
         // Logout
         $this->reset();
         $this->clearMemory();
-    }
-
-    /**
-     * @return bool|void
-     * Prepare values for the synchroization
-     */
-    public function reset()
-    {
-        parent::reset();
-
-        // Clean order cache
-        if (is_array($this->_cache['entitiesUpdating'])) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                $this->unsetEntityCache($_orderNumber);
-            }
-        }
-
-        $this->_cache = array(
-            'accountsLookup' => array(),
-            'entitiesUpdating' => array(),
-            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
-            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
-            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
-            sprintf('%sToUpsert', strtolower($this->getManyParentEntityType())) => array(),
-        );
-
-        return $this->check();
     }
 }

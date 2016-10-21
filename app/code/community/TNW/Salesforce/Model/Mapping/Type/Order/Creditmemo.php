@@ -63,6 +63,10 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo extends TNW_Salesforce_
 
         /** @var Mage_Sales_Model_Order_Creditmemo_Item $item */
         foreach ($_helperCreditmemo->getItems($_entity) as $itemId => $item) {
+            if ($_helperCreditmemo->isFeeEntityItem($item)) {
+                continue;
+            }
+
             $rowTotalInclTax = $baseCurrency ? $item->getBaseRowTotalInclTax() : $item->getRowTotalInclTax();
             $discount = $baseCurrency ? $item->getBaseDiscountAmount() : $item->getDiscountAmount();
 
