@@ -23,7 +23,7 @@ $sizeAll        = (int)$connection->fetchOne($selectSize);
 $lastPageNumber = ceil($sizeAll/$pageSize);
 
 for($i = 1;$i<=$lastPageNumber;$i++) {
-    $select->limitPage($i, $pageSize);
+    $select->limitPage(1, $pageSize);
 
     $items = $connection->fetchAll($select);
     if (!is_array($items)) {
