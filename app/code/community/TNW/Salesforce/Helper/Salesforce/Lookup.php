@@ -225,7 +225,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                         }
                     }
 
-                    $returnArray[$_item->ProductCode] = $tmp;
+                    $returnArray[strtolower(trim($_item->ProductCode))] = $tmp;
                     Mage::getSingleton('tnw_salesforce/connection')->clearMemory();
                 }
             }

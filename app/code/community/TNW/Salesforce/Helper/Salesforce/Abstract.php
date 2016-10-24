@@ -389,14 +389,10 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         if (empty($chunk)) {
             return false;
         }
-        if (
-            array_key_exists($_batchType, $this->_cache['batchCache'])
-            && array_key_exists($_batchNum, $this->_cache['batchCache'][$_batchType])
-            && !empty($this->_cache['batchCache'][$_batchType][$_batchNum])
-        ) {
+
+        if (!empty($this->_cache['batchCache'][$_batchType][$_batchNum])) {
             return true; // Already processed
         }
-        $_batchId = NULL;
 
         $_data = '<?xml version="1.0" encoding="UTF-8"?>
 <sObjects xmlns="http://www.force.com/2009/06/asyncapi/dataload">'."\n";
@@ -548,10 +544,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
-        $objectStr = var_export($_object, true);
         if (is_array($_response->errors)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ');
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($objectStr);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(print_r($_object, true));
             foreach ($_response->errors as $_error) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
             }

@@ -93,6 +93,10 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
 
         /** @var $item Mage_Sales_Model_Order_Item */
         foreach ($_helperOrder->getItems($order) as $itemId => $item) {
+            if ($_helperOrder->isFeeEntityItem($item)) {
+                continue;
+            }
+
             $rowTotalInclTax = $baseCurrency ? $item->getBaseRowTotalInclTax() : $item->getRowTotalInclTax();
             $discount = $baseCurrency ? $item->getBaseDiscountAmount() : $item->getDiscountAmount();
 
