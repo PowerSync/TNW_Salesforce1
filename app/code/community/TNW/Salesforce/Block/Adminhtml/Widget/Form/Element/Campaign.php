@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Data_Form_Element_Select
+class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Campaign extends Varien_Data_Form_Element_Select
 {
     /**
      * Return Form Element HTML
@@ -9,11 +9,11 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
      */
     public function getElementHtml()
     {
-        $cIdVal   = array();
+        $cIdVal     = array();
         $value  = $this->getValue();
         if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
             $cIdVal = Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
-                ->toArraySearchById($value, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_USER);
+                ->toArraySearchById($value, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_CAMPAIGN);
         }
 
         $sfLink = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url');
@@ -46,7 +46,7 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
         $block
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'url'       => $block->getUrl('*/salesforce_search/user'),
+                'url'       => $block->getUrl('*/salesforce_search/campaign'),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE,
                 'selector'  => sprintf('.%s', $this->getData('selector'))
             ));

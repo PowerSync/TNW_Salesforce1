@@ -15,16 +15,11 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit_Tab_Salesforce
             'legend'    => Mage::helper('tnw_salesforce')->__('Salesforce')
         ));
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_SalesforceId $renderer */
-        $renderer = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_salesforceId');
-
-        $fieldset
-            ->addField('salesforce_id', 'text', array(
-                'label'     => Mage::helper('tnw_salesforce')->__('Salesforce ID'),
-                'name'      => 'salesforce_id',
-            ))
-            ->setRenderer($renderer);
+        $fieldset->addType('salesforceId', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_salesforceId'));
+        $fieldset->addField('salesforce_id', 'salesforceId', array(
+            'label'     => Mage::helper('tnw_salesforce')->__('Salesforce ID'),
+            'name'      => 'salesforce_id',
+        ));
 
         /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Pricebooks $renderer */
         $renderer = Mage::getSingleton('core/layout')
@@ -57,16 +52,12 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit_Tab_Salesforce
             ),
         ));
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Campaign $renderer */
-        $renderer = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_campaign');
-
-        $fieldset
-            ->addField('salesforce_campaign_id', 'text', array(
-                'label'     => Mage::helper('tnw_salesforce')->__('Salesforce Campaign'),
-                'name'      => 'salesforce_campaign_id',
-            ))
-            ->setRenderer($renderer);
+        $fieldset->addType('campaign', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_campaign'));
+        $fieldset->addField('salesforce_campaign_id', 'campaign', array(
+            'label'     => Mage::helper('tnw_salesforce')->__('Salesforce Campaign'),
+            'name'      => 'salesforce_campaign_id',
+            'selector'  => 'tnw-ajax-find-select-campaign'
+        ));
 
         $form->setValues(Mage::registry('current_product')->getData());
         $this->setForm($form);
