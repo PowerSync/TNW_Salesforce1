@@ -53,7 +53,8 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
 
         if ($collection instanceof TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract) {
             foreach ($collection as $item) {
-                (new self)
+                $cache = new self;
+                $cache
                     ->setData(array(
                         'id'          => $item->getId(),
                         'name'        => $item->getData('Name'),
