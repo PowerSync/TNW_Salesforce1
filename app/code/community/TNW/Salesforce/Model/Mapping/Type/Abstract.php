@@ -226,19 +226,21 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
     /**
      * @param $item
+     * @param bool $includeTax
+     * @param bool $includeDiscount
      * @param int $qty
      * @return float
      */
-    protected function _calculateItemPrice($item, $qty = 1)
+    protected function _calculateItemPrice($item, $qty = 1, $includeTax = true, $includeDiscount = true)
     {
         $rowTotal = $this->getEntityPrice($item, 'RowTotal');
 
-        if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+        if ($includeTax) {
             $rowTotal += $this->getEntityPrice($item, 'TaxAmount');
             $rowTotal += $this->getEntityPrice($item, 'HiddenTaxAmount');
         }
 
-        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+        if ($includeDiscount) {
             $rowTotal -= $this->getEntityPrice($item, 'DiscountAmount');
         }
 

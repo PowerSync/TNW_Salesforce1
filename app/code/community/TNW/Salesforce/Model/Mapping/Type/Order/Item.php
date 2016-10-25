@@ -15,8 +15,17 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
             case 'number':
                 return $this->convertNumber($_entity);
 
-            case 'unit_price':
-                return $this->convertUnitPrice($_entity);
+            case 'unit_price_excluding_tax_and_discounts':
+                return $this->convertUnitPrice($_entity, false, false);
+
+            case 'unit_price_including_tax_excluding_discounts':
+                return $this->convertUnitPrice($_entity, true, false);
+
+            case 'unit_price_including_discounts_excluding_tax':
+                return $this->convertUnitPrice($_entity, false, true);
+
+            case 'unit_price_including_tax_and_discounts':
+                return $this->convertUnitPrice($_entity, true, true);
 
             case 'sf_product_options_html':
                 return $this->convertSfProductOptionsHtml($_entity);
@@ -39,11 +48,13 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
 
     /**
      * @param $_entity Mage_Sales_Model_Order_Item
+     * @param bool $includeTax
+     * @param bool $includeDiscount
      * @return float|mixed
      */
-    public function convertUnitPrice($_entity)
+    public function convertUnitPrice($_entity, $includeTax, $includeDiscount)
     {
-        $netTotal = $this->_calculateItemPrice($_entity, $_entity->getQtyOrdered());
+        $netTotal = $this->_calculateItemPrice($_entity, $_entity->getQtyOrdered(), $includeTax, $includeDiscount);
         return $this->numberFormat($netTotal);
     }
 
