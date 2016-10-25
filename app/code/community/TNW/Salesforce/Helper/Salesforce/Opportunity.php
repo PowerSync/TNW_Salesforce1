@@ -120,14 +120,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
-        foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
-            foreach ($_opp as $_key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-        }
-
         $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
         try {
             Mage::dispatchEvent("tnw_salesforce_order_send_before",array(

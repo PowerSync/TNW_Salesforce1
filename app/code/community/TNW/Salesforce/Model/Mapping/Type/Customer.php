@@ -159,18 +159,53 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSfCompany($_entity)
     {
-        $company = $_entity->getData('company');
+        return self::companyByCustomer($_entity);
+    }
 
-        if (empty($company)) {
-            $company = $_entity->getDefaultBillingAddress()
-                ? $_entity->getDefaultBillingAddress()->getData('company') : null;
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    static public function companyByCustomer($_entity)
+    {
+        $company = self::getCompanyByCustomer($_entity);
+        return empty($company)
+            ? self::generateCompanyByCustomer($_entity)
+            : $company;
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    static public function getCompanyByCustomer($_entity)
+    {
+        $companyName = $_entity->getCompany();
+
+        if (empty($companyName)) {
+            $address = $_entity->getDefaultBillingAddress();
+            if ($address instanceof Mage_Customer_Model_Address_Abstract) {
+                $companyName = $address->getCompany();
+            }
         }
 
-        if (empty($company)) {
-            $company = $_entity->getFirstname() . ' ' . $_entity->getLastname();
+        if (empty($companyName)) {
+            $address = $_entity->getBillingAddress();
+            if ($address instanceof Mage_Customer_Model_Address_Abstract) {
+                $companyName = $address->getCompany();
+            }
         }
 
-        return $company;
+        return trim($companyName);
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $_entity
+     * @return string
+     */
+    static public function generateCompanyByCustomer($_entity)
+    {
+        return trim(sprintf('%s %s', trim($_entity->getFirstname()), trim($_entity->getLastname())));
     }
 
     /**

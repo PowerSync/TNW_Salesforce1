@@ -53,6 +53,10 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Shipment extends TNW_Salesforce_Mo
 
         /** @var Mage_Sales_Model_Order_Shipment_Item $item */
         foreach ($_helperInvoice->getItems($_entity) as $itemId => $item) {
+            if ($_helperInvoice->isFeeEntityItem($item)) {
+                continue;
+            }
+
             $lines[] = implode(', ', array(
                 $item->getSku(),
                 $this->numberFormat($item->getQty()),

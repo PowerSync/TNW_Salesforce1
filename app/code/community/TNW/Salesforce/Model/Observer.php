@@ -84,6 +84,17 @@ class TNW_Salesforce_Model_Observer
         return $this;
     }
 
+    /**
+     *
+     * @param Varien_Event_Observer $observer
+     * @return void
+     */
+    public function loadConfig(Varien_Event_Observer $observer)
+    {
+        $sections = $observer->getEvent()->getConfig()->getNode('sections');
+        $this->checkConfigCondition($sections);
+    }
+
     public function adjustMenu()
     {
         try {
@@ -754,5 +765,17 @@ class TNW_Salesforce_Model_Observer
             $collection->save();
         }
 
+    }
+
+    /**
+     * @param $observer Varien_Event_Observer
+     */
+    public function cacheEntityClear($observer)
+    {
+        if ($observer->getEvent()->getName() == 'adminhtml_cache_refresh_type' && strcasecmp($observer->getData('type'), 'tnw_salesforce') != 0) {
+            return;
+        }
+
+        Mage::getResourceModel('tnw_salesforce/entity_cache')->clearAll();
     }
 }

@@ -109,10 +109,13 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 // Update history orders and assigne to customer we just created
                 $this->_assignCustomerToOrder($_entity->getData('email'), $_entity->getId());
 
-                $this->_salesforceAssociation[$_type][] = array(
-                    'salesforce_id' => $_entity->getData('salesforce_id'),
-                    'magento_id'    => $_entity->getId()
-                );
+                $magentoId   = $this->_getEntityNumber($_entity);
+                if ($this->_getSfMagentoId($this->_salesforceObject) != $magentoId) {
+                    $this->_salesforceAssociation[$_type][] = array(
+                        'salesforce_id' => $_entity->getData('salesforce_id'),
+                        'magento_id'    => $magentoId
+                    );
+                }
 
                 $this->_response->success = true;
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Salesforce " . $_type . " #" . $this->_salesforceObject->Id . " upserted!");
@@ -341,6 +344,52 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         }
                     }
 
+                }
+            }
+
+            $_mapCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Account')
+                ->addFilterTypeSM(!$_entity->isObjectNew())
+                ->firstSystem();
+
+            /** @var TNW_Salesforce_Model_Mapping $_mapping */
+            foreach ($_mapCollection as $_mapping) {
+                $value = property_exists($this->_salesforceObject->Account, $_mapping->getSfField())
+                    ? $this->_salesforceObject->Account->{$_mapping->getSfField()} : null;
+
+                if (strpos($_mapping->getLocalField(), 'Customer : ') === 0) {
+                    Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+                        ->setMapping($_mapping)
+                        ->setValue($_entity, $value);
+
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace('Customer: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_entity->getData($_mapping->getLocalFieldAttributeCode()), true));
+                } elseif (strpos($_mapping->getLocalField(), 'Shipping : ') === 0) {
+                    // Shipping Address
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
+                    $_magentoFieldName = str_replace('Shipping : ', '', $_mapping->getLocalField());
+                    if ($value) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Shipping Address: ' . $_magentoFieldName . ' = ' . $value);
+                        $_additional['shipping'][$_magentoFieldName] = $value;
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
+                    }
+                } elseif (strpos($_mapping->getLocalField(), 'Billing : ') === 0) {
+                    // Billing Address
+                    if (empty($value)) {
+                        $value = $_mapping->getDefaultValue();
+                    }
+
+                    $_magentoFieldName = str_replace('Billing : ', '', $_mapping->getLocalField());
+                    if ($value) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Customer Billing Address: ' . $_magentoFieldName . ' = ' . $value);
+                        $_additional['billing'][$_magentoFieldName] = $value;
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Billing Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
+                    }
                 }
             }
 

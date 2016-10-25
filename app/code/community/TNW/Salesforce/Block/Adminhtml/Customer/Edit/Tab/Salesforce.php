@@ -17,30 +17,21 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
             'legend' => Mage::helper('tnw_salesforce')->__('Salesforce')
         ));
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_SalesforceId $renderer */
-        $renderer = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_salesforceId');
+        $fieldset->addType('salesforceId', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_salesforceId'));
+        $fieldset->addField('salesforce_id', 'salesforceId', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Contact'),
+            'name' => 'salesforce_id',
+        ));
 
-        $fieldset
-            ->addField('salesforce_id', 'text', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Contact'),
-                'name' => 'salesforce_id',
-            ))
-            ->setRenderer($renderer);
+        $fieldset->addField('salesforce_account_id', 'salesforceId', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Account'),
+            'name' => 'salesforce_account_id',
+        ));
 
-        $fieldset
-            ->addField('salesforce_account_id', 'text', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Account'),
-                'name' => 'salesforce_account_id',
-            ))
-            ->setRenderer($renderer);
-
-        $fieldset
-            ->addField('salesforce_lead_id', 'text', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Lead'),
-                'name' => 'salesforce_lead_id',
-            ))
-            ->setRenderer($renderer);
+        $fieldset->addField('salesforce_lead_id', 'salesforceId', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Lead'),
+            'name' => 'salesforce_lead_id',
+        ));
 
         if (!empty($data['salesforce_account_owner_id']) && !empty($data['salesforce_account_id'])) {
             $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
