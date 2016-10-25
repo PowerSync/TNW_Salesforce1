@@ -182,12 +182,20 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param Mage_Sales_Model_Order $order
      * @param stdClass $object
      * @return bool
+     * @throws Exception
      */
     protected function isItemChange($order, $object)
     {
         $isChange        = false;
         $salesforceIds   = array();
         $hasSalesforceId = array();
+
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappingCollection */
+        $mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addFieldToFilter('sf_object', array('eq'=>'OrderItem'))
+            ->addFieldToFilter('sf_field',  array('in'=> array('Quantity', 'UnitPrice')));
+
+        $hasSfField = $mappingCollection->walk('getSfField');
 
         /** @var Mage_Sales_Model_Order_Item $item */
         foreach ($order->getAllVisibleItems() as $item) {
@@ -210,19 +218,32 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             }
 
             $itemId = array_search($record->Id, $hasSalesforceId);
-            if (false == $itemId) {
+            if (false === $itemId) {
                 $isChange = true;
                 break;
             }
 
             /** @var Mage_Sales_Model_Order_Item $item */
             $item = $order->getItemsCollection()->getItemById($itemId);
-            if (floatval($item->getQtyOrdered()) != floatval($record->Quantity)) {
+
+            $mappingId = array_search('Quantity', $hasSfField);
+            if (false === $mappingId) {
+                throw new Exception('Quantity mapping not found!');
+            }
+
+            $qty = $mappingCollection->getItemById($mappingId)->getModelType()->getValue($item);
+            if (floatval($qty) != floatval($record->Quantity)) {
                 $isChange = true;
                 break;
             }
 
-            if (!$this->priceCompare($item->getPrice(), $record->UnitPrice)) {
+            $mappingId = array_search('UnitPrice', $hasSfField);
+            if (false === $mappingId) {
+                throw new Exception('UnitPrice mapping not found!');
+            }
+
+            $price = $mappingCollection->getItemById($mappingId)->getModelType()->getValue($item);
+            if (!$this->priceCompare($price, $record->UnitPrice)) {
                 $isChange = true;
                 break;
             }

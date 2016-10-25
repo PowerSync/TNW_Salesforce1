@@ -1525,7 +1525,7 @@
                             <depends>
                                 <use_tax_product>1</use_tax_product>
                             </depends>
-                            <comment>Apply Tax fee price from Salesforce to Magento Order</comment>
+                            <comment>Apply Tax fee price from Salesforce to Magento Order (BETA!)</comment>
                         </update_tax_total>
                         <tax_product_pricebook translate="label">
                             <label>Tax Product</label>
@@ -1567,7 +1567,7 @@
                             <depends>
                                 <use_shipping_product>1</use_shipping_product>
                             </depends>
-                            <comment>Apply Shipping fee price from Salesforce to Magento Order</comment>
+                            <comment>Apply Shipping fee price from Salesforce to Magento Order (BETA!)</comment>
                         </update_shipping_total>
                         <shipping_product_pricebook translate="label">
                             <label>Shipping Product</label>
@@ -1609,7 +1609,7 @@
                             <depends>
                                 <use_discount_product>1</use_discount_product>
                             </depends>
-                            <comment>Apply Discount fee price from Salesforce to Magento Order</comment>
+                            <comment>Apply Discount fee price from Salesforce to Magento Order (BETA!)</comment>
                         </update_discount_total>
                         <discount_product_pricebook translate="label">
                             <label>Discount Product</label>
