@@ -621,15 +621,13 @@
                         <default_owner translate="label">
                             <label>Default Owner</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>tnw-ajax-find-select-owner-default</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
-                            <comment>This default owner will be assigned to a Lead, Contact and/or Account when
-                                created
-                            </comment>
+                            <comment>This default owner will be assigned to synchronized entity</comment>
                         </default_owner>
                         <use_address_picklist translate="label">
                             <label>Use Country/State picklist data</label>
@@ -836,12 +834,12 @@
                         <customer_lead_owner translate="label">
                             <label>Default Owner</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>tnw-ajax-find-select-owner-lead</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>100</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <customer_integration>1</customer_integration>
                             </depends>
@@ -1669,12 +1667,12 @@
                         <customer_form_assigned translate="label">
                             <label>Task Assignee</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>tnw-ajax-find-select-owner</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <customer_form_enable>1</customer_form_enable>
                             </depends>
@@ -1741,8 +1739,8 @@
                         <default_owner>
                             <label>Default Owner</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
-                            <frontend_class>chosen-select</frontend_class>
+                            <frontend_class>tnw-ajax-find-select-owner</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>130</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>

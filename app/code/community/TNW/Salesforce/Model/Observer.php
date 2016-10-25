@@ -766,4 +766,16 @@ class TNW_Salesforce_Model_Observer
         }
 
     }
+
+    /**
+     * @param $observer Varien_Event_Observer
+     */
+    public function cacheEntityClear($observer)
+    {
+        if ($observer->getEvent()->getName() == 'adminhtml_cache_refresh_type' && strcasecmp($observer->getData('type'), 'tnw_salesforce') != 0) {
+            return;
+        }
+
+        Mage::getResourceModel('tnw_salesforce/entity_cache')->clearAll();
+    }
 }
