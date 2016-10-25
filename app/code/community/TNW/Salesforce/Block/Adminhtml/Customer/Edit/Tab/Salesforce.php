@@ -33,7 +33,7 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
             'name' => 'salesforce_lead_id',
         ));
 
-        if (!empty($data['salesforce_account_owner_id']) && !empty($data['salesforce_account_id'])) {
+        if (!empty($data['salesforce_account_id'])) {
             $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
             $fieldset->addField('salesforce_account_owner_id', 'owner', array(
                 'label' => Mage::helper('tnw_salesforce')->__('Account Owner'),
