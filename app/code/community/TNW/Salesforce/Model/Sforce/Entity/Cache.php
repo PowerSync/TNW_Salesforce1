@@ -107,7 +107,31 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
      */
     public function toArraySearchById($id, $objectType)
     {
-        return $this->getResource()->toArraySearchById($id, $objectType);
+        $result = $this->getResource()->toArraySearchById($id, $objectType);
+
+        if (empty($result)) {
+            $collection = $this->generateCollectionByType($objectType)
+                ->addFieldToFilter('Id', array('eq' => $id));
+
+            $result = array();
+            foreach ($collection as $item) {
+                $result[] = array(
+                    'value' => $item['Id'],
+                    'label' => $item['Name']
+                );
+
+                $cache = new self;
+                $cache
+                    ->setData(array(
+                        'id'          => $item['Id'],
+                        'name'        => $item['Name'],
+                        'object_type' => $objectType,
+                    ))
+                    ->save();
+            }
+        }
+
+        return $result;
     }
 
     /**
