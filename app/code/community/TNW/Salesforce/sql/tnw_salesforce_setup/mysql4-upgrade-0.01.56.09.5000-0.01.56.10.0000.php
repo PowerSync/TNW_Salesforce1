@@ -19,7 +19,7 @@ $connection->addColumn($tableImport, 'created_at', 'TIMESTAMP NOT NULL DEFAULT C
 
 $select = $connection->select()->from($tableImport, array('import_id'));
 foreach (array_chunk($connection->fetchCol($select), $pageSize) as $importIds) {
-    $connection->select()
+    $select = $connection->select()
         ->from($tableImport, array('json'))
         ->where($connection->prepareSqlCondition('import_id', array('in'=>$importIds)));
 
