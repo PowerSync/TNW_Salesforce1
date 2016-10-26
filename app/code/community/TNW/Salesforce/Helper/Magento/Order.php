@@ -247,7 +247,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         // Get Customer
         $customer = $this->_searchCustomer($object->BillToContactId, $_websiteId);
         if (is_null($customer->getId())) {
-            throw new Exception('Trying to create an order, customer not found');
+            throw new Exception(sprintf('Trying to create an order, customer not found in Website "%s"',
+                Mage::app()->getWebsite($_websiteId)->getCode()));
         }
 
         /**
