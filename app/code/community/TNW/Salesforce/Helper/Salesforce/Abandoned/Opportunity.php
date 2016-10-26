@@ -203,14 +203,19 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $_entity   = $this->_loadEntityByCache(array_search($_quoteNum, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_quoteNum);
                 $_customer = $this->_getObjectByEntityType($_entity, 'Customer');
 
-                $_entity->addData(array(
+                $saveData = array(
                     'sf_sync_force'         => 0,
                     'sf_insync'             => 1,
                     'salesforce_id'         => $_result->id,
                     'contact_salesforce_id' => $_customer->getSalesforceId(),
                     'account_salesforce_id' => $_customer->getSalesforceAccountId()
-                ));
-                $_entity->getResource()->save($_entity);
+                );
+
+                $_entity->addData($saveData);
+
+                // Save Attribute
+                $fakeEntity = clone $_entity;
+                $_entity->getResource()->save($fakeEntity->setData($saveData)->setId($_entity->getId()));
 
                 $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_quoteNum] = $_result->id;
                 Mage::getSingleton('tnw_salesforce/tool_log')
@@ -422,8 +427,15 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             else {
                 $_item = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_cartItemId));
                 if ($_item instanceof Mage_Core_Model_Abstract) {
-                    $_item->setData('salesforce_id', $_result->id);
-                    $_item->getResource()->save($_item);
+                    $saveData = array(
+                        'salesforce_id' => $_result->id
+                    );
+
+                    $_item->addData($saveData);
+
+                    // Save Attribute
+                    $fakeItem = clone $_item;
+                    $_item->getResource()->save($fakeItem->setData($saveData)->setId($_item->getId()));
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
@@ -687,6 +699,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 case 1:
                     $_items[] = $_item;
 
+                    /** @var Mage_Sales_Model_Quote_Item $_childItem */
                     foreach ($_item->getChildren() as $_childItem) {
                         $_childItem
                             ->setTaxAmount(null)
@@ -697,18 +710,21 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                             ->setBaseRowTotal(null)
                             ->setDiscountAmount(null)
                             ->setBaseDiscountAmount(null)
-                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
-                                . $_item->getSku());
+                            ->setQty($_childItem->getOrigData('qty') * $_item->getQty())
+                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER . $_item->getSku())
+                        ;
 
                         $_items[] = $_childItem;
                     }
                     break;
 
                 case 2:
+                    /** @var Mage_Sales_Model_Quote_Item $_childItem */
                     foreach ($_item->getChildren() as $_childItem) {
                         $_childItem
-                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER
-                            . $_item->getSku());
+                            ->setQty($_childItem->getOrigData('qty') * $_item->getQty())
+                            ->setBundleItemToSync(TNW_Salesforce_Helper_Config_Sales::BUNDLE_ITEM_MARKER . $_item->getSku())
+                        ;
 
                         $_items[] = $_childItem;
                     }
