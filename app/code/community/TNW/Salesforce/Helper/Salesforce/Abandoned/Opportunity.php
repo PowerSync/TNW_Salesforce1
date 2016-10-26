@@ -417,8 +417,12 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 }
 
                 // Reset sync status
-                $_entity->setData('sf_insync', 0);
-                $_entity->getResource()->save($_entity);
+                $saveData = array('sf_insync' => 0);
+                $_entity->addData($saveData);
+
+                // Save Attribute
+                $fakeEntity = clone $_entity;
+                $_entity->getResource()->save($fakeEntity->setData($saveData)->setId($_entity->getId()));
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('ERROR: One of the Cart Item for (quote: ' . $_quoteNum . ') failed to upsert.');
