@@ -82,6 +82,15 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
                         'base_discount_amount' => !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price
                     ));
 
+                    $baseSubtotalWithDiscount = $subtotalWithDiscount = 0;
+                    foreach ($this->getAllItems() as $item) {
+                        $subtotalWithDiscount+=$item->getRowTotal();
+                        $baseSubtotalWithDiscount+=$item->getBaseRowTotal();
+                    }
+
+                    $this->setSubtotalWithDiscount($subtotalWithDiscount);
+                    $this->setBaseSubtotalWithDiscount($baseSubtotalWithDiscount);
+
                     $this->setGrandTotal($this->getGrandTotal() + $this->getDiscountAmount());
                     $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getBaseDiscountAmount());
                     continue 2;

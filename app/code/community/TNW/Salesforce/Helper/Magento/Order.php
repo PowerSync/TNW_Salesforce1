@@ -663,10 +663,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $orderCreate->getQuote()->getShippingAddress()->setCollectShippingRates(true);
         }
 
-        $orderCreate->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
         if (!$isVirtual && !$orderCreate->getQuote()->getShippingAddress()->requestShippingRates()) {
             $this->_setShippingMethod($orderCreate);
         }
+        $orderCreate->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
 
         try {
             $newOrder = $orderCreate->createOrder();
