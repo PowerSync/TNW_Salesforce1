@@ -150,13 +150,13 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                         $item    = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_batchKey));
                         if ($item instanceof Mage_Core_Model_Abstract) {
                             $saveData = array(
-                                'salesforce_id' => $_item->id
+                                'salesforce_id' => (string)$_item->id
                             );
 
                             $item->addData($saveData);
 
                             // Save Attribute
-                            $fakeItem = clone $_item;
+                            $fakeItem = clone $item;
                             $item->getResource()->save($fakeItem->setData($saveData)->setId($item->getId()));
                         }
                         continue;
