@@ -146,6 +146,19 @@ class TNW_Salesforce_Helper_Bulk_Abandoned_Opportunity extends TNW_Salesforce_He
                     $this->_cache['responses']['opportunityLineItems'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
 
                     if ($_item->success == "true") {
+                        $_entity = $this->_loadEntityByCache(array_search($_oid, $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), $_oid);
+                        $item    = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_batchKey));
+                        if ($item instanceof Mage_Core_Model_Abstract) {
+                            $saveData = array(
+                                'salesforce_id' => (string)$_item->id
+                            );
+
+                            $item->addData($saveData);
+
+                            // Save Attribute
+                            $fakeItem = clone $item;
+                            $item->getResource()->save($fakeItem->setData($saveData)->setId($item->getId()));
+                        }
                         continue;
                     }
 
