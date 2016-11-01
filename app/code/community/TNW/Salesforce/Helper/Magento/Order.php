@@ -102,10 +102,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
                 $this->saveEntities();
 
+                /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
+                $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
+                    ->setIsValidate(false);
+
                 // Create new order
-                $newOrder = $this->reorder($order, $object);
-                $order = Mage::getSingleton('adminhtml/sales_order_create')->getSession()
-                    ->getOrder();
+                $newOrder = $this->reorder($orderCreate, $order, $object);
+                $order    = $orderCreate->getSession()->getOrder();
 
                 $this
                     ->_updateMappedEntityFields($object, $newOrder, $mappings)
@@ -140,8 +143,12 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 return false;
             }
 
+            /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
+            $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
+                ->setIsValidate(false);
+
             // Create new order
-            $order = $this->create($object, $mappings);
+            $order = $this->create($orderCreate, $object, $mappings);
         }
 
         $order->addData(array(
@@ -217,40 +224,32 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
+     * @param $orderCreate TNW_Salesforce_Model_Sale_Order_Create
      * @param $object
      * @param $mappings
      * @return Mage_Sales_Model_Order
      * @throws Exception
      */
-    protected function create($object, $mappings)
+    protected function create($orderCreate, $object, $mappings)
     {
-        /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
-        $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
-            ->setIsValidate(false);
-
-        // Get Customer
-        $customer = $this->_searchCustomer($object->BillToContactId);
-        if (is_null($customer->getId())) {
-            $message = Mage::helper('tnw_salesforce')
-                ->__('Trying to create an order, customer not found');
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($message);
-            throw new Exception($message);
-        }
-
-        $_websiteId = null;
+        $_websiteId = false;
         $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
         if (property_exists($object, $_websiteSfField)) {
             $_websiteSfId = Mage::helper('tnw_salesforce')
                 ->prepareId($object->{$_websiteSfField});
 
             $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-            $_websiteId = ($_websiteId === false) ? null : $_websiteId;
         }
 
-        $storeId = is_null($_websiteId)
-            ? Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId()
-            : Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+        $_websiteId = ($_websiteId === false) ? Mage::app()->getWebsite(true)->getId() : $_websiteId;
+        $storeId    = Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+
+        // Get Customer
+        $customer = $this->_searchCustomer($object->BillToContactId, $_websiteId);
+        if (is_null($customer->getId())) {
+            throw new Exception(sprintf('Trying to create an order, customer not found in Website "%s"',
+                Mage::app()->getWebsite($_websiteId)->getCode()));
+        }
 
         /**
          * Identify customer
@@ -394,17 +393,14 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
+     * @param $orderCreate TNW_Salesforce_Model_Sale_Order_Create
      * @param Mage_Sales_Model_Order $order
      * @param stdClass $object
      * @return Mage_Sales_Model_Order
      * @throws Exception
      */
-    protected function reorder($order, $object)
+    protected function reorder($orderCreate, $order, $object)
     {
-        /** @var Mage_Adminhtml_Model_Sales_Order_Create $orderCreate */
-        $orderCreate   = Mage::getSingleton('adminhtml/sales_order_create')
-            ->setIsValidate(false);
-
         //FIX: Bundle zero price
         $bundleItems = array();
         /** @var Mage_Sales_Model_Order_Item $item */
@@ -895,14 +891,19 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
-     * @param $accountId
+     * @param $contactId
+     * @param $websiteId
      * @return Mage_Customer_Model_Customer
      */
-    protected function _searchCustomer($accountId)
+    protected function _searchCustomer($contactId, $websiteId)
     {
         $collection = Mage::getResourceModel('customer/customer_collection')
             ->addNameToSelect()
-            ->addAttributeToFilter('salesforce_id', array('like'=>$accountId));
+            ->addAttributeToFilter('salesforce_id', array('like'=>$contactId));
+
+        if (Mage::getSingleton('customer/config_share')->isWebsiteScope()) {
+            $collection->addAttributeToFilter('website_id', array('eq'=>$websiteId));
+        }
 
         return $collection->getFirstItem();
     }
