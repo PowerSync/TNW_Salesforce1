@@ -165,7 +165,9 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->setMassactionIdField('mapping_id');
+            $this
+                ->setMassactionIdField('entity_id')
+            ;
             $this->getMassactionBlock()->setFormFieldName('customers');
 
             $this->getMassactionBlock()->addItem('sync', array(
