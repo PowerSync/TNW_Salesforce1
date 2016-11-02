@@ -64,3 +64,11 @@
 .tnw-owner-wrapper .tnw-owner-link {
     position: absolute; right: -108px; top: -2px;
 }
+
+/* Hide 'Captured in Salesforce' payment method */
+#p_method_tnw_import {
+    display: none;
+}
+label[for="p_method_tnw_import"] {
+    display: none;
+}
