@@ -170,7 +170,10 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->setMassactionIdField('mapping_id');
+            $this
+                ->setMassactionIdField('entity_id')
+                ->setMassactionIdFilter('main_table.entity_id')
+            ;
             $this->getMassactionBlock()->setFormFieldName('orders');
 
             if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {

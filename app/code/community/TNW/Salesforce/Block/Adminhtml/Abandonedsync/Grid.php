@@ -243,7 +243,10 @@ class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_B
 
     protected function _prepareMassaction()
     {
-        $this->setMassactionIdField('entity_id');
+        $this
+            ->setMassactionIdField('entity_id')
+            ->setMassactionIdFilter('main_table.entity_id')
+        ;
         $this->getMassactionBlock()->setFormFieldName('abandoneds');
 
         if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {
