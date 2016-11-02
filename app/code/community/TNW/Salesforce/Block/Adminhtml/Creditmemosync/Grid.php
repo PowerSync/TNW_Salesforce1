@@ -150,7 +150,10 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->setMassactionIdField('increment_id');
+            $this
+                ->setMassactionIdField('entity_id')
+                ->setMassactionIdFilter('main_table.entity_id')
+            ;
             $this->getMassactionBlock()->setFormFieldName('creditmemo_ids');
 
             if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {
