@@ -55,7 +55,11 @@ function sendJsonAndExit($errorString = null)
 $helper = Mage::helper('tnw_salesforce');
 
 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("========== Sync from Salesforce Start ==========");
-$fromSf = isset($_REQUEST['sf']) ? strip_tags($_REQUEST['sf'], true) : NULL;
+
+$fromSf = $_REQUEST['sf'];
+$fromSf = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $fromSf);
+$fromSf = str_replace(array('<?', '?>'), '', $fromSf);
+
 if (empty($fromSf)) {
     sendJsonAndExit("Salesforce object is not available!");
 }
