@@ -401,6 +401,12 @@ class TNW_Salesforce_Model_Sale_Observer
 
     public function afterSalesRuleSave($observer)
     {
+        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+            return; // Disabled
+        }
+
         if (!Mage::helper('tnw_salesforce')->isEnabled()
             || !Mage::helper('tnw_salesforce')->isOrderRulesEnabled()
         ) {
