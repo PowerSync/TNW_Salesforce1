@@ -99,6 +99,14 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
         $this->_prepare();
 
         $_type = $this->_salesforceObject->attributes->type;
+
+        if ($type = "Account"
+            && property_exists($this->_salesforceObject, 'IsPersonAccount')
+            && $this->_salesforceObject->IsPersonAccount == true)
+        {
+            $_type = 'Contact';
+        }
+
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("** " . $_type . " #" . $this->_salesforceObject->Id . " **");
 
         $_entity = $this->syncFromSalesforce($this->_salesforceObject);
