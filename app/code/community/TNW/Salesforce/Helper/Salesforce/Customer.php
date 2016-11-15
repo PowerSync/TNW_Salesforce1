@@ -1387,6 +1387,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 foreach (array_keys($_saveAttributes) as $_code) {
                     $_customer->getResource()->saveAttribute($_customer, $_code);
                 }
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace(sprintf("Save attribute (customer: %s)\n%s", $_customer->getEmail(), print_r(array_intersect_key($_customer->getData(), $_saveAttributes), true)));
             }
 
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Updated: " . count($_websiteCustomers) . " customers!");
