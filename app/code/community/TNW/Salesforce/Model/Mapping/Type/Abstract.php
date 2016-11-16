@@ -426,19 +426,23 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
             $dateTime->setTimezone($timezoneObj);
         } else {
 
-            $dateObj = new DateTime("now", $timezoneObj);
+            $dateObj = new DateTime("now");
             $timeOffset = $timezoneObj->getOffset($dateObj);
 
             /**
              * set 12 pm if no time information here
              */
-            $dateTime->setTime(12, 0, 0);
+            $dateTime->setTime(0, 0, 0);
 
             /**
              * reduce the time to compensate Time zone offset
              */
-            $dateTime->sub(new DateInterval('PT'.$timeOffset.'S'));
-
+            $timeOffsetInterval = new DateInterval('PT'.abs($timeOffset).'S');
+            if ($timeOffset > 0) {
+                $dateTime->sub($timeOffsetInterval);
+            } else {
+                $dateTime->add($timeOffsetInterval);
+            }
         }
 
         return $dateTime;
