@@ -133,6 +133,9 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
      */
     abstract public function syncFromSalesforce($object = null);
 
+    /**
+     * @param $_association
+     */
     public static function sendMagentoIdToSalesforce($_association)
     {
         /** @var TNW_Salesforce_Model_Connection $_client */
@@ -158,7 +161,10 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
 
                 try {
                     $_client->getClient()->upsert('Id', $sendData, $type);
-                } catch (Exception $e) {}
+                } catch (Exception $e) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError($e->getMessage());
+                }
             }
         }
     }
