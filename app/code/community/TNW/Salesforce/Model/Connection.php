@@ -42,7 +42,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     protected $_connection = FALSE;
 
     /**
-     * @var bool
+     * @var stdClass
      */
     protected $_loggedIn = FALSE;
 
@@ -172,60 +172,57 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function tryToLogin()
     {
-        $success = true;
         if (!is_object($this->_connection)) {
             return false;
         }
 
-        if (!is_object($this->_loggedIn)) {
-            try {
-                $this->_errorMessage = NULL;
-                $user = Mage::helper('tnw_salesforce')->getApiUsername();
-                $pass = Mage::helper('tnw_salesforce')->getApiPassword();
-                $token = Mage::helper('tnw_salesforce')->getApiToken();
-
-                // log in to salesforce
-                $this->_loggedIn = $this->_client->login($user, $pass . $token);
-
-                if (property_exists($this->_loggedIn, 'sessionId')) {
-                    $this->_sessionId = $this->_loggedIn->sessionId;
-                    Mage::getSingleton('core/session')->setSalesforceSessionId($this->_loggedIn->sessionId);
-                    Mage::getSingleton('core/session')->setSalesforceSessionCreated(time());
-                    Mage::helper('tnw_salesforce/test_authentication')->setStorage($this->_sessionId, 'salesforce_session_id');
-                    Mage::helper('tnw_salesforce/test_authentication')->setStorage(time(), 'salesforce_session_created');
-                }
-                if (property_exists($this->_loggedIn, 'serverUrl')) {
-                    $this->_serverUrl = $this->_loggedIn->serverUrl;
-                    Mage::getSingleton('core/session')->setSalesforceServerUrl($this->_loggedIn->serverUrl);
-                    Mage::helper('tnw_salesforce/test_authentication')->setStorage($this->_serverUrl, 'salesforce_server_url');
-
-                    $instance_url = explode('/', $this->_serverUrl);
-
-                    $_salesforceServerDomain = 'https://' . $instance_url[2];
-                    Mage::getSingleton('core/session')->setSalesforceUrl($_salesforceServerDomain);
-                    Mage::helper('tnw_salesforce/test_authentication')->setStorage($_salesforceServerDomain, 'salesforce_url');
-
-                    $cache = Mage::app()->getCache();
-                    if (Mage::app()->useCache('tnw_salesforce')) {
-                        $cache->save(serialize($_salesforceServerDomain), "tnw_salesforce_salesforce_url", array("TNW_SALESFORCE"));
-
-                        $cache->save($this->_loggedIn->userInfo->organizationId, "tnw_salesforce_org", array("TNW_SALESFORCE"));
-                    }
-                    Mage::helper('tnw_salesforce/test_authentication')->setStorage($this->_loggedIn->userInfo->organizationId, 'salesforce_org_id');
-                    Mage::getSingleton('core/session')->setSalesForceOrg($this->_loggedIn->userInfo->organizationId);
-
-                    Mage::getSingleton('core/session')->setSfNotWorking(false);
-                }
-                unset($user, $pass, $token);
-            } catch (Exception $e) {
-                $this->_errorMessage = $e->getMessage();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Login Failure: " . $e->getMessage());
-                unset($e);
-                return false;
-            }
+        if (is_object($this->_loggedIn)) {
+            return true;
         }
 
-        return $success;
+        try {
+            $this->_errorMessage = NULL;
+            $user  = Mage::helper('tnw_salesforce')->getApiUsername();
+            $pass  = Mage::helper('tnw_salesforce')->getApiPassword();
+            $token = Mage::helper('tnw_salesforce')->getApiToken();
+
+            // log in to salesforce
+            $this->_loggedIn = $this->_client->login($user, $pass . $token);
+
+            if (property_exists($this->_loggedIn, 'sessionId')) {
+                $this->_sessionId = $this->_loggedIn->sessionId;
+                Mage::getSingleton('core/session')
+                    ->addData(array(
+                        'salesforce_session_id'      => $this->_loggedIn->sessionId,
+                        'salesforce_session_created' => time()
+                    ));
+            }
+
+            if (property_exists($this->_loggedIn, 'serverUrl')) {
+                $this->_serverUrl = $this->_loggedIn->serverUrl;
+                Mage::helper('tnw_salesforce/test_authentication')
+                    ->setStorage($this->_serverUrl, 'salesforce_server_url');
+
+                $instance_url = explode('/', $this->_serverUrl);
+                $_salesforceServerDomain = 'https://' . $instance_url[2];
+                Mage::helper('tnw_salesforce/test_authentication')
+                    ->setStorage($_salesforceServerDomain, 'salesforce_url');
+
+                Mage::helper('tnw_salesforce/test_authentication')
+                    ->setStorage($this->_loggedIn->userInfo->organizationId, 'salesforce_org_id');
+
+                Mage::getSingleton('core/session')->setSfNotWorking(false);
+            }
+
+        } catch (Exception $e) {
+            $this->_errorMessage = $e->getMessage();
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError("Login Failure: " . $e->getMessage());
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
