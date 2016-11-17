@@ -98,4 +98,22 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
     {
         return '';
     }
+
+    protected function _prepareMassaction()
+    {
+
+        $this->setMassactionIdField('import_id');
+        $this->setMassactionIdFilter('main_table.import_id');
+        $this->getMassactionBlock()->setFormFieldName('import_ids');
+
+        $url = '*/*/massDelete';
+
+        $this->getMassactionBlock()->addItem('delete', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Delete'),
+            'url' => $this->getUrl($url),
+            'confirm' => Mage::helper('tnw_salesforce')->__('This will remove all selected items from the queue. Are you sure?')
+        ));
+
+        return $this;
+    }
 }

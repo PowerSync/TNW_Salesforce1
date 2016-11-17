@@ -417,10 +417,35 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _reversePrepareDateTime($date)
     {
         $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-        $timezoneForce = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
+        $timezoneForce = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) && !preg_match('/\d{4}-\d{2}-\d{2}/i', $date)? new DateTimeZone($currentTimezone) : null;
 
         $dateTime = new DateTime($date, $timezoneForce);
-        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
+
+        $timezoneObj = new DateTimeZone($currentTimezone);
+        if (!is_null($timezoneForce)) {
+            $dateTime->setTimezone($timezoneObj);
+        } else {
+
+            $dateObj = new DateTime("now");
+            $timeOffset = $timezoneObj->getOffset($dateObj);
+
+            /**
+             * set 12 pm if no time information here
+             */
+            $dateTime->setTime(0, 0, 0);
+
+            /**
+             * reduce the time to compensate Time zone offset
+             */
+            $timeOffsetInterval = new DateInterval('PT'.abs($timeOffset).'S');
+            if ($timeOffset > 0) {
+                $dateTime->sub($timeOffsetInterval);
+            } else {
+                $dateTime->add($timeOffsetInterval);
+            }
+        }
+
+        return $dateTime;
     }
 
     /**

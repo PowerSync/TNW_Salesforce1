@@ -146,6 +146,9 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
         return $_association;
     }
 
+    /**
+     * @param $_association
+     */
     public function sendMagentoIdToSalesforce($_association)
     {
         $importProcessor = $this->getProcessor();

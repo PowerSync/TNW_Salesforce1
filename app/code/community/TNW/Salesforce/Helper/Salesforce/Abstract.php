@@ -654,36 +654,15 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         }
         /* Dump object into the log */
         foreach ($array as $k => $_obj) {
-            if ($isError) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Entity Key: " . $k);
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Entity Key: " . $k);
-            }
             if (empty($_obj) || (!is_array($_obj) && !is_object($_obj))) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object is empty!");
-            } else {
-                foreach ($_obj as $_key => $_value) {
-                    if (is_object($_value) || is_array($_value)) {
-                        foreach ($_value as $k1 => $v1) {
-                            if ($isError) {
-                                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object: " . $k1 . " = '" . $v1 . "'");
-                            } else {
-                                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $k1 . " = '" . $v1 . "'");
-                            }
-                        }
-                    } else {
-                        if ($isError) {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($type . " Object: " . $_key . " = '" . $_value . "'");
-                        } else {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " Object: " . $_key . " = '" . $_value . "'");
-                        }
-                    }
-                }
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("$type Object (Entity Key: $k) is empty!");
+                continue;
             }
+
             if ($isError) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("=====================");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("$type Object (Entity Key: $k): \n" . print_r($_obj, true));
             } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=====================");
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("$type Object (Entity Key: $k): \n" . print_r($_obj, true));
             }
         }
         if ($isError) {
@@ -758,12 +737,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $this->_initCache();
         }
 
-        $_orgId = NULL;
-        if ($this->_useCache) {
-            $_orgId = $this->_mageCache->load("tnw_salesforce_org");
-        } elseif (Mage::getSingleton('core/session')->getSalesForceOrg()) {
-            $_orgId = Mage::getSingleton('core/session')->getSalesForceOrg();
-        } else {
+        $_orgId = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_org_id');
+        if (empty($_orgId)) {
             $_orgId = 'Unknown';
         }
 

@@ -44,6 +44,39 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_FromController extends Mage_
     }
 
     /**
+     *
+     */
+    public function massDeleteAction()
+    {
+        $ids = $this->getRequest()->getParam('import_ids');
+
+        if (!is_array($ids)) {
+            $this->_getSession()->addError($this->__('Please select Item(s).'));
+        } else {
+            try {
+                foreach ($ids as $id) {
+                    $model = Mage::getSingleton('tnw_salesforce/import')->load($id);
+                    $model->delete();
+                }
+
+                $this->_getSession()->addSuccess(
+                    $this->__('Total of %d record(s) have been deleted.', count($ids))
+                );
+            } catch (Mage_Core_Exception $e) {
+                $this->_getSession()->addError($e->getMessage());
+            } catch (Exception $e) {
+                $this->_getSession()->addError(
+                    Mage::helper('')->__('An error occurred while mass deleting items. Please review log and try again.')
+                );
+                Mage::logException($e);
+                return;
+            }
+        }
+        $this->_redirect('*/*/');
+    }
+
+
+    /**
      * Grid Action
      */
     public function gridAction()

@@ -1,78 +1,24 @@
 <?php
 
-class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_Abstract
+class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_Order_Base
 {
     const SYNC_SUCCESS = 1;
 
     /**
-     * @var null
+     * @var string
      */
-    protected $_salesforceObject = null;
+    protected $_mappingEntityName = 'Order';
 
     /**
-     * @see TNW_Salesforce_Model_Sale_Observer::quoteAddressCollectTotalsAfter
-     * @return null|stdClass
+     * @var string
      */
-    public function getSalesforceObject()
-    {
-        return $this->_salesforceObject;
-    }
+    protected $_mappingEntityItemName = 'OrderItem';
 
     /**
-     * @param stdClass $object
-     * @return mixed
+     * @comment salesforce entity alias
+     * @var string
      */
-    public function syncFromSalesforce($object = null)
-    {
-        /**
-         * @see TNW_Salesforce_Model_Sale_Observer::quoteAddressCollectTotalsAfter
-         */
-        $this->_salesforceObject = $object;
-
-        $this->_prepare();
-
-        $_mMagentoId = null;
-
-        $_sSalesforceId = (property_exists($object, "Id") && $object->Id)
-            ? $object->Id : null;
-
-        if (!$_sSalesforceId) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR upserting order into Magento: ID is missing");
-            $this->_addError('Could not upsert Order into Magento, salesforce ID is missing', 'SALESFORCE_ID_IS_MISSING');
-            return false;
-        }
-
-        $_sMagentoIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . "Magento_ID__c";
-        $_sMagentoId    = (!empty($object->$_sMagentoIdKey))
-            ? $object->$_sMagentoIdKey : null;
-
-        $orderTable = Mage::helper('tnw_salesforce')->getTable('sales_flat_order');
-        if (!empty($_sMagentoId)) {
-            //Test if user exists
-            $sql = "SELECT increment_id  FROM `$orderTable` WHERE increment_id = '$_sMagentoId'";
-            $row = $this->_write->query($sql)->fetch();
-            if ($row) {
-                $_mMagentoId = $row['increment_id'];
-
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace("Order loaded using Magento ID: " . $_mMagentoId);
-            }
-        }
-
-        if (is_null($_mMagentoId) && !empty($_sSalesforceId)) {
-            // Try to find the user by SF Id
-            $sql = "SELECT increment_id FROM `$orderTable` WHERE salesforce_id = '$_sSalesforceId'";
-            $row = $this->_write->query($sql)->fetch();
-            if ($row) {
-                $_mMagentoId = $row['increment_id'];
-
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace("Order #" . $_mMagentoId . " Loaded by using Salesforce ID: " . $_sSalesforceId);
-            }
-        }
-
-        return $this->_updateMagento($object, $_mMagentoId, $_sSalesforceId);
-    }
+    protected $_salesforceEntityName = 'order';
 
     /**
      * @param $object stdClass
@@ -83,11 +29,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      */
     protected function _updateMagento($object, $_mMagentoId, $_sSalesforceId)
     {
-        //Get Address
-        $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-            ->addObjectToFilter('Order')
-            ->addFilterTypeSM((bool) $_mMagentoId)
-            ->firstSystem();
 
         if ($_mMagentoId) {
             /** @var Mage_Sales_Model_Order $order */
@@ -115,21 +56,23 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 ));
 
                 $this
-                    ->_updateMappedEntityFields($object, $order, $mappings)
+                    ->_updateMappedEntityFields($object, $order)
                     ->_updateMappedEntityItemFields($object, $order)
                     ->_updateNotes($object, $order);
 
                 $this->saveEntities();
 
+                /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
+                $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
+                    ->setIsValidate(false);
+
                 // Create new order
-                $newOrder = $this->reorder($order, $object);
-                $order = Mage::getSingleton('tnw_salesforce/sale_order_create')->getSession()
-                    ->getOrder();
+                $newOrder = $this->reorder($orderCreate, $order, $object);
+                $order    = $orderCreate->getSession()->getOrder();
 
                 $this
-                    ->_updateMappedEntityFields($object, $newOrder, $mappings)
-                    ->_updateMappedEntityItemFields($object, $newOrder)
-                    ->_updateStatus($object, $newOrder);
+                    ->_updateMappedEntityFields($object, $newOrder)
+                    ->_updateMappedEntityItemFields($object, $newOrder);
 
                 $this->saveEntities();
 
@@ -159,8 +102,12 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 return false;
             }
 
+            /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
+            $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
+                ->setIsValidate(false);
+
             // Create new order
-            $order = $this->create($object, $mappings);
+            $order = $this->create($orderCreate, $object);
         }
 
         $order->addData(array(
@@ -169,10 +116,9 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         ));
 
         $this
-            ->_updateMappedEntityFields($object, $order, $mappings)
+            ->_updateMappedEntityFields($object, $order)
             ->_updateMappedEntityItemFields($object, $order, (bool) $_mMagentoId)
-            ->_updateNotes($object, $order)
-            ->_updateStatus($object, $order);
+            ->_updateNotes($object, $order);
 
         $this->saveEntities();
         return $order;
@@ -350,40 +296,32 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
+     * @param $orderCreate TNW_Salesforce_Model_Sale_Order_Create
      * @param $object
      * @param $mappings
      * @return Mage_Sales_Model_Order
      * @throws Exception
      */
-    protected function create($object, $mappings)
+    protected function create($orderCreate, $object)
     {
-        /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
-        $orderCreate   = Mage::getSingleton('tnw_salesforce/sale_order_create')
-            ->setIsValidate(false);
-
-        // Get Customer
-        $customer = $this->_searchCustomer($object->BillToContactId);
-        if (is_null($customer->getId())) {
-            $message = Mage::helper('tnw_salesforce')
-                ->__('Trying to create an order, customer not found');
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($message);
-            throw new Exception($message);
-        }
-
-        $_websiteId = null;
+        $_websiteId = false;
         $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
         if (property_exists($object, $_websiteSfField)) {
             $_websiteSfId = Mage::helper('tnw_salesforce')
                 ->prepareId($object->{$_websiteSfField});
 
             $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-            $_websiteId = ($_websiteId === false) ? null : $_websiteId;
         }
 
-        $storeId = is_null($_websiteId)
-            ? Mage::app()->getWebsite(true)->getDefaultGroup()->getDefaultStoreId()
-            : Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+        $_websiteId = ($_websiteId === false) ? Mage::app()->getWebsite(true)->getId() : $_websiteId;
+        $storeId    = Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+
+        // Get Customer
+        $customer = $this->_searchCustomer($object->BillToContactId, $_websiteId);
+        if (is_null($customer->getId())) {
+            throw new Exception(sprintf('Trying to create an order, customer not found in Website "%s"',
+                Mage::app()->getWebsite($_websiteId)->getCode()));
+        }
 
         /**
          * Identify customer
@@ -405,6 +343,8 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             'Shipping' => array(),
             'Billing'  => array(),
         );
+
+        $mappings = $this->getMappingByType($orderCreate, 'Order');
 
         /** @var TNW_Salesforce_Model_Mapping $mapping */
         foreach ($mappings as $mapping) {
@@ -533,17 +473,14 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
+     * @param $orderCreate TNW_Salesforce_Model_Sale_Order_Create
      * @param Mage_Sales_Model_Order $order
      * @param stdClass $object
      * @return Mage_Sales_Model_Order
      * @throws Exception
      */
-    protected function reorder($order, $object)
+    protected function reorder($orderCreate, $order, $object)
     {
-        /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
-        $orderCreate   = Mage::getSingleton('tnw_salesforce/sale_order_create')
-            ->setIsValidate(false);
-
         //FIX: Bundle zero price
         $bundleItems = array();
         /** @var Mage_Sales_Model_Order_Item $item */
@@ -782,247 +719,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
-     * @param $object stdClass
-     * @param $order Mage_Sales_Model_Order
-     * @param $mappings
-     * @return $this
-     */
-    protected function _updateMappedEntityFields($object, $order, $mappings)
-    {
-        $entities = array(
-            'Order'     => $order,
-            'Billing'   => $order->getBillingAddress(),
-            'Payment'   => $order->getPayment(),
-            'Customer'  => Mage::getModel('customer/customer')->load($order->getCustomerId()),
-        );
-
-        if (!$order->getIsVirtual()) {
-            $entities['Shipping'] = $order->getShippingAddress();
-        }
-
-        //clear log fields before update
-        $updateFieldsLog = array();
-
-        $additional = array();
-
-        /** @var TNW_Salesforce_Model_Mapping $mapping */
-        foreach ($mappings as $mapping) {
-            $newValue = property_exists($object, $mapping->getSfField())
-                ? $object->{$mapping->getSfField()} : null;
-
-            if (empty($newValue)) {
-                $newValue = $mapping->getDefaultValue();
-            }
-
-            $entityName = $mapping->getLocalFieldType();
-            $field = $mapping->getLocalFieldAttributeCode();
-            if (!isset($entities[$entityName])) {
-                continue;
-            }
-
-            $entity = $entities[$entityName];
-            if ($entity instanceof Mage_Sales_Model_Order_Address) {
-                $additional[$entityName][$field] = $newValue;
-            }
-
-            if ($entity->getData($field) != $newValue) {
-                $entity->setData($field, $newValue);
-                $this->addEntityToSave($entityName, $entity);
-
-                //add info about updated field to order comment
-                $updateFieldsLog[] = sprintf('%s - from "%s" to "%s"',
-                    $mapping->getLocalField(), $entity->getOrigData($field), $newValue);
-            }
-        }
-
-        foreach ($additional as $entityName => $address) {
-            if (!isset($entities[$entityName])) {
-                continue;
-            }
-
-            $entity = $entities[$entityName];
-            if (!$entity instanceof Mage_Sales_Model_Order_Address) {
-                continue;
-            }
-
-            $_countryCode = $this->_getCountryId($address['country_id']);
-            $_regionCode  = null;
-            if ($_countryCode) {
-                foreach (array('region_id', 'region') as $_regionField) {
-                    if (!isset($address[$_regionField])) {
-                        continue;
-                    }
-
-                    $_regionCode = $this->_getRegionId($address[$_regionField], $_countryCode);
-                    if (!empty($_regionCode)) {
-                        break;
-                    }
-                }
-            }
-
-            $entity->addData(array(
-                'country_id' => $_countryCode,
-                'region_id'  => $_regionCode,
-            ));
-
-            $this->addEntityToSave($entityName, $entity);
-        }
-
-        //add comment about all updated fields
-        if (!empty($updateFieldsLog)) {
-            $order->addStatusHistoryComment(
-                "Fields are updated by salesforce:\n"
-                . implode("\n", $updateFieldsLog)
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param $object stdClass
-     * @param $order Mage_Sales_Model_Order
-     * @param bool $isUpdate
-     * @return $this
-     */
-    protected function _updateMappedEntityItemFields($object, $order, $isUpdate = true)
-    {
-        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
-        $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
-            ->addObjectToFilter('OrderItem')
-            ->addFilterTypeSM($isUpdate)
-            ->firstSystem();
-
-        /** @var Mage_Sales_Model_Resource_Order_Item_Collection $_orderItemCollection */
-        $_orderItemCollection = $order->getItemsCollection();
-        $hasSalesforceId      = $_orderItemCollection->walk('getSalesforceId');
-
-        foreach ($object->OrderItems->records as $record) {
-            $orderItemId = array_search($record->Id, $hasSalesforceId);
-            if (false === $orderItemId) {
-                continue;
-            }
-
-            /** @var Mage_Sales_Model_Order_Item $entity */
-            $entity = $_orderItemCollection->getItemById($orderItemId);
-
-            /** @var $mapping TNW_Salesforce_Model_Mapping */
-            foreach ($mappings as $mapping) {
-                if ($mapping->getLocalFieldType() != 'Order Item') {
-                    continue;
-                }
-
-                $newValue = property_exists($record, $mapping->getSfField())
-                    ? $record->{$mapping->getSfField()} : null;
-
-                if (empty($newValue)) {
-                    $newValue = $mapping->getDefaultValue();
-                }
-
-                $entity->setData($mapping->getLocalFieldAttributeCode(), $newValue);
-                $this->addEntityToSave(sprintf('Order Item %s', $entity->getId()), $entity);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param $object stdClass
-     * @param $order Mage_Sales_Model_Order
-     * @return $this
-     */
-    protected function _updateStatus($object, $order)
-    {
-        if (!isset($object->Status) || !$object->Status) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Order status is not avaialble');
-            return $this;
-        }
-
-        $matchedStatuses = Mage::getModel('tnw_salesforce/order_status')
-            ->getCollection()
-            ->addFieldToFilter('sf_order_status', $object->Status);
-
-        if (count($matchedStatuses) === 1) {
-            foreach ($matchedStatuses as $_status) {
-                if ($order->getStatus() != $_status->getStatus()) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Order status updated to ' . $_status->getStatus());
-                    $oldStatusLabel = $order->getStatusLabel();
-                    $order->setStatus($_status->getStatus());
-                    $order->addStatusHistoryComment(
-                        sprintf("Update from salesforce: status is updated from %s to %s",
-                            $oldStatusLabel, $order->getStatusLabel()),
-                        $order->getStatus()
-                    );
-                    $this->addEntityToSave('Order', $order);
-                } else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Order status is in sync');
-                }
-                break;
-            }
-        } elseif (count($matchedStatuses) > 1) {
-            $log = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId());
-            $log .= ' Mapped Salesforce status matches multiple Magento Order statuses';
-            $log .= ' - not sure which one should be selected';
-            $order->addStatusHistoryComment($log);
-            $this->addEntityToSave('Order', $order);
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: ' . $log);
-        } else {
-            $message = sprintf('SKIPPING: Order #%s status update.', $order->getIncrementId())
-                . ' Mapped Salesforce status does not match any Magento Order status';
-            $order->addStatusHistoryComment(
-                $message
-            );
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: ' . $message);
-            $this->addEntityToSave('Order', $order);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param $object
-     * @param $order Mage_Sales_Model_Order
-     * @return $this
-     */
-    protected function _updateNotes($object, $order)
-    {
-        if (!property_exists($object, 'Notes')) {
-            return $this;
-        }
-
-        if (empty($object->Notes->records)) {
-            return $this;
-        }
-
-        $salesforceIds = $order->getStatusHistoryCollection()->walk('getSalesforceId');
-        foreach ($object->Notes->records as $record) {
-            if (empty($record->Body)) {
-                continue;
-            }
-
-            $noteId = array_search($record->Id, $salesforceIds);
-            if ($noteId === false) {
-                $history = Mage::getModel('sales/order_status_history')
-                    ->setStatus($order->getStatus())
-                    ->setComment($record->Body)
-                    ->setSalesforceId($record->Id)
-                    ->setEntityName(Mage_Sales_Model_Order::HISTORY_ENTITY_NAME);
-
-                $order->addStatusHistory($history);
-            }
-            else {
-                $order->getStatusHistoryCollection()
-                    ->getItemById($noteId)
-                    ->setComment($record->Body);
-            }
-        }
-
-        $this->addEntityToSave('Order', $order);
-        return $this;
-    }
-
-    /**
      * @param $product2Id
      * @return Mage_Catalog_Model_Product
      */
@@ -1035,14 +731,19 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
-     * @param $accountId
+     * @param $contactId
+     * @param $websiteId
      * @return Mage_Customer_Model_Customer
      */
-    protected function _searchCustomer($accountId)
+    protected function _searchCustomer($contactId, $websiteId)
     {
         $collection = Mage::getResourceModel('customer/customer_collection')
             ->addNameToSelect()
-            ->addAttributeToFilter('salesforce_id', array('like'=>$accountId));
+            ->addAttributeToFilter('salesforce_id', array('like'=>$contactId));
+
+        if (Mage::getSingleton('customer/config_share')->isWebsiteScope()) {
+            $collection->addAttributeToFilter('website_id', array('eq'=>$websiteId));
+        }
 
         return $collection->getFirstItem();
     }
@@ -1076,14 +777,5 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         }
 
         return NULL;
-    }
-
-    /**
-     * @param $_entity Mage_Sales_Model_Order
-     * @return mixed
-     */
-    protected function _getEntityNumber($_entity)
-    {
-        return $_entity->getIncrementId();
     }
 }

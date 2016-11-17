@@ -145,7 +145,10 @@ class TNW_Salesforce_Block_Adminhtml_Campaign_Salesrulesync_Grid extends Mage_Ad
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->setMassactionIdField('mapping_id');
+            $this
+                ->setMassactionIdField('rule_id')
+                ->setMassactionIdFilter('main_table.rule_id')
+            ;
             $this->getMassactionBlock()->setFormFieldName('salesrules');
 
             $this->getMassactionBlock()->addItem('sync', array(
