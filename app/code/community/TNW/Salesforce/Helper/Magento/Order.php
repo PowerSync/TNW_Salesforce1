@@ -306,6 +306,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
         // Get Product
         $this->addProducts($orderCreate, $object->OrderItems->records);
+
+        $sfItems = array();
+        /** @var stdClass $record */
+        foreach ($object->OrderItems->records as $record) {
+            $sfItems[$record->Id] = $record;
+        }
+
         if (!$orderCreate->getQuote()->hasItems()) {
             $message = Mage::helper('tnw_salesforce')
                 ->__('The quote is empty. Could not move products to create an order.');
