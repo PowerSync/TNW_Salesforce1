@@ -378,9 +378,11 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
         }
 
-        $key = empty($_entityItem->getId())
+        $entityId = $_entityItem->getId();
+
+        $key = empty($entityId)
             ? sprintf('%s_%s', $_entityNumber, count($this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]))
-            : $_entityItem->getId();
+            : $entityId;
 
         $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]['cart_' . $key] = $this->_obj;
     }

@@ -402,9 +402,11 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
                 = $_entityItem->getOrderItem()->getData('salesforce_id');
         }
 
-        $key = empty($_entityItem->getId())
+        $entityId = $_entityItem->getId();
+
+        $key = empty($entityId)
             ? sprintf('%s_%s', $_entityNumber, count($this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]))
-            : $_entityItem->getId();
+            : $entityId;
 
         $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]['cart_' . $key] = $this->_obj;
     }
