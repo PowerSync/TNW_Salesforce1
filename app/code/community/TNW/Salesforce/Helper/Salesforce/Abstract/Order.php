@@ -410,13 +410,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($_entityNumber);
 
-        $_isDescription = property_exists($this->_obj, 'Description');
-        if ((!$_isDescription || ($_isDescription && empty($this->_obj->Description)))
-            && $_entityItem->getBundleItemToSync()
-        ) {
-            $this->_obj->Description = $_entityItem->getBundleItemToSync();
-        }
-
         // use_product_campaign_assignment
         if (
             Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()
@@ -461,9 +454,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("Opportunity/Order Item Object: \n" . print_r($this->_obj, true));
 
-        $key = empty($_entityItem->getId())
+        $entityId = $_entityItem->getId();
+        $key = empty($entityId)
             ? sprintf('%s_%s', $_entityNumber, count($this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]))
-            : $_entityItem->getId();
+            : $entityId;
 
         $this->_cache[sprintf('%sProductsToSync', lcfirst($this->getItemsField()))][$this->_getParentEntityId($_entityNumber)][] = $product->getSku();
         $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]['cart_' . $key] = $this->_obj;
