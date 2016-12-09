@@ -515,6 +515,11 @@ class TNW_Salesforce_Model_Observer
 
     public function pushCreditMemo(Varien_Event_Observer $observer)
     {
+        if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Credit Memo synchronization disabled');
+            return;
+        }
+
         $_creditmemoIds = $observer->getEvent()->getData('creditmemoIds');
         $_message       = $observer->getEvent()->getMessage();
         $_type          = $observer->getEvent()->getType();
