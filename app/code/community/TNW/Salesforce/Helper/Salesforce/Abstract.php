@@ -544,15 +544,17 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
+        $errorLog = array('Failed to upsert "' . $type . '": ');
         if (is_array($_response->errors)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ');
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(print_r($_object, true));
             foreach ($_response->errors as $_error) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
+                $errorLog[] = $_error->message;
             }
         } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message . '. Object dump: ' . $objectStr);
+            $errorLog[] = $_response->errors->message;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveError(implode("\n", $errorLog));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(print_r($_object, true));
     }
 
     public function getCurrencies()

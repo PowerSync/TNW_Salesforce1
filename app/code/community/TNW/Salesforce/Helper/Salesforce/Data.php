@@ -780,33 +780,25 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
-     * @param null $object
-     * @param null $field
-     * @return bool
+     * @param string $object
+     * @param string $field
+     * @return stdClass[]
      */
-    public function getPicklistValues($object = NULL, $field = NULL)
+    public function getPicklistValues($object, $field)
     {
-        if (!$object || !$field || !is_object($this->getClient())) {
-            return false;
-        }
-        try {
-            $list = $this->getClient()->describeSObject($object);
-            if ($list) {
-                foreach ($list->fields as $_field) {
-                    if ($_field->name == $field) {
-                        $sortedList = $_field->picklistValues;
-                        return $sortedList;
-                    }
-                }
+        foreach ($this->describeTable($object) as $_field) {
+            if (strcmp($_field->name, $field) !== 0) {
+                continue;
             }
-            unset($list);
-            return false;
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get picklist (" . $field . ") values from " . $object . " Object");
-            unset($e);
-            return false;
+
+            if (empty($_field->picklistValues)) {
+                break;
+            }
+
+            return $_field->picklistValues;
         }
+
+        return array();
     }
 
     /**
