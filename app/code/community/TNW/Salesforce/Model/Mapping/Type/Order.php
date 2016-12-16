@@ -292,7 +292,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
      */
     public function convertOwnerSalesforceId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner();
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId());
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         $currentOwner  = $_entity->getData($attributeCode);
 

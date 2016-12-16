@@ -524,16 +524,16 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     // Customer Business Account Record Type
 
-    public function getLeadDefaultOwner($storeId = null)
+    public function getLeadDefaultOwner($storeId = null, $websiteId = null)
     {
-        return $this->getStoreConfig(self::LEAD_CONVERTED_OWNER, $storeId);
+        return $this->getStoreConfig(self::LEAD_CONVERTED_OWNER, $storeId, $websiteId);
     }
 
     // Customer get Lead Converted Status
 
-    public function getDefaultOwner($storeId = null)
+    public function getDefaultOwner($storeId = null, $websiteId = null)
     {
-        return $this->getStoreConfig(self::DEFAULT_ENTITY_OWNER, $storeId);
+        return $this->getStoreConfig(self::DEFAULT_ENTITY_OWNER, $storeId, $websiteId);
     }
 
     // Default Lead owner to be used during conversion

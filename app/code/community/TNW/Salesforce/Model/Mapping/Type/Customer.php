@@ -214,7 +214,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSalesforceContactOwnerId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId());
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
         $currentOwner  = $_entity->getData('salesforce_contact_owner_id');
 
         return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
@@ -226,7 +226,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSalesforceAccountOwnerId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId());
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
         $currentOwner  = $_entity->getData('salesforce_account_owner_id');
 
         return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
@@ -238,7 +238,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSalesforceLeadOwnerId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getLeadDefaultOwner($_entity->getStoreId());
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getLeadDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
         $currentOwner  = $_entity->getData('salesforce_lead_owner_id');
 
         return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
