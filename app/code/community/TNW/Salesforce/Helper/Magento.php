@@ -467,7 +467,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'website'           => 'Associate to Website',
                 'sf_stage'          => 'Salesforce Stage',
                 'sf_name'           => 'Salesforce Name',
-                'price_book'        => 'Price Book'
+                'price_book'        => 'Price Book',
+                'owner_salesforce_id'        => 'owner_salesforce_id'
             );
 
             foreach ($_additionalAttributes as $value => $label) {

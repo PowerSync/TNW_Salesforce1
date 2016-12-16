@@ -32,6 +32,9 @@ class TNW_Salesforce_Model_Mapping_Type_Cart extends TNW_Salesforce_Model_Mappin
 
             case 'updated_at':
                 return $this->convertUpdatedAt($_entity);
+
+            case 'owner_salesforce_id':
+                return $this->convertOwnerSalesforceId($_entity);
         }
 
         return parent::_prepareValue($_entity);
@@ -178,5 +181,16 @@ class TNW_Salesforce_Model_Mapping_Type_Cart extends TNW_Salesforce_Model_Mappin
 
         // Always use quote date as closing date if quote already exists
         return gmdate(DATE_ATOM, $closeDate->getTimestamp());
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return string
+     */
+    public function convertOwnerSalesforceId($_entity)
+    {
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId());
+
+        return $defaultOwner;
     }
 }

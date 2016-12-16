@@ -302,11 +302,11 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     protected function getStoreConfig($path, $_currentStoreId = null, $_currentWebsite = null)
     {
         if (!$_currentWebsite) {
-            $_currentWebsite = Mage::app()->getStore()->getWebsiteId();
+            $_currentWebsite = Mage::app()->getStore($_currentStoreId)->getWebsiteId();
         }
 
         if (!$_currentStoreId) {
-            $_currentStoreId = Mage::app()->getStore()->getStoreId();
+            $_currentStoreId = Mage::app()->getWebsite($_currentWebsite)->getDefaultStore()->getId();
         }
 
         if ($_currentWebsite == 0 && $_currentStoreId == 0) {
