@@ -303,7 +303,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
 
 
     /**
-     * @param Mage_Sales_Model_Quote $_entity
+     * @param Mage_Sales_Model_Order $_entity
      * @return string
      */
     public function convertUpdatedAt($_entity)
