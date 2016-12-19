@@ -172,12 +172,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function getSalesforceServerDomain()
     {
-        $this->getClient();
+        $serverDomain = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url');
 
-        $instance_url = explode('/', Mage::getSingleton('core/session')->getSalesforceServerUrl());
-        Mage::getSingleton('core/session')->setSalesforceServerDomain('https://' . $instance_url[2]);
-
-        return 'https://' . $instance_url[2];
+        return $serverDomain;
     }
 
     /**
