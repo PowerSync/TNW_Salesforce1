@@ -299,10 +299,16 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      * @param $path
      * @return mixed|null|string
      */
-    protected function getStoreConfig($path)
+    protected function getStoreConfig($path, $_currentStoreId = null, $_currentWebsite = null)
     {
-        $_currentWebsite = Mage::app()->getStore()->getWebsiteId();
-        $_currentStoreId = Mage::app()->getStore()->getStoreId();
+        if (!$_currentWebsite) {
+            $_currentWebsite = Mage::app()->getStore($_currentStoreId)->getWebsiteId();
+        }
+
+        if (!$_currentStoreId) {
+            $_currentStoreId = Mage::app()->getWebsite($_currentWebsite)->getDefaultStore()->getId();
+        }
+
         if ($_currentWebsite == 0 && $_currentStoreId == 0) {
             if ($this->getStoreId()) {
                 return Mage::getStoreConfig($path, $this->getStoreId());
@@ -312,7 +318,12 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
             }
         }
 
-        return Mage::getStoreConfig($path);
+        $availableStoreIds = Mage::app()->getWebsite($_currentWebsite)->getStoreIds();
+        if (!in_array($_currentStoreId, $availableStoreIds)) {
+            $_currentStoreId = Mage::app()->getWebsite($_currentWebsite)->getDefaultStore()->getId();
+        }
+
+        return Mage::getStoreConfig($path, $_currentStoreId);
     }
 
     /**

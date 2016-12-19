@@ -554,6 +554,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         return $leadConvert;
     }
 
+    /**
+     * @param $parentEntityId
+     * @param array $accounts
+     * @param string $parentEntityType
+     * @return bool
+     */
     public function prepareLeadConversionObject($parentEntityId, $accounts = array(), $parentEntityType = 'order')
     {
         return $this->_prepareLeadConversionObject($parentEntityId, $accounts, $parentEntityType);
