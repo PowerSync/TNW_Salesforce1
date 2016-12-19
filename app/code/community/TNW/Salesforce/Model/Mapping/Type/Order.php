@@ -35,8 +35,6 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
 
             case 'price_book':
                 return $this->convertPriceBook($_entity);
-            case 'updated_at':
-                return $this->convertUpdatedAt($_entity);
 
             case 'owner_salesforce_id':
                 return $this->convertOwnerSalesforceId($_entity);
@@ -301,17 +299,4 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
     }
 
-
-    /**
-     * @param Mage_Sales_Model_Order $_entity
-     * @return string
-     */
-    public function convertUpdatedAt($_entity)
-    {
-        $closeDate = new Zend_Date($_entity->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
-        $closeDate->addDay(Mage::helper('tnw_salesforce/config_sales_abandoned')->getAbandonedCloseTimeAfter($_entity));
-
-        // Always use quote date as closing date if quote already exists
-        return gmdate(DATE_ATOM, $closeDate->getTimestamp());
-    }
 }

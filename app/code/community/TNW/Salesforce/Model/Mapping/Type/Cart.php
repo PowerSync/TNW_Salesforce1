@@ -30,8 +30,8 @@ class TNW_Salesforce_Model_Mapping_Type_Cart extends TNW_Salesforce_Model_Mappin
             case 'price_book':
                 return $this->convertPriceBook($_entity);
 
-            case 'updated_at':
-                return $this->convertUpdatedAt($_entity);
+            case 'sf_close_date':
+                return $this->convertCloseDate($_entity);
 
             case 'owner_salesforce_id':
                 return $this->convertOwnerSalesforceId($_entity);
@@ -174,13 +174,23 @@ class TNW_Salesforce_Model_Mapping_Type_Cart extends TNW_Salesforce_Model_Mappin
      * @param Mage_Sales_Model_Quote $_entity
      * @return string
      */
-    public function convertUpdatedAt($_entity)
+    public function convertCloseDate($_entity)
     {
-        $closeDate = new Zend_Date($_entity->getUpdatedAt(), Varien_Date::DATETIME_INTERNAL_FORMAT);
-        $closeDate->addDay(Mage::helper('tnw_salesforce/config_sales_abandoned')->getAbandonedCloseTimeAfter($_entity));
+        /**
+         * reduce the time to compensate Time zone offset
+         */
+        $timeOffsetInterval = new DateInterval(
+            'P' .
+            abs(Mage::helper('tnw_salesforce/config_sales_abandoned')->getAbandonedCloseTimeAfter($_entity)) .
+            'D'
+        );
 
-        // Always use quote date as closing date if quote already exists
-        return gmdate(DATE_ATOM, $closeDate->getTimestamp());
+        $this->_mapping->setLocalFieldAttributeCode('updated_at');
+        $closeDate = $this->_prepareDateTime($_entity->getUpdatedAt())
+            ->add($timeOffsetInterval)
+            ->format('c');
+
+        return $closeDate;
     }
 
     /**
