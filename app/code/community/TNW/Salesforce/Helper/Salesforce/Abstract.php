@@ -6,6 +6,12 @@
 
 class TNW_Salesforce_Helper_Salesforce_Abstract
 {
+
+    static public $usedHelpers = array();
+
+    /**
+     * @var string
+     */
     protected $_salesforceApiVersion = '34.0';
     /**
      * @var null
@@ -250,6 +256,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         if ($this->_stopFurtherProcessing) {
             return false;
         }
+
+        self::$usedHelpers[get_class($this)] = $this;
 
         return true;
     }

@@ -132,7 +132,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
         $_forceRecordType = Mage::app()->getWebsite($_websiteId)
             ->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE);
 
-        switch($_forceRecordType) {
+        switch ($_forceRecordType) {
             case TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT:
                 return Mage::app()->getWebsite($_websiteId)
                     ->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
@@ -209,15 +209,80 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     }
 
     /**
+     * Get WebsiteKey for lookup
+     * @param $_customer
+     * @return array|int|null|string
+     */
+    protected function getWebsiteKey($_customer)
+    {
+        // Get Customer Website Id
+        $_websiteId = $_customer->getData('website_id');
+        $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+
+        $_sfWebsite = $currentHelper->getWebsiteSfIds($_websiteId);
+        if (!$_sfWebsite) {
+            $_sfWebsite = 0;
+        }
+
+        return $_sfWebsite;
+    }
+    /**
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
      */
     public function convertSalesforceContactOwnerId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
-        $currentOwner  = $_entity->getData('salesforce_contact_owner_id');
+        $availableOwners = array();
 
-        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
+        $result = null;
+
+        /**
+         * Owner already assigned
+         */
+        $availableOwners[] = $_entity->getData('salesforce_contact_owner_id');
+
+        if (Mage::helper('tnw_salesforce/config_customer')->useAccountOwner($_entity->getStoreId(), $_entity->getWesbsiteId())) {
+
+            $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+
+            if (!empty($currentHelper)) {
+
+                /**
+                 * Account owner prepared to push
+                 */
+                if (
+                    isset($currentHelper->_cache['accountsToUpsert']['Id'][$_entity->getId()]) &&
+                    property_exists($currentHelper->_cache['accountsToUpsert']['Id'][$_entity->getId()], 'OwnerId')
+                ) {
+                    /**
+                     * Account owner
+                     */
+                    $availableOwners[] = $currentHelper->_cache['accountsToUpsert']['Id'][$_entity->getId()]->OwnerId;
+                    /**
+                     * if no data in ToUpsert - try to find it in lookup
+                     */
+                } elseif (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]) &&
+                    property_exists($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()], 'OwnerId')
+                ) {
+                    $availableOwners[] = $currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId;
+
+                }
+            }
+        }
+
+        /**
+         * Default owner
+         */
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+
+        foreach ($availableOwners as $owner) {
+            if (!empty($owner) && $this->_isUserActive($owner)) {
+                $result = $owner;
+                break;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -226,10 +291,52 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSalesforceAccountOwnerId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
-        $currentOwner  = $_entity->getData('salesforce_account_owner_id');
+        $result = null;
 
-        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
+        /**
+         * Owner already assigned
+         */
+        $availableOwners[] = $_entity->getData('salesforce_account_owner_id');
+
+        $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+
+        if (!empty($currentHelper)) {
+
+            $websiteKey = $this->getWebsiteKey($_entity);
+
+            /**
+             * Lead owner prepared to push
+             */
+            if (
+                isset($currentHelper->_cache['leadsToUpsert']['Id'][$_entity->getId()]) &&
+                property_exists($currentHelper->_cache['leadsToUpsert']['Id'][$_entity->getId()], 'OwnerId')
+            ) {
+
+                $availableOwners[] = $currentHelper->_cache['leadsToUpsert']['Id'][$_entity->getId()]->OwnerId;
+
+                /**
+                 * if no data in ToUpsert - try to find it in lookup
+                 */
+            } elseif (isset($currentHelper->_cache['leadLookup'][$websiteKey][$_entity->getEmail()]) &&
+                property_exists($currentHelper->_cache['leadLookup'][$websiteKey][$_entity->getEmail()], 'OwnerId')
+            ) {
+                $availableOwners[] = $currentHelper->_cache['leadLookup'][$websiteKey][$_entity->getEmail()]->OwnerId;
+            }
+        }
+
+        /**
+         * Default owner
+         */
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+
+        foreach ($availableOwners as $owner) {
+            if (!empty($owner) && $this->_isUserActive($owner)) {
+                $result = $owner;
+                break;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -238,8 +345,8 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSalesforceLeadOwnerId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getLeadDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
-        $currentOwner  = $_entity->getData('salesforce_lead_owner_id');
+        $defaultOwner = Mage::helper('tnw_salesforce')->getLeadDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+        $currentOwner = $_entity->getData('salesforce_lead_owner_id');
 
         return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
     }

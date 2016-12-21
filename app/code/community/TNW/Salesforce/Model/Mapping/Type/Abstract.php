@@ -458,4 +458,22 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     {
         return Mage::helper('tnw_salesforce/salesforce_data_user')->isUserActive($_sfUserId);
     }
+
+    /**
+     * @param $className
+     * @return null|TNW_Salesforce_Helper_Salesforce_Customer
+     */
+    public function getHelperInstance($className)
+    {
+        $currentHelper = null;
+        foreach (TNW_Salesforce_Helper_Salesforce_Abstract::$usedHelpers as $helper) {
+
+            if ($helper instanceof $className) {
+                $currentHelper = $helper;
+                break;
+            }
+        }
+
+        return $currentHelper;
+    }
 }
