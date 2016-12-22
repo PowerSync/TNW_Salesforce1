@@ -292,11 +292,49 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
      */
     public function convertOwnerSalesforceId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId());
-        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
-        $currentOwner  = $_entity->getData($attributeCode);
 
-        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
+        $availableOwners = array();
+
+        $result = null;
+
+        /**
+         * Owner already assigned
+         */
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+        $availableOwners[]  = $_entity->getData($attributeCode);
+
+        if (Mage::helper('tnw_salesforce/config_customer')->useAccountOwner($_entity->getStoreId(), $_entity->getWesbsiteId())) {
+
+            $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+
+            if (!empty($currentHelper)) {
+
+                /**
+                 * Account owner from lookup
+                 */
+                if (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]) &&
+                    property_exists($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()], 'OwnerId')
+                ) {
+                    $availableOwners[] = $currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId;
+
+                }
+            }
+        }
+
+        /**
+         * Default owner
+         */
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+
+        foreach ($availableOwners as $owner) {
+            if (!empty($owner) && $this->_isUserActive($owner)) {
+                $result = $owner;
+                break;
+            }
+        }
+
+        return $result;
+
     }
 
 }
