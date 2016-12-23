@@ -204,8 +204,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
             $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_order_status');
             return ($orderStatus) ? $orderStatus : Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
-        }
-        else {
+        } else {
             $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_opportunity_status_code');
             return ($orderStatus)
                 ? $orderStatus : 'Committed';
@@ -223,8 +222,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
                 ->addFieldToFilter('sf_order_status', $value);
 
             return $matchedStatuses->getFirstItem()->getData('status');
-        }
-        else {
+        } else {
             $matchedStatuses = Mage::getResourceModel('tnw_salesforce/order_status_collection')
                 ->addFieldToFilter('sf_opportunity_status_code', $value);
 
@@ -253,8 +251,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
     {
         if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
             return "Magento Order #" . $this->convertNumber($_entity);
-        }
-        else {
+        } else {
             return "Request #" . $this->convertNumber($_entity);
         }
 
@@ -273,8 +270,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
             $pricebook2Id = Mage::app()
                 ->getStore($_entity->getStoreId())
                 ->getConfig($_helper::PRODUCT_PRICEBOOK);
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("INFO: Could not load pricebook based on the order ID. Loading default pricebook based on current store ID.");
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
 
@@ -301,23 +297,20 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
          * Owner already assigned
          */
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
-        $availableOwners[]  = $_entity->getData($attributeCode);
+        $availableOwners[] = $_entity->getData($attributeCode);
 
-        if (Mage::helper('tnw_salesforce/config_customer')->useAccountOwner($_entity->getStoreId(), $_entity->getWesbsiteId())) {
+        $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Order');
 
-            $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+        if (!empty($currentHelper)) {
 
-            if (!empty($currentHelper)) {
+            /**
+             * Account owner from lookup
+             */
+            if (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]) &&
+                property_exists($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()], 'OwnerId')
+            ) {
+                $availableOwners[] = $currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId;
 
-                /**
-                 * Account owner from lookup
-                 */
-                if (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]) &&
-                    property_exists($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()], 'OwnerId')
-                ) {
-                    $availableOwners[] = $currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId;
-
-                }
             }
         }
 
@@ -326,12 +319,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
          */
         $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
 
-        foreach ($availableOwners as $owner) {
-            if (!empty($owner) && $this->_isUserActive($owner)) {
-                $result = $owner;
-                break;
-            }
-        }
+        $this->getFirstAvailableOwner($availableOwners);
 
         return $result;
 

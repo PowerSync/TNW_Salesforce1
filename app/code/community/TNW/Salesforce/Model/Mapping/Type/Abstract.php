@@ -476,4 +476,22 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
         return $currentHelper;
     }
+
+    /**
+     * Check array of owners and return first active user
+     * @param $availableOwners
+     * @return null
+     */
+    public function getFirstAvailableOwner($availableOwners)
+    {
+
+        $result = null;
+        foreach ($availableOwners as $owner) {
+            if (!empty($owner) && $this->_isUserActive($owner)) {
+                $result = $owner;
+                break;
+            }
+        }
+        return $result;
+    }
 }

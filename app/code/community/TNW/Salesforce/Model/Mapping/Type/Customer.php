@@ -329,12 +329,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
          */
         $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
 
-        foreach ($availableOwners as $owner) {
-            if (!empty($owner) && $this->_isUserActive($owner)) {
-                $result = $owner;
-                break;
-            }
-        }
+        $this->getFirstAvailableOwner($availableOwners);
 
         return $result;
     }
