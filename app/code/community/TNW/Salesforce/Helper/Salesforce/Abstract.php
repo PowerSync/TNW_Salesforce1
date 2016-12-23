@@ -518,6 +518,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 if (property_exists($_responseRow, 'state')) {
                     if ('Failed' == $_responseRow->state) {
                         $completed = 'exception';
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError(sprintf('Batch failed: %s', @$_responseRow->stateMessage));
+
                         break;
                         // completed but failed
                     } elseif ('Completed' != $_responseRow->state) {
@@ -536,6 +539,35 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         }
 
         return $completed;
+    }
+
+    /**
+     * @param $jobId
+     * @return bool
+     */
+    protected function waitingSuccessStatusBatch($jobId)
+    {
+        $result = $this->_checkBatchCompletion($jobId);
+
+        $attempt = 1;
+        while (strval($result) != 'exception' && !$result) {
+            set_time_limit(1800);
+            sleep(5);
+            $result = $this->_checkBatchCompletion($jobId);
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Still checking (job: ' . $jobId . ')...');
+
+            $result = $this->_whenToStopWaiting($result, ++$attempt, $jobId);
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace('Batch is complete! Moving on...');
+
+        if (strval($result) == 'exception') {
+            return false;
+        }
+
+        return true;
     }
 
     /**
