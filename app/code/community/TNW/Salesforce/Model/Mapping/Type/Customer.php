@@ -215,17 +215,26 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     protected function getWebsiteKey($_customer)
     {
+        $_sfWebsite = 0;
+
         // Get Customer Website Id
         $_websiteId = $_customer->getData('website_id');
         $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
 
-        $_sfWebsite = $currentHelper->getWebsiteSfIds($_websiteId);
-        if (!$_sfWebsite) {
-            $_sfWebsite = 0;
+        if (!$_websiteId || empty($currentHelper)) {
+            $_websiteId = 0;
+        }
+
+        if (!empty($currentHelper)) {
+            $_sfWebsite = $currentHelper->getWebsiteSfIds($_websiteId);
+            if (!$_sfWebsite) {
+                $_sfWebsite = 0;
+            }
         }
 
         return $_sfWebsite;
     }
+
     /**
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
@@ -275,12 +284,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
          */
         $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
 
-        foreach ($availableOwners as $owner) {
-            if (!empty($owner) && $this->_isUserActive($owner)) {
-                $result = $owner;
-                break;
-            }
-        }
+        $result = $this->getFirstAvailableOwner($availableOwners);
 
         return $result;
     }
@@ -329,7 +333,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
          */
         $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
 
-        $this->getFirstAvailableOwner($availableOwners);
+        $result = $this->getFirstAvailableOwner($availableOwners);
 
         return $result;
     }
@@ -340,9 +344,11 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSalesforceLeadOwnerId($_entity)
     {
-        $defaultOwner = Mage::helper('tnw_salesforce')->getLeadDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
-        $currentOwner = $_entity->getData('salesforce_lead_owner_id');
+        $availableOwners[] = $_entity->getData('salesforce_lead_owner_id');
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getLeadDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
 
-        return $this->_isUserActive($currentOwner) ? $currentOwner : $defaultOwner;
+        $result = $this->getFirstAvailableOwner($availableOwners);
+
+        return $result;
     }
 }
