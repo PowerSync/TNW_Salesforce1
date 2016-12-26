@@ -560,10 +560,10 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             $result = $this->_whenToStopWaiting($result, ++$attempt, $jobId);
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace('Batch is complete! Moving on...');
-
         if (strval($result) == 'exception') {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('Check batch is failed! Stopping...');
+
             return false;
         }
 
