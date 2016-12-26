@@ -259,10 +259,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                 /**
                  * Account owner prepared to push
                  */
-                if (
-                    isset($currentHelper->_cache['accountsToUpsert']['Id'][$_entity->getId()]) &&
-                    property_exists($currentHelper->_cache['accountsToUpsert']['Id'][$_entity->getId()], 'OwnerId')
-                ) {
+                if (isset($currentHelper->_cache['accountsToUpsert']['Id'][$_entity->getId()]->OwnerId)) {
                     /**
                      * Account owner
                      */
@@ -270,8 +267,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                     /**
                      * if no data in ToUpsert - try to find it in lookup
                      */
-                } elseif (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId)
-                ) {
+                } elseif (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId)) {
                     $availableOwners[] = $currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId;
 
                 }
@@ -310,19 +306,14 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
             /**
              * Lead owner prepared to push
              */
-            if (
-                isset($currentHelper->_cache['leadsToUpsert']['Id'][$_entity->getId()]) &&
-                property_exists($currentHelper->_cache['leadsToUpsert']['Id'][$_entity->getId()], 'OwnerId')
-            ) {
+            if (isset($currentHelper->_cache['leadsToUpsert']['Id'][$_entity->getId()]->OwnerId)) {
 
                 $availableOwners[] = $currentHelper->_cache['leadsToUpsert']['Id'][$_entity->getId()]->OwnerId;
 
                 /**
                  * if no data in ToUpsert - try to find it in lookup
                  */
-            } elseif (isset($currentHelper->_cache['leadLookup'][$websiteKey][$_entity->getEmail()]) &&
-                property_exists($currentHelper->_cache['leadLookup'][$websiteKey][$_entity->getEmail()], 'OwnerId')
-            ) {
+            } elseif (isset($currentHelper->_cache['leadLookup'][$websiteKey][$_entity->getEmail()]->OwnerId)) {
                 $availableOwners[] = $currentHelper->_cache['leadLookup'][$websiteKey][$_entity->getEmail()]->OwnerId;
             }
         }
