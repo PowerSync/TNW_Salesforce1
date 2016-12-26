@@ -270,8 +270,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
                     /**
                      * if no data in ToUpsert - try to find it in lookup
                      */
-                } elseif (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]) &&
-                    property_exists($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()], 'OwnerId')
+                } elseif (isset($currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId)
                 ) {
                     $availableOwners[] = $currentHelper->_cache['accountLookup'][0][$_entity->getEmail()]->OwnerId;
 
