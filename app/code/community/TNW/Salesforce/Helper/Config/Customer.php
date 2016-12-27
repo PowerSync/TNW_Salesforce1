@@ -54,9 +54,9 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
      * @comment return true if owner from config should be used
      * @return bool
      */
-    public function useAccountOwner()
+    public function useAccountOwner($storeId = null, $websiteId = null)
     {
-        return $this->getStoreConfig(self::CONFIG_CONTACT_ASIGNEE) == TNW_Salesforce_Model_Config_Contact_Asignee::CONTACT_ASIGNEE_ACCOUNT;
+        return $this->getStoreConfig(self::CONFIG_CONTACT_ASIGNEE, $storeId, $websiteId) == TNW_Salesforce_Model_Config_Contact_Asignee::CONTACT_ASIGNEE_ACCOUNT;
     }
 
     /**
