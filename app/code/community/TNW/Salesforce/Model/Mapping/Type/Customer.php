@@ -252,7 +252,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
         if (Mage::helper('tnw_salesforce/config_customer')->useAccountOwner($_entity->getStoreId(), $_entity->getWesbsiteId())) {
 
-            $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+            $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
 
             if (!empty($currentHelper)) {
 
