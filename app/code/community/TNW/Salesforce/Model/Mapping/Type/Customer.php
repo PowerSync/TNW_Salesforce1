@@ -219,7 +219,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
         // Get Customer Website Id
         $_websiteId = $_customer->getData('website_id');
-        $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+        $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
 
         if (!$_websiteId || empty($currentHelper)) {
             $_websiteId = 0;
@@ -297,7 +297,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
          */
         $availableOwners[] = $_entity->getData('salesforce_account_owner_id');
 
-        $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_Customer');
+        $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
 
         if (!empty($currentHelper)) {
 
