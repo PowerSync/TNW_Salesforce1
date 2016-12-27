@@ -465,7 +465,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
      */
     public function getHelperInstance($classAlias)
     {
-        $className = Mage::getConfig()->getModelClassName($classAlias);
+        $className = Mage::getConfig()->getHelperClassName($classAlias);
         $currentHelper = null;
         foreach (TNW_Salesforce_Helper_Salesforce_Abstract::$usedHelpers as $helper) {
 
