@@ -299,7 +299,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         $availableOwners[] = $_entity->getData($attributeCode);
 
-        $currentHelper = $this->getHelperInstance('TNW_Salesforce_Helper_Salesforce_' . Mage::helper('tnw_salesforce')->getOrderObject());
+        $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_' . Mage::helper('tnw_salesforce')->getOrderObject());
 
         if (!empty($currentHelper)) {
 
