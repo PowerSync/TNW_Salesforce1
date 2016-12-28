@@ -260,12 +260,8 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
          */
         $collection = $entityModel->getCollection();
 
-        $_chunks = array_chunk($idSet, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT);
-        unset($itemIds);
         try {
-            foreach ($_chunks as $_chunk) {
-
-                $collection->resetData();
+            foreach (array_chunk($idSet, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
                 $collection->addFieldToFilter($entityModel->getIdFieldName(), array('in' => $_chunk));
 
                 $select = $collection->getSelect();

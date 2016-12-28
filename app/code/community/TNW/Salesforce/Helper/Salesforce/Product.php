@@ -4,6 +4,7 @@
  * Class TNW_Salesforce_Helper_Salesforce_Product
  *
  * @method Mage_Catalog_Model_Product getEntityCache($cachePrefix)
+ * @method Mage_Catalog_Model_Product _modelEntity()
  */
 class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
 {
@@ -238,7 +239,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
      */
     protected function storesAvailable($entity)
     {
-        return array_merge(array(Mage::app()->getStore('admin')->getId()), $entity->getStoreIds());
+        return array_map(function (Mage_Core_Model_Store $store) {
+            return $store->getId();
+        }, Mage::app()->getWebsite()->getStores());
     }
 
     /**
