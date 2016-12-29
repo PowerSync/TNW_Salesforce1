@@ -244,14 +244,10 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      */
     public function addObject(array $idSet = array(), $sfObType, $mageObType, $syncBulk = false)
     {
-        // TODO: Need to rewrite to use insertMultiple
-        // TODO: (Trello) https://trello.com/c/mJkQlYv3/144-performance-rewrite-addobject-to-insert-multiple-rows-with-1-query-to-optimize-performance
-        // save to table
-
         $entityModelAlias = $this->getMageModels($mageObType);
 
         /**
-         * @var $entityModel Mage_Sales_Model_Order|Mage_Catalog_Model_Product
+         * @var $entityModel Mage_Core_Model_Abstract
          */
         $entityModel = Mage::getModel($entityModelAlias);
 
@@ -265,7 +261,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 $collection->addFieldToFilter($entityModel->getIdFieldName(), array('in' => $_chunk));
 
                 $select = $collection->getSelect();
-                $select->reset(Zend_Db_Select::COLUMNS);
+                $select->reset($select::COLUMNS);
 
                 $syncType = $syncBulk
                     ? TNW_Salesforce_Model_Cron::SYNC_TYPE_BULK

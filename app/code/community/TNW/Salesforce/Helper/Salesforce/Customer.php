@@ -878,15 +878,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
          */
         $this->setForceLeadConvertaton(true);
 
-        // test sf api connection
-        /** @var TNW_Salesforce_Model_Connection $_client */
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$_client->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
-
-            return false;
-        }
-
         $this->_skippedEntity = array();
         try {
             $_existIds = array_filter(array_map(function(Mage_Customer_Model_Customer $_customer){

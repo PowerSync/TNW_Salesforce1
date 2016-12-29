@@ -12,10 +12,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     const UPDATE_LIMIT = 100;
 
     const PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL = 'NOT IN USE';
-    /**
-     * @var null
-     */
-    protected $_write = NULL;
 
     /**
      * @var array
@@ -44,20 +40,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     public function connect()
     {
-        return Mage::getSingleton('tnw_salesforce/connection')->initConnection();
-    }
-
-    /**
-     * @return mixed|Salesforce_SforceEnterpriseClient
-     */
-    public function getClient()
-    {
-        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
-    }
-
-    public function isLoggedIn()
-    {
-        return Mage::getSingleton('tnw_salesforce/connection')->isLoggedIn();
+        return TNW_Salesforce_Model_Connection::createConnection()->initConnection();
     }
 
     /**

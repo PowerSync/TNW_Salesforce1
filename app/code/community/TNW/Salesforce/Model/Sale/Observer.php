@@ -64,66 +64,6 @@ class TNW_Salesforce_Model_Sale_Observer
         }
     }
 
-
-    /* Shipment Sync */
-    public function shipmentPush($observer)
-    {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
-        $shipment = $observer->getEvent()->getShipment();
-        $order = $shipment->getOrder();
-
-        if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper('tnw_salesforce/salesforce_opportunity')->resetOrder($order->getId());
-        }
-
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING shipment sync');
-            return; // Disabled
-        }
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
-            return; // Disabled
-        }
-
-        // check if queue sync setting is on - then save to database
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
-
-            // Extract all purchased products and add to local storage for sync
-            $_productIds = array();
-            foreach ($order->getAllVisibleItems() as $_item) {
-                $_productIds[] = (int)Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart($_item);
-            }
-
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: products from the order were not saved in local storage');
-                return;
-            }
-
-            // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: order not saved to local storage');
-            }
-        } else {
-            if ($order->getId() && $order->getSalesforceId()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Shipping Start ######################################");
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("----- Shipping itmes from Order #" . $order->getRealOrderId() . " -----");
-                Mage::helper('tnw_salesforce/shipment')->salesforcePush($shipment, $order->getSalesforceId());
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Shipping End ########################################");
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER SHIPMENT. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
-            }
-        }
-    }
-
     /**
      * order sync event
      *
@@ -429,7 +369,7 @@ class TNW_Salesforce_Model_Sale_Observer
 
             // Assign Campaign
             try {
-                Mage::getSingleton('tnw_salesforce/connection')->getClient()
+                TNW_Salesforce_Model_Connection::createConnection()->getClient()
                     ->update(array($obj), 'Campaign');
 
                 $rule->setData('salesforce_id', $this->assignToCampaign);

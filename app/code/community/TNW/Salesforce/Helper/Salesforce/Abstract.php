@@ -24,13 +24,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected $_useCache = false;
 
     /**
-     * reference to salesforce connection
-     *
-     * @var null|Salesforce_SforceEnterpriseClient
-     */
-    public $_mySforceConnection = NULL;
-
-    /**
      * @var null
      */
     protected $_obj = NULL;
@@ -106,16 +99,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * @var null
      */
-    protected $_salesforceSessionId = NULL;
-
-    /**
-     * @var null
-     */
-    protected $_salesforceServerDomain = NULL;
-
-    /**
-     * @var null
-     */
     protected $_prefix = NULL;
 
     /**
@@ -145,32 +128,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     }
 
     /**
-     * test for product integration flag,
-     * try to extract the salesforce connection from the helper, if not available
-     * we instantiate another salesforce connection
-     */
-    protected function checkConnection()
-    {
-        if (!$this->_mySforceConnection) {
-            $this->_mySforceConnection = Mage::getSingleton('tnw_salesforce/connection')->getClient();
-        }
-    }
-
-    /**
      * @return Salesforce_SforceEnterpriseClient
      */
     public function getClient()
     {
-        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
-    }
-
-    /**
-     * @param null $_value
-     * @deprecated
-     */
-    public function setSalesforceServerDomain($_value = NULL)
-    {
-        $this->_salesforceServerDomain = $_value;
+        return TNW_Salesforce_Model_Connection::createConnection()->getClient();
     }
 
     /**
@@ -181,15 +143,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $serverDomain = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url');
 
         return $serverDomain;
-    }
-
-    /**
-     * @param null $_value
-     * @deprecated
-     */
-    public function setSalesforceSessionId($_value = NULL)
-    {
-        $this->_salesforceSessionId = $_value;
     }
 
     /**
@@ -247,8 +200,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             return false;
         }
 
-        $this->checkConnection();
-        if (!$this->_mySforceConnection) {
+        if (!$this->getClient()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
             return false;
         }
@@ -297,7 +249,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $_jobInfo = simplexml_load_string($response);
 
         if (isset($_jobInfo->exceptionMessage)) {
-            throw new Exception('Cannot find job id:' . $_jobInfo->exceptionMessage);
+            throw new Exception('Cannot find job id:' . (string)$_jobInfo->exceptionMessage);
         } elseif (!isset($_jobInfo->id)) {
             throw new Exception('Cannot find job id');
         }

@@ -126,7 +126,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_personAccountRecordTypes = array();
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = array();
-    protected $_objectSyncType = null;
 
     //const MODULE_TYPE = 'BASIC';
     /**
@@ -211,30 +210,30 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     // Is extension enabled in config
 
-    public function getApiUsername()
+    public function getApiUsername($_currentStoreId = null, $_currentWebsite = null)
     {
-        return $this->getStoreConfig(self::API_USERNAME);
+        return $this->getStoreConfig(self::API_USERNAME, $_currentStoreId, $_currentWebsite);
     }
 
     // Salesforce API Username
 
-    public function getApiPassword()
+    public function getApiPassword($_currentStoreId = null, $_currentWebsite = null)
     {
-        return $this->getStoreConfig(self::API_PASSWORD);
+        return $this->getStoreConfig(self::API_PASSWORD, $_currentStoreId, $_currentWebsite);
     }
 
     // Salesforce API Password
 
-    public function getApiToken()
+    public function getApiToken($_currentStoreId = null, $_currentWebsite = null)
     {
-        return $this->getStoreConfig(self::API_TOKEN);
+        return $this->getStoreConfig(self::API_TOKEN, $_currentStoreId, $_currentWebsite);
     }
 
     // Salesforce API User Tocken
 
-    public function getApiWSDL()
+    public function getApiWSDL($_currentStoreId = null, $_currentWebsite = null)
     {
-        return $this->getStoreConfig(self::API_WSDL);
+        return $this->getStoreConfig(self::API_WSDL, $_currentStoreId, $_currentWebsite);
     }
 
     // Salesforce WSDL file location
@@ -379,17 +378,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getObjectSyncType()
     {
-        if (!empty($this->_objectSyncType)) {
-            return $this->_objectSyncType;
-        }
-
         return $this->getStoreConfig(self::OBJECT_SYNC_TYPE);
-    }
-
-    public function setObjectSyncType($objectSyncType)
-    {
-        $this->_objectSyncType = $objectSyncType;
-        return $this;
     }
 
     // queue object sync type
@@ -721,7 +710,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function canPush()
     {
         if ($this->isWorking()
-            && Mage::getSingleton('tnw_salesforce/connection')->getClient()
+            && TNW_Salesforce_Model_Connection::createConnection()->getClient()
         ) {
             Mage::getSingleton('core/session')->setSfNotWorking(false);
             return true;
@@ -1078,12 +1067,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function getSalesforcePackagesVersion()
     {
-        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        $_model = TNW_Salesforce_Model_Connection::createConnection();
         $_model->tryWsdl();
 
         if (!$this->_sfVersions && $_model->isWsdlFound()) {
-            $sfClient = Mage::getSingleton('tnw_salesforce/connection');
-            $wsdlFile = $sfClient->getWsdl();
+            $wsdlFile = $_model->getWsdl();
 
             $wsdl = file_get_contents($wsdlFile);
 
@@ -1113,13 +1101,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         $type = self::SALESFORCE_ENTERPRISE;
 
         try {
-            $this->checkConnection();
-
-            if ($this->_mySforceConnection) {
-                $typeObj = $this->_mySforceConnection->query('select OrganizationType from Organization');
-                if (is_object($typeObj) && property_exists($typeObj, 'size') && $typeObj->size) {
-                    $type = $typeObj->records[0]->OrganizationType;
-                }
+            /** @var stdClass $typeObj */
+            $typeObj = $this->getClient()->query('select OrganizationType from Organization');
+            if (!empty($typeObj->records)) {
+                $type = $typeObj->records[0]->OrganizationType;
             }
         }
         catch (Exception $e) {

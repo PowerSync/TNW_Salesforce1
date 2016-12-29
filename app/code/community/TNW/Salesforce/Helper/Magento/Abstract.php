@@ -139,7 +139,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     public static function sendMagentoIdToSalesforce($_association)
     {
         /** @var TNW_Salesforce_Model_Connection $_client */
-        $_client = Mage::getSingleton('tnw_salesforce/connection');
+        $_client = TNW_Salesforce_Model_Connection::createConnection();
         if (!$_client->initConnection()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on sync entity, sf api connection failed");
 

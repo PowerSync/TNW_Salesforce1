@@ -217,7 +217,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                 $returnArray[strtolower(trim($s))] = $record;
             }
 
-            Mage::getSingleton('tnw_salesforce/connection')->clearMemory();
+            $this->clearMemory();
 
             return $returnArray;
         } catch (Exception $e) {

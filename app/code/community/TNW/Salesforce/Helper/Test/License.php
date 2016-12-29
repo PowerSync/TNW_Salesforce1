@@ -29,7 +29,7 @@ class TNW_Salesforce_Helper_Test_License extends TNW_Salesforce_Helper_Test_Abst
      */
     protected function _performTest()
     {
-        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        $_model = TNW_Salesforce_Model_Connection::createConnection();
         return $_model->checkPackage();
     }
 

@@ -74,43 +74,16 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     );
 
     /**
-     * sf connection entity
-     *
-     * @var Salesforce_SforceEnterpriseClient
-     */
-    protected $_mySforceConnection = false;
-
-    /**
      * @var array
      */
     protected $_cache = array();
-
-    /**
-     * init sf connection
-     * the method duplicated here from childs
-     * as well methods checkConnection() left in childs for old code compatibility
-     */
-    protected function checkConnection()
-    {
-        try {
-            $this->_mySforceConnection = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
-            if (!$this->_mySforceConnection) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
-                return;
-            }
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: could not get salesforce connection");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error info:" . $e->getMessage());
-            return;
-        }
-    }
 
     /**
      * @return Salesforce_SforceEnterpriseClient
      */
     public function getClient()
     {
-        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
+        return TNW_Salesforce_Model_Connection::createConnection()->getClient();
     }
 
     protected function _processErrors($_response, $type = 'order', $_object = null)
@@ -141,7 +114,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      */
     protected function deleteSfObjectById($id = false)
     {
-        return $this->_mySforceConnection->delete(array($id));
+        return $this->getClient()->delete(array($id));
     }
 
     /**
@@ -412,10 +385,6 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     protected function _reset()
     {
         $this->_initCache();
-
-        if (!$this->_mySforceConnection) {
-            $this->checkConnection();
-        }
 
         $sql = "SELECT * FROM `" . $this->getTable('eav_entity_type') . "` WHERE entity_type_code = 'customer'";
         $row = $this->getDbConnection('read')->query($sql)->fetch();

@@ -43,8 +43,6 @@ class TNW_Salesforce_Helper_Salesforce_Newslettersubscriber extends TNW_Salesfor
             return false;
         }
 
-        $this->checkConnection();
-
         /** @var  TNW_Salesforce_Helper_Salesforce_Data $helper_sf_data */
         $helper_sf_data = Mage::helper('tnw_salesforce/salesforce_data');
 

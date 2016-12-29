@@ -40,7 +40,7 @@ class TNW_Salesforce_Model_Config_Products_Backend_Fees extends Mage_Core_Model_
         }
 
         try {
-            $_responses = Mage::getSingleton('tnw_salesforce/connection')->getClient()
+            $_responses = TNW_Salesforce_Model_Connection::createConnection()->getClient()
                 ->upsert('Id', $createProduct, 'Product2');
         } catch (Exception $e) {
             $_responses = array();

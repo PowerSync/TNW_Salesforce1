@@ -38,8 +38,27 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
         }
         else if (isset($this->_args['outgoing'])) {
             try {
+                $websites = Mage::app()->getWebsites(true);
+                if (isset($this->_args['website'])) {
+                    $websites = array(Mage::app()->getWebsite($this->_args['website']));
+                }
+
                 $this->processLock(self::LOCK_OUTGOING);
-                Mage::getModel('tnw_salesforce/cron')->processQueue();
+
+                /** @var Mage_Core_Model_App_Emulation $appEmulation */
+                $appEmulation = Mage::getSingleton('core/app_emulation');
+
+                /** @var Mage_Core_Model_Store[] $stores */
+                $stores = array_map(function (Mage_Core_Model_Website $website) {
+                    return $website->getDefaultStore();
+                }, $websites);
+
+                foreach ($stores as $store) {
+                    $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
+                    Mage::getModel('tnw_salesforce/cron')->processQueue();
+                    $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+                }
+
                 echo "Import successfully finished\n";
             } catch (Mage_Core_Exception $e) {
                 echo $e->getMessage() . "\n";
@@ -52,9 +71,27 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
         }
         else if (isset($this->_args['bulk'])) {
             try {
+                $websites = Mage::app()->getWebsites(true);
+                if (isset($this->_args['website'])) {
+                    $websites = array(Mage::app()->getWebsite($this->_args['website']));
+                }
+
                 $this->processLock(self::LOCK_BULK);
-                Mage::helper('tnw_salesforce')->setObjectSyncType('sync_type_system_scheduled');
-                Mage::getModel('tnw_salesforce/cron')->processBulkQueue();
+
+                /** @var Mage_Core_Model_App_Emulation $appEmulation */
+                $appEmulation = Mage::getSingleton('core/app_emulation');
+
+                /** @var Mage_Core_Model_Store[] $stores */
+                $stores = array_map(function (Mage_Core_Model_Website $website) {
+                    return $website->getDefaultStore();
+                }, $websites);
+
+                foreach ($stores as $store) {
+                    $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
+                    Mage::getModel('tnw_salesforce/cron')->processBulkQueue();
+                    $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+                }
+
                 echo "Import successfully finished\n";
             } catch (Mage_Core_Exception $e) {
                 echo $e->getMessage() . "\n";
