@@ -236,10 +236,21 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             ->setIsDefaultBilling('1')
             ->setSaveInAddressBook('0')
             ->setTelephone(strip_tags($_formData['telephone']));
+
+        $_shippingAddress = Mage::getModel('customer/address');
+        $_shippingAddress->setCustomerId(0)
+            ->setId('2')
+            ->setIsDefaultShipping('1')
+            ->setSaveInAddressBook('0')
+            ->setTelephone(strip_tags($_formData['telephone']));
+
         $_billingAddress->setCompany($company);
         $fakeCustomer->addAddress($_billingAddress);
+        $fakeCustomer->addAddress($_shippingAddress);
         $_billingAddress->setCustomer($fakeCustomer);
+        $_shippingAddress->setCustomer($fakeCustomer);
         $fakeCustomer->setDefaultBilling(1);
+        $fakeCustomer->setDefaultShipping(2);
 
         $customerId = $this->_getEntityId($fakeCustomer);
         if (Mage::registry('customer_cached_' . $customerId)) {
@@ -259,20 +270,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         $_id = null;
         if ($this->forceAdd(array($fakeCustomer))) {
+            Mage::register('customer_event_type', 'contact_us');
             $this->setForceLeadConvertaton(false);
             $this->process();
+            Mage::unregister('customer_event_type');
         }
 
-//        if ($fakeCustomer->getData('salesforce_is_person')) {
-//            $_id = $fakeCustomer->getData('salesforce_account_id');
-//        } else {
-            foreach (array('salesforce_id', 'salesforce_lead_id') as $sfKey) {
-                $_id = $fakeCustomer->getData($sfKey);
-                if (!empty($_id)) {
-                    break;
-                }
+        foreach (array('salesforce_id', 'salesforce_lead_id') as $sfKey) {
+            $_id = $fakeCustomer->getData($sfKey);
+            if (!empty($_id)) {
+                break;
             }
-//        }
+        }
 
         return $_id;
     }
@@ -1347,6 +1356,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
     }
 
+    /**
+     *
+     */
     protected function _updateMagento()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- Start: Magento Update ----------");
@@ -1391,6 +1403,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---------- End: Magento Update ----------");
     }
 
+    /**
+     * @param null $_customerId
+     * @param int $_value
+     * @param null $_attributeName
+     * @param string $_tableName
+     */
     public function updateMagentoEntityValue($_customerId = NULL, $_value = 0, $_attributeName = NULL, $_tableName = 'customer_entity_varchar')
     {
         if (empty($_customerId)) {
@@ -1443,6 +1461,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected function _pushToSalesforce()
     {
         /**
+         * prefix for special events: ContactUs and soon
+         */
+        $eventType = null;
+        if (Mage::registry('customer_event_prefix')) {
+            $eventType = Mage::registry('customer_event_type');
+        }
+
+        /**
          * Upsert Accounts
          */
         if (!empty($this->_cache['accountsToUpsert']['Id'])) {
@@ -1453,13 +1479,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $_contactIds = array_keys($this->_cache['accountsToUpsert']['Id']);
             try {
                 Mage::dispatchEvent("tnw_salesforce_account_send_before", array(
-                    "data" => $this->_cache['accountsToUpsert']['Id']
+                    "data" => $this->_cache['accountsToUpsert']['Id'],
+                    'eventType' => $eventType
                 ));
 
                 $_results = $this->getClient()->upsert('Id', array_values($this->_cache['accountsToUpsert']['Id']), 'Account');
                 Mage::dispatchEvent("tnw_salesforce_account_send_after", array(
                     "data" => $this->_cache['accountsToUpsert']['Id'],
-                    "result" => $_results
+                    "result" => $_results,
+                    'eventType' => $eventType
                 ));
             } catch (Exception $e) {
                 $_results = array_fill(0, count($_contactIds),
@@ -1569,11 +1597,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $_contactIds = array_keys($this->_cache['contactsToUpsert']['Id']);
             try {
-                Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert']['Id']));
+                Mage::dispatchEvent("tnw_salesforce_contact_send_before", array(
+                    "data" => $this->_cache['contactsToUpsert']['Id'],
+                    'eventType' => $eventType
+                ));
                 $_results = $this->getClient()->upsert('Id', array_values($this->_cache['contactsToUpsert']['Id']), 'Contact');
                 Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
                     "data" => $this->_cache['contactsToUpsert']['Id'],
-                    "result" => $_results
+                    "result" => $_results,
+                    'eventType' => $eventType
                 ));
             } catch (Exception $e) {
                 $_results = array_fill(0, count($_contactIds),
@@ -1668,11 +1700,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $_contactIds = array_keys($this->_cache['contactsToUpsert'][$this->_magentoId]);
             try {
-                Mage::dispatchEvent("tnw_salesforce_contact_send_before", array("data" => $this->_cache['contactsToUpsert'][$this->_magentoId]));
+                Mage::dispatchEvent("tnw_salesforce_contact_send_before", array(
+                    "data" => $this->_cache['contactsToUpsert'][$this->_magentoId],
+                    'eventType' => $eventType
+                ));
                 $_results = $this->getClient()->upsert($this->_magentoId, array_values($this->_cache['contactsToUpsert'][$this->_magentoId]), 'Contact');
                 Mage::dispatchEvent("tnw_salesforce_contact_send_after", array(
                     "data" => $this->_cache['contactsToUpsert'][$this->_magentoId],
-                    "result" => $_results
+                    "result" => $_results,
+                    'eventType' => $eventType
                 ));
             } catch (Exception $e) {
                 $_results = array_fill(0, count($_contactIds),
@@ -1742,11 +1778,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $_contactIds = array_keys($this->_cache['leadsToUpsert'][$this->_magentoId]);
             try {
-                Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert'][$this->_magentoId]));
+                Mage::dispatchEvent("tnw_salesforce_lead_send_before", array(
+                    "data" => $this->_cache['leadsToUpsert'][$this->_magentoId],
+                    'eventType' => $eventType
+                ));
                 $_results = $this->getClient()->upsert($this->_magentoId, array_values($this->_cache['leadsToUpsert'][$this->_magentoId]), 'Lead');
                 Mage::dispatchEvent("tnw_salesforce_lead_send_after", array(
                     "data" => $this->_cache['leadsToUpsert'][$this->_magentoId],
-                    "result" => $_results
+                    "result" => $_results,
+                    'eventType' => $eventType
                 ));
             } catch (Exception $e) {
                 $_results = array_fill(0, count($_contactIds),
@@ -1820,11 +1860,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $_contactIds = array_keys($this->_cache['leadsToUpsert']['Id']);
             try {
-                Mage::dispatchEvent("tnw_salesforce_lead_send_before", array("data" => $this->_cache['leadsToUpsert']['Id']));
+                Mage::dispatchEvent("tnw_salesforce_lead_send_before", array(
+                    "data" => $this->_cache['leadsToUpsert']['Id'],
+                    'eventType' => $eventType
+                ));
                 $_results = $this->getClient()->upsert('Id', array_values($this->_cache['leadsToUpsert']['Id']), 'Lead');
                 Mage::dispatchEvent("tnw_salesforce_lead_send_after", array(
                     "data" => $this->_cache['leadsToUpsert']['Id'],
-                    "result" => $_results
+                    "result" => $_results,
+                    'eventType' => $eventType
                 ));
             } catch (Exception $e) {
                 $_results = array_fill(0, count($_contactIds),
