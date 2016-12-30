@@ -233,6 +233,141 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         return false;
     }
 
+    protected function generateSelectForType($modelType, $idSet)
+    {
+        switch ($modelType) {
+            case 'sales/order':
+                /** @var Mage_Sales_Model_Resource_Order $resource */
+                $resource   = Mage::getResourceModel('sales/order');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('order'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
+                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `order`.`store_id`', array('website_id'))
+                    ->where($connection->prepareSqlCondition('`order`.`entity_id`', array('in'=>$idSet)))
+                ;
+
+            case 'sales/quote':
+                /** @var Mage_Sales_Model_Resource_Order $resource */
+                $resource   = Mage::getResourceModel('sales/quote');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('quote'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
+                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `quote`.`store_id`', array('website_id'))
+                    ->where($connection->prepareSqlCondition('`quote`.`entity_id`', array('in'=>$idSet)))
+                ;
+
+            case 'customer/customer':
+                /** @var Mage_Customer_Model_Resource_Customer $resource */
+                $resource   = Mage::getResourceModel('customer/customer');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('customer'=>$resource->getEntityTable()), array('object_id' => 'entity_id', 'website_id' => 'website_id'))
+                    ->where($connection->prepareSqlCondition('customer.entity_id', array('in'=>$idSet)))
+                ;
+
+            case 'catalog/product':
+                /** @var Mage_Catalog_Model_Resource_Product $resource */
+                $resource   = Mage::getResourceModel('catalog/product');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('product'=>$resource->getEntityTable()), array('object_id' => 'entity_id'))
+                    ->joinInner(array('website'=>$resource->getTable('catalog/product_website')), 'product.entity_id = website.product_id', array('website_id'))
+                    ->group(array('product.entity_id'))
+                    ->where($connection->prepareSqlCondition('product.entity_id', array('in'=>$idSet)))
+                ;
+
+            case 'core/website':
+                /** @var Mage_Core_Model_Resource_Website $resource */
+                $resource   = Mage::getResourceModel('core/website');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('website'=>$resource->getMainTable()), array('object_id' => 'website_id', 'website_id' => 'website_id'))
+                    ->where($connection->prepareSqlCondition('website.website_id', array('in'=>$idSet)))
+                ;
+
+            case 'sales/order_invoice':
+                /** @var Mage_Sales_Model_Resource_Order_Invoice $resource */
+                $resource   = Mage::getResourceModel('sales/order_invoice');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('invoice'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
+                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `invoice`.`store_id`', array('website_id'))
+                    ->where($connection->prepareSqlCondition('invoice.entity_id', array('in'=>$idSet)))
+                ;
+
+            case 'sales/order_shipment':
+                /** @var Mage_Sales_Model_Resource_Order_Shipment $resource */
+                $resource   = Mage::getResourceModel('sales/order_shipment');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('shipment'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
+                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `shipment`.`store_id`', array('website_id'))
+                    ->where($connection->prepareSqlCondition('shipment.entity_id', array('in'=>$idSet)))
+                ;
+
+            case 'sales/order_creditmemo':
+                /** @var Mage_Sales_Model_Resource_Order_Creditmemo $resource */
+                $resource   = Mage::getResourceModel('sales/order_creditmemo');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('creditmemo'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
+                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `creditmemo`.`store_id`', array('website_id'))
+                    ->where($connection->prepareSqlCondition('creditmemo.entity_id', array('in'=>$idSet)))
+                ;
+
+            case 'catalogrule/rule':
+                /** @var Mage_CatalogRule_Model_Resource_Rule $resource */
+                $resource   = Mage::getResourceModel('catalogrule/rule');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('rule'=>$resource->getMainTable()), array('object_id' => 'rule_id'))
+                    ->joinInner(array('website'=>$resource->getTable('catalogrule/website')), 'rule.rule_id = website.rule_id', array('website_id'))
+                    ->group(array('rule.rule_id'))
+                    ->where($connection->prepareSqlCondition('rule.rule_id', array('in'=>$idSet)))
+                ;
+
+            case 'salesrule/rule':
+                /** @var Mage_SalesRule_Model_Resource_Rule $resource */
+                $resource   = Mage::getResourceModel('salesrule/rule');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('rule'=>$resource->getMainTable()), array('object_id' => 'rule_id'))
+                    ->joinInner(array('website'=>$resource->getTable('salesrule/website')), 'rule.rule_id = website.rule_id', array('website_id'))
+                    ->group(array('rule.rule_id'))
+                    ->where($connection->prepareSqlCondition('rule.rule_id', array('in'=>$idSet)))
+                ;
+
+            default:
+                /**
+                 * @var $entityModel Mage_Core_Model_Abstract
+                 */
+                $entityModel = Mage::getModel($modelType);
+
+                /**
+                 * @var $collection Mage_Sales_Model_Resource_Order_Collection|Mage_Catalog_Model_Resource_Product_Collection
+                 */
+                $collection = $entityModel->getCollection();
+                $collection->addFieldToFilter($entityModel->getIdFieldName(), array('in'=>$idSet));
+
+                return $collection->getSelect()
+                    ->reset(Zend_Db_Select::COLUMNS)
+                    ->columns(array(
+                        'object_id'  => $entityModel->getIdFieldName(),
+                        'website_id' => new Zend_Db_Expr('"0"'),
+                    ));
+        }
+    }
+
     /**
      * insert / update object in table for future sf synchronization
      *
@@ -246,46 +381,28 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     {
         $entityModelAlias = $this->getMageModels($mageObType);
 
-        /**
-         * @var $entityModel Mage_Core_Model_Abstract
-         */
-        $entityModel = Mage::getModel($entityModelAlias);
+        $syncType = $syncBulk
+            ? TNW_Salesforce_Model_Cron::SYNC_TYPE_BULK
+            : TNW_Salesforce_Model_Cron::SYNC_TYPE_OUTGOING;
 
-        /**
-         * @var $collection Mage_Sales_Model_Resource_Order_Collection|Mage_Catalog_Model_Resource_Product_Collection
-         */
-        $collection = $entityModel->getCollection();
+        foreach (array_chunk($idSet, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
+            $select = $this->generateSelectForType($entityModelAlias, $_chunk);
+            $select->columns(array(
+                'mage_object_type'  => new Zend_Db_Expr('"' . $entityModelAlias .'"'),
+                'sf_object_type'    => new Zend_Db_Expr('"' . $sfObType . '"'),
+                'date_created'      => new Zend_Db_Expr('"' . Mage::helper('tnw_salesforce')->getDate() . '"'),
+                'sync_type'         => new Zend_Db_Expr('"' . $syncType . '"')
+            ));
 
-        try {
-            foreach (array_chunk($idSet, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
-                $collection->addFieldToFilter($entityModel->getIdFieldName(), array('in' => $_chunk));
+            $query = $select->insertFromSelect(
+                Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
+                array('object_id', 'website_id',  'mage_object_type', 'sf_object_type', 'date_created', 'sync_type'));
 
-                $select = $collection->getSelect();
-                $select->reset($select::COLUMNS);
-
-                $syncType = $syncBulk
-                    ? TNW_Salesforce_Model_Cron::SYNC_TYPE_BULK
-                    : TNW_Salesforce_Model_Cron::SYNC_TYPE_OUTGOING;
-
-                $columns = array(
-                    'object_id'         => $entityModel->getIdFieldName(),
-                    'mage_object_type'  => new Zend_Db_Expr('"' . $entityModelAlias . '"'),
-                    'sf_object_type'    => new Zend_Db_Expr('"' . $sfObType . '"'),
-                    'date_created'      => new Zend_Db_Expr('"' . Mage::helper('tnw_salesforce')->getDate() . '"'),
-                    'sync_type'         => new Zend_Db_Expr('"' . $syncType . '"'),
-                );
-
-                $select->columns($columns);
-
-                $query = $select->insertFromSelect(
-                    Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
-                    array_keys($columns)
-                );
-
+            try {
                 Mage::helper('tnw_salesforce')->getDbConnection('write')->query($query);
+            } catch (Exception $e) {
+                return false;
             }
-        } catch (\Exception $e) {
-            return false;
         }
 
         return true;
