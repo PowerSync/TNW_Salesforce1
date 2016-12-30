@@ -415,11 +415,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $this->_prepareContacts();
             $this->_prepareNew();
 
-            if ($this instanceof TNW_Salesforce_Helper_Bulk_Customer) {
-                // Clean up the data we are going to be pushing in (for guest orders if multiple orders placed by the same person and they happen to end up in the same batch)
-                $this->_deDupeCustomers();
-            }
-
             $this->clearMemory();
 
             // Push Data
@@ -622,18 +617,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 // Set Conjoint AccountId
                 if (isset($this->_cache['accountLookup'][0][$_email])) {
                     $this->_obj->AccountId = $this->_cache['accountLookup'][0][$_email]->Id;
-
-                    if (empty($this->_obj->Id) && Mage::helper('tnw_salesforce/config_customer')->useAccountOwner($_customer->getStoreId(), $_customer->getStoreId())) {
-                        $_ownerID = $this->_cache['accountLookup'][0][$_email]->OwnerId;
-                        $defaultOwner = Mage::helper('tnw_salesforce')->getDefaultOwner($_customer->getStoreId(), $_customer->getWebsiteId());
-                        if ($_ownerID && $this->_isUserActive($_ownerID)) {
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($type . " record already assigned to " . $_ownerID);
-                        } else {
-                            $_ownerID = $defaultOwner;
-                        }
-
-                        $this->_obj->OwnerId = $_ownerID;
-                    }
                 }
 
                 $this->_cache['contactsToUpsert'][$_upsertOn][$_id] = $this->_obj;

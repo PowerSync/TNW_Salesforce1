@@ -406,7 +406,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     public function getConnection()
     {
         $currentTime = time();
-        if ($currentTime - (int)$this->getPreviousTime() > self::CONNECTION_TIME_LIMIT) {
+        if (empty($this->_connection) || $currentTime - (int)$this->getPreviousTime() > self::CONNECTION_TIME_LIMIT) {
             $this->setPreviousTime($currentTime);
             $this->_connection = null;
             $this->_loggedIn = null;
