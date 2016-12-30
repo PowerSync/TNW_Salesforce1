@@ -1449,7 +1449,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
          */
         $eventType = null;
         if (Mage::registry('customer_event_prefix')) {
-            $eventType = Mage::registry('customer_event_type');
+            $eventType = Mage::registry('customer_event_prefix');
         }
 
         /**
