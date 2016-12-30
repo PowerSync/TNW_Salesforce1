@@ -61,7 +61,7 @@ class TNW_Salesforce_Model_Customer_Observer
                 /** @var tnw_salesforce_helper_salesforce_customer $manualSync */
                 $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
                 if ($manualSync->reset()) {
-                    $manualSync->pushLead($formData);
+                    $manualSync->pushContactUs($formData);
                 }
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('SKIPING: Contact form synchronization, error: ' . $e->getMessage());

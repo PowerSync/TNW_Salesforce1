@@ -269,6 +269,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected function _pushFakeCustomer($fakeCustomer)
     {
         $_id = null;
+        $this->reset();
         if ($this->forceAdd(array($fakeCustomer))) {
             Mage::register('customer_event_type', 'contact_us');
             $this->setForceLeadConvertaton(false);
@@ -336,7 +337,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      * @param $_formData
      * @return bool
      */
-    public function pushLead($_formData)
+    public function pushContactUs($_formData)
     {
         if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("IMPORTANT: Skipping form synchronization, please upgrade to Enterprise version!");
