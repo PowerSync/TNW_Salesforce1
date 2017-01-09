@@ -92,4 +92,62 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
 
         return $results;
     }
+
+    /**
+     * @param bool $withDefault
+     * @return Mage_Core_Model_Website[]
+     */
+    public function getWebsiteDifferentConfig($withDefault = true)
+    {
+        static $tmpWebsites = array();
+        if (!count($tmpWebsites)) {
+            $paths = array(
+                'salesforce/api_config/api_enable',
+                'salesforce/api_config/api_username',
+                'salesforce/api_config/api_password',
+                'salesforce/api_config/api_token',
+            );
+
+            /** @var Mage_Core_Model_Resource_Config_Data $resource */
+            $resource = Mage::getResourceModel('core/config_data');
+            $adapter = $resource->getReadConnection();
+
+            $selectWhere = $adapter->select()
+                ->from($resource->getMainTable(), array('path'))
+                ->where($adapter->prepareSqlCondition('path', array('in'=>$paths)))
+                ->group(array('path'))
+                ->having('count(*) > 1')
+            ;
+
+            $select = $adapter->select()
+                ->from($resource->getMainTable(), array('scope_id', 'scope'))
+                ->where($adapter->prepareSqlCondition('path', array('in'=>$selectWhere)))
+            ;
+
+            foreach ($adapter->fetchAll($select) as $row) {
+                switch ($row['scope']) {
+                    case 'websites':
+                        $website = Mage::app()->getWebsite($row['scope_id']);
+                        break;
+
+                    case 'stores':
+                        $website = Mage::app()->getStore($row['scope_id'])->getWebsite();
+                        break;
+
+                    default:
+                        continue 2;
+                }
+
+                $tmpWebsites[$website->getId()] = $website;
+            }
+        }
+
+        $addWebsite = array();
+        if ($withDefault) {
+            $website = Mage::app()->getWebsite('admin');
+            $addWebsite[$website->getId()] = $website;
+        }
+
+        return array_merge($tmpWebsites, $addWebsite);
+    }
 }

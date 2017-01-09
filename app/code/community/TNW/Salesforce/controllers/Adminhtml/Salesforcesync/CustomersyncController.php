@@ -111,36 +111,78 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
         } elseif (!$helper->isProfessionalEdition()) {
             $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            try {
-                if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
-                    $syncBulk = (count($itemIds) > 1);
 
-                    $success = Mage::getModel('tnw_salesforce/localstorage')
-                        ->addObject($itemIds, 'Customer', 'customer', $syncBulk);
+        }
+        $this->_redirect('*/*/index');
+    }
 
-                    if ($success) {
-                        if ($syncBulk) {
-                            $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+    /**
+     * @param array $entityIds
+     */
+    protected function syncEntity(array $entityIds)
+    {
+        /** check empty */
+        if (empty($entityIds)) {
+            return;
+        }
+
+        /** @var Mage_Adminhtml_Model_Session $session */
+        $session = Mage::getSingleton('adminhtml/session');
+
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
+
+        /** @var Varien_Db_Select $select */
+        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('customer/customer', $entityIds);
+
+        $groupWebsite = array();
+        foreach ($select->getAdapter()->fetchAll($select) as $row) {
+            $groupWebsite[$row['website_id']][] = $row['object_id'];
+        }
+
+        /** @var Mage_Core_Model_App_Emulation $appEmulation */
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        foreach ($groupWebsite as $websiteId => $entityIds) {
+            $storeId = Mage::app()->getWebsite($websiteId)->getDefaultStore()->getId();
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+
+            if (!$helper->isEnabled()) {
+                $session->addError(sprintf('API Integration is disabled in Website: %s', Mage::app()->getWebsite($websiteId)->getName()));
+            }
+            else {
+                $syncBulk = (count($entityIds) > 1);
+
+                try {
+                    if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                        $success = Mage::getModel('tnw_salesforce/localstorage')
+                            ->addObject($entityIds, 'Customer', 'customer', $syncBulk);
+
+                        if ($success) {
+                            if ($syncBulk) {
+                                $session->addNotice($this->__('ISSUE: Too many records selected.'));
+                                $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                            }
+                            else {
+                                $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                            }
                         }
                         else {
-                            $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                            $session->addError('Could not add to the queue!');
                         }
                     }
                     else {
-                        $session->addError('Could not add to the queue!');
+                        /** @var TNW_Salesforce_Helper_Salesforce_Customer $manualSync */
+                        $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_customer', $syncBulk ? 'bulk' : 'salesforce'));
+                        if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
+                            $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                        }
                     }
+                } catch (Exception $e) {
+                    $session->addError($e->getMessage());
                 }
-                else {
-                    $manualSync = Mage::helper('tnw_salesforce/bulk_customer');
-                    if ($manualSync->reset() && $manualSync->massAdd($itemIds) && $manualSync->process()) {
-                        $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($itemIds)));
-                    }
-                }
-            } catch (Exception $e) {
-                $session->addError($e->getMessage());
             }
+
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
         }
-        $this->_redirect('*/*/index');
     }
 }

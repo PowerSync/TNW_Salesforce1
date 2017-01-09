@@ -6,22 +6,23 @@
 
 class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 {
+    /**
+     * @var array
+     */
     protected $_mageModels = array();
 
     public function __construct()
     {
-        if (empty($this->_mageModels)) {
-            $this->_mageModels['order'] = 'sales/order';
-            $this->_mageModels['abandoned'] = 'sales/quote';
-            $this->_mageModels['customer'] = 'customer/customer';
-            $this->_mageModels['product'] = 'catalog/product';
-            $this->_mageModels['website'] = 'core/website';
-            $this->_mageModels['invoice'] = 'sales/order_invoice';
-            $this->_mageModels['shipment'] = 'sales/order_shipment';
-            $this->_mageModels['creditmemo'] = 'sales/order_creditmemo';
-            $this->_mageModels['catalogrule'] = 'catalogrule/rule';
-            $this->_mageModels['salesrule'] = 'salesrule/rule';
-        }
+        $this->_mageModels['order'] = 'sales/order';
+        $this->_mageModels['abandoned'] = 'sales/quote';
+        $this->_mageModels['customer'] = 'customer/customer';
+        $this->_mageModels['product'] = 'catalog/product';
+        $this->_mageModels['website'] = 'core/website';
+        $this->_mageModels['invoice'] = 'sales/order_invoice';
+        $this->_mageModels['shipment'] = 'sales/order_shipment';
+        $this->_mageModels['creditmemo'] = 'sales/order_creditmemo';
+        $this->_mageModels['catalogrule'] = 'catalogrule/rule';
+        $this->_mageModels['salesrule'] = 'salesrule/rule';
     }
 
     /**
@@ -233,7 +234,12 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         return false;
     }
 
-    protected function generateSelectForType($modelType, $idSet)
+    /**
+     * @param $modelType
+     * @param $idSet
+     * @return Varien_Db_Select
+     */
+    public static function generateSelectForType($modelType, $idSet)
     {
         switch ($modelType) {
             case 'sales/order':
@@ -386,7 +392,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             : TNW_Salesforce_Model_Cron::SYNC_TYPE_OUTGOING;
 
         foreach (array_chunk($idSet, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
-            $select = $this->generateSelectForType($entityModelAlias, $_chunk);
+            $select = self::generateSelectForType($entityModelAlias, $_chunk);
             $select->columns(array(
                 'mage_object_type'  => new Zend_Db_Expr('"' . $entityModelAlias .'"'),
                 'sf_object_type'    => new Zend_Db_Expr('"' . $sfObType . '"'),
@@ -401,6 +407,9 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             try {
                 Mage::helper('tnw_salesforce')->getDbConnection('write')->query($query);
             } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError("ERROR add object from queue: " . $e->getMessage());
+
                 return false;
             }
         }
