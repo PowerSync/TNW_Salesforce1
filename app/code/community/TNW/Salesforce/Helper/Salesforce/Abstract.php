@@ -128,7 +128,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     }
 
     /**
-     * @return Salesforce_SforceEnterpriseClient
+     * @return TNW_Salesforce_Model_Sforce_Client
      */
     public function getClient()
     {
@@ -150,8 +150,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function getSalesforceSessionId()
     {
-        $this->getClient();
-        return Mage::getSingleton('core/session')->getSalesforceSessionId();
+        return TNW_Salesforce_Model_Connection::createConnection()->getSalesforceSessionId();
     }
 
     public function setIsFromCLI($_value = false)
@@ -763,8 +762,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                     continue;
                 }
 
-                $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') . '/' . $value;
                 if (Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url')) {
+                    $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') . '/' . $value;
                     $_data .=  '<strong>' . $currency . '<a target="_blank" href="' . $_url . '">' . $_field . "</a></strong><br />";
                 } else {
                     $_data .= '<strong>' . $value . "</strong><br />";

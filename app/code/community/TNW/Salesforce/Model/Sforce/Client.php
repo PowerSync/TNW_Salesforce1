@@ -8,6 +8,7 @@ class TNW_Salesforce_Model_Sforce_Client extends Salesforce_SforceEnterpriseClie
      * Connect method to www.salesforce.com
      *
      * @param string $wsdl Salesforce.com Partner WSDL
+     * @param stdClass $proxy
      * @return TNW_Salesforce_Model_Sforce_Soapclient
      */
     public function createConnection($wsdl, $proxy = null)

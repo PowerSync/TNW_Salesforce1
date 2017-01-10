@@ -18,9 +18,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
      */
     protected function _initLayout()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::getSingleton('adminhtml/session')->addNotice("Salesforce integration is not working! Refer to the config or the log files for more information.");
-        }
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Manual Product Synchronization'), Mage::helper('tnw_salesforce')->__('Manual Product Synchronization'));
@@ -64,17 +61,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
 
     public function massSyncAction()
     {
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
-
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper  = Mage::helper('tnw_salesforce');
 
         $itemIds = $this->getRequest()->getParam('products');
         if (!is_array($itemIds)) {
-            $session->addError($helper->__('Please select products(s)'));
+            $this->_getSession()->addError($helper->__('Please select products(s)'));
         } elseif (!$helper->isProfessionalEdition()) {
-            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
+            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             $this->syncEntity($itemIds);
         }
@@ -112,11 +106,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
         /** @var Mage_Core_Model_App_Emulation $appEmulation */
         $appEmulation = Mage::getSingleton('core/app_emulation');
         foreach ($groupWebsite as $websiteId => $entityIds) {
-            $storeId = Mage::app()->getWebsite($websiteId)->getDefaultStore()->getId();
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+            $website = Mage::app()->getWebsite($websiteId);
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
 
             if (!$helper->isEnabled()) {
-                $session->addError(sprintf('API Integration is disabled in Website: %s', Mage::app()->getWebsite($websiteId)->getName()));
+                $session->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
             }
             else {
                 $syncBulk = (count($entityIds) > 1);
@@ -143,7 +137,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
                         /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
                         $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_product', $syncBulk ? 'bulk' : 'salesforce'));
                         if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
-                            $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                            $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
                         }
                     }
                 } catch (Exception $e) {

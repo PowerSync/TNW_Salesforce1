@@ -9,12 +9,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
 
     protected function _initLayout()
     {
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled() ||
-            !Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()
-        ) {
-            Mage::getSingleton('adminhtml/session')->addNotice("Salesforce integration is not working! Refer to the config or the log files for more information.");
-        }
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Manual Abandoned cart Synchronization'), Mage::helper('tnw_salesforce')->__('Manual Abandoned cart Synchronization'));
@@ -47,128 +41,107 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
 
     /**
      * Sync Action
-     *
      */
     public function syncAction()
     {
-        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
-        }
-        if (!$_syncType) {
-            Mage::getSingleton('adminhtml/session')->addError("Integration Type is not set.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce_abandoned')));
-            Mage::app()->getResponse()->sendResponse();
-        }
+        $entityId = $this->getRequest()->getParam('abandoned_id');
 
-        if ($this->getRequest()->getParam('abandoned_id') > 0) {
-            try {
-                $itemIds = array($this->getRequest()->getParam('abandoned_id'));
-
-                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    $stores = Mage::app()->getStores(true);
-                    $storeIds = array_keys($stores);
-
-                    $abandoned = Mage::getModel('sales/quote')->setSharedStoreIds($storeIds)->load($this->getRequest()->getParam('abandoned_id'));
-
-                    $_productIds = Mage::helper('tnw_salesforce/salesforce_abandoned_opportunity')->getProductIdsFromEntity($abandoned);
-                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
-                    if (!$res) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveWarning('Products from the abandoned were not added to the queue');
-                    }
-
-                    // pass data to local storage
-                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObject($itemIds, 'Abandoned', 'abandoned');
-                    if (!$res) {
-                        Mage::getSingleton('adminhtml/session')->addError('Could not add abandoned to the queue!');
-                    } else {
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Abandoned was added to the queue!')
-                            );
-                        }
-                    }
-                } else {
-                    Mage::dispatchEvent(
-                        sprintf('tnw_salesforce_%s_process', $_syncType),
-                        array(
-                            'orderIds' => $itemIds,
-                            'object_type' => 'abandoned',
-                            'message' => Mage::helper('adminhtml')->__('Total of %d record(s) were successfully synchronized', count($itemIds)),
-                            'type' => 'salesforce'
-                        )
-                    );
-                }
-            } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-                $this->_redirect('*/*/');
-            }
-        }
-        $this->_redirect('*/*/');
+        $this->syncEntity(array($entityId));
+        $this->_redirectReferer();
     }
 
     public function massSyncForceAction()
     {
-        $session = Mage::getSingleton('adminhtml/session');
-        $helper  = Mage::helper('tnw_salesforce');
-
-        if (!$helper->isEnabled()) {
-            $session->addError("API Integration is disabled.");
-            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
-            return;
-        }
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
 
         $itemIds = $this->getRequest()->getParam('abandoneds');
         if (!is_array($itemIds)) {
-            $session->addError($helper->__('Please select abandoneds(s)'));
+            $this->_getSession()->addError($helper->__('Please select abandoneds(s)'));
         } elseif (!$helper->isProfessionalEdition()) {
-            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
+            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            try {
-                if (count($itemIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
-                    $syncBulk = (count($itemIds) > 1);
-
-                    /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
-                    $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
-                        ->addFieldToFilter('quote_id', array('in' => $itemIds));
-
-                    $productIds = $_collection->walk('getProductId');
-
-                    $success = Mage::getModel('tnw_salesforce/localstorage')
-                        ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
-
-                    $success = $success && Mage::getModel('tnw_salesforce/localstorage')
-                        ->addObject($itemIds, 'Abandoned', 'abandoned', $syncBulk);
-
-                    if ($success) {
-                        if ($syncBulk) {
-                            $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                            $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
-                        }
-                        else {
-                            $session->addSuccess($this->__('Records are pending addition into the queue!'));
-                        }
-                    }
-                    else {
-                        $session->addError('Could not add to the queue!');
-                    }
-                }
-                else {
-                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
-                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'orderIds' => $itemIds,
-                        'message' => $this->__('Total of %d abandoned(s) were synchronized', count($itemIds)),
-                        'type' => 'bulk',
-                        'object_type' => 'abandoned'
-                    ));
-                }
-            } catch (Exception $e) {
-                $session->addError($e->getMessage());
-            }
+            $this->syncEntity($itemIds);
         }
 
         $this->_redirect('*/*/index');
+    }
+
+    /**
+     * @param array $entityIds
+     */
+    protected function syncEntity(array $entityIds)
+    {
+        /** check empty */
+        if (empty($entityIds)) {
+            return;
+        }
+
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
+
+        /** @var Varien_Db_Select $select */
+        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/quote', $entityIds);
+
+        $groupWebsite = array();
+        foreach ($select->getAdapter()->fetchAll($select) as $row) {
+            $groupWebsite[$row['website_id']][] = $row['object_id'];
+        }
+
+        /** @var Mage_Core_Model_App_Emulation $appEmulation */
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        foreach ($groupWebsite as $websiteId => $entityIds) {
+            $website = Mage::app()->getWebsite($websiteId);
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
+
+            if (!$helper->isEnabled()) {
+                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
+            }
+            else {
+                $syncBulk = (count($entityIds) > 1);
+
+                try {
+                    if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                        /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
+                        $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
+                            ->addFieldToFilter('quote_id', array('in' => $entityIds));
+
+                        $productIds = $_collection->walk('getProductId');
+
+                        $success = Mage::getModel('tnw_salesforce/localstorage')
+                            ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
+
+                        $success = $success && Mage::getModel('tnw_salesforce/localstorage')
+                            ->addObject($entityIds, 'Abandoned', 'abandoned', $syncBulk);
+
+                        if ($success) {
+                            if ($syncBulk) {
+                                $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
+                                $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                            }
+                            else {
+                                $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
+                            }
+                        }
+                        else {
+                            $this->_getSession()->addError('Could not add to the queue!');
+                        }
+                    }
+                    else {
+                        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
+                        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                            'orderIds' => $entityIds,
+                            'message' => $this->__('Total of %d abandoned(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
+                            'type' => $syncBulk ? 'bulk' : 'salesforce',
+                            'object_type' => 'abandoned'
+                        ));
+                    }
+                } catch (Exception $e) {
+                    $this->_getSession()->addError($e->getMessage());
+                }
+            }
+
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+        }
     }
 }

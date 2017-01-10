@@ -16,9 +16,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
 
     protected function _initLayout()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::getSingleton('adminhtml/session')->addNotice("Salesforce integration is not working! Refer to the config or the log files for more information.");
-        }
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Manual Shipment Synchronization'), Mage::helper('tnw_salesforce')->__('Manual Shipment Synchronization'));
@@ -63,17 +60,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
 
     public function massSyncForceAction()
     {
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
-
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper  = Mage::helper('tnw_salesforce');
 
         $itemIds = $this->getRequest()->getParam('shipment_ids');
         if (!is_array($itemIds)) {
-            $session->addError($helper->__('Please select shipment(s)'));
+            $this->_getSession()->addError($helper->__('Please select shipment(s)'));
         } elseif (!$helper->isProfessionalEdition()) {
-            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
+            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             $this->syncEntity($itemIds);
         }
@@ -91,9 +85,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
             return;
         }
 
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
-
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
@@ -108,11 +99,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
         /** @var Mage_Core_Model_App_Emulation $appEmulation */
         $appEmulation = Mage::getSingleton('core/app_emulation');
         foreach ($groupWebsite as $websiteId => $entityIds) {
-            $storeId = Mage::app()->getWebsite($websiteId)->getDefaultStore()->getId();
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+            $website = Mage::app()->getWebsite($websiteId);
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
 
             if (!$helper->isEnabled()) {
-                $session->addError(sprintf('API Integration is disabled in Website: %s', Mage::app()->getWebsite($websiteId)->getName()));
+                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
             }
             else {
                 /** @var bool $syncBulk */
@@ -125,27 +116,27 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
 
                         if ($success) {
                             if ($syncBulk) {
-                                $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                                $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                                $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
+                                $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
                             }
                             else {
-                                $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                                $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
                             }
                         }
                         else {
-                            $session->addError('Could not add to the queue!');
+                            $this->_getSession()->addError('Could not add to the queue!');
                         }
                     }
                     else {
                         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
                         Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                             'shipmentIds' => $entityIds,
-                            'message' => $this->__('Total of %d records(s) were synchronized', count($entityIds)),
+                            'message' => $this->__('Total of %d records(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
                             'type' => $syncBulk ? 'bulk' : 'salesforce'
                         ));
                     }
                 } catch (Exception $e) {
-                    $session->addError($e->getMessage());
+                    $this->_getSession()->addError($e->getMessage());
                 }
             }
 

@@ -279,10 +279,12 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 $resource   = Mage::getResourceModel('catalog/product');
                 $connection = $resource->getReadConnection();
 
+                $selectDiff = TNW_Salesforce_Helper_Config::generateSelectWebsiteDifferent();
                 return $connection->select()
                     ->from(array('product'=>$resource->getEntityTable()), array('object_id' => 'entity_id'))
                     ->joinInner(array('website'=>$resource->getTable('catalog/product_website')), 'product.entity_id = website.product_id', array('website_id'))
-                    ->group(array('product.entity_id'))
+                    ->joinLeft(array('diff_websites'=>$selectDiff), 'diff_websites.scope_id = website.website_id', array())
+                    ->group(array('diff_websites.scope_id'))
                     ->where($connection->prepareSqlCondition('product.entity_id', array('in'=>$idSet)))
                 ;
 

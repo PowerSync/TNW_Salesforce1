@@ -172,11 +172,6 @@ class TNW_Salesforce_Model_Connection
 
             if (property_exists($this->_loggedIn, 'sessionId')) {
                 $this->_sessionId = $this->_loggedIn->sessionId;
-                Mage::getSingleton('core/session')
-                    ->addData(array(
-                        'salesforce_session_id'      => $this->_loggedIn->sessionId,
-                        'salesforce_session_created' => time()
-                    ));
             }
 
             if (property_exists($this->_loggedIn, 'serverUrl')) {
@@ -353,7 +348,7 @@ class TNW_Salesforce_Model_Connection
     }
 
     /**
-     * @return Salesforce_SforceEnterpriseClient
+     * @return TNW_Salesforce_Model_Sforce_Client
      */
     public function getClient()
     {
@@ -433,6 +428,11 @@ class TNW_Salesforce_Model_Connection
         return $this->_serverUrl;
     }
 
+    public function getSalesforceSessionId()
+    {
+        return $this->_sessionId;
+    }
+
     /**
      * @param null $websiteId
      * @return $this
@@ -441,7 +441,8 @@ class TNW_Salesforce_Model_Connection
     {
         static $connection = array();
 
-        $website = Mage::app()->getWebsite($websiteId);
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($websiteId);
         if (empty($connection[$website->getCode()])) {
             $connection[$website->getCode()] = Mage::getModel('tnw_salesforce/connection');
         }

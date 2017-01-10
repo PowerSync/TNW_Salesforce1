@@ -94,51 +94,53 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     }
 
     /**
+     * @return Varien_Db_Select
+     */
+    public static function generateSelectWebsiteDifferent()
+    {
+        /** @var Mage_Core_Model_Resource_Config_Data $resource */
+        $resource = Mage::getResourceModel('core/config_data');
+        $adapter = $resource->getReadConnection();
+
+        return $adapter->select()
+            ->distinct()
+            ->from($resource->getMainTable(), array('scope_id'))
+            ->where($adapter->prepareSqlCondition('path', array('in'=>array(
+                TNW_Salesforce_Helper_Data::API_ENABLED,
+                TNW_Salesforce_Helper_Data::API_USERNAME,
+                TNW_Salesforce_Helper_Data::API_PASSWORD,
+                TNW_Salesforce_Helper_Data::API_TOKEN,
+            ))))
+            ->where($adapter->prepareSqlCondition('scope', 'websites'))
+        ;
+    }
+
+    /**
+     * @param null $website
+     * @return Mage_Core_Model_Website|null
+     */
+    public function getWebsiteDifferentConfig($website = null)
+    {
+        $website = Mage::app()->getWebsite($website);
+        $diffWebsites = $this->getWebsitesDifferentConfig(false);
+        if (!isset($diffWebsites[$website->getId()])) {
+            $website = Mage::app()->getWebsite('admin');
+        }
+
+        return $website;
+    }
+
+    /**
      * @param bool $withDefault
      * @return Mage_Core_Model_Website[]
      */
-    public function getWebsiteDifferentConfig($withDefault = true)
+    public function getWebsitesDifferentConfig($withDefault = true)
     {
         static $tmpWebsites = array();
         if (!count($tmpWebsites)) {
-            $paths = array(
-                'salesforce/api_config/api_enable',
-                'salesforce/api_config/api_username',
-                'salesforce/api_config/api_password',
-                'salesforce/api_config/api_token',
-            );
-
-            /** @var Mage_Core_Model_Resource_Config_Data $resource */
-            $resource = Mage::getResourceModel('core/config_data');
-            $adapter = $resource->getReadConnection();
-
-            $selectWhere = $adapter->select()
-                ->from($resource->getMainTable(), array('path'))
-                ->where($adapter->prepareSqlCondition('path', array('in'=>$paths)))
-                ->group(array('path'))
-                ->having('count(*) > 1')
-            ;
-
-            $select = $adapter->select()
-                ->from($resource->getMainTable(), array('scope_id', 'scope'))
-                ->where($adapter->prepareSqlCondition('path', array('in'=>$selectWhere)))
-            ;
-
-            foreach ($adapter->fetchAll($select) as $row) {
-                switch ($row['scope']) {
-                    case 'websites':
-                        $website = Mage::app()->getWebsite($row['scope_id']);
-                        break;
-
-                    case 'stores':
-                        $website = Mage::app()->getStore($row['scope_id'])->getWebsite();
-                        break;
-
-                    default:
-                        continue 2;
-                }
-
-                $tmpWebsites[$website->getId()] = $website;
+            $select = self::generateSelectWebsiteDifferent();
+            foreach ($select->getAdapter()->fetchCol($select) as $websiteId) {
+                $tmpWebsites[$websiteId] = Mage::app()->getWebsite($websiteId);
             }
         }
 

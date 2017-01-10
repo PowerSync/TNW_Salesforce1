@@ -132,19 +132,21 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
      * we need to abstract from cache or session storage for our data, that depends of client side settings
      *
      * @param $key
+     * @param null $website
      * @return mixed
      */
-    public function getStorage($key)
+    public function getStorage($key, $website = null)
     {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
         $count = 0;
 
         do {
-            if (Mage::app()->useCache('tnw_salesforce')) {
-                $res = unserialize(Mage::app()->getCache()->load($key));
-            }
-            else {
-                $res = Mage::getSingleton('core/session')->getData($key);
-            }
+            $res = Mage::app()->useCache('tnw_salesforce')
+                ? unserialize(Mage::app()->getCache()->load($key))
+                : Mage::getSingleton('core/session')->getData($key);
 
             if (++$count > self::AUTHENTICATION_COUNT) {
                 break;
@@ -157,12 +159,17 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     /**
      * set value to cache or session
      *
-     * @param $key
      * @param $value
+     * @param $key
+     * @param null $website
      * @return bool
      */
-    public function setStorage($value, $key)
+    public function setStorage($value, $key, $website = null)
     {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
         if (Mage::app()->useCache('tnw_salesforce')) {
             return Mage::app()->getCache()->save(serialize($value), $key, array("TNW_SALESFORCE"));
         }

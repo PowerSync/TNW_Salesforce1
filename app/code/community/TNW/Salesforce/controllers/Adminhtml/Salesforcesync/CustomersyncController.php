@@ -15,9 +15,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
 
     protected function _initLayout()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::getSingleton('adminhtml/session')->addNotice("Salesforce integration is not working! Refer to the config or the log files for more information.");
-        }
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('Manual Customer Synchronization'), Mage::helper('tnw_salesforce')->__('Manual Customer Synchronization'));
@@ -50,69 +47,26 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
      */
     public function syncAction()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
-            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
-        }
-        if ($this->getRequest()->getParam('customer_id') > 0) {
-            try {
-                if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                    // pass data to local storage
-                    // TODO add level up abstract class with Order as static values, now we have word 'Customer' as parameter
-                    $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($this->getRequest()->getParam('customer_id')), 'Customer', 'customer');
-                    if (!$res) {
-                        Mage::getSingleton('adminhtml/session')->addError('Could not add customer to the queue!');
-                    } else {
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Record was added to synchronization queue!')
-                            );
-                        }
-                    }
-                } else {
-                    $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-                    if ($manualSync->reset()) {
+        $entityId = $this->getRequest()->getParam('customer_id');
 
-                        if ($manualSync->massAdd(array($this->getRequest()->getParam('customer_id')))){
-                            $manualSync->process();
-                        }
-                        if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess(
-                                Mage::helper('adminhtml')->__('Record was syncronized successfully!')
-                            );
-                        }
-                    } else {
-                        Mage::getSingleton('adminhtml/session')->addError('Salesforce Connection failed!');
-                    }
-                }
-            } catch (Exception $e) {
-                Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
-            }
-        }
-
+        $this->syncEntity(array($entityId));
         $this->_redirectReferer($this->getUrl('*/*/index', array('_current' => true)));
     }
 
     public function massSyncAction()
     {
-        $session = Mage::getSingleton('adminhtml/session');
-        $helper  = Mage::helper('tnw_salesforce');
-
-        if (!$helper->isEnabled()) {
-            $session->addError("API Integration is disabled.");
-            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
-            return;
-        }
+        /** @var TNW_Salesforce_Helper_Data $helper */
+        $helper = Mage::helper('tnw_salesforce');
 
         $itemIds = $this->getRequest()->getParam('customers');
         if (!is_array($itemIds)) {
-            $session->addError($helper->__('Please select customer(s)'));
+            $this->_getSession()->addError($helper->__('Please select customer(s)'));
         } elseif (!$helper->isProfessionalEdition()) {
-            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
+            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-
+            $this->syncEntity($itemIds);
         }
+
         $this->_redirect('*/*/index');
     }
 
@@ -125,9 +79,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
         if (empty($entityIds)) {
             return;
         }
-
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
 
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
@@ -143,11 +94,11 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
         /** @var Mage_Core_Model_App_Emulation $appEmulation */
         $appEmulation = Mage::getSingleton('core/app_emulation');
         foreach ($groupWebsite as $websiteId => $entityIds) {
-            $storeId = Mage::app()->getWebsite($websiteId)->getDefaultStore()->getId();
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
+            $website = Mage::app()->getWebsite($websiteId);
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
 
             if (!$helper->isEnabled()) {
-                $session->addError(sprintf('API Integration is disabled in Website: %s', Mage::app()->getWebsite($websiteId)->getName()));
+                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
             }
             else {
                 $syncBulk = (count($entityIds) > 1);
@@ -159,26 +110,26 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
 
                         if ($success) {
                             if ($syncBulk) {
-                                $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                                $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
+                                $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
+                                $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
                             }
                             else {
-                                $session->addSuccess($this->__('Records are pending addition into the queue!'));
+                                $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
                             }
                         }
                         else {
-                            $session->addError('Could not add to the queue!');
+                            $this->_getSession()->addError('Could not add to the queue!');
                         }
                     }
                     else {
                         /** @var TNW_Salesforce_Helper_Salesforce_Customer $manualSync */
                         $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_customer', $syncBulk ? 'bulk' : 'salesforce'));
                         if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
-                            $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                            $this->_getSession()->addSuccess($this->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
                         }
                     }
                 } catch (Exception $e) {
-                    $session->addError($e->getMessage());
+                    $this->_getSession()->addError($e->getMessage());
                 }
             }
 

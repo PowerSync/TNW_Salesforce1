@@ -16,13 +16,19 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
                 ->toArraySearchById($value, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_ACCOUNT);
         }
 
+        $websiteCode = Mage::app()->getWebsite()->getCode();
+        if ($websiteCode == 'admin') {
+            $websiteCode = Mage::app()->getRequest()->getParam('website');
+            $websiteCode = Mage::app()->getWebsite($websiteCode)->getCode();
+        }
+
         /** @var Mage_Core_Block_Template $block */
         $block = $this->getLayout()
             ->getBlockSingleton('core/template')
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
                 'selector'  => sprintf('.%s', $element->getData('class')),
-                'url'       => $this->getUrl('*/salesforce_search/account'),
+                'url'       => $this->getUrl('*/salesforce_search/account', array('website'=>$websiteCode)),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
             ));
 
