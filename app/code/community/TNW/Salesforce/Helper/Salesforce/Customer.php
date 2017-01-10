@@ -269,8 +269,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected function _pushFakeCustomer($fakeCustomer)
     {
         $_id = null;
-        $this->reset();
-        if ($this->forceAdd(array($fakeCustomer))) {
+
+        if ($this->reset() && $this->forceAdd(array($fakeCustomer))) {
             Mage::register('customer_event_type', 'contact_us');
             $this->setForceLeadConvertaton(false);
             $this->process();
@@ -1448,8 +1448,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
          * prefix for special events: ContactUs and soon
          */
         $eventType = null;
-        if (Mage::registry('customer_event_prefix')) {
-            $eventType = Mage::registry('customer_event_prefix');
+        if (Mage::registry('customer_event_type')) {
+            $eventType = Mage::registry('customer_event_type');
         }
 
         /**
