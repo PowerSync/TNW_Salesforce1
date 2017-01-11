@@ -694,15 +694,21 @@ class TNW_Salesforce_Model_Cron
 
     public function entityCacheFill()
     {
-        /** @var TNW_Salesforce_Helper_Data $_helperData */
-        $_helperData = Mage::helper('tnw_salesforce');
-        if (!$_helperData->isEnabled()) {
-            return;
-        }
+        /** @var Mage_Core_Model_App_Emulation $appEmulation */
+        $appEmulation = Mage::getSingleton('core/app_emulation');
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Fill magento cache START ===");
-        Mage::getSingleton('tnw_salesforce/sforce_entity_cache')->importFromSalesforce();
-        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'entityCacheFill'));
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Fill magento cache END ===");
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig() as $website) {
+            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
+
+            if (Mage::helper('tnw_salesforce')->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('=== Fill magento cache START in Website: %s ===', $website->getName()));
+                Mage::getSingleton('tnw_salesforce/sforce_entity_cache')->importFromSalesforce();
+                Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'entityCacheFill'));
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('=== Fill magento cache END in Website: %s ===', $website->getName()));
+            }
+
+            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+        }
     }
 }

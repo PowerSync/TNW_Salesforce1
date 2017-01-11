@@ -735,47 +735,39 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * input paremeter: salesforceId or string type1:salesforceId1;type2:salesforceId2;
      * @param $_field
-     * @param bool $showName
      * @return string
      */
-    public function generateLinkToSalesforce($_field, $showName = false)
+    public function generateLinkToSalesforce($_field)
     {
-        $_data = null;
+        $website = Mage::app()->getWebsite();
 
-        if ($_field) {
-            $valuesArray = explode("\n", $_field);
-
-            foreach ($valuesArray as $value) {
-                $currency = '';
-                if (strpos($value, ':') !== false) {
-                    $tmp = explode(':', $value);
-                    if ($showName) {
-                        $_field = $tmp[0];
-                    } else {
-                        $currency = $tmp[0] . ': ';
-                        $_field = $tmp[1];
-                    }
-                    $value = $tmp[1];
-                }
-
-                if (empty($value)) {
-                    continue;
-                }
-
-                if (Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url')) {
-                    $_url = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url') . '/' . $value;
-                    $_data .=  '<strong>' . $currency . '<a target="_blank" href="' . $_url . '">' . $_field . "</a></strong><br />";
-                } else {
-                    $_data .= '<strong>' . $value . "</strong><br />";
-                }
+        $_data = array();
+        foreach (explode("\n", $_field) as $value) {
+            $currency = '';
+            if (strpos($value, ':') !== false) {
+                list($currency, $value) = explode(':', $value, 2);
+                $currency = "$currency: ";
             }
+
+            if (empty($value)) {
+                continue;
+            }
+
+            $salesforceUrl = Mage::helper('tnw_salesforce/test_authentication')
+                ->getStorage('salesforce_url', $website);
+
+            if (!empty($salesforceUrl)) {
+                $value = sprintf('%1$s<a target="_blank" href="%2$s/%3$s">%3$s</a>', $currency, $salesforceUrl, $value);
+            }
+
+            $_data[] = sprintf('<strong>%s</strong>', $value);
         }
 
-        if (!$_data) {
-            $_data = 'N/A';
+        if (empty($_data)) {
+            return 'N/A';
         }
 
-        return $_data;
+        return implode('<br />', $_data);
     }
 
     protected function _whenToStopWaiting($_result = NULL, $_attempt = 50, $_jobRecords = NULL)

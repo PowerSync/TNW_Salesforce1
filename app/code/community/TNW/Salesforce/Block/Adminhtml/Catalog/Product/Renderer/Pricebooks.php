@@ -18,20 +18,17 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Pricebooks
             return '<span style="font-family: monospace;">N/A</span>';
         }
 
-        return implode('', array_map(function ($book) {
-            $currency = $id = null;
+        return implode('<br />', array_map(function ($book) {
+            $currency = null;
             if (strpos($book, ':') !== false) {
-                list($currency, $id) = explode(':', $book, 2);
-            } else {
-                $id = $book;
+                list($currency, $book) = explode(':', $book, 2);
             }
 
-            $link = Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($id);
-            $html = '<span style="font-family: monospace;">'.str_replace('<br />', '', $link) .'</span>';
+            $link = Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($book);
+            $html = '<span style="font-family: monospace;">'.$link.'</span>';
             if (!empty($currency)) {
                 $html .= " <span>($currency)</span>";
             }
-            $html .= '<br />';
 
             return $html;
         }, $books));

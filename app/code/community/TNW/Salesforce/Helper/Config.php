@@ -150,6 +150,57 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
             $addWebsite[$website->getId()] = $website;
         }
 
-        return array_merge($tmpWebsites, $addWebsite);
+        return $tmpWebsites + $addWebsite;
+    }
+
+    /**
+     * @param $website
+     * @return Varien_Object
+     */
+    public function startEmulationWebsiteDifferentConfig($website)
+    {
+        $website = $this->getWebsiteDifferentConfig($website);
+        if (Mage::app()->getWebsite()->getId() == $website->getId()) {
+            return new Varien_Object();
+        }
+
+        /** @var Mage_Core_Model_App_Emulation $appEmulation */
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        return $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
+    }
+
+    /**
+     * @param Varien_Object $initialEnvironmentInfo
+     */
+    public function stopEmulationWebsiteDifferentConfig(Varien_Object $initialEnvironmentInfo)
+    {
+        if ($initialEnvironmentInfo->isEmpty()) {
+            return;
+        }
+
+        /** @var Mage_Core_Model_App_Emulation $appEmulation */
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+    }
+
+    /**
+     * @param $website
+     * @param $callback
+     * @return mixed
+     * @throws Exception
+     */
+    public function wrapEmulationWebsiteDifferentConfig($website, $callback)
+    {
+        $initialEnvironmentInfo = $this->startEmulationWebsiteDifferentConfig($website);
+
+        try {
+            $return = call_user_func($callback);
+        } catch (Exception $e) {
+            $this->stopEmulationWebsiteDifferentConfig($initialEnvironmentInfo);
+            throw $e;
+        }
+
+        $this->stopEmulationWebsiteDifferentConfig($initialEnvironmentInfo);
+        return $return;
     }
 }

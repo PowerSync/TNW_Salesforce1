@@ -4,45 +4,57 @@ class TNW_Salesforce_Adminhtml_Salesforce_SearchController extends Mage_Adminhtm
 {
     public function accountAction()
     {
+        $website = $this->getRequest()->getParam('website');
+        $curPage = $this->getRequest()->getQuery('page', 1);
         $query = $this->getRequest()->getQuery('q');
+
         if (empty($query)) {
             $this->_sendJson(array());
             return;
         }
 
-        $curPage = $this->getRequest()->getQuery('page', 1);
-        $result  = Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
-            ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_ACCOUNT, $curPage);
+        $result = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($website, function () use($query, $curPage) {
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_ACCOUNT, $curPage);
+        });
 
         $this->_sendJson($result);
     }
 
     public function campaignAction()
     {
+        $website = $this->getRequest()->getParam('website');
+        $curPage = $this->getRequest()->getQuery('page', 1);
         $query = $this->getRequest()->getQuery('q');
+
         if (empty($query)) {
             $this->_sendJson(array());
             return;
         }
 
-        $curPage = $this->getRequest()->getQuery('page', 1);
-        $result  = Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
-            ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_CAMPAIGN, $curPage);
+        $result = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($website, function () use($query, $curPage) {
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_CAMPAIGN, $curPage);
+        });
 
         $this->_sendJson($result);
     }
 
     public function userAction()
     {
+        $website = $this->getRequest()->getParam('website');
+        $curPage = $this->getRequest()->getQuery('page', 1);
         $query = $this->getRequest()->getQuery('q');
+
         if (empty($query)) {
             $this->_sendJson(array());
             return;
         }
 
-        $curPage = $this->getRequest()->getQuery('page', 1);
-        $result  = Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
-            ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_USER, $curPage);
+        $result  = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($website, function () use($query, $curPage) {
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_USER, $curPage);
+        });
 
         $this->_sendJson($result);
     }

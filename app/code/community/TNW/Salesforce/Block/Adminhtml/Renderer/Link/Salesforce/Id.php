@@ -8,7 +8,16 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id extends Mage_Ad
 {
     public function render(Varien_Object $row)
     {
-        $_field = $this->_getValue($row);
-        return '<span style="font-family: monospace;">'.Mage::helper('tnw_salesforce/salesforce_abstract')->generateLinkToSalesforce($_field).'</span>';
+        $websiteId = $row->hasData('website_id')
+            ? $row->getData('website_id')
+            : Mage::app()->getStore($row->getData('store_id'))->getWebsiteId();
+
+        $value = $this->_getValue($row);
+        $link = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($websiteId, function () use($value) {
+            return Mage::helper('tnw_salesforce/salesforce_abstract')
+                ->generateLinkToSalesforce($value);
+        });
+
+        return sprintf('<span style="font-family: monospace;">%s</span>', $link);
     }
 }
