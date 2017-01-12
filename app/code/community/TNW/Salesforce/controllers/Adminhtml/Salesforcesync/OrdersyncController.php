@@ -57,8 +57,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
     public function syncAction()
     {
         $entityId = $this->getRequest()->getParam('order_id');
+        Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder(array($entityId));
 
-        $this->syncEntity(array($entityId));
         $this->_redirectReferer();
     }
 
@@ -210,88 +210,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         } elseif (!$helper->isProfessionalEdition()) {
             $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            $this->syncEntity($itemIds);
+            Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder($itemIds);
         }
 
         $this->_redirect('*/*/index');
-    }
-
-    /**
-     * @param array $entityIds
-     */
-    protected function syncEntity(array $entityIds)
-    {
-        /** check empty */
-        if (empty($entityIds)) {
-            return;
-        }
-
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
-        /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/order', $entityIds);
-
-        $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
-        }
-
-        /** @var Mage_Core_Model_App_Emulation $appEmulation */
-        $appEmulation = Mage::getSingleton('core/app_emulation');
-        foreach ($groupWebsite as $websiteId => $entityIds) {
-            $website = Mage::app()->getWebsite($websiteId);
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
-
-            if (!$helper->isEnabled()) {
-                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
-            }
-            else {
-                try {
-                    $syncBulk = count($entityIds) > 1;
-
-                    if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
-                        $_collection = Mage::getResourceModel('sales/order_item_collection')
-                            ->addFieldToFilter('order_id', array('in' => $entityIds));
-
-                        // use Mage::helper('tnw_salesforce/salesforce_order')->getProductIdFromCart(
-                        $productIds = $_collection->walk(array(
-                            Mage::helper('tnw_salesforce/salesforce_order'), 'getProductIdFromCart'
-                        ));
-
-                        $success = Mage::getModel('tnw_salesforce/localstorage')
-                            ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
-
-                        $success = $success && Mage::getModel('tnw_salesforce/localstorage')
-                                ->addObject($entityIds, 'Order', 'order', $syncBulk);
-
-                        if ($success) {
-                            if ($syncBulk) {
-                                $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
-                                $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
-                            }
-                            else {
-                                $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
-                            }
-                        }
-                        else {
-                            $this->_getSession()->addError('Could not add to the queue!');
-                        }
-                    }
-                    else {
-                        $_syncType = strtolower($helper->getOrderObject());
-                        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                            'orderIds' => $entityIds,
-                            'message' => $this->__('Total of %d order(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
-                            'type' => $syncBulk ? 'bulk' : 'salesforce'
-                        ));
-                    }
-                } catch (Exception $e) {
-                    $this->_getSession()->addError($e->getMessage());
-                }
-            }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
-        }
     }
 }

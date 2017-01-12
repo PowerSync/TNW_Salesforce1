@@ -6,5 +6,6 @@ $installer = $this;
 $installer->startSetup();
 
 $installer->getConnection()->addColumn($this->getTable('tnw_salesforce/queue_storage'), 'website_id', 'INT NOT NULL');
+$installer->getConnection()->addColumn($this->getTable('tnw_salesforce/entity_cache'), 'website_id', 'INT NOT NULL');
 
 $installer->endSetup();

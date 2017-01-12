@@ -160,6 +160,16 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     public function startEmulationWebsiteDifferentConfig($website)
     {
         $website = $this->getWebsiteDifferentConfig($website);
+        return $this->startEmulationWebsite($website);
+    }
+
+    /**
+     * @param $website
+     * @return Varien_Object
+     */
+    public function startEmulationWebsite($website)
+    {
+        $website = Mage::app()->getWebsite($website);
         if (Mage::app()->getWebsite()->getId() == $website->getId()) {
             return new Varien_Object();
         }
@@ -169,10 +179,7 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
         return $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
     }
 
-    /**
-     * @param Varien_Object $initialEnvironmentInfo
-     */
-    public function stopEmulationWebsiteDifferentConfig(Varien_Object $initialEnvironmentInfo)
+    public function stopEmulationWebsite(Varien_Object $initialEnvironmentInfo)
     {
         if ($initialEnvironmentInfo->isEmpty()) {
             return;
@@ -191,16 +198,28 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
      */
     public function wrapEmulationWebsiteDifferentConfig($website, $callback)
     {
-        $initialEnvironmentInfo = $this->startEmulationWebsiteDifferentConfig($website);
+        $website = $this->getWebsiteDifferentConfig($website);
+        return $this->wrapEmulationWebsite($website, $callback);
+    }
+
+    /**
+     * @param $website
+     * @param $callback
+     * @return mixed
+     * @throws Exception
+     */
+    public function wrapEmulationWebsite($website, $callback)
+    {
+        $initialEnvironmentInfo = $this->startEmulationWebsite($website);
 
         try {
             $return = call_user_func($callback);
         } catch (Exception $e) {
-            $this->stopEmulationWebsiteDifferentConfig($initialEnvironmentInfo);
+            $this->stopEmulationWebsite($initialEnvironmentInfo);
             throw $e;
         }
 
-        $this->stopEmulationWebsiteDifferentConfig($initialEnvironmentInfo);
+        $this->stopEmulationWebsite($initialEnvironmentInfo);
         return $return;
     }
 }

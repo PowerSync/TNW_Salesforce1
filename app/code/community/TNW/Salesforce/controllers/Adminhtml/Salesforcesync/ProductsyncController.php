@@ -54,8 +54,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
     public function syncAction()
     {
         $productId = $this->getRequest()->getParam('product_id');
+        Mage::getSingleton('tnw_salesforce/product_observer')->syncShipment(array($productId));
 
-        $this->syncEntity(array($productId));
         $this->_redirectReferer($this->getUrl('*/*/index', array('_current' => true)));
     }
 
@@ -70,82 +70,12 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
         } elseif (!$helper->isProfessionalEdition()) {
             $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            $this->syncEntity($itemIds);
+            Mage::getSingleton('tnw_salesforce/product_observer')->syncShipment($itemIds);
         }
         $url = '*/*/index';
         if (Mage::helper('tnw_salesforce')->getStoreId() != 0) {
             $url .= '/store/' . Mage::helper('tnw_salesforce')->getStoreId();
         }
         $this->_redirect($url);
-    }
-
-    /**
-     * @param array $entityIds
-     */
-    protected function syncEntity(array $entityIds)
-    {
-        /** check empty */
-        if (empty($entityIds)) {
-            return;
-        }
-
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
-
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
-        /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('catalog/product', $entityIds);
-
-        $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
-        }
-
-        /** @var Mage_Core_Model_App_Emulation $appEmulation */
-        $appEmulation = Mage::getSingleton('core/app_emulation');
-        foreach ($groupWebsite as $websiteId => $entityIds) {
-            $website = Mage::app()->getWebsite($websiteId);
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
-
-            if (!$helper->isEnabled()) {
-                $session->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
-            }
-            else {
-                $syncBulk = (count($entityIds) > 1);
-
-                try {
-                    if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
-                        $success = Mage::getModel('tnw_salesforce/localstorage')
-                            ->addObjectProduct($entityIds, 'Product', 'product', $syncBulk);
-
-                        if ($success) {
-                            if ($syncBulk) {
-                                $session->addNotice($this->__('ISSUE: Too many records selected.'));
-                                $session->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
-                            }
-                            else {
-                                $session->addSuccess($this->__('Records are pending addition into the queue!'));
-                            }
-                        }
-                        else {
-                            $session->addError('Could not add to the queue!');
-                        }
-                    }
-                    else {
-                        /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
-                        $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_product', $syncBulk ? 'bulk' : 'salesforce'));
-                        if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
-                            $session->addSuccess($this->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
-                        }
-                    }
-                } catch (Exception $e) {
-                    $session->addError($e->getMessage());
-                }
-            }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
-        }
     }
 }

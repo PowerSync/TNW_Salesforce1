@@ -4,6 +4,9 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
+/**
+ * @deprecated
+ */
 class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Lead_Id extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
 {
     public function render(Varien_Object $row)

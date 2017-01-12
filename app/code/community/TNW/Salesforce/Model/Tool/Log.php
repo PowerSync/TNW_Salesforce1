@@ -12,11 +12,13 @@
  * @method saveWarning($message)
  * @method saveError($message)
  * @method saveInfo($message)
+ * @method saveSuccess($message)
  *
  */
 class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
 {
     const MESSAGE_LIMIT_SIZE = 65000;
+    const SUCCESS = 18;
 
     /**
      * all available log message levels
@@ -70,15 +72,17 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
      */
     public static function getAllLevels()
     {
-        if (!self::$allLevels) {
-            /**
-             * find all available log message levels
-             */
-            $reflection = new ReflectionClass('Zend_Log');
-            self::$allLevels = array_flip($reflection->getConstants());
-        }
-
-        return self::$allLevels;
+        return array(
+            Zend_Log::EMERG => 'EMERG',
+            Zend_Log::ALERT => 'ALERT',
+            Zend_Log::CRIT => 'CRIT',
+            Zend_Log::ERR => 'ERR',
+            Zend_Log::WARN => 'WARN',
+            Zend_Log::NOTICE => 'NOTICE',
+            Zend_Log::INFO => 'INFO',
+            Zend_Log::DEBUG => 'DEBUG',
+            self::SUCCESS => 'SUCCESS',
+        );
     }
 
     /**
@@ -113,6 +117,9 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                     break;
                 case Zend_Log::WARN:
                     Mage::getSingleton('adminhtml/session')->addUniqueMessages(Mage::getSingleton('core/message')->warning($message));
+                    break;
+                case self::SUCCESS:
+                    Mage::getSingleton('adminhtml/session')->addUniqueMessages(Mage::getSingleton('core/message')->success($message));
                     break;
                 default:
                     break;

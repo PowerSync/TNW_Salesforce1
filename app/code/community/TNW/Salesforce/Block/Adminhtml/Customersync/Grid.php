@@ -118,7 +118,7 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
             'index' => 'salesforce_account_id',
             'type' => 'varchar',
             'width' => '140px',
-            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_account_id',
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
 
         $this->addColumn('salesforce_lead_id', array(
@@ -126,7 +126,7 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
             'index' => 'salesforce_lead_id',
             'type' => 'varchar',
             'width' => '140px',
-            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_lead_id',
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
 
         if (!Mage::app()->isSingleStoreMode()) {

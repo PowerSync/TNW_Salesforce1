@@ -395,22 +395,27 @@ class TNW_Salesforce_Model_Observer
         // Set common header on all pages for tracking purposes
         $controller->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
 
+        /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
-
-        $loginPage = $controller->getRequest()->getModuleName() == 'admin'
-            && $controller->getRequest()->getControllerName() == 'index'
-            && $controller->getRequest()->getActionName() == 'login';
-
-        // skip if sf synchronization is disabled or we are on api config or login page
-        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isEnabled()) {
+        if ($helper->isLoginPage() || $helper->isApiConfigurationPage()) {
             return;
         }
 
-        if (!TNW_Salesforce_Helper_Test_License::isValidate()) {
-            return;
-        }
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig() as $website) {
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function() use($helper) {
+                if (!$helper->isEnabled()) {
+                    return;
+                }
 
-        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
+                if (!TNW_Salesforce_Helper_Test_License::isValidate()) {
+                    return;
+                }
+
+                Mage::helper('tnw_salesforce/test_authentication')
+                    ->mageSfAuthenticate();
+            });
+        }
     }
 
     /**

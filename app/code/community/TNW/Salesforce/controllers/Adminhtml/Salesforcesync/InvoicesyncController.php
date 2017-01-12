@@ -53,8 +53,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
     public function syncAction()
     {
         $entityId = $this->getRequest()->getParam('invoice_id');
+        Mage::getSingleton('tnw_salesforce/order_invoice_observer')->syncInvoice(array($entityId));
 
-        $this->syncEntity(array($entityId));
         $this->_redirectReferer();
     }
 
@@ -69,77 +69,9 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
         } elseif (!$helper->isProfessionalEdition()) {
             $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            $this->syncEntity($itemIds);
+            Mage::getSingleton('tnw_salesforce/order_invoice_observer')->syncInvoice($itemIds);
         }
 
         $this->_redirect('*/*/index');
-    }
-
-    /**
-     * @param array $entityIds
-     */
-    protected function syncEntity(array $entityIds)
-    {
-        /** check empty */
-        if (empty($entityIds)) {
-            return;
-        }
-
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
-        /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/order_invoice', $entityIds);
-
-        $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
-        }
-
-        /** @var Mage_Core_Model_App_Emulation $appEmulation */
-        $appEmulation = Mage::getSingleton('core/app_emulation');
-        foreach ($groupWebsite as $websiteId => $entityIds) {
-            $website = Mage::app()->getWebsite($websiteId);
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
-
-            if (!$helper->isEnabled()) {
-                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
-            }
-            else {
-                $syncBulk = (count($entityIds) > 1);
-
-                try {
-                    if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
-                        $success = Mage::getModel('tnw_salesforce/localstorage')
-                            ->addObject($entityIds, 'Invoice', 'invoice', $syncBulk);
-
-                        if ($success) {
-                            if ($syncBulk) {
-                                $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
-                                $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
-                            }
-                            else {
-                                $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
-                            }
-                        }
-                        else {
-                            $this->_getSession()->addError('Could not add to the queue!');
-                        }
-                    }
-                    else {
-                        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
-                        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                            'invoiceIds' => $entityIds,
-                            'message' => $this->__('Total of %d records(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
-                            'type' => $syncBulk ? 'bulk' : 'salesforce'
-                        ));
-                    }
-                } catch (Exception $e) {
-                    $this->_getSession()->addError($e->getMessage());
-                }
-            }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
-        }
     }
 }

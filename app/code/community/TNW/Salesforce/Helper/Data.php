@@ -709,9 +709,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function canPush()
     {
-        if ($this->isWorking()
-            && TNW_Salesforce_Model_Connection::createConnection()->getClient()
-        ) {
+        if ($this->isWorking()) {
             Mage::getSingleton('core/session')->setSfNotWorking(false);
             return true;
         }
@@ -1037,6 +1035,16 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
             && $this->_getRequest()->getControllerName() == 'system_config'
             && $this->_getRequest()->getActionName() == 'edit'
             && $this->_getRequest()->getParam('section') == 'salesforce';
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLoginPage()
+    {
+        return $this->_getRequest()->getModuleName() == 'admin'
+            && $this->_getRequest()->getControllerName() == 'index'
+            && $this->_getRequest()->getActionName() == 'login';
     }
 
     /**
