@@ -47,7 +47,7 @@ class TNW_Salesforce_Model_Product_Observer
     /**
      * @param array $entityIds
      */
-    protected function syncProduct(array $entityIds)
+    public function syncProduct(array $entityIds)
     {
         /** @var Varien_Db_Select $select */
         $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('catalog/product', $entityIds);
@@ -66,7 +66,7 @@ class TNW_Salesforce_Model_Product_Observer
      * @param array $entityIds
      * @param null $website
      */
-    protected function syncProductForWebsite(array $entityIds, $website = null)
+    public function syncProductForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
             $website = Mage::app()->getWebsite();

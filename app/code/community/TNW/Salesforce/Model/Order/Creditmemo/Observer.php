@@ -21,7 +21,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
     /**
      * @param array $entityIds
      */
-    protected function syncCreditMemo(array $entityIds)
+    public function syncCreditMemo(array $entityIds)
     {
         /** @var Varien_Db_Select $select */
         $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/order_creditmemo', $entityIds);
@@ -40,7 +40,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
      * @param array $entityIds
      * @param null $website
      */
-    protected function syncCreditMemoForWebsite(array $entityIds, $website = null)
+    public function syncCreditMemoForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
             $website = Mage::app()->getWebsite();

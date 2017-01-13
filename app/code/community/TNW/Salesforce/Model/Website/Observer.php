@@ -14,53 +14,110 @@ class TNW_Salesforce_Model_Website_Observer
     /**
      * Function listens to Website changes (new, edits) captures them and either adds them to the queue
      * or pushes data into Salesforce
-     * @param $observer
-     * @return bool
+     * @param $observer Varien_Event_Observer
      */
     public function salesforcePush($observer)
     {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
+        /** @var Mage_Core_Model_Website $website */
         $website = $observer->getEvent()->getWebsite();
-        $_webstieId = intval($website->getData('website_id'));
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Website Sync (Code: ' . $website->getData('code') . ')');
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("TNW EVENT: Website Sync (Code: {$website->getData('code')})");
 
-        // check if queue sync setting is on - then save to database
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($_webstieId), 'Website', 'website');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Website could not be added to queue');
-                return false;
-            }
-            return true;
-        }
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: processing Saleforce trigger');
-            return; // Disabled
-        }
+        $this->syncWebsite(array($website->getId()));
+    }
 
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING website sync');
-            return; // Disabled
+    /**
+     * @param array $entityIds
+     */
+    public function syncWebsite(array $entityIds)
+    {
+        /** @var Varien_Db_Select $select */
+        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('core/website', $entityIds);
+
+        $groupWebsite = array();
+        foreach ($select->getAdapter()->fetchAll($select) as $row) {
+            $groupWebsite[$row['website_id']][] = $row['object_id'];
         }
 
-        $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-
-        if ($manualSync->reset()) {
-            $manualSync->massAdd(array($_webstieId));
-            $manualSync->process();
-            if (Mage::helper('tnw_salesforce')->displayErrors()
-                && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Website (code: ' . $website->getData('code') . ') is successfully synchronized'));
-            }
+        foreach ($groupWebsite as $websiteId => $entityIds) {
+            $this->syncWebsiteForWebsite($entityIds, $websiteId);
         }
     }
 
-    public function updateForm($observer) {
+    /**
+     * @param array $entityIds
+     * @param null $website
+     */
+    public function syncWebsiteForWebsite(array $entityIds, $website = null)
+    {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+            $website = Mage::app()->getWebsite();
+
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            $syncBulk = (count($entityIds) > 1);
+
+            try {
+                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject($entityIds, 'Website', 'website', $syncBulk);
+
+                    if (!$success) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('Could not add to the queue!');
+                    } elseif ($syncBulk) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
+
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                    }
+                } else {
+                    /** @var TNW_Salesforce_Helper_Salesforce_Website $manualSync */
+                    $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_website', $syncBulk ? 'bulk' : 'salesforce'));
+                    if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * @param $observer Varien_Event_Observer
+     */
+    public function updateForm($observer)
+    {
         $_block = $observer->getEvent()->getBlock();
         if (!$_block) {
             return;

@@ -21,11 +21,11 @@ class TNW_Salesforce_Model_Cron
      */
     protected $_serverName = NULL;
 
+    /**
+     *
+     */
     public function backgroundProcess()
     {
-        set_time_limit(0);
-        Mage::getModel('tnw_salesforce/feed')->checkUpdate();
-
         // Only process if module is enabled
         if (Mage::helper('tnw_salesforce')->isEnabled()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Salesforce 2 Magento queue START ===");
@@ -38,14 +38,19 @@ class TNW_Salesforce_Model_Cron
     }
 
     /**
+     *
+     */
+    public function updateFeed()
+    {
+        Mage::getModel('tnw_salesforce/feed')->checkUpdate();
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'updateFeed'));
+    }
+
+    /**
      * @comment add Abandoned carts to quote for synchronization
      */
     public function addAbandonedToQueue()
     {
-        if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
-            return false;
-        }
-
         /** @var $collection Mage_Reports_Model_Resource_Quote_Collection */
         $collection = Mage::getModel('tnw_salesforce/abandoned')->getAbandonedCollection();
         $collection->addFieldToFilter('sf_sync_force', 1);
@@ -58,34 +63,12 @@ class TNW_Salesforce_Model_Cron
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento Abandoned Cart queue preparation START ===");
 
-        /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
-        $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
-            ->addFieldToFilter('quote_id', array('in' => $itemIds));
-
-        $productIds = $_collection->walk('getProductId');
-
-        /** @var TNW_Salesforce_Model_Localstorage $localstorage */
-        $localstorage = Mage::getModel('tnw_salesforce/localstorage');
-        $localstorage->addObjectProduct(array_unique($productIds), 'Product', 'product');
+        Mage::getSingleton('tnw_salesforce/abandoned')->syncAbandoned($itemIds);
 
         foreach (array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
-            $localstorage->addObject($_chunk, 'Abandoned', 'abandoned');
-            $bind = array(
-                'sf_sync_force' => 0
-            );
-
-            $where = array(
-                'entity_id IN (?)' => $_chunk
-            );
-
             Mage::helper('tnw_salesforce')->getDbConnection('write')
-                ->update(Mage::getResourceModel('sales/quote')->getMainTable(), $bind, $where);
-
+                ->update($collection->getMainTable(), array('sf_sync_force' => 0), array('entity_id IN (?)' => $_chunk));
         }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(
-            sprintf("Powersync background process for store (%s) and website id (%s): abandoned added to the queue",
-                Mage::helper('tnw_salesforce')->getStoreId(), Mage::helper('tnw_salesforce')->getWebsiteId()));
 
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'addAbandonedToQueue'));
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento Abandoned Cart queue preparation END ===");
@@ -97,27 +80,32 @@ class TNW_Salesforce_Model_Cron
      */
     public function syncCurrency()
     {
-        /** @var TNW_Salesforce_Helper_Data $_helperData */
-        $_helperData = Mage::helper('tnw_salesforce');
-        if (!$_helperData->isEnabled() || !$_helperData->isMultiCurrency()) {
-            return;
-        }
-
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce currency sync START ===");
 
-        $currencies = Mage::getModel('directory/currency')
-            ->getConfigAllowCurrencies();
+        foreach (Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig() as $website) {
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function() {
+                /** @var TNW_Salesforce_Helper_Data $_helperData */
+                $_helperData = Mage::helper('tnw_salesforce');
+                if (!$_helperData->isEnabled() || !$_helperData->isMultiCurrency()) {
+                    return;
+                }
 
-        try {
-            $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
-            if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace($_helperData->__('%d Magento currency entities were successfully synchronized', count($currencies)));
-            }
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError($e->getMessage());
+                $currencies = Mage::getModel('directory/currency')
+                    ->getConfigAllowCurrencies();
+
+                try {
+                    $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
+                    if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveTrace($_helperData->__('%d Magento currency entities were successfully synchronized', count($currencies)));
+                    }
+                } catch (Exception $e) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError($e->getMessage());
+                }
+            });
         }
+
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'syncCurrency'));
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce currency sync END ===");
     }
@@ -694,19 +682,19 @@ class TNW_Salesforce_Model_Cron
 
     public function entityCacheFill()
     {
-        /** @var Mage_Core_Model_Website $website */
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('=== Fill magento cache START ===');
+
         foreach (Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig() as $website) {
             Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function() {
                 if (!Mage::helper('tnw_salesforce')->isEnabled()) {
                     return;
                 }
 
-                $website = Mage::app()->getWebsite();
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('=== Fill magento cache START in Website: %s ===', $website->getName()));
                 Mage::getSingleton('tnw_salesforce/sforce_entity_cache')->importFromSalesforce();
-                Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'entityCacheFill'));
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('=== Fill magento cache END in Website: %s ===', $website->getName()));
             });
         }
+
+        Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'entityCacheFill'));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('=== Fill magento cache END ===');
     }
 }

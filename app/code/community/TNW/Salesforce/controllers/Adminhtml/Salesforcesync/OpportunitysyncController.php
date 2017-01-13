@@ -57,186 +57,65 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
     public function syncAction()
     {
         $entityId = $this->getRequest()->getParam('order_id');
+        Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder(array($entityId));
 
-        $this->syncEntity(array($entityId));
         $this->_redirect('*/*/');
     }
 
     public function massSyncForceAction()
     {
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
-
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper  = Mage::helper('tnw_salesforce');
 
         $itemIds = $this->getRequest()->getParam('orders');
         if (!is_array($itemIds)) {
-            $session->addError($helper->__('Please select orders(s)'));
+            $this->_getSession()->addError($helper->__('Please select orders(s)'));
         } elseif (!$helper->isProfessionalEdition()) {
-            $session->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
+            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            $this->syncEntity($itemIds);
+            Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder($itemIds);
         }
         $this->_redirect('*/*/index');
     }
 
-    /**
-     * @param array $entityIds
-     */
-    protected function syncEntity(array $entityIds)
-    {
-        /** check empty */
-        if (empty($entityIds)) {
-            return;
-        }
-
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
-        /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/order', $entityIds);
-
-        $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
-        }
-
-        /** @var Mage_Core_Model_App_Emulation $appEmulation */
-        $appEmulation = Mage::getSingleton('core/app_emulation');
-        foreach ($groupWebsite as $websiteId => $entityIds) {
-            $storeId = Mage::app()->getWebsite($websiteId)->getDefaultStore()->getId();
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
-
-            if (!$helper->isEnabled()) {
-                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', Mage::app()->getWebsite($websiteId)->getName()));
-            }
-            else {
-                $syncBulk = (count($entityIds) > 1);
-
-                try {
-                    if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
-                        $_collection = Mage::getResourceModel('sales/order_item_collection')
-                            ->addFieldToFilter('order_id', array('in' => $entityIds));
-
-                        // use Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart(
-                        $productIds = $_collection->walk(array(
-                            Mage::helper('tnw_salesforce/salesforce_opportunity'), 'getProductIdFromCart'
-                        ));
-
-                        $success = Mage::getModel('tnw_salesforce/localstorage')
-                            ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
-
-                        $success = $success && Mage::getModel('tnw_salesforce/localstorage')
-                                ->addObject($entityIds, 'Order', 'order', $syncBulk);
-
-                        if ($success) {
-                            if ($syncBulk) {
-                                $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
-                                $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
-                            } else {
-                                $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
-                            }
-                        }
-                        else {
-                            $this->_getSession()->addError('Could not add to the queue!');
-                        }
-                    }
-                    else {
-                        Mage::dispatchEvent('tnw_salesforce_opportunity_process', array(
-                            'orderIds' => $entityIds,
-                            'message' => $this->__('Total of %d record(s) were successfully synchronized', count($entityIds)),
-                            'type' => $syncBulk ? 'bulk' : 'salesforce'
-                        ));
-                    }
-                } catch (Exception $e) {
-                    $this->_getSession()->addError($e->getMessage());
-                }
-            }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
-        }
-    }
-
     public function syncWebsitesAction()
     {
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
+        $websiteIds = array_map(function(Mage_Core_Model_Website $website) {
+            return $website->getId();
+        }, Mage::app()->getWebsites(true));
 
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
-        /** @var TNW_Salesforce_Helper_Config $helperConfig */
-        $helperConfig = Mage::helper('tnw_salesforce/config');
-
-        /** @var Mage_Core_Model_App_Emulation $appEmulation */
-        $appEmulation = Mage::getSingleton('core/app_emulation');
-
-        /** @var Mage_Core_Model_Website $website */
-        foreach ($helperConfig->getWebsitesDifferentConfig() as $website) {
-            $storeId = $website->getDefaultStore()->getId();
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
-
-            if (!$helper->isEnabled()) {
-                $session->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
-            }
-            else {
-                try {
-                    $websites = ($website->getId() == Mage::app()->getWebsite('admin')->getId())
-                        ? array_keys(array_diff_key(Mage::app()->getWebsites(true), $helperConfig->getWebsitesDifferentConfig(false)))
-                        : array($website->getId());
-
-                    /** @var TNW_Salesforce_Helper_Salesforce_Website $manualSync */
-                    $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
-                    if ($manualSync->reset() && $manualSync->massAdd($websites) && $manualSync->process()) {
-                        $session->addSuccess($this->__('Magento website entities were successfully synchronized in Website: %s', $website->getName()));
-                    }
-                } catch (Exception $e) {
-                    $session->addError($e->getMessage());
-                }
-            }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
-        }
+        Mage::getSingleton('tnw_salesforce/website_observer')
+            ->syncWebsite($websiteIds);
 
         $this->_redirect('*/system_store/index');
     }
 
     public function syncCurrencyAction()
     {
-        /** @var Mage_Adminhtml_Model_Session $session */
-        $session = Mage::getSingleton('adminhtml/session');
+        foreach (Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig() as $website) {
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function() {
+                $website = Mage::app()->getWebsite();
 
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
+                /** @var TNW_Salesforce_Helper_Data $_helperData */
+                $_helperData = Mage::helper('tnw_salesforce');
+                if (!$_helperData->isEnabled() || !$_helperData->isMultiCurrency()) {
+                    return;
+                }
 
-        /** @var TNW_Salesforce_Helper_Config $helperConfig */
-        $helperConfig = Mage::helper('tnw_salesforce/config');
+                $currencies = Mage::getModel('directory/currency')
+                    ->getConfigAllowCurrencies();
 
-        /** @var Mage_Core_Model_App_Emulation $appEmulation */
-        $appEmulation = Mage::getSingleton('core/app_emulation');
-
-        foreach ($helperConfig->getWebsitesDifferentConfig() as $website) {
-            $storeId = $website->getDefaultStore()->getId();
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($storeId);
-
-            if ($helper->isMultiCurrency()) {
                 try {
-                    /** @var Mage_Directory_Model_Currency $currencyModel */
-                    $currencyModel = Mage::getModel('directory/currency');
-                    $currencies = $currencyModel->getConfigAllowCurrencies();
-
-                    /** @var TNW_Salesforce_Helper_Salesforce_Currency $manualSync */
                     $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
                     if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
-                        $session->addSuccess($this->__('Magento currency entities were successfully synchronized in Website: %s', $website->getName()));
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($_helperData->__('%d Magento currency entities were successfully synchronized in Website: %s', count($currencies), $website->getName()));
                     }
                 } catch (Exception $e) {
-                    $session->addError($e->getMessage());
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError($e->getMessage());
                 }
-            }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+            });
         }
 
         $this->_redirect('*/system_currency/index');
