@@ -226,37 +226,12 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 continue;
             }
 
-            $isBase = empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode);
-            switch ($feeType) {
-                case 'tax':
-                    if (!Mage::helper('tnw_salesforce')->isUpdateTaxTotal()) {
-                        $magentoPrice = $record->UnitPrice;
-                        break;
-                    }
-
-                    $magentoPrice = $isBase ? $order->getBaseTaxAmount() : $order->getTaxAmount();
-                    break;
-
-                case 'shipping':
-                    if (!Mage::helper('tnw_salesforce')->isUpdateShippingTotal()) {
-                        $magentoPrice = $record->UnitPrice;
-                        break;
-                    }
-
-                    $magentoPrice = $isBase ? $order->getBaseShippingAmount() : $order->getShippingAmount();
-                    break;
-
-                case 'discount':
-                    if (!Mage::helper('tnw_salesforce')->isUpdateDiscountTotal()) {
-                        $magentoPrice = $record->UnitPrice;
-                        break;
-                    }
-
-                    $magentoPrice = $isBase ? $order->getBaseDiscountAmount() : $order->getDiscountAmount();
-                    break;
-
-                default:
-                    continue 2;
+            if (!Mage::helper('tnw_salesforce')->isUpdateTotalByFeeType($feeType)) {
+                $magentoPrice = $record->UnitPrice;
+            } else {
+                $magentoPrice = empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode)
+                    ? $order->getData("base_{$feeType}_amount")
+                    : $order->getData("{$feeType}_amount");
             }
 
             if (!$this->priceCompare($magentoPrice, $record->UnitPrice)) {

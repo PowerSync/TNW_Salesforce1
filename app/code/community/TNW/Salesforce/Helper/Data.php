@@ -653,6 +653,27 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return (bool)(int)$this->getStoreConfig(self::ORDER_UPDATE_DISCOUNT_TOTAL);
     }
 
+    /**
+     * @param $feeType
+     * @return bool
+     */
+    public function isUpdateTotalByFeeType($feeType)
+    {
+        switch ($feeType) {
+            case 'tax':
+                return $this->isUpdateTaxTotal();
+
+            case 'discount':
+                return $this->isUpdateDiscountTotal();
+
+            case 'shipping':
+                return $this->isUpdateShippingTotal();
+
+            default:
+                return false;
+        }
+    }
+
     // Shipping Fee Product
 
     public function getDefaultAccountId()
