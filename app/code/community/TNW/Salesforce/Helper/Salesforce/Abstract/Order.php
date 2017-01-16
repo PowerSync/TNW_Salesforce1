@@ -779,12 +779,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function updateStatus($order)
     {
-        $_entityNumber = $this->_getEntityNumber($order);
-        if (Mage::getModel('tnw_salesforce/localstorage')->getObject($order->getId())) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Order #$_entityNumber is already queued for update.");
-            return;
-        }
-
         if (!$this->reset()) {
             return;
         }
@@ -800,7 +794,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return;
         }
 
-        $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $_lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $_entityNumber = $this->_getEntityNumber($order);
         if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
             $this->_prepareEntity();
 

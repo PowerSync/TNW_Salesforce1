@@ -24,7 +24,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected $_useCache = false;
 
     /**
-     * @var null
+     * @var stdClass
      */
     protected $_obj = NULL;
 

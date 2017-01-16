@@ -617,21 +617,127 @@ class TNW_Salesforce_Model_Observer
     public function updateOpportunity(Varien_Event_Observer $observer)
     {
         $_order = $observer->getEvent()->getData('order');
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Updating Opportunity Status ... ');
-        if ($_order && is_object($_order)) {
-            Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($_order);
+        if (!$_order instanceof Mage_Sales_Model_Order) {
+            return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace('Updating Opportunity Status ... ');
+
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($_order->getStore()->getWebsite(), function () use($_order) {
+            $website = Mage::app()->getWebsite();
+
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+
+                return;
+            }
+
+            if (!$helper->isEnabledOrderSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError(sprintf('SKIPPING: Order Integration is disabled in Website: %s', $website->getName()));
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            if (!$helper->isRealTimeType()) {
+                $success = Mage::getModel('tnw_salesforce/localstorage')
+                    ->addObject(array($_order->getId()), 'Order', 'order');
+
+                if (!$success) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('Could not add to the queue!');
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                }
+
+                return;
+            }
+
+            Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($_order);
+        });
     }
 
     public function updateOrder(Varien_Event_Observer $observer)
     {
         $_order = $observer->getEvent()->getData('order');
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Updating Order Status ... ');
-        if ($_order && is_object($_order)) {
-            Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
+        if (!$_order instanceof Mage_Sales_Model_Order) {
+            return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace('Updating Order Status ... ');
+
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($_order->getStore()->getWebsite(), function () use($_order) {
+            $website = Mage::app()->getWebsite();
+
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+
+                return;
+            }
+
+            if (!$helper->isEnabledOrderSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError(sprintf('SKIPPING: Order Integration is disabled in Website: %s', $website->getName()));
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            if (!$helper->isRealTimeType()) {
+                $success = Mage::getModel('tnw_salesforce/localstorage')
+                    ->addObject(array($_order->getId()), 'Order', 'order');
+
+                if (!$success) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('Could not add to the queue!');
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                }
+
+                return;
+            }
+
+            Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
+        });
     }
 
     public function updateOrderStatusForm($observer)
