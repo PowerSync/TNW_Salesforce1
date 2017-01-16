@@ -94,7 +94,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
             $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
 
             if (!$helper->isEnabled()) {
-                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
+                $this->_getSession()->addError('API Integration is disabled');
             }
             else {
                 $syncBulk = (count($entityIds) > 1);
@@ -121,7 +121,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
                         /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Catalogrule $campaignMember */
                         $campaignMember = Mage::helper(sprintf('tnw_salesforce/%s_campaign_catalogrule', $syncBulk ? 'bulk' : 'salesforce'));
                         if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process()) {
-                            $this->_getSession()->addSuccess($this->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
+                            $this->_getSession()->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
                         }
                     }
                 } catch (Exception $e) {

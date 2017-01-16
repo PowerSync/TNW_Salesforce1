@@ -110,14 +110,14 @@ class TNW_Salesforce_Model_Customer_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveNotice('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isEnabledCustomerSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace(sprintf('SKIPPING: Customer synchronization disabled in Website: %s', $website->getName()));
+                    ->saveTrace('SKIPPING: Customer synchronization disabled');
 
                 return;
             }
@@ -161,7 +161,7 @@ class TNW_Salesforce_Model_Customer_Observer
                     $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_customer', $syncBulk ? 'bulk' : 'salesforce'));
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
                     }
                 }
             } catch (Exception $e) {

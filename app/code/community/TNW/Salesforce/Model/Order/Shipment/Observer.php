@@ -43,21 +43,19 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
     public function syncShipmentForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('SKIPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveNotice('SKIPING: API Integration is disabled');
 
                 return;
             }
 
             if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace(sprintf('SKIPING: Shipment synchronization disabled in Website: %s', $website->getName()));
+                    ->saveTrace('SKIPING: Shipment synchronization disabled');
 
                 return;
             }
@@ -101,7 +99,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                     $_syncType = strtolower($helper->getShipmentObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'shipmentIds' => $entityIds,
-                        'message' => $helper->__('Total of %d records(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
+                        'message' => $helper->__('Total of %d records(s) were synchronized', count($entityIds)),
                         'type' => $syncBulk ? 'bulk' : 'salesforce'
                     ));
                 }

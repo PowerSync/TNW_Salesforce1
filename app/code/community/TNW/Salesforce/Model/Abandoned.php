@@ -45,21 +45,19 @@ class TNW_Salesforce_Model_Abandoned
     public function syncAbandonedForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveNotice('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('SKIPPING: Abandoned Integration is disabled in Website: %s', $website->getName()));
+                    ->saveNotice('SKIPPING: Abandoned Integration is disabled');
 
                 return;
             }
@@ -112,7 +110,7 @@ class TNW_Salesforce_Model_Abandoned
                     $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'orderIds' => $entityIds,
-                        'message' => $helper->__('Total of %d abandoned(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
+                        'message' => $helper->__('Total of %d abandoned(s) were synchronized', count($entityIds)),
                         'type' => $syncBulk ? 'bulk' : 'salesforce',
                         'object_type' => 'abandoned'
                     ));

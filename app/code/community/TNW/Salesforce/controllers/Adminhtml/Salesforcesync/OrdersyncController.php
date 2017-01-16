@@ -93,7 +93,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
             $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
 
             if (!$helper->isEnabled()) {
-                $this->_getSession()->addError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
+                $this->_getSession()->addError('API Integration is disabled');
             }
             else {
                 try {
@@ -156,7 +156,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                         $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
                         Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                             'orderIds' => $entityIds,
-                            'message' => $this->__('Order: total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()),
+                            'message' => $this->__('Order: total of %d record(s) were successfully synchronized', count($entityIds)),
                             'type' => 'salesforce'
                         ));
 
@@ -165,7 +165,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getInvoiceObject());
                             Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                                 'invoiceIds' => array_values($invoiceIds),
-                                'message' => $this->__('Invoice: total of %d record(s) were successfully synchronized in Website: %s', count($invoiceIds), $website->getName()),
+                                'message' => $this->__('Invoice: total of %d record(s) were successfully synchronized', count($invoiceIds)),
                                 'type' => 'salesforce'
                             ));
                         }
@@ -175,7 +175,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getShipmentObject());
                             Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                                 'shipmentIds' => array_values($shipmentIds),
-                                'message' => $this->__('Shipment: total of %d record(s) were successfully synchronized in Website: %s', count($shipmentIds), $website->getName()),
+                                'message' => $this->__('Shipment: total of %d record(s) were successfully synchronized', count($shipmentIds)),
                                 'type' => 'salesforce'
                             ));
                         }
@@ -185,7 +185,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
                             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getCreditmemoObject());
                             Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                                 'creditmemoIds' => array_values($creditMemoIds),
-                                'message' => $this->__('Credit Memo: total of %d record(s) were successfully synchronized in Website: %s', count($creditMemoIds), $website->getName()),
+                                'message' => $this->__('Credit Memo: total of %d record(s) were successfully synchronized', count($creditMemoIds)),
                                 'type' => 'salesforce'
                             ));
                         }

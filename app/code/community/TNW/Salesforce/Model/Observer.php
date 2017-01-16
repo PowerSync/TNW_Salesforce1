@@ -625,21 +625,19 @@ class TNW_Salesforce_Model_Observer
             ->saveTrace('Updating Opportunity Status ... ');
 
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($_order->getStore()->getWebsite(), function () use($_order) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isEnabledOrderSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: Order Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: Order Integration is disabled');
 
                 return;
             }
@@ -688,21 +686,19 @@ class TNW_Salesforce_Model_Observer
             ->saveTrace('Updating Order Status ... ');
 
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($_order->getStore()->getWebsite(), function () use($_order) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isEnabledOrderSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: Order Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: Order Integration is disabled');
 
                 return;
             }

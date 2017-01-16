@@ -46,21 +46,19 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
     public function syncInvoiceForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('API Integration is disabled');
 
                 return;
             }
 
             if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('Invoice Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('Invoice Integration is disabled');
 
                 return;
             }
@@ -103,7 +101,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
                     $_syncType = strtolower($helper->getInvoiceObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'invoiceIds' => $entityIds,
-                        'message' => $helper->__('Total of %d records(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
+                        'message' => $helper->__('Total of %d records(s) were synchronized', count($entityIds)),
                         'type' => $syncBulk ? 'bulk' : 'salesforce'
                     ));
                 }

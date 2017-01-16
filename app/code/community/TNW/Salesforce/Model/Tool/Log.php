@@ -14,6 +14,11 @@
  * @method saveInfo($message)
  * @method saveSuccess($message)
  *
+ * @method string getMessage()
+ * @method int getLevel()
+ * @method $this setMessage($message)
+ * @method $this setLevel($level)
+ *
  */
 class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
 {
@@ -36,7 +41,7 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
      * identify new synchronization
      * @var
      */
-    protected static $newTransaction = true;
+    protected static $newTransaction = array();
 
     /**
      * prepare object
@@ -47,9 +52,19 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
         $this->_init('tnw_salesforce/tool_log');
     }
 
-    public function isNewTransaction()
+    /**
+     * @param null $website
+     * @return bool
+     */
+    public function isNewTransaction($website = null)
     {
-        return empty(self::$transactionId) || self::$newTransaction;
+        $website = Mage::app()->getWebsite($website)->getCode();
+        if(!isset(self::$newTransaction[$website])) {
+            self::$newTransaction[$website] = false;
+            return true;
+        }
+
+        return self::$newTransaction[$website];
     }
 
     /**
@@ -57,10 +72,8 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
      */
     public function getTransactionId()
     {
-        if (is_null(self::$transactionId)) {
+        if (empty(self::$transactionId)) {
             self::$transactionId = uniqid();
-        } else {
-            self::$newTransaction = false;
         }
 
         return self::$transactionId;
@@ -92,23 +105,16 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
      */
     protected function _beforeSave()
     {
-        if (!$this->getData('transaction_id')) {
-            $this->setData('transaction_id', $this->getTransactionId());
-        }
+        $currentWebsite = Mage::app()->getWebsite();
+        $this->setData('transaction_id', $this->getTransactionId());
+        $this->setData('website_id', $currentWebsite->getId());
 
         /**
          * @comment add session message is we in Admin area
          */
-        if (
-            Mage::app()->getStore()->isAdmin()
-            && PHP_SAPI != 'cli'
-        ) {
-
-            $level = $this->getLevel();
-            $message = $this->getMessage();
-
-            $message = 'Salesforce integration: '. $message;
-            switch ($level) {
+        if (Mage::getSingleton('admin/session')->isLoggedIn()) {
+            $message = sprintf('Salesforce integration: %s (Website: %s)', $this->getMessage(), $currentWebsite->getCode());
+            switch ($this->getLevel()) {
                 case Zend_Log::ERR:
                     Mage::getSingleton('adminhtml/session')->addUniqueMessages(Mage::getSingleton('core/message')->error($message));
                     break;
@@ -129,7 +135,7 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
         /**
          * Add config first time only
          */
-        if ($this->isNewTransaction()) {
+        if ($this->isNewTransaction($currentWebsite)) {
             $log = new self;
             $log->saveTrace("******************** New Transaction:{$this->getTransactionId()} ************");
         }
@@ -208,6 +214,9 @@ class TNW_Salesforce_Model_Tool_Log extends Mage_Core_Model_Abstract
                             break;
                         case 'INFO':
                             $level = Zend_Log::INFO;
+                            break;
+                        case 'SUCCESS':
+                            $level = self::SUCCESS;
                             break;
                         default:
                             $level = Zend_Log::DEBUG;

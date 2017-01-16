@@ -171,21 +171,19 @@ class TNW_Salesforce_Model_Sale_Observer
     public function syncOrderForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isEnabledOrderSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: Order Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: Order Integration is disabled');
 
                 return;
             }
@@ -239,7 +237,7 @@ class TNW_Salesforce_Model_Sale_Observer
                     $_syncType = strtolower($helper->getOrderObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'orderIds' => $entityIds,
-                        'message' => $helper->__('Total of %d order(s) were synchronized in Website: %s', count($entityIds), $website->getName()),
+                        'message' => $helper->__('Total of %d order(s) were synchronized', count($entityIds)),
                         'type' => $syncBulk ? 'bulk' : 'salesforce'
                     ));
                 }
@@ -306,17 +304,15 @@ class TNW_Salesforce_Model_Sale_Observer
         if (!empty($assignToCampaign) && ($rule->getData('salesforce_id') != $assignToCampaign)) {
             try {
                 Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($assignToCampaign, $rule) {
-                    $website = Mage::app()->getWebsite();
-
                     /** @var TNW_Salesforce_Helper_Data $helper */
                     $helper = Mage::helper('tnw_salesforce');
 
                     if (!$helper->isEnabled()) {
-                        throw new Exception(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                        throw new Exception('SKIPPING: API Integration is disabled');
                     }
 
                     if (!$helper->isOrderRulesEnabled()) {
-                        throw new Exception(sprintf('SKIPPING: Sales Rule Integration is disabled in Website: %s', $website->getName()));
+                        throw new Exception('SKIPPING: Sales Rule Integration is disabled');
                     }
 
                     if (Mage::getSingleton('core/session')->getFromSalesForce()) {
@@ -374,21 +370,19 @@ class TNW_Salesforce_Model_Sale_Observer
     public function syncSalesRuleForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isOrderRulesEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPPING: Sales Rule Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPPING: Sales Rule Integration is disabled');
 
                 return;
             }
@@ -433,7 +427,7 @@ class TNW_Salesforce_Model_Sale_Observer
                     $campaignMember = Mage::helper(sprintf('tnw_salesforce/%s_campaign_salesrule', $syncBulk ? 'bulk' : 'salesforce'));
                     if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
                     }
                 }
             } catch (Exception $e) {

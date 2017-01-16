@@ -52,14 +52,12 @@ class TNW_Salesforce_Model_Website_Observer
     public function syncWebsiteForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice(sprintf('SKIPPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveNotice('SKIPPING: API Integration is disabled');
 
                 return;
             }
@@ -103,7 +101,7 @@ class TNW_Salesforce_Model_Website_Observer
                     $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_website', $syncBulk ? 'bulk' : 'salesforce'));
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
                     }
                 }
             } catch (Exception $e) {

@@ -94,8 +94,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
     {
         foreach (Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig() as $website) {
             Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function() {
-                $website = Mage::app()->getWebsite();
-
                 /** @var TNW_Salesforce_Helper_Data $_helperData */
                 $_helperData = Mage::helper('tnw_salesforce');
                 if (!$_helperData->isEnabled() || !$_helperData->isMultiCurrency()) {
@@ -109,7 +107,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
                     $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
                     if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($_helperData->__('%d Magento currency entities were successfully synchronized in Website: %s', count($currencies), $website->getName()));
+                            ->saveSuccess($_helperData->__('%d Magento currency entities were successfully synchronized', count($currencies)));
                     }
                 } catch (Exception $e) {
                     Mage::getSingleton('tnw_salesforce/tool_log')

@@ -76,14 +76,14 @@ class TNW_Salesforce_Model_Product_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPING: API Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isEnabledProductSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError(sprintf('SKIPING: Product Integration is disabled in Website: %s', $website->getName()));
+                    ->saveError('SKIPING: Product Integration is disabled');
 
                 return;
             }
@@ -127,7 +127,7 @@ class TNW_Salesforce_Model_Product_Observer
                     $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_product', $syncBulk ? 'bulk' : 'salesforce'));
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized in Website: %s', count($entityIds), $website->getName()));
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
                     }
                 }
             } catch (Exception $e) {

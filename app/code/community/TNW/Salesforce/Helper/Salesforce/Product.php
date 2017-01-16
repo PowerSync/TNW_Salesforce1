@@ -205,27 +205,12 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         $ids = !is_array($ids)
             ? array($ids) : $ids;
 
-        foreach ($ids as $id) {
-
-            $resetAttribute = array(
-                'salesforce_id'           => null,
+        foreach ($this->storesAvailable() as $storeId) {
+            Mage::getSingleton('catalog/product_action')->updateAttributes($ids, array(
+                'salesforce_id' => null,
                 'salesforce_pricebook_id' => null,
-                'sf_insync'               => null
-            );
-
-            $entity = $this->getEntityCache($this->_cache['productIdToSku'][$id])
-                ->addData($resetAttribute);
-
-            $originalStoreId = $entity->getStoreId();
-            foreach ($this->storesAvailable($entity) as $storeId) {
-                $entity->setData('store_id', $storeId);
-
-                foreach (array_keys($resetAttribute) as $code) {
-                    $entity->getResource()->saveAttribute($entity, $code);
-                }
-            }
-
-            $entity->setData('store_id', $originalStoreId);
+                'sf_insync' => null
+            ), $storeId);
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')
@@ -234,12 +219,13 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     }
 
     /**
-     * @param $entity Mage_Catalog_Model_Product
      * @return array
      */
-    protected function storesAvailable($entity)
+    protected function storesAvailable()
     {
-        return array_merge(array(Mage::app()->getStore('admin')->getId()), $entity->getStoreIds());
+        return array_unique(
+            Mage::app()->getWebsite()->getStoreIds() +
+            Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig()->getStoreIds());
     }
 
     /**
@@ -337,7 +323,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
             // Save Attribute
             $message = '';
-            foreach ($this->storesAvailable($entity) as $_storeId) {
+            foreach ($this->storesAvailable() as $_storeId) {
                 $entity->setData('store_id', $_storeId);
 
                 if (!empty($_product->pricebookEntryIds[$_storeId])) {
@@ -406,7 +392,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         // Is Multi Site Sync?
         if (!$this->isMultiSync()) {
-            $currentStore = Mage::app()->getStore($this->getHelper()->getStoreId());
+            $currentStore = Mage::app()->getStore();
             $this->addPriceBookEntryToSync($currentStore, $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
 
             /* Do I need to create Default Pricebook Entry or update existing one? */
@@ -423,7 +409,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->addPriceBookEntryToSync(Mage::app()->getStore('admin'), $_magentoId, $_prod, $_sfProductId, $this->_standardPricebookId);
 
             // Sync remaining Stores
-            foreach ($entity->getStoreIds() as $_storeId) {
+            foreach ($this->storesAvailable() as $_storeId) {
                 $_storePriceBookId = $this->getHelper()->getPricebookId($_storeId) ?: $this->_defaultPriceBook;
                 $this->addPriceBookEntryToSync($_storeId, $_magentoId, $_prod, $_sfProductId, $_storePriceBookId);
             }
@@ -432,9 +418,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
     protected function addPriceBookEntryToSync($store, $magentoProductId, $sfProduct, $sfProductId, $priceBookId)
     {
-        if (!($store instanceof Mage_Core_Model_Store)) {
-            $store = Mage::app()->getStore($store);
-        }
+        $store = Mage::app()->getStore($store);
 
         if ($this->getHelper()->isMultiCurrency()) {
             /**
@@ -619,7 +603,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
 
         foreach ($this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())] as $sku => $salesforceId) {
             $entity = $this->getEntityCache($sku);
-            foreach ($this->storesAvailable($entity) as $storeId) {
+            foreach ($this->storesAvailable() as $storeId) {
                 $productId = $this->_getEntityId($entity);
                 $price = is_numeric($productId)
                     ? $entity->getResource()->getAttributeRawValue($productId, 'price', $storeId)
