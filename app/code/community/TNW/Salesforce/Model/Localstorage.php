@@ -249,7 +249,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('order'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `order`.`store_id`', array('website_id'))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `order`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('`order`.`entity_id`', array('in'=>$idSet)))
                 ;
 
@@ -260,7 +260,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('quote'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `quote`.`store_id`', array('website_id'))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `quote`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('`quote`.`entity_id`', array('in'=>$idSet)))
                 ;
 
@@ -282,7 +282,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 $selectDiff = TNW_Salesforce_Helper_Config::generateSelectWebsiteDifferent();
                 return $connection->select()
                     ->from(array('product'=>$resource->getEntityTable()), array('object_id' => 'entity_id'))
-                    ->joinInner(array('website'=>$resource->getTable('catalog/product_website')), 'product.entity_id = website.product_id', array('website_id'))
+                    ->joinLeft(array('website'=>$resource->getTable('catalog/product_website')), 'product.entity_id = website.product_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->joinLeft(array('diff_websites'=>$selectDiff), 'diff_websites.scope_id = website.website_id', array())
                     ->group(array('diff_websites.scope_id'))
                     ->where($connection->prepareSqlCondition('product.entity_id', array('in'=>$idSet)))
@@ -305,7 +305,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('invoice'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `invoice`.`store_id`', array('website_id'))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `invoice`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('invoice.entity_id', array('in'=>$idSet)))
                 ;
 
@@ -316,7 +316,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('shipment'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `shipment`.`store_id`', array('website_id'))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `shipment`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('shipment.entity_id', array('in'=>$idSet)))
                 ;
 
@@ -327,7 +327,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('creditmemo'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinInner(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `creditmemo`.`store_id`', array('website_id'))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `creditmemo`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('creditmemo.entity_id', array('in'=>$idSet)))
                 ;
 
@@ -338,7 +338,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('rule'=>$resource->getMainTable()), array('object_id' => 'rule_id'))
-                    ->joinInner(array('website'=>$resource->getTable('catalogrule/website')), 'rule.rule_id = website.rule_id', array('website_id'))
+                    ->joinLeft(array('website'=>$resource->getTable('catalogrule/website')), 'rule.rule_id = website.rule_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->group(array('rule.rule_id'))
                     ->where($connection->prepareSqlCondition('rule.rule_id', array('in'=>$idSet)))
                 ;
@@ -350,7 +350,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('rule'=>$resource->getMainTable()), array('object_id' => 'rule_id'))
-                    ->joinInner(array('website'=>$resource->getTable('salesrule/website')), 'rule.rule_id = website.rule_id', array('website_id'))
+                    ->joinLeft(array('website'=>$resource->getTable('salesrule/website')), 'rule.rule_id = website.rule_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->group(array('rule.rule_id'))
                     ->where($connection->prepareSqlCondition('rule.rule_id', array('in'=>$idSet)))
                 ;
