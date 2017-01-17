@@ -442,9 +442,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("Opportunity/Order Item Object: \n" . print_r($this->_obj, true));
-
         $entityId = $_entityItem->getId();
         $key = empty($entityId)
             ? sprintf('%s_%s', $_entityNumber, count($this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]))

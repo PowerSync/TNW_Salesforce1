@@ -584,11 +584,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $this->_addPriceBookEntry($sku, $salesforceId);
         }
 
-        foreach ($this->_cache['pricebookEntryToSync'] as $_key => $tmpObject) {
-            // Dump products that will be synced
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Pricebook Object:\n". print_r($tmpObject, true));
-        }
-
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------UPSERTING Pricebook: End----------');
     }
 
@@ -615,8 +610,8 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         foreach ($_responses as $_key => $_response) {
             $cacheKey = $_keys[$_key];
 
-            list(, $_magentoId, $currencyCode) = explode(':::', $cacheKey, 3);
-            $sku      = $this->_cache['productIdToSku'][$_magentoId];
+            list($priceBookId, $_magentoId, $currencyCode) = explode(':::', $cacheKey, 3);
+            $sku = $this->_cache['productIdToSku'][$_magentoId];
 
             //Report Transaction
             $this->_cache['responses']['pricebooks'][$cacheKey] = $_response;
@@ -627,8 +622,9 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
                 continue;
             }
 
+            $standard = ($priceBookId == $this->_standardPricebookId) ? ' of standard pricebook' : '';
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('PRICEBOOK ENTRY: magento (' . $sku . ') : salesforceID (' . $_response->id . ')');
+                ->saveTrace("PRICEBOOK ENTRY: Product SKU ({$sku}) : salesforceID ({$_response->id}){$standard}");
 
             foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$cacheKey]) as $_storeId) {
                 $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId][] = "{$currencyCode}:{$_response->id}";
@@ -639,8 +635,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     public function reset()
     {
         parent::reset();
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
 
         // Reset cache (need to conver to magento cache
         $this->_cache = array(

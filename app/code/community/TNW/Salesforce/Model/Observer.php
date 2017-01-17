@@ -566,16 +566,14 @@ class TNW_Salesforce_Model_Observer
          * @var $manualSync TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity|TNW_Salesforce_Helper_Salesforce_Opportunity|TNW_Salesforce_Helper_Salesforce_Order
          */
         $manualSync = Mage::helper($_model);
-        $_ids = (count($_orderIds) == 1) ? $_orderIds[0] : $_orderIds;
-
         if ($manualSync->reset()) {
-            $checkAdd = $manualSync->massAdd($_ids);
+            $checkAdd = $manualSync->massAdd($_orderIds);
 
             // Delete Skipped Entity
             $skipped = $manualSync->getSkippedEntity();
             if (!empty($skipped)) {
                 $objectId = array();
-                foreach ($manualSync->getSkippedEntity() as $entity_id) {
+                foreach ($skipped as $entity_id) {
                     $objectId[] = @$_queueIds[array_search($entity_id, $_orderIds)];
                 }
 
@@ -597,10 +595,7 @@ class TNW_Salesforce_Model_Observer
                     }
 
                     if ($_message) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($_message);
-                        if (Mage::helper('tnw_salesforce')->isAdmin()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess($_message);
-                        }
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveSuccess($_message);
                     }
                 }
             }
