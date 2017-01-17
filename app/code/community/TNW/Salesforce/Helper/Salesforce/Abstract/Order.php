@@ -424,28 +424,19 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         if (!property_exists($this->_obj, 'Id')) {
             $_currencyCode    = $this->getCurrencyCode($_entity);
             $pricebookEntryId = $product->getSalesforcePricebookId();
+            foreach (explode("\n", $pricebookEntryId) as $value) {
+                if (strpos($value, ':') === false) {
+                    continue;
+                }
 
-            if (!empty($pricebookEntryId)) {
-                $valuesArray = explode("\n", $pricebookEntryId);
-
-                if (!empty($valuesArray)) {
-                    foreach ($valuesArray as $value) {
-
-                        if (strpos($value, ':') !== false) {
-                            $tmp = explode(':', $value);
-                            if (
-                                isset($tmp[0])
-                                && ($tmp[0] == $_currencyCode || empty($_currencyCode))
-                            ) {
-                                $pricebookEntryId = $tmp[1];
-                            }
-                        }
-                    }
+                list($_currency, $_priceBook) = explode(':', $value, 2);
+                if (!empty($_currency) && ($_currency == $_currencyCode || empty($_currencyCode))) {
+                    $pricebookEntryId = $_priceBook;
                 }
             }
 
             if (empty($pricebookEntryId)) {
-                throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getSku() . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+                throw new Exception("NOTICE: Product w/ SKU ({$_entityItem->getSku()}) is not synchronized, could not add to {$this->_salesforceEntityName}!");
             }
 
             $this->_obj->PricebookEntryId = $pricebookEntryId;
