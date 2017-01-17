@@ -99,7 +99,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                     $_syncType = strtolower($helper->getShipmentObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'shipmentIds' => $entityIds,
-                        'message' => $helper->__('Total of %d records(s) were synchronized', count($entityIds)),
+                        'message' => $helper->__('Total of %d shipment(s) were synchronized', count($entityIds)),
                         'type' => $syncBulk ? 'bulk' : 'salesforce'
                     ));
                 }

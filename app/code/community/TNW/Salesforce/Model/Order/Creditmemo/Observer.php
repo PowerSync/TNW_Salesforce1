@@ -100,7 +100,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
                     $_syncType = strtolower($helper->getCreditmemoObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'creditmemoIds' => $entityIds,
-                        'message' => $helper->__('Total of %d records(s) were synchronized', count($entityIds)),
+                        'message' => $helper->__('Total of %d creditmemo(s) were synchronized', count($entityIds)),
                         'type' => $syncBulk ? 'bulk' : 'salesforce'
                     ));
                 }

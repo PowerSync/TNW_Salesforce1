@@ -18,7 +18,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Invoice #{$_invoice->getIncrementId()} Sync");
 
-        $this->syncInvoice(array($_invoice));
+        $this->syncInvoice(array($_invoice->getId()));
     }
 
     /**
@@ -101,7 +101,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
                     $_syncType = strtolower($helper->getInvoiceObject());
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'invoiceIds' => $entityIds,
-                        'message' => $helper->__('Total of %d records(s) were synchronized', count($entityIds)),
+                        'message' => $helper->__('Total of %d invoice(s) were synchronized', count($entityIds)),
                         'type' => $syncBulk ? 'bulk' : 'salesforce'
                     ));
                 }

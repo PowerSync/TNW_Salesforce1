@@ -3,7 +3,7 @@
 /**
  * Class TNW_Salesforce_Helper_Salesforce_Shipment
  *
- * @method Mage_Sales_Model_Order_Shipment _loadEntityByCache($_entityId, $_entityNumber)
+ * @method Mage_Sales_Model_Order_Shipment _loadEntityByCache($_entityId, $_entityNumber = null)
  */
 class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Helper_Salesforce_Abstract_Sales
 {
@@ -44,13 +44,9 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
         // Parent in Salesforce
         $_order = $_entity->getOrder();
         if (!$_order->getSalesforceId() || !$_order->getData('sf_insync')) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')
-                    ->addError('WARNING: Sync for shipment #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
-            }
-
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveNotice('SKIPPING: Sync for shipment #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
+
             return false;
         }
 
@@ -68,15 +64,9 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
         // Associate order Number with a customer Email
         $email = strtolower($customer->getEmail());
         if (empty($email)) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                $message = sprintf('SKIPPED: Sync for %s #%s failed, %s is missing an email address!',
-                    $this->_magentoEntityName, $_recordNumber, $this->_magentoEntityName);
-
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice($message);
-                Mage::getSingleton('adminhtml/session')
-                    ->addNotice($message);
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice(sprintf('SKIPPED: Sync for %1$s #%2$s failed, %1$s is missing an email address!',
+                    $this->_magentoEntityName, $_recordNumber));
 
             return false;
         }
@@ -96,10 +86,8 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
         }
 
         if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for shipment #' . $_recordNumber . ', sync for customer group #' . $_customerGroup . ' is disabled!');
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
 
             return false;
         }
@@ -256,7 +244,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
 
     /**
      * @param $_entityItem
-     * @return bool|void
+     * @return bool
      */
     protected function _getEntityItemSalesforceId($_entityItem)
     {
@@ -583,14 +571,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Shipment Push: Start----------');
-        foreach ($this->_cache[$entityToUpsertKey] as $_opp) {
-            foreach ($_opp as $_key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace(sprintf('%s Object: %s = "%s"', $this->_salesforceEntityName, $_key, $_value));
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-        }
 
         $_keys = array_keys($this->_cache[$entityToUpsertKey]);
 

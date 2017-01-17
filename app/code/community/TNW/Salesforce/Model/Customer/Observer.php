@@ -161,7 +161,7 @@ class TNW_Salesforce_Model_Customer_Observer
                     $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_customer', $syncBulk ? 'bulk' : 'salesforce'));
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                            ->saveSuccess($helper->__('Total of %d customer(s) were successfully synchronized', count($entityIds)));
                     }
                 }
             } catch (Exception $e) {

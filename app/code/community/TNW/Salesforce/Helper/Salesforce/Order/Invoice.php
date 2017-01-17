@@ -62,13 +62,9 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
         // Parent in Salesforce
         $_order = $_entity->getOrder();
         if (!$_order->getSalesforceId() || !$_order->getData('sf_insync')) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')
-                    ->addError('WARNING: Sync for invoice #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
-            }
-
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveNotice('SKIPPING: Sync for invoice #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
+
             return false;
         }
 
@@ -86,15 +82,9 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
         // Associate order Number with a customer Email
         $email = strtolower($customer->getEmail());
         if (empty($email)) {
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                $message = sprintf('SKIPPED: Sync for %s #%s failed, %s is missing an email address!',
-                    $this->_magentoEntityName, $_recordNumber, $this->_magentoEntityName);
-
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice($message);
-                Mage::getSingleton('adminhtml/session')
-                    ->addNotice($message);
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice(sprintf('SKIPPED: Sync for %1$s #%2$s failed, %1$s is missing an email address!',
+                    $this->_magentoEntityName, $_recordNumber));
 
             return false;
         }
@@ -114,10 +104,8 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
         }
 
         if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_customerGroup)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addNotice('SKIPPED: Sync for invoice #' . $_recordNumber . ', sync for customer group #' . $_customerGroup . ' is disabled!');
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice("SKIPPING: Sync for customer group #" . $_customerGroup . " is disabled!");
 
             return false;
         }
@@ -428,14 +416,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Invoice Push: Start----------');
-        foreach ($this->_cache[$entityToUpsertKey] as $_opp) {
-            foreach ($_opp as $_key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace(sprintf('%s Object: %s = "%s"', $this->_salesforceEntityName, $_key, $_value));
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-        }
 
         $_keys = array_keys($this->_cache[$entityToUpsertKey]);
 
