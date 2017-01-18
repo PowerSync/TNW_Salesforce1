@@ -252,39 +252,37 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $fakeCustomer->setDefaultBilling(1);
         $fakeCustomer->setDefaultShipping(2);
 
-        $customerId = $this->_getEntityId($fakeCustomer);
-        if (Mage::registry('customer_cached_' . $customerId)) {
-            Mage::unregister('customer_cached_' . $customerId);
+        return $fakeCustomer;
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer[] $fakeCustomer
+     * @return array
+     */
+    protected function _pushFakeCustomers(array $fakeCustomer)
+    {
+        if ($this->reset() && $this->forceAdd($fakeCustomer)) {
+            $this->setForceLeadConvertaton(false);
+            $this->process();
         }
-
-        Mage::register('customer_cached_' . $customerId, $fakeCustomer);
-
         return $fakeCustomer;
     }
 
     /**
      * @param Mage_Customer_Model_Customer $fakeCustomer
-     * @return null
+     * @return null|Varien_Object
      */
     protected function _pushFakeCustomer($fakeCustomer)
     {
-        $_id = null;
-
-        if ($this->reset() && $this->forceAdd(array($fakeCustomer))) {
-            Mage::register('customer_event_type', 'contact_us');
-            $this->setForceLeadConvertaton(false);
-            $this->process();
-            Mage::unregister('customer_event_type');
+        if (!is_array($fakeCustomer)) {
+            $fakeCustomer = array($fakeCustomer);
         }
 
-        foreach (array('salesforce_id', 'salesforce_lead_id') as $sfKey) {
-            $_id = $fakeCustomer->getData($sfKey);
-            if (!empty($_id)) {
-                break;
-            }
-        }
+        $this->_pushFakeCustomers($fakeCustomer);
 
-        return $_id;
+        $fakeCustomer = reset($fakeCustomer);
+
+        return $fakeCustomer;
     }
 
     /**
@@ -348,9 +346,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return false;
         }
 
-        $logger = Mage::helper('tnw_salesforce/report');
-        $logger->reset();
-
         /** @var Mage_Customer_Model_Customer $fakeCustomer */
         $fakeCustomer = $this->generateFakeCustomer($_formData);
 
@@ -359,37 +354,44 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $leadSource = (Mage::helper('tnw_salesforce')->useLeadSourceFilter())
             ? Mage::helper('tnw_salesforce')->getLeadSource() : null;
 
-        $this->_cache['leadLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
-            ->lookup(array($fakeCustomer), $leadSource);
         // Check for Contact and Account
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->lookup(array($fakeCustomer));
-        $this->_cache['accountLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
+        $contactsLookup = Mage::helper('tnw_salesforce/salesforce_data_contact')
             ->lookup(array($fakeCustomer));
 
         $_email = $fakeCustomer->getEmail();
 
-        $this->_obj = new stdClass();
         $_id = NULL;
-        if (!empty($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email])) {
+        if (!empty($contactsLookup[$this->_websiteSfIds[$_websiteId]][$_email])) {
             // Existing Contact
-            $_id = $this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
-        } else if (!empty($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email])) {
-            // Existing Lead
-            $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->Id;
-            if ($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
-                $_id = $this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->ConvertedContactId;
-            }
+            $_id = $contactsLookup[$this->_websiteSfIds[$_websiteId]][$_email]->Id;
         } else {
-            $_id = $this->_pushFakeCustomer($fakeCustomer);
+            $leadLookup = Mage::helper('tnw_salesforce/salesforce_data_lead')
+                ->lookup(array($fakeCustomer), $leadSource);
+
+            if (!empty($leadLookup[$this->_websiteSfIds[$_websiteId]][$_email])) {
+                // Existing Lead
+                $_id = $leadLookup[$this->_websiteSfIds[$_websiteId]][$_email]->Id;
+                if ($leadLookup[$this->_websiteSfIds[$_websiteId]][$_email]->IsConverted) {
+                    $_id = $leadLookup[$this->_websiteSfIds[$_websiteId]][$_email]->ConvertedContactId;
+                }
+            } else {
+                Mage::register('customer_event_type', 'contact_us');
+
+                $fakeCustomer = $this->_pushFakeCustomer($fakeCustomer);
+
+                Mage::unregister('customer_event_type');
+
+
+                foreach (array('salesforce_id', 'salesforce_lead_id') as $sfKey) {
+                    $_id = $fakeCustomer->getData($sfKey);
+                    if (!empty($_id)) {
+                        break;
+                    }
+                }
+            }
         }
 
         $this->_createTask($_id, $_formData);
-
-        //Send Transaction Data
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger->send();
-        }
     }
 
     /**
