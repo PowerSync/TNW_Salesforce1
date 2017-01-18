@@ -739,8 +739,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     public function generateLinkToSalesforce($_field)
     {
-        $website = Mage::app()->getWebsite();
-
         $_data = array();
         foreach (explode("\n", $_field) as $value) {
             $currency = '';
@@ -754,7 +752,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             }
 
             $salesforceUrl = Mage::helper('tnw_salesforce/test_authentication')
-                ->getStorage('salesforce_url', $website);
+                ->getStorage('salesforce_url');
 
             if (!empty($salesforceUrl)) {
                 $value = sprintf('%1$s<a target="_blank" href="%2$s/%3$s">%3$s</a>', $currency, $salesforceUrl, $value);

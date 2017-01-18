@@ -377,6 +377,22 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     }
 
     /**
+     * @param $modelType
+     * @param $entityId
+     * @return int
+     */
+    public function getWebsiteIdForType($modelType, $entityId)
+    {
+        $select = self::generateSelectForType($modelType, array($entityId));
+        $row = $select->getAdapter()->fetchRow($select);
+        if (empty($row)) {
+            return null;
+        }
+
+        return $row['website_id'];
+    }
+
+    /**
      * insert / update object in table for future sf synchronization
      *
      * @param array $idSet

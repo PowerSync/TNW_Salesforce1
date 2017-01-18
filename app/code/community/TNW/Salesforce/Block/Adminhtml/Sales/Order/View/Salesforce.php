@@ -4,6 +4,9 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Salesforce extends Mage_Ad
 {
     protected function _prepareForm()
     {
+        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('sales/order', $this->getOrder()->getId());
+
         $form = new Varien_Data_Form(array(
             'id' => 'salesforce_edit_form',
             'action' => $this->getUrl(
@@ -22,8 +25,9 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Salesforce extends Mage_Ad
         $form->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
         $form->addField('owner_salesforce_id', 'owner', array(
-            'name'      => 'owner_salesforce_id',
-            'selector'  => 'tnw-ajax-find-select-owner-info'
+            'name' => 'owner_salesforce_id',
+            'selector' => 'tnw-ajax-find-select-owner-info',
+            'website' => $orderWebsite
         ));
 
         $form->setValues($this->getOrder()->getData());

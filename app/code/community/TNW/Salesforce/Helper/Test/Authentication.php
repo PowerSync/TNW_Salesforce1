@@ -132,13 +132,12 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
      * we need to abstract from cache or session storage for our data, that depends of client side settings
      *
      * @param $key
-     * @param null $website
      * @return mixed
      */
-    public function getStorage($key, $website = null)
+    public function getStorage($key)
     {
         /** @var Mage_Core_Model_Website $website */
-        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig();
         $key = sprintf('%s_%s', $key, $website->getCode());
 
         $count = 0;

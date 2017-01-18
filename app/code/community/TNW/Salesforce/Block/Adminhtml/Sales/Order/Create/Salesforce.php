@@ -7,6 +7,9 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
      */
     protected function _prepareForm()
     {
+        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('sales/quote', $this->_getSession()->getQuote()->getId());
+
         $form = new Varien_Data_Form();
         $form->setUseContainer(false);
         $form->setFieldNameSuffix('order');
@@ -15,7 +18,8 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
         $form->addField('owner_salesforce_id', 'owner', array(
             'name'      => 'owner_salesforce_id',
             'selector'  => 'tnw-ajax-find-select-owner-info',
-            'value'     => $this->getSalesforceOwner()
+            'value'     => $this->getSalesforceOwner(),
+            'website'   => $orderWebsite
         ));
 
         $this->setForm($form);
