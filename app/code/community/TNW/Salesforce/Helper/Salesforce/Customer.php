@@ -296,6 +296,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $logger = Mage::helper('tnw_salesforce/report');
             $logger->reset();
+
             // Create a Task
             $this->_obj = new stdClass();
             $this->_obj->WhoId = $_id;
