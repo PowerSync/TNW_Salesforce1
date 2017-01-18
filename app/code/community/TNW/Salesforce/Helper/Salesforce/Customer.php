@@ -328,6 +328,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
 
             $logger->add('Salesforce', 'Note', array('note' => $this->_obj), $_sfResult);
+
+            //Send Transaction Data
+            if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
+                $logger->send();
+            }
         }
     }
 
