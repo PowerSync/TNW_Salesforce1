@@ -167,15 +167,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getRecordTypeByEntity($entity)
     {
         try {
-            $_useCache = Mage::app()->useCache('tnw_salesforce');
-            $cache = Mage::app()->getCache();
-
-            $_data = array();
-            $serializeData = $cache->load("tnw_salesforce_" . strtolower($entity) . "_record_type");
-            if (!empty($serializeData)) {
-                $_data = unserialize($serializeData);
-            }
-
+            $_data = $this->getStorage("tnw_salesforce_" . strtolower($entity) . "_record_type");
             if (empty($_data)) {
                 $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='$entity'";
                 $allRules = $this->getClient()->query($query);
@@ -184,9 +176,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     $_data = $allRules->records;
                 }
 
-                if ($_useCache) {
-                    $cache->save(serialize($_data), "tnw_salesforce_" . strtolower($entity) . "_record_type", array("TNW_SALESFORCE"));
-                }
+                $this->setStorage($_data, "tnw_salesforce_" . strtolower($entity) . "_record_type");
             }
 
             return $_data;
@@ -630,9 +620,6 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getAllFields($field = NULL)
     {
         try {
-            $_useCache = Mage::app()->useCache('tnw_salesforce');
-            $cache = Mage::app()->getCache();
-
             switch ($field) {
                 case 'Abandoned':
                     $field = 'Opportunity';
@@ -642,13 +629,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                     break;
             }
 
-            $_data = array();
-
-            $serializeData = $cache->load("tnw_salesforce_" . strtolower($field) . "_fields");
-            if (!empty($serializeData)) {
-                $_data = unserialize($serializeData);
-            }
-
+            $_data = $this->getStorage("tnw_salesforce_" . strtolower($field) . "_fields");
             if (empty($_data)) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $field . " object...");
                 if (!is_object($this->getClient())) {
@@ -666,9 +647,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 unset($list, $_field);
                 ksort($sortedList);
                 $_data = $sortedList;
-                if ($_useCache) {
-                    $cache->save(serialize($_data), "tnw_salesforce_" . strtolower($field) . "_fields", array("TNW_SALESFORCE"));
-                }
+                $this->setStorage($_data, "tnw_salesforce_" . strtolower($field) . "_fields");
             }
 
             return $_data;
@@ -687,73 +666,64 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     public function describeTable($alias)
     {
+        switch ($alias) {
+            case 'Abandoned':
+                $table = 'Opportunity';
+                break;
+            case 'AbandonedItem':
+                $table = 'OpportunityLineItem';
+                break;
+            case 'OrderInvoice':
+            case 'OpportunityInvoice':
+                $table = 'tnw_invoice__Invoice__c';
+                break;
+            case 'OrderInvoiceItem':
+            case 'OpportunityInvoiceItem':
+                $table = 'tnw_invoice__InvoiceItem__c';
+                break;
+            case 'OrderShipment':
+            case 'OpportunityShipment':
+                $table = 'tnw_shipment__Shipment__c';
+                break;
+            case 'OrderShipmentItem':
+            case 'OpportunityShipmentItem':
+                $table = 'tnw_shipment__ShipmentItem__c';
+                break;
+            case 'OrderCreditMemo':
+                $table = 'Order';
+                break;
+            case 'OrderCreditMemoItem':
+                $table = 'OrderItem';
+                break;
+            case 'CampaignSalesRule':
+                $table = 'Campaign';
+                break;
+
+            default:
+                $table = $alias;
+                break;
+        }
+
+        $transport = new Varien_Object(array(
+            'object_name'   => $table,
+            'magento_alias' => $alias
+        ));
+        Mage::dispatchEvent('tnw_salesforce_describe_table', array('transport' => $transport, 'helper' => $this));
+        $table = $transport->getData('object_name');
+
         try {
-            $_useCache = Mage::app()->useCache('tnw_salesforce');
-            $cache = Mage::app()->getCache();
+            $columns = $this->getStorage("tnw_salesforce_descsribe_" . strtolower($table) . "_fields");
+            if (empty($columns)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $table . " object...");
 
-            switch ($alias) {
-                case 'Abandoned':
-                    $table = 'Opportunity';
-                    break;
-                case 'AbandonedItem':
-                    $table = 'OpportunityLineItem';
-                    break;
-                case 'OrderInvoice':
-                case 'OpportunityInvoice':
-                    $table = 'tnw_invoice__Invoice__c';
-                    break;
-                case 'OrderInvoiceItem':
-                case 'OpportunityInvoiceItem':
-                    $table = 'tnw_invoice__InvoiceItem__c';
-                    break;
-                case 'OrderShipment':
-                case 'OpportunityShipment':
-                    $table = 'tnw_shipment__Shipment__c';
-                    break;
-                case 'OrderShipmentItem':
-                case 'OpportunityShipmentItem':
-                    $table = 'tnw_shipment__ShipmentItem__c';
-                    break;
-                case 'OrderCreditMemo':
-                    $table = 'Order';
-                    break;
-                case 'OrderCreditMemoItem':
-                    $table = 'OrderItem';
-                    break;
-                case 'CampaignSalesRule':
-                    $table = 'Campaign';
-                    break;
+                $columns = Mage::getResourceSingleton('tnw_salesforce_api_entity/account')
+                    ->getReadConnection()
+                    ->describeTable($table);
 
-                default:
-                    $table = $alias;
-                    break;
+                $this->setStorage($columns, "tnw_salesforce_describe_" . strtolower($table) . "_fields");
             }
 
-            $transport = new Varien_Object(array(
-                'object_name'   => $table,
-                'magento_alias' => $alias
-            ));
-            Mage::dispatchEvent('tnw_salesforce_describe_table', array('transport' => $transport, 'helper' => $this));
-
-            $table = $transport->getData('object_name');
-            if (empty($this->_tableDescription[$table])) {
-                if ($cache->load("tnw_salesforce_descsribe_" . strtolower($table) . "_fields")) {
-                    $columns = unserialize($cache->load("tnw_salesforce_describe_" . strtolower($table) . "_fields"));
-                } else {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $table . " object...");
-
-                    $columns = Mage::getResourceSingleton('tnw_salesforce_api_entity/account')
-                        ->getReadConnection()
-                        ->describeTable($table);
-
-                    if ($_useCache) {
-                        $cache->save(serialize($columns), "tnw_salesforce_describe_" . strtolower($table) . "_fields", array("TNW_SALESFORCE"));
-                    }
-                }
-                $this->_tableDescription[$table] = $columns;
-            }
-
-            return $this->_tableDescription[$table];
+            return $columns;
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $alias . " Object");

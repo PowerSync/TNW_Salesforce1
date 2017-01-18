@@ -13,22 +13,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
     const MERGE_LIMIT = 3;
 
     /**
-     * @var null
-     */
-    protected $_sfUsers = NULL;
-
-    /**
-     * @var null
-     */
-    protected $_queueList = NULL;
-
-    /**
-     * global cache array
-     * @var
-     */
-    protected $_cache;
-
-    /**
      * Read from cache or pull from Salesforce Active users
      * Accept $sfUserId parameter and check if its in the array of active users
      * @param null $sfUserId
@@ -36,33 +20,30 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
      */
     protected function _isUserActive($sfUserId = NULL)
     {
-        if ($this->_mageCache === NULL) {
-            $this->_initCache();
-        }
-        $activeUsers = array();
-        if (!$this->_sfUsers) {
-            if ($this->_useCache) {
-                $this->_sfUsers = unserialize($this->_mageCache->load("tnw_salesforce_users"));
-            }
-            if (!$this->_sfUsers) {
-                $this->_sfUsers = Mage::helper('tnw_salesforce/salesforce_data')->getUsers();
-            }
-        }
-
-        if (is_array($this->_sfUsers)) {
-            foreach ($this->_sfUsers as $user) {
-                $activeUsers[] = $user['value'];
-            }
-        }
-
+        $activeUsers = $this->getActiveUsers();
         $result = (!empty($activeUsers)) ? in_array($sfUserId, $activeUsers) : false;
-
         if (!$result) {
             $result = $this->_isQueue($sfUserId);
         }
 
         return $result;
+    }
 
+    /**
+     * @return array
+     */
+    public function getActiveUsers()
+    {
+        $activeUsers = $this->getStorage('tnw_salesforce_users');
+        if (empty($activeUsers)) {
+            $activeUsers = array_map(function ($user) {
+                return $user['value'];
+            }, Mage::helper('tnw_salesforce/salesforce_data')->getUsers());
+
+            $this->setStorage($activeUsers, 'tnw_salesforce_users');
+        }
+
+        return $activeUsers;
     }
 
     /**
@@ -72,11 +53,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_User extends TNW_Salesforce_Helper_S
      */
     protected function _isQueue($sfUserId = NULL)
     {
-        if (is_null($this->_queueList)) {
-            $this->_queueList = Mage::helper('tnw_salesforce/salesforce_data_queue')->getAllQueues();
+        $queueList = $this->getStorage('tnw_salesforce_queue_list');
+        if (empty($queueList)) {
+            $queueList = Mage::helper('tnw_salesforce/salesforce_data_queue')->getAllQueues();
+            $this->setStorage($queueList, 'tnw_salesforce_queue_list');
         }
 
-        return in_array($sfUserId, $this->_queueList);
+        return in_array($sfUserId, $queueList);
     }
 
     /**

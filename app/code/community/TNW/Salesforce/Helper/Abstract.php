@@ -9,7 +9,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     const MIN_LEN_SF_ID = 15;
 
     /**
-     * @var null
+     * @var Zend_Cache_Core
      */
     protected $_mageCache = NULL;
 
@@ -380,6 +380,44 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         }
 
         return $this->_useCache;
+    }
+
+    /**
+     * @param $key
+     * @param null $website
+     * @return mixed
+     */
+    public function getStorage($key, $website = null)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
+        return $this->useCache()
+            ? unserialize($this->getCache()->load($key))
+            : Mage::getSingleton('core/session')->getData($key);
+    }
+
+    /**
+     * @param $value
+     * @param $key
+     * @param null $website
+     * @return bool
+     */
+    public function setStorage($value, $key, $website = null)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
+        if ($this->useCache()) {
+            return $this->getCache()
+                ->save(serialize($value), $key, array("TNW_SALESFORCE"));
+        }
+        else {
+            Mage::getSingleton('core/session')->setData($key, $value);
+            return true;
+        }
     }
 
     protected function _reset()

@@ -767,15 +767,15 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function getLeadStates()
     {
-        if ($this->isWorking()) {
+        $this->_leadStatus = $this->getStorage('tnw_salesforce_lead_states');
+        if (empty($this->_leadStatus)) {
             if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->getStatus()) {
                 foreach ($collection as $_item) {
                     $this->_leadStates[$_item->Id] = $_item->MasterLabel;
                 }
                 unset($collection, $_item);
             }
-        }
-        if (!$this->_leadStatus) {
+
             $this->_leadStatus = array();
             foreach ($this->_leadStates as $key => $_obj) {
                 $this->_leadStatus[] = array(
@@ -783,6 +783,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
                     'value' => $_obj
                 );
             }
+
+            $this->setStorage($this->_leadStatus, 'tnw_salesforce_lead_states');
         }
 
         return $this->_leadStatus;
@@ -814,23 +816,18 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getPersonAccountRecordIds()
     {
-        if ($this->isWorking()) {
+        $this->_personAccountRecordTypes = $this->getStorage('tnw_salesforce_person_account_record_types');
+        if (empty($this->_personAccountRecordTypes)) {
             if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->getAccountPersonRecordType()) {
                 foreach ($collection as $_item) {
                     $this->_personAccountRecordTypes[$_item->Id] = $_item->Name;
                 }
                 unset($collection, $_item);
             }
+
+            $this->setStorage($this->_personAccountRecordTypes, 'tnw_salesforce_person_account_record_types');
         }
-        if (!$this->_personAccountRecordTypes) {
-            $this->_personAccountRecordTypes = array();
-            foreach ($this->_personAccountRecordTypes as $key => $_obj) {
-                $this->_personAccountRecordTypes[] = array(
-                    'label' => $_obj,
-                    'value' => $_obj
-                );
-            }
-        }
+
         return $this->_personAccountRecordTypes;
     }
 
@@ -838,23 +835,18 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getBusinessAccountRecordIds()
     {
-        if ($this->isWorking()) {
+        $this->_businessAccountRecordTypes = $this->getStorage('tnw_salesforce_business_account_record_types');
+        if (empty($this->_businessAccountRecordTypes)) {
             if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->getAccountBusinessRecordType()) {
                 foreach ($collection as $_item) {
                     $this->_businessAccountRecordTypes[$_item->Id] = $_item->Name;
                 }
                 unset($collection, $_item);
             }
+
+            $this->setStorage($this->_businessAccountRecordTypes, 'tnw_salesforce_business_account_record_types');
         }
-        if (!$this->_businessAccountRecordTypes) {
-            $this->_businessAccountRecordTypes = array();
-            foreach ($this->_businessAccountRecordTypes as $key => $_obj) {
-                $this->_businessAccountRecordTypes[] = array(
-                    'label' => $_obj,
-                    'value' => $_obj
-                );
-            }
-        }
+
         return $this->_businessAccountRecordTypes;
     }
 
@@ -862,15 +854,15 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getPriceBooks()
     {
-        if ($this->isWorking()) {
+        $this->_pricebookTypes = $this->getStorage('tnw_salesforce_pricebooks');
+        if (empty($this->_pricebookTypes)) {
             if ($collection = Mage::helper('tnw_salesforce/salesforce_data')->getNotStandardPricebooks()) {
                 foreach ($collection as $id => $name) {
                     $this->_pricebooks[$id] = $name;
                 }
                 unset($collection, $id, $name);
             }
-        }
-        if (!$this->_pricebookTypes) {
+
             $this->_pricebookTypes = array();
             foreach ($this->_pricebooks as $key => $_obj) {
                 $this->_pricebookTypes[] = array(
@@ -878,7 +870,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
                     'value' => $key
                 );
             }
+
+            $this->setStorage($this->_pricebookTypes, 'tnw_salesforce_pricebooks');
         }
+
         return $this->_pricebookTypes;
     }
 
@@ -886,7 +881,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     public function getCustomerRoles()
     {
-        if ($this->isWorking() && $this->isEnabled()) {
+        $this->_customerRoleTypes = $this->getStorage("tnw_salesforce_opportunity_customer_roles");
+        if (empty($this->_customerRoleTypes)) {
             $collection = Mage::helper('tnw_salesforce/salesforce_data')->getPicklistValues('OpportunityContactRole', 'Role');
             if ($collection) {
                 foreach ($collection as $_role) {
@@ -896,14 +892,18 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
                 }
                 unset($collection, $role);
             }
+
+            $this->_customerRoleTypes = array();
+            foreach ($this->_customerRoles as $key => $_obj) {
+                $this->_customerRoleTypes[] = array(
+                    'label' => $_obj,
+                    'value' => $key
+                );
+            }
+
+            $this->setStorage($this->_customerRoleTypes, 'tnw_salesforce_opportunity_customer_roles');
         }
-        $this->_customerRoleTypes = array();
-        foreach ($this->_customerRoles as $key => $_obj) {
-            $this->_customerRoleTypes[] = array(
-                'label' => $_obj,
-                'value' => $key
-            );
-        }
+
         return $this->_customerRoleTypes;
     }
 
@@ -931,7 +931,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function displayErrors()
     {
-        return ($this->getWebsiteId() == 0) ? true : false;
+        return Mage::getSingleton('admin/session')->isLoggedIn();
     }
 
     /**
