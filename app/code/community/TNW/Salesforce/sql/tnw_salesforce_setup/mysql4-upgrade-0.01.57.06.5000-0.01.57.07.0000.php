@@ -26,4 +26,13 @@ $installer->updateAttribute('catalog_product', 'salesforce_id', 'is_global', Mag
 $installer->updateAttribute('catalog_product', 'salesforce_disable_sync', 'is_global', Mage_Catalog_Model_Resource_Eav_Attribute::SCOPE_WEBSITE);
 $installer->updateAttribute('catalog_product', 'salesforce_campaign_id', 'is_global', Mage_Catalog_Model_Resource_Eav_Attribute::SCOPE_WEBSITE);
 
+/** @var TNW_Salesforce_Model_Mysql4_Order_Status_Collection $_collection */
+$_collection = Mage::getResourceModel('tnw_salesforce/order_status_collection');
+$_collection->addFieldToFilter('status', 'closed');
+/** @var TNW_Salesforce_Model_Order_Status $item */
+foreach ($_collection as $item) {
+    $item->setData('sf_order_status', 'Activated');
+    $item->save();
+}
+
 $installer->endSetup();

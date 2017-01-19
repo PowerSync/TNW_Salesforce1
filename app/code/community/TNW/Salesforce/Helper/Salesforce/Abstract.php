@@ -497,17 +497,26 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     /**
      * @param $_response
      * @param string $type
+     * @param null $_object
      */
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ');
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(var_export($_object, true));
+
         if (is_array($_response->errors)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ');
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(print_r($_object, true));
             foreach ($_response->errors as $_error) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $_error->message);
+                $fields = '';
+                if (!empty($_error->fields)) {
+                    $fields = sprintf('. Fields: %s', implode(', ', $_error->fields));
+                }
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError("ERROR: {$_error->message}{$fields}");
             }
         } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('CRITICAL ERROR: Failed to upsert ' . $type . ': ' . $_response->errors->message . '. Object dump: ' . $objectStr);
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError("ERROR: {$_response->errors->message}");
         }
     }
 
@@ -579,10 +588,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected function _fillWebsiteSfIds()
     {
         $websiteHelper = Mage::helper('tnw_salesforce/magento_websites');
-        $website = Mage::getModel('core/website')->load(0);
-        $this->_websiteSfIds[0] = $websiteHelper->getWebsiteSfId($website);
-        foreach (Mage::app()->getWebsites() as $website) {
-            Mage::helper('tnw_salesforce/salesforce_website');
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::app()->getWebsites(true) as $website) {
             $websiteSfId = $websiteHelper->getWebsiteSfId($website);
             $this->_websiteSfIds[$website->getData('website_id')] = $websiteSfId;
             if (empty($websiteSfId)) {
@@ -689,10 +696,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      */
     protected function _buildErrorResponse($_text = NULL, $_statusCode = 'POWERSYNC_EXCEPTION')
     {
-        if ($this->_mageCache === NULL) {
-            $this->_initCache();
-        }
-
         $_orgId = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_org_id');
         if (empty($_orgId)) {
             $_orgId = 'Unknown';
@@ -957,6 +960,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * Add message to output
      * @param $message
      * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     * @deprecated
      */
     public function logNotice($message)
     {
@@ -967,6 +971,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
      * Add message to output
      * @param $message
      * @return TNW_Salesforce_Helper_Salesforce_Abstract
+     * @deprecated
      */
     public function logError($message)
     {

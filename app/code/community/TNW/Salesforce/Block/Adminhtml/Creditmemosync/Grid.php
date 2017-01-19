@@ -36,7 +36,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
             ->addFieldToSelect('order_created_at')
             ->addFieldToSelect('billing_name')
             ->addFieldToSelect('state')
-            ->addAttributeToSelect('store_id')
+            ->addFieldToSelect('store_id')
             ->addFieldToSelect('grand_total');
 
         $collection->getSelect()->join(

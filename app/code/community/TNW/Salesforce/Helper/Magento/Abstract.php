@@ -214,9 +214,8 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         }
 
         // Get Website Salesforce Id's
-        $website = Mage::getModel('core/website')->load(0);
-        $this->_websiteSfIds[0] = $this->getWebsiteSfId($website);
-        foreach (Mage::app()->getWebsites() as $website) {
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::app()->getWebsites(true) as $website) {
             $this->_websiteSfIds[$website->getData('website_id')] = $this->getWebsiteSfId($website);
         }
 
@@ -225,19 +224,31 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         }
     }
 
+    /**
+     * @param $website Mage_Core_Model_Website
+     * @return mixed|string
+     */
     public function getWebsiteSfId($website)
     {
-        $sfId = $website->getData('salesforce_id');
-        if (empty($sfId)){
-            $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
+        $website = Mage::app()->getWebsite($website);
 
-            if ($manualSync->reset()) {
-                $manualSync->massAdd(array($website->getData('website_id')));
-                $manualSync->process();
-                $newWebsite = Mage::getModel('core/website')->load($website->getData('website_id'));
-                $sfId = $newWebsite->getData('salesforce_id');
-            }
+        $sfId = $website->getData('salesforce_id');
+        if (empty($sfId)) {
+            $websiteId = $website->getId();
+            $sfId = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($websiteId) {
+                $sfId = null;
+                /** @var TNW_Salesforce_Helper_Salesforce_Website $manualSync */
+                $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
+                if ($manualSync->reset() && $manualSync->massAdd(array($websiteId)) && $manualSync->process()) {
+                    Mage::app()->clearWebsiteCache($websiteId);
+                    $sfId = Mage::app()->getWebsite($websiteId)
+                        ->getData('salesforce_id');
+                }
+
+                return $sfId;
+            });
         }
+
         $sfId = Mage::helper('tnw_salesforce')->prepareId($sfId);
         return $sfId;
     }

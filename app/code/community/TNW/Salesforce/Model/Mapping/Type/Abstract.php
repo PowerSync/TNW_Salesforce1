@@ -69,6 +69,8 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
                 $value = null;
             }
+        } else {
+            $value = null;
         }
 
 
