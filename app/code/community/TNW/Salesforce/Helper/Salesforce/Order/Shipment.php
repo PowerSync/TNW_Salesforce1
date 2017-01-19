@@ -495,7 +495,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                 $_entity->setData('sf_insync', 0);
                 $_entity->getResource()->save($_entity);
 
-                $this->_processErrors($_result, 'shipmentCart', $chunk[$_cartItemId]);
+                $this->_processErrors($_result, TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT, $chunk[$_cartItemId]);
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError(sprintf('ERROR: One of the Cart Item for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_entityNum));
             }
@@ -545,7 +545,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                 //Report Transaction
                 $this->_cache['responses']['orderShipmentTrack'][$_orderNum]['subObj'][] = $_result;
                 if (!$_result->success) {
-                    $this->_processErrors($_result, 'shipmentCartTrack', $_itemsToPush[$_cartItemId]);
+                    $this->_processErrors($_result, TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'ShipmentTracking__c', $_itemsToPush[$_cartItemId]);
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveError(sprintf('ERROR: One of the Cart Item Track for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_orderNum));
                 }
@@ -606,7 +606,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                     $_undeleteIds[] = $_entityNum;
                 }
 
-                $this->_processErrors($_result, $this->_salesforceEntityName, $this->_cache[$entityToUpsertKey][$_entityNum]);
+                $this->_processErrors($_result, TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT, $this->_cache[$entityToUpsertKey][$_entityNum]);
                 $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_entityNum;
 
                 Mage::getSingleton('tnw_salesforce/tool_log')

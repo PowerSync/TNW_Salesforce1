@@ -619,44 +619,18 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     public function getAllFields($field = NULL)
     {
-        try {
-            switch ($field) {
-                case 'Abandoned':
-                    $field = 'Opportunity';
-                    break;
-                case 'AbandonedItem':
-                    $field = 'OpportunityLineItem';
-                    break;
-            }
-
-            $_data = $this->getStorage("tnw_salesforce_" . strtolower($field) . "_fields");
-            if (empty($_data)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $field . " object...");
-                if (!is_object($this->getClient())) {
-                    return $this->_noConnectionArray;
+        $sortedList = array();
+        $list = $this->describeTable($field);
+        if ($list) {
+            foreach ($list->fields as $_field) {
+                if (!$_field->deprecatedAndHidden) {
+                    $sortedList[$_field->name] = $list->label . ' : ' . $_field->label;
                 }
-                $sortedList = array();
-                $list = $this->getClient()->describeSObject($field);
-                if ($list) {
-                    foreach ($list->fields as $_field) {
-                        if (!$_field->deprecatedAndHidden) {
-                            $sortedList[$_field->name] = $list->label . ' : ' . $_field->label;
-                        }
-                    }
-                }
-                unset($list, $_field);
-                ksort($sortedList);
-                $_data = $sortedList;
-                $this->setStorage($_data, "tnw_salesforce_" . strtolower($field) . "_fields");
             }
-
-            return $_data;
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $field . " Object");
-            unset($e);
-            return false;
         }
+
+        ksort($sortedList);
+        return $sortedList;
     }
 
 
@@ -712,18 +686,18 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         $table = $transport->getData('object_name');
 
         try {
-            $columns = $this->getStorage("tnw_salesforce_descsribe_" . strtolower($table) . "_fields");
-            if (empty($columns)) {
+            $describe = $this->getStorage("tnw_salesforce_describe_" . strtolower($table) . "_fields");
+            if (empty($describe)) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Extracting fields for " . $table . " object...");
 
-                $columns = Mage::getResourceSingleton('tnw_salesforce_api_entity/account')
+                $describe = Mage::getResourceSingleton('tnw_salesforce_api_entity/account')
                     ->getReadConnection()
                     ->describeTable($table);
 
-                $this->setStorage($columns, "tnw_salesforce_describe_" . strtolower($table) . "_fields");
+                $this->setStorage($describe, "tnw_salesforce_describe_" . strtolower($table) . "_fields");
             }
 
-            return $columns;
+            return $describe;
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get a list of all fields from " . $alias . " Object");

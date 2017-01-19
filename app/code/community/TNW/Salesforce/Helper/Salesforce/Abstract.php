@@ -502,7 +502,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
     protected function _processErrors($_response, $type = 'order', $_object = NULL)
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Failed to upsert ' . $type . '! ');
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(var_export($_object, true));
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(print_r($_object, true));
 
         if (is_array($_response->errors)) {
             foreach ($_response->errors as $_error) {

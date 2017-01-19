@@ -451,7 +451,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                     $_undeleteIds[] = $_entityNum;
                 }
 
-                $this->_processErrors($_result, $this->_salesforceEntityName, $this->_cache[$entityToUpsertKey][$_entityNum]);
+                $this->_processErrors($_result, TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT, $this->_cache[$entityToUpsertKey][$_entityNum]);
                 $this->_cache[sprintf('failed%s', $this->getManyParentEntityType())][] = $_entityNum;
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
@@ -522,7 +522,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
                 $_entity->setData('sf_insync', 0);
                 $_entity->getResource()->save($_entity);
 
-                $this->_processErrors($_result, 'invoiceCart', $chunk[$_cartItemId]);
+                $this->_processErrors($_result, TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT, $chunk[$_cartItemId]);
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError(sprintf('ERROR: One of the Cart Item for (%s: %s) failed to upsert.', $this->_magentoEntityName, $_entityNum));
             }
