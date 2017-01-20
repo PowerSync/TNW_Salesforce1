@@ -21,11 +21,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected $_magentoEntityModel = 'customer/customer';
 
     /**
-     * @var null
-     */
-    protected $_currentCustomer = NULL;
-
-    /**
      * @var array
      */
     protected $_customerAccounts = array();
@@ -138,12 +133,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             }
         }
 
-        $this->_customerObjects = array();
-        $this->_currentCustomer = NULL;
-
         $this->_cache = array(
             'contactsLookup' => array(),
             'leadLookup' => array(),
+            'accountLookup' => array(),
             'notFoundCustomers' => array(),
             'leadsToUpsert' => array(),
             'contactsToUpsert' => array(),
@@ -566,9 +559,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         );
 
         $_lookupKey = $_cacheLookup[$type];
-        if (isset($this->_cache[$_lookupKey][$_sfWebsite])
-            && array_key_exists($_email, $this->_cache[$_lookupKey][$_sfWebsite])
-        ) {
+        if (!empty($this->_cache[$_lookupKey][$_sfWebsite][$_email])) {
             $this->_obj->Id = $this->_cache[$_lookupKey][$_sfWebsite][$_email]->Id;
             $_upsertOn = 'Id';
         }

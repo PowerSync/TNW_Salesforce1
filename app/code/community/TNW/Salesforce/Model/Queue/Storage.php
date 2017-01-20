@@ -16,4 +16,12 @@ class TNW_Salesforce_Model_Queue_Storage extends Mage_Core_Model_Abstract
         parent::_construct();
         $this->_init('tnw_salesforce/queue_storage');
     }
+
+    /**
+     * @return Mage_Core_Model_Website
+     */
+    public function getWebsite()
+    {
+        return Mage::app()->getWebsite($this->getData('website_id'));
+    }
 }

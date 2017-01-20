@@ -358,6 +358,10 @@ class TNW_Salesforce_Model_Cron
         $this->_resetStuckRecords();
         $this->_deleteSuccessfulRecords();
 
+        $_dependencies = in_array($type, array('order', 'abandoned'))
+            ? Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies()
+            : array();
+
         // get entity id list from local storage
         /** @var TNW_Salesforce_Model_Mysql4_Queue_Storage_Collection $list */
         $list = Mage::getResourceModel('tnw_salesforce/queue_storage_collection')
@@ -379,40 +383,69 @@ class TNW_Salesforce_Model_Cron
 
                 $list->clear();
 
-                $_dependencies = Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies();
-                $idSet = $objectIdSet = array();
-                /** @var TNW_Salesforce_Model_Queue_Storage $item */
-                foreach ($list as $item) {
-                    if (in_array($item->getMageObjectType(), array('sales/order', 'sales/quote')) && (isset($_dependencies['Customer']) || isset($_dependencies['Product']))) {
-                        /** @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote $_entity */
-                        $_entity = Mage::getModel($item->getMageObjectType())->load($item->getObjectId());
+                $storageItems = array_filter($list->getItems(), function (TNW_Salesforce_Model_Queue_Storage $storage) use($_dependencies) {
+                    if (!in_array($storage->getMageObjectType(), array('sales/order', 'sales/quote'))) {
+                        return true;
+                    }
 
-                        if ($_entity->getCustomerId() && isset($_dependencies['Customer'])
-                            && in_array($_entity->getCustomerId(), $_dependencies['Customer'])
-                        ) {
-                            continue 2;
-                        }
+                    if (!isset($_dependencies['Customer']) && !isset($_dependencies['Product'])) {
+                        return true;
+                    }
 
-                        if (isset($_dependencies['Product'])) {
-                            /** @var Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item $_item */
-                            foreach ($_entity->getAllVisibleItems() as $_item) {
-                                $id = $_item instanceof Mage_Sales_Model_Order_Item
-                                    ? Mage::helper('tnw_salesforce/salesforce_order')->getProductIdFromCart($_item)
-                                    : Mage::helper('tnw_salesforce/salesforce_abandoned_opportunity')->getProductIdFromCart($_item);
+                    /** @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote $_entity */
+                    $_entity = Mage::getModel($storage->getMageObjectType())
+                        ->load($storage->getObjectId());
 
-                                if (in_array($id, $_dependencies['Product'])) {
-                                    continue 2;
-                                }
+                    if ($_entity->getCustomerId() && isset($_dependencies['Customer'])
+                        && in_array($_entity->getCustomerId(), $_dependencies['Customer'])
+                    ) {
+                        return false;
+                    }
+
+                    if (isset($_dependencies['Product'])) {
+                        /** @var Mage_Sales_Model_Order_Item|Mage_Sales_Model_Quote_Item $_item */
+                        foreach ($_entity->getAllVisibleItems() as $_item) {
+                            $id = $_item instanceof Mage_Sales_Model_Order_Item
+                                ? Mage::helper('tnw_salesforce/salesforce_order')->getProductIdFromCart($_item)
+                                : Mage::helper('tnw_salesforce/salesforce_abandoned_opportunity')->getProductIdFromCart($_item);
+
+                            if (in_array($id, $_dependencies['Product'])) {
+                                return false;
                             }
                         }
                     }
 
-                    $idSet[] = $item->getId();
-                    $objectIdSet[] = $item->getObjectId();
-                }
+                    return true;
+                });
 
-                if (!empty($objectIdSet)) {
-                    // set status to 'sync_running'
+                $this->syncQueueStorage($storageItems);
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: %s not synced: %s", $type, $e->getMessage()));
+            }
+        }
+    }
+
+    /**
+     * @param $iterate TNW_Salesforce_Model_Queue_Storage[]
+     */
+    public function syncQueueStorage(array $iterate)
+    {
+        $websiteStorage = array();
+        foreach ($iterate as $queueStorage) {
+            $websiteStorage = array_merge_recursive($websiteStorage, array($queueStorage->getWebsite()->getCode() => array(
+                strtolower($queueStorage->getSfObjectType()) => array(
+                    'storageId' => array($queueStorage->getId()),
+                    'objectId' => array($queueStorage->getObjectId()),
+                )
+            )));
+        }
+
+        foreach ($websiteStorage as $website => $typeStorage) {
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($typeStorage) {
+                foreach ($typeStorage as $type => $queueStorage) {
+                    $idSet = $queueStorage['storageId'];
+                    $objectIdSet = $queueStorage['objectId'];
+
                     Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
 
                     $eventTypes = array(
@@ -503,10 +536,7 @@ class TNW_Salesforce_Model_Cron
                         }
                     }
                 }
-
-            } catch (Exception $e) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: %s not synced: %s", $type, $e->getMessage()));
-            }
+            });
         }
     }
 

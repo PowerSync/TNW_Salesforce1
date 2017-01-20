@@ -717,7 +717,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return false;
         }
         try {
-            $list = $this->getClient()->describeSObject($object);
+            $list = $this->describeTable($object);
             if ($list) {
                 foreach ($list->fields as $_field) {
                     if ($_field->name == $field) {

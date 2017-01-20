@@ -45,7 +45,9 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
     public function getAllDependencies()
     {
         $_dependencies = array();
-        $_sql = "SELECT object_id, sf_object_type FROM " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " WHERE mage_object_type IN ('" . $this->_mageModels['customer'] . "', '" . $this->_mageModels['product'] . "')";
+        $queueStorageTable = Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage');
+        $websiteId = Mage::app()->getWebsite()->getId();
+        $_sql = "SELECT object_id, sf_object_type FROM {$queueStorageTable} WHERE mage_object_type IN ('{$this->_mageModels['customer']}', '{$this->_mageModels['product']}') AND website_id = {$websiteId}";
         $_results = $this->getDbConnection('read')->query($_sql)->fetchAll();
         foreach ($_results as $_result) {
             $_dependencies[$_result['sf_object_type']][] = $_result['object_id'];

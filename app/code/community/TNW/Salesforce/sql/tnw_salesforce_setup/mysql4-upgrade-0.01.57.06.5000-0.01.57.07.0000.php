@@ -10,6 +10,22 @@ $connection = $installer->getConnection();
 $queueStorage = $this->getTable('tnw_salesforce/queue_storage');
 if (!$connection->tableColumnExists($queueStorage, 'website_id')) {
     $connection->addColumn($queueStorage, 'website_id', 'INT NOT NULL');
+
+    $connection->dropIndex(
+        $queueStorage,
+        'object_id_sf_object_type'
+    );
+
+    $connection->addIndex(
+        $queueStorage,
+        $installer->getIdxName(
+            'tnw_salesforce/queue_storage',
+            array('object_id', 'sf_object_type', 'website_id'),
+            Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE
+        ),
+        array('object_id', 'sf_object_type', 'website_id'),
+        Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE
+    );
 }
 
 $entityCache = $this->getTable('tnw_salesforce/entity_cache');

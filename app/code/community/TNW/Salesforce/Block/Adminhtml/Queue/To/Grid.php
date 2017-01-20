@@ -87,20 +87,13 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
             'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Queuemessage'
         ));
 
-        /**
-         * Check is single store mode
-         */
-        if (!Mage::app()->isSingleStoreMode()) {
-            $this->addColumn('website_id',
-                array(
-                    'header'=> Mage::helper('review')->__('Websites'),
-                    'width' => '100px',
-                    'sortable'  => false,
-                    'index'     => 'website_id',
-                    'type'      => 'options',
-                    'options'   => Mage::getModel('core/website')->getCollection()->toOptionHash(),
-                ));
-        }
+        $this->addColumn('website_id', array(
+            'header'=> Mage::helper('review')->__('Websites'),
+            'width' => '100px',
+            'index' => 'website_id',
+            'type' => 'options',
+            'options' => Mage::getModel('core/website')->getCollection()->toOptionHash(),
+        ));
 
         $this->addColumn('singleAction',
             array(
