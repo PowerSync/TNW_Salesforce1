@@ -315,7 +315,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         /**
          * Default owner
          */
-        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner();
 
         $result = $this->getFirstAvailableOwner($availableOwners);
 
