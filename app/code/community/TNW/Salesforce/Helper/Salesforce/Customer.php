@@ -1364,7 +1364,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_customer = $this->getEntityCache($_data->MagentoId)
                     ->addData($_saveAttributes);
 
-                if (!$_customer->getId() || strpos($_data->MagentoId, 'guest_') === 0) {
+                /**
+                 * skip fake customer, these customer don't exist in magento and use email instead Id
+                 */
+                $_magentoId = $this->_getEntityId($_customer);
+                if (!is_numeric($_magentoId)) {
                     continue;
                 }
 
