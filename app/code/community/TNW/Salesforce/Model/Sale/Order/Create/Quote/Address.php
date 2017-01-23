@@ -9,11 +9,14 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
      */
     public function collectTotals()
     {
-        $productPrices = array();
-        $feeIds        = Mage::helper('tnw_salesforce/magento_order')->getFeeIds();
-        $object        = Mage::helper('tnw_salesforce/magento_order')->getSalesforceObject();
+        $object = $this->getQuote()->getData('_salesforce_object');
+        if (empty($object)) {
+            return parent::collectTotals();
+        }
 
-        //Fill $productPrices
+        $feeIds = Mage::helper('tnw_salesforce/magento_order')->getFeeIds();
+
+        $productPrices = array();
         foreach ($object->OrderItems->records as $record) {
             $productPrices[$record->PricebookEntry->Product2Id] = $record->UnitPrice;
         }
@@ -24,79 +27,31 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
         Mage::dispatchEvent($this->_eventPrefix . '_collect_totals_before', array($this->_eventObject => $this));
         /** @var Mage_Sales_Model_Quote_Address_Total_Abstract $model */
         foreach ($this->getTotalCollector()->getCollectors() as $model) {
-            switch ($model->getCode()) {
-                case 'shipping':
-                    if (!Mage::helper('tnw_salesforce')->isUpdateShippingTotal()) {
-                        break;
-                    }
-
-                    if (empty($productPrices[$feeIds['shipping']])) {
-                        break;
-                    }
-
-                    $price = $productPrices[$feeIds['shipping']];
-                    $this->addData(array(
-                        'shipping_amount'      => $isBase  ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price,
-                        'base_shipping_amount' => !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price
-                    ));
-
-                    $this->setGrandTotal($this->getGrandTotal() + $this->getShippingAmount());
-                    $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getBaseShippingAmount());
-                    continue 2;
-
-                case 'tax':
-                    if (!Mage::helper('tnw_salesforce')->isUpdateTaxTotal()) {
-                        break;
-                    }
-
-                    if (empty($productPrices[$feeIds['tax']])) {
-                        break;
-                    }
-
-                    $price = $productPrices[$feeIds['tax']];
-                    $this->addData(array(
-                        'tax_amount'           => $isBase  ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price,
-                        'base_tax_amount'      => !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price
-                    ));
-
-                    $this->setGrandTotal($this->getGrandTotal() + $this->getTaxAmount());
-                    $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getBaseTaxAmount());
-                    continue 2;
-/*
-                case 'tax_subtotal':
-                case 'tax_shipping':
-                    continue 2;
-*/
-                case 'discount':
-                    if (!Mage::helper('tnw_salesforce')->isUpdateDiscountTotal()) {
-                        break;
-                    }
-
-                    if (empty($productPrices[$feeIds['discount']])) {
-                        break;
-                    }
-
-                    $price = $productPrices[$feeIds['discount']];
-                    $this->addData(array(
-                        'discount_amount'      => $isBase  ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price,
-                        'base_discount_amount' => !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price
-                    ));
-
-                    $baseSubtotalWithDiscount = $subtotalWithDiscount = 0;
-                    foreach ($this->getAllItems() as $item) {
-                        $subtotalWithDiscount+=$item->getRowTotal();
-                        $baseSubtotalWithDiscount+=$item->getBaseRowTotal();
-                    }
-
-                    $this->setSubtotalWithDiscount($subtotalWithDiscount);
-                    $this->setBaseSubtotalWithDiscount($baseSubtotalWithDiscount);
-
-                    $this->setGrandTotal($this->getGrandTotal() + $this->getDiscountAmount());
-                    $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getBaseDiscountAmount());
-                    continue 2;
+            $code = $model->getCode();
+            if (!Mage::helper('tnw_salesforce')->isUpdateTotalByFeeType($code) || empty($productPrices[$feeIds[$code]])) {
+                $model->collect($this);
+                continue;
             }
 
-            $model->collect($this);
+            $price = $productPrices[$feeIds[$code]];
+            $this->addData(array(
+                "{$code}_amount" => $isBase ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price,
+                "base_{$code}_amount" => !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price
+            ));
+
+            if ($code == 'discount') {
+                $baseSubtotalWithDiscount = $subtotalWithDiscount = 0;
+                foreach ($this->getAllItems() as $item) {
+                    $subtotalWithDiscount+=$item->getRowTotal();
+                    $baseSubtotalWithDiscount+=$item->getBaseRowTotal();
+                }
+
+                $this->setSubtotalWithDiscount($subtotalWithDiscount);
+                $this->setBaseSubtotalWithDiscount($baseSubtotalWithDiscount);
+            }
+
+            $this->setGrandTotal($this->getGrandTotal() + $this->getData("{$code}_amount"));
+            $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getData("base_{$code}_amount"));
         }
 
         Mage::dispatchEvent($this->_eventPrefix . '_collect_totals_after', array($this->_eventObject => $this));
