@@ -8,15 +8,6 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
     const LOCK_BULK = 'bulk';
 
     /**
-     * @var null
-     */
-    protected $_lockFile = array(
-        self::LOCK_INCOMING => null,
-        self::LOCK_OUTGOING => null,
-        self::LOCK_BULK     => null,
-    );
-
-    /**
      * Run script
      *
      */
@@ -75,11 +66,8 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
      */
     protected function processLock($name)
     {
-        $file = Mage::getBaseDir('var') . DS . 'tnw_'.$name.'.lock';
-        $this->_lockFile[$name] = fopen($file, 'w+');
-        if (!flock($this->_lockFile[$name], LOCK_EX | LOCK_NB)) {
-            @fclose($this->_lockFile[$name]);
-            Mage::throwException(sprintf('The file "%s" blocked', $file));
+        if (!Mage_Index_Model_Lock::getInstance()->setLock("tnw_{$name}", true)) {
+            Mage::throwException(sprintf('The process "%s" blocked', $name));
         }
     }
 
@@ -88,12 +76,7 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
      */
     protected function processUnlock($name)
     {
-        if (!is_resource($this->_lockFile[$name])) {
-            return;
-        }
-
-        @flock($this->_lockFile[$name], LOCK_UN);
-        @fclose($this->_lockFile[$name]);
+        Mage_Index_Model_Lock::getInstance()->releaseLock("tnw_{$name}", true);
     }
 
     /**
