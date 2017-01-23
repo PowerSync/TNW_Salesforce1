@@ -1364,14 +1364,12 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_customer = $this->getEntityCache($_data->MagentoId)
                     ->addData($_saveAttributes);
 
-                if (!$_customer->getId()) {
+                if (!$_customer->getId() || strpos($_data->MagentoId, 'guest_') === 0) {
                     continue;
                 }
 
-                if (!strpos($_data->MagentoId, 'guest_') === 0) {
-                    foreach (array_keys($_saveAttributes) as $_code) {
-                        $_customer->getResource()->saveAttribute($_customer, $_code);
-                    }
+                foreach (array_keys($_saveAttributes) as $_code) {
+                    $_customer->getResource()->saveAttribute($_customer, $_code);
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')
