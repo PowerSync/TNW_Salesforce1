@@ -65,11 +65,11 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
                 $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
                     ->setIsValidate(false);
-                $order = $orderCreate->getSession()->getOrder();
-                $order->setData('_salesforce_object', $object);
+                $orderCreate->getQuote()->setData('_salesforce_object', $object);
 
                 // Create new order
                 $newOrder = $this->reorder($orderCreate, $order, $object);
+                $order = $orderCreate->getSession()->getOrder();
 
                 $this
                     ->_updateMappedEntityFields($object, $newOrder)
@@ -106,8 +106,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
             $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
                 ->setIsValidate(false);
-            $orderCreate->getSession()->getOrder()
-                ->setData('_salesforce_object', $object);
+            $orderCreate->getQuote()->setData('_salesforce_object', $object);
 
             // Create new order
             $order = $this->create($orderCreate, $object);
