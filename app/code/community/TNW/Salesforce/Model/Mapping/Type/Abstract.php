@@ -71,7 +71,7 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
             }
         } else {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPED: Field \"{$this->_mapping->getSfObject()}::{$this->_mapping->getSfField()}\" not found");
+                ->saveNotice("Field \"{$this->_mapping->getSfObject()}::{$this->_mapping->getSfField()}\" not found in SF! Skipped field.");
 
             $value = null;
         }
