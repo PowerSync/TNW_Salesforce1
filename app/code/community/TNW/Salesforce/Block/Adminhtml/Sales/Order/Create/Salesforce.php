@@ -7,29 +7,16 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
      */
     protected function _prepareForm()
     {
-        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->getWebsiteIdForType('sales/quote', $this->_getSession()->getQuote()->getId());
-
         $form = new Varien_Data_Form();
         $form->setUseContainer(false);
         $form->setFieldNameSuffix('order');
         $form->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
-        /** @var Mage_Customer_Model_Customer $customer */
-        $customer = $this->_getSession()->getQuote()->getCustomer();
-        $salesforceOwner = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($orderWebsite, function () use($customer) {
-            $mapping  = Mage::getModel('tnw_salesforce/mapping_type_customer');
-
-            return $customer->getData('salesforce_id')
-                ? $mapping->convertSalesforceContactOwnerId($customer)
-                : $mapping->convertSalesforceLeadOwnerId($customer);
-        });
-
         $form->addField('owner_salesforce_id', 'owner', array(
             'name'      => 'owner_salesforce_id',
             'selector'  => 'tnw-ajax-find-select-owner-info',
-            'value'     => $salesforceOwner,
-            'website'   => $orderWebsite
+            'value'     => $this->getSalesforceOwner(),
+            'website'   => $this->getQuoteWebsiteId()
         ));
 
         $this->setForm($form);
@@ -46,14 +33,36 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
     }
 
     /**
+     * @return int
+     */
+    protected function getQuoteWebsiteId()
+    {
+        return Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('sales/quote', $this->_getSession()->getQuote()->getId());
+    }
+
+    /**
+     * @return string
+     */
+    protected function getSalesforceOwner()
+    {
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = $this->_getSession()->getQuote()->getCustomer();
+        return Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($this->getQuoteWebsiteId(), function () use($customer) {
+            $mapping  = Mage::getModel('tnw_salesforce/mapping_type_customer');
+
+            return $customer->getData('salesforce_id')
+                ? $mapping->convertSalesforceContactOwnerId($customer)
+                : $mapping->convertSalesforceLeadOwnerId($customer);
+        });
+    }
+
+    /**
      * @return string
      */
     protected function _toHtml()
     {
-        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->getWebsiteIdForType('sales/quote', $this->_getSession()->getQuote()->getId());
-
-        $isEnable = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($orderWebsite, function () {
+        $isEnable = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($this->getQuoteWebsiteId(), function () {
             return Mage::helper('tnw_salesforce')->isEnabled();
         });
 
