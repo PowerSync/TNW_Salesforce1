@@ -33,7 +33,8 @@ class TNW_Salesforce_Model_Website_Observer
     public function syncWebsite(array $entityIds)
     {
         /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('core/website', $entityIds);
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('core/website', $entityIds);
 
         $groupWebsite = array();
         foreach ($select->getAdapter()->fetchAll($select) as $row) {

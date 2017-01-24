@@ -241,7 +241,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      * @param $idSet
      * @return Varien_Db_Select
      */
-    public static function generateSelectForType($modelType, $idSet)
+    public function generateSelectForType($modelType, $idSet)
     {
         switch ($modelType) {
             case 'sales/order':
@@ -251,8 +251,8 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('order'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `order`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
-                    ->where($connection->prepareSqlCondition('`order`.`entity_id`', array('in'=>$idSet)))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), 'store.store_id = order.store_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
+                    ->where($connection->prepareSqlCondition('order.entity_id', array('in'=>$idSet)))
                 ;
 
             case 'sales/quote':
@@ -262,8 +262,8 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('quote'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `quote`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
-                    ->where($connection->prepareSqlCondition('`quote`.`entity_id`', array('in'=>$idSet)))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), 'store.store_id = quote.store_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
+                    ->where($connection->prepareSqlCondition('quote.entity_id', array('in'=>$idSet)))
                 ;
 
             case 'customer/customer':
@@ -307,7 +307,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('invoice'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `invoice`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), 'store.store_id = invoice.store_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('invoice.entity_id', array('in'=>$idSet)))
                 ;
 
@@ -318,7 +318,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('shipment'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `shipment`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), 'store.store_id = shipment.store_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('shipment.entity_id', array('in'=>$idSet)))
                 ;
 
@@ -329,7 +329,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                 return $connection->select()
                     ->from(array('creditmemo'=>$resource->getMainTable()), array('object_id' => 'entity_id'))
-                    ->joinLeft(array('store'=>$resource->getTable('core/store')), '`store`.`store_id` = `creditmemo`.`store_id`', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
+                    ->joinLeft(array('store'=>$resource->getTable('core/store')), 'store.store_id = creditmemo.store_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->where($connection->prepareSqlCondition('creditmemo.entity_id', array('in'=>$idSet)))
                 ;
 
@@ -385,7 +385,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      */
     public function getWebsiteIdForType($modelType, $entityId)
     {
-        $select = self::generateSelectForType($modelType, array($entityId));
+        $select = $this->generateSelectForType($modelType, array($entityId));
         $row = $select->getAdapter()->fetchRow($select);
         if (empty($row)) {
             return null;
@@ -412,7 +412,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             : TNW_Salesforce_Model_Cron::SYNC_TYPE_OUTGOING;
 
         foreach (array_chunk($idSet, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
-            $select = self::generateSelectForType($entityModelAlias, $_chunk);
+            $select = $this->generateSelectForType($entityModelAlias, $_chunk);
             $select->columns(array(
                 'mage_object_type'  => new Zend_Db_Expr('"' . $entityModelAlias .'"'),
                 'sf_object_type'    => new Zend_Db_Expr('"' . $sfObType . '"'),

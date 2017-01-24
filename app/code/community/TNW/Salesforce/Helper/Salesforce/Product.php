@@ -223,9 +223,16 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
      */
     protected function storesAvailable()
     {
-        return array_unique(
-            Mage::app()->getWebsite()->getStoreIds() +
-            Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig()->getStoreIds());
+        $adminWebsiteId = Mage::app()->getWebsite('admin')->getId();
+        $currentDiffWebsite = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig();
+
+        $websites = ($currentDiffWebsite->getId() == $adminWebsiteId)
+            ? array_diff_key(Mage::app()->getWebsites(true), Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig(false))
+            : array($currentDiffWebsite->getId() => $currentDiffWebsite);
+
+        return call_user_func_array('array_merge', array_map(function (Mage_Core_Model_Website $website) {
+            return $website->getStoreIds();
+        }, $websites));
     }
 
     /**

@@ -30,7 +30,8 @@ class TNW_Salesforce_Model_Abandoned
     public function syncAbandoned(array $entityIds)
     {
         /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/quote', $entityIds);
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('sales/quote', $entityIds);
 
         $groupWebsite = array();
         foreach ($select->getAdapter()->fetchAll($select) as $row) {

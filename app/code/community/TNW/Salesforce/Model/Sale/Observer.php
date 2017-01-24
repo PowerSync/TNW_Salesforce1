@@ -152,7 +152,8 @@ class TNW_Salesforce_Model_Sale_Observer
     public function syncOrder(array $entityIds)
     {
         /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/order', $entityIds);
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('sales/order', $entityIds);
 
         $groupWebsite = array();
         foreach ($select->getAdapter()->fetchAll($select) as $row) {
@@ -288,17 +289,15 @@ class TNW_Salesforce_Model_Sale_Observer
             return; // Disabled
         }
 
-        /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('salesrule/rule', array($rule->getId()));
-        $row = $select->getAdapter()->fetchRow($select);
-        if (empty($row['website_id'])) {
+        $website = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('salesrule/rule', $rule->getId());
+
+        if (is_null($website)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('Unable to determine the entry Website');
 
             return;
         }
-
-        $website = $row['website_id'];
 
         $assignToCampaign = $this->assignToCampaign;
         if (!empty($assignToCampaign) && ($rule->getData('salesforce_id') != $assignToCampaign)) {
@@ -308,19 +307,31 @@ class TNW_Salesforce_Model_Sale_Observer
                     $helper = Mage::helper('tnw_salesforce');
 
                     if (!$helper->isEnabled()) {
-                        throw new Exception('SKIPPING: API Integration is disabled');
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('SKIPPING: API Integration is disabled');
+
+                        return;
                     }
 
                     if (!$helper->isOrderRulesEnabled()) {
-                        throw new Exception('SKIPPING: Sales Rule Integration is disabled');
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveTrace('SKIPPING: Sales Rule Integration is disabled');
+
+                        return;
                     }
 
                     if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-                        throw new Exception('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                        return;
                     }
 
                     if (!$helper->canPush()) {
-                        throw new Exception('ERROR: Salesforce connection could not be established, SKIPPING sync');
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
+
+                        return;
                     }
 
                     $obj = new stdClass();
@@ -351,7 +362,8 @@ class TNW_Salesforce_Model_Sale_Observer
     {
 
         /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('salesrule/rule', $entityIds);
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('salesrule/rule', $entityIds);
 
         $groupWebsite = array();
         foreach ($select->getAdapter()->fetchAll($select) as $row) {

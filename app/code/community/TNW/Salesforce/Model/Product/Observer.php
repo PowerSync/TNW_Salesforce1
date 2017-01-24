@@ -50,7 +50,8 @@ class TNW_Salesforce_Model_Product_Observer
     public function syncProduct(array $entityIds)
     {
         /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('catalog/product', $entityIds);
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('catalog/product', $entityIds);
 
         $groupWebsite = array();
         foreach ($select->getAdapter()->fetchAll($select) as $row) {

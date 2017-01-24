@@ -80,7 +80,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
         $helper = Mage::helper('tnw_salesforce');
 
         /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('catalogrule/rule', $entityIds);
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('catalogrule/rule', $entityIds);
 
         $groupWebsite = array();
         foreach ($select->getAdapter()->fetchAll($select) as $row) {

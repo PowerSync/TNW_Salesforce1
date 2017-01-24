@@ -24,7 +24,8 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
     public function syncCreditMemo(array $entityIds)
     {
         /** @var Varien_Db_Select $select */
-        $select = TNW_Salesforce_Model_Localstorage::generateSelectForType('sales/order_creditmemo', $entityIds);
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('sales/order_creditmemo', $entityIds);
 
         $groupWebsite = array();
         foreach ($select->getAdapter()->fetchAll($select) as $row) {
