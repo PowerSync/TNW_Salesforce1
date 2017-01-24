@@ -136,8 +136,9 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
      */
     public function getWebsitesDifferentConfig($withDefault = true)
     {
-        static $tmpWebsites = array();
-        if (!count($tmpWebsites)) {
+        static $tmpWebsites = null;
+        if (is_null($tmpWebsites)) {
+            $tmpWebsites = array();
             $select = self::generateSelectWebsiteDifferent();
             foreach ($select->getAdapter()->fetchCol($select) as $websiteId) {
                 $tmpWebsites[$websiteId] = Mage::app()->getWebsite($websiteId);

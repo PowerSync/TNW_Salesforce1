@@ -790,30 +790,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->_leadStatus;
     }
 
-    /**
-     * return list of quote statuses in salesforce
-     *
-     * @return array
-     */
-    public function quoteStatusDropdown()
-    {
-        $collection = array();
-        //Only look for Quote status data if Quote integration is enabled
-        if ($this->getDefaultQuoteEnableSettings()) {
-            $collection = Mage::helper('tnw_salesforce/salesforce_data')->getPicklistValues('Quote', 'Status');
-        }
-
-        $res = array();
-        foreach ($collection as $item) {
-            $res[] = array(
-                'label' => $item->label,
-                'value' => $item->value,
-            );
-        }
-
-        return $res;
-    }
-
     public function getPersonAccountRecordIds()
     {
         $this->_personAccountRecordTypes = $this->getStorage('tnw_salesforce_person_account_record_types');
