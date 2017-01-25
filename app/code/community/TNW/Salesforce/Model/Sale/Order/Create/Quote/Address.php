@@ -46,8 +46,10 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
         foreach ($this->getTotalCollector()->getCollectors() as $model) {
             $code = $model->getCode();
 
-            $price = !in_array($code, $clearType)
-                ? $this->priceByFeeType($code) : 0;
+            $price = $this->priceByFeeType($code);
+            if (is_null($price) && in_array($code, $clearType)) {
+                $price = 0;
+            }
 
             // Default calculate price
             if (is_null($price)) {
