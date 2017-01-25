@@ -14,11 +14,28 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
             return parent::collectTotals();
         }
 
-        $feeIds = Mage::helper('tnw_salesforce/magento_order')->getFeeIds();
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappingCollection */
+        $mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addFieldToFilter('sf_object', 'OrderItem')
+            ->addFieldToFilter('sf_field', 'UnitPrice');
 
-        $productPrices = array();
-        foreach ($object->OrderItems->records as $record) {
-            $productPrices[$record->PricebookEntry->Product2Id] = $record->UnitPrice;
+        /** @var TNW_Salesforce_Model_Mapping $mapping */
+        $mapping = $mappingCollection->getFirstItem();
+
+        $clearType = array();
+        switch ($mapping->getLocalFieldAttributeCode()) {
+            case 'unit_price_including_tax_excluding_discounts':
+                $clearType[] = 'tax';
+                break;
+
+            case 'unit_price_including_discounts_excluding_tax':
+                $clearType[] = 'discount';
+                break;
+
+            case 'unit_price_including_tax_and_discounts':
+                $clearType[] = 'tax';
+                $clearType[] = 'discount';
+                break;
         }
 
         $quote  = $this->getQuote();
@@ -28,12 +45,16 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
         /** @var Mage_Sales_Model_Quote_Address_Total_Abstract $model */
         foreach ($this->getTotalCollector()->getCollectors() as $model) {
             $code = $model->getCode();
-            if (!Mage::helper('tnw_salesforce')->isUpdateTotalByFeeType($code) || empty($productPrices[$feeIds[$code]])) {
+
+            $price = !in_array($code, $clearType)
+                ? $this->priceByFeeType($code) : 0;
+
+            // Default calculate price
+            if (is_null($price)) {
                 $model->collect($this);
                 continue;
             }
 
-            $price = $productPrices[$feeIds[$code]];
             $this->addData(array(
                 "{$code}_amount" => $isBase ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price,
                 "base_{$code}_amount" => !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price
@@ -56,6 +77,33 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
 
         Mage::dispatchEvent($this->_eventPrefix . '_collect_totals_after', array($this->_eventObject => $this));
         return $this;
+    }
+
+    /**
+     * @param string $feeType
+     * @return null
+     */
+    protected function priceByFeeType($feeType)
+    {
+        if (!Mage::helper('tnw_salesforce')->isUpdateTotalByFeeType($feeType)) {
+            return null;
+        }
+
+        $object = $this->getQuote()->getData('_salesforce_object');
+        if (empty($object->OrderItems->records)) {
+            return null;
+        }
+
+        $feeIds = Mage::helper('tnw_salesforce/magento_order')->getFeeIds();
+        foreach ($object->OrderItems->records as $record) {
+            if ($record->PricebookEntry->Product2Id != $feeIds[$feeType]) {
+                continue;
+            }
+
+            return $record->UnitPrice;
+        }
+
+        return null;
     }
 
     /**
