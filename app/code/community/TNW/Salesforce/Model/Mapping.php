@@ -11,6 +11,7 @@
  * @method string getLocalFieldType()
  * @method string getLocalFieldAttributeCode()
  * @method string getDefaultValue()
+ * @method string getSfObject()
  */
 class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
 {

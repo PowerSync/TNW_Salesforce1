@@ -15,9 +15,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
 
     protected function _initLayout()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::getSingleton('adminhtml/session')->addNotice("Salesforce integration is not working! Refer to the config or the log files for more information.");
-        }
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce');
 

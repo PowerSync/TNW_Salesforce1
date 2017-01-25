@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.57.06.0000</version>
+            <version>0.01.57.07.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -707,6 +707,10 @@
                 <schedule><cron_expr>0 0 * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::entityCacheFill</model></run>
             </tnw_salesforce_cache_fill>
+            <tnw_salesforce_update_feed>
+                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
+                <run><model>tnw_salesforce/cron::updateFeed</model></run>
+            </tnw_salesforce_update_feed>
         </jobs>
     </crontab>
     <default>

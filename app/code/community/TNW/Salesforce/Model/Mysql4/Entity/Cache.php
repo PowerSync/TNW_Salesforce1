@@ -20,19 +20,22 @@ class TNW_Salesforce_Model_Mysql4_Entity_Cache extends Mage_Core_Model_Mysql4_Ab
     /**
      * @param $id
      * @param $objectType
+     * @param $websiteId
      * @return array
      */
-    public function toArraySearchById($id, $objectType)
+    public function toArraySearchById($id, $objectType, $websiteId)
     {
         $adapter = $this->_getReadAdapter();
         $select = $adapter->select()
             ->from($this->getMainTable(), array('id', 'name'))
             ->where('id LIKE :id')
-            ->where('object_type = :object_type');
+            ->where('object_type = :object_type')
+            ->where('website_id = :website_id');
 
         $rowSet = $adapter->fetchAll($select, array(
             ':id' => $id,
-            ':object_type' => $objectType
+            ':object_type' => $objectType,
+            ':website_id' => $websiteId
         ));
 
         return array_map(function ($item) {
@@ -55,10 +58,11 @@ class TNW_Salesforce_Model_Mysql4_Entity_Cache extends Mage_Core_Model_Mysql4_Ab
 
     /**
      * @param $type
+     * @param $websiteId
      */
-    public function clearType($type)
+    public function clearType($type, $websiteId)
     {
-        $this->_getWriteAdapter()->delete($this->getMainTable(), array('object_type = ?'=>$type));
+        $this->_getWriteAdapter()->delete($this->getMainTable(), array('object_type = ?'=>$type, 'website_id = ?'=>$websiteId));
     }
 
     /**

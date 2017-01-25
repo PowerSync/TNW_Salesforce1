@@ -38,8 +38,20 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
         }
         else if (isset($this->_args['outgoing'])) {
             try {
+                $websites = Mage::app()->getWebsites(true);
+                if (isset($this->_args['website'])) {
+                    $websites = array(Mage::app()->getWebsite($this->_args['website']));
+                }
+
                 $this->processLock(self::LOCK_OUTGOING);
-                Mage::getModel('tnw_salesforce/cron')->processQueue();
+
+                /** @var Mage_Core_Model_Website $website */
+                foreach ($websites as $website) {
+                    Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () {
+                        Mage::getModel('tnw_salesforce/cron')->processQueue();
+                    });
+                }
+
                 echo "Import successfully finished\n";
             } catch (Mage_Core_Exception $e) {
                 echo $e->getMessage() . "\n";
@@ -52,9 +64,20 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
         }
         else if (isset($this->_args['bulk'])) {
             try {
+                $websites = Mage::app()->getWebsites(true);
+                if (isset($this->_args['website'])) {
+                    $websites = array(Mage::app()->getWebsite($this->_args['website']));
+                }
+
                 $this->processLock(self::LOCK_BULK);
-                Mage::helper('tnw_salesforce')->setObjectSyncType('sync_type_system_scheduled');
-                Mage::getModel('tnw_salesforce/cron')->processBulkQueue();
+
+                /** @var Mage_Core_Model_Website $website */
+                foreach ($websites as $website) {
+                    Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () {
+                        Mage::getModel('tnw_salesforce/cron')->processBulkQueue();
+                    });
+                }
+
                 echo "Import successfully finished\n";
             } catch (Mage_Core_Exception $e) {
                 echo $e->getMessage() . "\n";
