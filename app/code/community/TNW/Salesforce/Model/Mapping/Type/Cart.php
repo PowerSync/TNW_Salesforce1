@@ -199,7 +199,7 @@ class TNW_Salesforce_Model_Mapping_Type_Cart extends TNW_Salesforce_Model_Mappin
      */
     public function convertOwnerSalesforceId($_entity)
     {
-        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId());
+        $defaultOwner  = Mage::helper('tnw_salesforce')->getDefaultOwner();
 
         return $defaultOwner;
     }

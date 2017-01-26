@@ -53,7 +53,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo extends TNW_Salesforce_
         ## Put Products into Single field
         $delimiter = '=======================================';
         $lines = array();
-        $lines[] = 'Items invoice:';
+        $lines[] = 'Items creditmemo:';
         $lines[] = $delimiter;
         $lines[] = 'SKU, Qty, Name, Price, Tax, Subtotal, Net Total';
         $lines[] = $delimiter;

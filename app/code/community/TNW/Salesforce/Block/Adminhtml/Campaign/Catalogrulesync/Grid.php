@@ -41,7 +41,7 @@ class TNW_Salesforce_Block_Adminhtml_Campaign_Catalogrulesync_Grid extends Mage_
                 1 => 'Yes',
             ),
             'index' => 'sf_insync',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status()
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
         $this->addColumn('rule_id', array(
@@ -103,7 +103,7 @@ class TNW_Salesforce_Block_Adminhtml_Campaign_Catalogrulesync_Grid extends Mage_
             'index' => 'salesforce_id',
             'type' => 'varchar',
             'width' => '140px',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
 
         $this->addColumn('singleAction',

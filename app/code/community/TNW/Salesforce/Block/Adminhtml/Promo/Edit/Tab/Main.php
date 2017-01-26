@@ -49,8 +49,10 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
         /** @var Mage_SalesRule_Model_Rule $model */
         $model = Mage::registry('current_promo_quote_rule');
 
-        $form = new Varien_Data_Form();
+        $ruleWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('salesrule/rule', $model->getId());
 
+        $form = new Varien_Data_Form();
         $fieldset = $form->addFieldset('base_fieldset',
             array('legend' => $this->__('Salesforce'))
         );
@@ -61,7 +63,8 @@ class TNW_Salesforce_Block_Adminhtml_Promo_Edit_Tab_Main
             'title'     => $this->__('Assign to Campaign'),
             'name'      => 'assign_to_campaign',
             'selector'  => 'tnw-ajax-find-select',
-            'value'     => $model->getData('salesforce_id')
+            'value'     => $model->getData('salesforce_id'),
+            'website'   => $ruleWebsite
         ));
 
         $this->setForm($form);

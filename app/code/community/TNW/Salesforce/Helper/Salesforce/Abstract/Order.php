@@ -424,35 +424,23 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         if (!property_exists($this->_obj, 'Id')) {
             $_currencyCode    = $this->getCurrencyCode($_entity);
             $pricebookEntryId = $product->getSalesforcePricebookId();
+            foreach (explode("\n", $pricebookEntryId) as $value) {
+                if (strpos($value, ':') === false) {
+                    continue;
+                }
 
-            if (!empty($pricebookEntryId)) {
-                $valuesArray = explode("\n", $pricebookEntryId);
-
-                if (!empty($valuesArray)) {
-                    foreach ($valuesArray as $value) {
-
-                        if (strpos($value, ':') !== false) {
-                            $tmp = explode(':', $value);
-                            if (
-                                isset($tmp[0])
-                                && ($tmp[0] == $_currencyCode || empty($_currencyCode))
-                            ) {
-                                $pricebookEntryId = $tmp[1];
-                            }
-                        }
-                    }
+                list($_currency, $_priceBook) = explode(':', $value, 2);
+                if (!empty($_currency) && ($_currency == $_currencyCode || empty($_currencyCode))) {
+                    $pricebookEntryId = $_priceBook;
                 }
             }
 
             if (empty($pricebookEntryId)) {
-                throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getSku() . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+                throw new Exception("NOTICE: Product w/ SKU ({$_entityItem->getSku()}) is not synchronized, could not add to {$this->_salesforceEntityName}!");
             }
 
             $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("Opportunity/Order Item Object: \n" . print_r($this->_obj, true));
 
         $entityId = $_entityItem->getId();
         $key = empty($entityId)
@@ -779,12 +767,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function updateStatus($order)
     {
-        $_entityNumber = $this->_getEntityNumber($order);
-        if (Mage::getModel('tnw_salesforce/localstorage')->getObject($order->getId())) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Order #$_entityNumber is already queued for update.");
-            return;
-        }
-
         if (!$this->reset()) {
             return;
         }
@@ -800,7 +782,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return;
         }
 
-        $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $_lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $_entityNumber = $this->_getEntityNumber($order);
         if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
             $this->_prepareEntity();
 

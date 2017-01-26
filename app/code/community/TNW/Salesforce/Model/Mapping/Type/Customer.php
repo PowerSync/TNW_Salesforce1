@@ -260,7 +260,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
          */
         $availableOwners[] = $_entity->getData('salesforce_contact_owner_id');
 
-        if (Mage::helper('tnw_salesforce/config_customer')->useAccountOwner($_entity->getStoreId(), $_entity->getWesbsiteId())) {
+        if (Mage::helper('tnw_salesforce/config_customer')->useAccountOwner()) {
 
             $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
 
@@ -287,7 +287,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
         /**
          * Default owner
          */
-        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner();
 
         $result = $this->getFirstAvailableOwner($availableOwners);
 
@@ -331,7 +331,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
         /**
          * Default owner
          */
-        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getDefaultOwner();
 
         $result = $this->getFirstAvailableOwner($availableOwners);
 
@@ -345,7 +345,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     public function convertSalesforceLeadOwnerId($_entity)
     {
         $availableOwners[] = $_entity->getData('salesforce_lead_owner_id');
-        $availableOwners[] = Mage::helper('tnw_salesforce')->getLeadDefaultOwner($_entity->getStoreId(), $_entity->getWebsiteId());
+        $availableOwners[] = Mage::helper('tnw_salesforce')->getLeadDefaultOwner();
 
         $result = $this->getFirstAvailableOwner($availableOwners);
 

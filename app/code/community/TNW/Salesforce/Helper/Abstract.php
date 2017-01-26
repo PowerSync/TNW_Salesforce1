@@ -9,7 +9,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     const MIN_LEN_SF_ID = 15;
 
     /**
-     * @var null
+     * @var Zend_Cache_Core
      */
     protected $_mageCache = NULL;
 
@@ -74,43 +74,16 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     );
 
     /**
-     * sf connection entity
-     *
-     * @var Salesforce_SforceEnterpriseClient
-     */
-    protected $_mySforceConnection = false;
-
-    /**
      * @var array
      */
     protected $_cache = array();
-
-    /**
-     * init sf connection
-     * the method duplicated here from childs
-     * as well methods checkConnection() left in childs for old code compatibility
-     */
-    protected function checkConnection()
-    {
-        try {
-            $this->_mySforceConnection = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
-            if (!$this->_mySforceConnection) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
-                return;
-            }
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: could not get salesforce connection");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error info:" . $e->getMessage());
-            return;
-        }
-    }
 
     /**
      * @return Salesforce_SforceEnterpriseClient
      */
     public function getClient()
     {
-        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
+        return TNW_Salesforce_Model_Connection::createConnection()->getClient();
     }
 
     protected function _processErrors($_response, $type = 'order', $_object = null)
@@ -141,7 +114,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      */
     protected function deleteSfObjectById($id = false)
     {
-        return $this->_mySforceConnection->delete(array($id));
+        return $this->getClient()->delete(array($id));
     }
 
     /**
@@ -409,13 +382,47 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         return $this->_useCache;
     }
 
+    /**
+     * @param $key
+     * @param null $website
+     * @return mixed
+     */
+    public function getStorage($key, $website = null)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
+        return $this->useCache()
+            ? unserialize($this->getCache()->load($key))
+            : Mage::getSingleton('core/session')->getData($key);
+    }
+
+    /**
+     * @param $value
+     * @param $key
+     * @param null $website
+     * @return bool
+     */
+    public function setStorage($value, $key, $website = null)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
+        if ($this->useCache()) {
+            return $this->getCache()
+                ->save(serialize($value), $key, array("TNW_SALESFORCE"));
+        }
+        else {
+            Mage::getSingleton('core/session')->setData($key, $value);
+            return true;
+        }
+    }
+
     protected function _reset()
     {
         $this->_initCache();
-
-        if (!$this->_mySforceConnection) {
-            $this->checkConnection();
-        }
 
         $sql = "SELECT * FROM `" . $this->getTable('eav_entity_type') . "` WHERE entity_type_code = 'customer'";
         $row = $this->getDbConnection('read')->query($sql)->fetch();

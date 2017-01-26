@@ -50,27 +50,20 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 
             $_i = 0;
             foreach ($response as $_result) {
-                $pricebookEntryKey                 = $_keys[$_i++];
-                list(, $_magentoId, $currencyCode) = explode(':::', $pricebookEntryKey, 3);
-                $sku                               = $this->_cache['productIdToSku'][$_magentoId];
+                $pricebookEntryKey = $_keys[$_i++];
+                list($priceBookId, $_magentoId, $currencyCode) = explode(':::', $pricebookEntryKey, 3);
+                $sku  = $this->_cache['productIdToSku'][$_magentoId];
 
                 //Report Transaction
                 $this->_cache['responses']['pricebooks'][$pricebookEntryKey] = json_decode(json_encode($_result), TRUE);
                 if ($_result->success == "true") {
-                    if (!property_exists($this->_cache['toSaveInMagento'][$sku], 'pricebookEntryIds')) {
-                        $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds = array();
+                    foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]) as $uStoreId) {
+                        $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$uStoreId][] = "{$currencyCode}:{$_result->id}";
                     }
 
-                    foreach (array_unique($this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]) as $uStoreId) {
-                        if (!isset($this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$uStoreId])) {
-                            $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$uStoreId] = '';
-                        }
-
-                        $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$uStoreId] .= $currencyCode . ':' . (string)$_result->id . "\n";
-                    }
-
+                    $standard = ($priceBookId == $this->_standardPricebookId) ? ' of standard pricebook' : '';
                     Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveTrace('PRICEBOOK ENTRY: magento (' . $sku . ') : salesforceID (' . (string)$_result->id . ')');
+                        ->saveTrace("PRICEBOOK ENTRY: Product SKU ({$sku}) : salesforceID ({$_result->id}){$standard}");
                     continue;
                 }
 
