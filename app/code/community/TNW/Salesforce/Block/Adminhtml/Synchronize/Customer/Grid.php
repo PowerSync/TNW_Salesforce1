@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     protected $_allowedCustomerGroups = array();
 
@@ -66,7 +66,7 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
             'width' => '50px',
             'index' => 'entity_id',
             'type' => 'number',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_entity',
             'actions' => array(
                 array(
                     'url' => array('base' => '*/customer/edit'),
@@ -164,7 +164,7 @@ class TNW_Salesforce_Block_Adminhtml_Customersync_Grid extends Mage_Adminhtml_Bl
 
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
             $this
                 ->setMassactionIdField('entity_id')
             ;

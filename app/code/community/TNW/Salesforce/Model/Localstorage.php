@@ -23,6 +23,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         $this->_mageModels['creditmemo'] = 'sales/order_creditmemo';
         $this->_mageModels['catalogrule'] = 'catalogrule/rule';
         $this->_mageModels['salesrule'] = 'salesrule/rule';
+        $this->_mageModels['wishlist'] = 'wishlist/wishlist';
     }
 
     /**
