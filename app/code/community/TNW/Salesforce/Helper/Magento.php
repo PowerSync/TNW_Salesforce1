@@ -73,7 +73,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_CREDIT_MEMO_OBJECT,
-
+            'Wishlist',
         );
 
         $this->_acl['product'] = array(
@@ -86,6 +86,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_ITEM_OBJECT,
             TNW_Salesforce_Model_Config_Objects::ORDER_CREDIT_MEMO_ITEM_OBJECT,
+            'WishlistItem',
         );
 
         $this->_acl['invoice'] = array(
@@ -124,6 +125,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         $this->_acl['wishlist'] = array(
             'Wishlist'
+        );
+
+        $this->_acl['wishlistItem'] = array(
+            'WishlistItem'
         );
     }
     /**
@@ -225,6 +230,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
         if (in_array($type, $this->_acl['wishlist'])) {
             $this->_populateWishlistAttributes($type);
+        }
+
+        if (in_array($type, $this->_acl['wishlistItem'])) {
+            $this->_populateWishlistItemAttributes($type);
         }
 
         /* Customization */
@@ -1016,86 +1025,36 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     public function _populateCatalogruleAttributes($type)
     {
         try {
-            $collection = $this->getDbConnection('read')
-                ->describeTable(Mage::helper('tnw_salesforce')->getTable('catalogrule'));
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            /** @var Mage_CatalogRule_Model_Resource_Rule $resource */
+            $resource = Mage::getResourceModel('catalogrule/rule');
+            $describe = $resource->getReadConnection()
+                ->describeTable($resource->getMainTable());
 
-            return;
-        }
-
-        if ($collection) {
             $this->_cache[$type]['catalog_rule'] = array(
                 'label' => 'Catalog rule attributes',
-                'value' => array()
+                'value' => $this->prepareAttributes($describe, 'Catalog Rule', array('number' => 'Number'), array('salesforce_id'))
             );
-
-            $_additionalAttributes = array(
-                'number'                  => 'Number',
-            );
-
-            foreach ($_additionalAttributes as $value => $label) {
-                $this->_cache[$type]['catalog_rule']['value'][] = array(
-                    'value' => 'Catalog Rule : '.$value,
-                    'label' => 'Catalog Rule : '.$label,
-                );
-            }
-
-            foreach ($collection as $_attribute) {
-                $key = $_attribute['COLUMN_NAME'];
-                if (in_array($key, array('salesforce_id'))) {
-                    continue;
-                }
-
-                $this->_cache[$type]['catalog_rule']['value'][] = array(
-                    'value' => 'Catalog Rule : ' . $key,
-                    'label' => 'Catalog Rule : ' . $this->toName($key),
-                );
-            }
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not load Magento quote items schema...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: {$e->getMessage()}");
         }
     }
 
     public function _populateSalesruleAttributes($type)
     {
         try {
-            $collection = $this->getDbConnection('read')
-                ->describeTable(Mage::helper('tnw_salesforce')->getTable('salesrule'));
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not load Magento quote items schema...");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
+            /** @var Mage_SalesRule_Model_Resource_Rule $resource */
+            $resource = Mage::getResourceModel('salesrule/rule');
+            $describe = $resource->getReadConnection()
+                ->describeTable($resource->getMainTable());
 
-            return;
-        }
-
-        if ($collection) {
             $this->_cache[$type]['sales_rule'] = array(
-                'label' => 'Shopping cart rule attributes',
-                'value' => array()
+                'label' => 'Shopping Cart Rule',
+                'value' => $this->prepareAttributes($describe, 'Shopping Cart Rule', array('number' => 'Number'), array('salesforce_id'))
             );
-
-            $_additionalAttributes = array(
-                'number'                  => 'Number',
-            );
-
-            foreach ($_additionalAttributes as $value => $label) {
-                $this->_cache[$type]['sales_rule']['value'][] = array(
-                    'value' => 'Shopping Cart Rule : '.$value,
-                    'label' => 'Shopping Cart Rule : '.$label,
-                );
-            }
-
-            foreach ($collection as $_attribute) {
-                $key = $_attribute['COLUMN_NAME'];
-                if (in_array($key, array('salesforce_id'))) {
-                    continue;
-                }
-
-                $this->_cache[$type]['sales_rule']['value'][] = array(
-                    'value' => 'Shopping Cart Rule : ' . $key,
-                    'label' => 'Shopping Cart Rule : ' . $this->toName($key),
-                );
-            }
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not load Magento quote items schema...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: {$e->getMessage()}");
         }
     }
 
@@ -1103,56 +1062,67 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
     {
         try {
             $resource = Mage::getResourceModel('wishlist/wishlist');
-            $collection = $resource->getReadConnection()
+            $describe = $resource->getReadConnection()
                 ->describeTable($resource->getMainTable());
+
+            $this->_cache[$type]['wishlist'] = array(
+                'label' => 'Wishlist',
+                'value' => $this->prepareAttributes($describe, 'Wishlist', array(), array('salesforce_id'))
+            );
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not load Magento quote items schema...');
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: {$e->getMessage()}");
-
-            return;
         }
+    }
 
-        if ($collection) {
-            $this->_cache[$type]['wishlist'] = array(
-                'label' => 'Wishlist attributes',
-                'value' => array()
+    public function _populateWishlistItemAttributes($type)
+    {
+        try {
+            /** @var Mage_Wishlist_Model_Resource_Item $resource */
+            $resource = Mage::getResourceModel('wishlist/item');
+            $describe = $resource->getReadConnection()
+                ->describeTable($resource->getMainTable());
+
+            $this->_cache[$type]['wishlistItem'] = array(
+                'label' => 'Wishlist Item',
+                'value' => $this->prepareAttributes($describe, 'Wishlist Item')
             );
-
-            $_additionalAttributes = array(
-                'number' => 'Number',
-            );
-
-            foreach ($_additionalAttributes as $value => $label) {
-                $this->_cache[$type]['wishlist']['value'][] = array(
-                    'value' => "Wishlist : $value",
-                    'label' => "Wishlist : $label",
-                );
-            }
-
-            foreach ($collection as $_attribute) {
-                $key = $_attribute['COLUMN_NAME'];
-                if (in_array($key, array('salesforce_id'))) {
-                    continue;
-                }
-
-                $this->_cache[$type]['wishlist']['value'][] = array(
-                    'value' => "Wishlist : $key",
-                    'label' => "Wishlist : {$this->toName($key)}",
-                );
-            }
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not load Magento quote items schema...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: {$e->getMessage()}");
         }
     }
 
     /**
-     * @param string $tableName
-     * @return mixed
+     * @param array $describe
+     * @param $fieldLabel
+     * @param array $additionalAttributes
+     * @param array $excludeAttributes
+     * @return array
      */
-    protected function getTableColumnList($tableName = 'cataloginventory_stock_item')
+    protected function prepareAttributes(array $describe, $fieldLabel, array $additionalAttributes = array(), array $excludeAttributes = array())
     {
-        $sql = "DESCRIBE " . Mage::helper('tnw_salesforce')->getTable($tableName) . ";";
-        $res = $this->getDbConnection('read')->query($sql)->fetchAll();
+        $fields = array();
+        foreach ($additionalAttributes as $value => $label) {
+            $fields[] = array(
+                'value' => "$fieldLabel: $value",
+                'label' => "$fieldLabel: $label",
+            );
+        }
 
-        return !empty($res) ? $res : array();
+        foreach ($describe as $_attribute) {
+            $key = $_attribute['COLUMN_NAME'];
+            if (in_array($key, $excludeAttributes)) {
+                continue;
+            }
+
+            $fields[] = array(
+                'value' => "$fieldLabel: $key",
+                'label' => "$fieldLabel: {$this->toName($key)}",
+            );
+        }
+
+        return $fields;
     }
 
     /**

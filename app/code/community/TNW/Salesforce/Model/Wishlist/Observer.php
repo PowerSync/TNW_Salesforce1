@@ -8,13 +8,15 @@ class TNW_Salesforce_Model_Wishlist_Observer
      */
     public function syncWishlist(array $entityIds)
     {
-        /** @var Varien_Db_Select $select */
-        $select = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->generateSelectForType('core/website', $entityIds);
-
         $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
+        foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
+            /** @var Varien_Db_Select $select */
+            $select = Mage::getSingleton('tnw_salesforce/localstorage')
+                ->generateSelectForType('wishlist/wishlist', $_entityIds);
+
+            foreach ($select->getAdapter()->fetchAll($select) as $row) {
+                $groupWebsite[$row['website_id']][] = $row['object_id'];
+            }
         }
 
         foreach ($groupWebsite as $websiteId => $_entityIds) {
@@ -36,6 +38,13 @@ class TNW_Salesforce_Model_Wishlist_Observer
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveNotice('SKIPPING: API Integration is disabled');
+
+                return;
+            }
+
+            if (!Mage::helper('tnw_salesforce/config_wishlist')->syncWishlist()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice('SKIPPING: Wishlist Integration is disabled');
 
                 return;
             }

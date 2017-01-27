@@ -6,8 +6,10 @@
 
 class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
-    protected $_allowedCustomerGroups = array();
 
+    /**
+     * TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid constructor.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -18,12 +20,12 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Admi
         $this->setSaveParametersInSession(true);
     }
 
+    /**
+     * @return Mage_Adminhtml_Block_Widget_Grid
+     */
     protected function _prepareCollection()
     {
-        if (!Mage::helper('tnw_salesforce')->getSyncAllGroups()) {
-            $this->_allowedCustomerGroups = Mage::helper('tnw_salesforce')->getAllowedCustomerGroups();
-        }
-
+        /** @var Mage_Customer_Model_Resource_Customer_Collection $collection */
         $collection = Mage::getResourceModel('customer/customer_collection')
             ->addNameToSelect()
             ->addAttributeToSelect('email')
@@ -38,8 +40,12 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Admi
             ->joinAttribute('billing_telephone', 'customer_address/telephone', 'default_billing', null, 'left')
             ->joinAttribute('billing_region', 'customer_address/region', 'default_billing', null, 'left')
             ->joinAttribute('billing_country_id', 'customer_address/country_id', 'default_billing', null, 'left');
-        if (!empty($this->_allowedCustomerGroups)) {
-            $collection->addFieldToFilter('group_id', array('in' => $this->_allowedCustomerGroups));
+
+        $allowedCustomerGroups = !Mage::helper('tnw_salesforce')->getSyncAllGroups()
+            ? Mage::helper('tnw_salesforce')->getAllowedCustomerGroups() : array();
+
+        if (!empty($allowedCustomerGroups)) {
+            $collection->addFieldToFilter('group_id', array('in' => $allowedCustomerGroups));
         }
 
         $this->setCollection($collection);
@@ -47,6 +53,9 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Admi
         return parent::_prepareCollection();
     }
 
+    /**
+     * @return $this
+     */
     protected function _prepareColumns()
     {
         $this->addColumn('sf_insync', array(
@@ -162,6 +171,9 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Admi
         return parent::_prepareColumns();
     }
 
+    /**
+     * @return $this
+     */
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
@@ -177,6 +189,15 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Admi
             ));
         }
         return $this;
+    }
+
+    /**
+     * @param $item
+     * @return string
+     */
+    public function getRowUrl($item)
+    {
+        return '';
     }
 
     /**
