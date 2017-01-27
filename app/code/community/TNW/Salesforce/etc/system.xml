@@ -29,7 +29,7 @@
                             <frontend_model>tnw_salesforce/adminhtml_build</frontend_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </build>
                         <version translate="label">
@@ -38,7 +38,7 @@
                             <frontend_model>tnw_salesforce/adminhtml_version</frontend_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </version>
                         <salesforce_version translate="label">
@@ -47,7 +47,7 @@
                             <frontend_model>tnw_salesforce/adminhtml_salesforceversion</frontend_model>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </salesforce_version>
                     </fields>
@@ -210,7 +210,7 @@
                     <label>Synchronization</label>
                     <sort_order>150</sort_order>
                     <show_in_default>1</show_in_default>
-                    <show_in_website>0</show_in_website>
+                    <show_in_website>1</show_in_website>
                     <show_in_store>0</show_in_store>
                     <expanded>1</expanded>
                     <fields>
@@ -268,7 +268,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Enable remote error logging</comment>
                         </remote_log>
@@ -636,7 +636,8 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <!--TODO: Create a mapping for website-->
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
 
                             <comment><![CDATA[
@@ -1021,7 +1022,7 @@
                             <comment />
                             <sort_order>70</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </sync_type_all>
                         <sync_type_allow>
@@ -1031,7 +1032,7 @@
                             <comment />
                             <sort_order>80</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <sync_type_all>0</sync_type_all>
@@ -1044,7 +1045,7 @@
                             <comment>Try creating deleted product automatically in Salesforce</comment>
                             <sort_order>90</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </create_delete_product>
                     </fields>
@@ -1176,7 +1177,7 @@
                             <source_model>tnw_salesforce/config_yesnopro</source_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
                                 Salesforce multi-currency support must be enabled as well.
@@ -1204,7 +1205,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <multi_currency>1</multi_currency>
@@ -1215,7 +1216,7 @@
                             <frontend_type>time</frontend_type>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <multi_currency>1</multi_currency>
@@ -1228,7 +1229,7 @@
                             <backend_model>tnw_salesforce/config_backend_currency_cron</backend_model>
                             <sort_order>50</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <multi_currency>1</multi_currency>
@@ -1508,7 +1509,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Tax Fee
@@ -1535,7 +1536,7 @@
                             <product_type>tax</product_type>
                             <sort_order>15</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_tax_product>1</use_tax_product>
@@ -1550,7 +1551,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Shipping Fee
@@ -1577,7 +1578,7 @@
                             <product_type>shipping</product_type>
                             <sort_order>25</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_shipping_product>1</use_shipping_product>
@@ -1592,7 +1593,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Discount Fee
@@ -1619,7 +1620,7 @@
                             <product_type>discount</product_type>
                             <sort_order>35</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_discount_product>1</use_discount_product>

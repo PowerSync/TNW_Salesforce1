@@ -16,6 +16,7 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Creditmemos extends Ma
             ->addFieldToSelect('grand_total')
             ->addFieldToSelect('base_grand_total')
             ->addFieldToSelect('billing_name')
+            ->addFieldToSelect('store_id')
         ;
 
         $collection->join(array('flat_creditmemo' => 'sales/creditmemo'),
@@ -30,7 +31,14 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Creditmemos extends Ma
 
     protected function _prepareColumns()
     {
-        if (Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemo()) {
+        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('sales/order', $this->getOrder()->getId());
+
+        $syncCreditMemo = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($orderWebsite, function () {
+            return Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemo();
+        });
+
+        if ($syncCreditMemo) {
             $this->addColumn('sf_insync', array(
                 'header' => Mage::helper('sales')->__('Status'),
                 'width' => '40px',

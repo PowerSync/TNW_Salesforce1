@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
+class TNW_Salesforce_Model_Connection
 {
     /**
      * seconds
@@ -71,14 +71,14 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     protected $_serverUrl = NULL;
 
-    public function clearMemory()
-    {
-        set_time_limit(1000);
-        gc_enable();
-        gc_collect_cycles();
-        gc_disable();
-    }
+    /**
+     * @var int
+     */
+    protected $_previousTime = 0;
 
+    /**
+     * TNW_Salesforce_Model_Connection constructor.
+     */
     public function __construct()
     {
         $this->_errorMessage = NULL;
@@ -92,15 +92,14 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
             // Array was causing issues with Redis Cache, this variable has to be a string
             $_SERVER['HTTP_USER_AGENT'] = join(' ', $system);
         }
+
         $this->_userAgent = $_SERVER['HTTP_USER_AGENT'];
+
         # Disable SOAP cache
         ini_set('soap.wsdl_cache_enabled', 0);
-        if (!$this->_client) {
-            # instantiate a new Salesforce object
-            $this->_client = new TNW_Salesforce_Model_Sforce_Client();
-        } else {
-            Mage::getSingleton('adminhtml/session')->addNotice("Salesforce API connectivity issue, sync is disabled. Check API configuration and try manual synchronization.");
-        }
+
+        # instantiate a new Salesforce object
+        $this->_client = new TNW_Salesforce_Model_Sforce_Client();
     }
 
     /**
@@ -108,21 +107,8 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function getWsdl()
     {
-        if (defined('MAGENTO_ROOT')) {
-            $basepath = MAGENTO_ROOT;
-        } else if (defined('BP')) {
-            $extra = "";
-            if (Mage::helper('tnw_salesforce')->getMagentoVersion() < 1500) {
-                $extra = "/../";
-            }
-            $basepath = realpath(BP . $extra);
-        } else {
-            $basepath = realpath(dirname(__FILE__) . "/../../../../../../");
-        }
-
-        $this->_wsdl = $basepath . "/" . Mage::helper('tnw_salesforce')->getApiWSDL();
-
-        if (!file_exists($this->_wsdl) || Mage::helper('tnw_salesforce')->getApiWSDL() == "") {
+        $this->_wsdl = Mage::getBaseDir() . DIRECTORY_SEPARATOR . Mage::helper('tnw_salesforce')->getApiWSDL();
+        if (!is_file($this->_wsdl)) {
             $this->_wsdl = NULL;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("WSDL file not found!");
         }
@@ -135,12 +121,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
      */
     public function tryWsdl()
     {
-
-        if (!$this->getWsdl()) {
-            return false;
-        }
-
-        return true;
+        return (bool)$this->getWsdl();
     }
 
     /**
@@ -191,11 +172,6 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
 
             if (property_exists($this->_loggedIn, 'sessionId')) {
                 $this->_sessionId = $this->_loggedIn->sessionId;
-                Mage::getSingleton('core/session')
-                    ->addData(array(
-                        'salesforce_session_id'      => $this->_loggedIn->sessionId,
-                        'salesforce_session_created' => time()
-                    ));
             }
 
             if (property_exists($this->_loggedIn, 'serverUrl')) {
@@ -372,7 +348,7 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     }
 
     /**
-     * @return Salesforce_SforceEnterpriseClient
+     * @return TNW_Salesforce_Model_Sforce_Client
      */
     public function getClient()
     {
@@ -406,8 +382,8 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
     public function getConnection()
     {
         $currentTime = time();
-        if ($currentTime - (int)$this->getPreviousTime() > self::CONNECTION_TIME_LIMIT) {
-            $this->setPreviousTime($currentTime);
+        if (empty($this->_connection) || $currentTime - (int)$this->_previousTime > self::CONNECTION_TIME_LIMIT) {
+            $this->_previousTime = $currentTime;
             $this->_connection = null;
             $this->_loggedIn = null;
 
@@ -447,13 +423,30 @@ class TNW_Salesforce_Model_Connection extends Mage_Core_Model_Session_Abstract
         return $this->_errorMessage;
     }
 
-    public function getSessionId()
+    public function getServerUrl()
+    {
+        return $this->_serverUrl;
+    }
+
+    public function getSalesforceSessionId()
     {
         return $this->_sessionId;
     }
 
-    public function getServerUrl()
+    /**
+     * @param null $websiteId
+     * @return $this
+     */
+    public static function createConnection($websiteId = null)
     {
-        return $this->_serverUrl;
+        static $connection = array();
+
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($websiteId);
+        if (empty($connection[$website->getCode()])) {
+            $connection[$website->getCode()] = Mage::getModel('tnw_salesforce/connection');
+        }
+
+        return $connection[$website->getCode()];
     }
 }

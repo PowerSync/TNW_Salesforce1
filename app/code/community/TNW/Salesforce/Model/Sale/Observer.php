@@ -17,11 +17,6 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function triggerSalesforceShippmentEvent($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
-            return; // Disabled
-        }
-
         // Triggers TNW event that pushes to SF
         $shipment = $observer->getEvent()->getShipment();
         Mage::dispatchEvent('tnw_salesforce_order_shipment_save', array('shipment' => $shipment));
@@ -29,7 +24,7 @@ class TNW_Salesforce_Model_Sale_Observer
 
     /**
      * @comment try to find related opportunity for order
-     * @param $observer
+     * @param $observer Varien_Event_Observer
      */
     public function addOpportunity($observer)
     {
@@ -64,93 +59,13 @@ class TNW_Salesforce_Model_Sale_Observer
         }
     }
 
-
-    /* Shipment Sync */
-    public function shipmentPush($observer)
-    {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
-        $shipment = $observer->getEvent()->getShipment();
-        $order = $shipment->getOrder();
-
-        if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper('tnw_salesforce/salesforce_opportunity')->resetOrder($order->getId());
-        }
-
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING shipment sync');
-            return; // Disabled
-        }
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
-            return; // Disabled
-        }
-
-        // check if queue sync setting is on - then save to database
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
-
-            // Extract all purchased products and add to local storage for sync
-            $_productIds = array();
-            foreach ($order->getAllVisibleItems() as $_item) {
-                $_productIds[] = (int)Mage::helper('tnw_salesforce/salesforce_opportunity')->getProductIdFromCart($_item);
-            }
-
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: products from the order were not saved in local storage');
-                return;
-            }
-
-            // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: order not saved to local storage');
-            }
-        } else {
-            if ($order->getId() && $order->getSalesforceId()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Shipping Start ######################################");
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("----- Shipping itmes from Order #" . $order->getRealOrderId() . " -----");
-                Mage::helper('tnw_salesforce/shipment')->salesforcePush($shipment, $order->getSalesforceId());
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Shipping End ########################################");
-            } else {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER SHIPMENT. ERRORS FOUND. PLEASE REFER TO LOG FILE ----");
-            }
-        }
-    }
-
     /**
      * order sync event
      *
-     * @param $observer
+     * @param $observer Varien_Event_Observer
      */
     public function orderStatusUpdateTrigger($observer)
     {
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
-            return; // Disabled
-        }
-
-        /* My no longer be used, need to test
-         * */
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
-
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
-            return; // Disabled
-        }
-
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
         /**
@@ -172,21 +87,16 @@ class TNW_Salesforce_Model_Sale_Observer
             return;
         }
 
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("###################################### Order Status Update Start ######################################");
 
-            // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array($order->getId()), 'Order', 'order');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: order status update not saved to local storage');
-            }
-        } else {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($order->getStore()->getWebsite(), function () use($order) {
             $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update Start ######################################");
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_status_update', $_syncType),
-                array('order' => $order));
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("###################################### Order Status Update End ########################################");
-        }
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_status_update', $_syncType), array('order' => $order));
+        });
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("###################################### Order Status Update End ########################################");
     }
 
     /**
@@ -196,18 +106,6 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function triggerSalesforceEvent($observer)
     {
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
-            return; // Disabled
-        }
-
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
-            return; // Disabled
-        }
         // Triggers TNW event that pushes to SF
         $order = $observer->getEvent()->getOrder();
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Order #' . $order->getRealOrderId() . ' Sync');
@@ -234,235 +132,321 @@ class TNW_Salesforce_Model_Sale_Observer
         Mage::dispatchEvent('tnw_salesforce_order_save', array('order' => $order));
     }
 
-    /* Order Sync */
+    /**
+     * Order Sync
+     * @param $observer Varien_Event_Observer
+     */
     public function salesforcePush($observer)
     {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
+        /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("TNW EVENT: Order #{$order->getRealOrderId()} Sync");
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Order #' . $order->getRealOrderId() . ' Sync');
+        $this->syncOrder(array($order->getId()));
+    }
 
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Order synchronization disabled');
-            return; // Disabled
+    /**
+     * @param array $entityIds
+     */
+    public function syncOrder(array $entityIds)
+    {
+        /** @var Varien_Db_Select $select */
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('sales/order', $entityIds);
+
+        $groupWebsite = array();
+        foreach ($select->getAdapter()->fetchAll($select) as $row) {
+            $groupWebsite[$row['website_id']][] = $row['object_id'];
         }
 
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
-            return; // Disabled
-        }
-
-        // check if queue sync setting is on - then save to database
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
-
-            // Extract all purchased products and add to local storage for sync
-            $_productIds = Mage::helper('tnw_salesforce/salesforce_order')->getProductIdsFromEntity($order);
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct($_productIds, 'Product', 'product');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: products from the order were not saved in local storage');
-                return;
-            }
-
-            // TODO add level up abstract class with Order as static values, now we have word 'Order' as parameter
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR:: order not saved to local storage');
-            }
-            return;
-        }
-
-        $_order = Mage::getModel('sales/order')->load($order->getId());
-
-        if ($order->getId() &&
-            $_order->getStatus() // commented cause order status is <empty> or 'pending' and if <empty> then order was not synced with sf
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("############################ New Order Start ############################");
-            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-
-            Mage::dispatchEvent(
-                sprintf('tnw_salesforce_%s_process', $_syncType),
-                array(
-                    'orderIds'      => array($order->getId()),
-                    'message'       => "SUCCESS: Upserting Order #" . $order->getRealOrderId(),
-                    'type'   => 'salesforce'
-                )
-            );
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("############################ New Order End ############################");
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("---- SKIPPING ORDER SYNC ----");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Status: " . $_order->getStatus());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Id: " . $order->getId());
-            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Transaction is from Salesforce!");
-            }
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------");
+        foreach ($groupWebsite as $websiteId => $entityIds) {
+            $this->syncOrderForWebsite($entityIds, $websiteId);
         }
     }
 
-    /* Order Cancel Event */
+    /**
+     * @param array $entityIds
+     * @param null $website
+     */
+    public function syncOrderForWebsite(array $entityIds, $website = null)
+    {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: API Integration is disabled');
+
+                return;
+            }
+
+            if (!$helper->isEnabledOrderSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: Order Integration is disabled');
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            try {
+                $syncBulk = count($entityIds) > 1;
+
+                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $_collection = Mage::getResourceModel('sales/order_item_collection')
+                        ->addFieldToFilter('order_id', array('in' => $entityIds));
+
+                    // use Mage::helper('tnw_salesforce/salesforce_order')->getProductIdFromCart(
+                    $productIds = $_collection->walk(array(
+                        Mage::helper('tnw_salesforce/salesforce_order'), 'getProductIdFromCart'
+                    ));
+
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObjectProduct(array_unique($productIds), 'Product', 'product', $syncBulk);
+
+                    $success = $success && Mage::getModel('tnw_salesforce/localstorage')
+                            ->addObject($entityIds, 'Order', 'order', $syncBulk);
+
+                    if (!$success) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('Could not add to the queue!');
+                    } elseif ($syncBulk) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
+
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                    }
+                } else {
+                    $_syncType = strtolower($helper->getOrderObject());
+                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
+                        'orderIds' => $entityIds,
+                        'message' => $helper->__('Total of %d order(s) were synchronized', count($entityIds)),
+                        'type' => $syncBulk ? 'bulk' : 'salesforce'
+                    ));
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Order Cancel Event
+     * @param $observer Varien_Event_Observer
+     */
     public function orderCancelled($observer)
     {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
-        if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::helper('tnw_salesforce/salesforce_opportunity')
-                ->resetEntity($order->getId());
-        }
+        $orderHelperName = $this->orderHelper;
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($order->getStore()->getWebsite(), function () use($order, $orderHelperName) {
+            $orderHelperName = $orderHelperName ?: sprintf('tnw_salesforce/salesforce_%s', strtolower(Mage::helper('tnw_salesforce')->getOrderObject()));
 
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError('ERROR:: Salesforce connection could not be established, SKIPPING order sync');
-            return; // Disabled
-        }
-
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('SKIPING: Order synchronization disabled');
-            return; // Disabled
-        }
-
-        $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-        if (!$this->orderHelper) {
-            $this->orderHelper = 'tnw_salesforce/salesforce_' . $_syncType;
-        }
-
-        // check if queue sync setting is on - then save to database
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
+            /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $orderHelper */
+            $orderHelper = Mage::helper($orderHelperName);
 
             // Extract all purchased products and add to local storage for sync
             $_productIds = array();
-            foreach (Mage::helper($this->orderHelper)->getItems($order) as $_item) {
-                $_productIds[] = (int)Mage::helper($this->orderHelper)->getProductIdFromCart($_item);
+            foreach ($orderHelper->getItems($order) as $_item) {
+                $_productIds[] = (int)$orderHelper->getProductIdFromCart($_item);
             }
 
-            $res = Mage::getModel('tnw_salesforce/localstorage')
-                ->addObjectProduct($_productIds, 'Product', 'product');
+            Mage::getSingleton('tnw_salesforce/product_observer')->syncProductForWebsite($_productIds);
+        });
 
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('ERROR:: products from the order were not saved in local storage');
-                return;
-            }
-
-            // Add order into the Queue
-            $res = Mage::getModel('tnw_salesforce/localstorage')
-                ->addObject(array(intval($order->getData('entity_id'))), 'Order', 'order');
-
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('ERROR:: order cancellation not saved to local storage');
-                return;
-            }
-
-            return;
-        }
-
-        if ($order->getId() && $order->getStatus()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
-            $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-            if ($manualSync->reset()) {
-                $itemIds = array();
-                foreach (Mage::helper($this->orderHelper)->getItems($order) as $_item) {
-                    $itemIds[] = (int)Mage::helper($this->orderHelper)->getProductIdFromCart($_item);
-                }
-
-                if (!empty($itemIds) && $manualSync->massAdd($itemIds) && $manualSync->process()) {
-                    Mage::getSingleton('adminhtml/session')
-                        ->addSuccess(Mage::helper('adminhtml')->__('Product inventory was synchronized with Salesforce'));
-                }
-            }
-            else {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('Salesforce Connection failed!');
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace("================ INVENTORY SYNC: END ================");
-        }
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: END ================");
     }
 
+    /**
+     * @param $observer Varien_Event_Observer
+     */
     public function afterSalesRuleSave($observer)
     {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
-
-        if (!Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isOrderRulesEnabled()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('SKIPING: Synchronization disabled');
-
-            return; // Disabled
-        }
-
         /** @var Mage_SalesRule_Model_Rule $rule */
         $rule = $observer->getEvent()->getRule();
         if (!$rule->getId()) {
             return; // Disabled
         }
 
-        if (!empty($this->assignToCampaign) && ($rule->getData('salesforce_id') != $this->assignToCampaign)) {
-            $obj = new stdClass();
-            $obj->Id = $this->assignToCampaign;
-            $obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = 'sr_'.$rule->getId();
+        $website = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('salesrule/rule', $rule->getId());
 
-            // Assign Campaign
+        if (is_null($website)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError('Unable to determine the entry Website');
+
+            return;
+        }
+
+        $assignToCampaign = $this->assignToCampaign;
+        if (!empty($assignToCampaign) && ($rule->getData('salesforce_id') != $assignToCampaign)) {
             try {
-                Mage::getSingleton('tnw_salesforce/connection')->getClient()
-                    ->update(array($obj), 'Campaign');
+                Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($assignToCampaign, $rule) {
+                    /** @var TNW_Salesforce_Helper_Data $helper */
+                    $helper = Mage::helper('tnw_salesforce');
 
-                $rule->setData('salesforce_id', $this->assignToCampaign);
-                $rule->getResource()->save($rule);
+                    if (!$helper->isEnabled()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('SKIPPING: API Integration is disabled');
+
+                        return;
+                    }
+
+                    if (!$helper->isOrderRulesEnabled()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveTrace('SKIPPING: Sales Rule Integration is disabled');
+
+                        return;
+                    }
+
+                    if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                        return;
+                    }
+
+                    if (!$helper->canPush()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('ERROR: Salesforce connection could not be established, SKIPPING order sync');
+
+                        return;
+                    }
+
+                    $obj = new stdClass();
+                    $obj->Id = $assignToCampaign;
+                    $obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = 'sr_'.$rule->getId();
+
+                    // Assign Campaign
+                    TNW_Salesforce_Model_Connection::createConnection()->getClient()
+                        ->update(array($obj), 'Campaign');
+
+                    $rule->setData('salesforce_id', $assignToCampaign);
+                    $rule->getResource()->save($rule);
+                });
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError('Assign Campaign: '.$e->getMessage());
-                return; // Disabled
+                return;
             }
         }
 
-        try {
-            if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
+        $this->syncSalesRuleForWebsite(array($rule->getId()), $website);
+    }
 
-                $res = Mage::getModel('tnw_salesforce/localstorage')
-                    ->addObject(array($rule->getId()), 'Campaign_SalesRule', 'salesrule');
+    /**
+     * @param array $entityIds
+     */
+    public function syncSalesRule(array $entityIds)
+    {
 
-                if (!$res) {
-                    Mage::getSingleton('adminhtml/session')->addError('Could not add catalog rule(s) to the queue!');
-                }
-                else if (!Mage::getSingleton('adminhtml/session')->getMessages()->getErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addSuccess('Records are pending addition into the queue!');
-                }
-            }
-            else {
-                $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
-                if ($campaignMember->reset() && $campaignMember->massAdd(array($rule->getId()))) {
-                    $campaignMember->process();
-                }
-            }
-        } catch (Exception $e) {
-            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+        /** @var Varien_Db_Select $select */
+        $select = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->generateSelectForType('salesrule/rule', $entityIds);
+
+        $groupWebsite = array();
+        foreach ($select->getAdapter()->fetchAll($select) as $row) {
+            $groupWebsite[$row['website_id']][] = $row['object_id'];
         }
+
+        foreach ($groupWebsite as $websiteId => $entityIds) {
+            $this->syncSalesRuleForWebsite($entityIds, $websiteId);
+        }
+    }
+
+    /**
+     * @param array $entityIds
+     * @param null $website
+     */
+    public function syncSalesRuleForWebsite(array $entityIds, $website = null)
+    {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: API Integration is disabled');
+
+                return;
+            }
+
+            if (!$helper->isOrderRulesEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: Sales Rule Integration is disabled');
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            $syncBulk = (count($entityIds) > 1);
+
+            try {
+                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject($entityIds, 'Campaign_SalesRule', 'salesrule', $syncBulk);
+
+                    if (!$success) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('Could not add catalog rule(s) to the queue!');
+                    } elseif ($syncBulk) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
+
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                    }
+                }
+                else {
+                    /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Salesrule $campaignMember */
+                    $campaignMember = Mage::helper(sprintf('tnw_salesforce/%s_campaign_salesrule', $syncBulk ? 'bulk' : 'salesforce'));
+                    if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($e->getMessage());
+            }
+        });
     }
 
     public function controllerSalesRulePrepareSave($observer)
@@ -477,12 +461,8 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function quoteSubmitBefore($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce')->isEnabledOrderSync()) {
-            return; // Disabled
-        }
-
         $postOrder = Mage::app()->getRequest()->getPost('order');
-        if (!$postOrder || empty($postOrder['owner_salesforce_id'])) {
+        if (empty($postOrder['owner_salesforce_id'])) {
             return;
         }
 

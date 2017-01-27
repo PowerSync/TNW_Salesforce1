@@ -32,6 +32,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
 
             case 'sf_product_options_text':
                 return $this->convertSfProductOptionsText($_entity);
+
         }
 
         return parent::_prepareValue($_entity);
@@ -218,6 +219,14 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
             foreach ($purchasedItem as $item) {
                 $_summary[] = sprintf('%s (%s / %s)', $item->getLinkTitle(), $item->getNumberOfDownloadsUsed(), $item->getNumberOfDownloadsBought()?$item->getNumberOfDownloadsBought():Mage::helper('downloadable')->__('U'));
             }
+        }
+
+
+        /**
+         * add parent SKU to Description for Bundle items
+         */
+        if (empty($_summary) && $_entity->getBundleItemToSync()) {
+            $_summary[] = $_entity->getBundleItemToSync();
         }
 
         return join(", ", $_summary);

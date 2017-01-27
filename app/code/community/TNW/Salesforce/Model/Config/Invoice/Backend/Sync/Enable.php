@@ -37,7 +37,7 @@ class TNW_Salesforce_Model_Config_Invoice_Backend_Sync_Enable extends Mage_Core_
     protected function _checkInvoiceObject()
     {
         /** @var tnw_salesforce_model_connection $_connection */
-        $_connection = Mage::getSingleton('tnw_salesforce/connection');
+        $_connection = TNW_Salesforce_Model_Connection::createConnection();
         if (!$_connection->initConnection()) {
             return false;
         }

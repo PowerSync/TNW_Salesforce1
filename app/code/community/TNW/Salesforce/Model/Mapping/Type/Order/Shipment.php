@@ -43,7 +43,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Shipment extends TNW_Salesforce_Mo
         ## Put Products into Single field
         $delimiter = '=======================================';
         $lines = array();
-        $lines[] = 'Items invoice:';
+        $lines[] = 'Items shipment:';
         $lines[] = $delimiter;
         $lines[] = 'SKU, Qty, Name';
         $lines[] = $delimiter;

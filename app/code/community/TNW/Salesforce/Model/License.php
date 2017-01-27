@@ -11,7 +11,7 @@ class TNW_Salesforce_Model_License
      */
     public function getStatus()
     {
-        return (bool)Mage::getSingleton('tnw_salesforce/connection')
+        return (bool)TNW_Salesforce_Model_Connection::createConnection()
             ->isConnected();
     }
 
