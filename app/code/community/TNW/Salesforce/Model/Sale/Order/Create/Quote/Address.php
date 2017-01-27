@@ -17,7 +17,10 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappingCollection */
         $mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addFieldToFilter('sf_object', 'OrderItem')
-            ->addFieldToFilter('sf_field', 'UnitPrice');
+            ->addFieldToFilter('sf_field', 'UnitPrice')
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem()
+        ;
 
         /** @var TNW_Salesforce_Model_Mapping $mapping */
         $mapping = $mappingCollection->getFirstItem();

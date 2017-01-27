@@ -141,7 +141,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappingCollection */
         $mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
             ->addFieldToFilter('sf_object', array('eq'=>'OrderItem'))
-            ->addFieldToFilter('sf_field',  array('in'=> array('Quantity', 'UnitPrice')));
+            ->addFieldToFilter('sf_field',  array('in'=> array('Quantity', 'UnitPrice')))
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem()
+        ;
 
         $hasSfField = $mappingCollection->walk('getSfField');
 
