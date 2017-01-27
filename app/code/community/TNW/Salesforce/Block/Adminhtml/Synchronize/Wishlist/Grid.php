@@ -20,20 +20,17 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
 
     protected function _prepareCollection()
     {
-        /** @var Mage_Customer_Model_Resource_Customer $productResource */
-        $productResource = Mage::getResourceModel('customer/customer');
-
-        $firstName = $productResource->getAttribute('firstname');
-        $lastName  = $productResource->getAttribute('lastname');
-
-        /** @var Mage_Wishlist_Model_Resource_Wishlist_Collection $collection */
-        $collection = Mage::getResourceModel('wishlist/wishlist_collection');
-
-        $collection->addFieldToFilter('visibility', 1);
-        $collection->getSelect()
-            ->columns(array('customer_name' => new Zend_Db_Expr('CONCAT(first.value, \' \', last.value)')))
-            ->joinInner(array('first' => $firstName->getBackendTable()), "first.attribute_id = {$firstName->getAttributeId()} AND first.entity_id = main_table.customer_id", array())
-            ->joinInner(array('last' => $lastName->getBackendTable()), "last.attribute_id = {$lastName->getAttributeId()} AND last.entity_id = main_table.customer_id", array());
+        /** @var Mage_Customer_Model_Resource_Customer_Collection $collection */
+        $collection = Mage::getResourceModel('customer/customer_collection');
+        $collection
+            ->addNameToSelect()
+            ->joinTable(
+                array('wishlist'=>'wishlist/wishlist'),
+                'customer_id=entity_id',
+                array('wishlist_id', 'wishlist_name'=>'name', 'wishlist_updated_at'=>'updated_at'),
+                array('visibility'=>'1')
+            )
+        ;
 
         $this->setCollection($collection);
 
@@ -54,8 +51,8 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
             'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
-        $this->addColumn('entity_id', array(
-            'header' => Mage::helper('customer')->__('ID'),
+        $this->addColumn('wishlist_id', array(
+            'header' => Mage::helper('wishlist')->__('ID'),
             'width' => '50px',
             'index' => 'wishlist_id',
             'type' => 'number',
@@ -69,23 +66,25 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                         )
                     ),
                     'field' => 'id',
-                    'getter' => 'getCustomerId',
+                    'getter' => 'getId',
                 )
             ),
         ));
 
         $this->addColumn('name', array(
             'header' => Mage::helper('sales')->__('Name'),
-            'index' => 'name',
+            'index' => 'wishlist_name',
             'type' => 'varchar',
         ));
 
         $this->addColumn('customer_name', array(
-            'header' => Mage::helper('sales')->__('Customer Name'),
-            'index' => 'customer_name',
-            'type' => 'varchar',
-            'filter' => false,
-            'sortable' => false,
+            'header' => Mage::helper('customer')->__('Customer Name'),
+            'index' => 'name'
+        ));
+        $this->addColumn('email', array(
+            'header' => Mage::helper('customer')->__('Customer Email'),
+            'width' => '150',
+            'index' => 'email'
         ));
 
         $this->addColumn('salesforce_id', array(
@@ -98,7 +97,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
 
         $this->addColumn('updated_at', array(
             'header' => Mage::helper('sales')->__('Updated At'),
-            'index' => 'updated_at',
+            'index' => 'wishlist_updated_at',
             'type' => 'datetime',
             'width' => '200px',
         ));
@@ -107,7 +106,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
             'header' => Mage::helper('sales')->__('Action'),
             'width' => '50px',
             'type' => 'action',
-            'getter' => 'getId',
+            'getter' => 'getWishlistId',
             'actions' => array(
                 array(
                     'caption' => Mage::helper('sales')->__('Sync'),
@@ -124,6 +123,9 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
         return parent::_prepareColumns();
     }
 
+    /**
+     * @return $this
+     */
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
