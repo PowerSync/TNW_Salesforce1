@@ -713,21 +713,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     public function getPicklistValues($object, $field)
     {
-        if (!$object || !$field || !is_object($this->getClient())) {
-            return false;
-        }
-        try {
-            $list = $this->describeTable($object);
-            if ($list) {
-                foreach ($list->fields as $_field) {
-                    if ($_field->name == $field) {
-                        $sortedList = $_field->picklistValues;
-                        return $sortedList;
-                    }
+        $list = $this->describeTable($object);
+        if ($list) {
+            foreach ((array)$list->fields as $_field) {
+                if ($_field->name == $field) {
+                    return $_field->picklistValues;
                 }
             }
-
-            return $_field->picklistValues;
         }
 
         return array();

@@ -550,9 +550,6 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError("ERROR: {$_response->errors->message}");
         }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveError(implode("\n", $errorLog));
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(print_r($_object, true));
     }
 
     public function getCurrencies()
