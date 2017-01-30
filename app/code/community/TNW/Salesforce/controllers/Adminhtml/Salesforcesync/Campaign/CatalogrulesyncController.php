@@ -68,69 +68,67 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
 
     /**
      * @param array $entityIds
+     * @throws Exception
      */
     protected function syncEntity(array $entityIds)
     {
-        /** check empty */
-        if (empty($entityIds)) {
-            return;
-        }
-
-        /** @var TNW_Salesforce_Helper_Data $helper */
-        $helper = Mage::helper('tnw_salesforce');
-
-        /** @var Varien_Db_Select $select */
-        $select = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->generateSelectForType('catalogrule/rule', $entityIds);
-
         $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
+        foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
+            /** @var Varien_Db_Select $select */
+            $select = Mage::getSingleton('tnw_salesforce/localstorage')
+                ->generateSelectForType('catalogrule/rule', $_entityIds);
+
+            foreach ($select->getAdapter()->fetchAll($select) as $row) {
+                $groupWebsite[$row['website_id']][] = $row['object_id'];
+            }
         }
 
-        /** @var Mage_Core_Model_App_Emulation $appEmulation */
-        $appEmulation = Mage::getSingleton('core/app_emulation');
         foreach ($groupWebsite as $websiteId => $entityIds) {
-            $website = Mage::app()->getWebsite($websiteId);
-            $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($websiteId, function () use($entityIds) {
+                /** @var TNW_Salesforce_Helper_Data $helper */
+                $helper = Mage::helper('tnw_salesforce');
 
-            if (!$helper->isEnabled()) {
-                $this->_getSession()->addError('API Integration is disabled');
-            }
-            else {
+                if (!$helper->isEnabled()) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('API Integration is disabled');
+
+                    return;
+                }
+
                 $syncBulk = (count($entityIds) > 1);
 
                 try {
-                    if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
                         $success = Mage::getModel('tnw_salesforce/localstorage')
                             ->addObject($entityIds, 'Campaign_CatalogRule', 'catalogrule', $syncBulk);
 
-                        if ($success) {
-                            if ($syncBulk) {
-                                $this->_getSession()->addNotice($this->__('ISSUE: Too many records selected.'));
-                                $this->_getSession()->addSuccess($this->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', $this->getUrl('*/salesforcesync_queue_to/bulk')));
-                            }
-                            else {
-                                $this->_getSession()->addSuccess($this->__('Records are pending addition into the queue!'));
-                            }
+                        if (!$success) {
+                            Mage::getSingleton('tnw_salesforce/tool_log')
+                                ->saveError('Could not add catalog rule(s) to the queue!');
+                        } elseif ($syncBulk) {
+                            Mage::getSingleton('tnw_salesforce/tool_log')
+                                ->saveNotice($helper->__('ISSUE: Too many records selected.'));
+                            Mage::getSingleton('tnw_salesforce/tool_log')
+                                ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
                         }
                         else {
-                            $this->_getSession()->addError('Could not add catalog rule(s) to the queue!');
+                            Mage::getSingleton('tnw_salesforce/tool_log')
+                                ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                         }
                     }
                     else {
                         /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Catalogrule $campaignMember */
                         $campaignMember = Mage::helper(sprintf('tnw_salesforce/%s_campaign_catalogrule', $syncBulk ? 'bulk' : 'salesforce'));
                         if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process()) {
-                            $this->_getSession()->addSuccess($this->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                            Mage::getSingleton('tnw_salesforce/tool_log')
+                                ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
                         }
                     }
                 } catch (Exception $e) {
-                    $this->_getSession()->addError($e->getMessage());
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError($e->getMessage());
                 }
-            }
-
-            $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+            });
         }
     }
 }

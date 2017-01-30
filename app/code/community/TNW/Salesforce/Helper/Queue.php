@@ -6,7 +6,7 @@
 
 class TNW_Salesforce_Helper_Queue extends Mage_Core_Helper_Abstract
 {
-    const UPDATE_LIMIT = 5000;
+    const UPDATE_LIMIT = 1000;
 
     protected $_prefix = NULL;
     protected $_itemIds = array();
