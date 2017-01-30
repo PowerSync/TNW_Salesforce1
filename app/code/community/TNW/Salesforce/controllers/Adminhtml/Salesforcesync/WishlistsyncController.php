@@ -7,7 +7,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_WishlistsyncController extends Mag
      */
     protected function _isAllowed()
     {
-        return Mage::getSingleton('admin/session')->isAllowed('sales/tnw_salesforce/manual_sync/wishlist');
+        return Mage::getSingleton('admin/session')->isAllowed('sales/tnw_salesforce/manual_sync/wishlist')
+            && Mage::helper('tnw_salesforce')->isProfessionalEdition();
     }
 
     /**

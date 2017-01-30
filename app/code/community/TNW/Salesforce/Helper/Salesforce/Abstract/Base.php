@@ -764,7 +764,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param array $chunk
-     * @return mixed
      * @throws Exception
      */
     protected function _pushEntityItems($chunk = array())
@@ -773,7 +772,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @return mixed
      * @throws Exception
      */
     protected function _pushEntity()
