@@ -26,7 +26,7 @@ class TNW_Salesforce_Helper_Test_Login extends TNW_Salesforce_Helper_Test_Abstra
      */
     protected function _performTest()
     {
-        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        $_model = TNW_Salesforce_Model_Connection::createConnection();
 
         try {
             $canLogin = $_model->tryToLogin();

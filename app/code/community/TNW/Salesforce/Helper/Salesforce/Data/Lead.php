@@ -13,14 +13,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     protected $_parent = null;
 
     /**
-     * @comment connect to Salesforce
-     */
-    public function __construct()
-    {
-        $this->checkConnection();
-    }
-
-    /**
      * @param Mage_Customer_Model_Customer[] $customers
      * @param string $leadSource
      * @param string $idPrefix

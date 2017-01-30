@@ -168,7 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
                 $_websitesArray[$_website->getData('website_id')] = $_website->getData('salesforce_id');
             }
             $this->_cache['entitiesUpdating'] = $_websitesArray;
-            $this->_cache['websitesLookup'] = Mage::helper('tnw_salesforce/salesforce_data_website')->websiteLookup($_websitesArray, array_keys($_websitesArray));
+            //$this->_cache['websitesLookup'] = Mage::helper('tnw_salesforce/salesforce_data_website')->websiteLookup($_websitesArray, array_keys($_websitesArray));
 
             return true;
         }

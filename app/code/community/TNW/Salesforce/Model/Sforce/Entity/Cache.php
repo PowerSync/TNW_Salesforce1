@@ -34,13 +34,15 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
      * @param $objectType
      * @param int $page
      * @return array
-     * @throws Exception
      */
     public function searchByName($name, $objectType, $page = 1)
     {
+        $websiteId = Mage::app()->getWebsite()->getId();
+
         $collection = $this->getCollection()
             ->addFieldToFilter('name', array('like' => "%$name%"))
-            ->addFieldToFilter('object_type', array('eq' => $objectType));
+            ->addFieldToFilter('object_type', array('eq' => $objectType))
+            ->addFieldToFilter('website_id', array('eq' => $websiteId));
 
         if (!$collection->getSize()) {
             $collection = $this->generateCollectionByType($objectType)
@@ -59,6 +61,7 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
                         'id'          => $item->getId(),
                         'name'        => $item->getData('Name'),
                         'object_type' => $objectType,
+                        'website_id'  => $websiteId
                     ))
                     ->save();
             }
@@ -107,7 +110,8 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
      */
     public function toArraySearchById($id, $objectType)
     {
-        $result = $this->getResource()->toArraySearchById($id, $objectType);
+        $websiteId = Mage::app()->getWebsite()->getId();
+        $result = $this->getResource()->toArraySearchById($id, $objectType, $websiteId);
 
         if (empty($result)) {
             $collection = $this->generateCollectionByType($objectType)
@@ -126,6 +130,7 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
                         'id'          => $item['Id'],
                         'name'        => $item['Name'],
                         'object_type' => $objectType,
+                        'website_id'  => $websiteId
                     ))
                     ->save();
             }
@@ -139,6 +144,8 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
      */
     public function importFromSalesforce()
     {
+        $websiteId = Mage::app()->getWebsite()->getId();
+
         foreach ($this->cacheTypes as $cacheType) {
             /** @var TNW_Salesforce_Model_Api_Entity_Resource_Collection_Abstract $collection */
             $collection = $this->generateCollectionByType($cacheType)
@@ -146,7 +153,7 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
 
             $collection->getSelect()->order('Id ASC');
             $lastPageNumber = $collection->getLastPageNumber();
-            $this->getResource()->clearType($cacheType);
+            $this->getResource()->clearType($cacheType, $websiteId);
 
             for($i = 1; $i <= $lastPageNumber; $i++) {
                 $collection->clear()->setCurPage($i);
@@ -155,7 +162,8 @@ class TNW_Salesforce_Model_Sforce_Entity_Cache extends Mage_Core_Model_Abstract
                     $data[] = array(
                         'id'            => $item->getId(),
                         'name'          => $item->getData('Name'),
-                        'object_type'   => $cacheType
+                        'object_type'   => $cacheType,
+                        'website_id'    => $websiteId
                     );
                 }
 

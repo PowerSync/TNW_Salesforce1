@@ -29,7 +29,7 @@ class TNW_Salesforce_Helper_Test_License extends TNW_Salesforce_Helper_Test_Abst
      */
     protected function _performTest()
     {
-        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        $_model = TNW_Salesforce_Model_Connection::createConnection();
         return $_model->checkPackage();
     }
 
@@ -38,10 +38,28 @@ class TNW_Salesforce_Helper_Test_License extends TNW_Salesforce_Helper_Test_Abst
      */
     protected static function loadConfigObject()
     {
-        $config = Mage::getModel('core/config_data')
-            ->load(self::VALIDATE_PATH, 'path');
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')
+            ->getWebsiteDifferentConfig();
 
-        return $config->setData('path', self::VALIDATE_PATH);
+        $scopeId = $website->getId();
+        $scope = ($scopeId == Mage_Core_Model_App::ADMIN_STORE_ID)
+            ? 'default' : 'website';
+
+        /** @var Mage_Core_Model_Mysql4_Config_Data_Collection $configCollection */
+        $configCollection = Mage::getResourceModel('core/config_data_collection');
+        $configCollection
+            ->addFieldToFilter('path', self::VALIDATE_PATH)
+            ->addFieldToFilter('scope', $scope)
+            ->addFieldToFilter('scope_id', $scopeId);
+
+        /** @var Mage_Core_Model_Config_Data $config */
+        $config = $configCollection->getFirstItem();
+        return $config->addData(array(
+            'path' => self::VALIDATE_PATH,
+            'scope' => $scope,
+            'scope_id' => $scopeId,
+        ));
     }
 
     /**

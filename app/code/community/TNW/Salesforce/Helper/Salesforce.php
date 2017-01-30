@@ -6,26 +6,23 @@
 
 class TNW_Salesforce_Helper_Salesforce extends TNW_Salesforce_Helper_Abstract
 {
-    public function isConnected() {
-        return Mage::getSingleton('tnw_salesforce/connection')->initConnection();
-    }
-    /**
-     * @return mixed
-     */
-    public function getClient()
+    public function isConnected()
     {
-        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
+        return TNW_Salesforce_Model_Connection::createConnection()->initConnection();
     }
 
     public function isLoggedIn()
     {
-        return Mage::getSingleton('tnw_salesforce/connection')->isLoggedIn();
+        return TNW_Salesforce_Model_Connection::createConnection()->isLoggedIn();
     }
 
-    public function tryToLogin() {
-        Mage::getSingleton('tnw_salesforce/connection')->tryToLogin();
+    public function tryToLogin()
+    {
+        TNW_Salesforce_Model_Connection::createConnection()->tryToLogin();
     }
-    public function getLastErrorMessage() {
-        Mage::getSingleton('tnw_salesforce/connection')->getLastErrorMessage();
+
+    public function getLastErrorMessage()
+    {
+        TNW_Salesforce_Model_Connection::createConnection()->getLastErrorMessage();
     }
 }

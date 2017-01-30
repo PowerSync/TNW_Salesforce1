@@ -92,4 +92,135 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
 
         return $results;
     }
+
+    /**
+     * @return Varien_Db_Select
+     */
+    public static function generateSelectWebsiteDifferent()
+    {
+        /** @var Mage_Core_Model_Resource_Config_Data $resource */
+        $resource = Mage::getResourceModel('core/config_data');
+        $adapter = $resource->getReadConnection();
+
+        return $adapter->select()
+            ->distinct()
+            ->from($resource->getMainTable(), array('scope_id'))
+            ->where($adapter->prepareSqlCondition('path', array('in'=>array(
+                TNW_Salesforce_Helper_Data::API_ENABLED,
+                TNW_Salesforce_Helper_Data::API_USERNAME,
+                TNW_Salesforce_Helper_Data::API_PASSWORD,
+                TNW_Salesforce_Helper_Data::API_TOKEN,
+            ))))
+            ->where($adapter->prepareSqlCondition('scope', 'websites'))
+        ;
+    }
+
+    /**
+     * @param null $website
+     * @return Mage_Core_Model_Website|null
+     */
+    public function getWebsiteDifferentConfig($website = null)
+    {
+        $website = Mage::app()->getWebsite($website);
+        $diffWebsites = $this->getWebsitesDifferentConfig(false);
+        if (!isset($diffWebsites[$website->getId()])) {
+            $website = Mage::app()->getWebsite('admin');
+        }
+
+        return $website;
+    }
+
+    /**
+     * @param bool $withDefault
+     * @return Mage_Core_Model_Website[]
+     */
+    public function getWebsitesDifferentConfig($withDefault = true)
+    {
+        static $tmpWebsites = null;
+        if (is_null($tmpWebsites)) {
+            $tmpWebsites = array();
+            $select = self::generateSelectWebsiteDifferent();
+            foreach ($select->getAdapter()->fetchCol($select) as $websiteId) {
+                $tmpWebsites[$websiteId] = Mage::app()->getWebsite($websiteId);
+            }
+        }
+
+        $addWebsite = array();
+        if ($withDefault) {
+            $website = Mage::app()->getWebsite('admin');
+            $addWebsite[$website->getId()] = $website;
+        }
+
+        return $tmpWebsites + $addWebsite;
+    }
+
+    /**
+     * @param $website
+     * @return Varien_Object
+     */
+    public function startEmulationWebsiteDifferentConfig($website)
+    {
+        $website = $this->getWebsiteDifferentConfig($website);
+        return $this->startEmulationWebsite($website);
+    }
+
+    /**
+     * @param $website
+     * @return Varien_Object
+     */
+    public function startEmulationWebsite($website)
+    {
+        $website = Mage::app()->getWebsite($website);
+        if (Mage::app()->getWebsite()->getId() == $website->getId()) {
+            return new Varien_Object();
+        }
+
+        /** @var Mage_Core_Model_App_Emulation $appEmulation */
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        return $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
+    }
+
+    public function stopEmulationWebsite(Varien_Object $initialEnvironmentInfo)
+    {
+        if ($initialEnvironmentInfo->isEmpty()) {
+            return;
+        }
+
+        /** @var Mage_Core_Model_App_Emulation $appEmulation */
+        $appEmulation = Mage::getSingleton('core/app_emulation');
+        $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+    }
+
+    /**
+     * @param $website
+     * @param $callback
+     * @return mixed
+     * @throws Exception
+     */
+    public function wrapEmulationWebsiteDifferentConfig($website, $callback)
+    {
+        $website = $this->getWebsiteDifferentConfig($website);
+        return $this->wrapEmulationWebsite($website, $callback);
+    }
+
+    /**
+     * @param $website
+     * @param $callback
+     * @return mixed
+     * @throws Exception
+     */
+    public function wrapEmulationWebsite($website, $callback)
+    {
+        $initialEnvironmentInfo = $this->startEmulationWebsite($website);
+
+        try {
+            $return = call_user_func($callback);
+        } catch (Exception $e) {
+            $this->stopEmulationWebsite($initialEnvironmentInfo);
+            throw $e;
+        }
+
+        $this->stopEmulationWebsite($initialEnvironmentInfo);
+        return $return;
+    }
 }

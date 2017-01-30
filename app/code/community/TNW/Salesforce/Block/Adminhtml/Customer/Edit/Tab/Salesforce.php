@@ -11,7 +11,10 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
         $form->setUseContainer(false);
         $form->setFieldNameSuffix('account');
 
-        $data = Mage::registry('current_customer')->getData();
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = Mage::registry('current_customer');
+        $customerWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('customer/customer', $customer->getId());
 
         $fieldset = $form->addFieldset('salesforce_fieldset', array(
             'legend' => Mage::helper('tnw_salesforce')->__('Salesforce')
@@ -21,24 +24,29 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
         $fieldset->addField('salesforce_id', 'salesforceId', array(
             'label' => Mage::helper('tnw_salesforce')->__('Contact'),
             'name' => 'salesforce_id',
+            'website' => $customerWebsite
         ));
 
         $fieldset->addField('salesforce_account_id', 'salesforceId', array(
             'label' => Mage::helper('tnw_salesforce')->__('Account'),
             'name' => 'salesforce_account_id',
+            'website' => $customerWebsite
         ));
 
         $fieldset->addField('salesforce_lead_id', 'salesforceId', array(
             'label' => Mage::helper('tnw_salesforce')->__('Lead'),
             'name' => 'salesforce_lead_id',
+            'website' => $customerWebsite
         ));
 
+        $data = $customer->getData();
         if (!empty($data['salesforce_account_id'])) {
             $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
             $fieldset->addField('salesforce_account_owner_id', 'owner', array(
                 'label' => Mage::helper('tnw_salesforce')->__('Account Owner'),
                 'name' => 'salesforce_account_owner_id',
-                'selector'  => 'tnw-ajax-find-select-account-owner'
+                'selector'  => 'tnw-ajax-find-select-account-owner',
+                'website' => $customerWebsite
             ));
         }
 

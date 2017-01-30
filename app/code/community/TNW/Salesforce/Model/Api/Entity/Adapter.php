@@ -11,12 +11,6 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     protected $_autoQuoteIdentifiers = false;
 
     /**
-     * @comment list of described tables
-     * @var array
-     */
-    protected $_tablesDescription = array();
-
-    /**
      * @var bool
      */
     protected $_queryAll = false;
@@ -133,20 +127,16 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
 
     public function describeTable($tableName, $schemaName = null)
     {
-
-        if (!isset($this->_tablesDescription[$tableName])) {
-            try {
-                $data = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject($tableName);
-                $this->_tablesDescription[$tableName] = $data->fields;
-            } catch (Exception $e) {
-                /**
-                 * some tables can be not available for our module, so, return empty array in this case
-                 */
-                $this->_tablesDescription[$tableName] = array();
-            }
+        try {
+            $data = Mage::helper('tnw_salesforce/salesforce_data')->getClient()->describeSObject($tableName);
+        } catch (Exception $e) {
+            /**
+             * some tables can be not available for our module, so, return empty array in this case
+             */
+            $data = array();
         }
 
-        return $this->_tablesDescription[$tableName];
+        return $data;
     }
 
     /**

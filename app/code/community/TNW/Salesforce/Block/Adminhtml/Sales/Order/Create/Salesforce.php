@@ -15,23 +15,11 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
         $form->addField('owner_salesforce_id', 'owner', array(
             'name'      => 'owner_salesforce_id',
             'selector'  => 'tnw-ajax-find-select-owner-info',
-            'value'     => $this->getSalesforceOwner()
+            'value'     => $this->getSalesforceOwner(),
+            'website'   => $this->getQuoteWebsiteId()
         ));
 
         $this->setForm($form);
-    }
-
-    /**
-     * @return string
-     */
-    protected function getSalesforceOwner()
-    {
-        $mapping  = Mage::getModel('tnw_salesforce/mapping_type_customer');
-        $customer = $this->_getSession()->getQuote()->getCustomer();
-
-        return $customer->getData('salesforce_id')
-            ? $mapping->convertSalesforceContactOwnerId($customer)
-            : $mapping->convertSalesforceLeadOwnerId($customer);
     }
 
     /**
@@ -45,11 +33,40 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
     }
 
     /**
+     * @return int
+     */
+    protected function getQuoteWebsiteId()
+    {
+        return Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('sales/quote', $this->_getSession()->getQuote()->getId());
+    }
+
+    /**
+     * @return string
+     */
+    protected function getSalesforceOwner()
+    {
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = $this->_getSession()->getQuote()->getCustomer();
+        return Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($this->getQuoteWebsiteId(), function () use($customer) {
+            $mapping  = Mage::getModel('tnw_salesforce/mapping_type_customer');
+
+            return $customer->getData('salesforce_id')
+                ? $mapping->convertSalesforceContactOwnerId($customer)
+                : $mapping->convertSalesforceLeadOwnerId($customer);
+        });
+    }
+
+    /**
      * @return string
      */
     protected function _toHtml()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled()) {
+        $isEnable = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($this->getQuoteWebsiteId(), function () {
+            return Mage::helper('tnw_salesforce')->isEnabled();
+        });
+
+        if (!$isEnable) {
             return '';
         }
 

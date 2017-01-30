@@ -16,17 +16,19 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     {
         $value = $this->_prepareValue($_entity);
 
-        $fields = Mage::helper('tnw_salesforce/salesforce_data')
+        $describe = Mage::helper('tnw_salesforce/salesforce_data')
             ->describeTable($this->_mapping->getSfObject());
 
         /**
          * try to find SF field
          */
         $appropriatedField = false;
-        foreach ($fields as $field) {
-            if (strtolower($field->name) == strtolower($this->_mapping->getSfField())) {
-                $appropriatedField = $field;
-                break;
+        if (!empty($describe->fields)) {
+            foreach ($describe->fields as $field) {
+                if (strtolower($field->name) == strtolower($this->_mapping->getSfField())) {
+                    $appropriatedField = $field;
+                    break;
+                }
             }
         }
 
@@ -69,6 +71,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
                 $value = null;
             }
+        } else {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice("Field \"{$this->_mapping->getSfObject()}::{$this->_mapping->getSfField()}\" not found in SF! Skipped field.");
+
+            $value = null;
         }
 
 

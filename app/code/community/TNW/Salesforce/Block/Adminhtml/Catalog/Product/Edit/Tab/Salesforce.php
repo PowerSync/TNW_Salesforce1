@@ -7,6 +7,9 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit_Tab_Salesforce
 
     protected function _prepareForm()
     {
+        $website = Mage::app()->getStore($this->getRequest()->getParam('store'))->getWebsite();
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+
         $form = new Varien_Data_Form();
         $form->setUseContainer(false);
         $form->setFieldNameSuffix('product');
@@ -16,21 +19,19 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit_Tab_Salesforce
         ));
 
         $fieldset->addType('salesforceId', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_salesforceId'));
+        $fieldset->addType('campaign', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_campaign'));
+
         $fieldset->addField('salesforce_id', 'salesforceId', array(
             'label'     => Mage::helper('tnw_salesforce')->__('Salesforce ID'),
             'name'      => 'salesforce_id',
+            'website'   => $website
         ));
 
-        /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_Pricebooks $renderer */
-        $renderer = Mage::getSingleton('core/layout')
-            ->createBlock('tnw_salesforce/adminhtml_catalog_product_renderer_pricebooks');
-
-        $fieldset
-            ->addField('salesforce_pricebook_id', 'text', array(
-                'label'     => Mage::helper('tnw_salesforce')->__('Salesforce Pricebook ID'),
-                'name'      => 'salesforce_pricebook_id',
-            ))
-            ->setRenderer($renderer);
+        $fieldset->addField('salesforce_pricebook_id', 'salesforceId', array(
+            'label'     => Mage::helper('tnw_salesforce')->__('Salesforce Pricebook ID'),
+            'name'      => 'salesforce_pricebook_id',
+            'website'   => $website
+        ));
 
         /** @var TNW_Salesforce_Block_Adminhtml_Catalog_Product_Renderer_InSync $renderer */
         $renderer = Mage::getSingleton('core/layout')
@@ -52,11 +53,11 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit_Tab_Salesforce
             ),
         ));
 
-        $fieldset->addType('campaign', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_campaign'));
         $fieldset->addField('salesforce_campaign_id', 'campaign', array(
             'label'     => Mage::helper('tnw_salesforce')->__('Salesforce Campaign'),
             'name'      => 'salesforce_campaign_id',
-            'selector'  => 'tnw-ajax-find-select-campaign'
+            'selector'  => 'tnw-ajax-find-select-campaign',
+            'website'   => $website
         ));
 
         $form->setValues(Mage::registry('current_product')->getData());

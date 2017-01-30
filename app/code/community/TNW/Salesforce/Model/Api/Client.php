@@ -10,17 +10,12 @@ class TNW_Salesforce_Model_Api_Client
 
     protected function getConnection()
     {
-        return Mage::getSingleton('tnw_salesforce/connection');
+        return TNW_Salesforce_Model_Connection::createConnection();
     }
 
     protected function getClient()
     {
-        if (is_null($this->client)) {
-            $this->getConnection()->initConnection();
-            $this->client = $this->getConnection()->getClient();
-        }
-
-        return $this->client;
+        return $this->getConnection()->getClient();
     }
 
     /**
