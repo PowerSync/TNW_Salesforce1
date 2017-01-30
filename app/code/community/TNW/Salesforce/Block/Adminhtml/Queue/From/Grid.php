@@ -50,7 +50,8 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
         $this->addColumn('object_type', array(
             'header' => Mage::helper('tnw_salesforce')->__('Object Type'),
             'type' => 'text',
-            'index' => 'object_type'
+            'index' => 'object_type',
+            'width' => '70px',
         ));
 
         $this->addColumn('status', array(
@@ -63,6 +64,7 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
                 TNW_Salesforce_Model_Import::STATUS_ERROR       => $this->__('Error'),
             ),
             'index' => 'status',
+            'width' => '70px',
         ));
 
         $this->addColumn('message', array(
@@ -75,6 +77,24 @@ class TNW_Salesforce_Block_Adminhtml_Queue_From_Grid extends Mage_Adminhtml_Bloc
             'header'    => Mage::helper('tnw_salesforce')->__('JSON'),
             'index'     => 'json',
             'renderer'  => 'tnw_salesforce/adminhtml_widget_grid_column_renderer_json'
+        ));
+
+        $this->addColumn('singleAction', array(
+            'header' => Mage::helper('sales')->__('Action'),
+            'width' => '50px',
+            'type' => 'action',
+            'getter' => 'getId',
+            'actions' => array(
+                array(
+                    'caption' => Mage::helper('sales')->__('Sync'),
+                    'url' => array('base' => '*/*/sync'),
+                    'field' => 'queue',
+                    'getter' => 'getId',
+                )
+            ),
+            'filter' => false,
+            'sortable' => false,
+            'is_system' => true,
         ));
 
         return parent::_prepareColumns();
