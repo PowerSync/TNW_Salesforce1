@@ -563,6 +563,27 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::ORDER_USE_DISCOUNT_PRODUCT);
     }
 
+    /**
+     * @param $feeType
+     * @return bool
+     */
+    public function useFeeByType($feeType)
+    {
+        switch ($feeType) {
+            case 'tax':
+                return $this->useTaxFeeProduct();
+
+            case 'discount':
+                return $this->useDiscountFeeProduct();
+
+            case 'shipping':
+                return $this->useShippingFeeProduct();
+
+            default:
+                return false;
+        }
+    }
+
     // Use Shipping Fee Product
 
     public function syncAllOrders()

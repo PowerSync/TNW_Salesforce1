@@ -224,22 +224,33 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      */
     protected function isTotalChange($order, $object)
     {
-        $feeIds   = $this->getFeeIds();
-        foreach ($object->OrderItems->records as $record) {
-            $feeType = array_search($record->PricebookEntry->Product2Id, $feeIds);
-            if ($feeType === false) {
+        foreach ($this->getFeeIds() as $feeType => $productId) {
+            if (empty($productId)) {
+                continue;
+            }
+
+            if (!Mage::helper('tnw_salesforce')->useFeeByType($feeType)) {
                 continue;
             }
 
             if (!Mage::helper('tnw_salesforce')->isUpdateTotalByFeeType($feeType)) {
-                $magentoPrice = $record->UnitPrice;
-            } else {
-                $magentoPrice = empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode)
-                    ? $order->getData("base_{$feeType}_amount")
-                    : $order->getData("{$feeType}_amount");
+                continue;
             }
 
-            if (!$this->priceCompare($magentoPrice, $record->UnitPrice)) {
+            $magentoPrice = empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode)
+                ? (float)$order->getData("base_{$feeType}_amount")
+                : (float)$order->getData("{$feeType}_amount");
+
+            if (empty($magentoPrice)) {
+                continue;
+            }
+
+            $orderItem = $this->searchOrderItemByProductId($object->OrderItems->records, $productId);
+            if (null === $orderItem) {
+                return true;
+            }
+
+            if (!$this->priceCompare($magentoPrice, $orderItem->UnitPrice)) {
                 return true;
             }
         }
@@ -248,37 +259,49 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
+     * @param array $orderItems
+     * @param string $productId
+     * @return stdClass|null
+     */
+    public function searchOrderItemByProductId(array $orderItems, $productId)
+    {
+        foreach ($orderItems as $orderItem) {
+            if (strcasecmp($orderItem->PricebookEntry->Product2Id, $productId) !== 0) {
+                continue;
+            }
+
+            return $orderItem;
+        }
+
+        return null;
+    }
+
+    /**
      * @return array
      */
     public function getFeeIds()
     {
-        static $feeIds = null;
-        if (is_null($feeIds)) {
-            $feeIds = array_map(function ($feeData) {
-                if (empty($feeData)) {
-                    return null;
-                }
+        return array_filter(array_map(function ($feeData) {
+            if (empty($feeData)) {
+                return null;
+            }
 
-                $feeData = @unserialize($feeData);
-                if (empty($feeData)) {
-                    return null;
-                }
+            $feeData = @unserialize($feeData);
+            if (empty($feeData)) {
+                return null;
+            }
 
-                return $feeData['Id'];
-            }, array(
-                'tax'      => Mage::helper('tnw_salesforce')->getTaxProduct(),
-                'shipping' => Mage::helper('tnw_salesforce')->getShippingProduct(),
-                'discount' => Mage::helper('tnw_salesforce')->getDiscountProduct(),
-            ));
-        }
-
-        return $feeIds;
+            return $feeData['Id'];
+        }, array(
+            'tax'      => Mage::helper('tnw_salesforce')->getTaxProduct(),
+            'shipping' => Mage::helper('tnw_salesforce')->getShippingProduct(),
+            'discount' => Mage::helper('tnw_salesforce')->getDiscountProduct(),
+        )));
     }
 
     /**
      * @param $orderCreate TNW_Salesforce_Model_Sale_Order_Create
      * @param $object
-     * @param $mappings
      * @return Mage_Sales_Model_Order
      * @throws Exception
      */

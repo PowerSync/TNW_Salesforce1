@@ -50,20 +50,18 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
             $code = $model->getCode();
 
             $price = $this->priceByFeeType($code);
-            if (is_null($price) && in_array($code, $clearType)) {
+            if (null === $price && in_array($code, $clearType)) {
                 $price = 0;
             }
 
             // Default calculate price
-            if (is_null($price)) {
+            if (null === $price) {
                 $model->collect($this);
                 continue;
             }
 
-            $this->addData(array(
-                "{$code}_amount" => $isBase ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price,
-                "base_{$code}_amount" => !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price
-            ));
+            $this->setTotalAmount($code, $isBase ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price);
+            $this->setBaseTotalAmount($code, !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price);
 
             if ($code == 'discount') {
                 $baseSubtotalWithDiscount = $subtotalWithDiscount = 0;
@@ -76,8 +74,10 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
                 $this->setBaseSubtotalWithDiscount($baseSubtotalWithDiscount);
             }
 
-            $this->setGrandTotal($this->getGrandTotal() + $this->getData("{$code}_amount"));
-            $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getData("base_{$code}_amount"));
+            if ($code != 'shipping') {
+                $this->setGrandTotal($this->getGrandTotal() + $this->getData("{$code}_amount"));
+                $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getData("base_{$code}_amount"));
+            }
         }
 
         Mage::dispatchEvent($this->_eventPrefix . '_collect_totals_after', array($this->_eventObject => $this));
@@ -90,6 +90,10 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
      */
     protected function priceByFeeType($feeType)
     {
+        if (!Mage::helper('tnw_salesforce')->useFeeByType($feeType)) {
+            return null;
+        }
+
         if (!Mage::helper('tnw_salesforce')->isUpdateTotalByFeeType($feeType)) {
             return null;
         }
@@ -100,15 +104,18 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
         }
 
         $feeIds = Mage::helper('tnw_salesforce/magento_order')->getFeeIds();
-        foreach ($object->OrderItems->records as $record) {
-            if ($record->PricebookEntry->Product2Id != $feeIds[$feeType]) {
-                continue;
-            }
-
-            return $record->UnitPrice;
+        if (empty($feeIds[$feeType])) {
+            return null;
         }
 
-        return null;
+        $orderItem = Mage::helper('tnw_salesforce/magento_order')
+            ->searchOrderItemByProductId($object->OrderItems->records, $feeIds[$feeType]);
+
+        if (null === $orderItem) {
+            return 0;
+        }
+
+        return $orderItem->UnitPrice;
     }
 
     /**
