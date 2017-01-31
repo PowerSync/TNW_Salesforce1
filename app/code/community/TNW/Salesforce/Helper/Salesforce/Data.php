@@ -573,7 +573,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             unset($e, $obj, $id);
-            return false;
+            return array();
         }
     }
 
