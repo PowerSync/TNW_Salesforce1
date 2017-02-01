@@ -148,16 +148,19 @@ class TNW_Salesforce_Model_Sale_Observer
 
     /**
      * @param array $entityIds
+     * @throws Exception
      */
     public function syncOrder(array $entityIds)
     {
-        /** @var Varien_Db_Select $select */
-        $select = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->generateSelectForType('sales/order', $entityIds);
-
         $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
+        foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
+            /** @var Varien_Db_Select $select */
+            $select = Mage::getSingleton('tnw_salesforce/localstorage')
+                ->generateSelectForType('sales/order', $_entityIds);
+
+            foreach ($select->getAdapter()->fetchAll($select) as $row) {
+                $groupWebsite[$row['website_id']][] = $row['object_id'];
+            }
         }
 
         foreach ($groupWebsite as $websiteId => $entityIds) {
@@ -168,6 +171,7 @@ class TNW_Salesforce_Model_Sale_Observer
     /**
      * @param array $entityIds
      * @param null $website
+     * @throws Exception
      */
     public function syncOrderForWebsite(array $entityIds, $website = null)
     {
@@ -357,17 +361,19 @@ class TNW_Salesforce_Model_Sale_Observer
 
     /**
      * @param array $entityIds
+     * @throws Exception
      */
     public function syncSalesRule(array $entityIds)
     {
-
-        /** @var Varien_Db_Select $select */
-        $select = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->generateSelectForType('salesrule/rule', $entityIds);
-
         $groupWebsite = array();
-        foreach ($select->getAdapter()->fetchAll($select) as $row) {
-            $groupWebsite[$row['website_id']][] = $row['object_id'];
+        foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
+            /** @var Varien_Db_Select $select */
+            $select = Mage::getSingleton('tnw_salesforce/localstorage')
+                ->generateSelectForType('salesrule/rule', $_entityIds);
+
+            foreach ($select->getAdapter()->fetchAll($select) as $row) {
+                $groupWebsite[$row['website_id']][] = $row['object_id'];
+            }
         }
 
         foreach ($groupWebsite as $websiteId => $entityIds) {
@@ -378,6 +384,7 @@ class TNW_Salesforce_Model_Sale_Observer
     /**
      * @param array $entityIds
      * @param null $website
+     * @throws Exception
      */
     public function syncSalesRuleForWebsite(array $entityIds, $website = null)
     {
