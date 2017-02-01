@@ -609,6 +609,23 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         return call_user_func_array('array_merge', $_records);
     }
 
+    /**
+     * @param $obj
+     * @param $field
+     * @return null
+     */
+    protected function getProperty($obj, $field)
+    {
+        foreach (explode('/', $field) as $_field) {
+            if (!property_exists($obj, $_field)) {
+                return null;
+            }
+
+            $obj = $obj->$_field;
+        }
+
+        return $obj;
+    }
 
     /*               ---- OLD SHIT -------                            */
 
