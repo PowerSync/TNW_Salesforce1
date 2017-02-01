@@ -60,23 +60,64 @@ class TNW_Salesforce_Model_Sale_Order_Create_Quote_Address extends Mage_Sales_Mo
                 continue;
             }
 
-            $this->setTotalAmount($code, $isBase ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price);
-            $this->setBaseTotalAmount($code, !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price);
+            $total = $isBase ? $this->convertPrice($price, $quote->getBaseCurrencyCode(), $quote->getQuoteCurrencyCode()) : $price;
+            $baseTotal = !$isBase ? $this->convertPrice($price, $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode()) : $price;
 
-            if ($code == 'discount') {
-                $baseSubtotalWithDiscount = $subtotalWithDiscount = 0;
-                foreach ($this->getAllItems() as $item) {
-                    $subtotalWithDiscount+=$item->getRowTotal();
-                    $baseSubtotalWithDiscount+=$item->getBaseRowTotal();
-                }
+            switch ($code) {
+                case 'discount':
+                    $baseSubtotalWithDiscount = $subtotalWithDiscount = 0;
 
-                $this->setSubtotalWithDiscount($subtotalWithDiscount);
-                $this->setBaseSubtotalWithDiscount($baseSubtotalWithDiscount);
-            }
+                    $items = $this->getAllItems();
+                    if (!count($items)) {
+                        $this->setDiscountAmount(0);
+                        $this->setSubtotalWithDiscount($subtotalWithDiscount);
+                        $this->setBaseDiscountAmount(0);
+                        $this->setBaseSubtotalWithDiscount($baseSubtotalWithDiscount);
+                        break;
+                    }
 
-            if ($code != 'shipping') {
-                $this->setGrandTotal($this->getGrandTotal() + $this->getData("{$code}_amount"));
-                $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getData("base_{$code}_amount"));
+                    /** @var Mage_Sales_Model_Quote_Item $item */
+                    foreach ($items as $item) {
+                        $item->setDiscountAmount(0);
+                        $item->setBaseDiscountAmount(0);
+                        $item->setRowTotalWithDiscount($item->getRowTotal());
+                        $item->setBaseRowTotalWithDiscount($item->getBaseRowTotal());
+
+                        $subtotalWithDiscount+=$item->getRowTotalWithDiscount();
+                        $baseSubtotalWithDiscount+=$item->getBaseRowTotalWithDiscount();
+                    }
+
+                    $this->setDiscountAmount($total);
+                    $this->setSubtotalWithDiscount($subtotalWithDiscount);
+                    $this->setBaseDiscountAmount($baseTotal);
+                    $this->setBaseSubtotalWithDiscount($baseSubtotalWithDiscount);
+
+                    $this->setGrandTotal($this->getGrandTotal() - abs($total));
+                    $this->setBaseGrandTotal($this->getBaseGrandTotal() - abs($baseTotal));
+                    break;
+
+                case 'shipping':
+                    $items = $this->getAllNonNominalItems();
+                    if (!count($items)) {
+                        break;
+                    }
+
+                    $this->setShippingAmount($total);
+                    $this->setBaseShippingAmount($baseTotal);
+                    break;
+
+                case 'tax':
+                    $items = $this->getAllItems();
+                    if (!count($items)) {
+                        break;
+                    }
+
+                    $this->setTaxAmount($total);
+                    $this->setBaseTaxAmount($baseTotal);
+
+                    $this->setGrandTotal($this->getGrandTotal() + $this->getTaxAmount());
+                    $this->setBaseGrandTotal($this->getBaseGrandTotal() + $this->getBaseTaxAmount());
+                    break;
             }
         }
 
