@@ -116,15 +116,28 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     }
 
     /**
+     * @param string|int|Mage_Core_Model_Website $website
+     * @return Mage_Core_Model_Website
+     */
+    public function getWebsite($website = null)
+    {
+        if ('' === $website) {
+            $website = null;
+        }
+
+        return Mage::app()->getWebsite($website);
+    }
+
+    /**
      * @param null $website
      * @return Mage_Core_Model_Website|null
      */
     public function getWebsiteDifferentConfig($website = null)
     {
-        $website = Mage::app()->getWebsite($website);
+        $website = $this->getWebsite($website);
         $diffWebsites = $this->getWebsitesDifferentConfig(false);
         if (!isset($diffWebsites[$website->getId()])) {
-            $website = Mage::app()->getWebsite('admin');
+            $website = $this->getWebsite('admin');
         }
 
         return $website;
@@ -147,7 +160,7 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
 
         $addWebsite = array();
         if ($withDefault) {
-            $website = Mage::app()->getWebsite('admin');
+            $website = $this->getWebsite('admin');
             $addWebsite[$website->getId()] = $website;
         }
 
@@ -170,8 +183,8 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
      */
     public function startEmulationWebsite($website)
     {
-        $website = Mage::app()->getWebsite($website);
-        if (Mage::app()->getWebsite()->getId() == $website->getId()) {
+        $website = $this->getWebsite($website);
+        if ($this->getWebsite()->getId() == $website->getId()) {
             return new Varien_Object();
         }
 

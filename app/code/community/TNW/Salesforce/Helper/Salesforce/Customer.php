@@ -642,33 +642,22 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_fixPersonAccountFields($this->_cache['accountsToUpsert']['Id'][$_id]);
             }
         } else if ($type == "Account") {
-            /**
-             * At the present time not possible change RecordType if some other date defined for account sync
-             */
-            if (property_exists($this->_obj, 'Id') /*&& !property_exists($this->_obj, 'RecordTypeId')*/) {
-                $this->_obj->RecordTypeId = ($this->_cache['accountLookup'][0][$_email]->RecordTypeId)
-                    ? $this->_cache['accountLookup'][0][$_email]->RecordTypeId
-                    : Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
-            } elseif (isset($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email])) {
-                $this->_obj->RecordTypeId
-                    = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
+
+            $_personType = null;
+            if (!empty($this->_obj->RecordTypeId)) {
+                $_personType = $this->_obj->RecordTypeId;
+            } elseif (!empty($this->_cache['accountLookup'][0][$_email]->RecordTypeId)) {
+                $_personType = $this->_cache['accountLookup'][0][$_email]->RecordTypeId;
             }
 
-            $_personType = Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE);
-            $this->_isPerson = (property_exists($this->_obj, 'RecordTypeId') && !empty($this->_obj->RecordTypeId) && $this->_obj->RecordTypeId == $_personType);
+            $this->_isPerson = ($_personType == Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE));
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
             }
 
-            //Unset Record Type if blank
-            if (property_exists($this->_obj, 'RecordTypeId') && empty($this->_obj->RecordTypeId)) {
-                unset($this->_obj->RecordTypeId);
-            }
-
             $nameCompare = !empty($this->_cache['accountLookup'][0][$_email]->Name)
-                ? strcasecmp(TNW_Salesforce_Model_Mapping_Type_Customer::generateCompanyByCustomer($_customer), trim($this->_cache['accountLookup'][0][$_email]->Name)) == 0
-                : false;
+                && strcasecmp(TNW_Salesforce_Model_Mapping_Type_Customer::generateCompanyByCustomer($_customer), trim($this->_cache['accountLookup'][0][$_email]->Name)) == 0;
 
             $company = TNW_Salesforce_Model_Mapping_Type_Customer::getCompanyByCustomer($_customer);
             if ($nameCompare && !empty($company)) {
@@ -1357,14 +1346,16 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_customer = $this->getEntityCache($_data->MagentoId)
                     ->addData($_saveAttributes);
 
-                if (!$_customer->getId()) {
+                /**
+                 * skip fake customer, these customer don't exist in magento and use email instead Id
+                 */
+                $_magentoId = $this->_getEntityId($_customer);
+                if (!is_numeric($_magentoId)) {
                     continue;
                 }
 
-                if (!strpos($_data->MagentoId, 'guest_') === 0) {
-                    foreach (array_keys($_saveAttributes) as $_code) {
-                        $_customer->getResource()->saveAttribute($_customer, $_code);
-                    }
+                foreach (array_keys($_saveAttributes) as $_code) {
+                    $_customer->getResource()->saveAttribute($_customer, $_code);
                 }
 
                 Mage::getSingleton('tnw_salesforce/tool_log')

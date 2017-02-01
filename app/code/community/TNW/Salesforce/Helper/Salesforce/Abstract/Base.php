@@ -662,6 +662,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     /**
      * @param $_entity
      * @return mixed
+     */
+    public function getEntityNumber($_entity)
+    {
+        return $this->_getEntityNumber($_entity);
+    }
+
+    /**
+     * @param $_entity
+     * @return mixed
      * @throws Exception
      */
     protected function _getEntityNumber($_entity)

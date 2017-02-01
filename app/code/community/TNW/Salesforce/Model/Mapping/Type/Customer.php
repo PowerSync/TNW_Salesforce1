@@ -129,6 +129,16 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     public function convertSfRecordType($_entity)
     {
         $_websiteId = $_entity->getData('website_id');
+
+        $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
+        if (
+            $currentHelper instanceof TNW_Salesforce_Helper_Salesforce_Customer
+            && isset($currentHelper->_cache['contactsLookup'][$currentHelper->getWebsiteSfIds($_websiteId)][$currentHelper->getEntityNumber($_entity)])
+        ) {
+            return Mage::app()->getWebsite($_websiteId)
+                ->getConfig(TNW_Salesforce_Helper_Data::BUSINESS_RECORD_TYPE);
+        }
+
         $_forceRecordType = Mage::app()->getWebsite($_websiteId)
             ->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE);
 
