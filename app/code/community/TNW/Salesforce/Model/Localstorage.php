@@ -287,7 +287,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                     ->from(array('product'=>$resource->getEntityTable()), array('object_id' => 'entity_id'))
                     ->joinLeft(array('website'=>$resource->getTable('catalog/product_website')), 'product.entity_id = website.product_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->joinLeft(array('diff_websites'=>$selectDiff), 'diff_websites.scope_id = website.website_id', array())
-                    ->group(array('diff_websites.scope_id'))
+                    ->group(array('diff_websites.scope_id', 'product.entity_id'))
                     ->where($connection->prepareSqlCondition('product.entity_id', array('in'=>$idSet)))
                 ;
 
