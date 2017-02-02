@@ -139,7 +139,7 @@ class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_
             ->lookup($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
 
         $ordersUpdating = array();
-        foreach (array_chunk(array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), 1) as $ids) {
+        foreach (array_chunk(array_keys($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]), TNW_Salesforce_Helper_Salesforce_Data::UPDATE_LIMIT) as $ids) {
 
             $ordersCollection = Mage::getModel('sales/order_creditmemo')->getCollection();
 

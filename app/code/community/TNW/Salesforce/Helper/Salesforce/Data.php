@@ -573,7 +573,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
             unset($e, $obj, $id);
-            return false;
+            return array();
         }
     }
 
@@ -609,6 +609,23 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         return call_user_func_array('array_merge', $_records);
     }
 
+    /**
+     * @param $obj
+     * @param $field
+     * @return null
+     */
+    protected function getProperty($obj, $field)
+    {
+        foreach (explode('/', $field) as $_field) {
+            if (!property_exists($obj, $_field)) {
+                return null;
+            }
+
+            $obj = $obj->$_field;
+        }
+
+        return $obj;
+    }
 
     /*               ---- OLD SHIT -------                            */
 
@@ -707,33 +724,22 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
-     * @param null $object
-     * @param null $field
-     * @return bool
+     * @param string $object
+     * @param string $field
+     * @return stdClass[]
      */
-    public function getPicklistValues($object = NULL, $field = NULL)
+    public function getPicklistValues($object, $field)
     {
-        if (!$object || !$field || !is_object($this->getClient())) {
-            return false;
-        }
-        try {
-            $list = $this->describeTable($object);
-            if ($list) {
-                foreach ($list->fields as $_field) {
-                    if ($_field->name == $field) {
-                        $sortedList = $_field->picklistValues;
-                        return $sortedList;
-                    }
+        $list = $this->describeTable($object);
+        if ($list) {
+            foreach ((array)$list->fields as $_field) {
+                if ($_field->name == $field) {
+                    return $_field->picklistValues;
                 }
             }
-            unset($list);
-            return false;
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not get picklist (" . $field . ") values from " . $object . " Object");
-            unset($e);
-            return false;
         }
+
+        return array();
     }
 
     /**

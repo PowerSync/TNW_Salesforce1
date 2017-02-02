@@ -48,8 +48,6 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
     public function syncCreditMemoForWebsite(array $entityIds, $website = null)
     {
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
-            $website = Mage::app()->getWebsite();
-
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
@@ -60,7 +58,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
                 return;
             }
 
-            if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
+            if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemo()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('SKIPPING: Credit Memo synchronization disabled');
 
