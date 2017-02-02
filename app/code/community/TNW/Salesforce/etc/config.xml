@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.57.08.0000</version>
+            <version>0.01.58.01.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -779,6 +779,7 @@
             <wishlist>
                 <sync_enable>0</sync_enable>
                 <close_date>2</close_date>
+                <enable_contact_role>0</enable_contact_role>
             </wishlist>
         </salesforce_customer>
         <salesforce_product>

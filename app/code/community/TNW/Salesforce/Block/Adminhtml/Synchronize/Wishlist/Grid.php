@@ -30,18 +30,13 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
         $collection
             ->addNameToSelect()
             ->addAttributeToSelect('email')
-            ->joinTable(
-                array('wishlist'=>'wishlist/wishlist'),
-                'customer_id=entity_id',
-                array(
-                    'wishlist_id',
-                    'wishlist_name'=>'name',
-                    'wishlist_updated_at'=>'updated_at',
-                    //'wishlist_sf_insync'=>'sf_insync',
-                    //'wishlist_salesforce_id'=>'salesforce_id',
-                ),
-                array(/*'visibility'=>'1'*/)
-            )
+            ->joinTable(array('wishlist'=>'wishlist/wishlist'), 'customer_id=entity_id', array(
+                'wishlist_id',
+                'wishlist_name' => 'name',
+                'wishlist_updated_at' => 'updated_at',
+                'wishlist_sf_insync' => 'sf_insync',
+                'wishlist_salesforce_id' => 'salesforce_id',
+            ))
         ;
 
         $this->setCollection($collection);
@@ -54,7 +49,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
      */
     protected function _prepareColumns()
     {
-        $this->addColumn('sf_insync', array(
+        $this->addColumn('wishlist_sf_insync', array(
             'header' => Mage::helper('sales')->__('Status'),
             'width' => '40',
             'type' => 'options',

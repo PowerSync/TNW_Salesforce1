@@ -122,7 +122,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
                 return Mage::helper('tnw_salesforce/magento_shipment');
             case 'Opportunity':
                 $magentoId = Mage::helper('tnw_salesforce/config')->getMagentoIdField();
-                if (false !== strpos($this->getObjectProperty($magentoId), 'wish_')) {
+                if (false !== strpos($this->getObjectProperty($magentoId), TNW_Salesforce_Helper_Salesforce_Wishlist::SALESFORCE_ENTITY_PREFIX)) {
                     return Mage::helper('tnw_salesforce/magento_wishlist');
                 }
 

@@ -94,7 +94,7 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     {
         parent::_afterLoad();
 
-        $cutLocalField = explode(" : ", $this->getLocalField());
+        $cutLocalField = array_map('trim', explode(':', $this->getLocalField(), 2));
         if (count($cutLocalField) > 1) {
             $this->setLocalFieldType($cutLocalField[0]);
             $this->setLocalFieldAttributeCode($cutLocalField[1]);

@@ -17,7 +17,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param string $leadSource
      * @param string $idPrefix
      * @return array
-     * @throws Mage_Core_Exception
      */
     public function lookup($customers, $leadSource = '', $idPrefix = '')
     {

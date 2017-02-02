@@ -124,7 +124,8 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         );
 
         $this->_acl['wishlist'] = array(
-            'Wishlist'
+            'Wishlist',
+            'WishlistItem'
         );
 
         $this->_acl['wishlistItem'] = array(
@@ -1069,9 +1070,19 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $describe = $resource->getReadConnection()
                 ->describeTable($resource->getMainTable());
 
+            $_additionalAttributes = array(
+                'number' => 'Number',
+                'cart_all' => 'All Cart Items (Text)',
+                'website' => 'Associate to Website',
+                'sf_stage' => 'Salesforce Stage',
+                'sf_name' => 'Salesforce Name',
+                'sf_close_date' => 'Close Date',
+                'owner_salesforce_id' => 'Salesforce Owner Id'
+            );
+
             $this->_cache[$type]['wishlist'] = array(
                 'label' => 'Wishlist',
-                'value' => $this->prepareAttributes($describe, 'Wishlist', array(), array('salesforce_id'))
+                'value' => $this->prepareAttributes($describe, 'Wishlist', $_additionalAttributes, array('salesforce_id'))
             );
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not load Magento quote items schema...');
@@ -1087,9 +1098,14 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             $describe = $resource->getReadConnection()
                 ->describeTable($resource->getMainTable());
 
+            $_additionalAttributes = array(
+                'sf_product_options_html'                       => 'Product Options (HTML)',
+                'sf_product_options_text'                       => 'Product Options (Text)',
+            );
+
             $this->_cache[$type]['wishlistItem'] = array(
                 'label' => 'Wishlist Item',
-                'value' => $this->prepareAttributes($describe, 'Wishlist Item')
+                'value' => $this->prepareAttributes($describe, 'Wishlist Item', $_additionalAttributes)
             );
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError('Could not load Magento quote items schema...');
