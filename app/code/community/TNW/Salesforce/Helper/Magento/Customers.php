@@ -725,16 +725,15 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
     protected function _findMagentoCustomer()
     {
-        $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
-        if (property_exists($this->_salesforceObject, $_websiteSfField)) {
-            $_websiteSfId = Mage::helper('tnw_salesforce')
-                ->prepareId($this->_salesforceObject->{$_websiteSfField});
+        $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+            . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
-            $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
-            if ($_websiteId !== false) {
-                $this->_websiteId = $_websiteId;
-            }
-        }
+        $_websiteSfId = property_exists($this->_salesforceObject, $_websiteSfField)
+            ? Mage::helper('tnw_salesforce')->prepareId($this->_salesforceObject->{$_websiteSfField}) : null;
+
+        $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
+        $this->_websiteId = $_websiteId === false
+            ? Mage::app()->getWebsite(true)->getId() : $_websiteId;
 
         $entityTable = Mage::helper('tnw_salesforce')->getTable('customer_entity');
         $entityVarcharTable = Mage::helper('tnw_salesforce')->getTable('customer_entity_varchar');
