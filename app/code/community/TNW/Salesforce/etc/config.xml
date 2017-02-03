@@ -572,6 +572,15 @@
                     </tnw_after_sales_rule_save>
                 </observers>
             </salesrule_rule_save_commit_after>
+
+            <wishlist_product_add_after>
+                <observers>
+                    <tnw_salesforce>
+                        <class>tnw_salesforce/wishlist_observer</class>
+                        <method>productAddAfter</method>
+                    </tnw_salesforce>
+                </observers>
+            </wishlist_product_add_after>
         </events>
     </global>
     <adminhtml>

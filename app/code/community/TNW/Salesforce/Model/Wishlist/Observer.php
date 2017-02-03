@@ -3,6 +3,21 @@
 class TNW_Salesforce_Model_Wishlist_Observer
 {
     /**
+     * @param $observer Varien_Event_Observer
+     * @throws Exception
+     */
+    public function productAddAfter($observer)
+    {
+        /** @var Mage_Wishlist_Model_Item[] $items */
+        $items = $observer->getEvent()->getData('items');
+        $wishlistIds = array_unique(array_map(function (Mage_Wishlist_Model_Item $item) {
+            return $item->getWishlistId();
+        }, $items));
+
+        $this->syncWishlist($wishlistIds);
+    }
+
+    /**
      * @param array $entityIds
      * @throws Exception
      */
