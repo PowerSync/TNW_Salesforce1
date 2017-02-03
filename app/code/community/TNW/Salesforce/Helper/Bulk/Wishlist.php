@@ -66,7 +66,7 @@ class TNW_Salesforce_Helper_Bulk_Wishlist extends TNW_Salesforce_Helper_Salesfor
 
                 //Report Transaction
                 $this->_cache['responses']['opportunities'][$entityNumber] = json_decode(json_encode($_item), true);
-                if ($_item->success == 'true') {
+                if (strcasecmp($_item->success, 'true') === 0) {
                     $entity = $this->getEntityCache($entityNumber);
                     $entity->addData(array(
                         'salesforce_id' => (string)$_item->id,
@@ -124,7 +124,7 @@ class TNW_Salesforce_Helper_Bulk_Wishlist extends TNW_Salesforce_Helper_Salesfor
                         //Report Transaction
                         $this->_cache['responses']['opportunityLineItems'][$entityNum]['subObj'][] = json_decode(json_encode($_item), TRUE);
 
-                        if ($_item->success == 'true') {
+                        if (strcasecmp($_item->success, 'true') === 0) {
                             $_itemCollection = $entity->getItemCollection()->getItemById(str_replace('cart_', '', $entityItemNumber));
                             if ($_itemCollection instanceof Mage_Core_Model_Abstract) {
                                 $_itemCollection->setData('salesforce_id', (string)$_item->id);
@@ -184,7 +184,7 @@ class TNW_Salesforce_Helper_Bulk_Wishlist extends TNW_Salesforce_Helper_Salesfor
                         //Report Transaction
                         $this->_cache['responses']['opportunityCustomerRoles'][$entityNum]['subObj'][] = json_decode(json_encode($_item), TRUE);
 
-                        if ($_item->success == 'true') {
+                        if (strcasecmp($_item->success, 'true') === 0) {
                             Mage::getSingleton('tnw_salesforce/tool_log')
                                 ->saveTrace('Contact Role (role: ' . $_batch[$entityItemNumber]->Role . ') for (quote: ' . $entityNum . ') upserted.');
 
