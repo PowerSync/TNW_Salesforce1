@@ -1515,6 +1515,19 @@
                                 Use Salesforce Product for a Tax Fee
                             ]]></comment>
                         </use_tax_product>
+                        <update_tax_total translate="label">
+                            <label>Use in Salesforce-to-Magento sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>11</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <use_tax_product>1</use_tax_product>
+                            </depends>
+                            <comment>Apply Tax fee price from Salesforce to Magento Order (BETA!)</comment>
+                        </update_tax_total>
                         <tax_product_pricebook translate="label">
                             <label>Tax Product</label>
                             <frontend_type>select</frontend_type>
@@ -1544,6 +1557,19 @@
                                 Use Salesforce Product for a Shipping Fee
                             ]]></comment>
                         </use_shipping_product>
+                        <update_shipping_total>
+                            <label>Use in Salesforce-to-Magento sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>21</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <use_shipping_product>1</use_shipping_product>
+                            </depends>
+                            <comment>Apply Shipping fee price from Salesforce to Magento Order (BETA!)</comment>
+                        </update_shipping_total>
                         <shipping_product_pricebook translate="label">
                             <label>Shipping Product</label>
                             <frontend_type>select</frontend_type>
@@ -1573,6 +1599,19 @@
                                 Use Salesforce Product for a Discount Fee
                             ]]></comment>
                         </use_discount_product>
+                        <update_discount_total>
+                            <label>Use in Salesforce-to-Magento sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>31</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <use_discount_product>1</use_discount_product>
+                            </depends>
+                            <comment>Apply Discount fee price from Salesforce to Magento Order (BETA!)</comment>
+                        </update_discount_total>
                         <discount_product_pricebook translate="label">
                             <label>Discount Product</label>
                             <frontend_type>select</frontend_type>

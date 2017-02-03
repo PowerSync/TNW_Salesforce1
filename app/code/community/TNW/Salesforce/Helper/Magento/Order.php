@@ -43,7 +43,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 throw new Exception($message);
             }
 
-            if ($this->isItemChange($order, $object) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
+            if (($this->isItemChange($order, $object) || $this->isTotalChange($order, $object)) && Mage::helper('tnw_salesforce')->isOrderCreateReverseSync()) {
                 if (!$order->canEdit()) {
                     $massage = Mage::helper('tnw_salesforce')->__('Order editing is prohibited');
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveError($massage);
@@ -65,10 +65,11 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
                 $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
                     ->setIsValidate(false);
+                $orderCreate->getQuote()->setData('_salesforce_object', $object);
 
                 // Create new order
                 $newOrder = $this->reorder($orderCreate, $order, $object);
-                $order    = $orderCreate->getSession()->getOrder();
+                $order = $orderCreate->getSession()->getOrder();
 
                 $this
                     ->_updateMappedEntityFields($object, $newOrder)
@@ -105,6 +106,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
             $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
                 ->setIsValidate(false);
+            $orderCreate->getQuote()->setData('_salesforce_object', $object);
 
             // Create new order
             $order = $this->create($orderCreate, $object);
@@ -128,12 +130,23 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      * @param Mage_Sales_Model_Order $order
      * @param stdClass $object
      * @return bool
+     * @throws Exception
      */
     protected function isItemChange($order, $object)
     {
         $isChange        = false;
         $salesforceIds   = array();
         $hasSalesforceId = array();
+
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappingCollection */
+        $mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+            ->addFieldToFilter('sf_object', array('eq'=>'OrderItem'))
+            ->addFieldToFilter('sf_field',  array('in'=> array('Quantity', 'UnitPrice')))
+            ->addFieldToFilter('sf_magento_enable', 1)
+            ->firstSystem()
+        ;
+
+        $hasSfField = $mappingCollection->walk('getSfField');
 
         /** @var Mage_Sales_Model_Order_Item $item */
         foreach ($order->getAllVisibleItems() as $item) {
@@ -156,19 +169,32 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             }
 
             $itemId = array_search($record->Id, $hasSalesforceId);
-            if (false == $itemId) {
+            if (false === $itemId) {
                 $isChange = true;
                 break;
             }
 
             /** @var Mage_Sales_Model_Order_Item $item */
             $item = $order->getItemsCollection()->getItemById($itemId);
-            if (floatval($item->getQtyOrdered()) != floatval($record->Quantity)) {
+
+            $mappingId = array_search('Quantity', $hasSfField);
+            if (false === $mappingId) {
+                throw new Exception('Quantity mapping not found!');
+            }
+
+            $qty = $mappingCollection->getItemById($mappingId)->getModelType()->getValue($item);
+            if (floatval($qty) != floatval($record->Quantity)) {
                 $isChange = true;
                 break;
             }
 
-            if (floatval($item->getPrice()) != floatval($record->UnitPrice)) {
+            $mappingId = array_search('UnitPrice', $hasSfField);
+            if (false === $mappingId) {
+                throw new Exception('UnitPrice mapping not found!');
+            }
+
+            $price = $mappingCollection->getItemById($mappingId)->getModelType()->getValue($item);
+            if (!$this->priceCompare($price, $record->UnitPrice)) {
                 $isChange = true;
                 break;
             }
@@ -182,9 +208,100 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     }
 
     /**
+     * @param $magentoPrice
+     * @param $salesforcePrice
+     * @return bool
+     */
+    protected function priceCompare($magentoPrice, $salesforcePrice)
+    {
+        return round(floatval($magentoPrice), 2) == floatval($salesforcePrice);
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @param stdClass $object
+     * @return bool
+     */
+    protected function isTotalChange($order, $object)
+    {
+        foreach ($this->getFeeIds() as $feeType => $productId) {
+            if (empty($productId)) {
+                continue;
+            }
+
+            if (!Mage::helper('tnw_salesforce')->useFeeByType($feeType)) {
+                continue;
+            }
+
+            if (!Mage::helper('tnw_salesforce')->isUpdateTotalByFeeType($feeType)) {
+                continue;
+            }
+
+            $magentoPrice = empty($object->CurrencyIsoCode) || (!empty($object->CurrencyIsoCode) && $order->getBaseCurrencyCode() == $object->CurrencyIsoCode)
+                ? (float)$order->getData("base_{$feeType}_amount")
+                : (float)$order->getData("{$feeType}_amount");
+
+            if (empty($magentoPrice)) {
+                continue;
+            }
+
+            $orderItem = $this->searchOrderItemByProductId($object->OrderItems->records, $productId);
+            if (null === $orderItem) {
+                return true;
+            }
+
+            if (!$this->priceCompare($magentoPrice, $orderItem->UnitPrice)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array $orderItems
+     * @param string $productId
+     * @return stdClass|null
+     */
+    public function searchOrderItemByProductId(array $orderItems, $productId)
+    {
+        foreach ($orderItems as $orderItem) {
+            if (strcasecmp($orderItem->PricebookEntry->Product2Id, $productId) !== 0) {
+                continue;
+            }
+
+            return $orderItem;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array
+     */
+    public function getFeeIds()
+    {
+        return array_filter(array_map(function ($feeData) {
+            if (empty($feeData)) {
+                return null;
+            }
+
+            $feeData = @unserialize($feeData);
+            if (empty($feeData)) {
+                return null;
+            }
+
+            return $feeData['Id'];
+        }, array(
+            'tax'      => Mage::helper('tnw_salesforce')->getTaxProduct(),
+            'shipping' => Mage::helper('tnw_salesforce')->getShippingProduct(),
+            'discount' => Mage::helper('tnw_salesforce')->getDiscountProduct(),
+        )));
+    }
+
+    /**
      * @param $orderCreate TNW_Salesforce_Model_Sale_Order_Create
      * @param $object
-     * @param $mappings
      * @return Mage_Sales_Model_Order
      * @throws Exception
      */
@@ -215,6 +332,12 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         $orderCreate->getSession()
             ->setCustomerId((int) $customer->getId())
             ->setStoreId((int) $storeId);
+
+        // Set Currency
+        if (!empty($object->CurrencyIsoCode)) {
+            $orderCreate->getSession()
+                ->setCurrencyId($object->CurrencyIsoCode);
+        }
 
         $orderCreate->setRecollect(true);
 
@@ -476,6 +599,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         //Unset address cached
         foreach ($orderCreate->getQuote()->getAllAddresses() as $item) {
             $item
+                ->setData('should_ignore_validation', true)
                 ->unsetData('cached_items_all')
                 ->unsetData('cached_items_nominal')
                 ->unsetData('cached_items_nonnominal');
@@ -486,10 +610,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             $orderCreate->getQuote()->getShippingAddress()->setCollectShippingRates(true);
         }
 
-        $orderCreate->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
         if (!$isVirtual && !$orderCreate->getQuote()->getShippingAddress()->requestShippingRates()) {
             $this->_setShippingMethod($orderCreate);
         }
+        $orderCreate->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
 
         try {
             $newOrder = $orderCreate->createOrder();
