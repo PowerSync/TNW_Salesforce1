@@ -760,10 +760,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         // Additional de duplication logic for PersonAccounts
         $_salesforceIds = array();
         foreach ($this->_cache['accountsToUpsert']['Id'] as $_magentoId => $_object) {
-            $_websiteId = $this->_getWebsiteIdByCustomerId($_magentoId);
             if (
-                Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
-                && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE) != TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
+                Mage::helper('tnw_salesforce')->customerTypeRecordType() != TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
                 && !property_exists($_object, 'Name')
                 && property_exists($_object, 'RecordTypeId')
                 && Mage::helper('tnw_salesforce')->usePersonAccount()

@@ -918,6 +918,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
+     * @param $_entity
+     * @return string
+     */
+    public function getEntityId($_entity)
+    {
+        return $this->_getEntityId($_entity);
+    }
+
+    /**
      * find leads from lookup and generate convertation object
      * update initial emails array: remove found emails
      * @return $this
