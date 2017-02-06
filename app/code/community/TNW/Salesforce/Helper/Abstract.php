@@ -395,7 +395,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 
         return $this->useCache()
             ? unserialize($this->getCache()->load($key))
-            : Mage::getSingleton('core/session')->getData($key);
+            : Mage::getSingleton('tnw_salesforce/session')->getData($key);
     }
 
     /**
@@ -403,6 +403,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      * @param $key
      * @param null $website
      * @return bool
+     * @throws Zend_Cache_Exception
      */
     public function setStorage($value, $key, $website = null)
     {
@@ -412,10 +413,9 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
 
         if ($this->useCache()) {
             return $this->getCache()
-                ->save(serialize($value), $key, array("TNW_SALESFORCE"));
-        }
-        else {
-            Mage::getSingleton('core/session')->setData($key, $value);
+                ->save(serialize($value), $key, array('TNW_SALESFORCE'));
+        } else {
+            Mage::getSingleton('tnw_salesforce/session')->setData($key, $value);
             return true;
         }
     }

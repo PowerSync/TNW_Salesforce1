@@ -879,10 +879,30 @@ class TNW_Salesforce_Model_Observer
      */
     public function cacheEntityClear($observer)
     {
-        if ($observer->getEvent()->getName() == 'adminhtml_cache_refresh_type' && strcasecmp($observer->getData('type'), 'tnw_salesforce') != 0) {
+        $eventTypeName = $observer->getEvent()->getName();
+        $cacheSection = array(
+            'salesforce',
+            'salesforce_customer',
+            'salesforce_product',
+            'salesforce_order',
+            'salesforce_contactus',
+            'salesforce_promotion',
+            'salesforce_invoice',
+            'salesforce_shipment',
+            'salesforce_creditmemo',
+        );
+
+        if ($eventTypeName == 'admin_system_config_section_save_after' && in_array($observer->getData('section'), $cacheSection)) {
+            Mage::getSingleton('tnw_salesforce/session')->clear();
+            Mage::app()->cleanCache(array('TNW_SALESFORCE'));
             return;
         }
 
+        if ($eventTypeName == 'adminhtml_cache_refresh_type' && strcasecmp($observer->getData('type'), 'tnw_salesforce') != 0) {
+            return;
+        }
+
+        Mage::getSingleton('tnw_salesforce/session')->clear();
         Mage::getResourceModel('tnw_salesforce/entity_cache')->clearAll();
     }
 }
