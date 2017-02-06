@@ -56,6 +56,7 @@ class TNW_Salesforce_Block_Adminhtml_Check_Grid extends Mage_Adminhtml_Block_Wid
         $this->addColumn('response', array(
             'header' => 'Server Response',
             'index' => 'response',
+            'format' => '$response'
         ));
 
         return parent::_prepareColumns();

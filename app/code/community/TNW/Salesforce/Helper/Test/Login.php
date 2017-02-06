@@ -22,6 +22,30 @@ class TNW_Salesforce_Helper_Test_Login extends TNW_Salesforce_Helper_Test_Abstra
     protected $_redirect;
 
     /**
+     * @param $title
+     * @param $response
+     * @param $resultClass
+     * @param $redirect
+     * @return Varien_Object
+     */
+    protected function _createResultObject($title, $response, $resultClass, $redirect)
+    {
+        if ($resultClass == $this->_successClass && Mage::helper('tnw_salesforce/config_tool')->getLogApiCallStatistic()) {
+
+            $this->getClient()->getSessionId();
+            $url = Mage::helper('tnw_salesforce/data')
+                ->getStorage('salesforce_url');
+
+            $sessionId = $this->getClient()->getSessionId();
+
+            $response .= sprintf(' <a href="%s/secur/frontdoor.jsp?sid=%s">Go to SF org</a>', $url, $sessionId);
+        }
+        return parent::_createResultObject($title, $response, $resultClass, $redirect);
+
+    }
+
+
+    /**
      * @return mixed
      */
     protected function _performTest()
