@@ -691,11 +691,13 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CUSTOMER_DEFAULT_ACCOUNT);
     }
 
-    // Discount Fee Product
-
+    /**
+     * @return bool
+     * @deprecated
+     */
     public function createPersonAccount()
     {
-        return $this->getStoreConfig(self::CUSTOMER_PERSON_ACCOUNT);
+        return $this->usePersonAccount();
     }
 
     // Customer integration type

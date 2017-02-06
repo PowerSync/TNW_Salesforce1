@@ -884,14 +884,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     /**
      * @param string $key
-     * @return array|null|string
+     * @return string|null
      */
-    public function getWebsiteSfIds($key = null)
+    public function getWebsiteSfIds($key)
     {
-        if (!is_null($key)) {
-            return isset($this->_websiteSfIds[$key]) ? (string)$this->_websiteSfIds[$key] : null;
-        }
-        return $this->_websiteSfIds;
+        return isset($this->_websiteSfIds[$key]) ? (string)$this->_websiteSfIds[$key] : null;
     }
 
     /**

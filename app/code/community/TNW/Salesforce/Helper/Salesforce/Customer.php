@@ -650,7 +650,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_personType = $this->_cache['accountLookup'][0][$_email]->RecordTypeId;
             }
 
-            $this->_isPerson = ($_personType == Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE));
+            $this->_isPerson = ($_personType == Mage::helper('tnw_salesforce')->getPersonAccountRecordType());
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
@@ -1290,8 +1290,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_customer->AccountId = (property_exists($_customer, 'AccountId')) ? $_customer->AccountId : NULL;
 
                 if (
-                    Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
-                    && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE)
+                    Mage::helper('tnw_salesforce')->usePersonAccount()
+                    && Mage::helper('tnw_salesforce')->getPersonAccountRecordType()
                     && $_customer->AccountId != NULL && $_customer->AccountId == $_customer->SalesforceId
                 ) {
                     // Lookup needed
