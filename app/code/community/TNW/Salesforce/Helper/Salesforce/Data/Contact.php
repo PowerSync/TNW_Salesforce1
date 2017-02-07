@@ -333,11 +333,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             // Index Email
             $recordsEmail[$key] = null;
             if (!empty($record->Account->PersonEmail)) {
-                $recordsEmail[$key] = $record->Account->PersonEmail;
+                $recordsEmail[$key] = strtolower($record->Account->PersonEmail);
             }
 
             if (!empty($record->Email)) {
-                $recordsEmail[$key] = $record->Email;
+                $recordsEmail[$key] = strtolower($record->Email);
             }
 
             // Index MagentoId
