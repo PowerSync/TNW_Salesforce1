@@ -72,15 +72,26 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     /**
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
+     * @throws Exception
      */
     public function convertWebsite($_entity)
     {
-        /** @var tnw_salesforce_helper_magento_websites $websiteHelper */
-        $websiteHelper = Mage::helper('tnw_salesforce/magento_websites');
-        $_website = Mage::app()
-            ->getWebsite($_entity->getWebsiteId());
+        return Mage::helper('tnw_salesforce/magento_websites')
+            ->getWebsiteSfId($this->getWebsiteId($_entity));
+    }
 
-        return $websiteHelper->getWebsiteSfId($_website);
+    /**
+     * @param Mage_Customer_Model_Customer $entity
+     * @return string
+     */
+    public function getWebsiteId($entity)
+    {
+        $websiteId = $entity->getData('website_id');
+        if (null === $websiteId) {
+            $websiteId = Mage::app()->getWebsite('admin')->getId();
+        }
+
+        return $websiteId;
     }
 
     /**
@@ -125,13 +136,14 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     /**
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
+     * @throws Exception
      */
     public function convertSfRecordType($_entity)
     {
         $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
         if (
             $currentHelper instanceof TNW_Salesforce_Helper_Salesforce_Customer
-            && isset($currentHelper->_cache['contactsLookup'][$this->getWebsiteKey($_entity)][$currentHelper->getEntityNumber($_entity)])
+            && isset($currentHelper->_cache['contactsLookup'][$this->convertWebsite($_entity)][$currentHelper->getEntityNumber($_entity)])
         ) {
             return Mage::helper('tnw_salesforce')->getBusinessAccountRecordType();
         }
@@ -212,33 +224,6 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     }
 
     /**
-     * Get WebsiteKey for lookup
-     * @param $_customer
-     * @return array|int|null|string
-     */
-    protected function getWebsiteKey($_customer)
-    {
-        $_sfWebsite = 0;
-
-        // Get Customer Website Id
-        $_websiteId = $_customer->getData('website_id');
-        $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
-
-        if (!$_websiteId || empty($currentHelper)) {
-            $_websiteId = 0;
-        }
-
-        if (!empty($currentHelper)) {
-            $_sfWebsite = $currentHelper->getWebsiteSfIds($_websiteId);
-            if (!$_sfWebsite) {
-                $_sfWebsite = 0;
-            }
-        }
-
-        return $_sfWebsite;
-    }
-
-    /**
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
      */
@@ -289,6 +274,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
     /**
      * @param Mage_Customer_Model_Customer $_entity
      * @return string
+     * @throws Exception
      */
     public function convertSalesforceAccountOwnerId($_entity)
     {
@@ -303,7 +289,7 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
 
         if (!empty($currentHelper)) {
 
-            $websiteKey = $this->getWebsiteKey($_entity);
+            $websiteKey = $this->convertWebsite($_entity);
 
             /**
              * Lead owner prepared to push

@@ -557,7 +557,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
 
         // Get Customer Website Id
-        $_websiteId = $_customer->getData('website_id');
+        $_websiteId = Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+            ->getWebsiteId($_customer);
 
         //If Lookup returned values add them
         $_email = strtolower($_customer->getEmail());
@@ -1157,13 +1158,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_entity->getGroupId())) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPING: Sync for customer group #" . $_entity->getGroupId() . " is disabled!");
+                ->saveNotice("SKIPPING: Sync for customer group #{$_entity->getGroupId()} is disabled!");
             return false;
         }
 
-        if ($_entity->getData('website_id') != NULL) {
-            $this->_websites[$this->_getEntityId($_entity)] = $this->_websiteSfIds[$_entity->getData('website_id')];
-        }
+        $_websiteId = Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+            ->getWebsiteId($_entity);
+
+        $this->_websites[$this->_getEntityId($_entity)] = $this->_websiteSfIds[$_websiteId];
 
         $_email = strtolower($_entity->getData('email'));
 
@@ -1172,7 +1174,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $tmp->MagentoId = $this->_getEntityId($_entity);
         $tmp->SfInSync = 0;
 
-        $this->_cache['toSaveInMagento'][$_entity->getData('website_id')][$_email] = $tmp;
+        $this->_cache['toSaveInMagento'][$_websiteId][$_email] = $tmp;
         return true;
     }
 
@@ -1907,7 +1909,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected function _getWebsiteIdByCustomerId($_customerId)
     {
-        return $this->getEntityCache($_customerId)->getWebsiteId();
+        return Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+            ->getWebsiteId($this->getEntityCache($_customerId));
     }
 
     /**
