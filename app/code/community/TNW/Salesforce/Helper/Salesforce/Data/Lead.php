@@ -87,7 +87,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             // Index Email
             $recordsEmail[$key] = null;
             if (!empty($record->Email)) {
-                $recordsEmail[$key] = $record->Email;
+                $recordsEmail[$key] = strtolower($record->Email);
             }
 
             // Index MagentoId

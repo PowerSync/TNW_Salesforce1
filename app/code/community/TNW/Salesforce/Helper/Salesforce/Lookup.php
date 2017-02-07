@@ -167,7 +167,7 @@ class TNW_Salesforce_Helper_Salesforce_Lookup extends TNW_Salesforce_Helper_Sale
                 // Index Email
                 $recordsProductCode[$key] = null;
                 if (!empty($record->ProductCode)) {
-                    $recordsSKU[$key] = $record->ProductCode;
+                    $recordsSKU[$key] = strtolower($record->ProductCode);
                 }
 
                 // Index MagentoId
