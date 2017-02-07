@@ -530,7 +530,19 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     // Default Lead owner to be used during conversion
 
+    /**
+     * @return integer
+     * @deprecated
+     */
     public function isCustomerSingleRecordType()
+    {
+        return $this->customerTypeRecordType();
+    }
+
+    /**
+     * @return integer
+     */
+    public function customerTypeRecordType()
     {
         return $this->getStoreConfig(self::CUSTOMER_FORCE_RECORDTYPE);
     }
@@ -691,11 +703,13 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CUSTOMER_DEFAULT_ACCOUNT);
     }
 
-    // Discount Fee Product
-
+    /**
+     * @return bool
+     * @deprecated
+     */
     public function createPersonAccount()
     {
-        return $this->getStoreConfig(self::CUSTOMER_PERSON_ACCOUNT);
+        return $this->usePersonAccount();
     }
 
     // Customer integration type
