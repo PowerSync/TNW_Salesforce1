@@ -652,6 +652,15 @@
                     </tnw_salesforce_cache_entity_clear>
                 </observers>
             </adminhtml_cache_refresh_type>
+
+            <admin_system_config_section_save_after>
+                <observers>
+                    <tnw_salesforce_cache_entity_clear>
+                        <class>tnw_salesforce/observer</class>
+                        <method>cacheEntityClear</method>
+                    </tnw_salesforce_cache_entity_clear>
+                </observers>
+            </admin_system_config_section_save_after>
         </events>
     </adminhtml>
     <frontend>
