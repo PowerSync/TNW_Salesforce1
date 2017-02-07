@@ -231,7 +231,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             : array($currentDiffWebsite->getId() => $currentDiffWebsite);
 
         return call_user_func_array('array_merge', array_map(function (Mage_Core_Model_Website $website) {
-            return $website->getId()? $website->getStoreIds(): array(0 => 0);
+            return $website->getStoreIds();
         }, $websites));
     }
 
