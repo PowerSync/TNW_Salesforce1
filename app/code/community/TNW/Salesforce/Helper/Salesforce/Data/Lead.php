@@ -418,14 +418,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     public function convertLeadsSimple()
     {
-        return $this->_convertLeadsSimple();
-    }
-
-    /**
-     * @comment convertation method for Customer Sync
-     */
-    protected function _convertLeadsSimple()
-    {
         if (!empty($this->_cache['leadsToConvert'])) {
             $leadsToConvertChunks = array_chunk($this->_cache['leadsToConvert'], TNW_Salesforce_Helper_Data::BASE_CONVERT_LIMIT, true);
 
@@ -487,17 +479,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     public function prepareLeadConversionObjectSimple($lead = NULL, $leadConvert = NULL)
     {
-
-        return $this->_prepareLeadConversionObjectSimple($lead, $leadConvert);
-    }
-
-    /**
-     * @param null $lead
-     * @param stdClass $leadConvert
-     * @return mixed
-     */
-    protected function _prepareLeadConversionObjectSimple($lead = NULL, $leadConvert = NULL)
-    {
         if (!$leadConvert) {
             $leadConvert = new stdClass();
         }
@@ -548,100 +529,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * @param $parentEntityId
-     * @param array $accounts
-     * @param string $parentEntityType
-     * @return bool
-     */
-    public function prepareLeadConversionObject($parentEntityId, $accounts = array(), $parentEntityType = 'order')
-    {
-        return $this->_prepareLeadConversionObject($parentEntityId, $accounts, $parentEntityType);
-    }
-
-    /**
-     * @comment Prepare object for lead conversion
-     * @param $parentEntityId
-     * @param array $accounts
-     * @param string $parentEntityType
-     * @return bool
-     */
-    protected function _prepareLeadConversionObject($parentEntityId, $accounts = array(), $parentEntityType = 'order')
-    {
-        try {
-
-            if (!$this->getParent()) {
-                throw new Exception('You should define parent object to access for cache');
-            }
-
-            if (!Mage::helper("tnw_salesforce")->getLeadConvertedStatus()) {
-                throw new Exception('Converted Lead status is not set in the configuration, cannot proceed!');
-            }
-
-            $email = strtolower($this->_cache[$parentEntityType . 'ToEmail'][$parentEntityId]);
-
-            if (isset($this->_cache[$parentEntityType . 'ToWebsiteId'][$parentEntityId])) {
-                $websiteId = $this->_cache[$parentEntityType . 'ToWebsiteId'][$parentEntityId];
-            } else {
-                /**
-                 * @comment try to find parent entity in cache or load from database
-                 */
-                if (!($parentEntity = Mage::registry($parentEntityType . '_cached_' . $parentEntityId))) {
-                    $parentEntity = $this->_loadEntity($parentEntityId, $parentEntityType);
-                }
-
-                $websiteId = Mage::app()->getStore($parentEntity->getData('store_id'))->getWebsiteId();
-            }
-
-            $salesforceWebsiteId = $this->getWebsiteSfIds($websiteId);
-
-            if (isset($this->_cache['leadLookup'][$salesforceWebsiteId][$email])
-                && !$this->_cache['leadLookup'][$salesforceWebsiteId][$email]->IsConverted
-            ) {
-                $leadData = $this->_cache['leadLookup'][$salesforceWebsiteId][$email];
-                $leadConvert = $this->_prepareLeadConversionObjectSimple($leadData);
-
-                // Attach to existing account
-                if (array_key_exists($email, $accounts) && $accounts[$email]) {
-                    $leadConvert->accountId = $accounts[$email];
-                } elseif (isset($this->_cache['accountLookup'][0][$email])) {
-                    $leadConvert->accountId = $this->_cache['accountLookup'][0][$email]->Id;
-                } else if (isset($this->_cache[$parentEntityType . 'Customers'][$parentEntityId])) {
-                    $customer = $this->_cache[$parentEntityType . 'Customers'][$parentEntityId];
-                    $accountLookup = Mage::helper('tnw_salesforce/salesforce_data_account')
-                        ->lookup(array($customer));
-
-                    $_email = strtolower($customer->getEmail());
-                    if (isset($accountLookup[0][$_email]) && property_exists($accountLookup[0][$_email], 'Id')) {
-                        $leadConvert->accountId = $accountLookup[0][$_email]->Id;
-                    }
-                }
-
-                if (isset($this->_cache['contactsLookup'][$salesforceWebsiteId][$email])) {
-                    $leadConvert->contactId = $this->_cache['contactsLookup'][$salesforceWebsiteId][$email]->Id;
-                }
-
-                // logs
-                foreach ($leadConvert as $key => $value) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead Conversion: " . $key . " = '" . $value . "'");
-                }
-
-                if ($leadConvert->leadId && !$this->_cache['leadLookup'][$salesforceWebsiteId][$email]->IsConverted) {
-                    $this->_cache['leadsToConvert'][$parentEntityId] = $leadConvert;
-                } else {
-                    throw new Exception($parentEntityType . ' #' . $parentEntityId . ' - customer (email: ' . $email . ') needs to be synchronized first, aborting!');
-                }
-            }
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
-            return false;
-        }
-
-        $result = isset($this->_cache['leadsToConvert'][$parentEntityId]) ? $this->_cache['leadsToConvert'][$parentEntityId] : null;
-
-        return $result;
-    }
-
-    /**
      * @return null|TNW_Salesforce_Helper_Salesforce_Abstract_Base
      */
     public function getParent()
@@ -666,68 +553,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * @param $id
-     * @param string $type
-     * @return mixed
-     * @throws Exception
-     */
-    protected function _loadEntity($id, $type = 'order')
-    {
-        /**
-         * @comment 'Abandoned' type is related to the Quote magento object
-         */
-        if ($type == 'abandoned') {
-            $type = 'quote';
-        }
-        /**
-         * @comment according with code 'qquoteadv/qqadvcustomer' model loading is not necessary
-         */
-
-        $loadMethod = 'load';
-
-        switch ($type) {
-            case 'order':
-                $object = Mage::getModel('sales/' . $type);
-                $loadMethod = 'loadByIncrementId';
-                break;
-            case 'quote':
-                $object = Mage::getModel('sales/' . $type);
-                $stores = Mage::app()->getStores(true);
-                $storeIds = array_keys($stores);
-                $object->setSharedStoreIds($storeIds);
-                break;
-            default:
-                throw new Exception('Incorrect entity defined!');
-                break;
-        }
-
-
-        return $object->$loadMethod($id);
-    }
-
-    /**
      * @param null $key
      * @return string
      */
     public function getWebsiteSfIds($key = null)
     {
         return $this->getParent()->getWebsiteSfIds($key);
-    }
-
-    /**
-     * @return mixed
-     */
-    public function isFromCLI()
-    {
-        return $this->getParent()->isFromCLI();
-    }
-
-    /**
-     * @return mixed
-     */
-    public function isCron()
-    {
-        return $this->getParent()->isCron();
     }
 
     /**
