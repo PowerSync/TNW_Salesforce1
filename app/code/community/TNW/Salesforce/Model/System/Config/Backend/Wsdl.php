@@ -38,8 +38,8 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
             }
 
             // Clear Cache
-            Mage::app()->getCacheInstance()
-                ->cleanType('tnw_salesforce');
+            Mage::getSingleton('tnw_salesforce/session')->clear();
+            Mage::app()->getCacheInstance()->cleanType('tnw_salesforce');
 
             $filename = $result['file'];
             if ($filename) {

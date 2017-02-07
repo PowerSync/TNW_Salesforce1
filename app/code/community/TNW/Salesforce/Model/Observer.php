@@ -894,7 +894,7 @@ class TNW_Salesforce_Model_Observer
 
         if ($eventTypeName == 'admin_system_config_section_save_after' && in_array($observer->getData('section'), $cacheSection)) {
             Mage::getSingleton('tnw_salesforce/session')->clear();
-            Mage::app()->cleanCache(array('TNW_SALESFORCE'));
+            Mage::app()->getCacheInstance()->cleanType('tnw_salesforce');
             return;
         }
 
@@ -902,6 +902,7 @@ class TNW_Salesforce_Model_Observer
             return;
         }
 
+        Mage::app()->getCacheInstance()->cleanType('tnw_salesforce');
         Mage::getSingleton('tnw_salesforce/session')->clear();
         Mage::getResourceModel('tnw_salesforce/entity_cache')->clearAll();
     }
