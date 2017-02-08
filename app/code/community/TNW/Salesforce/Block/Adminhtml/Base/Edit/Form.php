@@ -207,7 +207,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'label' => $this->__('Enable'),
             'name' => 'magento_sf_enable',
             'class' => 'chosen-select',
-            'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'values' => Mage::getModel('tnw_salesforce/system_config_source_yesno')->toArray(),
             'note' => $this->__('Allow Magento to change data in Salesforce for this mapping'),
             'disabled' => $_isSystem
         ));
@@ -230,7 +230,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit_Form extends Mage_Adminhtml_Block
             'label' => $this->__('Enable'),
             'name' => 'sf_magento_enable',
             'class' => 'chosen-select',
-            'values' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'values' => Mage::getModel('tnw_salesforce/system_config_source_yesno')->toArray(),
             'note' => $this->__('Allow Salesforce to change data in Magento for this mapping'),
             'disabled' => $_isSystem
         ));
