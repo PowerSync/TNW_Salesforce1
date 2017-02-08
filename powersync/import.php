@@ -89,7 +89,7 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
      */
     protected function processLock($name)
     {
-        if (!Mage_Index_Model_Lock::getInstance()->setLock("tnw_{$name}", true)) {
+        if (!TNW_Salesforce_Model_Lock::getInstance()->setLock("tnw_{$name}", true)) {
             Mage::throwException(sprintf('The process "%s" blocked', $name));
         }
     }
@@ -99,7 +99,7 @@ class Powersync_Shell_Import extends Mage_Shell_Abstract
      */
     protected function processUnlock($name)
     {
-        Mage_Index_Model_Lock::getInstance()->releaseLock("tnw_{$name}", true);
+        TNW_Salesforce_Model_Lock::getInstance()->releaseLock("tnw_{$name}", true);
     }
 
     /**
