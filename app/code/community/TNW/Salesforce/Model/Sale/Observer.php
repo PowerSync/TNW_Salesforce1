@@ -401,7 +401,7 @@ class TNW_Salesforce_Model_Sale_Observer
 
             if (!$helper->isOrderRulesEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('SKIPPING: Sales Rule Integration is disabled');
+                    ->saveTrace('SKIPPING: Sales Rule Integration is disabled');
 
                 return;
             }
