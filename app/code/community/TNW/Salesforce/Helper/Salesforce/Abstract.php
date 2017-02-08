@@ -404,7 +404,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         foreach ($chunk as $_item) {
             $_data .= "\t<sObject>";
             foreach ($_item as $_tag => $_value) {
-                $_data .= '<' . $_tag . '>' . htmlspecialchars($_value, ENT_XML1) . '</' . $_tag . '>';
+                $_data .= '<' . $_tag . '><![CDATA[' . str_replace( array('<![CDATA[', ']]>'), '', $_value) . ']]></' . $_tag . '>';
             }
             $_data .= "</sObject>\n";
         }
