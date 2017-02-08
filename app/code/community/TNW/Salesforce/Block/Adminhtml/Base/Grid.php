@@ -114,7 +114,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             'renderer' => $this->getLayout()->createBlock('tnw_salesforce/adminhtml_renderer_entity_mappingset')
                 ->setDirection(TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Mappingset::SYNC_DIRECTION_MAGENTO_SF),
             'type' => 'options',
-            'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'options' => Mage::getModel('tnw_salesforce/system_config_source_yesno')->toArray(),
         ));
 
         $this->addColumn('sf_magento', array(
@@ -124,7 +124,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             'renderer' => $this->getLayout()->createBlock('tnw_salesforce/adminhtml_renderer_entity_mappingset')
                 ->setDirection(TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Mappingset::SYNC_DIRECTION_SF_MAGENTO),
             'type' => 'options',
-            'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'options' => Mage::getModel('tnw_salesforce/system_config_source_yesno')->toArray(),
         ));
 
         $this->addColumn('is_system', array(
@@ -132,7 +132,7 @@ class TNW_Salesforce_Block_Adminhtml_Base_Grid extends Mage_Adminhtml_Block_Widg
             'width' => '50px',
             'index' => 'is_system',
             'type' => 'options',
-            'options' => Mage::getModel('adminhtml/system_config_source_yesno')->toArray(),
+            'options' => Mage::getModel('tnw_salesforce/system_config_source_yesno')->toArray(),
         ));
 
         return parent::_prepareColumns();
