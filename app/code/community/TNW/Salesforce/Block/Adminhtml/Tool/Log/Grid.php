@@ -70,9 +70,8 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
             'width' => '100px',
             'index' => 'website_id',
             'type' => 'options',
-            'options' => array_merge(
-                array(0=>Mage::app()->getWebsite('admin')->getName()),
-                Mage::getModel('core/website')->getCollection()->toOptionHash()),
+            'options' => Mage::getResourceModel('core/website_collection')
+                ->setLoadDefault(true)->toOptionHash(),
         ));
 
         $this->addColumn('message',
