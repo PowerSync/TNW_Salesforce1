@@ -50,6 +50,15 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * @param $name
+     * @return bool
+     */
+    public function hasOriginSetting($name)
+    {
+        return isset($this->_originSettings[$name]);
+    }
+
+    /**
      * @param null $name
      * @return array
      */
@@ -187,8 +196,8 @@ class TNW_Salesforce_Helper_Config_Server extends Mage_Core_Helper_Abstract
             /**
              * @comment save origin value
              */
-            if ($this->getOriginSetting($name) == null) {
-                $this->setOriginSettings($this->getSettingValue($name));
+            if (!$this->hasOriginSetting($name)) {
+                $this->addOriginSetting($name, $this->getSettingValue($name));
             }
 
             if (is_array($_settingData)) {
