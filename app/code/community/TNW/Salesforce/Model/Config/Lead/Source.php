@@ -31,13 +31,8 @@ class TNW_Salesforce_Model_Config_Lead_Source
      */
     public function toOptionArray()
     {
-        $_useCache = Mage::app()->useCache('tnw_salesforce');
-        $cache = Mage::app()->getCache();
-
-        if ($_useCache && $cache->load("tnw_salesforce_lead_source")) {
-            $leadSource = unserialize($cache->load("tnw_salesforce_lead_source"));
-        } else {
-
+        $leadSource = Mage::helper('tnw_salesforce')->getStorage("tnw_salesforce_lead_source");
+        if (empty($leadSource)) {
             $leadSource = array(
                 array(
                     'label' => Mage::helper('tnw_salesforce')->__('None'),
@@ -63,9 +58,7 @@ class TNW_Salesforce_Model_Config_Lead_Source
                     }
                 }
 
-                if ($_useCache) {
-                    $cache->save(serialize($leadSource), 'tnw_salesforce_lead_source', array("TNW_SALESFORCE"));
-                }
+                Mage::helper('tnw_salesforce')->setStorage($leadSource, 'tnw_salesforce_lead_source');
             }
         }
 

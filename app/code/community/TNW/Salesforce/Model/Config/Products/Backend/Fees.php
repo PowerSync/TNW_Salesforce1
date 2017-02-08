@@ -17,17 +17,17 @@ class TNW_Salesforce_Model_Config_Products_Backend_Fees extends Mage_Core_Model_
         switch ($this->getData('field_config')->product_type) {
             case 'tax':
                 $enablePath = 'groups/opportunity_cart/fields/use_tax_product/value';
-                $createProduct = array((object)array('Name'=>'Tax Fee', 'ProductCode'=>'fee_tax'));
+                $createProduct = array((object)array('Name'=>'Tax Fee', 'ProductCode'=>$this->generateSku('fee_tax')));
                 break;
 
             case 'shipping':
                 $enablePath = 'groups/opportunity_cart/fields/use_shipping_product/value';
-                $createProduct = array((object)array('Name'=>'Shipping Fee', 'ProductCode'=>'fee_shipping'));
+                $createProduct = array((object)array('Name'=>'Shipping Fee', 'ProductCode'=>$this->generateSku('fee_shipping')));
                 break;
 
             case 'discount':
                 $enablePath = 'groups/opportunity_cart/fields/use_discount_product/value';
-                $createProduct = array((object)array('Name'=>'Discount Fee', 'ProductCode'=>'fee_discount'));
+                $createProduct = array((object)array('Name'=>'Discount Fee', 'ProductCode'=>$this->generateSku('fee_discount')));
                 break;
 
             default:
@@ -40,7 +40,7 @@ class TNW_Salesforce_Model_Config_Products_Backend_Fees extends Mage_Core_Model_
         }
 
         try {
-            $_responses = Mage::getSingleton('tnw_salesforce/connection')->getClient()
+            $_responses = TNW_Salesforce_Model_Connection::createConnection()->getClient()
                 ->upsert('Id', $createProduct, 'Product2');
         } catch (Exception $e) {
             $_responses = array();
@@ -58,5 +58,14 @@ class TNW_Salesforce_Model_Config_Products_Backend_Fees extends Mage_Core_Model_
         }
 
         return parent::_beforeSave();
+    }
+
+    /**
+     * @param $prefix
+     * @return string
+     */
+    protected function generateSku($prefix)
+    {
+        return uniqid($prefix);
     }
 }

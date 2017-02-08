@@ -14,6 +14,8 @@
  */
 class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstract
 {
+    const AUTHENTICATION_COUNT = 1;
+
     /**
      * error container
      *
@@ -97,6 +99,22 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         return true;
     }
 
+    /**
+     * @return bool
+     */
+    public function validateLogin()
+    {
+        foreach (array('wsdl', 'connection', 'login') as $testName) {
+            if ($this->_checkTest($testName)) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
     protected function _checkTest($testName)
     {
         $test = Mage::helper('tnw_salesforce/test_'.$testName)->performTest();
@@ -110,24 +128,6 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
     }
 
     /**
-     * convert string with delimiter to camel case
-     *
-     * @param $string
-     * @param string $delimiter
-     * @param bool $capitalizeFirstCharacter
-     * @return mixed
-     */
-    private function toCamelCase($string, $delimiter = '_', $capitalizeFirstCharacter = false)
-    {
-        $str = str_replace(' ', '', ucwords(str_replace($delimiter, ' ', $string)));
-        if (!$capitalizeFirstCharacter) {
-            $str[0] = strtolower($str[0]);
-        }
-
-        return $str;
-    }
-
-    /**
      * check cache and then session for data - this logic intended to be incapsulated within this method
      * we need to abstract from cache or session storage for our data, that depends of client side settings
      *
@@ -136,83 +136,46 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
      */
     public function getStorage($key)
     {
-        // check if cache has a "sf session id"
-        // if cache is disabled, check if "sf session id is" in the magento session
-        $this->validateStorage();
-        $mageCache = Mage::app()->getCache();
-        $useCache = Mage::app()->useCache('tnw_salesforce');
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig();
+        $key = sprintf('%s_%s', $key, $website->getCode());
 
-        /**
-         * The Cache feature broke our authorization and we receive
-         * the 'Salesforce connection failed, bulk API session ID is invalid' error
-         *
-         * @TODO check my comment, is the change below fix this problem
-         */
-        $useCache = false;
+        $count = 0;
 
-        if ($useCache) {
-            $res = unserialize($mageCache->load($key));
-        }
-        else {
-            $keyCamelCase = 'get'.$this->toCamelCase($key, '_', true);
-            $res = Mage::getSingleton('core/session')->$keyCamelCase();
-        }
+        do {
+            $res = Mage::app()->useCache('tnw_salesforce')
+                ? unserialize(Mage::app()->getCache()->load($key))
+                : Mage::getSingleton('core/session')->getData($key);
+
+            if (++$count > self::AUTHENTICATION_COUNT) {
+                break;
+            }
+        } while(empty($res) && $this->validateLogin());
 
         return $res;
-    }
-
-    /**
-     * check is salesforce session was established more than 90 minutes ago
-     * if so - create new session
-     */
-    public function validateStorage(){
-        $mageCache = Mage::app()->getCache();
-        $useCache = Mage::app()->useCache('tnw_salesforce');
-        if ($useCache) {
-            $creationTime = unserialize($mageCache->load('salesforce_session_created'));
-        }
-        else {
-            $keyCamelCase = 'get'.$this->toCamelCase('salesforce_session_created', '_', true);
-            $creationTime = Mage::getSingleton('core/session')->$keyCamelCase();
-        }
-        if ($creationTime){
-            $sessionExists = time() - $creationTime;
-        }
-        if (empty($creationTime) || ($sessionExists > 540) ){
-            Mage::getSingleton('tnw_salesforce/connection')->initConnection();
-        }
-
     }
 
     /**
      * set value to cache or session
      *
-     * @param $key
      * @param $value
+     * @param $key
+     * @param null $website
      * @return bool
      */
-    public function setStorage($value, $key)
+    public function setStorage($value, $key, $website = null)
     {
-        $mageCache = Mage::app()->getCache();
-        $useCache = Mage::app()->useCache('tnw_salesforce');
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
 
-        /**
-         * The Cache feature broke our authorization and we receive
-         * the 'Salesforce connection failed, bulk API session ID is invalid' error
-         *
-         * @TODO check my comment, is the change below fix this problem
-         */
-        $useCache = false;
-
-        if ($useCache) {
-            $res = $mageCache->save(serialize($value), $key, array("TNW_SALESFORCE"));
+        if (Mage::app()->useCache('tnw_salesforce')) {
+            return Mage::app()->getCache()->save(serialize($value), $key, array("TNW_SALESFORCE"));
         }
         else {
-            $keyCamelCase = 'set'.$this->toCamelCase($key, '_', true);
-            $res = Mage::getSingleton('core/session')->$keyCamelCase($value);
+            Mage::getSingleton('core/session')->setData($key, $value);
+            return true;
         }
-
-        return $res;
     }
 
     /**

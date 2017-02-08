@@ -16,17 +16,19 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     {
         $value = $this->_prepareValue($_entity);
 
-        $fields = Mage::helper('tnw_salesforce/salesforce_data')
+        $describe = Mage::helper('tnw_salesforce/salesforce_data')
             ->describeTable($this->_mapping->getSfObject());
 
         /**
          * try to find SF field
          */
         $appropriatedField = false;
-        foreach ($fields as $field) {
-            if (strtolower($field->name) == strtolower($this->_mapping->getSfField())) {
-                $appropriatedField = $field;
-                break;
+        if (!empty($describe->fields)) {
+            foreach ($describe->fields as $field) {
+                if (strtolower($field->name) == strtolower($this->_mapping->getSfField())) {
+                    $appropriatedField = $field;
+                    break;
+                }
             }
         }
 
@@ -69,6 +71,11 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
                 $value = null;
             }
+        } else {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice("Field \"{$this->_mapping->getSfObject()}::{$this->_mapping->getSfField()}\" not found in SF! Skipped field.");
+
+            $value = null;
         }
 
 
@@ -226,19 +233,21 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
 
     /**
      * @param $item
+     * @param bool $includeTax
+     * @param bool $includeDiscount
      * @param int $qty
      * @return float
      */
-    protected function _calculateItemPrice($item, $qty = 1)
+    protected function _calculateItemPrice($item, $qty = 1, $includeTax = true, $includeDiscount = true)
     {
         $rowTotal = $this->getEntityPrice($item, 'RowTotal');
 
-        if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
+        if ($includeTax) {
             $rowTotal += $this->getEntityPrice($item, 'TaxAmount');
             $rowTotal += $this->getEntityPrice($item, 'HiddenTaxAmount');
         }
 
-        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
+        if ($includeDiscount) {
             $rowTotal -= $this->getEntityPrice($item, 'DiscountAmount');
         }
 
@@ -415,10 +424,35 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _reversePrepareDateTime($date)
     {
         $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
-        $timezoneForce = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) ? new DateTimeZone($currentTimezone) : null;
+        $timezoneForce = !preg_match('/\d{4}-\d{2}-\d{2}T/i', $date) && !preg_match('/\d{4}-\d{2}-\d{2}/i', $date)? new DateTimeZone($currentTimezone) : null;
 
         $dateTime = new DateTime($date, $timezoneForce);
-        return $dateTime->setTimezone(new DateTimeZone($currentTimezone));
+
+        $timezoneObj = new DateTimeZone($currentTimezone);
+        if (!is_null($timezoneForce)) {
+            $dateTime->setTimezone($timezoneObj);
+        } else {
+
+            $dateObj = new DateTime("now");
+            $timeOffset = $timezoneObj->getOffset($dateObj);
+
+            /**
+             * set 12 pm if no time information here
+             */
+            $dateTime->setTime(0, 0, 0);
+
+            /**
+             * reduce the time to compensate Time zone offset
+             */
+            $timeOffsetInterval = new DateInterval('PT'.abs($timeOffset).'S');
+            if ($timeOffset > 0) {
+                $dateTime->sub($timeOffsetInterval);
+            } else {
+                $dateTime->add($timeOffsetInterval);
+            }
+        }
+
+        return $dateTime;
     }
 
     /**
@@ -430,5 +464,42 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     protected function _isUserActive($_sfUserId = NULL)
     {
         return Mage::helper('tnw_salesforce/salesforce_data_user')->isUserActive($_sfUserId);
+    }
+
+    /**
+     * @param $className
+     * @return null|TNW_Salesforce_Helper_Salesforce_Customer
+     */
+    public function getHelperInstance($classAlias)
+    {
+        $className = Mage::getConfig()->getHelperClassName($classAlias);
+        $currentHelper = null;
+        foreach (TNW_Salesforce_Helper_Salesforce_Abstract::$usedHelpers as $helper) {
+
+            if ($helper instanceof $className) {
+                $currentHelper = $helper;
+                break;
+            }
+        }
+
+        return $currentHelper;
+    }
+
+    /**
+     * Check array of owners and return first active user
+     * @param $availableOwners
+     * @return null
+     */
+    public function getFirstAvailableOwner($availableOwners)
+    {
+
+        $result = null;
+        foreach ($availableOwners as $owner) {
+            if (!empty($owner) && $this->_isUserActive($owner)) {
+                $result = $owner;
+                break;
+            }
+        }
+        return $result;
     }
 }

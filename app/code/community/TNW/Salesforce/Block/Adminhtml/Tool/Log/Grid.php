@@ -42,7 +42,7 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
                 'header' => $this->__('Id'),
                 'width' => '50px',
                 'type' => 'number',
-                'index' => 'entity_id'
+                'index' => 'entity_id',
             )
         );
 
@@ -52,7 +52,7 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
                 'index' => 'level',
                 'type' => 'options',
                 'options' => TNW_Salesforce_Model_Tool_Log::getAllLevels(),
-
+                'width' => '70px',
             )
         );
 
@@ -60,9 +60,19 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
             array(
                 'header' => $this->__('Transaction ID'),
                 'index' => 'transaction_id',
-                'type' => 'text'
+                'type' => 'text',
+                'width' => '100px',
             )
         );
+
+        $this->addColumn('website_id', array(
+            'header' => Mage::helper('catalog')->__('Website'),
+            'width' => '100px',
+            'index' => 'website_id',
+            'type' => 'options',
+            'options' => Mage::getResourceModel('core/website_collection')
+                ->setLoadDefault(true)->toOptionHash(),
+        ));
 
         $this->addColumn('message',
             array(
@@ -77,7 +87,8 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
                 'header' => $this->__('Created at'),
                 'index' => 'created_at',
                 'type' => 'datetime',
-                'filter_time' => true
+                'filter_time' => true,
+                'width' => '150px',
             )
         );
 

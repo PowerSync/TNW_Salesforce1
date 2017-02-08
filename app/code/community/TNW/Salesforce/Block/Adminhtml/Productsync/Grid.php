@@ -33,6 +33,7 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
     protected function _prepareCollection()
     {
         $store = $this->_getStore();
+        /** @var Mage_Catalog_Model_Resource_Product_Collection $collection */
         $collection = Mage::getModel('catalog/product')->getCollection()
             ->addAttributeToSelect('name')
             ->addAttributeToSelect('salesforce_disable_sync');
@@ -49,10 +50,11 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
         $collection->getSelect()->where('`at_salesforce_disable_sync`.`value` = 0 OR `at_salesforce_disable_sync`.`value` IS NULL');
 
         if ($store->getId()) {
-            $adminStore = Mage_Core_Model_App::ADMIN_STORE_ID;
+            $collection->getSelect()->columns(array('website_id'=>new Zend_Db_Expr($store->getWebsiteId())));
+
             $collection->addStoreFilter($store);
-            $collection->joinAttribute('name', 'catalog_product/name', 'entity_id', null, 'inner', $adminStore);
-            $collection->joinAttribute('salesforce_id', 'catalog_product/salesforce_id', 'entity_id', null, 'left', $adminStore);
+            $collection->joinAttribute('name', 'catalog_product/name', 'entity_id', null, 'inner', Mage_Core_Model_App::ADMIN_STORE_ID);
+            $collection->joinAttribute('salesforce_id', 'catalog_product/salesforce_id', 'entity_id', null, 'left', $store->getId());
             $collection->joinAttribute('custom_name', 'catalog_product/name', 'entity_id', null, 'inner', $store->getId());
             $collection->joinAttribute('status', 'catalog_product/status', 'entity_id', null, 'inner', $store->getId());
             $collection->joinAttribute('visibility', 'catalog_product/visibility', 'entity_id', null, 'inner', $store->getId());
@@ -110,7 +112,7 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
                 1 => 'Yes',
             ),
             'index' => 'sf_insync',
-            'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status'
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
         $this->addColumn('entity_id',
@@ -119,7 +121,7 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
                 'width' => '50px',
                 'type' => 'number',
                 'index' => 'entity_id',
-                'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+                'renderer' => 'tnw_salesforce/adminhtml_renderer_link_entity',
                 'actions' => array(
                     array(
                         'url' => array('base' => '*/catalog_product/edit'),
@@ -138,14 +140,14 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
             'index' => 'salesforce_id',
             'type' => 'varchar',
             'width' => '140px',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
         $this->addColumn('salesforce_pricebook_id', array(
             'header' => Mage::helper('sales')->__('Product2 Pricebook ID'),
             'index' => 'salesforce_pricebook_id',
             'type' => 'text',
             'width' => '180px',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
         $store = $this->_getStore();
         if ($store->getId()) {

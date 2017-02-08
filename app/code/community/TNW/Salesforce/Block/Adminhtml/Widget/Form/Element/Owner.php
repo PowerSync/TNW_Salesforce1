@@ -9,16 +9,19 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
      */
     public function getElementHtml()
     {
-        $cIdVal   = array();
-        $ownerId  = $this->getValue();
-        if (!empty($ownerId)) {
-            /** @var TNW_Salesforce_Model_Api_Entity_Resource_User_Collection $collection */
-            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/user_collection')
-                ->addFieldToFilter('Id', array('eq' => $ownerId));
-            $cIdVal = $collection->setFullIdMode(true)->getAllOptions();
-        }
+        $sfLink = null;
+        $value  = $this->getValue();
+        $cIdVal = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($this->getWebsite(), function () use($value, &$sfLink) {
+            $sfLink = Mage::helper('tnw_salesforce/test_authentication')
+                ->getStorage('salesforce_url');
 
-        $sfLink = Mage::helper('tnw_salesforce/test_authentication')->getStorage('salesforce_url');
+            if (empty($value) || strlen($value) < TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
+                return array();
+            }
+
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->toArraySearchById($value, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_USER);
+        });
 
         $this->addData(array(
             'label'    => null,
@@ -30,8 +33,8 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
         return sprintf('<span class="tnw-owner-wrapper">%s<a class="tnw-owner-link %s-link" target="_blank" href="%s" style="display: %s">%s</a></span>',
             parent::getElementHtml(),
             $this->getId(),
-            !empty($ownerId) ? sprintf('%s/%s', $sfLink, $ownerId) : '#',
-            !empty($ownerId) ? 'inline' : 'none',
+            !empty($value) ? sprintf('%s/%s', $sfLink, $value) : '#',
+            !empty($value) ? 'inline' : 'none',
             Mage::helper('tnw_salesforce')->__('View in Salesforce')
         );
     }
@@ -48,11 +51,20 @@ class TNW_Salesforce_Block_Adminhtml_Widget_Form_Element_Owner extends Varien_Da
         $block
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'url'       => $block->getUrl('*/salesforce_search/user'),
+                'url'       => $block->getUrl('*/salesforce_search/user', array('website'=>$this->getWebsite()->getCode())),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE,
                 'selector'  => sprintf('.%s', $this->getData('selector'))
             ));
 
         return $block->toHtml().parent::getAfterElementHtml();
+    }
+
+    /**
+     * @return Mage_Core_Model_Website|null
+     */
+    protected function getWebsite()
+    {
+        return Mage::helper('tnw_salesforce/config')
+            ->getWebsiteDifferentConfig($this->getData('website'));
     }
 }

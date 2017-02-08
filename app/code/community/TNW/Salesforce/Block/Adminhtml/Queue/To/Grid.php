@@ -33,7 +33,7 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
                 'success' => 'Synchronized',
             ),
             'index' => 'status',
-            'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Objectstatus'
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_objectstatus'
         ));
 
         $this->addColumn('object_id', array(
@@ -41,6 +41,8 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
             'width' => '80px',
             'type' => 'text',
             'index' => 'object_id',
+            'align' =>'right',
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_queue'
         ));
 
         $this->addColumn('sf_object_type', array(
@@ -83,6 +85,14 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
             'type' => 'text',
             'index' => 'message',
             'renderer' => 'TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Queuemessage'
+        ));
+
+        $this->addColumn('website_id', array(
+            'header'=> Mage::helper('review')->__('Websites'),
+            'width' => '100px',
+            'index' => 'website_id',
+            'type' => 'options',
+            'options' => Mage::getModel('core/website')->getCollection()->toOptionHash(),
         ));
 
         $this->addColumn('singleAction',

@@ -25,70 +25,118 @@ class TNW_Salesforce_Model_Product_Observer
     }
 
     /**
-     * @param $observer
-     * @return bool
+     * @param $observer Varien_Event_Observer
      */
     public function salesforcePush($observer)
     {
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
+        /** @var Mage_Catalog_Model_Product $_product */
         $_product = $observer->getEvent()->getProduct();
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('TNW EVENT: Product #' . $_product->getId() . ' Sync');
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("TNW EVENT: Product #{$_product->getId()} Sync");
 
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledProductSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Product synchronization disabled');
-            return; // Disabled sync
-        } else if ($_product->getIsDuplicate()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Product duplicate process');
-            return; //
-        } else if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING product sync');
-            return; // Disabled
-        } else if (
-            $_product->getSuperProduct() &&
-            $_product->getSuperProduct()->isConfigurable()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Configurable Product');
-            return; // Only simple
-        } else {
-            // check if queue sync setting is on - then save to database
-            if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-                // pass data to local storage
-                // TODO add level up abstract class with Order as static values, now we have word 'Product' as parameter
-                $res = Mage::getModel('tnw_salesforce/localstorage')->addObjectProduct(array(intval($_product->getData('entity_id'))), 'Product', 'product');
-                if (!$res) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveError('error: product not saved to local storage');
-                    return false;
-                }
-                return true;
+        if ($_product->getIsDuplicate()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('SKIPING: Product duplicate process');
+
+            return;
+        }
+
+        $this->syncProduct(array($_product->getId()));
+    }
+
+    /**
+     * @param array $entityIds
+     */
+    public function syncProduct(array $entityIds)
+    {
+        $groupWebsite = array();
+        foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
+            /** @var Varien_Db_Select $select */
+            $select = Mage::getSingleton('tnw_salesforce/localstorage')
+                ->generateSelectForType('catalog/product', $_entityIds);
+
+            foreach ($select->getAdapter()->fetchAll($select) as $row) {
+                $groupWebsite[$row['website_id']][] = $row['object_id'];
             }
+        }
 
-            if (!Mage::getSingleton('core/session')->getFromSalesForce()) {
-                /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
-                $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-                $manualSync->reset();
-                $manualSync->updateMagentoEntityValue($_product->getId(), NULL, 'sf_insync', 'catalog_product_entity_int', 0);
-                foreach (Mage::app()->getStores() as $_storeId => $_store) {
-                    $manualSync->updateMagentoEntityValue($_product->getId(), NULL, 'sf_insync', 'catalog_product_entity_int', $_storeId);
-                }
-                $manualSync->processSql();
-            } else {
-                // Skip, coming from Salesforce
+        foreach ($groupWebsite as $websiteId => $entityIds) {
+            $this->syncProductForWebsite($entityIds, $websiteId);
+        }
+    }
+
+    /**
+     * @param array $entityIds
+     * @param null $website
+     * @throws Exception
+     */
+    public function syncProductForWebsite(array $entityIds, $website = null)
+    {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPING: API Integration is disabled');
+
                 return;
             }
 
-            $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
+            if (!$helper->isEnabledProductSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPING: Product Integration is disabled');
 
-            if ($manualSync->reset() && $manualSync->massAdd(array($_product->getId()))) {
-                $manualSync->process();
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('adminhtml')->__('Product (sku: ' . $_product->getSku() . ') is successfully synchronized'));
+                return;
             }
-        }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            $syncBulk = (count($entityIds) > 1);
+
+            try {
+                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObjectProduct($entityIds, 'Product', 'product', $syncBulk);
+
+                    if (!$success) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('Could not add to the queue!');
+                    } elseif ($syncBulk) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
+
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                    }
+                } else {
+                    /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
+                    $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_product', $syncBulk ? 'bulk' : 'salesforce'));
+                    if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Total of %d product(s) were successfully synchronized', count($entityIds)));
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($e->getMessage());
+            }
+        });
     }
 
     public function beforeImport()

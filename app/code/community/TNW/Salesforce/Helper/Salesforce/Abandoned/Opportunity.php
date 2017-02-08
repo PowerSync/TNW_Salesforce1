@@ -50,9 +50,9 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected $_salesforceParentIdField = 'OpportunityId';
 
     /**
-     * @var null
+     * @var array
      */
-    protected $_read = null;
+    protected $_availableFees = array();
 
     /**
      * @param $id
@@ -111,22 +111,25 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
 
-        /* If existing Opportunity, delete products */
-        if (!empty($opportunitiesUpdate)) {
+        do {
+            if (empty($opportunitiesUpdate)) {
+                break;
+            }
 
-            // Delete Products
-            $oppItemSetId = array();
             $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunitiesUpdate);
+            if (empty($oppItemSet)) {
+                break;
+            }
+
+            $oppItemSetId = array();
             foreach ($oppItemSet as $item) {
                 $oppItemSetId[] = $item->Id;
             }
 
-            $oppItemSetIds = array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-            foreach ($oppItemSetIds as $oppItemSetId) {
+            foreach (array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $oppItemSetId) {
                 $this->getClient()->delete($oppItemSetId);
             }
-
-        }
+        } while(false);
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: End----------');
     }
@@ -154,14 +157,6 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
-        foreach (array_values($this->_cache['opportunitiesToUpsert']) as $_opp) {
-            foreach ($_opp as $_key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Object: " . $_key . " = '" . $_value . "'");
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-        }
-
         $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
         try {
             Mage::dispatchEvent("tnw_salesforce_opportunity_send_before", array(
@@ -223,68 +218,52 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
             }
         }
 
-        if (!empty($_undeleteIds)) {
+        do {
+            if (empty($_undeleteIds)) {
+                break;
+            }
+
             $_deleted = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($_undeleteIds);
+            if (empty($_deleted)) {
+                break;
+            }
+
             $_toUndelete = array();
             foreach ($_deleted as $_object) {
                 $_toUndelete[] = $_object->Id;
             }
-            if (!empty($_toUndelete)) {
-                $this->getClient()->undelete($_toUndelete);
-            }
-        }
+
+            $this->getClient()->undelete($_toUndelete);
+        } while(false);
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: End----------');
     }
 
     /**
-     * Prepare Store Id for upsert
-     *
-     * @param Mage_Sales_Model_Quote_Item $_item
+     * @param $entityItem Mage_Sales_Model_Quote_Item
+     * @param $fieldName
+     * @return null
      */
-    protected function _prepareStoreId($_item) {
-        $itemId = $this->getProductIdFromCart($_item);
-        $_quote = $_item->getQuote();
-        $_storeId = $_quote->getStoreId();
-
-        if (!array_key_exists($_storeId, $this->_stockItems)) {
-            $this->_stockItems[$_storeId] = array();
-        }
-        // Item's stock needs to be updated in Salesforce
-        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
-            $this->_stockItems[$_storeId][] = $itemId;
-        }
-    }
-
-    /**
-     * @param $_item Mage_Sales_Model_Quote_Item
-     * @return int
-     * Get product Id from the cart
-     */
-    public function getProductIdFromCart($_item)
+    public function getFieldFromEntityItem($entityItem, $fieldName)
     {
-        if (!$_item instanceof Mage_Sales_Model_Quote_Item) {
-            return false;
-        }
-
-        $productId = null;
-        switch ($_item->getProductType()) {
+        $field = null;
+        switch ($entityItem->getProductType()) {
             case Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE:
-                $children = $_item->getChildren();
+                $children = $entityItem->getChildren();
                 if (empty($children)) {
                     $productId = null;
                     break;
                 }
 
-                $productId = reset($children)->getProductId();
+                $field = reset($children)->getData($fieldName);
                 break;
 
             default:
-                $productId = $_item->getProductId();
+                $field = $entityItem->getData($fieldName);
                 break;
         }
 
-        return $productId;
+        return $field;
     }
 
     /**
@@ -492,28 +471,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
      */
     protected function _checkSyncCustomer($_entityNumber)
     {
-        $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
-        if (false === $_entityId) {
-            return false;
-        }
-
-        $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
-        $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
-        $websiteSfId = $this->_websites[$customerId];
-
-        $syncCustomer = false;
-
-        if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-            || !isset($this->_cache['accountsLookup'][0][$email])
-            || (
-                isset($this->_cache['leadsLookup'][$websiteSfId][$email])
-                && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
-            )
-        ) {
-            $syncCustomer = true;
-        }
-
-        return $syncCustomer;
+        return TNW_Salesforce_Helper_Salesforce_Abstract_Sales::_checkSyncCustomer($_entityNumber);
     }
 
     /**

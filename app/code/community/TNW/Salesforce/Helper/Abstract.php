@@ -9,7 +9,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     const MIN_LEN_SF_ID = 15;
 
     /**
-     * @var null
+     * @var Zend_Cache_Core
      */
     protected $_mageCache = NULL;
 
@@ -74,43 +74,16 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
     );
 
     /**
-     * sf connection entity
-     *
-     * @var Salesforce_SforceEnterpriseClient
-     */
-    protected $_mySforceConnection = false;
-
-    /**
      * @var array
      */
     protected $_cache = array();
-
-    /**
-     * init sf connection
-     * the method duplicated here from childs
-     * as well methods checkConnection() left in childs for old code compatibility
-     */
-    protected function checkConnection()
-    {
-        try {
-            $this->_mySforceConnection = Mage::helper('tnw_salesforce/salesforce_data')->getClient();
-            if (!$this->_mySforceConnection) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
-                return;
-            }
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: could not get salesforce connection");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error info:" . $e->getMessage());
-            return;
-        }
-    }
 
     /**
      * @return Salesforce_SforceEnterpriseClient
      */
     public function getClient()
     {
-        return Mage::getSingleton('tnw_salesforce/connection')->getClient();
+        return TNW_Salesforce_Model_Connection::createConnection()->getClient();
     }
 
     protected function _processErrors($_response, $type = 'order', $_object = null)
@@ -141,7 +114,7 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      */
     protected function deleteSfObjectById($id = false)
     {
-        return $this->_mySforceConnection->delete(array($id));
+        return $this->getClient()->delete(array($id));
     }
 
     /**
@@ -299,10 +272,16 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
      * @param $path
      * @return mixed|null|string
      */
-    protected function getStoreConfig($path)
+    protected function getStoreConfig($path, $_currentStoreId = null, $_currentWebsite = null)
     {
-        $_currentWebsite = Mage::app()->getStore()->getWebsiteId();
-        $_currentStoreId = Mage::app()->getStore()->getStoreId();
+        if (!$_currentWebsite) {
+            $_currentWebsite = Mage::app()->getStore($_currentStoreId)->getWebsiteId();
+        }
+
+        if (!$_currentStoreId) {
+            $_currentStoreId = Mage::app()->getWebsite($_currentWebsite)->getDefaultStore()->getId();
+        }
+
         if ($_currentWebsite == 0 && $_currentStoreId == 0) {
             if ($this->getStoreId()) {
                 return Mage::getStoreConfig($path, $this->getStoreId());
@@ -312,7 +291,12 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
             }
         }
 
-        return Mage::getStoreConfig($path);
+        $availableStoreIds = Mage::app()->getWebsite($_currentWebsite)->getStoreIds();
+        if (!in_array($_currentStoreId, $availableStoreIds)) {
+            $_currentStoreId = Mage::app()->getWebsite($_currentWebsite)->getDefaultStore()->getId();
+        }
+
+        return Mage::getStoreConfig($path, $_currentStoreId);
     }
 
     /**
@@ -398,13 +382,47 @@ class TNW_Salesforce_Helper_Abstract extends Mage_Core_Helper_Abstract
         return $this->_useCache;
     }
 
+    /**
+     * @param $key
+     * @param null $website
+     * @return mixed
+     */
+    public function getStorage($key, $website = null)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
+        return $this->useCache()
+            ? unserialize($this->getCache()->load($key))
+            : Mage::getSingleton('tnw_salesforce/session')->getData($key);
+    }
+
+    /**
+     * @param $value
+     * @param $key
+     * @param null $website
+     * @return bool
+     * @throws Zend_Cache_Exception
+     */
+    public function setStorage($value, $key, $website = null)
+    {
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')->getWebsiteDifferentConfig($website);
+        $key = sprintf('%s_%s', $key, $website->getCode());
+
+        if ($this->useCache()) {
+            return $this->getCache()
+                ->save(serialize($value), $key, array('TNW_SALESFORCE'));
+        } else {
+            Mage::getSingleton('tnw_salesforce/session')->setData($key, $value);
+            return true;
+        }
+    }
+
     protected function _reset()
     {
         $this->_initCache();
-
-        if (!$this->_mySforceConnection) {
-            $this->checkConnection();
-        }
 
         $sql = "SELECT * FROM `" . $this->getTable('eav_entity_type') . "` WHERE entity_type_code = 'customer'";
         $row = $this->getDbConnection('read')->query($sql)->fetch();

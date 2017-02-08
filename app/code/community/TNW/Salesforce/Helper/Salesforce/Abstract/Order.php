@@ -4,15 +4,11 @@
  * Class TNW_Salesforce_Helper_Salesforce_Abstract
  *
  * @method Mage_Sales_Model_Order getEntityByItem($_entity)
+ * @method Mage_Sales_Model_Order getEntityCache($cachePrefix)
  * @method Mage_Sales_Model_Order _loadEntityByCache($_entityId, $_entityNumber)
  */
-abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Base
+abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Salesforce_Helper_Salesforce_Abstract_Sales
 {
-    /**
-     * @var array
-     */
-    protected $_stockItems = array();
-
     /**
      * @comment magento entity model alias
      * @var array
@@ -31,79 +27,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         'discount'
     );
 
-    protected $_pricebookEntryId = NULL;
-
-    /**
-     * @comment order item field aliases
-     * @var array
-     */
-    protected $_itemFieldAlias = array();
-
     /**
      * @var array
      */
     protected $_allowedOrderStatuses = array();
 
     /**
-     * @var int
-     */
-    protected $_guestCount = 0;
-
-    /**
      * @var array
      */
     protected $_quotes = array();
-
-    /**
-     * @var array
-     */
-    protected $_emails = array();
-
-    /**
-     * @var array
-     */
-    protected $_websites = array();
-
-    /**
-     * @var bool
-     */
-    protected $_updateCustomer = true;
-
-    /**
-     * @param $isUpdate
-     * @return $this
-     */
-    public function setUpdateCustomer($isUpdate)
-    {
-        $this->_updateCustomer = $isUpdate;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getUpdateCustomer()
-    {
-        return $this->_updateCustomer;
-    }
-
-    /**
-     * @return array
-     */
-    public function getItemFieldAlias()
-    {
-        return $this->_itemFieldAlias;
-    }
-
-    /**
-     * @param array $itemFieldAlias
-     * @return $this
-     */
-    public function setItemFieldAlias($itemFieldAlias)
-    {
-        $this->_itemFieldAlias = $itemFieldAlias;
-        return $this;
-    }
 
     /**
      * @return string
@@ -146,12 +78,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
          * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
          */
         $parentEntityCacheKey = sprintf('%sLookup', $this->_salesforceEntityName);
-
-        if (
-            $this->_cache[$parentEntityCacheKey]
-            && array_key_exists($parentEntityNumber, $this->_cache[$parentEntityCacheKey])
-            && $this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}
-        ) {
+        if (!empty($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()})) {
             foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}->records as $_cartItem) {
                 if ($_cartItem->Id != $item->getData('salesforce_id')) {
                     continue;
@@ -176,7 +103,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             $_productIds[] = (int) $this->getProductIdFromCart($_item);
         }
 
-        return $_productIds;
+        return array_filter($_productIds);
     }
 
     /**
@@ -208,7 +135,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function getItems($parentEntity)
     {
-        $_items = array();
+        $_items = parent::getItems($parentEntity);
 
         /** @var Mage_Sales_Model_Order_Item $_item */
         foreach ($parentEntity->getAllVisibleItems() as $_item) {
@@ -261,35 +188,25 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
     /**
      * @param $_entity Mage_Sales_Model_Order
-     */
-    protected function _prepareEntityItemAfter($_entity)
-    {
-        $this->_applyAdditionalFees($_entity);
-    }
-
-    /**
-     * @param $_entity Mage_Sales_Model_Order
-     * @param $item Varien_Object
+     * @param $item Mage_Sales_Model_Order_Item
      */
     protected function _prepareAdditionalFees($_entity, $item)
     {
         $_salesforceId        = null;
         $_entityNumber        = $this->_getEntityNumber($_entity);
         $parentEntityCacheKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $productSalesforceId  = $this->_getObjectByEntityItemType($item, 'Product')->getData('salesforce_id');
 
-        if (
-            $this->_cache[$parentEntityCacheKey]
-            && array_key_exists($_entityNumber, $this->_cache[$parentEntityCacheKey])
-            && $this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}
-        ) {
-            foreach ($this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}->records as $_cartItem) {
-                if ($_cartItem->PricebookEntry->Product2Id != $item->getData('Id')) {
-                    continue;
-                }
+        $records              = !empty($this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()})
+            ? $this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}->records : array();
 
-                $_salesforceId = $_cartItem->Id;
-                break;
+        foreach ($records as $_cartItem) {
+            if ($_cartItem->PricebookEntry->Product2Id != $productSalesforceId) {
+                continue;
             }
+
+            $_salesforceId = $_cartItem->Id;
+            break;
         }
 
         $item->setData('salesforce_id', $_salesforceId);
@@ -306,44 +223,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $upsertedEntity = $this->_cache['upserted' . $this->getManyParentEntityType()];
         //return $this->_cache['upserted' . $this->getManyParentEntityType()][$parentEntityNumber];
         return (array_key_exists($parentEntityNumber, $upsertedEntity)) ? $upsertedEntity[$parentEntityNumber] :  NULL;
-    }
-
-    /**
-     * @param $item
-     * @param int $qty
-     * @return float
-     */
-    protected function _prepareItemPrice($item, $qty = 1)
-    {
-        $netTotal = $this->_calculateItemPrice($item, $qty);
-
-        /**
-         * @comment prepare formatted price
-         */
-        return $this->numberFormat($netTotal);
-    }
-
-    /**
-     * @param $item
-     * @param int $qty
-     * @return float
-     */
-    protected function _calculateItemPrice($item, $qty = 1)
-    {
-        if (!Mage::helper('tnw_salesforce')->useTaxFeeProduct()) {
-            $netTotal = $this->getEntityPrice($item, 'RowTotalInclTax');
-        } else {
-            $netTotal = $this->getEntityPrice($item, 'RowTotal');
-        }
-
-        if (!Mage::helper('tnw_salesforce')->useDiscountFeeProduct()) {
-            $netTotal = ($netTotal - $this->getEntityPrice($item, 'DiscountAmount'));
-            $netTotal = $netTotal / $qty;
-        } else {
-            $netTotal = $netTotal / $qty;
-        }
-
-        return $netTotal;
     }
 
     /**
@@ -473,8 +352,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     /**
      * @param $_entityItem Mage_Sales_Model_Order_Item
      * @param $_type string
-     * @return null
-     * @throws Exception
+     * @return mixed
      */
     protected function _getObjectByEntityItemType($_entityItem, $_type)
     {
@@ -489,37 +367,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
                 break;
 
             case 'Product':
-                // Load by product Id only if bundled OR simple with options
-                $_productId = $this->getProductIdFromCart($_entityItem);
-                $storeId    = $this->_getObjectByEntityItemType($_entityItem, 'Custom')->getId();
-
-                /** @var Mage_Catalog_Model_Product $_product */
-                $_product   = Mage::getModel('catalog/product')
-                    ->setStoreId($storeId);
-
-                if ($_productId) {
-                    $_object = $_product->load($_productId);
-                    break;
-                }
-                else {
-                    $_entity        = $this->_getObjectByEntityItemType($_entityItem, 'Order');
-                    $pricebookId    = $this->_getPricebookIdToOrder($_entity);
-                    $_currencyCode  = $this->getCurrencyCode($_entity);
-                    $pricebookEntry = Mage::helper('tnw_salesforce/salesforce_data_product')
-                        ->getProductPricebookEntry($_entityItem->getData('Id'), $pricebookId, $_currencyCode);
-
-                    if (!$pricebookEntry || !isset($pricebookEntry['Id'])) {
-                        throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getData('ProductCode') . ") is not synchronized, could not add to $this->_salesforceEntityName!");
-                    }
-
-                    $_object = $_product->addData(array(
-                        'name'                    => $_entityItem->getData('Name'),
-                        'sku'                     => $_entityItem->getData('ProductCode'),
-                        'salesforce_id'           => $_entityItem->getData('Id'),
-                        'salesforce_pricebook_id' => $pricebookEntry['Id'],
-                    ));
-                    break;
-                }
+                $_object = $this->getProductByEntityItem($_entityItem);
+                break;
 
             case 'Product Inventory':
                 $product = $this->_getObjectByEntityItemType($_entityItem, 'Product');
@@ -561,13 +410,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
         $this->_obj->{$this->getSalesforceParentIdField()} = $this->_getParentEntityId($_entityNumber);
 
-        $_isDescription = property_exists($this->_obj, 'Description');
-        if ((!$_isDescription || ($_isDescription && empty($this->_obj->Description)))
-            && $_entityItem->getBundleItemToSync()
-        ) {
-            $this->_obj->Description = $_entityItem->getBundleItemToSync();
-        }
-
         // use_product_campaign_assignment
         if (
             Mage::helper('tnw_salesforce/config_sales')->useProductCampaignAssignment()
@@ -582,41 +424,28 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         if (!property_exists($this->_obj, 'Id')) {
             $_currencyCode    = $this->getCurrencyCode($_entity);
             $pricebookEntryId = $product->getSalesforcePricebookId();
+            foreach (explode("\n", $pricebookEntryId) as $value) {
+                if (strpos($value, ':') === false) {
+                    continue;
+                }
 
-            if (!empty($pricebookEntryId)) {
-                $valuesArray = explode("\n", $pricebookEntryId);
-
-                if (!empty($valuesArray)) {
-                    foreach ($valuesArray as $value) {
-
-                        if (strpos($value, ':') !== false) {
-                            $tmp = explode(':', $value);
-                            if (
-                                isset($tmp[0])
-                                && ($tmp[0] == $_currencyCode || empty($_currencyCode))
-                            ) {
-                                $pricebookEntryId = $tmp[1];
-                            }
-                        }
-                    }
+                list($_currency, $_priceBook) = explode(':', $value, 2);
+                if (!empty($_currency) && ($_currency == $_currencyCode || empty($_currencyCode))) {
+                    $pricebookEntryId = $_priceBook;
                 }
             }
 
             if (empty($pricebookEntryId)) {
-                throw new Exception("NOTICE: Product w/ SKU (" . $_entityItem->getSku() . ") is not synchronized, could not add to $this->_salesforceEntityName!");
+                throw new Exception("NOTICE: Product w/ SKU ({$_entityItem->getSku()}) is not synchronized, could not add to {$this->_salesforceEntityName}!");
             }
 
             $this->_obj->PricebookEntryId = $pricebookEntryId;
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("Opportunity/Order Item Object: \n" . print_r($this->_obj, true));
-
-        $key = $_entityItem->getId();
-        // if it's fake product for order fee, has the same id's for all products
-        if (!$product->getId()) {
-            $key .= '_' . $_entityNumber;
-        }
+        $entityId = $_entityItem->getId();
+        $key = empty($entityId)
+            ? sprintf('%s_%s', $_entityNumber, count($this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]))
+            : $entityId;
 
         $this->_cache[sprintf('%sProductsToSync', lcfirst($this->getItemsField()))][$this->_getParentEntityId($_entityNumber)][] = $product->getSku();
         $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]['cart_' . $key] = $this->_obj;
@@ -679,8 +508,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _massAddBefore($_ids)
     {
-        $this->_guestCount = 0;
-        $this->_quotes = $this->_emails = $this->_websites = array();
+        parent::_massAddBefore($_ids);
+        $this->_quotes = array();
     }
 
     /**
@@ -757,104 +586,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     protected function _massAddAfter()
     {
         $this->_findAbandonedCart($this->_quotes);
-
-        $_cacheCustomersKey = sprintf('%sCustomers', $this->_magentoEntityName);
-        $this->_cache['leadsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_lead')
-            ->lookup($this->_cache[$_cacheCustomersKey]);
-        $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')
-            ->lookup($this->_cache[$_cacheCustomersKey]);
-        $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')
-            ->lookup($this->_cache[$_cacheCustomersKey]);
-
-        $this->_prepareOrderLookup();
-
-        /**
-         * Order customers sync can be denied if we just update order status
-         */
-        if ($this->getUpdateCustomer()) {
-            $this->syncEntityCustomers();
-        }
-
-        /**
-         * define Salesforce data for order customers
-         */
-        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $key => $number) {
-            $entity         = $this->_loadEntityByCache($key, $number);
-            /** @var Mage_Customer_Model_Customer $customer */
-            $customer       = $this->_getObjectByEntityType($entity, 'Customer');
-            $customerEmail  = strtolower($customer->getEmail());
-
-            if (!empty($this->_cache['accountsLookup'][0][$customerEmail])) {
-                $_websiteId = $this->_websites[$this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$number]];
-
-                $customer->setData('salesforce_account_id', $this->_cache['accountsLookup'][0][$customerEmail]->Id);
-
-                // Overwrite Contact Id for Person Account
-                if (property_exists($this->_cache['accountsLookup'][0][$customerEmail], 'PersonContactId')) {
-                    $customer->setData('salesforce_id', $this->_cache['accountsLookup'][0][$customerEmail]->PersonContactId);
-                }
-
-                // Overwrite from Contact Lookup if value exists there
-                if (isset($this->_cache['contactsLookup'][$_websiteId][$customerEmail])) {
-                    $customer->setData('salesforce_id', $this->_cache['contactsLookup'][$_websiteId][$customerEmail]->Id);
-                }
-
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SUCCESS: Automatic customer synchronization.');
-            }
-            else {
-                /**
-                 * No customers for this order in salesforce - error
-                 */
-                // Something is wrong, could not create / find Magento customer in SalesForce
-                $this->logError('CRITICAL ERROR: Contact or Lead for Magento customer (' . $customerEmail . ') could not be created / found!');
-                $this->_skippedEntity[$key] = $key;
-
-                continue;
-            }
-        }
-
-        foreach ($this->_skippedEntity as $_idToRemove) {
-            unset($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_idToRemove]);
-        }
-    }
-
-    /**
-     * Check and synchronize order customers if it's necessary
-     */
-    public function syncEntityCustomers()
-    {
-        /**
-         * Force sync of the customer
-         * Or if it's guest checkout: customer->getId() is empty
-         * Or customer was not synchronized before: no account/contact ids ot lead not converted
-         */
-
-        $_customersToSync = array();
-
-        $_cacheCustomersKey = sprintf('%sCustomers', $this->_magentoEntityName);
-        /** @var $customer Mage_Customer_Model_Customer */
-        foreach ($this->_cache[$_cacheCustomersKey] as $_entityNumber => $customer) {
-            if (!$this->_checkSyncCustomer($_entityNumber)) {
-                continue;
-            }
-
-            $_customersToSync[$_entityNumber] = $customer;
-        }
-
-        if (!empty($_customersToSync)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Synchronizing Guest/New customer...');
-
-            $helperType = count($_customersToSync) > 1
-                ? 'bulk' : 'salesforce';
-
-            /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Customer */
-            $manualSync = Mage::helper('tnw_salesforce/' . $helperType . '_customer');
-            if ($manualSync->reset() && $manualSync->forceAdd($_customersToSync) && $manualSync->process()) {
-                set_time_limit(30);
-                $this->_cache['contactsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_contact')->lookup($this->_cache[$_cacheCustomersKey]);
-                $this->_cache['accountsLookup'] = Mage::helper('tnw_salesforce/salesforce_data_account')->lookup($this->_cache[$_cacheCustomersKey]);
-            }
-        }
+        parent::_massAddAfter();
     }
 
     /**
@@ -863,28 +595,17 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     protected function _checkSyncCustomer($_entityNumber)
     {
-        $_entityId   = array_search($_entityNumber, $this->_cache['entitiesUpdating']);
-        if (false === $_entityId) {
-            return false;
-        }
+        $syncCustomer = parent::_checkSyncCustomer($_entityNumber);
 
-        $customerId  = $this->_cache[sprintf('%sToCustomerId', $this->_magentoEntityName)][$_entityNumber];
-        $email       = $this->_cache[sprintf('%sToEmail', $this->_magentoEntityName)][$_entityNumber];
-        $websiteSfId = $this->_websites[$customerId];
-
-        /** @var $customer Mage_Customer_Model_Customer */
-        $customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
-
-        $syncCustomer = false;
         /**
          * If customer has not default billing/shipping addresses - we can use data from order if it's allowed
          */
-        if (Mage::helper('tnw_salesforce')->canUseOrderAddress()) {
+        if (!$syncCustomer && Mage::helper('tnw_salesforce')->canUseOrderAddress()) {
+            /** @var $customer Mage_Customer_Model_Customer */
+            $customer    = $this->_cache[sprintf('%sCustomers', $this->_magentoEntityName)][$_entityNumber];
 
             if (!$customer->getDefaultBillingAddress()) {
-                /** @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote $entity */
-                $entity = $this->_loadEntityByCache($_entityId, $_entityNumber);
-                $entityAddress = $entity->getBillingAddress();
+                $entityAddress = $this->getEntityCache($_entityNumber)->getBillingAddress();
                 if ($entityAddress instanceof Mage_Customer_Model_Address_Abstract) {
                     /** @var Mage_Customer_Model_Address $customerAddress */
                     $customerAddress = Mage::getModel('customer/address');
@@ -899,9 +620,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
 
             if (!$customer->getDefaultShippingAddress()) {
-                /** @var Mage_Sales_Model_Order|Mage_Sales_Model_Quote $entity */
-                $entity = $this->_loadEntityByCache($_entityId, $_entityNumber);
-                $entityAddress = $entity->getShippingAddress();
+                $entityAddress = $this->getEntityCache($_entityNumber)->getShippingAddress();
                 if ($entityAddress instanceof Mage_Customer_Model_Address_Abstract) {
                     /** @var Mage_Customer_Model_Address $customerAddress */
                     $customerAddress = Mage::getModel('customer/address');
@@ -916,21 +635,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
         }
 
-        if (!isset($this->_cache['contactsLookup'][$websiteSfId][$email])
-            || !isset($this->_cache['accountsLookup'][0][$email])
-            || (
-                isset($this->_cache['leadsLookup'][$websiteSfId][$email])
-                && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted
-            )
-        ) {
-            $syncCustomer = true;
-        }
-
         return $syncCustomer;
     }
 
     /**
      * Try to find order in SF and save in local cache
+     * @deprecated
      */
     protected function _prepareOrderLookup()
     {
@@ -938,6 +648,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $this->_cache['orderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')->lookup($this->_cache['entitiesUpdating']);
     }
 
+    /**
+     *
+     */
+    protected function _massAddAfterLookup()
+    {
+        $this->_prepareOrderLookup();
+    }
 
     /**
      * @param $ids
@@ -1017,9 +734,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         $_orderNumber = $this->_cache['entitiesUpdating'][$_key];
 
         if (
-            is_array($this->_cache[$lookupKey])
-            && array_key_exists($_orderNumber, $this->_cache[$lookupKey])
-            && property_exists($this->_cache[$lookupKey][$_orderNumber], 'Pricebook2Id')
+            isset($this->_cache[$lookupKey][$_orderNumber]->Pricebook2Id)
             && $this->_obj->Pricebook2Id != $this->_cache[$lookupKey][$_orderNumber]->Pricebook2Id
         ){
             Mage::getSingleton('tnw_salesforce/tool_log')
@@ -1046,107 +761,12 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
         return $_entity->getRealOrderId();
     }
 
-    protected function _prepareEntityItemsBefore()
-    {
-        $failedKey    = sprintf('failed%s', $this->getManyParentEntityType());
-
-        // only sync all products if processing real time
-        if ($this->_isCron) {
-            return;
-        }
-
-        // Get all products from each order and decide if all needs to me synced prior to inserting them
-        foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-            if (in_array($_orderNumber, $this->_cache[$failedKey])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace(sprintf('%s (%s): Skipping, issues with upserting an %s!',
-                        strtoupper($this->_magentoEntityName), $_orderNumber, $this->_salesforceEntityName));
-
-                continue;
-            }
-
-            if (!$this->_checkPrepareEntityItem($_key)) {
-                continue;
-            }
-
-            /** @var Mage_Sales_Model_Order $_order */
-            $_order = $this->_loadEntityByCache($_key, $_orderNumber);
-            foreach ($this->getItems($_order) as $_item) {
-                $this->_prepareStoreId($_item);
-            }
-        }
-
-        // Sync Products
-        if (!empty($this->_stockItems)) {
-            $this->syncProducts();
-        }
-    }
-
-    protected function _checkPrepareEntityItem($_key)
-    {
-        return true;
-    }
-
-    /**
-     * Prepare Store Id for upsert
-     *
-     * @param Mage_Sales_Model_Order_Item $_item
-     */
-    protected function _prepareStoreId($_item)
-    {
-        $itemId = $this->getProductIdFromCart($_item);
-        $_order = $_item->getOrder();
-        $_storeId = $_order->getStoreId();
-
-        if (!array_key_exists($_storeId, $this->_stockItems)) {
-            $this->_stockItems[$_storeId] = array();
-        }
-        // Item's stock needs to be updated in Salesforce
-        if (!in_array($itemId, $this->_stockItems[$_storeId])) {
-            $this->_stockItems[$_storeId][] = $itemId;
-        }
-    }
-
-    /**
-     * Mass sync products that are part of the order
-     */
-    protected function syncProducts()
-    {
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
-
-        /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
-        $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
-
-        foreach ($this->_stockItems as $_storeId => $_products) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Store Id: " . $_storeId);
-            $manualSync->setOrderStoreId($_storeId);
-            if ($manualSync->reset() && $manualSync->massAdd($this->_stockItems[$_storeId]) && $manualSync->process()) {
-                if (!$this->isFromCLI()) {
-                    Mage::getSingleton('adminhtml/session')
-                        ->addSuccess(Mage::helper('adminhtml')->__('Store #' . $_storeId . ' ,Product inventory was synchronized with Salesforce'));
-                }
-            }
-            else {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('WARNING: Salesforce Connection could not be established!');
-            }
-        }
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: END ================");
-    }
-
     /**
      * @param $order Mage_Sales_Model_Order
      * @throws Exception
      */
     public function updateStatus($order)
     {
-        $_entityNumber = $this->_getEntityNumber($order);
-        if (Mage::getModel('tnw_salesforce/localstorage')->getObject($order->getId())) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Order #$_entityNumber is already queued for update.");
-            return;
-        }
-
         if (!$this->reset()) {
             return;
         }
@@ -1162,7 +782,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             return;
         }
 
-        $_lookupKey    = sprintf('%sLookup', $this->_salesforceEntityName);
+        $_lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $_entityNumber = $this->_getEntityNumber($order);
         if (isset($this->_cache[$_lookupKey][$_entityNumber])) {
             $this->_prepareEntity();
 
@@ -1187,28 +808,13 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
      */
     public function reset()
     {
-        parent::reset();
+        $return = parent::reset();
 
         // get all allowed order statuses from configuration
         $this->_allowedOrderStatuses = explode(',', Mage::helper('tnw_salesforce')->getAllowedOrderStates());
+        $this->_cache['productCampaignAssignment'] = array();
+        $this->_cache['products'] = array();
 
-        // Clean order cache
-        if (is_array($this->_cache['entitiesUpdating'])) {
-            foreach ($this->_cache['entitiesUpdating'] as $_key => $_orderNumber) {
-                $this->unsetEntityCache($_orderNumber);
-            }
-        }
-
-        $this->_cache = array(
-            'accountsLookup' => array(),
-            'productCampaignAssignment' => array(),
-            'entitiesUpdating' => array(),
-            sprintf('upserted%s', $this->getManyParentEntityType()) => array(),
-            sprintf('failed%s', $this->getManyParentEntityType()) => array(),
-            sprintf('%sToUpsert', lcfirst($this->getItemsField())) => array(),
-            sprintf('%sToUpsert', strtolower($this->getManyParentEntityType())) => array(),
-        );
-
-        return $this->check();
+        return $return;
     }
 }

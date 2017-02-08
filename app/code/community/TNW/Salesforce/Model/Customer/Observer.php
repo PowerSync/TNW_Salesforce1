@@ -61,7 +61,7 @@ class TNW_Salesforce_Model_Customer_Observer
                 /** @var tnw_salesforce_helper_salesforce_customer $manualSync */
                 $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
                 if ($manualSync->reset()) {
-                    $manualSync->pushLead($formData);
+                    $manualSync->pushContactUs($formData);
                 }
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError('SKIPING: Contact form synchronization, error: ' . $e->getMessage());
@@ -71,56 +71,111 @@ class TNW_Salesforce_Model_Customer_Observer
 
     /**
      * @param Varien_Event_Observer $observer
-     * @return bool
      */
     public function salesforcePush($observer)
     {
         /** @var Mage_Customer_Model_Customer $customer */
         $customer = $observer->getEvent()->getCustomer();
-
-        if (
-            !Mage::helper('tnw_salesforce')->isEnabled()
-            || !Mage::helper('tnw_salesforce')->isEnabledCustomerSync()
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING: Customer synchronization is disabled');
-            return; // Disabled
-        }
-
-        if (!Mage::helper('tnw_salesforce')->canPush()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError('ERROR: Salesforce connection could not be established, SKIPPING customer sync');
-            return; // Disabled
-        }
-
-        if (Mage::getSingleton('core/session')->getFromSalesForce()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
-            return; // Disabled
-        }
-
         Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace('TNW EVENT: Customer Sync (Email: ' . $customer->getEmail() . ')');
+            ->saveTrace("TNW EVENT: Customer Sync (Email: {$customer->getEmail()})");
 
-        // check if queue sync setting is on - then save to database
-        if (Mage::helper('tnw_salesforce')->getObjectSyncType() != 'sync_type_realtime') {
-            // pass data to local storage
-            // TODO add level up abstract class with Order as static values, now we have word 'Customer' as parameter
-            $res = Mage::getModel('tnw_salesforce/localstorage')->addObject(array(intval($customer->getData('entity_id'))), 'Customer', 'customer');
-            if (!$res) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError('error: customer not saved to local storage');
+        $this->syncCustomer(array($customer->getId()));
+    }
+
+    /**
+     * @param array $entityIds
+     * @throws Exception
+     */
+    public function syncCustomer(array $entityIds)
+    {
+        $groupWebsite = array();
+        foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
+            /** @var Varien_Db_Select $select */
+            $select = Mage::getSingleton('tnw_salesforce/localstorage')
+                ->generateSelectForType('customer/customer', $_entityIds);
+
+            foreach ($select->getAdapter()->fetchAll($select) as $row) {
+                $groupWebsite[$row['website_id']][] = $row['object_id'];
+            }
+        }
+
+        foreach ($groupWebsite as $websiteId => $entityIds) {
+            $this->syncCustomerForWebsite($entityIds, $websiteId);
+        }
+    }
+
+    /**
+     * @param array $entityIds
+     * @param null $website
+     * @throws Exception
+     */
+    public function syncCustomerForWebsite(array $entityIds, $website = null)
+    {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice('SKIPPING: API Integration is disabled');
+
                 return;
             }
 
-            return;
-        }
+            if (!$helper->isEnabledCustomerSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('SKIPPING: Customer synchronization disabled');
 
-        /** @var tnw_salesforce_helper_salesforce_customer $manualSync */
-        $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
-        if ($manualSync->reset() && $manualSync->massAdd(array($customer->getId())) && $manualSync->process()) {
-            if (Mage::helper('tnw_salesforce')->displayErrors()
-                && Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getSingleton('adminhtml/session')
-                    ->addSuccess(Mage::helper('adminhtml')->__('Customer (email: ' . $customer->getEmail() . ') is successfully synchronized'));
+                return;
             }
-        }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            $syncBulk = (count($entityIds) > 1);
+
+            try {
+                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $success = Mage::getModel('tnw_salesforce/localstorage')
+                        ->addObject($entityIds, 'Customer', 'customer', $syncBulk);
+
+                    if (!$success) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveError('Could not add to the queue!');
+                    } elseif ($syncBulk) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
+
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
+                    } else {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                    }
+                } else {
+                    /** @var TNW_Salesforce_Helper_Salesforce_Customer $manualSync */
+                    $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_customer', $syncBulk ? 'bulk' : 'salesforce'));
+                    if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
+                        Mage::getSingleton('tnw_salesforce/tool_log')
+                            ->saveSuccess($helper->__('Total of %d customer(s) were successfully synchronized', count($entityIds)));
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($e->getMessage());
+            }
+        });
     }
 
     /**
@@ -171,8 +226,8 @@ class TNW_Salesforce_Model_Customer_Observer
         $customer = $observer->getData('customer');
         $account  = $observer->getData('request')->getPost('account', array());
 
-        if (!empty($account['salesforce_account_owner_id'])) {
-            $customer->setData('salesforce_account_owner_id', $account['salesforce_account_owner_id']);
+        if (!empty($account['salesforce_account_owner_id']) && empty($account['salesforce_contact_owner_id'])) {
+            $customer->setData('salesforce_contact_owner_id', $account['salesforce_account_owner_id']);
         }
 
         if (!empty($account['salesforce_sales_person'])) {

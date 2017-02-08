@@ -11,10 +11,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_FromController extends Mage_
      */
     protected function _initLayout()
     {
-        if (!Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::getSingleton('adminhtml/session')->addNotice("Salesforce integration is not working! Refer to the config or the log files for more information.");
-        }
-
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce');
 
@@ -83,5 +79,60 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_FromController extends Mage_
     {
         $this->loadLayout(false);
         $this->renderLayout();
+    }
+
+    /**
+     *
+     */
+    public function syncAction()
+    {
+        $queueId = $this->getRequest()->getParam('queue');
+        /** @var TNW_Salesforce_Model_Import $queue */
+        $queue = Mage::getModel('tnw_salesforce/import')
+            ->load($queueId);
+
+        if (is_null($queue->getId())) {
+            $this->_getSession()
+                ->addError("Item id \"{$queueId}\" not found");
+
+            $this->_redirect('*/*/');
+            return;
+        }
+
+        $queue
+            ->setStatus(TNW_Salesforce_Model_Import::STATUS_PROCESSING)
+            ->save(); //Update status to prevent duplication
+
+        $association = array();
+        try {
+            $_association = $queue->process();
+            foreach($_association as $type=>$_item) {
+                if (!isset($association[$type])) {
+                    $association[$type] = array();
+                }
+
+                $association[$type] = array_merge($association[$type], $_item);
+            }
+
+            $queue
+                ->setStatus(TNW_Salesforce_Model_Import::STATUS_SUCCESS)
+                ->save();
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveError("Error: {$e->getMessage()}");
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("Failed to upsert a {$queue->getObjectType()} #{$queue->getObjectProperty('Id')}, please re-save or re-import it manually");
+
+            $queue
+                ->setMessage($e->getMessage())
+                ->setStatus(TNW_Salesforce_Model_Import::STATUS_ERROR)
+                ->save();
+        }
+
+        TNW_Salesforce_Helper_Magento_Abstract
+            ::sendMagentoIdToSalesforce($association);
+
+        $this->_redirect('*/*/');
     }
 }

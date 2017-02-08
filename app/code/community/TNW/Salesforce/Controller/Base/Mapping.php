@@ -201,17 +201,19 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
                 $model->setData($data)
                     ->setId($this->getRequest()->getParam('mapping_id'));
 
-                $fields = Mage::helper('tnw_salesforce/salesforce_data')
+                $describe = Mage::helper('tnw_salesforce/salesforce_data')
                     ->describeTable($model->getSfObject());
 
                 /**
                  * try to find SF field
                  */
                 $appropriatedField = false;
-                foreach ($fields as $field) {
-                    if (strtolower($field->name) == strtolower($model->getSfField())) {
-                        $appropriatedField = $field;
-                        break;
+                if (!empty($describe->fields)) {
+                    foreach ($describe->fields as $field) {
+                        if (strtolower($field->name) == strtolower($model->getSfField())) {
+                            $appropriatedField = $field;
+                            break;
+                        }
                     }
                 }
                 if ($appropriatedField) {

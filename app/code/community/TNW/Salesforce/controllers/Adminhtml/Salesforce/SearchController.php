@@ -4,109 +4,61 @@ class TNW_Salesforce_Adminhtml_Salesforce_SearchController extends Mage_Adminhtm
 {
     public function accountAction()
     {
+        $website = $this->getRequest()->getParam('website');
+        $curPage = $this->getRequest()->getQuery('page', 1);
         $query = $this->getRequest()->getQuery('q');
+
         if (empty($query)) {
             $this->_sendJson(array());
             return;
         }
 
-        $curPage = $this->getRequest()->getQuery('page', 1);
+        $result = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($website, function () use($query, $curPage) {
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_ACCOUNT, $curPage);
+        });
 
-        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
-            ->addFieldToFilter('Name', array('like' => "%$query%"))
-            ->setPageSize(TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE)
-            ->setCurPage($curPage);
-
-        if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-            $collection->getSelect()
-                ->where('IsPersonAccount = false');
-        }
-
-        $result = array();
-        /** @var TNW_Salesforce_Model_Api_Entity_Account $item */
-        foreach ($collection as $item) {
-            $result[] = array(
-                'id'    => $item->getId(),
-                'text'  => $item->getData('Name'),
-            );
-        }
-
-        $this->_sendJson(array(
-            'totalRecords' => $collection->getSize(),
-            'items' => $result
-        ));
+        $this->_sendJson($result);
     }
 
     public function campaignAction()
     {
+        $website = $this->getRequest()->getParam('website');
+        $curPage = $this->getRequest()->getQuery('page', 1);
         $query = $this->getRequest()->getQuery('q');
+
         if (empty($query)) {
             $this->_sendJson(array());
             return;
         }
 
-        $curPage = $this->getRequest()->getQuery('page', 1);
+        $result = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($website, function () use($query, $curPage) {
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_CAMPAIGN, $curPage);
+        });
 
-        /** @var TNW_Salesforce_Model_Api_Entity_Resource_Campaign_Collection $collection */
-        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/campaign_collection')
-            ->addFieldToFilter('Name', array('like' => "%$query%"))
-            ->setPageSize(TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE)
-            ->setCurPage($curPage);
-
-        $filterType = $this->getRequest()->getParam('filter');
-        switch ($filterType) {
-            case 'rules':
-                $collection->addFieldToFilter(TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c', array('eq'=>null));
-                break;
-        }
-
-        $result = array();
-        /** @var TNW_Salesforce_Model_Api_Entity_Account $item */
-        foreach ($collection as $item) {
-            $result[] = array(
-                'id'    => $item->getId(),
-                'text'  => $item->getData('Name'),
-            );
-        }
-
-        $this->_sendJson(array(
-            'totalRecords' => $collection->getSize(),
-            'items' => $result
-        ));
+        $this->_sendJson($result);
     }
 
     public function userAction()
     {
+        $website = $this->getRequest()->getParam('website');
+        $curPage = $this->getRequest()->getQuery('page', 1);
         $query = $this->getRequest()->getQuery('q');
+
         if (empty($query)) {
             $this->_sendJson(array());
             return;
         }
 
-        $curPage = $this->getRequest()->getQuery('page', 1);
+        $result  = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($website, function () use($query, $curPage) {
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->searchByName($query, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_USER, $curPage);
+        });
 
-        /** @var TNW_Salesforce_Model_Api_Entity_Resource_User_Collection $collection */
-        $collection = Mage::getResourceModel('tnw_salesforce_api_entity/user_collection')
-            ->addFieldToFilter('Name', array('like' => "%$query%"))
-            ->setPageSize(TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE)
-            ->setCurPage($curPage);
-
-        $result = array();
-        /** @var TNW_Salesforce_Model_Api_Entity_Account $item */
-        foreach ($collection as $item) {
-            $result[] = array(
-                'id'    => $item->getId(),
-                'text'  => $item->getData('Name'),
-            );
-        }
-
-        $this->_sendJson(array(
-            'totalRecords' => $collection->getSize(),
-            'items' => $result
-        ));
+        $this->_sendJson($result);
     }
-    
+
     /**
      * @param $json
      */

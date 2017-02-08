@@ -100,13 +100,9 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
      */
     protected function _pushToSalesforce()
     {
-        // before we send data to sf - check if connection / login / wsdl is valid
-        // related ticket https://trello.com/c/TNEu7Rk1/54-salesforce-maintenance-causes-bulk-sync-to-run-indefinately
-        $sfClient = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$sfClient->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
-            return false;
-        }
+
+        // Clean up the data we are going to be pushing in (for guest orders if multiple orders placed by the same person and they happen to end up in the same batch)
+        $this->_deDupeCustomers();
 
         // Push Accounts on Id
         if (array_key_exists('Id', $this->_cache['accountsToUpsert']) && !empty($this->_cache['accountsToUpsert']['Id'])) {
@@ -764,10 +760,8 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         // Additional de duplication logic for PersonAccounts
         $_salesforceIds = array();
         foreach ($this->_cache['accountsToUpsert']['Id'] as $_magentoId => $_object) {
-            $_websiteId = $this->_getWebsiteIdByCustomerId($_magentoId);
             if (
-                Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
-                && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_FORCE_RECORDTYPE) != TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
+                Mage::helper('tnw_salesforce')->customerTypeRecordType() != TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT
                 && !property_exists($_object, 'Name')
                 && property_exists($_object, 'RecordTypeId')
                 && Mage::helper('tnw_salesforce')->usePersonAccount()

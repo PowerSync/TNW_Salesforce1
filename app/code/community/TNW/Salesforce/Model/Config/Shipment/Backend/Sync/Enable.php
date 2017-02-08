@@ -37,7 +37,7 @@ class TNW_Salesforce_Model_Config_Shipment_Backend_Sync_Enable extends Mage_Core
     protected function _checkShipmentObject()
     {
         /** @var tnw_salesforce_model_connection $_connection */
-        $_connection = Mage::getSingleton('tnw_salesforce/connection');
+        $_connection = TNW_Salesforce_Model_Connection::createConnection();
         if (!$_connection->initConnection()) {
             return false;
         }
