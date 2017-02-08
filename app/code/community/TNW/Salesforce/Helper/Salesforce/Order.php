@@ -236,15 +236,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Order Push: Start----------');
-        foreach (array_values($this->_cache['ordersToUpsert']) as $_opp) {
-            foreach ($_opp as $_key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace("Order Object: " . $_key . " = '" . $_value . "'");
-            }
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("--------------------------");
-        }
-
         $_keys = array_keys($this->_cache['ordersToUpsert']);
         try {
             Mage::dispatchEvent("tnw_salesforce_order_send_before", array(
@@ -325,7 +316,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
 
         $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
         if (array_key_exists($_orderNumber, $_orderStatuses) && $_orderStatuses[$_orderNumber] != $_draftStatus) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('ORDER (' . $_orderNumber . '): Skipping, order is already Active!');
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('ORDER (' . $_orderNumber . '): Skip order items sync, order is already Active!');
+
             return false;
         }
 

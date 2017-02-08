@@ -40,6 +40,7 @@ class TNW_Salesforce_Block_Adminhtml_Invoicesync_Grid extends Mage_Adminhtml_Blo
             ->addAttributeToSelect('order_created_at')
             ->addAttributeToSelect('billing_name')
             ->addAttributeToSelect('state')
+            ->addAttributeToSelect('store_id')
             ->addAttributeToSelect('grand_total');
 
         $this->setCollection($collection);
@@ -59,7 +60,7 @@ class TNW_Salesforce_Block_Adminhtml_Invoicesync_Grid extends Mage_Adminhtml_Blo
             ),
             'index' => 'sf_insync',
             'filter_index' => 'flat_invoice.sf_insync',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status()
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
         $this->addColumn('increment_id', array(
@@ -67,7 +68,7 @@ class TNW_Salesforce_Block_Adminhtml_Invoicesync_Grid extends Mage_Adminhtml_Blo
             'index'     => 'increment_id',
             'type'      => 'text',
             'filter_index' => 'main_table.increment_id',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_entity',
             'actions' => array(
                 array(
                     'url' => array('base' => '*/sales_invoice/view'),
@@ -82,7 +83,7 @@ class TNW_Salesforce_Block_Adminhtml_Invoicesync_Grid extends Mage_Adminhtml_Blo
             'index' => 'salesforce_id',
             'type' => 'text',
             'width' => '140px',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
             'filter_index' => 'flat_invoice.salesforce_id',
         ));
 

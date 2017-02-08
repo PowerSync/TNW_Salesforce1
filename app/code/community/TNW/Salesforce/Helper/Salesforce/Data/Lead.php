@@ -13,14 +13,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     protected $_parent = null;
 
     /**
-     * @comment connect to Salesforce
-     */
-    public function __construct()
-    {
-        $this->checkConnection();
-    }
-
-    /**
      * @param Mage_Customer_Model_Customer[] $customers
      * @param string $leadSource
      * @param string $idPrefix
@@ -554,6 +546,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         return $leadConvert;
     }
 
+    /**
+     * @param $parentEntityId
+     * @param array $accounts
+     * @param string $parentEntityType
+     * @return bool
+     */
     public function prepareLeadConversionObject($parentEntityId, $accounts = array(), $parentEntityType = 'order')
     {
         return $this->_prepareLeadConversionObject($parentEntityId, $accounts, $parentEntityType);
@@ -992,18 +990,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     public function getCompanyByCustomer($customer)
     {
         //company from customer
-        $company = $customer->getCompany();
-
-        //set company from billing address
-        if (!$company && $customer->getDefaultBillingAddress()) {
-            $address = $customer->getDefaultBillingAddress();
-            if ($address->getCompany() && strlen($address->getCompany())) {
-                $company = $address->getCompany();
-            }
-        }
+        $company = TNW_Salesforce_Model_Mapping_Type_Customer::getCompanyByCustomer($customer);
 
         //set from domains
-        if (!$company) {
+        if (empty($company)) {
             $lookupByDomain = Mage::helper('tnw_salesforce/salesforce_data_account')
                 ->lookupByEmailDomain(array($customer));
             if (!empty($lookupByDomain) && isset($lookupByDomain['_'.$customer->getId()]->Name)) {
@@ -1012,8 +1002,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         }
 
         //set company from firstname + lastname
-        if (!$company && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
-            $company = $customer->getFirstname() . " " . $customer->getLastname();
+        if (empty($company) && !Mage::helper("tnw_salesforce")->createPersonAccount()) {
+            $company = TNW_Salesforce_Model_Mapping_Type_Customer::generateCompanyByCustomer($customer);
         }
 
         return trim($company);

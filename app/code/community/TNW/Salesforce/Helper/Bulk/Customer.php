@@ -100,13 +100,9 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
      */
     protected function _pushToSalesforce()
     {
-        // before we send data to sf - check if connection / login / wsdl is valid
-        // related ticket https://trello.com/c/TNEu7Rk1/54-salesforce-maintenance-causes-bulk-sync-to-run-indefinately
-        $sfClient = Mage::getSingleton('tnw_salesforce/connection');
-        if (!$sfClient->initConnection()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR on push contacts: logging to salesforce api failed, cannot push data to salesforce");
-            return false;
-        }
+
+        // Clean up the data we are going to be pushing in (for guest orders if multiple orders placed by the same person and they happen to end up in the same batch)
+        $this->_deDupeCustomers();
 
         // Push Accounts on Id
         if (array_key_exists('Id', $this->_cache['accountsToUpsert']) && !empty($this->_cache['accountsToUpsert']['Id'])) {

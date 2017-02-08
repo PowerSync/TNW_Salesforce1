@@ -26,7 +26,7 @@ class TNW_Salesforce_Helper_Test_Connection extends TNW_Salesforce_Helper_Test_A
      */
     protected function _performTest()
     {
-        $_model = Mage::getSingleton('tnw_salesforce/connection');
+        $_model = TNW_Salesforce_Model_Connection::createConnection();
         $isConnect = $_model->tryToConnect();
         $this->_message = $_model->getLastErrorMessage();
 

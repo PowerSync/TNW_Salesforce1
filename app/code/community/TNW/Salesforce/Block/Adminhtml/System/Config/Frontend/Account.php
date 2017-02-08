@@ -9,23 +9,27 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Frontend_Account
 {
     protected function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
     {
-        $aIdVal = array();
-        $value = $element->getData('value');
-        if (!empty($value) && strlen($value) >= TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
-            /** @var TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection $collection */
-            $collection = Mage::getResourceModel('tnw_salesforce_api_entity/account_collection')
-                ->addFieldToFilter('Id', array('eq' => $value));
+        /** @var Mage_Core_Model_Website $website */
+        $website = Mage::helper('tnw_salesforce/config')
+            ->getWebsiteDifferentConfig($this->getRequest()->getParam('website'));
 
-            $aIdVal = $collection->setFullIdMode(true)->getAllOptions();
-        }
+        $value = $element->getData('value');
+        $aIdVal = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($website, function () use($value) {
+            if (empty($value) || strlen($value) < TNW_Salesforce_Helper_Abstract::MIN_LEN_SF_ID) {
+                return array();
+            }
+
+            return Mage::getSingleton('tnw_salesforce/sforce_entity_cache')
+                ->toArraySearchById($value, TNW_Salesforce_Model_Sforce_Entity_Cache::CACHE_TYPE_ACCOUNT);
+        });
 
         /** @var Mage_Core_Block_Template $block */
         $block = $this->getLayout()
             ->getBlockSingleton('core/template')
             ->setTemplate('salesforce/select2ajax.phtml')
             ->addData(array(
-                'selector'  => '.tnw-ajax-find-select-account',
-                'url'       => $this->getUrl('*/salesforce_search/account'),
+                'selector'  => sprintf('.%s', $element->getData('class')),
+                'url'       => $this->getUrl('*/salesforce_search/account', array('website'=>$website->getCode())),
                 'page_size' => TNW_Salesforce_Model_Api_Entity_Resource_Account_Collection::PAGE_SIZE
             ));
 

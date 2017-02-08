@@ -10,7 +10,9 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Shipments extends Mage
             ->addFieldToSelect('created_at')
             ->addFieldToSelect('increment_id')
             ->addFieldToSelect('total_qty')
-            ->addFieldToSelect('shipping_name');
+            ->addFieldToSelect('shipping_name')
+            ->addFieldToSelect('store_id')
+        ;
 
         $collection->join(array('flat_shipment' => 'sales/shipment'),
             'main_table.entity_id = flat_shipment.entity_id',
@@ -24,7 +26,14 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Shipments extends Mage
 
     protected function _prepareColumns()
     {
-        if (Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
+        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
+            ->getWebsiteIdForType('sales/order', $this->getOrder()->getId());
+
+        $syncShipments = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($orderWebsite, function () {
+            return Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments();
+        });
+
+        if ($syncShipments) {
             $this->addColumn('sf_insync', array(
                 'header' => Mage::helper('sales')->__('Status'),
                 'width' => '40px',

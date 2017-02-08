@@ -4,6 +4,11 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
+/**
+ * Class TNW_Salesforce_Model_Mysql4_Mapping_Collection
+ *
+ * @method TNW_Salesforce_Model_Mapping getItemById($idValue)
+ */
 class TNW_Salesforce_Model_Mysql4_Mapping_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
 {
     /**

@@ -36,6 +36,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
             ->addFieldToSelect('order_created_at')
             ->addFieldToSelect('billing_name')
             ->addFieldToSelect('state')
+            ->addFieldToSelect('store_id')
             ->addFieldToSelect('grand_total');
 
         $collection->getSelect()->join(
@@ -59,7 +60,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
                 1 => 'Yes',
             ),
             'index' => 'sf_insync',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status()
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
         $this->addColumn('increment_id', array(
@@ -67,7 +68,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
             'index'     => 'increment_id',
             'filter_index' => 'main_table.increment_id',
             'type'      => 'text',
-            'renderer'  => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Entity(),
+            'renderer'  => 'tnw_salesforce/adminhtml_renderer_link_entity',
             'actions'   => array(
                 array(
                     'url' => array('base' => '*/sales_creditmemo/view'),
@@ -106,7 +107,7 @@ class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_
             'index' => 'salesforce_id',
             'type' => 'text',
             'width' => '140px',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
+            'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
 
         $this->addColumn('state', array(

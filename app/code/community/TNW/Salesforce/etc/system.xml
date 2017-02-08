@@ -29,7 +29,7 @@
                             <frontend_model>tnw_salesforce/adminhtml_build</frontend_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </build>
                         <version translate="label">
@@ -38,7 +38,7 @@
                             <frontend_model>tnw_salesforce/adminhtml_version</frontend_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </version>
                         <salesforce_version translate="label">
@@ -47,7 +47,7 @@
                             <frontend_model>tnw_salesforce/adminhtml_salesforceversion</frontend_model>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </salesforce_version>
                     </fields>
@@ -210,7 +210,7 @@
                     <label>Synchronization</label>
                     <sort_order>150</sort_order>
                     <show_in_default>1</show_in_default>
-                    <show_in_website>0</show_in_website>
+                    <show_in_website>1</show_in_website>
                     <show_in_store>0</show_in_store>
                     <expanded>1</expanded>
                     <fields>
@@ -268,7 +268,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Enable remote error logging</comment>
                         </remote_log>
@@ -448,6 +448,18 @@
                             </depends>
                         </creditmemo_batch_size>
 
+                        <page_size_from_salesforce translate="label">
+                            <label>Page size from Salesforce</label>
+                            <sort_order>180</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Page size limit]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </page_size_from_salesforce>
+
                         <!-- Bulk settings end -->
 
                         <!-- Tool settings start -->
@@ -556,7 +568,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>Enable / Disable automated customer synchronization</comment>
                         </customer_sync_enable>
-                        <new_customer translate="label">
+                        <new_customer translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Create New Customers</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -609,15 +621,13 @@
                         <default_owner translate="label">
                             <label>Default Owner</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>tnw-ajax-find-select-owner-default</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
-                            <comment>This default owner will be assigned to a Lead, Contact and/or Account when
-                                created
-                            </comment>
+                            <comment>This default owner will be assigned to synchronized entity</comment>
                         </default_owner>
                         <use_address_picklist translate="label">
                             <label>Use Country/State picklist data</label>
@@ -626,7 +636,8 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
+                            <!--TODO: Create a mapping for website-->
+                            <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
 
                             <comment><![CDATA[
@@ -668,7 +679,7 @@
                             </depends>
                             <comment><![CDATA[ Account for synchronization ]]></comment>
                         </single_account_select>
-                        <merge_duplicates>
+                        <merge_duplicates translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Automated merge (BETA)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -755,7 +766,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>How Magento should handle ownership of a Contact, if a new Contact is created in Salesforce for an existing Account</comment>
                         </contact_asignee>
-                        <merge_duplicates>
+                        <merge_duplicates translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Automated merge (BETA)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -824,12 +835,12 @@
                         <customer_lead_owner translate="label">
                             <label>Default Owner</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>tnw-ajax-find-select-owner-lead</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>100</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <customer_integration>1</customer_integration>
                             </depends>
@@ -865,7 +876,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>Have Salesforce send an email notification when Lead is converted</comment>
                         </email_notification>
-                        <merge_duplicates>
+                        <merge_duplicates translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Automated merge (BETA)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -1011,7 +1022,7 @@
                             <comment />
                             <sort_order>70</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </sync_type_all>
                         <sync_type_allow>
@@ -1021,12 +1032,22 @@
                             <comment />
                             <sort_order>80</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <sync_type_all>0</sync_type_all>
                             </depends>
                         </sync_type_allow>
+                        <create_delete_product translate="label">
+                            <label>Create Deleted Products</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <comment>Try creating deleted product automatically in Salesforce</comment>
+                            <sort_order>90</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </create_delete_product>
                     </fields>
                 </general>
             </groups>
@@ -1084,7 +1105,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>Attach Salesforce products to the Order in Salesforce</comment>
                         </order_product_enable>
-                        <notes_synchronize>
+                        <notes_synchronize translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <label>Synchronize Notes</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
@@ -1156,7 +1177,7 @@
                             <source_model>tnw_salesforce/config_yesnopro</source_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[ Enable if your Magento has multiple stores with different currencies. NOTE:
                                 Salesforce multi-currency support must be enabled as well.
@@ -1184,7 +1205,7 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <multi_currency>1</multi_currency>
@@ -1195,7 +1216,7 @@
                             <frontend_type>time</frontend_type>
                             <sort_order>40</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <multi_currency>1</multi_currency>
@@ -1208,7 +1229,7 @@
                             <backend_model>tnw_salesforce/config_backend_currency_cron</backend_model>
                             <sort_order>50</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <multi_currency>1</multi_currency>
@@ -1488,12 +1509,25 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Tax Fee
                             ]]></comment>
                         </use_tax_product>
+                        <update_tax_total translate="label">
+                            <label>Use in Salesforce-to-Magento sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>11</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <use_tax_product>1</use_tax_product>
+                            </depends>
+                            <comment>Apply Tax fee price from Salesforce to Magento Order (BETA!)</comment>
+                        </update_tax_total>
                         <tax_product_pricebook translate="label">
                             <label>Tax Product</label>
                             <frontend_type>select</frontend_type>
@@ -1502,7 +1536,7 @@
                             <product_type>tax</product_type>
                             <sort_order>15</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_tax_product>1</use_tax_product>
@@ -1517,12 +1551,25 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Shipping Fee
                             ]]></comment>
                         </use_shipping_product>
+                        <update_shipping_total>
+                            <label>Use in Salesforce-to-Magento sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>21</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <use_shipping_product>1</use_shipping_product>
+                            </depends>
+                            <comment>Apply Shipping fee price from Salesforce to Magento Order (BETA!)</comment>
+                        </update_shipping_total>
                         <shipping_product_pricebook translate="label">
                             <label>Shipping Product</label>
                             <frontend_type>select</frontend_type>
@@ -1531,7 +1578,7 @@
                             <product_type>shipping</product_type>
                             <sort_order>25</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_shipping_product>1</use_shipping_product>
@@ -1546,12 +1593,25 @@
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment><![CDATA[
                                 Use Salesforce Product for a Discount Fee
                             ]]></comment>
                         </use_discount_product>
+                        <update_discount_total>
+                            <label>Use in Salesforce-to-Magento sync</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>31</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <use_discount_product>1</use_discount_product>
+                            </depends>
+                            <comment>Apply Discount fee price from Salesforce to Magento Order (BETA!)</comment>
+                        </update_discount_total>
                         <discount_product_pricebook translate="label">
                             <label>Discount Product</label>
                             <frontend_type>select</frontend_type>
@@ -1560,7 +1620,7 @@
                             <product_type>discount</product_type>
                             <sort_order>35</sort_order>
                             <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
+                            <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
                                 <use_discount_product>1</use_discount_product>
@@ -1647,12 +1707,12 @@
                         <customer_form_assigned translate="label">
                             <label>Task Assignee</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
+                            <frontend_class>tnw-ajax-find-select-owner</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <customer_form_enable>1</customer_form_enable>
                             </depends>
@@ -1664,7 +1724,7 @@
                 </general>
             </groups>
         </salesforce_contactus>
-        <salesforce_promotion>
+        <salesforce_promotion translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Promotions</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1699,6 +1759,9 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Default campaign status</comment>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </default_status>
                         <default_type>
                             <label>Default Type</label>
@@ -1709,17 +1772,23 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Default campaign type</comment>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </default_type>
                         <default_owner>
                             <label>Default Owner</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_account_users</source_model>
-                            <frontend_class>chosen-select</frontend_class>
+                            <frontend_class>tnw-ajax-find-select-owner</frontend_class>
+                            <frontend_model>tnw_salesforce/adminhtml_system_config_frontend_owner</frontend_model>
                             <sort_order>130</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Default Campaign Owner</comment>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </default_owner>
                         <create_campaign_automatic>
                             <label>Create new Campaign automatic</label>
@@ -1729,12 +1798,15 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
+                            <depends>
+                                <sync_enabled>1</sync_enabled>
+                            </depends>
                         </create_campaign_automatic>
                     </fields>
                 </salesforce_campaigns>
             </groups>
         </salesforce_promotion>
-        <salesforce_invoice>
+        <salesforce_invoice translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Invoices</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1775,7 +1847,7 @@
                 </invoice_configuration>
             </groups>
         </salesforce_invoice>
-        <salesforce_shipment>
+        <salesforce_shipment translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Shipments</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1816,7 +1888,7 @@
                 </shipment_configuration>
             </groups>
         </salesforce_shipment>
-        <salesforce_creditmemo>
+        <salesforce_creditmemo translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Credit Memo (BETA)</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>

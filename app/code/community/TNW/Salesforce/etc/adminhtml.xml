@@ -289,22 +289,22 @@
                             <action>adminhtml/system_config/edit/section/salesforce_contactus</action>
                             <sort_order>50</sort_order>
                         </contactus>
-                        <promotion translate="title" module="tnw_salesforce">
+                        <promotion translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <title>Promotions Configuration</title>
                             <action>adminhtml/system_config/edit/section/salesforce_promotion</action>
                             <sort_order>60</sort_order>
                         </promotion>
-                        <invoice translate="title" module="tnw_salesforce">
+                        <invoice translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <title>Invoices Configuration</title>
                             <action>adminhtml/system_config/edit/section/salesforce_invoice</action>
                             <sort_order>70</sort_order>
                         </invoice>
-                        <shipment translate="title" module="tnw_salesforce">
+                        <shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <title>Shipments Configuration</title>
                             <action>adminhtml/system_config/edit/section/salesforce_shipment</action>
                             <sort_order>80</sort_order>
                         </shipment>
-                        <creditmemo translate="title" module="tnw_salesforce">
+                        <creditmemo translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
                             <title>Credit Memo Configuration (BETA)</title>
                             <action>adminhtml/system_config/edit/section/salesforce_creditmemo</action>
                             <sort_order>90</sort_order>

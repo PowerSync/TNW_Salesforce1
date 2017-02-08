@@ -84,6 +84,17 @@ class TNW_Salesforce_Model_Observer
         return $this;
     }
 
+    /**
+     *
+     * @param Varien_Event_Observer $observer
+     * @return void
+     */
+    public function loadConfig(Varien_Event_Observer $observer)
+    {
+        $sections = $observer->getEvent()->getConfig()->getNode('sections');
+        $this->checkConfigCondition($sections);
+    }
+
     public function adjustMenu()
     {
         try {
@@ -384,22 +395,27 @@ class TNW_Salesforce_Model_Observer
         // Set common header on all pages for tracking purposes
         $controller->getResponse()->setHeader('X-PowerSync-Version', Mage::helper('tnw_salesforce')->getExtensionVersion(), true);
 
+        /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
-
-        $loginPage = $controller->getRequest()->getModuleName() == 'admin'
-            && $controller->getRequest()->getControllerName() == 'index'
-            && $controller->getRequest()->getActionName() == 'login';
-
-        // skip if sf synchronization is disabled or we are on api config or login page
-        if ($loginPage || $helper->isApiConfigurationPage() || !$helper->isEnabled()) {
+        if ($helper->isLoginPage() || $helper->isApiConfigurationPage()) {
             return;
         }
 
-        if (!TNW_Salesforce_Helper_Test_License::isValidate()) {
-            return;
-        }
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::helper('tnw_salesforce/config')->getWebsitesDifferentConfig() as $website) {
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function() use($helper) {
+                if (!$helper->isEnabled()) {
+                    return;
+                }
 
-        Mage::helper('tnw_salesforce/test_authentication')->mageSfAuthenticate();
+                if (!TNW_Salesforce_Helper_Test_License::isValidate()) {
+                    return;
+                }
+
+                Mage::helper('tnw_salesforce/test_authentication')
+                    ->mageSfAuthenticate();
+            });
+        }
     }
 
     /**
@@ -504,6 +520,11 @@ class TNW_Salesforce_Model_Observer
 
     public function pushCreditMemo(Varien_Event_Observer $observer)
     {
+        if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPING: Credit Memo synchronization disabled');
+            return;
+        }
+
         $_creditmemoIds = $observer->getEvent()->getData('creditmemoIds');
         $_message       = $observer->getEvent()->getMessage();
         $_type          = $observer->getEvent()->getType();
@@ -550,16 +571,14 @@ class TNW_Salesforce_Model_Observer
          * @var $manualSync TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity|TNW_Salesforce_Helper_Salesforce_Opportunity|TNW_Salesforce_Helper_Salesforce_Order
          */
         $manualSync = Mage::helper($_model);
-        $_ids = (count($_orderIds) == 1) ? $_orderIds[0] : $_orderIds;
-
         if ($manualSync->reset()) {
-            $checkAdd = $manualSync->massAdd($_ids);
+            $checkAdd = $manualSync->massAdd($_orderIds);
 
             // Delete Skipped Entity
             $skipped = $manualSync->getSkippedEntity();
             if (!empty($skipped)) {
                 $objectId = array();
-                foreach ($manualSync->getSkippedEntity() as $entity_id) {
+                foreach ($skipped as $entity_id) {
                     $objectId[] = @$_queueIds[array_search($entity_id, $_orderIds)];
                 }
 
@@ -581,10 +600,7 @@ class TNW_Salesforce_Model_Observer
                     }
 
                     if ($_message) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($_message);
-                        if (Mage::helper('tnw_salesforce')->isAdmin()) {
-                            Mage::getSingleton('adminhtml/session')->addSuccess($_message);
-                        }
+                        Mage::getSingleton('tnw_salesforce/tool_log')->saveSuccess($_message);
                     }
                 }
             }
@@ -601,21 +617,123 @@ class TNW_Salesforce_Model_Observer
     public function updateOpportunity(Varien_Event_Observer $observer)
     {
         $_order = $observer->getEvent()->getData('order');
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Updating Opportunity Status ... ');
-        if ($_order && is_object($_order)) {
-            Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($_order);
+        if (!$_order instanceof Mage_Sales_Model_Order) {
+            return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace('Updating Opportunity Status ... ');
+
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($_order->getStore()->getWebsite(), function () use($_order) {
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: API Integration is disabled');
+
+                return;
+            }
+
+            if (!$helper->isEnabledOrderSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: Order Integration is disabled');
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            if (!$helper->isRealTimeType()) {
+                $success = Mage::getModel('tnw_salesforce/localstorage')
+                    ->addObject(array($_order->getId()), 'Order', 'order');
+
+                if (!$success) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('Could not add to the queue!');
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                }
+
+                return;
+            }
+
+            Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($_order);
+        });
     }
 
     public function updateOrder(Varien_Event_Observer $observer)
     {
         $_order = $observer->getEvent()->getData('order');
-
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Updating Order Status ... ');
-        if ($_order && is_object($_order)) {
-            Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
+        if (!$_order instanceof Mage_Sales_Model_Order) {
+            return;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace('Updating Order Status ... ');
+
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($_order->getStore()->getWebsite(), function () use($_order) {
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: API Integration is disabled');
+
+                return;
+            }
+
+            if (!$helper->isEnabledOrderSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('SKIPPING: Order Integration is disabled');
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            if (!$helper->isRealTimeType()) {
+                $success = Mage::getModel('tnw_salesforce/localstorage')
+                    ->addObject(array($_order->getId()), 'Order', 'order');
+
+                if (!$success) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('Could not add to the queue!');
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                }
+
+                return;
+            }
+
+            Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
+        });
     }
 
     public function updateOrderStatusForm($observer)
@@ -754,5 +872,38 @@ class TNW_Salesforce_Model_Observer
             $collection->save();
         }
 
+    }
+
+    /**
+     * @param $observer Varien_Event_Observer
+     */
+    public function cacheEntityClear($observer)
+    {
+        $eventTypeName = $observer->getEvent()->getName();
+        $cacheSection = array(
+            'salesforce',
+            'salesforce_customer',
+            'salesforce_product',
+            'salesforce_order',
+            'salesforce_contactus',
+            'salesforce_promotion',
+            'salesforce_invoice',
+            'salesforce_shipment',
+            'salesforce_creditmemo',
+        );
+
+        if ($eventTypeName == 'admin_system_config_section_save_after' && in_array($observer->getData('section'), $cacheSection)) {
+            Mage::getSingleton('tnw_salesforce/session')->clear();
+            Mage::app()->getCacheInstance()->cleanType('tnw_salesforce');
+            return;
+        }
+
+        if ($eventTypeName == 'adminhtml_cache_refresh_type' && strcasecmp($observer->getData('type'), 'tnw_salesforce') != 0) {
+            return;
+        }
+
+        Mage::app()->getCacheInstance()->cleanType('tnw_salesforce');
+        Mage::getSingleton('tnw_salesforce/session')->clear();
+        Mage::getResourceModel('tnw_salesforce/entity_cache')->clearAll();
     }
 }

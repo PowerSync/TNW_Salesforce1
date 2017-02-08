@@ -18,8 +18,7 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
 
             // Create directory if does not exist
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir);
-                chmod($uploadDir, 0750);
+                mkdir($uploadDir, 0750, true);
             }
 
             try {
@@ -39,8 +38,8 @@ class TNW_Salesforce_Model_System_Config_Backend_Wsdl extends Mage_Adminhtml_Mod
             }
 
             // Clear Cache
-            Mage::app()->getCacheInstance()
-                ->cleanType('tnw_salesforce');
+            Mage::getSingleton('tnw_salesforce/session')->clear();
+            Mage::app()->getCacheInstance()->cleanType('tnw_salesforce');
 
             $filename = $result['file'];
             if ($filename) {

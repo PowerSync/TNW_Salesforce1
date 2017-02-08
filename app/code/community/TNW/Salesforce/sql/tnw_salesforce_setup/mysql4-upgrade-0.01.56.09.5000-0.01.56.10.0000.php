@@ -5,28 +5,27 @@
 $installer = $this;
 $installer->startSetup();
 
+/** @comment В одном элементе может содержаться неограниченное число подэлементов */
+$pageSize = 5;
+
 $connection = $this->getConnection();
 
 $tableImport = $installer->getTable('tnw_salesforce/import');
+$connection->delete($tableImport, 'is_processing IS NOT NULL');
 $connection->addColumn($installer->getTable('tnw_salesforce/queue_storage'), 'sync_type', 'varchar(50) DEFAULT \'outgoing\'');
 $connection->addColumn($tableImport, 'object_id', 'varchar(50)');
 $connection->addColumn($tableImport, 'object_type', 'varchar(50)');
 $connection->addColumn($tableImport, 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
 
-$select = $connection->select()
-    ->from($tableImport);
+$select = $connection->select()->from($tableImport, array('import_id'));
+foreach (array_chunk($connection->fetchCol($select), $pageSize) as $importIds) {
+    $select = $connection->select()
+        ->from($tableImport, array('json'))
+        ->where($connection->prepareSqlCondition('import_id', array('in'=>$importIds)));
 
-$items = $connection->fetchAll($select);
-if (is_array($items)) {
-    foreach ($items as $item) {
-        $json = @unserialize($item['json']);
-        if (empty($json)) {
-            continue;
-        }
-
-        $objects = json_decode($json);
-        if (is_null($objects)) {
-            $connection->delete($tableImport, sprintf('import_id = "%s"', $item['import_id']));
+    foreach ($connection->fetchCol($select) as $json) {
+        $objects = @json_decode($json);
+        if (empty($objects)) {
             continue;
         }
 
@@ -42,9 +41,9 @@ if (is_array($items)) {
                 'json'        => json_encode($object),
             ));
         }
-
-        $connection->delete($tableImport, sprintf('import_id = "%s"', $item['import_id']));
     }
+
+    $connection->delete($tableImport, $connection->prepareSqlCondition('import_id', array('in'=>$importIds)));
 }
 
 $installer->endSetup();

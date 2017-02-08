@@ -467,7 +467,9 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'website'           => 'Associate to Website',
                 'sf_stage'          => 'Salesforce Stage',
                 'sf_name'           => 'Salesforce Name',
-                'price_book'        => 'Price Book'
+                'price_book'        => 'Price Book',
+                'sf_close_date'        => 'Close Date',
+                'owner_salesforce_id'=> 'owner_salesforce_id'
             );
 
             foreach ($_additionalAttributes as $value => $label) {
@@ -715,9 +717,12 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             );
 
             $_additionalAttributes = array(
-                'unit_price'              => 'Unit Price',
-                'sf_product_options_html' => 'Product Options (HTML)',
-                'sf_product_options_text' => 'Product Options (Text)',
+                'unit_price_excluding_tax_and_discounts'        => 'Unit Price (excluding Tax and Discounts)',
+                'unit_price_including_tax_excluding_discounts'  => 'Unit Price including Tax (excluding Discounts)',
+                'unit_price_including_discounts_excluding_tax'  => 'Unit Price including Discounts (excluding Tax)',
+                'unit_price_including_tax_and_discounts'        => 'Unit Price including Tax and Discounts',
+                'sf_product_options_html'                       => 'Product Options (HTML)',
+                'sf_product_options_text'                       => 'Product Options (Text)',
             );
 
             foreach ($_additionalAttributes as $value => $label) {
@@ -760,9 +765,12 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             );
 
             $_additionalAttributes = array(
-                'unit_price'              => 'Unit Price',
-                'sf_product_options_html' => 'Product Options (HTML)',
-                'sf_product_options_text' => 'Product Options (Text)',
+                'unit_price_excluding_tax_and_discounts'        => 'Unit Price (excluding Tax and Discounts)',
+                'unit_price_including_tax_excluding_discounts'  => 'Unit Price including Tax (excluding Discounts)',
+                'unit_price_including_discounts_excluding_tax'  => 'Unit Price including Discounts (excluding Tax)',
+                'unit_price_including_tax_and_discounts'        => 'Unit Price including Tax and Discounts',
+                'sf_product_options_html'                       => 'Product Options (HTML)',
+                'sf_product_options_text'                       => 'Product Options (Text)',
             );
 
             foreach ($_additionalAttributes as $value => $label) {
@@ -805,10 +813,13 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             );
 
             $_additionalAttributes = array(
-                'number'                  => 'Number',
-                'unit_price'              => 'Unit Price',
-                'sf_product_options_html' => 'Product Options (HTML)',
-                'sf_product_options_text' => 'Product Options (Text)',
+                'number'                                        => 'Number',
+                'unit_price_excluding_tax_and_discounts'        => 'Unit Price (excluding Tax and Discounts)',
+                'unit_price_including_tax_excluding_discounts'  => 'Unit Price including Tax (excluding Discounts)',
+                'unit_price_including_discounts_excluding_tax'  => 'Unit Price including Discounts (excluding Tax)',
+                'unit_price_including_tax_and_discounts'        => 'Unit Price including Tax and Discounts',
+                'sf_product_options_html'                       => 'Product Options (HTML)',
+                'sf_product_options_text'                       => 'Product Options (Text)',
             );
 
             foreach ($_additionalAttributes as $value => $label) {
@@ -896,9 +907,13 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
             );
 
             $_additionalAttributes = array(
-                'number'                  => 'Number',
-                'sf_product_options_html' => 'Product Options (HTML)',
-                'sf_product_options_text' => 'Product Options (Text)',
+                'number'                                        => 'Number',
+                'unit_price_excluding_tax_and_discounts'        => 'Unit Price (excluding Tax and Discounts)',
+                'unit_price_including_tax_excluding_discounts'  => 'Unit Price including Tax (excluding Discounts)',
+                'unit_price_including_discounts_excluding_tax'  => 'Unit Price including Discounts (excluding Tax)',
+                'unit_price_including_tax_and_discounts'        => 'Unit Price including Tax and Discounts',
+                'sf_product_options_html'                       => 'Product Options (HTML)',
+                'sf_product_options_text'                       => 'Product Options (Text)',
             );
 
             foreach ($_additionalAttributes as $value => $label) {

@@ -70,7 +70,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Creditmemo extends TNW_Salesforce_He
             "Status",
             "OriginalOrderId",
             $_magentoId,
-            "(SELECT Id, Quantity, UnitPrice, OriginalOrderItemId FROM OrderItems)",
+            "(SELECT Id, Quantity, UnitPrice, OriginalOrderItemId, PricebookEntry.ProductCode FROM OrderItems)",
             "(SELECT Id, Title, Body FROM Notes)"
         );
 
