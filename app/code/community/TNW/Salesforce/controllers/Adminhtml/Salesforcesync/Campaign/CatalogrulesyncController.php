@@ -90,7 +90,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
 
                 if (!$helper->isEnabled()) {
                     Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveError('API Integration is disabled');
+                        ->saveTrace('API Integration is disabled');
 
                     return;
                 }
