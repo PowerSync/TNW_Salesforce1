@@ -9,12 +9,12 @@ class TNW_Salesforce_Helper_Test_Version extends TNW_Salesforce_Helper_Test_Abst
     /**
      * @var string
      */
-    protected $_title = 'PHP version above 5.3';
+    protected $_title = 'PHP version above 5.4';
 
     /**
      * @var string
      */
-    protected $_message = 'This extension requires PHP 5.3+';
+    protected $_message = 'This extension requires PHP 5.4+';
 
     /**
      * @var
