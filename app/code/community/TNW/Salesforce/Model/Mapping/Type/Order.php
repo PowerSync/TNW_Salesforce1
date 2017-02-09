@@ -88,17 +88,33 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         $lines[] = 'SKU, Qty, Name, Price, Tax, Subtotal, Net Total';
         $lines[] = $delimiter;
 
-        /** @var TNW_Salesforce_Helper_Salesforce_Order $_helperOrder */
-        $_helperOrder = Mage::helper('tnw_salesforce/salesforce_order');
-
         /** @var $item Mage_Sales_Model_Order_Item */
-        foreach ($_helperOrder->getItems($order) as $itemId => $item) {
-            if ($_helperOrder->isFeeEntityItem($item)) {
-                continue;
-            }
-
+        foreach ($order->getAllVisibleItems() as $item) {
             $rowTotalInclTax = $baseCurrency ? $item->getBaseRowTotalInclTax() : $item->getRowTotalInclTax();
             $discount = $baseCurrency ? $item->getBaseDiscountAmount() : $item->getDiscountAmount();
+
+            if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                $lines[] = implode(', ', array($item->getSku(), $helper->numberFormat($item->getQtyOrdered()), $item->getName(), '-', '-', '-', '-'));
+
+                /** @var Mage_Sales_Model_Order_Item $childrenItem */
+                foreach ($item->getChildrenItems() as $childrenItem)
+                {
+                    $rowTotalInclTax = $baseCurrency ? $childrenItem->getBaseRowTotalInclTax() : $childrenItem->getRowTotalInclTax();
+                    $discount = $baseCurrency ? $childrenItem->getBaseDiscountAmount() : $childrenItem->getDiscountAmount();
+
+                    $lines[] = implode(', ', array(
+                        $childrenItem->getSku(),
+                        $helper->numberFormat($childrenItem->getQtyOrdered()),
+                        $childrenItem->getName(),
+                        $currency . $helper->numberFormat($baseCurrency ? $childrenItem->getBasePrice() : $childrenItem->getPrice()),
+                        $currency . $helper->numberFormat($baseCurrency ? $childrenItem->getBaseTaxAmount() : $childrenItem->getTaxAmount()),
+                        $currency . $helper->numberFormat($rowTotalInclTax),
+                        $currency . $helper->numberFormat($rowTotalInclTax - $discount),
+                    ));
+                }
+
+                continue;
+            }
 
             $lines[] = implode(', ', array(
                 $item->getSku(),
