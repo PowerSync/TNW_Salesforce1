@@ -829,18 +829,12 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::API_ENABLED);
     }
 
+    /**
+     * @return bool
+     */
     public function checkPhpVersion()
     {
-        if (!defined('PHP_VERSION_ID')) {
-            $version = explode('.', PHP_VERSION);
-            define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
-            unset($version);
-        }
-
-        if (PHP_VERSION_ID > 50300) {
-            return true;
-        }
-        return false;
+        return version_compare(PHP_VERSION, '5.4.0', '>=');
     }
 
     /**
