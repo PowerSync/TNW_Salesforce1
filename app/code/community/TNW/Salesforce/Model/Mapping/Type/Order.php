@@ -70,15 +70,8 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
-        $baseCurrency = Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency();
+        $baseCurrency = Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency() && !$helper->isMultiCurrency();
         $currency = $baseCurrency ? $order->getBaseCurrencyCode() : $order->getOrderCurrencyCode();
-        /**
-         * use custome currency if Multicurrency enabled
-         */
-        if ($helper->isMultiCurrency()) {
-            $currency = $order->getOrderCurrencyCode();
-            $baseCurrency = false;
-        }
 
         ## Put Products into Single field
         $delimiter = '=======================================';
@@ -88,26 +81,38 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         $lines[] = 'SKU, Qty, Name, Price, Tax, Subtotal, Net Total';
         $lines[] = $delimiter;
 
-        /** @var TNW_Salesforce_Helper_Salesforce_Order $_helperOrder */
-        $_helperOrder = Mage::helper('tnw_salesforce/salesforce_order');
+        /** @var TNW_Salesforce_Model_Mapping_Type_Order_Item $mappingItem */
+        $mappingItem = Mage::getSingleton('tnw_salesforce/mapping_type_order_item');
 
         /** @var $item Mage_Sales_Model_Order_Item */
-        foreach ($_helperOrder->getItems($order) as $itemId => $item) {
-            if ($_helperOrder->isFeeEntityItem($item)) {
+        foreach ($order->getAllVisibleItems() as $item) {
+            if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                $lines[] = implode(', ', array($item->getSku(), $helper->numberFormat($item->getQtyOrdered()), $item->getName(), '-', '-', '-', '-'));
+
+                /** @var Mage_Sales_Model_Order_Item $childrenItem */
+                foreach ($item->getChildrenItems() as $childrenItem) {
+                    $lines[] = implode(', ', array(
+                        $childrenItem->getSku(),
+                        $helper->numberFormat($childrenItem->getQtyOrdered()),
+                        $childrenItem->getName(),
+                        $currency . $mappingItem->convertUnitPrice($childrenItem, false, false),
+                        $currency . $helper->numberFormat($this->getEntityPrice($childrenItem, 'TaxAmount')),
+                        $currency . $mappingItem->convertUnitPrice($childrenItem, true, false),
+                        $currency . $mappingItem->convertUnitPrice($childrenItem, true, true),
+                    ));
+                }
+
                 continue;
             }
-
-            $rowTotalInclTax = $baseCurrency ? $item->getBaseRowTotalInclTax() : $item->getRowTotalInclTax();
-            $discount = $baseCurrency ? $item->getBaseDiscountAmount() : $item->getDiscountAmount();
 
             $lines[] = implode(', ', array(
                 $item->getSku(),
                 $helper->numberFormat($item->getQtyOrdered()),
                 $item->getName(),
-                $currency . $helper->numberFormat($baseCurrency ? $item->getBasePrice() : $item->getPrice()),
-                $currency . $helper->numberFormat($baseCurrency ? $item->getBaseTaxAmount() : $item->getTaxAmount()),
-                $currency . $helper->numberFormat($rowTotalInclTax),
-                $currency . $helper->numberFormat($rowTotalInclTax - $discount),
+                $currency . $mappingItem->convertUnitPrice($item, false, false),
+                $currency . $helper->numberFormat($this->getEntityPrice($item, 'TaxAmount')),
+                $currency . $mappingItem->convertUnitPrice($item, true, false),
+                $currency . $mappingItem->convertUnitPrice($item, true, true),
             ));
         }
         $lines[] = $delimiter;
