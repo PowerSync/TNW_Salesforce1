@@ -62,14 +62,14 @@ class TNW_Salesforce_Model_Abandoned
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice('SKIPPING: API Integration is disabled');
+                    ->saveTrace('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice('SKIPPING: Abandoned Integration is disabled');
+                    ->saveTrace('SKIPPING: Abandoned Integration is disabled');
 
                 return;
             }

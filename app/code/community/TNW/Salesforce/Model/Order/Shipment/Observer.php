@@ -53,7 +53,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice('SKIPING: API Integration is disabled');
+                    ->saveTrace('SKIPING: API Integration is disabled');
 
                 return;
             }

@@ -53,7 +53,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('SKIPPING: API Integration is disabled');
+                    ->saveTrace('SKIPPING: API Integration is disabled');
 
                 return;
             }

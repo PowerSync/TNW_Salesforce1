@@ -56,14 +56,14 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('API Integration is disabled');
+                    ->saveTrace('API Integration is disabled');
 
                 return;
             }
 
             if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('Invoice Integration is disabled');
+                    ->saveTrace('Invoice Integration is disabled');
 
                 return;
             }

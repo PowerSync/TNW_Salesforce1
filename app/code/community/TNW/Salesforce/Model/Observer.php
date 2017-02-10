@@ -630,14 +630,14 @@ class TNW_Salesforce_Model_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('SKIPPING: API Integration is disabled');
+                    ->saveTrace('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isEnabledOrderSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('SKIPPING: Order Integration is disabled');
+                    ->saveTrace('SKIPPING: Order Integration is disabled');
 
                 return;
             }
@@ -691,14 +691,14 @@ class TNW_Salesforce_Model_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('SKIPPING: API Integration is disabled');
+                    ->saveTrace('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!$helper->isEnabledOrderSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('SKIPPING: Order Integration is disabled');
+                    ->saveTrace('SKIPPING: Order Integration is disabled');
 
                 return;
             }
