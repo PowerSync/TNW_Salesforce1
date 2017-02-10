@@ -163,26 +163,30 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     /**
      * @param $entity
      * @return array
+     * @throws Zend_Cache_Exception
      */
     public function getRecordTypeByEntity($entity)
     {
-        try {
-            $_data = $this->getStorage("tnw_salesforce_" . strtolower($entity) . "_record_type");
-            if (empty($_data)) {
-                $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='$entity'";
-                $allRules = $this->getClient()->query($query);
+        $_data = $this->getStorage('tnw_salesforce_' . strtolower($entity) . '_record_type');
+        if (!is_array($_data)) {
+            $query = "SELECT Id, Name FROM RecordType WHERE SobjectType='$entity'";
 
-                if ($allRules && property_exists($allRules, 'records') && $allRules->size >= 1) {
+            $_data = array();
+            try {
+                $allRules = $this->getClient()->query($query);
+                if (!empty($allRules->records)) {
                     $_data = $allRules->records;
                 }
-
-                $this->setStorage($_data, "tnw_salesforce_" . strtolower($entity) . "_record_type");
+            } catch (Exception $e) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError($e->getMessage());
             }
 
-            return $_data;
-        } catch (Exception $e) {
-            return array();
+            $this->setStorage($_data, 'tnw_salesforce_' . strtolower($entity) . '_record_type');
         }
+
+        return $_data;
+
     }
 
     /**
