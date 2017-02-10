@@ -48,6 +48,7 @@ class TNW_Salesforce_Model_Cron
 
     /**
      * @comment add Abandoned carts to quote for synchronization
+     * @throws Exception
      */
     public function addAbandonedToQueue()
     {
@@ -61,9 +62,9 @@ class TNW_Salesforce_Model_Cron
             return false;
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento Abandoned Cart queue preparation START ===");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('=== Magento Abandoned Cart queue preparation START ===');
 
-        Mage::getSingleton('tnw_salesforce/abandoned')->syncAbandoned($itemIds);
+        Mage::getSingleton('tnw_salesforce/abandoned')->syncAbandoned($itemIds, false);
 
         foreach (array_chunk($itemIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_chunk) {
             Mage::helper('tnw_salesforce')->getDbConnection('write')
@@ -71,12 +72,13 @@ class TNW_Salesforce_Model_Cron
         }
 
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'addAbandonedToQueue'));
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento Abandoned Cart queue preparation END ===");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('=== Magento Abandoned Cart queue preparation END ===');
         return true;
     }
 
     /**
      * @comment Auto Currency Sync
+     * @throws Exception
      */
     public function syncCurrency()
     {

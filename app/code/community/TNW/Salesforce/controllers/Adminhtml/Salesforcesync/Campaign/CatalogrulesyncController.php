@@ -95,10 +95,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
                     return;
                 }
 
-                $syncBulk = (count($entityIds) > 1);
-
                 try {
                     if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                        $syncBulk = (count($entityIds) > 1);
+
                         $success = Mage::getModel('tnw_salesforce/localstorage')
                             ->addObject($entityIds, 'Campaign_CatalogRule', 'catalogrule', $syncBulk);
 
@@ -118,7 +118,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
                     }
                     else {
                         /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Catalogrule $campaignMember */
-                        $campaignMember = Mage::helper(sprintf('tnw_salesforce/%s_campaign_catalogrule', $syncBulk ? 'bulk' : 'salesforce'));
+                        $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_catalogrule');
                         if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process()) {
                             Mage::getSingleton('tnw_salesforce/tool_log')
                                 ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));

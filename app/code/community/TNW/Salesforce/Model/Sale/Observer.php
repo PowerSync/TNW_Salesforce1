@@ -208,9 +208,9 @@ class TNW_Salesforce_Model_Sale_Observer
             }
 
             try {
-                $syncBulk = count($entityIds) > 1;
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = count($entityIds) > 1;
 
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
                     $_collection = Mage::getResourceModel('sales/order_item_collection')
                         ->addFieldToFilter('order_id', array('in' => $entityIds));
 
@@ -243,7 +243,7 @@ class TNW_Salesforce_Model_Sale_Observer
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'orderIds' => $entityIds,
                         'message' => $helper->__('Total of %d order(s) were synchronized', count($entityIds)),
-                        'type' => $syncBulk ? 'bulk' : 'salesforce'
+                        'type' => 'salesforce'
                     ));
                 }
             } catch (Exception $e) {
@@ -420,10 +420,10 @@ class TNW_Salesforce_Model_Sale_Observer
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($entityIds, 'Campaign_SalesRule', 'salesrule', $syncBulk);
 
@@ -443,7 +443,7 @@ class TNW_Salesforce_Model_Sale_Observer
                 }
                 else {
                     /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Salesrule $campaignMember */
-                    $campaignMember = Mage::helper(sprintf('tnw_salesforce/%s_campaign_salesrule', $syncBulk ? 'bulk' : 'salesforce'));
+                    $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
                     if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));

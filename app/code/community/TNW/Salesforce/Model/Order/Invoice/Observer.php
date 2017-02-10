@@ -82,10 +82,10 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($entityIds, 'Invoice', 'invoice', $syncBulk);
 
@@ -107,7 +107,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'invoiceIds' => $entityIds,
                         'message' => $helper->__('Total of %d invoice(s) were synchronized', count($entityIds)),
-                        'type' => $syncBulk ? 'bulk' : 'salesforce'
+                        'type' => 'salesforce'
                     ));
                 }
             } catch (Exception $e) {
