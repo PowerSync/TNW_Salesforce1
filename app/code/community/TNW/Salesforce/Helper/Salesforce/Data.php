@@ -665,6 +665,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             case 'Abandoned':
                 $table = 'Opportunity';
                 break;
+            case 'Abandoneditem':
             case 'AbandonedItem':
                 $table = 'OpportunityLineItem';
                 break;

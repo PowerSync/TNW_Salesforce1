@@ -79,11 +79,10 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                 return;
             }
 
-            /** @var bool $syncBulk */
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObjectProduct($entityIds, 'Shipment', 'shipment', $syncBulk);
 
@@ -105,7 +104,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'shipmentIds' => $entityIds,
                         'message' => $helper->__('Total of %d shipment(s) were synchronized', count($entityIds)),
-                        'type' => $syncBulk ? 'bulk' : 'salesforce'
+                        'type' => 'salesforce'
                     ));
                 }
             } catch (Exception $e) {

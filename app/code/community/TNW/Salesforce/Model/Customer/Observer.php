@@ -143,10 +143,10 @@ class TNW_Salesforce_Model_Customer_Observer
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($entityIds, 'Customer', 'customer', $syncBulk);
 
@@ -165,7 +165,7 @@ class TNW_Salesforce_Model_Customer_Observer
                     }
                 } else {
                     /** @var TNW_Salesforce_Helper_Salesforce_Customer $manualSync */
-                    $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_customer', $syncBulk ? 'bulk' : 'salesforce'));
+                    $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Total of %d customer(s) were successfully synchronized', count($entityIds)));

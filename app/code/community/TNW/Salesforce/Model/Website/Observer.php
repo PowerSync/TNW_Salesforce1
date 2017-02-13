@@ -81,10 +81,10 @@ class TNW_Salesforce_Model_Website_Observer
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($entityIds, 'Website', 'website', $syncBulk);
 
@@ -103,7 +103,7 @@ class TNW_Salesforce_Model_Website_Observer
                     }
                 } else {
                     /** @var TNW_Salesforce_Helper_Salesforce_Website $manualSync */
-                    $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_website', $syncBulk ? 'bulk' : 'salesforce'));
+                    $manualSync = Mage::helper('tnw_salesforce/salesforce_website');
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));

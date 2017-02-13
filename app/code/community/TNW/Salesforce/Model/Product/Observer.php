@@ -104,10 +104,10 @@ class TNW_Salesforce_Model_Product_Observer
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObjectProduct($entityIds, 'Product', 'product', $syncBulk);
 
@@ -126,7 +126,7 @@ class TNW_Salesforce_Model_Product_Observer
                     }
                 } else {
                     /** @var TNW_Salesforce_Helper_Salesforce_Product $manualSync */
-                    $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_product', $syncBulk ? 'bulk' : 'salesforce'));
+                    $manualSync = Mage::helper('tnw_salesforce/salesforce_product');
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Total of %d product(s) were successfully synchronized', count($entityIds)));
