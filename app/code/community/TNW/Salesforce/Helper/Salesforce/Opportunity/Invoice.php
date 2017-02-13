@@ -21,7 +21,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
     /**
      *
      */
-    protected function _massAddAfterInvoice()
+    protected function _massAddAfterLookup()
     {
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_invoice')
