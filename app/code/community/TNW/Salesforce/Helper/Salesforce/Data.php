@@ -9,7 +9,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     /**
      * Chunk size
      */
-    const UPDATE_LIMIT = 100;
+    const UPDATE_LIMIT = 50;
 
     const PROFESSIONAL_SALESFORCE_RECORD_TYPE_LABEL = 'NOT IN USE';
 
