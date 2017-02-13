@@ -84,7 +84,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                     $syncBulk = (count($entityIds) > 1);
 
                     $success = Mage::getModel('tnw_salesforce/localstorage')
-                        ->addObjectProduct($entityIds, 'Shipment', 'shipment', $syncBulk);
+                        ->addObject($entityIds, 'Shipment', 'shipment', $syncBulk);
 
                     if (!$success) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
