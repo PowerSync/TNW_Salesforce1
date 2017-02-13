@@ -651,7 +651,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_personType = $this->_cache['accountLookup'][0][$_email]->RecordTypeId;
             }
 
-            $this->_isPerson = ($_personType == Mage::helper('tnw_salesforce')->getPersonAccountRecordType());
+            $this->_isPerson = (!empty($_personType) && $_personType == Mage::helper('tnw_salesforce')->getPersonAccountRecordType());
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
