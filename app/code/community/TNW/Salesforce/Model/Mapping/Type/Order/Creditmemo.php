@@ -40,15 +40,8 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo extends TNW_Salesforce_
         /** @var TNW_Salesforce_Helper_Data $helper */
         $helper = Mage::helper('tnw_salesforce');
 
-        $baseCurrency = Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency();
+        $baseCurrency = Mage::helper('tnw_salesforce/config_sales')->useBaseCurrency() && !$helper->isMultiCurrency();
         $currency = $baseCurrency ? $_entity->getBaseCurrencyCode() : $_entity->getOrderCurrencyCode();
-        /**
-         * use custome currency if Multicurrency enabled
-         */
-        if ($helper->isMultiCurrency()) {
-            $currency = $_entity->getOrderCurrencyCode();
-            $baseCurrency = false;
-        }
 
         ## Put Products into Single field
         $delimiter = '=======================================';
@@ -58,26 +51,60 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo extends TNW_Salesforce_
         $lines[] = 'SKU, Qty, Name, Price, Tax, Subtotal, Net Total';
         $lines[] = $delimiter;
 
-        /** @var TNW_Salesforce_Helper_Salesforce_Creditmemo $_helperCreditmemo */
-        $_helperCreditmemo = Mage::helper('tnw_salesforce/salesforce_creditmemo');
+        /** @var TNW_Salesforce_Model_Mapping_Type_Order_Creditmemo_Item $mappingItem */
+        $mappingItem = Mage::getSingleton('tnw_salesforce/mapping_type_order_creditmemo_item');
+
+        $_itemCollection = $_entity->getItemsCollection();
+        $_hasOrderItemId = $_itemCollection->walk('getOrderItemId');
 
         /** @var Mage_Sales_Model_Order_Creditmemo_Item $item */
-        foreach ($_helperCreditmemo->getItems($_entity) as $itemId => $item) {
-            if ($_helperCreditmemo->isFeeEntityItem($item)) {
+        foreach ($_itemCollection as $item) {
+            if ($item->isDeleted() || $item->getOrderItem()->getParentItem()) {
                 continue;
             }
 
-            $rowTotalInclTax = $baseCurrency ? $item->getBaseRowTotalInclTax() : $item->getRowTotalInclTax();
-            $discount = $baseCurrency ? $item->getBaseDiscountAmount() : $item->getDiscountAmount();
+            if ($item->getOrderItem()->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+                $childrenItems = $item->getOrderItem()->getChildrenItems();
+
+                $orderItemsIds = array_map(function (Mage_Sales_Model_Order_Item $item) {
+                    return $item->getId();
+                }, $childrenItems);
+
+                if (count(array_intersect($orderItemsIds, $_hasOrderItemId)) === 0) {
+                    continue;
+                }
+
+                $lines[] = implode(', ', array($item->getSku(), '-', $item->getName(), '-', '-', '-', '-'));
+
+                /** @var Mage_Sales_Model_Order_Creditmemo_Item $childrenItem */
+                foreach ($childrenItems as $childrenItem) {
+                    $_item = $_itemCollection->getItemById(array_search($childrenItem->getId(), $_hasOrderItemId));
+                    if (!$_item instanceof Mage_Sales_Model_Order_Creditmemo_Item) {
+                        continue;
+                    }
+
+                    $lines[] = implode(', ', array(
+                        $childrenItem->getSku(),
+                        $helper->numberFormat($_item->getQty()),
+                        $childrenItem->getName(),
+                        $currency . $mappingItem->convertUnitPrice($_item, false, false),
+                        $currency . $helper->numberFormat($this->getEntityPrice($_item, 'TaxAmount')),
+                        $currency . $mappingItem->convertUnitPrice($_item, true, false),
+                        $currency . $mappingItem->convertUnitPrice($_item, true, true),
+                    ));
+                }
+
+                continue;
+            }
 
             $lines[] = implode(', ', array(
                 $item->getSku(),
-                $this->numberFormat($item->getQty()),
+                $helper->numberFormat($item->getQty()),
                 $item->getName(),
-                $currency . $this->numberFormat($baseCurrency ? $item->getBasePrice() : $item->getPrice()),
-                $currency . $this->numberFormat($baseCurrency ? $item->getBaseTaxAmount() : $item->getTaxAmount()),
-                $currency . $this->numberFormat($rowTotalInclTax),
-                $currency . $this->numberFormat($rowTotalInclTax - $discount),
+                $currency . $mappingItem->convertUnitPrice($item, false, false),
+                $currency . $helper->numberFormat($this->getEntityPrice($item, 'TaxAmount')),
+                $currency . $mappingItem->convertUnitPrice($item, true, false),
+                $currency . $mappingItem->convertUnitPrice($item, true, true),
             ));
         }
         $lines[] = $delimiter;
