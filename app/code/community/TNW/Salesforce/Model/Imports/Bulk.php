@@ -39,6 +39,7 @@ class TNW_Salesforce_Model_Imports_Bulk
 
     /**
      * @param null|string $objectType
+     * @throws Exception
      */
     protected function processType($objectType)
     {
@@ -91,7 +92,23 @@ class TNW_Salesforce_Model_Imports_Bulk
             }
 
             if (!empty($association)) {
-                TNW_Salesforce_Helper_Magento_Abstract::sendMagentoIdToSalesforce($association);
+                switch ($objectType) {
+                    case Mage::helper('tnw_salesforce/config')->getMagentoWebsiteField():
+                        TNW_Salesforce_Helper_Magento_Websites::sendMagentoIdToSalesforce($association);
+                        break;
+
+                    case TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT:
+                        TNW_Salesforce_Helper_Magento_Invoice::sendMagentoIdToSalesforce($association);
+                        break;
+
+                    case TNW_Salesforce_Model_Config_Objects::ORDER_SHIPMENT_OBJECT:
+                        TNW_Salesforce_Helper_Magento_Shipment::sendMagentoIdToSalesforce($association);
+                        break;
+
+                    default:
+                        TNW_Salesforce_Helper_Magento_Abstract::sendMagentoIdToSalesforce($association);
+                        break;
+                }
             }
         }
     }
