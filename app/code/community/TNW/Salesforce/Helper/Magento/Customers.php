@@ -362,17 +362,20 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             /** @var TNW_Salesforce_Model_Mapping $_mapping */
             foreach ($_mapCollection as $_mapping) {
-                $value = property_exists($this->_salesforceObject->Account, $_mapping->getSfField())
-                    ? $this->_salesforceObject->Account->{$_mapping->getSfField()} : null;
+                $objectAccount = !$this->_isPersonAccount
+                    ? $this->_salesforceObject->Account : $this->_salesforceObject;
 
-                if (strpos($_mapping->getLocalField(), 'Customer : ') === 0) {
+                $value = property_exists($objectAccount, $_mapping->getSfField())
+                    ? $objectAccount->{$_mapping->getSfField()} : null;
+
+                if (strcasecmp($_mapping->getLocalFieldType(), 'Customer') === 0) {
                     Mage::getSingleton('tnw_salesforce/mapping_type_customer')
                         ->setMapping($_mapping)
                         ->setValue($_entity, $value);
 
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveTrace('Customer: ' . $_mapping->getLocalFieldAttributeCode() . ' = ' . var_export($_entity->getData($_mapping->getLocalFieldAttributeCode()), true));
-                } elseif (strpos($_mapping->getLocalField(), 'Shipping : ') === 0) {
+                } elseif (strcasecmp($_mapping->getLocalFieldType(), 'Shipping') === 0) {
                     // Shipping Address
                     if (empty($value)) {
                         $value = $_mapping->getDefaultValue();
@@ -385,7 +388,7 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                     } else {
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING Customer Shipping Address: ' . $_magentoFieldName . ' - no value specified in Salesforce');
                     }
-                } elseif (strpos($_mapping->getLocalField(), 'Billing : ') === 0) {
+                } elseif (strcasecmp($_mapping->getLocalFieldType(), 'Billing') === 0) {
                     // Billing Address
                     if (empty($value)) {
                         $value = $_mapping->getDefaultValue();
