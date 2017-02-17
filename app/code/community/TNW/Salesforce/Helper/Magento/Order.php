@@ -525,6 +525,9 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         $orderCreate->getQuote()->setStoreId($order->getStoreId());
 
         $orderCreate->getQuote()->removeAllItems();
+
+        //FIX: $orderCreate->initRuleData()
+        Mage::unregister('rule_data');
         $orderCreate->initFromOrder($order);
 
         $sfItems = array();
