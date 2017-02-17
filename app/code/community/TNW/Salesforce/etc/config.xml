@@ -572,6 +572,25 @@
                     </tnw_after_sales_rule_save>
                 </observers>
             </salesrule_rule_save_commit_after>
+
+            <eav_entity_attribute_set_save_before>
+                <observers>
+                    <tnw_salesforce_attribute_set_save_before>
+                        <class>tnw_salesforce/eav_entity_attribute_set_observer</class>
+                        <method>saveBefore</method>
+                    </tnw_salesforce_attribute_set_save_before>
+                </observers>
+            </eav_entity_attribute_set_save_before>
+
+            <eav_entity_attribute_set_save_commit_after>
+                <observers>
+                    <tnw_salesforce_attribute_set_save_after>
+                        <class>tnw_salesforce/eav_entity_attribute_set_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_attribute_set_save_after>
+                </observers>
+            </eav_entity_attribute_set_save_commit_after>
+
         </events>
     </global>
     <adminhtml>
@@ -690,6 +709,7 @@
                     </tnw_salesforce_customer_address_save_after_observer>
                 </observers>
             </customer_address_save_commit_after>
+
         </events>
     </frontend>
     <admin>
