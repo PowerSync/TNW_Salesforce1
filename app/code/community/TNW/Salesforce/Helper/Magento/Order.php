@@ -65,7 +65,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
                 /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
                 $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
                     ->setIsValidate(false);
-                $orderCreate->getQuote()->setData('_salesforce_object', $object);
 
                 // Create new order
                 $newOrder = $this->reorder($orderCreate, $order, $object);
@@ -106,7 +105,6 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             /** @var TNW_Salesforce_Model_Sale_Order_Create $orderCreate */
             $orderCreate   = Mage::getModel('tnw_salesforce/sale_order_create')
                 ->setIsValidate(false);
-            $orderCreate->getQuote()->setData('_salesforce_object', $object);
 
             // Create new order
             $order = $this->create($orderCreate, $object);
@@ -330,8 +328,12 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
          * Identify customer
          */
         $orderCreate->getSession()
+            ->setCustomer($customer)
             ->setCustomerId((int) $customer->getId())
             ->setStoreId((int) $storeId);
+
+        $orderCreate->getQuote()
+            ->setData('_salesforce_object', $object);
 
         // Set Currency
         if (!empty($object->CurrencyIsoCode)) {
@@ -491,6 +493,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
      */
     protected function reorder($orderCreate, $order, $object)
     {
+        $orderCreate->getSession()
+            ->setCustomerId($order->getCustomerId())
+            ->setStoreId($order->getStoreId());
+
+        $orderCreate->getQuote()
+            ->setData('_salesforce_object', $object);
+
         //FIX: Bundle zero price
         $bundleItems = array();
         /** @var Mage_Sales_Model_Order_Item $item */
