@@ -130,8 +130,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_FromController extends Mage_
                 ->save();
         }
 
-        TNW_Salesforce_Helper_Magento_Abstract
-            ::sendMagentoIdToSalesforce($association);
+        $queue->sendMagentoIdToSalesforce($association);
 
         $this->_redirect('*/*/');
     }
