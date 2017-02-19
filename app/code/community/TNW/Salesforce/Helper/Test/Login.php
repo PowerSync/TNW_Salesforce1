@@ -33,7 +33,8 @@ class TNW_Salesforce_Helper_Test_Login extends TNW_Salesforce_Helper_Test_Abstra
         if ($resultClass == $this->_successClass && Mage::helper('tnw_salesforce/config_tool')->getLogApiCallStatistic()) {
 
             $this->getClient()->getSessionId();
-            $url = Mage::helper('tnw_salesforce/data')
+
+            $url = Mage::helper('tnw_salesforce/test_authentication')
                 ->getStorage('salesforce_url');
 
             $sessionId = $this->getClient()->getSessionId();
