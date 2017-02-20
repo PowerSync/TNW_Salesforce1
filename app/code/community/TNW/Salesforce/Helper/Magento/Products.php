@@ -405,22 +405,19 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
      */
     protected function isProductFee($salesforceId)
     {
-        static $fees = null;
-        if (is_null($fees)) {
-            $fees = array_filter(array_map('unserialize', array_filter(array(
-                Mage::helper('tnw_salesforce')->getTaxProduct(),
-                Mage::helper('tnw_salesforce')->getShippingProduct(),
-                Mage::helper('tnw_salesforce')->getDiscountProduct(),
-            ))));
+        $fees = array_filter(array_map('unserialize', array_filter(array(
+            Mage::helper('tnw_salesforce')->getTaxProduct(),
+            Mage::helper('tnw_salesforce')->getShippingProduct(),
+            Mage::helper('tnw_salesforce')->getDiscountProduct(),
+        ))));
 
-            $fees = array_map(function ($product) {
-                if (empty($product['Id'])) {
-                    return null;
-                }
+        $fees = array_map(function ($product) {
+            if (empty($product['Id'])) {
+                return null;
+            }
 
-                return $product['Id'];
-            }, $fees);
-        }
+            return $product['Id'];
+        }, $fees);
 
         return in_array($salesforceId, $fees);
     }

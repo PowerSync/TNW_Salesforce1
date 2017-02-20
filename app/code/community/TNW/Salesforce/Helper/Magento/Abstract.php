@@ -225,8 +225,8 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
     }
 
     /**
-     * @param $website Mage_Core_Model_Website
-     * @return mixed|string
+     * @param $website string|integer|Mage_Core_Model_Website
+     * @return string|null
      * @throws Exception
      */
     public function getWebsiteSfId($website)

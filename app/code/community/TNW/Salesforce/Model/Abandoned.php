@@ -29,9 +29,10 @@ class TNW_Salesforce_Model_Abandoned
 
     /**
      * @param array $entityIds
+     * @param bool $enableBackground
      * @throws Exception
      */
-    public function syncAbandoned(array $entityIds)
+    public function syncAbandoned(array $entityIds, $enableBackground = false)
     {
         $groupWebsite = array();
         foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
@@ -44,32 +45,33 @@ class TNW_Salesforce_Model_Abandoned
             }
         }
 
-        foreach ($groupWebsite as $websiteId => $entityIds) {
-            $this->syncAbandonedForWebsite($entityIds, $websiteId);
+        foreach ($groupWebsite as $websiteId => $_entityIds) {
+            $this->syncAbandonedForWebsite($_entityIds, $websiteId, $enableBackground);
         }
     }
 
     /**
      * @param array $entityIds
      * @param null $website
+     * @param bool $enableBackground
      * @throws Exception
      */
-    public function syncAbandonedForWebsite(array $entityIds, $website = null)
+    public function syncAbandonedForWebsite(array $entityIds, $website = null, $enableBackground = false)
     {
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds, $enableBackground) {
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice('SKIPPING: API Integration is disabled');
+                    ->saveTrace('SKIPPING: API Integration is disabled');
 
                 return;
             }
 
             if (!Mage::helper('tnw_salesforce/config_sales_abandoned')->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice('SKIPPING: Abandoned Integration is disabled');
+                    ->saveTrace('SKIPPING: Abandoned Integration is disabled');
 
                 return;
             }
@@ -88,10 +90,10 @@ class TNW_Salesforce_Model_Abandoned
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = $enableBackground && (count($entityIds) > 1);
+
                     /** @var TNW_Salesforce_Model_Mysql4_Quote_Item_Collection $_collection */
                     $_collection = Mage::getResourceModel('tnw_salesforce/quote_item_collection')
                         ->addFieldToFilter('quote_id', array('in' => $entityIds));
@@ -113,8 +115,7 @@ class TNW_Salesforce_Model_Abandoned
 
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
-                    }
-                    else {
+                    } else {
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                     }
@@ -123,7 +124,7 @@ class TNW_Salesforce_Model_Abandoned
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'orderIds' => $entityIds,
                         'message' => $helper->__('Total of %d abandoned(s) were synchronized', count($entityIds)),
-                        'type' => $syncBulk ? 'bulk' : 'salesforce',
+                        'type' => 'salesforce',
                         'object_type' => 'abandoned'
                     ));
                 }

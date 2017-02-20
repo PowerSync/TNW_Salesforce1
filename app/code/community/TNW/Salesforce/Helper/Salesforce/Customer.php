@@ -557,7 +557,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
 
         // Get Customer Website Id
-        $_websiteId = $_customer->getData('website_id');
+        $_websiteId = Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+            ->getWebsiteId($_customer);
 
         //If Lookup returned values add them
         $_email = strtolower($_customer->getEmail());
@@ -650,7 +651,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_personType = $this->_cache['accountLookup'][0][$_email]->RecordTypeId;
             }
 
-            $this->_isPerson = ($_personType == Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE));
+            $this->_isPerson = (!empty($_personType) && $_personType == Mage::helper('tnw_salesforce')->getPersonAccountRecordType());
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
@@ -918,6 +919,15 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
+     * @param $_entity
+     * @return string
+     */
+    public function getEntityId($_entity)
+    {
+        return $this->_getEntityId($_entity);
+    }
+
+    /**
      * find leads from lookup and generate convertation object
      * update initial emails array: remove found emails
      * @return $this
@@ -1148,13 +1158,14 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_entity->getGroupId())) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPING: Sync for customer group #" . $_entity->getGroupId() . " is disabled!");
+                ->saveNotice("SKIPPING: Sync for customer group #{$_entity->getGroupId()} is disabled!");
             return false;
         }
 
-        if ($_entity->getData('website_id') != NULL) {
-            $this->_websites[$this->_getEntityId($_entity)] = $this->_websiteSfIds[$_entity->getData('website_id')];
-        }
+        $_websiteId = Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+            ->getWebsiteId($_entity);
+
+        $this->_websites[$this->_getEntityId($_entity)] = $this->_websiteSfIds[$_websiteId];
 
         $_email = strtolower($_entity->getData('email'));
 
@@ -1163,7 +1174,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $tmp->MagentoId = $this->_getEntityId($_entity);
         $tmp->SfInSync = 0;
 
-        $this->_cache['toSaveInMagento'][$_entity->getData('website_id')][$_email] = $tmp;
+        $this->_cache['toSaveInMagento'][$_websiteId][$_email] = $tmp;
         return true;
     }
 
@@ -1290,8 +1301,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $_customer->AccountId = (property_exists($_customer, 'AccountId')) ? $_customer->AccountId : NULL;
 
                 if (
-                    Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::CUSTOMER_PERSON_ACCOUNT)
-                    && Mage::app()->getWebsite($_websiteId)->getConfig(TNW_Salesforce_Helper_Data::PERSON_RECORD_TYPE)
+                    Mage::helper('tnw_salesforce')->usePersonAccount()
+                    && Mage::helper('tnw_salesforce')->getPersonAccountRecordType()
                     && $_customer->AccountId != NULL && $_customer->AccountId == $_customer->SalesforceId
                 ) {
                     // Lookup needed
@@ -1898,7 +1909,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected function _getWebsiteIdByCustomerId($_customerId)
     {
-        return $this->getEntityCache($_customerId)->getWebsiteId();
+        return Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+            ->getWebsiteId($this->getEntityCache($_customerId));
     }
 
     /**

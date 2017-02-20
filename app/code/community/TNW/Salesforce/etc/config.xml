@@ -573,6 +573,24 @@
                 </observers>
             </salesrule_rule_save_commit_after>
 
+            <eav_entity_attribute_set_save_before>
+                <observers>
+                    <tnw_salesforce_attribute_set_save_before>
+                        <class>tnw_salesforce/eav_entity_attribute_set_observer</class>
+                        <method>saveBefore</method>
+                    </tnw_salesforce_attribute_set_save_before>
+                </observers>
+            </eav_entity_attribute_set_save_before>
+
+            <eav_entity_attribute_set_save_commit_after>
+                <observers>
+                    <tnw_salesforce_attribute_set_save_after>
+                        <class>tnw_salesforce/eav_entity_attribute_set_observer</class>
+                        <method>saveAfter</method>
+                    </tnw_salesforce_attribute_set_save_after>
+                </observers>
+            </eav_entity_attribute_set_save_commit_after>
+
             <wishlist_product_add_after>
                 <observers>
                     <tnw_salesforce>
@@ -661,6 +679,15 @@
                     </tnw_salesforce_cache_entity_clear>
                 </observers>
             </adminhtml_cache_refresh_type>
+
+            <admin_system_config_section_save_after>
+                <observers>
+                    <tnw_salesforce_cache_entity_clear>
+                        <class>tnw_salesforce/observer</class>
+                        <method>cacheEntityClear</method>
+                    </tnw_salesforce_cache_entity_clear>
+                </observers>
+            </admin_system_config_section_save_after>
         </events>
     </adminhtml>
     <frontend>
@@ -690,6 +717,7 @@
                     </tnw_salesforce_customer_address_save_after_observer>
                 </observers>
             </customer_address_save_commit_after>
+
         </events>
     </frontend>
     <admin>
@@ -829,8 +857,11 @@
             </abandoned_carts>
             <opportunity_cart>
                 <use_tax_product>0</use_tax_product>
+                <update_tax_total>0</update_tax_total>
                 <use_shipping_product>0</use_shipping_product>
+                <update_shipping_total>0</update_shipping_total>
                 <use_discount_product>0</use_discount_product>
+                <update_discount_total>0</update_discount_total>
             </opportunity_cart>
             <shopping_cart>
                 <use_product_campaign_assignment>0</use_product_campaign_assignment>

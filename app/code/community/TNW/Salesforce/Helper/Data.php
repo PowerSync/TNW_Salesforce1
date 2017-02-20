@@ -73,12 +73,15 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     //const ORDER_USE_PRODUCTS = 'salesforce_order/opportunity_cart/use_products';
     const ORDER_USE_TAX_PRODUCT = 'salesforce_order/opportunity_cart/use_tax_product';
     const ORDER_TAX_PRODUCT = 'salesforce_order/opportunity_cart/tax_product_pricebook';
+    const ORDER_UPDATE_TAX_TOTAL = 'salesforce_order/opportunity_cart/update_tax_total';
 
     const ORDER_USE_SHIPPING_PRODUCT = 'salesforce_order/opportunity_cart/use_shipping_product';
     const ORDER_SHIPPING_PRODUCT = 'salesforce_order/opportunity_cart/shipping_product_pricebook';
+    const ORDER_UPDATE_SHIPPING_TOTAL = 'salesforce_order/opportunity_cart/update_shipping_total';
 
     const ORDER_USE_DISCOUNT_PRODUCT = 'salesforce_order/opportunity_cart/use_discount_product';
     const ORDER_DISCOUNT_PRODUCT = 'salesforce_order/opportunity_cart/discount_product_pricebook';
+    const ORDER_UPDATE_DISCOUNT_TOTAL = 'salesforce_order/opportunity_cart/update_discount_total';
 
     /* Customer Config */
     const CUSTOMER_CREATE_AS_LEAD = 'salesforce_customer/lead_config/customer_integration';
@@ -527,7 +530,19 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     // Default Lead owner to be used during conversion
 
+    /**
+     * @return integer
+     * @deprecated
+     */
     public function isCustomerSingleRecordType()
+    {
+        return $this->customerTypeRecordType();
+    }
+
+    /**
+     * @return integer
+     */
+    public function customerTypeRecordType()
     {
         return $this->getStoreConfig(self::CUSTOMER_FORCE_RECORDTYPE);
     }
@@ -558,6 +573,27 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function useDiscountFeeProduct()
     {
         return $this->getStoreConfig(self::ORDER_USE_DISCOUNT_PRODUCT);
+    }
+
+    /**
+     * @param $feeType
+     * @return bool
+     */
+    public function useFeeByType($feeType)
+    {
+        switch ($feeType) {
+            case 'tax':
+                return $this->useTaxFeeProduct();
+
+            case 'discount':
+                return $this->useDiscountFeeProduct();
+
+            case 'shipping':
+                return $this->useShippingFeeProduct();
+
+            default:
+                return false;
+        }
     }
 
     // Use Shipping Fee Product
@@ -601,11 +637,27 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::ORDER_TAX_PRODUCT);
     }
 
+    /**
+     * @return bool
+     */
+    public function isUpdateTaxTotal()
+    {
+        return (bool)(int)$this->getStoreConfig(self::ORDER_UPDATE_TAX_TOTAL);
+    }
+
     // get a list of allowed order states for the sync
 
     public function getShippingProduct()
     {
         return $this->getStoreConfig(self::ORDER_SHIPPING_PRODUCT);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUpdateShippingTotal()
+    {
+        return (bool)(int)$this->getStoreConfig(self::ORDER_UPDATE_SHIPPING_TOTAL);
     }
 
     // Tax Fee Product
@@ -615,6 +667,35 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::ORDER_DISCOUNT_PRODUCT);
     }
 
+    /**
+     * @return bool
+     */
+    public function isUpdateDiscountTotal()
+    {
+        return (bool)(int)$this->getStoreConfig(self::ORDER_UPDATE_DISCOUNT_TOTAL);
+    }
+
+    /**
+     * @param $feeType
+     * @return bool
+     */
+    public function isUpdateTotalByFeeType($feeType)
+    {
+        switch ($feeType) {
+            case 'tax':
+                return $this->isUpdateTaxTotal();
+
+            case 'discount':
+                return $this->isUpdateDiscountTotal();
+
+            case 'shipping':
+                return $this->isUpdateShippingTotal();
+
+            default:
+                return false;
+        }
+    }
+
     // Shipping Fee Product
 
     public function getDefaultAccountId()
@@ -622,11 +703,13 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CUSTOMER_DEFAULT_ACCOUNT);
     }
 
-    // Discount Fee Product
-
+    /**
+     * @return bool
+     * @deprecated
+     */
     public function createPersonAccount()
     {
-        return $this->getStoreConfig(self::CUSTOMER_PERSON_ACCOUNT);
+        return $this->usePersonAccount();
     }
 
     // Customer integration type
@@ -746,18 +829,12 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::API_ENABLED);
     }
 
+    /**
+     * @return bool
+     */
     public function checkPhpVersion()
     {
-        if (!defined('PHP_VERSION_ID')) {
-            $version = explode('.', PHP_VERSION);
-            define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
-            unset($version);
-        }
-
-        if (PHP_VERSION_ID > 50300) {
-            return true;
-        }
-        return false;
+        return version_compare(PHP_VERSION, '5.4.0', '>=');
     }
 
     /**

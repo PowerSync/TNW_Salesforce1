@@ -21,7 +21,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
     /**
      *
      */
-    protected function _massAddAfterInvoice()
+    protected function _massAddAfterLookup()
     {
         // Salesforce lookup, find all orders by Magento order number
         $this->_cache[sprintf('%sLookup', $this->_salesforceEntityName)] = Mage::helper('tnw_salesforce/salesforce_data_invoice')
@@ -62,8 +62,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
     {
         $_entity       = $this->getEntityByItem($_entityItem);
         $_entityNumber = $this->_getEntityNumber($_entity);
-        /** @var Mage_Catalog_Model_Product $product */
-        $product       = $this->_getObjectByEntityItemType($_entityItem, 'Product');
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Invoice__c'}
             = $this->_getParentEntityId($_entityNumber);
@@ -78,17 +76,11 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
         }
 
-        /* Dump BillingItem object into the log */
-        foreach ($this->_obj as $key => $_item) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order Invoice Item Object: " . $key . " = '" . $_item . "'");
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('-----------------');
+        $entityId = $_entityItem->getId();
 
-        $key = $_entityItem->getId();
-        // if it's fake product for order fee, has the same id's for all products
-        if (!$product->getId()) {
-            $key .= '_' . $_entityNumber;
-        }
+        $key = empty($entityId)
+            ? sprintf('%s_%s', $_entityNumber, count($this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']))
+            : $entityId;
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $key] = $this->_obj;
     }

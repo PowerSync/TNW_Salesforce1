@@ -695,12 +695,20 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
                 continue;
             }
 
-            $item = clone $item;
             if ($item->getOrderItem()->getProductType() != Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
                 $items[] =  $item;
                 continue;
             }
 
+            $orderItemsIds = array_map(function (Mage_Sales_Model_Order_Item $item) {
+                return $item->getId();
+            }, $item->getOrderItem()->getChildrenItems());
+
+            if (count(array_intersect($orderItemsIds, $_hasOrderItemId)) === 0) {
+                continue;
+            }
+
+            $item = clone $item;
             $item
                 ->setTaxAmount(null)
                 ->setBaseTaxAmount(null)

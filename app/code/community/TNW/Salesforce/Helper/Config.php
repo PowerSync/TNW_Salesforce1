@@ -180,17 +180,28 @@ class TNW_Salesforce_Helper_Config extends TNW_Salesforce_Helper_Data
     /**
      * @param $website
      * @return Varien_Object
+     * @throws Mage_Core_Model_Store_Exception
      */
     public function startEmulationWebsite($website)
     {
         $website = $this->getWebsite($website);
+
+        $defaultStore = $website->getDefaultStore();
+        if (!$defaultStore instanceof Mage_Core_Model_Store) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveWarning("The website \"{$website->getCode()}\" missing store. Store \"admin\" will be applied");
+
+            $defaultStore = Mage::app()->getStore('admin');
+        }
+
+        // check diff website
         if ($this->getWebsite()->getId() == $website->getId()) {
             return new Varien_Object();
         }
 
         /** @var Mage_Core_Model_App_Emulation $appEmulation */
         $appEmulation = Mage::getSingleton('core/app_emulation');
-        return $appEmulation->startEnvironmentEmulation($website->getDefaultStore()->getId());
+        return $appEmulation->startEnvironmentEmulation($defaultStore->getId());
     }
 
     public function stopEmulationWebsite(Varien_Object $initialEnvironmentInfo)

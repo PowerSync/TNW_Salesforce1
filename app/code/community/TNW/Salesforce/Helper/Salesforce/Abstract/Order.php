@@ -148,12 +148,54 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             switch (Mage::getStoreConfig(TNW_Salesforce_Helper_Config_Sales::XML_PATH_ORDERS_BUNDLE_ITEM_SYNC)) {
                 case 0:
                     $_items[] = $_item;
+
+                    $_item
+                        ->setTaxAmount(null)
+                        ->setBaseTaxAmount(null)
+                        ->setHiddenTaxAmount(null)
+                        ->setBaseHiddenTaxAmount(null)
+                        ->setRowTotal(null)
+                        ->setBaseRowTotal(null)
+                        ->setDiscountAmount(null)
+                        ->setBaseDiscountAmount(null);
+
+                    /** @var Mage_Sales_Model_Order_Item $_childItem */
+                    foreach ($_item->getChildrenItems() as $_childItem) {
+                        $_item->setTaxAmount($_item->getTaxAmount() + $_childItem->getTaxAmount())
+                            ->setBaseTaxAmount($_item->getBaseTaxAmount() + $_childItem->getBaseTaxAmount())
+                            ->setHiddenTaxAmount($_item->getHiddenTaxAmount() + $_childItem->getHiddenTaxAmount())
+                            ->setBaseHiddenTaxAmount($_item->getBaseHiddenTaxAmount() + $_childItem->getBaseHiddenTaxAmount())
+                            ->setRowTotal($_item->getRowTotal() + $_childItem->getRowTotal())
+                            ->setBaseRowTotal($_item->getBaseRowTotal() + $_childItem->getBaseRowTotal())
+                            ->setDiscountAmount($_item->getDiscountAmount() + $_childItem->getDiscountAmount())
+                            ->setBaseDiscountAmount($_item->getBaseDiscountAmount() + $_childItem->getBaseDiscountAmount());
+                    }
                     break;
 
                 case 1:
                     $_items[] = $_item;
 
+                    $_item
+                        ->setTaxAmount(null)
+                        ->setBaseTaxAmount(null)
+                        ->setHiddenTaxAmount(null)
+                        ->setBaseHiddenTaxAmount(null)
+                        ->setRowTotal(null)
+                        ->setBaseRowTotal(null)
+                        ->setDiscountAmount(null)
+                        ->setBaseDiscountAmount(null);
+
+                    /** @var Mage_Sales_Model_Order_Item $_childItem */
                     foreach ($_item->getChildrenItems() as $_childItem) {
+                        $_item->setTaxAmount($_item->getTaxAmount() + $_childItem->getTaxAmount())
+                            ->setBaseTaxAmount($_item->getBaseTaxAmount() + $_childItem->getBaseTaxAmount())
+                            ->setHiddenTaxAmount($_item->getHiddenTaxAmount() + $_childItem->getHiddenTaxAmount())
+                            ->setBaseHiddenTaxAmount($_item->getBaseHiddenTaxAmount() + $_childItem->getBaseHiddenTaxAmount())
+                            ->setRowTotal($_item->getRowTotal() + $_childItem->getRowTotal())
+                            ->setBaseRowTotal($_item->getBaseRowTotal() + $_childItem->getBaseRowTotal())
+                            ->setDiscountAmount($_item->getDiscountAmount() + $_childItem->getDiscountAmount())
+                            ->setBaseDiscountAmount($_item->getBaseDiscountAmount() + $_childItem->getBaseDiscountAmount());
+
                         $_childItem = clone $_childItem;
                         $_childItem
                             ->setTaxAmount(null)

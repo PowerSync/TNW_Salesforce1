@@ -58,7 +58,7 @@ class TNW_Salesforce_Model_Config_Products
      * @return mixed
      */
     protected function _getKey($_item) {
-        return serialize($_item);
+        return serialize(array_intersect_key($_item, array_flip(array('Id', 'Name', 'ProductCode'))));
     }
 
 }

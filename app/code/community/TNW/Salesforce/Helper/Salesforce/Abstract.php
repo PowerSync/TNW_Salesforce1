@@ -356,7 +356,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         foreach ($chunk as $_item) {
             $_data .= "\t<sObject>";
             foreach ($_item as $_tag => $_value) {
-                $_data .= '<' . $_tag . '>' . htmlspecialchars($_value, ENT_XML1) . '</' . $_tag . '>';
+                $_data .= '<' . $_tag . '><![CDATA[' . str_replace( array('<![CDATA[', ']]>'), '', $_value) . ']]></' . $_tag . '>';
             }
             $_data .= "</sObject>\n";
         }
@@ -884,14 +884,11 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
     /**
      * @param string $key
-     * @return array|null|string
+     * @return string|null
      */
-    public function getWebsiteSfIds($key = null)
+    public function getWebsiteSfIds($key)
     {
-        if (!is_null($key)) {
-            return isset($this->_websiteSfIds[$key]) ? (string)$this->_websiteSfIds[$key] : null;
-        }
-        return $this->_websiteSfIds;
+        return isset($this->_websiteSfIds[$key]) ? (string)$this->_websiteSfIds[$key] : null;
     }
 
     /**

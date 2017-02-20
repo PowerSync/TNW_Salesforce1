@@ -53,7 +53,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('SKIPPING: API Integration is disabled');
+                    ->saveTrace('SKIPPING: API Integration is disabled');
 
                 return;
             }
@@ -79,10 +79,10 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
                 if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($entityIds, 'Creditmemo', 'creditmemo', $syncBulk);
 
@@ -104,7 +104,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
                     Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
                         'creditmemoIds' => $entityIds,
                         'message' => $helper->__('Total of %d creditmemo(s) were synchronized', count($entityIds)),
-                        'type' => $syncBulk ? 'bulk' : 'salesforce'
+                        'type' => 'salesforce'
                     ));
                 }
             } catch (Exception $e) {

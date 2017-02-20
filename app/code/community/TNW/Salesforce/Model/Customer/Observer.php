@@ -117,7 +117,7 @@ class TNW_Salesforce_Model_Customer_Observer
 
             if (!$helper->isEnabled()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveNotice('SKIPPING: API Integration is disabled');
+                    ->saveTrace('SKIPPING: API Integration is disabled');
 
                 return;
             }
@@ -143,10 +143,10 @@ class TNW_Salesforce_Model_Customer_Observer
                 return;
             }
 
-            $syncBulk = (count($entityIds) > 1);
-
             try {
-                if (count($entityIds) > $helper->getRealTimeSyncMaxCount() || !$helper->isRealTimeType()) {
+                if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
+                    $syncBulk = (count($entityIds) > 1);
+
                     $success = Mage::getModel('tnw_salesforce/localstorage')
                         ->addObject($entityIds, 'Customer', 'customer', $syncBulk);
 
@@ -165,7 +165,7 @@ class TNW_Salesforce_Model_Customer_Observer
                     }
                 } else {
                     /** @var TNW_Salesforce_Helper_Salesforce_Customer $manualSync */
-                    $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_customer', $syncBulk ? 'bulk' : 'salesforce'));
+                    $manualSync = Mage::helper('tnw_salesforce/salesforce_customer');
                     if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Total of %d customer(s) were successfully synchronized', count($entityIds)));
@@ -226,8 +226,8 @@ class TNW_Salesforce_Model_Customer_Observer
         $customer = $observer->getData('customer');
         $account  = $observer->getData('request')->getPost('account', array());
 
-        if (!empty($account['salesforce_account_owner_id'])) {
-            $customer->setData('salesforce_account_owner_id', $account['salesforce_account_owner_id']);
+        if (!empty($account['salesforce_account_owner_id']) && empty($account['salesforce_contact_owner_id'])) {
+            $customer->setData('salesforce_contact_owner_id', $account['salesforce_account_owner_id']);
         }
 
         if (!empty($account['salesforce_sales_person'])) {
