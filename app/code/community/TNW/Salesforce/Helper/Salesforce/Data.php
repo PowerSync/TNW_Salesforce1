@@ -599,7 +599,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         $_records = array();
         /** @var stdClass $record */
         foreach ($records as $record) {
-            if (!is_object($record) || !property_exists($record, 'records') || empty($record->records)) {
+            if (empty($record->records)) {
                 continue;
             }
 
@@ -1044,5 +1044,60 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         }
 
         return $result;
+    }
+
+    /**
+     * @param array $records
+     * @param array $entities
+     * @return array
+     */
+    public function assignLookupToEntity(array $records, array $entities)
+    {
+        $returnArray = array();
+        $searchIndex = $this->collectLookupIndex($records);
+        foreach ($entities as $entity) {
+            $recordsPriority = $this->searchLookupPriorityOrder($searchIndex, $entity);
+            ksort($recordsPriority, SORT_NUMERIC);
+
+            array_walk_recursive($recordsPriority, function (&$record) use($records) {
+                $record = $records[$record];
+            });
+
+            $returnArray[] = array(
+                'entity' => $entity,
+                'record' => $this->filterLookupByPriority($recordsPriority, $entity)
+            );
+        }
+
+        return $returnArray;
+    }
+
+    /**
+     * @param array $records
+     * @return array
+     */
+    protected function collectLookupIndex(array $records)
+    {
+        return array();
+    }
+
+    /**
+     * @param array $searchIndex
+     * @param $entity
+     * @return array[]
+     */
+    protected function searchLookupPriorityOrder(array $searchIndex, $entity)
+    {
+        return array();
+    }
+
+    /**
+     * @param array[] $recordsPriority
+     * @param $entity
+     * @return stdClass|null
+     */
+    protected function filterLookupByPriority(array $recordsPriority, $entity)
+    {
+        return null;
     }
 }
