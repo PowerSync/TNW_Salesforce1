@@ -158,7 +158,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param $customer Mage_Customer_Model_Customer
      * @param $record stdClass
      * @return array
-     * @throws Mage_Core_Exception
      */
     public function prepareRecord($customer, $record)
     {
@@ -367,14 +366,47 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      */
     protected function _queryLeads($customers, $leadSource = '', $idPrefix = '')
     {
+        $columns = $this->columnsLookupQuery();
+        $conditions = $this->conditionsLookupQuery($customers, $leadSource, $idPrefix);
+
+        $query = sprintf('SELECT %s FROM Lead WHERE %s',
+            $this->generateLookupSelect($columns),
+            $this->generateLookupWhere($conditions));
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("Lead QUERY:\n{$query}");
+
+        return $this->getClient()->query($query);
+    }
+
+    /**
+     * @return array
+     */
+    protected function columnsLookupQuery()
+    {
         $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
         $websiteFieldName = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
             . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
-        $query = 'SELECT ID, OwnerId, Company, Email, IsConverted, ConvertedAccountId, ConvertedContactId, '
-            . $_magentoId . ', ' . $websiteFieldName . ' FROM Lead WHERE ';
+        return array(
+            'ID', 'OwnerId', 'Company', 'Email', 'IsConverted',
+            'ConvertedAccountId', 'ConvertedContactId', $_magentoId, $websiteFieldName
+        );
+    }
 
-        $_lookup = array();
+    /**
+     * @param Mage_Customer_Model_Customer[] $customers
+     * @param string $leadSource
+     * @param string $idPrefix
+     * @return mixed
+     */
+    protected function conditionsLookupQuery(array $customers, $leadSource = '', $idPrefix = '')
+    {
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+        $websiteFieldName = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+            . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+        $conditions['OR'] = array();
         foreach ($customers as $customer) {
             if (!$customer instanceof Mage_Customer_Model_Customer) {
                 continue;
@@ -386,43 +418,24 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 ? Mage::app()->getWebsite($customer->getWebsiteId())->getData('salesforce_id')
                 : null;
 
-            $tmp = "((Email='" . addslashes($_email) . "'";
-
+            $orCond['AND']['eam']['OR']['Email'] = $_email;
             if (is_numeric($_id)) {
-                $tmp .= " OR " . $_magentoId . "='" . $idPrefix . $_id . "'";
+                $orCond['AND']['eam']['OR'][$_magentoId] = $idPrefix . $_id;
             }
-            $tmp .= ")";
-            if (
-                Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
-                && !empty($_website)
-            ) {
-                $tmp .= " AND ($websiteFieldName = '$_website' OR $websiteFieldName = '')";
+
+            if (!empty($_website) && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $orCond['AND']['website']['OR']["1:{$websiteFieldName}"] = $_website;
+                $orCond['AND']['website']['OR']["2:{$websiteFieldName}"] = '';
             }
-            $tmp .= ")";
-            $_lookup[] = $tmp;
+
+            $conditions['OR'][$customer->getData('email')] = $orCond;
         }
-        if (empty($_lookup)) {
-            return array();
-        }
-        $query .= '(' . join(' OR ', $_lookup) . ')';
 
         if ($leadSource) {
-            $query .= ' AND LeadSource = \'' . $leadSource . '\' ';
+            $conditions['AND']['LeadSource'] = $leadSource;
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("Lead QUERY: \n{$query}");
-
-        try {
-            $_result = $this->getClient()->query($query);
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError("ERROR: {$e->getMessage()}");
-
-            throw $e;
-        }
-
-        return $_result;
+        return $conditions;
     }
 
     /**

@@ -1100,4 +1100,38 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     {
         return null;
     }
+
+    protected function generateLookupSelect(array $columns)
+    {
+        return implode(', ', $columns);
+    }
+
+    /**
+     * @param array $conditions
+     * @return string
+     */
+    protected function generateLookupWhere(array $conditions)
+    {
+        $sql = '';
+        $first = true;
+        foreach ($conditions as $key => $group) {
+            foreach ($group as $fieldName => $condition) {
+                $sql .= ($first ? '': " $key ");
+
+                if (!is_array($condition)) {
+                    $pos = strpos($fieldName, ':');
+                    $sql .= sprintf("%s='%s'",
+                        false !== $pos ? substr($fieldName, $pos + 1) : $fieldName,
+                        addslashes($condition)
+                    );
+                } else {
+                    $sql .= "({$this->generateLookupWhere($condition)})";
+                }
+
+                $first = false;
+            }
+        }
+
+        return $sql;
+    }
 }

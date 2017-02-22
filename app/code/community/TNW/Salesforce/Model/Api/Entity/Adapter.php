@@ -298,7 +298,7 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      */
     public function select()
     {
-        return new TNW_Salesforce_Model_Api_Select($this);
+        return new Varien_Db_Select($this);
     }
 
     public function supportStraightJoin()

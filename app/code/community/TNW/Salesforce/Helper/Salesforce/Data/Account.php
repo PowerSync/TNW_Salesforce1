@@ -215,7 +215,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $returnArray = array();
         foreach ($customLookup as $item) {
             $returnArray = array_merge($returnArray,
-                $this->prepareContactRecord($item['customer'], $item['record'], $field));
+                $this->prepareContactRecord($item['entity'], $item['record'], $field));
         }
 
         return $returnArray;
@@ -381,7 +381,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      * @param string $hashField
      * @param string $field
      * @return array
-     * @throws \Exception
+     * @throws Exception
      */
     public function lookupByCriteria($criteria = array(), $hashField = 'Id', $field = 'Name')
     {
@@ -395,15 +395,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $sql = $this->_prepareCriteriaSql($criteria, $field);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Account QUERY:\n{$sql}");
 
-        try {
-            $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: {$e->getMessage()}");
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Could not find an account by criteria: ' . var_export($criteria, true));
-
-            throw $e;
-        }
-
+        $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
         if (empty($result)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace('Account lookup returned: 0 results...');
@@ -414,11 +406,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $returnArray = array();
         foreach ($result as $_item) {
             $_returnObject = new stdClass();
-            $_returnObject->Id = $this->getProperty($_item, 'Id');
-            $_returnObject->OwnerId = $this->getProperty($_item, 'OwnerId');
-            $_returnObject->Name = $this->getProperty($_item, 'Name');
-            $_returnObject->RecordTypeId = $this->getProperty($_item, 'RecordTypeId');
-            $_returnObject->IsPersonAccount = $this->getProperty($_item, 'IsPersonAccount');
+            $_returnObject->Id = (isset($_item['Id'])) ? $_item['Id'] : NULL;
+            $_returnObject->OwnerId = (isset($_item['OwnerId'])) ? $_item['OwnerId'] : NULL;
+            $_returnObject->Name = (isset($_item['Name'])) ? $_item['Name'] : NULL;
+            $_returnObject->RecordTypeId = (isset($_item['RecordTypeId'])) ? $_item['RecordTypeId'] : NULL;
+            $_returnObject->IsPersonAccount = (isset($_item['IsPersonAccount'])) ? $_item['IsPersonAccount'] : false;
 
             foreach ($criteria as $_customIndex => $_value) {
                 // Need case insensitive match
@@ -431,8 +423,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
             if (isset($_returnObject->$hashField) && $_returnObject->$hashField) {
                 $_hashKey = $_returnObject->$hashField;
-            } elseif (isset($_item->$hashField) && $_item->$hashField) {
-                $_hashKey = $_item->$hashField;
+            } elseif (!empty($_item[$hashField])) {
+                $_hashKey = $_item[$hashField];
             } else {
                 $_hashKey = $_returnObject->Id;
             }
@@ -443,19 +435,17 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         return $returnArray;
     }
 
+    /**
+     * @param $where
+     * @return bool
+     * @throws Exception
+     */
     public function lookupContactIds($where)
     {
         $sql = "SELECT Id, PersonContactId FROM Account WHERE Id IN ('" . implode("','", array_values($where)) . "')";
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Account QUERY:\n{$sql}");
 
-        try {
-            $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: {$e->getMessage()}");
-
-            throw $e;
-        }
-
+        $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
         if (empty($result)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("PersonAccount lookup did not return any results...");
             return false;
