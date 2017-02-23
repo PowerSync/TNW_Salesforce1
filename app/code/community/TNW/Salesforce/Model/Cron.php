@@ -17,6 +17,22 @@ class TNW_Salesforce_Model_Cron
     protected $_syncType = self::SYNC_TYPE_OUTGOING;
 
     /**
+     * @return string
+     */
+    public function getSyncType()
+    {
+        return $this->_syncType;
+    }
+
+    /**
+     * @param string $syncType
+     */
+    public function setSyncType($syncType)
+    {
+        $this->_syncType = $syncType;
+    }
+
+    /**
      * @var null
      */
     protected $_serverName = NULL;
