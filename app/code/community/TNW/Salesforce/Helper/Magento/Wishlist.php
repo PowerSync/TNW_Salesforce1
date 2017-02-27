@@ -20,13 +20,13 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
             return false;
         }
 
-        $_mwIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c';
-        $_mwId = !empty($object->$_mwIdKey) ? str_replace(TNW_Salesforce_Helper_Salesforce_Wishlist::SALESFORCE_ENTITY_PREFIX, '', $object->$_mwIdKey) : null;
-        $_sOpportunityId = $object->Id;
+        $_swmIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c';
+        $_swmId = !empty($object->$_swmIdKey) ? str_replace(TNW_Salesforce_Helper_Salesforce_Wishlist::SALESFORCE_ENTITY_PREFIX, '', $object->$_swmIdKey) : null;
 
+        $_mwId = null;
         // Lookup product by Magento Id
-        if ($_mwId) {
-            $wishlist = Mage::getModel('wishlist/wishlist')->load($_mwId);
+        if ($_swmId) {
+            $wishlist = Mage::getModel('wishlist/wishlist')->load($_swmId);
             $_mwId = $wishlist->getId();
 
             if ($_mwId) {
@@ -35,17 +35,20 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
             }
         }
 
-        if (!$_mwId && $_sOpportunityId) {
-            $wishlist = Mage::getModel('wishlist/wishlist')->load($_sOpportunityId, 'salesforce_id');
+        if (!$_mwId && $object->Id) {
+            $wishlist = Mage::getModel('wishlist/wishlist')->load($object->Id, 'salesforce_id');
             $_mwId = $wishlist->getId();
 
             if ($_mwId) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveTrace("Wishlist #{$_mwId} Loaded by using Salesforce ID: {$_sOpportunityId}");
+                    ->saveTrace("Wishlist #{$_mwId} Loaded by using Salesforce ID: {$object->Id}");
             }
         }
 
         if (!$_mwId) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('SKIPPING: could not find the wishlist by number: '. $object->Id);
+
             return false;
         }
 
