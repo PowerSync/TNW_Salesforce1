@@ -263,7 +263,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
     public function getContactsByEmails(array $customers)
     {
         $_results = array();
-        foreach (array_chunk($customers, self::UPDATE_LIMIT) as $_customers) {
+        foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
             $_results[] = $this->_queryContacts($_customers);
         }
 

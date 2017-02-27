@@ -22,7 +22,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     public function lookup($customers, $leadSource = '', $idPrefix = '')
     {
         $_results = array();
-        foreach (array_chunk($customers, self::UPDATE_LIMIT) as $_customers) {
+        foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
             $_results[] = $this->_queryLeads($_customers, $leadSource, $idPrefix);
         }
 
@@ -63,7 +63,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     public function customLookup($customers, $leadSource = '', $idPrefix = '')
     {
         $_results = array();
-        foreach (array_chunk($customers, self::UPDATE_LIMIT) as $_customers) {
+        foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
             $_results[] = $this->_queryLeads($_customers, $leadSource, $idPrefix);
         }
 
