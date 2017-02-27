@@ -12,8 +12,7 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
     {
         $this->_prepare();
 
-        $_sOpportunityId = !empty($object->Id) ? $object->Id : null;
-        if ($_sOpportunityId) {
+        if (empty($object->Id)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveError('Upserting wishlist into Magento: Opportunity ID is missing');
 
@@ -22,7 +21,8 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
         }
 
         $_mwIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c';
-        $_mwId = !empty($object->$_mwIdKey) ? $object->$_mwIdKey : null;
+        $_mwId = !empty($object->$_mwIdKey) ? str_replace(TNW_Salesforce_Helper_Salesforce_Wishlist::SALESFORCE_ENTITY_PREFIX, '', $object->$_mwIdKey) : null;
+        $_sOpportunityId = $object->Id;
 
         // Lookup product by Magento Id
         if ($_mwId) {
@@ -63,6 +63,13 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
         /** @var Mage_Wishlist_Model_Wishlist $wishlist */
         $wishlist = Mage::getModel('wishlist/wishlist')
             ->load($_mwId);
+
+        $wishlist->addData(array(
+            'salesforce_id' => $object->Id,
+            'sf_insync' => 1
+        ));
+
+        $this->addEntityToSave('Wishlist', $wishlist);
 
         $this->_updateMappedEntityFields($object, $wishlist)
             ->_updateMappedEntityItemFields($object, $wishlist)
@@ -116,13 +123,39 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
             return $this;
         }
 
+        $_websiteId = false;
+        $_websiteSfField = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+            . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+        if (property_exists($object, $_websiteSfField)) {
+            $_websiteSfId = Mage::helper('tnw_salesforce')
+                ->prepareId($object->{$_websiteSfField});
+
+            $_websiteId = array_search($_websiteSfId, $this->_websiteSfIds);
+        }
+
+        $_websiteId = ($_websiteId === false) ? Mage::app()->getWebsite(true)->getId() : $_websiteId;
+        $storeId = Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+
+        //FIX: Delete Item
+        $wishlist->getItemCollection()
+            ->setVisibilityFilter(false)
+            ->setSalableFilter(false);
+
         foreach ((array)$object->OpportunityLineItems->records as $record) {
             $product = $this->getProductByOpportunityLine($record);
             if (null === $product->getId()) {
                 continue;
             }
 
-            $wishlistItem = $wishlist->addNewItem($product, new Varien_Object(array('qty'=>$record->Quantity)));
+            if (!$this->isProductValidate($product)) {
+                continue;
+            }
+
+            //FIX: Store Item
+            $product->setData('wishlist_store_id', $storeId);
+
+            $wishlistItem = $wishlist->addNewItem($product, new Varien_Object(array('qty'=>$record->Quantity)), true);
             if (is_string($wishlistItem)) {
                 Mage::throwException($wishlistItem);
             }
@@ -144,11 +177,43 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
                     ->setMapping($mapping)
                     ->setValue($wishlistItem, $value);
 
-                $this->addEntityToSave('Wishlist Item '.$record->Id, $wishlistItem);
+                $this->addEntityToSave('Wishlist Item '.$wishlistItem->getId(), $wishlistItem);
             }
         }
 
         return $this;
+    }
+
+    /**
+     * @param Mage_Catalog_Model_Product $product
+     * @return bool
+     */
+    protected function isProductValidate($product)
+    {
+        $allowedProductType = array(
+            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
+        );
+
+        if (!in_array($product->getTypeId(), $allowedProductType)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice('Product (sku:'.$product->getSku().') skipping. Product type "'.$product->getTypeId().'"');
+
+            return false;
+        }
+
+        $collection = Mage::getResourceModel('catalog/product_option_collection')
+            ->addFieldToFilter('product_id', $product->getId())
+            ->addRequiredFilter(1);
+
+        if ($collection->getSize() > 1) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice('Product (sku:'.$product->getSku().') was skipped. It sas custom option(s).');
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -158,7 +223,7 @@ class TNW_Salesforce_Helper_Magento_Wishlist extends TNW_Salesforce_Helper_Magen
     protected function getProductByOpportunityLine($record)
     {
         /** @var Mage_Catalog_Model_Resource_Product_Collection $collection */
-        $collection = Mage::getResourceModel('catalog/product');
+        $collection = Mage::getResourceModel('catalog/product_collection');
         $collection->addAttributeToFilter('salesforce_id', $record->PricebookEntry->Product2Id);
 
         return $collection->getFirstItem();

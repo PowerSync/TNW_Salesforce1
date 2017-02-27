@@ -4,6 +4,9 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
+/**
+ * @method Mage_Customer_Model_Resource_Customer_Collection getCollection()
+ */
 class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
 
@@ -132,6 +135,34 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
         ));
 
         return parent::_prepareColumns();
+    }
+
+    /**
+     * Sets sorting order by some column
+     *
+     * @param Mage_Adminhtml_Block_Widget_Grid_Column $column
+     * @return Mage_Adminhtml_Block_Widget_Grid
+     */
+    protected function _setCollectionOrder($column)
+    {
+        switch ($column->getId()) {
+            case 'entity_id':
+                $this->getCollection()->getSelect()
+                    ->order('wishlist.wishlist_id '.strtoupper($column->getDir()));
+                break;
+
+            case 'name':
+                $this->getCollection()->getSelect()
+                    ->order('wishlist.name '.strtoupper($column->getDir()));
+                break;
+
+            case 'salesforce_id':
+                $this->getCollection()->getSelect()
+                    ->order('wishlist.salesforce_id '.strtoupper($column->getDir()));
+                break;
+        }
+
+        return parent::_setCollectionOrder($column);
     }
 
     /**
