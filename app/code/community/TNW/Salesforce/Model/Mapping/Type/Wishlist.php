@@ -119,7 +119,14 @@ class TNW_Salesforce_Model_Mapping_Type_Wishlist extends TNW_Salesforce_Model_Ma
      */
     public function convertSfName($_entity)
     {
-        return "Wishlist #" . $this->convertNumber($_entity);
+        $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_wishlist');
+
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = $currentHelper instanceof TNW_Salesforce_Helper_Salesforce_Customer
+            ? $currentHelper->getObjectByEntityType($_entity, 'Customer')
+            : Mage::getModel('customer/customer')->load($_entity->getCustomerId());
+
+        return sprintf('Wishlist for %s', $customer->getName());
     }
 
     /**

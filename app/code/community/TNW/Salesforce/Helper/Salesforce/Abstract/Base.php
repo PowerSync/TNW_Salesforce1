@@ -772,6 +772,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
+     * @param $_entity
+     * @param $type string
+     * @return mixed
+     */
+    public function getObjectByEntityType($_entity, $type)
+    {
+        return $this->_getObjectByEntityType($_entity, $type);
+    }
+
+    /**
      * @param array $chunk
      * @throws Exception
      */
@@ -910,6 +920,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _getObjectByEntityItemType($_entityItem, $_type)
     {
         return null;
+    }
+
+    /**
+     * @param $_entityItem
+     * @param $_type
+     * @return null
+     */
+    public function getObjectByEntityItemType($_entityItem, $_type)
+    {
+        return $this->_getObjectByEntityItemType($_entityItem, $_type);
     }
 
     /**
