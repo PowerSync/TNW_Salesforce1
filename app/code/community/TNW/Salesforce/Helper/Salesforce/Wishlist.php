@@ -304,6 +304,11 @@ class TNW_Salesforce_Helper_Salesforce_Wishlist extends TNW_Salesforce_Helper_Sa
         $this->_obj->OpportunityId
             = $this->_cache['upserted' . $this->getManyParentEntityType()][$this->getEntityNumber($entity)];
 
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $this->_obj->$disableSyncField = true;
+        }
+
         $key = $_entityItem->getId();
         $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))]['cart_' . $key] = $this->_obj;
     }
