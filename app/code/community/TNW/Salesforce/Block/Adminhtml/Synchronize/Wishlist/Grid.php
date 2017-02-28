@@ -171,10 +171,8 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
     protected function _prepareMassaction()
     {
         if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
-            $this
-                ->setMassactionIdField('entity_id')
-            ;
-            $this->getMassactionBlock()->setFormFieldName('customers');
+            $this->setMassactionIdField('wishlist_id');
+            $this->getMassactionBlock()->setFormFieldName('wishlist_ids');
 
             $this->getMassactionBlock()->addItem('sync', array(
                 'label' => Mage::helper('tnw_salesforce')->__('Synchronize'),
@@ -182,6 +180,23 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                 'confirm' => Mage::helper('tnw_salesforce')->__('This will ovewrite any mapped data in Salesforce. Are you sure?')
             ));
         }
+        return $this;
+    }
+
+
+    /**
+     * Prepare grid massaction column
+     *
+     * @return $this
+     */
+    protected function _prepareMassactionColumn()
+    {
+        parent::_prepareMassactionColumn();
+        $column = $this->getColumn('massaction');
+        if ($column instanceof Mage_Adminhtml_Block_Widget_Grid_Column) {
+            $column->setData('use_index',  true);
+        }
+
         return $this;
     }
 

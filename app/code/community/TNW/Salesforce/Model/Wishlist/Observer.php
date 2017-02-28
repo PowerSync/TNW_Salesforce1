@@ -83,7 +83,7 @@ class TNW_Salesforce_Model_Wishlist_Observer
             try {
                 if (!$helper->isRealTimeType() || count($entityIds) > $helper->getRealTimeSyncMaxCount()) {
                     $success = Mage::getModel('tnw_salesforce/localstorage')
-                        ->addObject($entityIds, 'Opportunity', 'wishlist', $syncBulk);
+                        ->addObject($entityIds, 'Wishlist', 'wishlist', $syncBulk);
 
                     if (!$success) {
                         Mage::getSingleton('tnw_salesforce/tool_log')

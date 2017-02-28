@@ -6,7 +6,7 @@ class TNW_Salesforce_Helper_Bulk_Wishlist extends TNW_Salesforce_Helper_Salesfor
      * @param string $type
      * @return bool
      */
-    public function process($type = 'soft')
+    public function process($type = 'full')
     {
         /**
          * @comment apply bulk server settings
@@ -84,12 +84,36 @@ class TNW_Salesforce_Helper_Bulk_Wishlist extends TNW_Salesforce_Helper_Salesfor
                 $this->_processErrors($_item, 'Opportunity', $_batch[$entityNumber]);
             }
         }
+
+        do {
+            if (empty($this->_cache[sprintf('upserted%s',$this->getManyParentEntityType())])) {
+                break;
+            }
+
+            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')
+                ->getOpportunityItems($this->_cache[sprintf('upserted%s',$this->getManyParentEntityType())]);
+
+            if (empty($oppItemSet)) {
+                break;
+            }
+
+            $oppItemSetId = array();
+            foreach ($oppItemSet as $item) {
+                $oppItemSetId[] = $item->Id;
+            }
+
+            foreach (array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $oppItemSetId) {
+                $this->getClient()->delete($oppItemSetId);
+            }
+        } while(false);
     }
 
     protected function _pushRemainingEntityData()
     {
         $itemKey = sprintf('%sToUpsert', lcfirst($this->getItemsField()));
         if (!empty($this->_cache[$itemKey])) {
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
 
             if (!$this->_cache['bulkJobs']['opportunityProducts']['Id']) {
                 // Create Job
@@ -98,6 +122,8 @@ class TNW_Salesforce_Helper_Bulk_Wishlist extends TNW_Salesforce_Helper_Salesfor
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('Syncronizing Opportunity Products, created job: ' . $this->_cache['bulkJobs']['opportunityProducts']['Id']);
             }
+
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_before', $this->_magentoEntityName), array('data' => $this->_cache[$itemKey]));
 
             $this->_pushChunked($this->_cache['bulkJobs']['opportunityProducts']['Id'], 'opportunityProducts', $this->_cache[$itemKey]);
             if ($this->waitingSuccessStatusBatch($this->_cache['bulkJobs']['opportunityProducts']['Id'])) {
@@ -147,6 +173,13 @@ class TNW_Salesforce_Helper_Bulk_Wishlist extends TNW_Salesforce_Helper_Salesfor
                     }
                 }
             }
+
+            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_after', $this->_magentoEntityName), array(
+                'data' => $this->_cache[$itemKey],
+                'result' => $this->_cache['responses']['opportunityLineItems']
+            ));
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');
         }
 
         if (!empty($this->_cache['contactRolesToUpsert'])) {

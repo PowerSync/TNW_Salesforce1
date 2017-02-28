@@ -65,14 +65,13 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_WishlistsyncController extends Mag
     }
 
     /**
-     *
      * @throws \Exception
      */
-    public function massSyncForceAction()
+    public function massSyncAction()
     {
         $itemIds = $this->getRequest()->getParam('wishlist_ids');
         if (!is_array($itemIds)) {
-            $this->_getSession()->addError($this->__('Please select shipment(s)'));
+            $this->_getSession()->addError($this->__('Please select wishlist(s)'));
         } elseif (!Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
             $this->_getSession()->addError($this->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {

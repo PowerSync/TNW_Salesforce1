@@ -119,7 +119,8 @@ class TNW_Salesforce_Helper_Salesforce_Wishlist extends TNW_Salesforce_Helper_Sa
             /** @var Mage_Wishlist_Model_Resource_Item_Collection $collection */
             $collection = Mage::getResourceModel('wishlist/item_collection')
                 ->addWishlistFilter($_entity)
-                ->setVisibilityFilter();
+                ->setVisibilityFilter(false)
+                ->setSalableFilter(false);
 
             $this->_cache['entityItems'][$entityNumber] = $collection->getItems();
         }
@@ -327,6 +328,11 @@ class TNW_Salesforce_Helper_Salesforce_Wishlist extends TNW_Salesforce_Helper_Sa
 
             case 'Product':
                 $_object = $_entityItem->getProduct();
+                if (!$_object->hasData('salesforce_pricebook_id')) {
+                    // Load All Attributes
+                    $_object->getResource()->load($_object, $_object->getId());
+                }
+
                 break;
 
             case 'Product Inventory':
