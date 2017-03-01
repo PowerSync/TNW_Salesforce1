@@ -418,14 +418,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 ? Mage::app()->getWebsite($customer->getWebsiteId())->getData('salesforce_id')
                 : null;
 
-            $orCond['AND']['eam']['OR']['Email'] = $_email;
+            $orCond['AND']['eam']['OR']['Email']['='] = $_email;
             if (is_numeric($_id)) {
-                $orCond['AND']['eam']['OR'][$_magentoId] = $idPrefix . $_id;
+                $orCond['AND']['eam']['OR'][$_magentoId]['='] = $idPrefix . $_id;
             }
 
             if (!empty($_website) && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
-                $orCond['AND']['website']['OR']["1:{$websiteFieldName}"] = $_website;
-                $orCond['AND']['website']['OR']["2:{$websiteFieldName}"] = '';
+                $orCond['AND']['website']['OR'][$websiteFieldName]['IN'] = array($_website, '');
             }
 
             $conditions['OR'][$customer->getData('email')] = $orCond;

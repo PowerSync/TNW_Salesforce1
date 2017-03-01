@@ -231,22 +231,21 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 ? Mage::app()->getWebsite($customer->getWebsiteId())->getData('salesforce_id')
                 : null;
 
-            $orCond['AND']['eam']['AND']['email']['OR']['Email'] = $_email;
+            $orCond['AND']['eam']['AND']['email']['OR']['Email']['='] = $_email;
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                $orCond['AND']['eam']['AND']['email']['OR']['Account.PersonEmail'] = $_email;
+                $orCond['AND']['eam']['AND']['email']['OR']['Account.PersonEmail']['='] = $_email;
             }
 
             if (is_numeric($_id)) {
-                $orCond['AND']['eam']['OR']['magentoId']['OR'][$_magentoId] = $_id;
+                $orCond['AND']['eam']['OR']['magentoId']['OR'][$_magentoId]['='] = $_id;
 
                 if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                    $orCond['AND']['eam']['OR']['magentoId']['OR']['Account.' . str_replace('__c', '__pc', $_magentoId)] = $_id;
+                    $orCond['AND']['eam']['OR']['magentoId']['OR']['Account.' . str_replace('__c', '__pc', $_magentoId)]['='] = $_id;
                 }
             }
 
             if (!empty($_website) && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
-                $orCond['AND']['website']['OR']["1:{$websiteFieldName}"] = $_website;
-                $orCond['AND']['website']['OR']["2:{$websiteFieldName}"] = '';
+                $orCond['AND']['website']['OR'][$websiteFieldName]['IN'] = array($_website, '');
             }
 
             $conditions['OR'][$customer->getData('email')] = $orCond;

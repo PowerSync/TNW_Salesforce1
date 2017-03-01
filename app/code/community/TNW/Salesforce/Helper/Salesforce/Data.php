@@ -1065,7 +1065,8 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
 
             $returnArray[] = array(
                 'entity' => $entity,
-                'record' => $this->filterLookupByPriority($recordsPriority, $entity)
+                'record' => $this->filterLookupByPriority($recordsPriority, $entity),
+                'records' => $records
             );
         }
 
@@ -1107,25 +1108,74 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     }
 
     /**
-     * @param array $conditions
+     * @param array $groups
      * @return string
      */
-    protected function generateLookupWhere(array $conditions)
+    protected function generateLookupWhere(array $groups)
+    {
+        $this->prepareLookupWhereGroup($groups);
+        return $this->generateLookupWhereGroup($groups);
+    }
+
+    /**
+     * @param array $groups
+     */
+    protected function prepareLookupWhereGroup(array &$groups)
+    {
+        foreach ($groups as &$group) {
+            foreach ($group as $fieldName => &$condition) {
+                switch (true) {
+                    case isset($condition['=']):
+                        $value = $this->soqlQuote($condition['=']);
+                        $condition = "$fieldName={$value}";
+                        break;
+
+                    case isset($condition['LIKE']):
+                        $value = $this->soqlQuote($condition['LIKE']);
+                        $condition = "$fieldName LIKE {$value}";
+                        break;
+
+                    case isset($condition['IN']):
+                        $in = implode(',', array_map(array($this, 'soqlQuote'), $condition['IN']));
+                        $condition = "$fieldName IN ({$in})";
+                        break;
+
+                    default:
+                        if (is_array($condition)) {
+                            $this->prepareLookupWhereGroup($condition);
+                        }
+                        break;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    public function soqlQuote($value)
+    {
+        $value = addslashes($value);
+        return "'$value'";
+    }
+
+    /**
+     * @param array $groups
+     * @return string
+     */
+    protected function generateLookupWhereGroup(array $groups)
     {
         $sql = '';
         $first = true;
-        foreach ($conditions as $key => $group) {
+        foreach ($groups as $key => $group) {
             foreach ($group as $fieldName => $condition) {
                 $sql .= ($first ? '': " $key ");
 
                 if (!is_array($condition)) {
-                    $pos = strpos($fieldName, ':');
-                    $sql .= sprintf("%s='%s'",
-                        false !== $pos ? substr($fieldName, $pos + 1) : $fieldName,
-                        addslashes($condition)
-                    );
+                    $sql .= $condition;
                 } else {
-                    $sql .= "({$this->generateLookupWhere($condition)})";
+                    $sql .= "({$this->generateLookupWhereGroup($condition)})";
                 }
 
                 $first = false;
