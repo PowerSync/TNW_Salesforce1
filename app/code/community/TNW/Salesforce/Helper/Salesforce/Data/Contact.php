@@ -188,9 +188,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
      */
     protected function columnsLookupQuery()
     {
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
         $columns = array(
-            'ID', 'FirstName', 'LastName', 'Email', 'AccountId',
-            'OwnerId', 'Account.OwnerId', 'Account.Name'
+            'ID', 'FirstName', 'LastName', 'Email', 'AccountId', $_magentoId,
+            'OwnerId', 'Account.Id', 'Account.OwnerId', 'Account.Name'
         );
 
         if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
@@ -231,21 +232,21 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
                 ? Mage::app()->getWebsite($customer->getWebsiteId())->getData('salesforce_id')
                 : null;
 
-            $orCond['AND']['eam']['AND']['email']['OR']['Email']['='] = $_email;
+            $orCond['AND']['eaw']['AND']['email']['OR']['Email']['='] = $_email;
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                $orCond['AND']['eam']['AND']['email']['OR']['Account.PersonEmail']['='] = $_email;
-            }
-
-            if (is_numeric($_id)) {
-                $orCond['AND']['eam']['OR']['magentoId']['OR'][$_magentoId]['='] = $_id;
-
-                if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
-                    $orCond['AND']['eam']['OR']['magentoId']['OR']['Account.' . str_replace('__c', '__pc', $_magentoId)]['='] = $_id;
-                }
+                $orCond['AND']['eaw']['AND']['email']['OR']['Account.PersonEmail']['='] = $_email;
             }
 
             if (!empty($_website) && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
-                $orCond['AND']['website']['OR'][$websiteFieldName]['IN'] = array($_website, '');
+                $orCond['AND']['eaw']['AND'][$websiteFieldName]['IN'] = array($_website, '');
+            }
+
+            if (is_numeric($_id)) {
+                $orCond['OR']['magentoId']['OR'][$_magentoId]['='] = $_id;
+
+                if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
+                    $orCond['OR']['magentoId']['OR']['Account.' . str_replace('__c', '__pc', $_magentoId)]['='] = $_id;
+                }
             }
 
             $conditions['OR'][$customer->getData('email')] = $orCond;
@@ -276,6 +277,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
      */
     public function lookup(array $customers)
     {
+        $_magentoId         = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+        $_personMagentoId   = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__pc';
+
         $records = $this->getContactsByEmails($customers);
         if (empty($records)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
@@ -284,8 +288,32 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             return array();
         }
 
-        $returnArray = array();
+        $returnArray = $clearContactToUpsert = $clearAccountToUpsert = array();
         foreach ($this->assignLookupToEntity($records, $customers) as $item) {
+            if (empty($item['record'])) {
+                continue;
+            }
+
+            $records = $item['records'];
+            unset($records[reset(array_keys($records, $item['record'], true))]);
+            foreach ($records as $record) {
+                if (!empty($record->$_magentoId) && $record->$_magentoId == $item['entity']->getId()) {
+                    $upsert = new stdClass();
+                    $upsert->Id = $record->Id;
+                    $upsert->$_magentoId = ' ';
+
+                    $clearContactToUpsert[] = $upsert;
+                }
+
+                if (!empty($record->Account->$_personMagentoId) && $record->Account->$_personMagentoId == $item['entity']->getId()) {
+                    $upsert = new stdClass();
+                    $upsert->Id = $record->Account->Id;
+                    $upsert->$_personMagentoId = ' ';
+
+                    $clearAccountToUpsert[] = $upsert;
+                }
+            }
+
             $return = $this->prepareRecord($item['entity'], $item['record']);
             if (empty($return)) {
                 continue;
@@ -299,6 +327,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             $returnArray[$website] = array_merge($returnArray[$website], $entityData);
         }
 
+        if (!empty($clearContactToUpsert)) {
+            // Clear Magento Id
+            $this->getClient()->upsert('Id', $clearContactToUpsert, 'Contact');
+        }
+
+        if (!empty($clearAccountToUpsert)) {
+            // Clear Magento Id
+            $this->getClient()->upsert('Id', $clearAccountToUpsert, 'Account');
+        }
+
         return $returnArray;
     }
 
@@ -308,9 +346,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
      */
     protected function collectLookupIndex(array $records)
     {
-        $_magentoId         = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
-        $_personMagentoId   = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__pc';
-
         $searchIndex = array();
         foreach ($records as $key => $record) {
             // Index Email
@@ -321,20 +356,6 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
 
             if (!empty($record->Email)) {
                 $searchIndex['email'][$key] = strtolower($record->Email);
-            }
-
-            // Index MagentoId
-            $searchIndex['magentoId'][$key] = null;
-            if (!empty($record->Account->$_personMagentoId)) {
-                $searchIndex['magentoId'][$key] = $record->Account->$_personMagentoId;
-            }
-
-            if (!empty($record->Account->$_magentoId)) {
-                $searchIndex['magentoId'][$key] = $record->Account->$_magentoId;
-            }
-
-            if (!empty($record->$_magentoId)) {
-                $searchIndex['magentoId'][$key] = $record->$_magentoId;
             }
         }
 
@@ -351,10 +372,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
         $recordsIds = array();
 
         // Priority 1
-        $recordsIds[10] = array_keys($searchIndex['magentoId'], $entity->getId());
-
-        // Priority 2
-        $recordsIds[20] = array_keys($searchIndex['email'], strtolower($entity->getData('email')));
+        $recordsIds[10] = array_keys($searchIndex['email'], strtolower($entity->getData('email')));
 
         return $recordsIds;
     }
@@ -366,12 +384,23 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
      */
     protected function filterLookupByPriority(array $recordsPriority, $entity)
     {
-        $websiteFieldKey    = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+        $websiteFieldKey = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
             . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+        $_personMagentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__pc';
 
         $findRecord = null;
         foreach ($recordsPriority as $records) {
             foreach ($records as $record) {
+                if (!empty($record->Account->$_personMagentoId) && $record->Account->$_personMagentoId == $entity->getId()) {
+                    $findRecord = $record;
+                    break 2;
+                } elseif (!empty($record->$_magentoId) && $record->$_magentoId == $entity->getId()) {
+                    $findRecord = $record;
+                    break 2;
+                }
+
                 if (empty($record->$websiteFieldKey)) {
                     $findRecord = $record;
                     continue;
