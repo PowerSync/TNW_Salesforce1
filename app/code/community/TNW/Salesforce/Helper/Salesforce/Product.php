@@ -633,8 +633,11 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("PRICEBOOK ENTRY: Product SKU ({$sku}) : salesforceID ({$_response->id}){$standard}");
 
-            foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$cacheKey]) as $_storeId) {
-                $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId][] = "{$currencyCode}:{$_response->id}";
+            // Skip standard pricebook
+            if (!empty($this->_cache['pricebookEntryKeyToStore'][$cacheKey])) {
+                foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$cacheKey]) as $_storeId) {
+                    $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId][] = "{$currencyCode}:{$_response->id}";
+                }
             }
         }
     }
