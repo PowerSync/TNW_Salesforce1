@@ -60,7 +60,7 @@ class TNW_Salesforce_Block_Sales_Order_Status_Grid extends Mage_Adminhtml_Block_
     }
 
     protected function _getSfStatusField() {
-        $_syncObject = strtolower(Mage::app()->getStore(Mage::app()->getStore()->getStoreId())->getConfig(TNW_Salesforce_Helper_Data::ORDER_OBJECT));
+        $_syncObject = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
 
         $_field = array(
             'header' => $this->_getHeaderLabel($_syncObject),

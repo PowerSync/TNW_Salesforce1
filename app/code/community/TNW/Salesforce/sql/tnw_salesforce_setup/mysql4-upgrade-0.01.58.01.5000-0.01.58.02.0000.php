@@ -1,0 +1,36 @@
+<?php
+/**
+ * @var $this TNW_Salesforce_Model_Mysql4_Setup
+ */
+$installer = $this;
+$installer->startSetup();
+
+$configTable = $installer->getTable('core/config_data');
+$adapter = $installer->getConnection();
+
+$select = $adapter->select()
+    ->from($configTable)
+    ->where('path', 'salesforce_order/customer_opportunity/order_or_opportunity');
+
+$rows = $adapter->fetchAll($select);
+if (is_array($rows)) {
+    foreach ($rows as $row) {
+        $row['path'] = 'salesforce_order/customer_opportunity/integration_option';
+        switch ($row['value']){
+            case TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT:
+            case TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT:
+                $row['value'] = strtolower($row['value']);
+                break;
+
+            default:
+                $row['value'] = TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER;
+                break;
+        }
+
+        $where = $adapter->prepareSqlCondition('config_id', $row['config_id']);
+        unset($row['config_id']);
+        $adapter->update($configTable, $row, $where);
+    }
+}
+
+$installer->endSetup();

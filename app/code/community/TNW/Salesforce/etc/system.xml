@@ -1243,14 +1243,25 @@
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>0</show_in_store>
-                    <comment><![CDATA[
-                        <strong style="color: red;">IMPORTANT:</strong> Integration with the Opportunity object will be decommissioned in the near future. We strongly recommend integrating with the new Salesforce Order object instead.
-                    ]]></comment>
                     <fields>
-                        <order_or_opportunity translate="label">
+                        <integration_option>
+                            <label>Integration Option</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/system_config_source_order_integration_option</source_model>
+                            <sort_order>9</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[
+                                <b>Opportunity (only)</b> - When Magento order is placed, Salesforce will record that transaction as an Opportunity in Salesforce. As Magento order transitions through various states, Opportunity will change Stage Names as well.<br>
+                                <b>Order (only)</b> - Salesforce Order will only be created when an order in Magento is fully paid. After Salesforce order is captured and as Magento order transitions through various states, Salesforce Order Status will change as well.<br>
+                                <b>Opportunity & Order</b> - When Magento order is placed, Salesforce will record that transaction as an Opportunity in Salesforce. As soon as Magento order will be paid in full, Salesforce Order will be created in Salesforce to capture a sales transaction.<br>
+                            ]]></comment>
+                        </integration_option>
+                        <integration_type translate="label">
                             <label>Integration Type</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_order_object</source_model>
+                            <source_model>tnw_salesforce/system_config_source_order_integration_type</source_model>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -1258,69 +1269,39 @@
                             <comment><![CDATA[
                                 Magento orders are integrated with the following Salesforce object
                             ]]></comment>
-                        </order_or_opportunity>
-
-                        <customer_opportunity_role_enable translate="label">
-                            <label>Enable Contact Roles</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <depends>
-                                <order_or_opportunity>Opportunity</order_or_opportunity>
-                            </depends>
-                            <comment><![CDATA[
-                                Enable Opportunity Customer Role Integration
-                            ]]></comment>
-                        </customer_opportunity_role_enable>
-
-                        <customer_integration_opp translate="label">
-                            <label>Opportunity Customer Role</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>tnw_salesforce/config_client_roles</source_model>
-                            <sort_order>30</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <frontend_class>chosen-select</frontend_class>
-                            <depends>
-                                <customer_opportunity_role_enable>1</customer_opportunity_role_enable>
-                                <order_or_opportunity>Opportunity</order_or_opportunity>
-                            </depends>
-                        </customer_integration_opp>
-
-                        <opportunity_default_record_type>
-                            <label>Default Record Type</label>
-                            <frontend_type>select</frontend_type>
-                            <frontend_class>chosen-select</frontend_class>
-                            <source_model>tnw_salesforce/system_config_source_recordtype_opportunity</source_model>
-                            <sort_order>40</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <depends>
-                                <order_or_opportunity>Opportunity</order_or_opportunity>
-                            </depends>
-                        </opportunity_default_record_type>
-
+                        </integration_type>
+                    </fields>
+                </customer_opportunity>
+                <order_configuration>
+                    <label>Order</label>
+                    <sort_order>110</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <comment><![CDATA[
+                        <strong style="color: red;">IMPORTANT:</strong> Order sync feature is available for Order (only) and Opportunity & Order sync option.
+                    ]]></comment>
+                    <fields>
                         <order_create_reverse_sync translate="label">
-                            <label>Create order when the reverse synchronization</label>
+                            <label>From Salesforce</label>
+                            <config_path>salesforce_order/customer_opportunity/order_create_reverse_sync</config_path>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>90</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment>Enable / Disable create order when the reverse synchronization</comment>
+                            <comment>Allow Salesforce to create Magento orders automatically</comment>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <integration_option separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>order|order_and_opportunity</value>
+                                </integration_option>
                             </depends>
                         </order_create_reverse_sync>
-
                         <draft_order_status translate="label">
-                            <label>Draft Order Status</label>
+                            <label>Draft Status</label>
+                            <config_path>salesforce_order/customer_opportunity/draft_order_status</config_path>
                             <frontend_type>select</frontend_type>
                             <source_model>tnw_salesforce/config_sync_order_status</source_model>
                             <comment><![CDATA[
@@ -1332,12 +1313,15 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <integration_option separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>order|order_and_opportunity</value>
+                                </integration_option>
                             </depends>
                         </draft_order_status>
-
                         <opportunity_to_order_status translate="label">
                             <label>Converted opportunity status</label>
+                            <config_path>salesforce_order/customer_opportunity/opportunity_to_order_status</config_path>
                             <frontend_type>select</frontend_type>
                             <frontend_class>chosen-select</frontend_class>
                             <source_model>tnw_salesforce/config_opportunity_state</source_model>
@@ -1346,13 +1330,16 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <integration_option separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>order|order_and_opportunity</value>
+                                </integration_option>
                             </depends>
                             <comment><![CDATA[ When order is placed for an existing Opportunity, change opportunity Stage Name to the one selected ]]></comment>
                         </opportunity_to_order_status>
-
                         <order_default_record_type>
                             <label>Default Record Type</label>
+                            <config_path>salesforce_order/customer_opportunity/order_default_record_type</config_path>
                             <frontend_type>select</frontend_type>
                             <frontend_class>chosen-select</frontend_class>
                             <source_model>tnw_salesforce/system_config_source_recordtype_order</source_model>
@@ -1361,20 +1348,86 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity>Order</order_or_opportunity>
+                                <integration_option separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>order|order_and_opportunity</value>
+                                </integration_option>
                             </depends>
                         </order_default_record_type>
                     </fields>
-                </customer_opportunity>
+                </order_configuration>
+                <opportunity_configuration>
+                    <label>Opportunity</label>
+                    <sort_order>120</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <comment><![CDATA[
+                        <strong style="color: red;">IMPORTANT:</strong> Order sync feature is available for Opportunity (only) and Opportunity & Order sync option.
+                    ]]></comment>
+                    <fields>
+                        <customer_opportunity_role_enable translate="label">
+                            <label>Enable Contact Roles</label>
+                            <config_path>salesforce_order/customer_opportunity/customer_opportunity_role_enable</config_path>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <integration_option separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>opportunity|order_and_opportunity</value>
+                                </integration_option>
+                            </depends>
+                            <comment><![CDATA[
+                                Enable Opportunity Customer Role Integration
+                            ]]></comment>
+                        </customer_opportunity_role_enable>
+                        <customer_integration_opp translate="label">
+                            <label>Customer Role</label>
+                            <config_path>salesforce_order/customer_opportunity/customer_integration_opp</config_path>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_client_roles</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_class>chosen-select</frontend_class>
+                            <depends>
+                                <customer_opportunity_role_enable>1</customer_opportunity_role_enable>
+                                <integration_option separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>opportunity|order_and_opportunity</value>
+                                </integration_option>
+                            </depends>
+                        </customer_integration_opp>
+                        <opportunity_default_record_type>
+                            <label>Default Record Type</label>
+                            <config_path>salesforce_order/customer_opportunity/opportunity_default_record_type</config_path>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_opportunity</source_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <integration_option separator="|">
+                                    <fieldset>customer_opportunity</fieldset>
+                                    <value>opportunity|order_and_opportunity</value>
+                                </integration_option>
+                            </depends>
+                        </opportunity_default_record_type>
+                    </fields>
+                </opportunity_configuration>
                 <abandoned_carts>
                     <label>Abandoned Carts</label>
                     <sort_order>140</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>0</show_in_store>
-                    <comment><![CDATA[
-                        <strong style="color: red;">IMPORTANT:</strong> Abandoned cart sync feature is available for Order-to-Order sync types.
-                    ]]></comment>
                     <fields>
                         <abandoned_cart_enabled translate="label">
                             <label>Capture Abandoned Carts</label>
@@ -1384,12 +1437,6 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <depends>
-                                <order_or_opportunity separator="|">
-                                    <fieldset>customer_opportunity</fieldset>
-                                    <value>Order</value>
-                                </order_or_opportunity>
-                            </depends>
                             <comment><![CDATA[ Capture Abandoned Carts in Magento for registered customers ]]></comment>
                         </abandoned_cart_enabled>
 
@@ -1402,10 +1449,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity separator="|">
-                                    <fieldset>customer_opportunity</fieldset>
-                                    <value>Order</value>
-                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1421,10 +1464,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity separator="|">
-                                    <fieldset>customer_opportunity</fieldset>
-                                    <value>Order</value>
-                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1442,10 +1481,6 @@
                             <show_in_store>0</show_in_store>
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
-                                <order_or_opportunity separator="|">
-                                    <fieldset>customer_opportunity</fieldset>
-                                    <value>Order</value>
-                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1463,10 +1498,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <depends>
-                                <order_or_opportunity separator="|">
-                                    <fieldset>customer_opportunity</fieldset>
-                                    <value>Order</value>
-                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                             <comment><![CDATA[
@@ -1487,10 +1518,6 @@
                             <frontend_class>chosen-select</frontend_class>
                             <depends>
                                 <abandoned_customer_opportunity_role_enable>1</abandoned_customer_opportunity_role_enable>
-                                <order_or_opportunity separator="|">
-                                    <fieldset>customer_opportunity</fieldset>
-                                    <value>Order</value>
-                                </order_or_opportunity>
                                 <abandoned_cart_enabled>1</abandoned_cart_enabled>
                             </depends>
                         </abandoned_customer_integration_opp>

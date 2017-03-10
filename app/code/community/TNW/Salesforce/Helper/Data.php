@@ -43,6 +43,8 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CUSTOMER_CAMPAIGN_ID = 'salesforce_customer/newsletter_config/customer_newletter_campaign_id';
 
     /* Order Config */
+    const ORDER_INTEGRATION_TYPE = 'salesforce_order/customer_opportunity/integration_type';
+    const ORDER_INTEGRATION_OPTION = 'salesforce_order/customer_opportunity/integration_option';
     const ORDER_SYNC = 'salesforce_order/general/order_sync_enable';
     const ORDER_PRODUCT_SYNC = 'salesforce_order/general/order_product_enable';
     const ORDER_MULTI_CURRENCY = 'salesforce_order/currency/multi_currency';
@@ -58,7 +60,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const CAMPAIGNS_CREATE_AUTOMATE = 'salesforce_promotion/salesforce_campaigns/create_campaign_automatic';
 
     /* Order Customer Role */
-    const ORDER_OBJECT = 'salesforce_order/customer_opportunity/order_or_opportunity';
     const ORDER_CREATE_REVERSE_SYNC = 'salesforce_order/customer_opportunity/order_create_reverse_sync';
     const CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
     const CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/customer_integration_opp';
@@ -239,11 +240,22 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::API_WSDL, $_currentStoreId, $_currentWebsite);
     }
 
-    // Salesforce WSDL file location
-
+    /**
+     * @return string
+     * @deprecated
+     */
     public function getOrderObject()
     {
-        return $this->getStoreConfig(self::ORDER_OBJECT);
+        switch ($this->getStoreConfig(self::ORDER_INTEGRATION_OPTION)) {
+            case TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER:
+                return TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT;
+
+            case TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::OPPORTUNITY:
+                return TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
+
+            default:
+                return TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT;
+        }
     }
 
     // Salesforce object where Magento orders will go to
