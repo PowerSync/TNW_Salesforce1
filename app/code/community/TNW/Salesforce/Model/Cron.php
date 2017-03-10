@@ -157,12 +157,7 @@ class TNW_Salesforce_Model_Cron
             ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
             ->save();
 
-        if ($_helperData->getObjectSyncType() == 'sync_type_realtime') {
-            $this->_syncObjectForRealTimeMode();
-        }
-        else {
-            $this->_syncObjectForBulkMode();
-        }
+        $this->_syncObjectForBulkMode();
 
         $this->_deleteSuccessfulRecords();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
