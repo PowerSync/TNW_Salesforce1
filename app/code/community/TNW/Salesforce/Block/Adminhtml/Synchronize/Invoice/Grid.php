@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Synchronize_Invoice_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     protected $_allowedOrderStatuses = array();
     protected $_allowedCustomerGroups = array();
@@ -10,7 +10,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
     protected function _construct()
     {
         parent::_construct();
-        $this->setId('tnw_salesforce_shipmentsync_grid');
+        $this->setId('tnw_salesforce_invoicesync_grid');
         $this->setDefaultSort('created_at');
         $this->setDefaultDir('DESC');
         $this->setSaveParametersInSession(true);
@@ -20,16 +20,16 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
 
     protected function _getCollectionClass()
     {
-        return 'sales/order_shipment_grid_collection';
+        return 'sales/order_invoice_grid_collection';
     }
 
     protected function _prepareCollection()
     {
-        /** @var Mage_Sales_Model_Resource_Order_Shipment_Grid_Collection $collection */
+        /** @var Mage_Sales_Model_Resource_Order_Invoice_Grid_Collection $collection */
         $collection = Mage::getResourceModel($this->_getCollectionClass());
         $collection->getSelect()->join(
-            array('flat_shipment' => Mage::helper('tnw_salesforce')->getTable('sales_flat_shipment')),
-            'main_table.entity_id = flat_shipment.entity_id',
+            array('flat_invoice' => Mage::helper('tnw_salesforce')->getTable('sales_flat_invoice')),
+            'main_table.entity_id = flat_invoice.entity_id',
             array('salesforce_id', 'sf_insync')
         );
 
@@ -38,9 +38,10 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
             ->addAttributeToSelect('created_at')
             ->addAttributeToSelect('order_increment_id')
             ->addAttributeToSelect('order_created_at')
-            ->addAttributeToSelect('shipping_name')
+            ->addAttributeToSelect('billing_name')
+            ->addAttributeToSelect('state')
             ->addAttributeToSelect('store_id')
-            ->addAttributeToSelect('total_qty');
+            ->addAttributeToSelect('grand_total');
 
         $this->setCollection($collection);
 
@@ -58,20 +59,20 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
                 1 => 'Yes',
             ),
             'index' => 'sf_insync',
-            'filter_index' => 'flat_shipment.sf_insync',
+            'filter_index' => 'flat_invoice.sf_insync',
             'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
         $this->addColumn('increment_id', array(
-            'header'    => Mage::helper('sales')->__('Shipment #'),
+            'header'    => Mage::helper('sales')->__('Invoice #'),
             'index'     => 'increment_id',
             'type'      => 'text',
             'filter_index' => 'main_table.increment_id',
             'renderer' => 'tnw_salesforce/adminhtml_renderer_link_entity',
             'actions' => array(
                 array(
-                    'url' => array('base' => '*/sales_shipment/view'),
-                    'field' => 'shipment_id',
+                    'url' => array('base' => '*/sales_invoice/view'),
+                    'field' => 'invoice_id',
                     'getter' => 'getId',
                 )
             ),
@@ -83,38 +84,51 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
             'type' => 'text',
             'width' => '140px',
             'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
-            'filter_index' => 'flat_shipment.salesforce_id',
+            'filter_index' => 'flat_invoice.salesforce_id',
         ));
 
         $this->addColumn('created_at', array(
-            'header'    => Mage::helper('sales')->__('Date Shipped'),
+            'header'    => Mage::helper('sales')->__('Invoice Date'),
             'index'     => 'created_at',
-            'filter_index' => 'main_table.created_at',
             'type'      => 'datetime',
+            'filter_index' => 'main_table.created_at',
         ));
 
         $this->addColumn('order_increment_id', array(
             'header'    => Mage::helper('sales')->__('Order #'),
             'index'     => 'order_increment_id',
             'type'      => 'text',
+            'filter_index' => 'main_table.order_increment_id',
         ));
 
         $this->addColumn('order_created_at', array(
             'header'    => Mage::helper('sales')->__('Order Date'),
             'index'     => 'order_created_at',
             'type'      => 'datetime',
+            'filter_index' => 'main_table.order_created_at',
         ));
 
-        $this->addColumn('shipping_name', array(
-            'header' => Mage::helper('sales')->__('Ship to Name'),
-            'index' => 'shipping_name',
+        $this->addColumn('billing_name', array(
+            'header' => Mage::helper('sales')->__('Bill to Name'),
+            'index' => 'billing_name',
+            'filter_index' => 'main_table.billing_name',
         ));
 
-        $this->addColumn('total_qty', array(
-            'header' => Mage::helper('sales')->__('Total Qty'),
-            'index' => 'total_qty',
-            'filter_index' => 'main_table.total_qty',
-            'type'  => 'number',
+        $this->addColumn('state', array(
+            'header'    => Mage::helper('sales')->__('Status'),
+            'index'     => 'state',
+            'type'      => 'options',
+            'options'   => Mage::getModel('sales/order_invoice')->getStates(),
+            'filter_index' => 'main_table.state',
+        ));
+
+        $this->addColumn('grand_total', array(
+            'header'    => Mage::helper('customer')->__('Amount'),
+            'index'     => 'grand_total',
+            'type'      => 'currency',
+            'align'     => 'right',
+            'currency'  => 'order_currency_code',
+            'filter_index' => 'main_table.grand_total',
         ));
 
         $this->addColumn('action',
@@ -127,7 +141,7 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
                     array(
                         'caption' => $this->__('Sync'),
                         'url'     => array('base'=>'*/*/sync'),
-                        'field'   => 'shipment_id'
+                        'field'   => 'invoice_id'
                     )
                 ),
                 'filter'    => false,
@@ -145,13 +159,15 @@ class TNW_Salesforce_Block_Adminhtml_Shipmentsync_Grid extends Mage_Adminhtml_Bl
                 ->setMassactionIdField('entity_id')
                 ->setMassactionIdFilter('main_table.entity_id')
             ;
-            $this->getMassactionBlock()->setFormFieldName('shipment_ids');
+            $this->getMassactionBlock()->setFormFieldName('invoice_ids');
 
-            $this->getMassactionBlock()->addItem('sync', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
-                'url' => $this->getUrl('*/*/massSyncForce'),
-                'confirm' => Mage::helper('tnw_salesforce')->__('Are you sure?')
-            ));
+            $this->getMassactionBlock()->addItem(
+                'sync', array(
+                    'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
+                    'url' => $this->getUrl('*/*/massSyncForce'),
+                    'confirm' => Mage::helper('tnw_salesforce')->__('Are you sure?')
+                )
+            );
         }
 
         return $this;

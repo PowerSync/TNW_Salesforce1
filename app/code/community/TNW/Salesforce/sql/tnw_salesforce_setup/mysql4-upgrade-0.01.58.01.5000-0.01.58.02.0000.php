@@ -23,8 +23,7 @@ if (is_array($rows)) {
                 break;
 
             default:
-                $row['value'] = TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER;
-                break;
+                continue 2;
         }
 
         $where = $adapter->prepareSqlCondition('config_id', $row['config_id']);

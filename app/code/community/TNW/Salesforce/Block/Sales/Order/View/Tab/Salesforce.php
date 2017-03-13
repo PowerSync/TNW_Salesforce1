@@ -61,7 +61,7 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
             'website' => $orderWebsite
         ));
 
-        if (Mage::helper('tnw_salesforce')->getOrderObject() != TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT) {
+        if (Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()) {
             $fieldset->addField('opportunity_id', 'text', array(
                 'label' => $this->__('Opportunity ID'),
                 'name' => 'opportunity_id',

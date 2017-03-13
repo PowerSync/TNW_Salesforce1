@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     protected $_allowedOrderStatuses = array();
     protected $_allowedCustomerGroups = array();
@@ -122,13 +122,27 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
             'width' => '200px',
             'filter_index' => 'main_table.created_at',
         ));
-        $this->addColumn('salesforce_id', array(
-            'header' => Mage::helper('sales')->__(Mage::helper('tnw_salesforce')->getOrderObject() . ' ID'),
-            'index' => 'salesforce_id',
-            'type' => 'text',
-            'width' => '140px',
-            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
-        ));
+
+        if (Mage::helper('tnw_salesforce')->integrationOrderAllowed()) {
+            $this->addColumn('salesforce_id', array(
+                'header' => Mage::helper('sales')->__('Order ID'),
+                'index' => 'salesforce_id',
+                'type' => 'text',
+                'width' => '140px',
+                'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
+            ));
+        }
+
+        if (Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()) {
+            $this->addColumn('salesforce_id', array(
+                'header' => Mage::helper('sales')->__('Opportunity ID'),
+                'index' => 'opportunity_id',
+                'type' => 'text',
+                'width' => '140px',
+                'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
+            ));
+        }
+
         $this->addColumn('grand_total', array(
             'header' => Mage::helper('sales')->__('G.T. (Purchased)'),
             'index' => 'grand_total',
@@ -169,7 +183,7 @@ class TNW_Salesforce_Block_Adminhtml_Ordersync_Grid extends Mage_Adminhtml_Block
 
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
             $this
                 ->setMassactionIdField('entity_id')
                 ->setMassactionIdFilter('main_table.entity_id')

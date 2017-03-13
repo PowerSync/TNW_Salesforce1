@@ -3,7 +3,7 @@
 /**
  * @method Mage_Sales_Model_Order_Creditmemo _loadEntityByCache($_entityId, $_entityNumber)
  */
-class TNW_Salesforce_Helper_Salesforce_Creditmemo extends TNW_Salesforce_Helper_Salesforce_Abstract_Sales
+class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_Helper_Salesforce_Abstract_Sales
 {
     /**
      * @comment magento entity alias "convert from"

@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Creditmemosync_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Synchronize_Creditmemo_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     /**
      * Internal constructor

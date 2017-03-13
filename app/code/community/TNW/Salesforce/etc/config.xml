@@ -465,7 +465,60 @@
                 </observers>
             </adminhtml_store_edit_form_prepare_form>
 
-            <!-- Pushing order object into Salesforce post all validation -->
+            <tnw_salesforce_sync_order_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityForWebsite</method>
+                    </opportunity>
+                    <order>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderForWebsite</method>
+                    </order>
+                </observers>
+            </tnw_salesforce_sync_order_for_website>
+            <tnw_salesforce_sync_abandoned_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/observer</class>
+                        <method>abandonedForWebsite</method>
+                    </opportunity>
+                </observers>
+            </tnw_salesforce_sync_abandoned_for_website>
+            <tnw_salesforce_sync_invoice_for_website>
+                <observers>
+                    <opportunity_invoice>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityInvoiceForWebsite</method>
+                    </opportunity_invoice>
+                    <order_invoice>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderInvoiceForWebsite</method>
+                    </order_invoice>
+                </observers>
+            </tnw_salesforce_sync_invoice_for_website>
+            <tnw_salesforce_sync_shipment_for_website>
+                <observers>
+                    <opportunity_shipment>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityShipmentForWebsite</method>
+                    </opportunity_shipment>
+                    <order_shipment>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderShipmentForWebsite</method>
+                    </order_shipment>
+                </observers>
+            </tnw_salesforce_sync_shipment_for_website>
+            <tnw_salesforce_sync_creditmemo_for_website>
+                <observers>
+                    <order_creditmemo>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderCreditmemoForWebsite</method>
+                    </order_creditmemo>
+                </observers>
+            </tnw_salesforce_sync_creditmemo_for_website>
+
+            <!-- Deprecated. Pushing order object into Salesforce post all validation -->
             <tnw_salesforce_order_process>
                 <observers>
                     <tnw_salesforce_push_order>
@@ -474,7 +527,7 @@
                     </tnw_salesforce_push_order>
                 </observers>
             </tnw_salesforce_order_process>
-            <!-- Pushing opportunity object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing opportunity object into Salesforce post all validation -->
             <tnw_salesforce_opportunity_process>
                 <observers>
                     <tnw_salesforce_push_opportunity>
@@ -483,7 +536,7 @@
                     </tnw_salesforce_push_opportunity>
                 </observers>
             </tnw_salesforce_opportunity_process>
-            <!-- Pushing invoice object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing invoice object into Salesforce post all validation -->
             <tnw_salesforce_invoice_process>
                 <observers>
                     <tnw_salesforce_push_invoice>
@@ -492,7 +545,7 @@
                     </tnw_salesforce_push_invoice>
                 </observers>
             </tnw_salesforce_invoice_process>
-            <!-- Pushing shipment object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing shipment object into Salesforce post all validation -->
             <tnw_salesforce_shipment_process>
                 <observers>
                     <tnw_salesforce_push_shipment>
@@ -501,7 +554,7 @@
                     </tnw_salesforce_push_shipment>
                 </observers>
             </tnw_salesforce_shipment_process>
-            <!-- Pushing creditmemo object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing creditmemo object into Salesforce post all validation -->
             <tnw_salesforce_creditmemo_process>
                 <observers>
                     <tnw_salesforce_push_creditmemo>
@@ -510,7 +563,7 @@
                     </tnw_salesforce_push_creditmemo>
                 </observers>
             </tnw_salesforce_creditmemo_process>
-            <!-- Update order status - Opportunity -->
+            <!-- Deprecated. Update order status - Opportunity -->
             <tnw_salesforce_opportunity_status_update>
                 <observers>
                     <tnw_salesforce_update_opportunity>
@@ -519,7 +572,7 @@
                     </tnw_salesforce_update_opportunity>
                 </observers>
             </tnw_salesforce_opportunity_status_update>
-            <!-- Update order status - Order -->
+            <!-- Deprecated. Update order status - Order -->
             <tnw_salesforce_order_status_update>
                 <observers>
                     <tnw_salesforce_update_order>

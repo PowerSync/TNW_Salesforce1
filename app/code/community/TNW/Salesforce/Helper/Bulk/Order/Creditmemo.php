@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Helper_Bulk_Creditmemo extends TNW_Salesforce_Helper_Salesforce_Creditmemo
+class TNW_Salesforce_Helper_Bulk_Order_Creditmemo extends TNW_Salesforce_Helper_Salesforce_Order_Creditmemo
 {
     protected function _pushEntity()
     {

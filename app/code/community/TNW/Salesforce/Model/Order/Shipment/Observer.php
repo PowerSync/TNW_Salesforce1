@@ -100,11 +100,9 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                             ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                     }
                 } else {
-                    $_syncType = strtolower($helper->getShipmentObject());
-                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'shipmentIds' => $entityIds,
-                        'message' => $helper->__('Total of %d shipment(s) were synchronized', count($entityIds)),
-                        'type' => 'salesforce'
+                    Mage::dispatchEvent('tnw_salesforce_sync_shipment_for_website', array(
+                        'entityIds' => $entityIds,
+                        'syncType' => 'realtime'
                     ));
                 }
             } catch (Exception $e) {

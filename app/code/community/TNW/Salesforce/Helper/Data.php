@@ -242,11 +242,41 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /**
      * @return string
+     */
+    public function integrationOption()
+    {
+        return $this->getStoreConfig(self::ORDER_INTEGRATION_OPTION);
+    }
+
+    /**
+     * @return bool
+     */
+    public function integrationOpportunityAllowed()
+    {
+        return in_array($this->integrationOption(), array(
+            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::OPPORTUNITY,
+            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY
+        ));
+    }
+
+    /**
+     * @return bool
+     */
+    public function integrationOrderAllowed()
+    {
+        return in_array($this->integrationOption(), array(
+            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER,
+            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY
+        ));
+    }
+
+    /**
+     * @return string
      * @deprecated
      */
     public function getOrderObject()
     {
-        switch ($this->getStoreConfig(self::ORDER_INTEGRATION_OPTION)) {
+        switch ($this->integrationOption()) {
             case TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER:
                 return TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT;
 
@@ -260,6 +290,10 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     // Salesforce object where Magento orders will go to
 
+    /**
+     * @return string
+     * @deprecated
+     */
     public function getAbandonedObject()
     {
         return TNW_Salesforce_Model_Config_Objects::OPPORTUNITY_OBJECT;
@@ -270,6 +304,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * Get Invoice Object
      *
      * @return string
+     * @deprecated
      */
     public function getInvoiceObject()
     {
@@ -286,6 +321,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * Get Shipment Object
      *
      * @return string
+     * @deprecated
      */
     public function getShipmentObject()
     {
@@ -302,6 +338,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      * Get Shipment Object
      *
      * @return string
+     * @deprecated
      */
     public function getCreditmemoObject()
     {

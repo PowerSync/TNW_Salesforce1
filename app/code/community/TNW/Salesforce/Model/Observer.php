@@ -387,6 +387,7 @@ class TNW_Salesforce_Model_Observer
      * Show sf status message on every admin page
      *
      * @param Varien_Event_Observer $observer
+     * @throws Exception
      */
     public function showSfStatus(Varien_Event_Observer $observer)
     {
@@ -422,6 +423,7 @@ class TNW_Salesforce_Model_Observer
      * Method executed by tnw_salesforce_order_process event
      *
      * @param Varien_Event_Observer $observer
+     * @deprecated
      */
     public function pushOrder(Varien_Event_Observer $observer)
     {
@@ -452,6 +454,10 @@ class TNW_Salesforce_Model_Observer
         $this->_processOrderPush($orderIds, $message, 'tnw_salesforce/' . $type . '_order', $queueIds);
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     * @deprecated
+     */
     public function pushOpportunity(Varien_Event_Observer $observer)
     {
         $_objectType = strtolower($observer->getEvent()->getData('object_type'));
@@ -493,6 +499,10 @@ class TNW_Salesforce_Model_Observer
         }
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     * @deprecated
+     */
     public function pushInvoice(Varien_Event_Observer $observer)
     {
         $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
@@ -518,6 +528,10 @@ class TNW_Salesforce_Model_Observer
         $this->_processOrderPush($_invoiceIds, $_message, 'tnw_salesforce/' . $_type . '_' . $_objectType . '_invoice', $_queueIds);
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     * @deprecated
+     */
     public function pushCreditMemo(Varien_Event_Observer $observer)
     {
         if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
@@ -540,6 +554,10 @@ class TNW_Salesforce_Model_Observer
         $this->_processOrderPush($_creditmemoIds, $_message, 'tnw_salesforce/' . $_type . '_creditmemo', $_queueIds);
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     * @deprecated
+     */
     public function pushShipment(Varien_Event_Observer $observer)
     {
         $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
@@ -565,6 +583,13 @@ class TNW_Salesforce_Model_Observer
         $this->_processOrderPush($_shipmentIds, $_message, 'tnw_salesforce/' . $_type . '_' . $_objectType . '_shipment', $_queueIds);
     }
 
+    /**
+     * @param $_orderIds
+     * @param $_message
+     * @param $_model
+     * @param $_queueIds
+     * @deprecated
+     */
     protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds)
     {
         /**
@@ -611,6 +636,180 @@ class TNW_Salesforce_Model_Observer
             if ($_message === NULL) {
                 Mage::throwException('Salesforce connection failed');
             }
+        }
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function orderForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()){
+            return; //Disabled
+        }
+
+        $entityIds = $observer->getData('entityIds');
+        if (!is_array($entityIds)) {
+            throw new InvalidArgumentException('entityIds argument not array');
+        }
+
+        $observer->setData('entityPathPostfix', 'order');
+        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function opportunityForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()){
+            return; //Disabled
+        }
+
+        $observer->setData('entityPathPostfix', 'opportunity');
+        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function abandonedForWebsite($observer)
+    {
+        $observer->setData('entityPathPostfix', 'abandoned_opportunity');
+        $observer->setData('successMessage', sprintf('Total of %d abandoned(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function orderInvoiceForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()){
+            return; //Disabled
+        }
+
+        $observer->setData('entityPathPostfix', 'order_invoice');
+        $observer->setData('successMessage', sprintf('Total of %d invoice(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function opportunityInvoiceForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()){
+            return; //Disabled
+        }
+
+        $observer->setData('entityPathPostfix', 'opportunity_invoice');
+        $observer->setData('successMessage', sprintf('Total of %d invoice(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function orderShipmentForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()){
+            return; //Disabled
+        }
+
+        $observer->setData('entityPathPostfix', 'order_shipment');
+        $observer->setData('successMessage', sprintf('Total of %d shipment(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function opportunityShipmentForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()){
+            return; //Disabled
+        }
+
+        $observer->setData('entityPathPostfix', 'opportunity_shipment');
+        $observer->setData('successMessage', sprintf('Total of %d shipment(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function orderCreditmemoForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()){
+            return; //Disabled
+        }
+
+        $observer->setData('entityPathPostfix', 'order_creditmemo');
+        $observer->setData('successMessage', sprintf('Total of %d creditmemo(s) were synchronized', count($observer->getData('entityIds'))));
+
+        $this->entityForWebsite($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws InvalidArgumentException
+     */
+    public function entityForWebsite($observer)
+    {
+        $entityIds = $observer->getData('entityIds');
+        if (!is_array($entityIds)) {
+            throw new InvalidArgumentException('entityIds argument not array');
+        }
+
+        $entityPathPostfix = $observer->getData('entityPathPostfix');
+        if (!is_string($entityPathPostfix)) {
+            throw new InvalidArgumentException('entityIds argument not string');
+        }
+
+        switch ($observer->getData('syncType')) {
+            case 'realtime':
+                $syncType = 'salesforce';
+                break;
+
+            case 'bulk':
+            default:
+                $syncType = 'bulk';
+                break;
+        }
+
+        /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Sales $manualSync */
+        $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_%s', $syncType, $entityPathPostfix));
+
+        $isCron = (bool)$observer->getData('isCron');
+        $manualSync->setIsCron($isCron);
+
+        // Add stack
+        $syncObjectStack = $observer->getData('syncObjectStack');
+        if ($syncObjectStack instanceof SplStack) {
+            $syncObjectStack->push($manualSync);
+        }
+
+        if ($manualSync->reset() && $manualSync->massAdd($entityIds, $isCron) && $manualSync->process('full')) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveSuccess($observer->getData('successMessage'));
         }
     }
 
@@ -749,15 +948,13 @@ class TNW_Salesforce_Model_Observer
                 'base_fieldset'
             );
 
-            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-            $sfFields = array();
             $_sfData = Mage::helper('tnw_salesforce/salesforce_data');
             $sfFields[] = array(
                 'value' => '',
                 'label' => 'Choose Salesforce Status ...'
             );
 
-            if ($_syncType == 'order') {
+            if (Mage::helper('tnw_salesforce')->integrationOrderAllowed()) {
                 $states = $_sfData->getPicklistValues('Order', 'Status');
                 if (!is_array($states)) {
                     $states = array();
