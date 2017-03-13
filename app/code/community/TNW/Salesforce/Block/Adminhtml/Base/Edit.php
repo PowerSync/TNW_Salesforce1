@@ -60,11 +60,6 @@ class TNW_Salesforce_Block_Adminhtml_Base_Edit extends Mage_Adminhtml_Block_Widg
      */
     public function __construct()
     {
-        if (!Mage::helper('tnw_salesforce')->isWorking()) {
-            Mage::getSingleton('adminhtml/session')->addError(Mage::helper('tnw_salesforce')->__('There is an issue with integration, please make sure all tests are successful!'));
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            return;
-        }
         $this->_objectId = 'mapping_id';
         parent::__construct();
 

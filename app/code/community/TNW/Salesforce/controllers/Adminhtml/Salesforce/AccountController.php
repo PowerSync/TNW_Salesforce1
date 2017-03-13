@@ -16,4 +16,8 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends TNW_Salesfor
      */
     protected $_sfEntity = 'Account';
 
+    /**
+     * @var string
+     */
+    protected $_blockPath = 'mapping_customer_account';
 }

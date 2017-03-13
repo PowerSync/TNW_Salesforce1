@@ -12,7 +12,7 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status extends Mage_Adminht
      */
     public function render(Varien_Object $row)
     {
-        $inSync = $row->getData('sf_insync');
+        $inSync = $this->_getValue($row);
         $_imageUrl = Mage::getDesign()->getSkinUrl('images/error_msg_icon.gif');
         $_imageTitle = 'Entity is out of sync! Manual synchronization required.';
         if ($inSync) {

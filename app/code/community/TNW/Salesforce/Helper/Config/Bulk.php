@@ -10,6 +10,7 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     const BULK_INVOICE_PATH = 'salesforce/development_and_debugging/invoice_batch_size';
     const BULK_SHIPMENT_PATH = 'salesforce/development_and_debugging/shipment_batch_size';
     const BULK_CREDIT_MEMO_PATH = 'salesforce/development_and_debugging/creditmemo_batch_size';
+    const BULK_WISHLIST_PATH = 'salesforce/development_and_debugging/wishlist_batch_size';
     const PAGE_SIZE_FROM_SALESFORCE_PATH = 'salesforce/development_and_debugging/page_size_from_salesforce';
 
     /**
@@ -87,6 +88,15 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     public function getCatalogRuleBatchSize()
     {
         return 150;
+    }
+
+    /**
+     * Get Wishlist batch size
+     * @return int
+     */
+    public function getWishlistBatchSize()
+    {
+        return $this->getStoreConfig(self::BULK_WISHLIST_PATH);
     }
 
     /**

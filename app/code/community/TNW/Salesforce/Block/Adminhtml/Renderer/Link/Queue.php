@@ -51,6 +51,16 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Queue extends Mage_Adminhtml_
 
             case 'salesrule/rule':
                 return sprintf('<a href="%s">%s</a>', $this->getUrl('*/promo_quote/edit', array('id'=>$objectId)), $objectId);
+
+            case 'wishlist/wishlist':
+                $quote = Mage::getModel('wishlist/wishlist')
+                    ->load($objectId);
+
+                if (!$quote->getData('customer_id')) {
+                    return $objectId;
+                }
+
+                return sprintf('<a href="%s">%s</a>', $this->getUrl('*/customer/edit', array('id'=>$quote->getData('customer_id'), 'active_tab' => 'wishlist')), $objectId);
         }
 
         return $objectId;

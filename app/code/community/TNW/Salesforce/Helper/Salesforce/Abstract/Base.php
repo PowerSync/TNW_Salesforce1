@@ -482,6 +482,25 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
+     * @return bool
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        foreach ((array)$this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_orderNumber) {
+            $this->unsetEntityCache($_orderNumber);
+        }
+
+        $this->_cache = array(
+            self::CACHE_KEY_ENTITIES_UPDATING => array(),
+        );
+
+        return $this->check();
+    }
+
+    /**
      * @param $type
      * @throws Exception
      */
@@ -634,11 +653,9 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 ? sprintf('%s...', mb_substr($comment, 0, 75))
                 : $comment;
 
-            foreach ($_obj as $key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('Note Object: %s = "%s"', $key, $_value));
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace(sprintf("Note Object:\n%s", print_r($_obj, true)));
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('+++++++++++++++++++++++++++++');
             $this->_cache['notesToUpsert'][$_note->getData('entity_id')] = $_obj;
         }
 
@@ -755,8 +772,17 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param array $chunk
+     * @param $_entity
+     * @param $type string
      * @return mixed
+     */
+    public function getObjectByEntityType($_entity, $type)
+    {
+        return $this->_getObjectByEntityType($_entity, $type);
+    }
+
+    /**
+     * @param array $chunk
      * @throws Exception
      */
     protected function _pushEntityItems($chunk = array())
@@ -765,7 +791,6 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @return mixed
      * @throws Exception
      */
     protected function _pushEntity()
@@ -895,6 +920,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected function _getObjectByEntityItemType($_entityItem, $_type)
     {
         return null;
+    }
+
+    /**
+     * @param $_entityItem
+     * @param $_type
+     * @return null
+     */
+    public function getObjectByEntityItemType($_entityItem, $_type)
+    {
+        return $this->_getObjectByEntityItemType($_entityItem, $_type);
     }
 
     /**
