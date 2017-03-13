@@ -17,41 +17,62 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param string $leadSource
      * @param string $idPrefix
      * @return array
-     * @throws Mage_Core_Exception
+     * @throws Exception
      */
     public function lookup($customers, $leadSource = '', $idPrefix = '')
     {
-        try {
-            if (!is_object($this->getClient())) {
-                return array();
-            }
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
 
-            $returnArray = array();
-            foreach ($this->customLookup($customers, $leadSource, $idPrefix) as $item) {
-                $return = $this->prepareRecord($item['customer'], $item['record']);
-                if (empty($return)) {
-                    continue;
-                }
-
-                list($website, $entityData) = each($return);
-                if (!isset($returnArray[$website])) {
-                    $returnArray[$website] = array();
-                }
-
-                $returnArray[$website] = array_merge($returnArray[$website], $entityData);
-            }
-
-            return $returnArray;
+        $_results = array();
+        foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
+            $_results[] = $this->_queryLeads($_customers, $leadSource, $idPrefix);
         }
-        catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
 
-            $email = array_map(function ($customer) {return $customer->getEmail();}, $customers);
+        $records = $this->mergeRecords($_results);
+        if (empty($records)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace("Could not find a contact by Magento Email #" . implode(",", $email));
+                ->saveTrace('Lead lookup returned: no results...');
 
             return array();
         }
+
+        $returnArray = $clearToUpsert = array();
+        foreach ($this->assignLookupToEntity($records, $customers) as $item) {
+            if (empty($item['record'])) {
+                continue;
+            }
+
+            $records = $item['records'];
+            unset($records[reset(array_keys($records, $item['record'], true))]);
+            foreach ($records as $record) {
+                if (!empty($record->$_magentoId) && $record->$_magentoId == $item['entity']->getId()) {
+                    $upsert = new stdClass();
+                    $upsert->Id = $record->Id;
+                    $upsert->$_magentoId = ' ';
+
+                    $clearToUpsert[] = $upsert;
+                }
+            }
+
+            $return = $this->prepareRecord($item['entity'], $item['record']);
+            if (empty($return)) {
+                continue;
+            }
+
+            list($website, $entityData) = each($return);
+            if (!isset($returnArray[$website])) {
+                $returnArray[$website] = array();
+            }
+
+            $returnArray[$website] = array_merge($returnArray[$website], $entityData);
+        }
+
+        if (!empty($clearToUpsert)) {
+            //Clear Magento Id
+            $this->getClient()->upsert('Id', $clearToUpsert, 'Lead');
+        }
+
+        return $returnArray;
     }
 
     /**
@@ -59,95 +80,103 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
      * @param string $leadSource
      * @param string $idPrefix
      * @return array|bool
-     * @throws Mage_Core_Exception
+     * @throws Exception
+     * @deprecated
      */
     public function customLookup($customers, $leadSource = '', $idPrefix = '')
     {
-        $_magentoId      = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-        $websiteFieldKey = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
-
         $_results = array();
         foreach (array_chunk($customers, self::UPDATE_LIMIT, true) as $_customers) {
-            $result = $this->_queryLeads($_magentoId, $_customers, $leadSource, $idPrefix);
-            if (empty($result) || $result->size < 1) {
-                continue;
-            }
-
-            $_results[] = $result;
+            $_results[] = $this->_queryLeads($_customers, $leadSource, $idPrefix);
         }
 
-        if (empty($_results)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Lead lookup returned: no results...");
+        $records = $this->mergeRecords($_results);
+        if (empty($records)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Lead lookup returned: no results...');
+
             return array();
         }
 
-        $recordsEmail = $recordsMagentoId = array();
-        $records = $this->mergeRecords($_results);
+        return $this->assignLookupToEntity($records, $customers);
+    }
+
+    /**
+     * @param array $records
+     * @return array
+     */
+    protected function collectLookupIndex(array $records)
+    {
+        $searchIndex = array();
         foreach ($records as $key => $record) {
             // Index Email
-            $recordsEmail[$key] = null;
+            $searchIndex['email'][$key] = null;
             if (!empty($record->Email)) {
-                $recordsEmail[$key] = strtolower($record->Email);
-            }
-
-            // Index MagentoId
-            $recordsMagentoId[$key] = null;
-            if (!empty($record->$_magentoId)) {
-                $recordsMagentoId[$key] = $record->$_magentoId;
+                $searchIndex['email'][$key] = strtolower($record->Email);
             }
         }
 
-        $returnArray = array();
-        foreach ($customers as $customer) {
-            $_websiteKey = Mage::app()
-                ->getWebsite($customer->getWebsiteId())
-                ->getData('salesforce_id');
+        return $searchIndex;
+    }
 
-            $recordsIds = array();
-            $recordsIds[] = array_keys($recordsMagentoId, $customer->getId());
-            $recordsIds[] = array_keys($recordsEmail, strtolower($customer->getEmail()));
+    /**
+     * @param array $searchIndex
+     * @param Mage_Customer_Model_Customer $entity
+     * @return array[]
+     */
+    protected function searchLookupPriorityOrder(array $searchIndex, $entity)
+    {
+        $recordsIds = array();
 
-            $record = null;
-            foreach ($recordsIds as $_recordsIds) {
-                foreach ($_recordsIds as $recordsId) {
-                    if (!isset($records[$recordsId])) {
-                        continue;
-                    }
+        // Priority 1
+        $recordsIds[10] = array_keys($searchIndex['email'], strtolower($entity->getData('email')));
 
-                    if (empty($records[$recordsId]->$websiteFieldKey)) {
-                        $record = $records[$recordsId];
-                        continue;
-                    }
+        return $recordsIds;
+    }
 
-                    if ($records[$recordsId]->$websiteFieldKey == $_websiteKey) {
-                        $record = $records[$recordsId];
-                        break;
-                    }
+    /**
+     * @param array[] $recordsPriority
+     * @param Mage_Customer_Model_Customer $entity
+     * @return stdClass|null
+     */
+    protected function filterLookupByPriority(array $recordsPriority, $entity)
+    {
+        $websiteFieldKey    = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+            . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+
+        $findRecord = null;
+        foreach ($recordsPriority as $records) {
+            foreach ($records as $record) {
+                if (!empty($record->$_magentoId) && $record->$_magentoId == $entity->getId()) {
+                    $findRecord = $record;
+                    break 2;
                 }
 
-                if (!empty($record)) {
-                    break;
+                if (empty($record->$websiteFieldKey)) {
+                    $findRecord = $record;
+                    continue;
+                }
+
+                if ($record->$websiteFieldKey == Mage::app()->getWebsite($entity->getData('website_id'))->getData('salesforce_id')) {
+                    $findRecord = $record;
+                    break 2;
                 }
             }
 
-            if (empty($record)) {
-                continue;
+            if (!empty($findRecord)) {
+                break;
             }
-
-            $returnArray[] = array(
-                'customer' => $customer,
-                'record'   => $record
-            );
         }
 
-        return $returnArray;
+        return $findRecord;
     }
 
     /**
      * @param $customer Mage_Customer_Model_Customer
      * @param $record stdClass
      * @return array
-     * @throws Mage_Core_Exception
      */
     public function prepareRecord($customer, $record)
     {
@@ -348,22 +377,55 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     }
 
     /**
-     * @param $_magentoId
      * @param $customers Mage_Customer_Model_Customer[]
      * @param string $leadSource
      * @param string $idPrefix
      * @return mixed
-     * @throws Mage_Core_Exception
+     * @throws Exception
      */
-    protected function _queryLeads($_magentoId, $customers, $leadSource = '', $idPrefix = '')
+    protected function _queryLeads($customers, $leadSource = '', $idPrefix = '')
     {
-        if (empty($customers)) {
-            return array();
-        }
+        $columns = $this->columnsLookupQuery();
+        $conditions = $this->conditionsLookupQuery($customers, $leadSource, $idPrefix);
 
-        $query = "SELECT ID, OwnerId, Company, Email, IsConverted, ConvertedAccountId, ConvertedContactId, " . $_magentoId . ", " . Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject() . " FROM Lead WHERE ";
+        $query = sprintf('SELECT %s FROM Lead WHERE %s',
+            $this->generateLookupSelect($columns),
+            $this->generateLookupWhere($conditions));
 
-        $_lookup = array();
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("Lead QUERY:\n{$query}");
+
+        return $this->getClient()->query($query);
+    }
+
+    /**
+     * @return array
+     */
+    protected function columnsLookupQuery()
+    {
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+        $websiteFieldName = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+            . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+        return array(
+            'ID', 'OwnerId', 'Company', 'Email', 'IsConverted',
+            'ConvertedAccountId', 'ConvertedContactId', $_magentoId, $websiteFieldName
+        );
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer[] $customers
+     * @param string $leadSource
+     * @param string $idPrefix
+     * @return mixed
+     */
+    protected function conditionsLookupQuery(array $customers, $leadSource = '', $idPrefix = '')
+    {
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+        $websiteFieldName = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
+            . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
+
+        $conditions['OR'] = array();
         foreach ($customers as $customer) {
             if (!$customer instanceof Mage_Customer_Model_Customer) {
                 continue;
@@ -375,42 +437,23 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
                 ? Mage::app()->getWebsite($customer->getWebsiteId())->getData('salesforce_id')
                 : null;
 
-            $tmp = "((Email='" . addslashes($_email) . "'";
+            $orCond['AND']['eaw']['AND']['Email']['='] = $_email;
+            if (!empty($_website) && Mage::helper('tnw_salesforce')->getCustomerScope() == "1") {
+                $orCond['AND']['eaw']['AND'][$websiteFieldName]['IN'] = array($_website, '');
+            }
 
             if (is_numeric($_id)) {
-                $tmp .= " OR " . $_magentoId . "='" . $idPrefix . $_id . "'";
+                $orCond['OR'][$_magentoId]['='] = $idPrefix . $_id;
             }
-            $tmp .= ")";
-            if (
-                Mage::helper('tnw_salesforce')->getCustomerScope() == "1"
-                && !empty($_website)
-            ) {
-                $websiteFieldName = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix()
-                    . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject();
 
-                $tmp .= " AND ($websiteFieldName = '$_website' OR $websiteFieldName = '')";
-            }
-            $tmp .= ")";
-            $_lookup[] = $tmp;
+            $conditions['OR'][$customer->getData('email')] = $orCond;
         }
-        if (empty($_lookup)) {
-            return array();
-        }
-        $query .= '(' . join(' OR ', $_lookup) . ')';
 
         if ($leadSource) {
-            $query .= ' AND LeadSource = \'' . $leadSource . '\' ';
+            $conditions['AND']['LeadSource'] = $leadSource;
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
-        try {
-            $_result = $this->getClient()->query(($query));
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            $_result = array();
-        }
-
-        return $_result;
+        return $conditions;
     }
 
     /**
