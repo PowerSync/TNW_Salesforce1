@@ -278,6 +278,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
                 = $this->generateFeeEntityItem($_entity, $feeName, $feeData)->setData(self::ITEM_FEE_CHECK, true);
         }
 
+        if (empty($this->_cache['fee_entity_items'][$entityNumber])) {
+            return array();
+        }
+
         return $this->_cache['fee_entity_items'][$entityNumber];
     }
 
