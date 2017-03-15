@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Abandonedsync_Grid extends Mage_Adminhtml_Block_Report_Shopcart_Abandoned_Grid
+class TNW_Salesforce_Block_Adminhtml_Synchronize_Abandoned_Grid extends Mage_Adminhtml_Block_Report_Shopcart_Abandoned_Grid
 {
     /**
      * Internal constructor

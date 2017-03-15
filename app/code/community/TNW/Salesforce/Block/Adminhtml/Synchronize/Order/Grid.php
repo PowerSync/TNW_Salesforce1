@@ -134,7 +134,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
         }
 
         if (Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()) {
-            $this->addColumn('salesforce_id', array(
+            $this->addColumn('opportunity_id', array(
                 'header' => Mage::helper('sales')->__('Opportunity ID'),
                 'index' => 'opportunity_id',
                 'type' => 'text',
@@ -216,6 +216,15 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
 //        );
         }
         return $this;
+    }
+
+    /**
+     * @param $item
+     * @return string
+     */
+    public function getRowUrl($item)
+    {
+        return '';
     }
 
     public function getGridUrl()

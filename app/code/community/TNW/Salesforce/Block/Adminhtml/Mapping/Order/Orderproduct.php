@@ -4,12 +4,12 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Orderproduct extends Mage_Adminhtml_Block_Widget_Grid_Container
+class TNW_Salesforce_Block_Adminhtml_Mapping_Order_Orderproduct extends Mage_Adminhtml_Block_Widget_Grid_Container
 {
     public function __construct()
     {
         $this->_blockGroup = 'tnw_salesforce';
-        $this->_controller = 'adminhtml_orderproduct';
+        $this->_controller = 'adminhtml_mapping_order_orderproduct';
         $this->_headerText = Mage::helper('tnw_salesforce')->__('Ordered Products Mapping');
         parent::__construct();
         $this->_updateButton('add', 'label', Mage::helper('tnw_salesforce')->__('Add New Mapping'));

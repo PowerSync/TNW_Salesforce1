@@ -16,5 +16,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_OpportunitylineitemController extends 
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'opportunitylineitem';
+    protected $_blockPath = 'mapping_order_opportunitylineitem';
 }

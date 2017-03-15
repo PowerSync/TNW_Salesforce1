@@ -29,6 +29,6 @@ class TNW_Salesforce_Helper_Config_Sales_Creditmemo extends TNW_Salesforce_Helpe
     public function syncCreditMemoForOrder()
     {
         return $this->syncCreditMemo()
-        && self::SYNC_TYPE_ORDER == strtolower($this->_helper()->getOrderObject());
+            && Mage::helper('tnw_salesforce')->integrationOrderAllowed();
     }
 }

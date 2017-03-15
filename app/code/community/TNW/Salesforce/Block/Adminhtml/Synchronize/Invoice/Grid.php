@@ -154,7 +154,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Invoice_Grid extends Mage_Admin
 
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
             $this
                 ->setMassactionIdField('entity_id')
                 ->setMassactionIdFilter('main_table.entity_id')
@@ -173,9 +173,13 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Invoice_Grid extends Mage_Admin
         return $this;
     }
 
-    public function getRowUrl($row)
+    /**
+     * @param $item
+     * @return string
+     */
+    public function getRowUrl($item)
     {
-        return false;
+        return '';
     }
 
     public function getGridUrl()

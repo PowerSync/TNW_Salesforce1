@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Block_Adminhtml_Opportunity_Shipmentitem_Grid extends TNW_Salesforce_Block_Adminhtml_Base_Grid
+class TNW_Salesforce_Block_Adminhtml_Mapping_Shipment_Opportunityshipmentitem_Grid extends TNW_Salesforce_Block_Adminhtml_Base_Grid
 {
     /**
      * name of  Salesforce object in case-sensitive case

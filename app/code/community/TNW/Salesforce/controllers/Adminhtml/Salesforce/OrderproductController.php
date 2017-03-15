@@ -16,5 +16,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderproductController extends TNW_Sal
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'orderproduct';
+    protected $_blockPath = 'mapping_order_orderproduct';
 }

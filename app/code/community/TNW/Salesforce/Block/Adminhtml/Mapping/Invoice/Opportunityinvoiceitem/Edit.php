@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Block_Adminhtml_Opportunity_Invoiceitem_Edit extends TNW_Salesforce_Block_Adminhtml_Base_Edit
+class TNW_Salesforce_Block_Adminhtml_Mapping_Invoice_Opportunityinvoiceitem_Edit extends TNW_Salesforce_Block_Adminhtml_Base_Edit
 {
     /**
      * name of  Salesforce object in case-sensitive case

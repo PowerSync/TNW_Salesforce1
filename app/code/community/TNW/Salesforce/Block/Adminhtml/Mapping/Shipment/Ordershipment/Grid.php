@@ -1,6 +1,6 @@
 <?php
 
-class TNW_Salesforce_Block_Adminhtml_Order_Shipment_Grid extends TNW_Salesforce_Block_Adminhtml_Base_Grid
+class TNW_Salesforce_Block_Adminhtml_Mapping_Shipment_Ordershipment_Grid extends TNW_Salesforce_Block_Adminhtml_Base_Grid
 {
     /**
      * name of  Salesforce object in case-sensitive case

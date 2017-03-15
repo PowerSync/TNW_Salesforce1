@@ -35,7 +35,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
 
         $this->_initLayout()
             ->_addContent($this->getLayout()->createBlock('adminhtml/store_switcher'));
-        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_productsync'));
+        $this->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_synchronize_product'));
 
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
         $this->renderLayout();

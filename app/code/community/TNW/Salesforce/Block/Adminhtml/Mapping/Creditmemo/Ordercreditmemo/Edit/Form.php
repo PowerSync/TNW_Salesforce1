@@ -1,6 +1,7 @@
 <?php
 
-class TNW_Salesforce_Block_Adminhtml_Ordercreditmemo_Edit_Form extends TNW_Salesforce_Block_Adminhtml_Base_Edit_Form
+class TNW_Salesforce_Block_Adminhtml_Mapping_Creditmemo_Ordercreditmemo_Edit_Form
+    extends TNW_Salesforce_Block_Adminhtml_Base_Edit_Form
 {
     /**
      * type Magento attributes

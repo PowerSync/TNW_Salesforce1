@@ -18,5 +18,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrdercreditmemoController extends TNW_
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath   = 'ordercreditmemo';
+    protected $_blockPath   = 'mapping_creditmemo_ordercreditmemo';
 }

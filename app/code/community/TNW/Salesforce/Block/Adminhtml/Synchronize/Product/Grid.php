@@ -4,7 +4,7 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Block_Widget_Grid
+class TNW_Salesforce_Block_Adminhtml_Synchronize_Product_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     public function __construct()
     {
@@ -231,7 +231,7 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
      */
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
             $this
                 ->setMassactionIdField('entity_id');
             $this->getMassactionBlock()->setFormFieldName('products');
@@ -249,6 +249,15 @@ class TNW_Salesforce_Block_Adminhtml_Productsync_Grid extends Mage_Adminhtml_Blo
         }
 
         return $this;
+    }
+
+    /**
+     * @param $item
+     * @return string
+     */
+    public function getRowUrl($item)
+    {
+        return '';
     }
 
     /**

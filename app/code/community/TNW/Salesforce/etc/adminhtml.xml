@@ -39,7 +39,7 @@
                             <action>adminhtml/salesforcesync_creditmemosync</action>
                             <sort_order>35</sort_order>
                         </creditmemo_sync>
-                        <abandoned_sync translate="title" module="tnw_salesforce">
+                        <abandoned_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                             <title>Abandoned Cart</title>
                             <action>adminhtml/salesforcesync_abandonedsync</action>
                             <sort_order>50</sort_order>
@@ -92,7 +92,7 @@
                                     <action>adminhtml/salesforce_account</action>
                                     <sort_order>30</sort_order>
                                 </account_mapping>
-                                <lead_mapping translate="title" module="tnw_salesforce">
+                                <lead_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::isCustomerAsLead">
                                     <title>Lead</title>
                                     <action>adminhtml/salesforce_lead</action>
                                     <sort_order>10</sort_order>
@@ -103,22 +103,22 @@
                             <title>Order Mappings</title>
                             <sort_order>300</sort_order>
                             <children>
-                                <order_mapping translate="title" module="tnw_salesforce">
+                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                     <title>Order</title>
                                     <action>adminhtml/salesforce_order</action>
                                     <sort_order>50</sort_order>
                                 </order_mapping>
-                                <order_cart_mapping translate="title" module="tnw_salesforce">
+                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                     <title>Order Products</title>
                                     <action>adminhtml/salesforce_orderproduct</action>
                                     <sort_order>60</sort_order>
                                 </order_cart_mapping>
-                                <opportunity_mapping translate="title" module="tnw_salesforce">
+                                <opportunity_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                     <title>Opportunity</title>
                                     <action>adminhtml/salesforce_opportunity</action>
                                     <sort_order>70</sort_order>
                                 </opportunity_mapping>
-                                <opportunity_cart_mapping translate="title" module="tnw_salesforce">
+                                <opportunity_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                     <title>Opportunity Products</title>
                                     <action>adminhtml/salesforce_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
@@ -173,12 +173,12 @@
                                 <opportunity_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
                                     <title>Opportunity Shipment</title>
                                     <action>adminhtml/salesforce_opportunity_shipment</action>
-                                    <sort_order>100</sort_order>
+                                    <sort_order>130</sort_order>
                                 </opportunity_shipment>
                                 <opportunity_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
                                     <title>Opportunity Shipment Items</title>
                                     <action>adminhtml/salesforce_opportunity_shipmentitem</action>
-                                    <sort_order>120</sort_order>
+                                    <sort_order>140</sort_order>
                                 </opportunity_shipment_item>
                             </children>
                         </shipment_mapping>
@@ -203,16 +203,16 @@
                                 </status_mapping>
                             </children>
                         </creditmemo_mapping>
-                        <abandoned_mapping translate="title" module="tnw_salesforce">
+                        <abandoned_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                             <title>Abandoned Cart Mappings</title>
                             <sort_order>600</sort_order>
                             <children>
-                                <order_mapping translate="title" module="tnw_salesforce">
+                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                     <title>Opportunity</title>
                                     <action>adminhtml/salesforce_abandoned_opportunity</action>
                                     <sort_order>70</sort_order>
                                 </order_mapping>
-                                <order_cart_mapping translate="title" module="tnw_salesforce">
+                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                     <title>Opportunity Products</title>
                                     <action>adminhtml/salesforce_abandoned_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
@@ -260,7 +260,7 @@
                         </wishlist>
                     </children>
                 </mappings>
-                <queue_sync translate="title" module="tnw_salesforce">
+                <queue_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::isProfessionalEdition">
                     <title>Sync Queue</title>
                     <sort_order>400</sort_order>
                     <children>
@@ -412,7 +412,7 @@
                                     <action>adminhtml/salesforce_account</action>
                                     <sort_order>30</sort_order>
                                 </account_mapping>
-                                <lead_mapping translate="title" module="tnw_salesforce">
+                                <lead_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::isCustomerAsLead">
                                     <title>Lead</title>
                                     <action>adminhtml/salesforce_lead</action>
                                     <sort_order>50</sort_order>
@@ -458,7 +458,7 @@
                                     <action>adminhtml/salesforcesync_creditmemosync</action>
                                     <sort_order>40</sort_order>
                                 </creditmemo_sync>
-                                <abandoned_sync translate="title" module="tnw_salesforce">
+                                <abandoned_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                                     <title>Abandoned Carts</title>
                                     <sort_order>50</sort_order>
                                     <action>adminhtml/salesforcesync_abandonedsync</action>
@@ -469,22 +469,22 @@
                             <title>Order Mappings</title>
                             <sort_order>30</sort_order>
                             <children>
-                                <order_mapping translate="title" module="tnw_salesforce">
+                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                     <title>Order</title>
                                     <action>adminhtml/salesforce_order</action>
                                     <sort_order>50</sort_order>
                                 </order_mapping>
-                                <order_cart_mapping translate="title" module="tnw_salesforce">
+                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                     <title>Order Products</title>
                                     <action>adminhtml/salesforce_orderproduct</action>
                                     <sort_order>60</sort_order>
                                 </order_cart_mapping>
-                                <opportunity_mapping translate="title" module="tnw_salesforce">
+                                <opportunity_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                     <title>Opportunity</title>
                                     <action>adminhtml/salesforce_opportunity</action>
                                     <sort_order>70</sort_order>
                                 </opportunity_mapping>
-                                <opportunity_cart_mapping translate="title" module="tnw_salesforce">
+                                <opportunity_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                     <title>Opportunity Products</title>
                                     <action>adminhtml/salesforce_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
@@ -539,12 +539,12 @@
                                 <opportunity_shipment translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
                                     <title>Opportunity Shipment</title>
                                     <action>adminhtml/salesforce_opportunity_shipment</action>
-                                    <sort_order>10</sort_order>
+                                    <sort_order>30</sort_order>
                                 </opportunity_shipment>
                                 <opportunity_shipment_item translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipmentsForOpportunity">
                                     <title>Opportunity Shipment Items</title>
                                     <action>adminhtml/salesforce_opportunity_shipmentitem</action>
-                                    <sort_order>20</sort_order>
+                                    <sort_order>40</sort_order>
                                 </opportunity_shipment_item>
                             </children>
                         </shipment_mappings>
@@ -569,7 +569,7 @@
                                 </status_mapping>
                             </children>
                         </creditmemo_mappings>
-                        <abandoned_mappings translate="title" module="tnw_salesforce">
+                        <abandoned_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                             <title>Abandoned Cart Mappings</title>
                             <sort_order>60</sort_order>
                             <children>
@@ -625,7 +625,7 @@
                                                 <title>Credit Memo Synchronization</title>
                                                 <sort_order>40</sort_order>
                                             </creditmemo_sync>
-                                            <abandoned_sync>
+                                            <abandoned_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                                                 <title>Abandoned Carts Synchronization</title>
                                                 <sort_order>50</sort_order>
                                             </abandoned_sync>
@@ -639,19 +639,19 @@
                                         <title>Order Mappings</title>
                                         <sort_order>30</sort_order>
                                         <children>
-                                            <order_mapping>
+                                            <order_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                                 <title>Order Field Mapping</title>
                                                 <sort_order>50</sort_order>
                                             </order_mapping>
-                                            <order_cart_mapping>
+                                            <order_cart_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                                 <title>Order Products Field Mapping</title>
                                                 <sort_order>60</sort_order>
                                             </order_cart_mapping>
-                                            <opportunity_mapping>
+                                            <opportunity_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                                 <title>Opportunity Field Mapping</title>
                                                 <sort_order>70</sort_order>
                                             </opportunity_mapping>
-                                            <opportunity_cart_mapping>
+                                            <opportunity_cart_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                                 <title>Opportunity Products Field Mapping</title>
                                                 <sort_order>80</sort_order>
                                             </opportunity_cart_mapping>
@@ -723,7 +723,7 @@
                                             </status_mapping>
                                         </children>
                                     </creditmemo_mapping>
-                                    <abandoned_mapping>
+                                    <abandoned_mapping ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                                         <title>Abandoned Cart Mappings</title>
                                         <sort_order>70</sort_order>
                                         <children>
@@ -789,7 +789,7 @@
                                                 <title>Account Mappings</title>
                                                 <sort_order>30</sort_order>
                                             </account_mapping>
-                                            <lead_mapping>
+                                            <lead_mapping ifhelper="tnw_salesforce/data::isCustomerAsLead">
                                                 <title>Lead Mappings</title>
                                                 <sort_order>50</sort_order>
                                             </lead_mapping>
@@ -832,7 +832,7 @@
                                         <title>Shipments</title>
                                         <sort_order>34</sort_order>
                                     </shipment_sync>
-                                    <abandoned_sync>
+                                    <abandoned_sync ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                                         <title>Synchronize Abandoned Cart</title>
                                         <sort_order>50</sort_order>
                                     </abandoned_sync>
@@ -858,7 +858,7 @@
                                                 <title>Account Field Mappings</title>
                                                 <sort_order>30</sort_order>
                                             </account_mapping>
-                                            <lead_mapping>
+                                            <lead_mapping ifhelper="tnw_salesforce/data::isCustomerAsLead">
                                                 <title>Lead Field Mappings</title>
                                                 <sort_order>10</sort_order>
                                             </lead_mapping>
@@ -868,19 +868,19 @@
                                         <title>Order Mappings</title>
                                         <sort_order>300</sort_order>
                                         <children>
-                                            <order_mapping>
+                                            <order_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                                 <title>Order Field Mappings</title>
                                                 <sort_order>50</sort_order>
                                             </order_mapping>
-                                            <order_cart_mapping>
+                                            <order_cart_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
                                                 <title>Order Product Field Mappings</title>
                                                 <sort_order>60</sort_order>
                                             </order_cart_mapping>
-                                            <opportunity_mapping>
+                                            <opportunity_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                                 <title>Opportunity</title>
                                                 <sort_order>70</sort_order>
                                             </opportunity_mapping>
-                                            <opportunity_cart_mapping>
+                                            <opportunity_cart_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
                                                 <title>Opportunity Products</title>
                                                 <sort_order>80</sort_order>
                                             </opportunity_cart_mapping>
@@ -934,7 +934,7 @@
                                             </opportunity_shipment_item>
                                         </children>
                                     </shipment_mapping>
-                                    <abandoned_mapping>
+                                    <abandoned_mapping ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                                         <title>Abandoned Cart Mappings</title>
                                         <sort_order>600</sort_order>
                                         <children>
@@ -950,7 +950,7 @@
                                     </abandoned_mapping>
                                 </children>
                             </mappings>
-                            <queue_sync>
+                            <queue_sync ifhelper="tnw_salesforce/data::isProfessionalEdition">
                                 <title>Synchronization Queue</title>
                                 <sort_order>300</sort_order>
                                 <children>

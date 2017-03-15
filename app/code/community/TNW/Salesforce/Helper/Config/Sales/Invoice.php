@@ -29,7 +29,7 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
     public function syncInvoicesForOrder()
     {
         return $this->syncInvoices()
-            && strcasecmp(self::SYNC_TYPE_ORDER, $this->_helper()->getOrderObject()) == 0;
+            && Mage::helper('tnw_salesforce')->integrationOrderAllowed();
     }
 
     /**
@@ -38,6 +38,6 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
     public function syncInvoicesForOpportunity()
     {
         return $this->syncInvoices()
-            && strcasecmp(self::SYNC_TYPE_OPPORTUNITY, $this->_helper()->getOrderObject()) == 0;
+            && Mage::helper('tnw_salesforce')->integrationOpportunityAllowed();
     }
 }
