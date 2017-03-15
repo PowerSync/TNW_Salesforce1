@@ -35,7 +35,6 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
             ->addAttributeToSelect('email')
             ->joinTable(array('wishlist'=>'wishlist/wishlist'), 'customer_id=entity_id', array(
                 'wishlist_id',
-                'wishlist_name' => 'name',
                 'wishlist_updated_at' => 'updated_at',
                 'wishlist_sf_insync' => 'sf_insync',
                 'wishlist_salesforce_id' => 'salesforce_id',
@@ -82,12 +81,6 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                     'getter' => 'getId',
                 )
             ),
-        ));
-
-        $this->addColumn('name', array(
-            'header' => Mage::helper('sales')->__('Name'),
-            'index' => 'wishlist_name',
-            'type' => 'varchar',
         ));
 
         $this->addColumn('customer_name', array(
@@ -149,11 +142,6 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
             case 'entity_id':
                 $this->getCollection()->getSelect()
                     ->order('wishlist.wishlist_id '.strtoupper($column->getDir()));
-                break;
-
-            case 'name':
-                $this->getCollection()->getSelect()
-                    ->order('wishlist.name '.strtoupper($column->getDir()));
                 break;
 
             case 'salesforce_id':
