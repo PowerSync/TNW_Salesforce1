@@ -253,7 +253,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function integrationOpportunityAllowed()
     {
-        return in_array($this->integrationOption(), array(
+        return $this->isEnabledOrderSync() && in_array($this->integrationOption(), array(
             TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::OPPORTUNITY,
             TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY
         ));
@@ -264,7 +264,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     public function integrationOrderAllowed()
     {
-        return in_array($this->integrationOption(), array(
+        return $this->isEnabledOrderSync() && in_array($this->integrationOption(), array(
             TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER,
             TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY
         ));

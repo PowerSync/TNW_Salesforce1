@@ -78,16 +78,13 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
 
                 //Sync Orders
                 Mage::getSingleton('core/session')->setFromSalesForce(false);
-
-                $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-                Mage::dispatchEvent(sprintf('tnw_salesforce_%s_status_update', $_syncType), array(
+                Mage::dispatchEvent('tnw_salesforce_sync_order_status_for_website', array(
                     'order' => $order
                 ));
 
-                Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                    'orderIds' => array($newOrder->getId()),
-                    'message'  => "SUCCESS: Upserting Order #" . $newOrder->getRealOrderId(),
-                    'type'     => 'salesforce'
+                Mage::dispatchEvent('tnw_salesforce_sync_order_for_website', array(
+                    'entityIds' => array($newOrder->getId()),
+                    'syncType' => 'realtime'
                 ));
 
                 Mage::getSingleton('core/session')->setFromSalesForce(true);

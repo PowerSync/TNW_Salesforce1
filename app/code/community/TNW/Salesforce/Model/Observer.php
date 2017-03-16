@@ -451,8 +451,6 @@ class TNW_Salesforce_Model_Observer
             throw new InvalidArgumentException('entityIds argument not array');
         }
 
-        //TODO: Filter Ids
-
         //COSTbIL: check that order has been already exported
         foreach ($entityIds as $key => $orderId) {
             if (!in_array($orderId, $this->exportedOrders)) {
@@ -490,8 +488,6 @@ class TNW_Salesforce_Model_Observer
         if (!is_array($entityIds)) {
             throw new InvalidArgumentException('entityIds argument not array');
         }
-
-        //TODO: Filter Ids
 
         //COSTbIL: check that order has been already exported
         foreach ($entityIds as $key => $orderId) {
@@ -674,6 +670,11 @@ class TNW_Salesforce_Model_Observer
         }
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     * @deprecated
+     * @throws Exception
+     */
     public function updateOpportunity(Varien_Event_Observer $observer)
     {
         $_order = $observer->getEvent()->getData('order');
@@ -735,6 +736,11 @@ class TNW_Salesforce_Model_Observer
         });
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     * @deprecated
+     * @throws Exception
+     */
     public function updateOrder(Varien_Event_Observer $observer)
     {
         $_order = $observer->getEvent()->getData('order');
@@ -794,6 +800,44 @@ class TNW_Salesforce_Model_Observer
 
             Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($_order);
         });
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws Exception
+     */
+    public function opportunityStatusForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()){
+            return; //Disabled
+        }
+
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $observer->getEvent()->getOrder();
+        if (!$order instanceof Mage_Sales_Model_Order) {
+            return;
+        }
+
+        Mage::helper('tnw_salesforce/salesforce_opportunity')->updateStatus($order);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @throws Exception
+     */
+    public function orderStatusForWebsite($observer)
+    {
+        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()){
+            return; //Disabled
+        }
+
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $observer->getEvent()->getOrder();
+        if (!$order instanceof Mage_Sales_Model_Order) {
+            return;
+        }
+
+        Mage::helper('tnw_salesforce/salesforce_order')->updateStatus($order);
     }
 
     public function updateOrderStatusForm($observer)

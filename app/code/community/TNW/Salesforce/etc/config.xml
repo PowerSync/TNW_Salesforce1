@@ -465,6 +465,7 @@
                 </observers>
             </adminhtml_store_edit_form_prepare_form>
 
+            <!-- Entity Sync Event -->
             <tnw_salesforce_sync_order_for_website>
                 <observers>
                     <opportunity>
@@ -517,6 +518,66 @@
                     </order_creditmemo>
                 </observers>
             </tnw_salesforce_sync_creditmemo_for_website>
+
+            <!-- Comment Sync Event -->
+            <tnw_salesforce_sync_order_comment_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>opportunityCommentForWebsite</method>
+                    </opportunity>
+                    <order>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderCommentForWebsite</method>
+                    </order>
+                </observers>
+            </tnw_salesforce_sync_order_comment_for_website>
+            <tnw_salesforce_sync_invoice_comment_for_website>
+                <observers>
+                    <opportunity_invoice>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>opportunityInvoiceCommentForWebsite</method>
+                    </opportunity_invoice>
+                    <order_invoice>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderInvoiceCommentForWebsite</method>
+                    </order_invoice>
+                </observers>
+            </tnw_salesforce_sync_invoice_comment_for_website>
+            <tnw_salesforce_sync_shipment_comment_for_website>
+                <observers>
+                    <opportunity_shipment>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>opportunityShipmentCommentForWebsite</method>
+                    </opportunity_shipment>
+                    <order_shipment>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderShipmentCommentForWebsite</method>
+                    </order_shipment>
+                </observers>
+            </tnw_salesforce_sync_shipment_comment_for_website>
+            <tnw_salesforce_sync_creditmemo_comment_for_website>
+                <observers>
+                    <order_creditmemo>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderCreditmemoCommentForWebsite</method>
+                    </order_creditmemo>
+                </observers>
+            </tnw_salesforce_sync_creditmemo_comment_for_website>
+
+            <!-- Order status Update -->
+            <tnw_salesforce_sync_order_status_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityStatusForWebsite</method>
+                    </opportunity>
+                    <order>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderStatusForWebsite</method>
+                    </order>
+                </observers>
+            </tnw_salesforce_sync_order_status_for_website>
 
             <!-- Deprecated. Pushing order object into Salesforce post all validation -->
             <tnw_salesforce_order_process>
