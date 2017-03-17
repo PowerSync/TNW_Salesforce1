@@ -106,7 +106,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
      */
     public function opportunityCommentForWebsite($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()) {
+        if (!Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
             return; // Disabled
         }
 
@@ -120,7 +120,7 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
      */
     public function orderCommentForWebsite($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()) {
+        if (!Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
             return; // Disabled
         }
 

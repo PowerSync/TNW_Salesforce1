@@ -19,6 +19,24 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
     protected $_mappingEntityItemName = 'OpportunityShipmentItem';
 
     /**
+     * @param Mage_Sales_Model_Order $order
+     * @return string
+     */
+    protected function orderSalesforceId($order)
+    {
+        return $order->getData('opportunity_id');
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order_Item $orderItem
+     * @return string
+     */
+    protected function orderItemSalesforceId($orderItem)
+    {
+        return $orderItem->getData('opportunity_id');
+    }
+
+    /**
      * @param $_entity Mage_Sales_Model_Order_Shipment
      * @param $key
      */
@@ -26,7 +44,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
     {
         // Link to Order
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity__c'}
-            = $_entity->getOrder()->getData('salesforce_id');
+            = $this->orderSalesforceId($_entity->getOrder());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'disableMagentoSync__c'}
             = true;
@@ -41,7 +59,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
         $_entityNumber = $this->_getEntityNumber($_entity);
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c'}
-            = $_entityItem->getOrderItem()->getData('salesforce_id');
+            = $this->orderItemSalesforceId($_entityItem->getOrderItem());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Shipment__c'}
             = $this->_getParentEntityId($_entityNumber);
@@ -59,14 +77,11 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
      */
     protected function _doesCartItemExist($_entity, $_entityItem)
     {
-        $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
+        $_sOrderItemId = $this->orderItemSalesforceId($_entityItem->getOrderItem());
         $_entityNumber = $this->_getEntityNumber($_entity);
         $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
 
-        if (! ($this->_cache[$lookupKey]
-            && array_key_exists($_entityNumber, $this->_cache[$lookupKey])
-            && $this->_cache[$lookupKey][$_entityNumber]->Items)
-        ){
+        if (empty($this->_cache[$lookupKey][$_entityNumber]->Items->records)){
             return false;
         }
 

@@ -242,41 +242,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /**
      * @return string
-     */
-    public function integrationOption()
-    {
-        return $this->getStoreConfig(self::ORDER_INTEGRATION_OPTION);
-    }
-
-    /**
-     * @return bool
-     */
-    public function integrationOpportunityAllowed()
-    {
-        return $this->isEnabledOrderSync() && in_array($this->integrationOption(), array(
-            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::OPPORTUNITY,
-            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY
-        ));
-    }
-
-    /**
-     * @return bool
-     */
-    public function integrationOrderAllowed()
-    {
-        return $this->isEnabledOrderSync() && in_array($this->integrationOption(), array(
-            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER,
-            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY
-        ));
-    }
-
-    /**
-     * @return string
      * @deprecated
      */
     public function getOrderObject()
     {
-        switch ($this->integrationOption()) {
+        switch (Mage::helper('tnw_salesforce/config_sales')->integrationOption()) {
             case TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER:
                 return TNW_Salesforce_Model_Config_Objects::ORDER_OBJECT;
 

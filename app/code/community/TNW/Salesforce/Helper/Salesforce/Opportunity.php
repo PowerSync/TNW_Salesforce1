@@ -83,6 +83,91 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         'opportunities_skipped' => 0,
     );
 
+    /**
+     * @param $ids
+     * Reset Salesforce ID in Magento for the order
+     */
+    public function resetEntity($ids)
+    {
+        if (empty($ids)) {
+            return;
+        }
+
+        $ids = !is_array($ids)
+            ? array($ids) : $ids;
+
+        $resource    = $this->_modelEntity()->getResource();
+        $mainTable   = $resource->getMainTable();
+        $idFieldName = $resource->getIdFieldName();
+        $sql = "UPDATE `$mainTable` SET opportunity_id = NULL, sf_insync = 0 WHERE $idFieldName IN (" . join(',', $ids) . ");";
+        Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("%s ID and Sync Status for %s (#%s) were reset.",
+                $this->_magentoEntityName, $this->_magentoEntityName, join(',', $ids)));
+    }
+
+    protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default', $item = null)
+    {
+        /**
+         * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
+         */
+        $parentEntityCacheKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        if (!empty($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()})) {
+            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}->records as $_cartItem) {
+                if ($_cartItem->Id != $item->getData('opportunity_id')) {
+                    continue;
+                }
+
+                return $_cartItem->Id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $_entity Mage_Sales_Model_Order
+     * @param $item Mage_Sales_Model_Order_Item
+     */
+    protected function _prepareAdditionalFees($_entity, $item)
+    {
+        $_salesforceId        = null;
+        $_entityNumber        = $this->_getEntityNumber($_entity);
+        $parentEntityCacheKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $productSalesforceId  = $this->_getObjectByEntityItemType($item, 'Product')->getData('salesforce_id');
+
+        $records              = !empty($this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()})
+            ? $this->_cache[$parentEntityCacheKey][$_entityNumber]->{$this->getItemsField()}->records : array();
+
+        foreach ($records as $_cartItem) {
+            if ($_cartItem->PricebookEntry->Product2Id != $productSalesforceId) {
+                continue;
+            }
+
+            $_salesforceId = $_cartItem->Id;
+            break;
+        }
+
+        $item->setData('opportunity_id', $_salesforceId);
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return bool
+     */
+    protected function _checkMassAddEntity($_entity)
+    {
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed() && $_entity->getBaseTotalDue() === 0) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice("SKIPPED: Sync for order #{$this->_getEntityNumber($_entity)} as Opportunity, paid");
+
+            return false;
+        }
+
+        return parent::_checkMassAddEntity($_entity);
+    }
+
     protected function _prepareRemaining()
     {
         parent::_prepareRemaining();
@@ -122,14 +207,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Push: Start----------');
         $_keys = array_keys($this->_cache['opportunitiesToUpsert']);
         try {
-            Mage::dispatchEvent("tnw_salesforce_order_send_before",array(
-                "data" => $this->_cache['opportunitiesToUpsert']
+            Mage::dispatchEvent('tnw_salesforce_opportunity_send_before',array(
+                'data' => $this->_cache['opportunitiesToUpsert']
             ));
 
             $results = $this->getClient()->upsert('Id', array_values($this->_cache['opportunitiesToUpsert']), 'Opportunity');
-            Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
-                "data" => $this->_cache['opportunitiesToUpsert'],
-                "result" => $results
+            Mage::dispatchEvent('tnw_salesforce_opportunity_send_after',array(
+                'data' => $this->_cache['opportunitiesToUpsert'],
+                'result' => $results
             ));
         } catch (Exception $e) {
             $results = array_fill(0, count($_keys),
@@ -162,7 +247,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $_order->addData(array(
                     'contact_salesforce_id' => $_customer->getData('salesforce_id'),
                     'account_salesforce_id' => $_customer->getData('salesforce_account_id'),
-                    'salesforce_id'         => $_result->id,
+                    'opportunity_id'        => $_result->id,
                     'sf_insync'             => 1,
                     'owner_salesforce_id'   => $this->_cache['opportunitiesToUpsert'][$_orderNum]->OwnerId
                 ));
@@ -306,7 +391,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
             } else {
                 $_item = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_cartItemId));
                 if ($_item instanceof Mage_Core_Model_Abstract) {
-                    $_item->setData('salesforce_id', $_result->id);
+                    $_item->setData('opportunity_id', $_result->id);
                     $_item->getResource()->save($_item);
                 }
 
@@ -347,7 +432,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
                 if (!$_result->success) {
                     // Reset sync status
-                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE salesforce_id = '" . $_sOpportunityId . "';";
+                    $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` SET sf_insync = 0 WHERE opportunity_id = '" . $_sOpportunityId . "';";
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                     Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
 

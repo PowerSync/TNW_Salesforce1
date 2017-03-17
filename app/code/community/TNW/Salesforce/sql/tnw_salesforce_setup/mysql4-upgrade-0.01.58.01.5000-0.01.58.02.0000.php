@@ -32,4 +32,9 @@ if (is_array($rows)) {
     }
 }
 
+$orderItemTable = $installer->getTable('sales/order_item');
+if (!$adapter->tableColumnExists($orderItemTable, 'opportunity_id')) {
+    $adapter->addColumn($orderItemTable, 'opportunity_id', 'varchar(50)');
+}
+
 $installer->endSetup();

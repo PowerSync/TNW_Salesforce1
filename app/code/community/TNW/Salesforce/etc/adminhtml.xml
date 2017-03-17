@@ -103,22 +103,22 @@
                             <title>Order Mappings</title>
                             <sort_order>300</sort_order>
                             <children>
-                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                     <title>Order</title>
                                     <action>adminhtml/salesforce_order</action>
                                     <sort_order>50</sort_order>
                                 </order_mapping>
-                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                     <title>Order Products</title>
                                     <action>adminhtml/salesforce_orderproduct</action>
                                     <sort_order>60</sort_order>
                                 </order_cart_mapping>
-                                <opportunity_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                <opportunity_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                     <title>Opportunity</title>
                                     <action>adminhtml/salesforce_opportunity</action>
                                     <sort_order>70</sort_order>
                                 </opportunity_mapping>
-                                <opportunity_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                <opportunity_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                     <title>Opportunity Products</title>
                                     <action>adminhtml/salesforce_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
@@ -207,12 +207,12 @@
                             <title>Abandoned Cart Mappings</title>
                             <sort_order>600</sort_order>
                             <children>
-                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                     <title>Opportunity</title>
                                     <action>adminhtml/salesforce_abandoned_opportunity</action>
                                     <sort_order>70</sort_order>
                                 </order_mapping>
-                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                     <title>Opportunity Products</title>
                                     <action>adminhtml/salesforce_abandoned_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
@@ -469,22 +469,22 @@
                             <title>Order Mappings</title>
                             <sort_order>30</sort_order>
                             <children>
-                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                <order_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                     <title>Order</title>
                                     <action>adminhtml/salesforce_order</action>
                                     <sort_order>50</sort_order>
                                 </order_mapping>
-                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                <order_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                     <title>Order Products</title>
                                     <action>adminhtml/salesforce_orderproduct</action>
                                     <sort_order>60</sort_order>
                                 </order_cart_mapping>
-                                <opportunity_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                <opportunity_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                     <title>Opportunity</title>
                                     <action>adminhtml/salesforce_opportunity</action>
                                     <sort_order>70</sort_order>
                                 </opportunity_mapping>
-                                <opportunity_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                <opportunity_cart_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                     <title>Opportunity Products</title>
                                     <action>adminhtml/salesforce_opportunitylineitem</action>
                                     <sort_order>80</sort_order>
@@ -639,19 +639,19 @@
                                         <title>Order Mappings</title>
                                         <sort_order>30</sort_order>
                                         <children>
-                                            <order_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                            <order_mapping ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                                 <title>Order Field Mapping</title>
                                                 <sort_order>50</sort_order>
                                             </order_mapping>
-                                            <order_cart_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                            <order_cart_mapping ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                                 <title>Order Products Field Mapping</title>
                                                 <sort_order>60</sort_order>
                                             </order_cart_mapping>
-                                            <opportunity_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                            <opportunity_mapping ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                                 <title>Opportunity Field Mapping</title>
                                                 <sort_order>70</sort_order>
                                             </opportunity_mapping>
-                                            <opportunity_cart_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                            <opportunity_cart_mapping ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                                 <title>Opportunity Products Field Mapping</title>
                                                 <sort_order>80</sort_order>
                                             </opportunity_cart_mapping>
@@ -868,19 +868,19 @@
                                         <title>Order Mappings</title>
                                         <sort_order>300</sort_order>
                                         <children>
-                                            <order_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                            <order_mapping ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                                 <title>Order Field Mappings</title>
                                                 <sort_order>50</sort_order>
                                             </order_mapping>
-                                            <order_cart_mapping ifhelper="tnw_salesforce/data::integrationOrderAllowed">
+                                            <order_cart_mapping ifhelper="tnw_salesforce/config_sales::integrationOrderAllowed">
                                                 <title>Order Product Field Mappings</title>
                                                 <sort_order>60</sort_order>
                                             </order_cart_mapping>
-                                            <opportunity_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                            <opportunity_mapping ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                                 <title>Opportunity</title>
                                                 <sort_order>70</sort_order>
                                             </opportunity_mapping>
-                                            <opportunity_cart_mapping ifhelper="tnw_salesforce/data::integrationOpportunityAllowed">
+                                            <opportunity_cart_mapping ifhelper="tnw_salesforce/config_sales::integrationOpportunityAllowed">
                                                 <title>Opportunity Products</title>
                                                 <sort_order>80</sort_order>
                                             </opportunity_cart_mapping>

@@ -36,11 +36,22 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
         $fieldset->addType('salesforceId', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_salesforceId'));
         $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
-        $fieldset->addField('salesforce_id', 'salesforceId', array(
-            'label' => Mage::helper('tnw_salesforce')->__('Order'),
-            'name' => 'salesforce_id',
-            'website' => $orderWebsite
-        ));
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+            $fieldset->addField('salesforce_id', 'salesforceId', array(
+                'label' => Mage::helper('tnw_salesforce')->__('Order'),
+                'name' => 'salesforce_id',
+                'website' => $orderWebsite
+            ));
+        }
+
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
+            $type = Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOpportunityAllowed()
+                ? 'text' : 'salesforceId';
+            $fieldset->addField('opportunity_id', $type, array(
+                'label' => $this->__('Opportunity'),
+                'name' => 'opportunity_id',
+            ));
+        }
 
         $fieldset->addField('contact_salesforce_id', 'salesforceId', array(
             'label' => Mage::helper('tnw_salesforce')->__('Contact'),
@@ -60,13 +71,6 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
             'selector'  => 'tnw-ajax-find-select-owner',
             'website' => $orderWebsite
         ));
-
-        if (Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()) {
-            $fieldset->addField('opportunity_id', 'text', array(
-                'label' => $this->__('Opportunity ID'),
-                'name' => 'opportunity_id',
-            ));
-        }
 
         $button = $this->getLayout()->createBlock('adminhtml/widget_button')
             ->setData(array(

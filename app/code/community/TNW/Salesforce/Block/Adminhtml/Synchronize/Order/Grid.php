@@ -40,7 +40,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
         $collection->getSelect()->join(
             array('flat_order' => Mage::helper('tnw_salesforce')->getTable('sales_flat_order')),
             'main_table.entity_id = flat_order.entity_id',
-            array('salesforce_id', 'sf_insync')
+            array('salesforce_id', 'opportunity_id', 'sf_insync')
         );
         $collection->addFieldToFilter('main_table.increment_id', array('notnull' => true));
         if (!empty($this->_allowedOrderStatuses)) {
@@ -123,7 +123,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
             'filter_index' => 'main_table.created_at',
         ));
 
-        if (Mage::helper('tnw_salesforce')->integrationOrderAllowed()) {
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
             $this->addColumn('salesforce_id', array(
                 'header' => Mage::helper('sales')->__('Order ID'),
                 'index' => 'salesforce_id',
@@ -133,7 +133,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
             ));
         }
 
-        if (Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()) {
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
             $this->addColumn('opportunity_id', array(
                 'header' => Mage::helper('sales')->__('Opportunity ID'),
                 'index' => 'opportunity_id',

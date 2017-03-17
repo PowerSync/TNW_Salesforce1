@@ -21,8 +21,18 @@ class TNW_Salesforce_Model_Observer
     /** @var null|Varien_Simplexml_Element */
     protected $_acl = NULL;
 
+    /**
+     * @var array
+     */
     protected $exportedOrders = array();
-    protected $exportedOpportunity = array();
+
+    /**
+     * @var array
+     */
+    protected $exportedOpportunity = array(
+        'opportunity' => array(),
+        'abandoned' => array(),
+    );
 
     /**
      * @return array
@@ -442,7 +452,7 @@ class TNW_Salesforce_Model_Observer
      */
     public function orderForWebsite($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()){
+        if (!Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()){
             return; //Disabled
         }
 
@@ -480,7 +490,7 @@ class TNW_Salesforce_Model_Observer
      */
     public function opportunityForWebsite($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()){
+        if (!Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()){
             return; //Disabled
         }
 
@@ -808,7 +818,7 @@ class TNW_Salesforce_Model_Observer
      */
     public function opportunityStatusForWebsite($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()){
+        if (!Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()){
             return; //Disabled
         }
 
@@ -827,7 +837,7 @@ class TNW_Salesforce_Model_Observer
      */
     public function orderStatusForWebsite($observer)
     {
-        if (!Mage::helper('tnw_salesforce')->integrationOrderAllowed()){
+        if (!Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()){
             return; //Disabled
         }
 
@@ -851,7 +861,7 @@ class TNW_Salesforce_Model_Observer
             ), 'base_fieldset');
 
             $_sfData = Mage::helper('tnw_salesforce/salesforce_data');
-            if (Mage::helper('tnw_salesforce')->integrationOrderAllowed()) {
+            if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
                 $sfFields = array(array(
                     'value' => '',
                     'label' => 'Choose Salesforce Status ...'
@@ -879,7 +889,7 @@ class TNW_Salesforce_Model_Observer
                 );
             }
 
-            if (Mage::helper('tnw_salesforce')->integrationOpportunityAllowed()) {
+            if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
                 $sfFields = array(array(
                     'value' => '',
                     'label' => 'Choose Salesforce Status ...'

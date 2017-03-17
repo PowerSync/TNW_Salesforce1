@@ -19,6 +19,24 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
     protected $_mappingEntityItemName = 'OpportunityInvoiceItem';
 
     /**
+     * @param Mage_Sales_Model_Order $order
+     * @return string
+     */
+    protected function orderSalesforceId($order)
+    {
+        return $order->getData('opportunity_id');
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order_Item $orderItem
+     * @return string
+     */
+    protected function orderItemSalesforceId($orderItem)
+    {
+        return $orderItem->getData('opportunity_id');
+    }
+
+    /**
      *
      */
     protected function _massAddAfterLookup()
@@ -49,7 +67,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
 
         // Link to Order
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity__c'}
-            = $_entity->getOrder()->getData('salesforce_id');
+            = $this->orderSalesforceId($_entity->getOrder());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'disableMagentoSync__c'}
             = true;
@@ -67,7 +85,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
             = $this->_getParentEntityId($_entityNumber);
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c'}
-            = $_entityItem->getOrderItem()->getData('salesforce_id');
+            = $this->orderItemSalesforceId($_entityItem->getOrderItem());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'disableMagentoSync__c'}
             = true;
@@ -92,14 +110,11 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
      */
     protected function _doesCartItemExist($_entity, $_entityItem)
     {
-        $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
+        $_sOrderItemId = $this->orderItemSalesforceId($_entityItem->getOrderItem());
         $_entityNumber = $this->_getEntityNumber($_entity);
         $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
 
-        if (! ($this->_cache[$lookupKey]
-            && array_key_exists($_entityNumber, $this->_cache[$lookupKey])
-            && $this->_cache[$lookupKey][$_entityNumber]->Items)
-        ){
+        if (empty($this->_cache[$lookupKey][$_entityNumber]->Items->records)){
             return false;
         }
 

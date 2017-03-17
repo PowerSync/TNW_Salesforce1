@@ -63,6 +63,22 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected $_salesforceParentOpportunityField = 'OpportunityId';
 
     /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return bool
+     */
+    protected function _checkMassAddEntity($_entity)
+    {
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed() && $_entity->getBaseTotalDue() > 0) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice("SKIPPED: Sync for order #{$this->_getEntityNumber($_entity)} as Order, not paid");
+
+            return false;
+        }
+
+        return parent::_checkMassAddEntity($_entity);
+    }
+
+    /**
      * @param $_entity Mage_Sales_Model_Order
      * @param $key
      */
