@@ -505,6 +505,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
             'shipping_address'  => null,
         ), $customerData);
 
+        /** @var Mage_Customer_Model_Customer $_customer */
         $_customer = Mage::getModel("customer/customer");
 
         if ($customerData['customer_id']) {

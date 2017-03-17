@@ -30,7 +30,8 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
     {
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('Manual Sync'))->_title($this->__('Customer'));
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_customersync'));
+            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_synchronize_customer'));
+
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
         $this->renderLayout();
     }

@@ -662,9 +662,11 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function describeTable($alias)
     {
         switch ($alias) {
+            case 'WishlistOpportunity':
             case 'Abandoned':
                 $table = 'Opportunity';
                 break;
+            case 'WishlistOpportunityLine':
             case 'Abandoneditem':
             case 'AbandonedItem':
                 $table = 'OpportunityLineItem';
@@ -991,40 +993,20 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return false;
         }
 
-        try {
-            if (!is_object($this->getClient())) {
-                return false;
-            }
-
-            $_results = array();
-            foreach (array_chunk($oid, self::UPDATE_LIMIT) as $_oid) {
-                $result = $this->_queryOpportunityItems($_oid);
-                if (empty($result) || $result->size < 1) {
-                    continue;
-                }
-
-                $_results[] = $result;
-            }
-
-            if (empty($_results)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Items lookup returned: no results...");
-                return false;
-            }
-
-            $items = array();
-            foreach ($_results as $result) {
-                foreach ($result->records as $_cartItem) {
-                    $items[] = $_cartItem;
-                }
-            }
-
-            return $items;
+        $_results = array();
+        foreach (array_chunk($oid, self::UPDATE_LIMIT) as $_oid) {
+            $_results[] = $this->_queryOpportunityItems($_oid);
         }
-        catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not lookup Opportunity Line Items for Opportunity #" . $oid);
-            return $e->getMessage();
+
+        $records = $this->mergeRecords($_results);
+        if (empty($records)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Opportunity Items lookup returned: no results...');
+
+            return false;
         }
+
+        return $records;
     }
 
     /**
@@ -1035,7 +1017,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     {
         $query = "SELECT ID, PricebookEntryId, Quantity, ServiceDate, UnitPrice, Description FROM OpportunityLineItem WHERE OpportunityId IN ('".implode("', '", $oid)."')";
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Lookup Query: " . $query);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Lookup Query:\n{$query}");
         try {
             $result = $this->getClient()->query($query);
         } catch (Exception $e) {

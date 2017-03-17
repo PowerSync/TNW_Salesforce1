@@ -222,6 +222,9 @@ class TNW_Salesforce_Model_Cron
         // Sync CatalogRule
         //$this->syncCatalogRule();
 
+        // Sync WishList
+        $this->syncWishlist();
+
         // Sync custom objects
         $this->_syncCustomObjects();
 
@@ -298,6 +301,9 @@ class TNW_Salesforce_Model_Cron
                 break;
             case 'campaign_catalogrule':
                 $batchSize = $_configHelper->getCatalogRuleBatchSize();
+                break;
+            case 'wishlist':
+                $batchSize = $_configHelper->getWishlistBatchSize();
                 break;
             default:
                 $transport = new Varien_Object(array('batch_size' => null));
@@ -672,6 +678,23 @@ class TNW_Salesforce_Model_Cron
             $this->syncEntity('campaign_catalogrule');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: CatalogRule not synced: %s", $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch Wishlist ids from local storage and sync with sf
+     *
+     * @return bool
+     */
+    public function syncWishlist()
+    {
+        try {
+            $this->syncEntity('wishlist');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf('ERROR: Wishlist not synced: %s', $e->getMessage()));
             return false;
         }
 

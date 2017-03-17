@@ -86,7 +86,7 @@
 
     <adminhtml_salesforcesync_customersync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_customersync_grid" name="customersync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_customer_grid" name="customersync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_customersync_grid>
 
     <adminhtml_salesforcesync_queue_from_grid>
@@ -113,6 +113,11 @@
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_campaign_salesrulesync_grid" name="salesrulesync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_campaign_salesrulesync_grid>
+
+    <adminhtml_salesforcesync_wishlistsync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_synchronize_wishlist_grid" name="wishlistsync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_wishlistsync_grid>
 
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
@@ -261,6 +266,14 @@
     <adminhtml_salesforce_campaign_member_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_campaign_member_edit>
+
+    <adminhtml_salesforce_wishlist_opportunity_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_wishlist_opportunity_edit>
+
+    <adminhtml_salesforce_wishlist_opportunityline_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_wishlist_opportunityline_edit>
 
     <adminhtml_tool_log_file_view>
         <reference name="head">
