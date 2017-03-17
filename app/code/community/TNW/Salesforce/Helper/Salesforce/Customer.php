@@ -513,12 +513,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 foreach ($websiteLeads as $_email => $_info) {
                     $this->_isPerson = NULL;
                     // Just in case Salesforce did not save Magento ID for some reason
-                    if (
-                        !$_info->MagentoId &&
-                        is_array($this->_cache['toSaveInMagento']) &&
-                        array_key_exists($_websiteId, $this->_cache['toSaveInMagento']) &&
-                        array_key_exists($_email, $this->_cache['toSaveInMagento'][$_websiteId])
-                    ) {
+                    if (!empty($this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId)) {
                         $_info->MagentoId = $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId;
                     }
 
