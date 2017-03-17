@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.57.10.0001</version>
+            <version>0.01.58.01.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -591,6 +591,14 @@
                 </observers>
             </eav_entity_attribute_set_save_commit_after>
 
+            <wishlist_product_add_after>
+                <observers>
+                    <tnw_salesforce>
+                        <class>tnw_salesforce/wishlist_observer</class>
+                        <method>productAddAfter</method>
+                    </tnw_salesforce>
+                </observers>
+            </wishlist_product_add_after>
         </events>
     </global>
     <adminhtml>
@@ -774,6 +782,7 @@
                 <invoice_batch_size>500</invoice_batch_size>
                 <shipment_batch_size>500</shipment_batch_size>
                 <creditmemo_batch_size>500</creditmemo_batch_size>
+                <wishlist_batch_size>500</wishlist_batch_size>
                 <page_size_from_salesforce>100</page_size_from_salesforce>
 
                 <db_log_limit>10000</db_log_limit>
@@ -805,6 +814,11 @@
             <newsletter_config>
                 <customer_newsletter_enable_sync>0</customer_newsletter_enable_sync>
             </newsletter_config>
+            <wishlist>
+                <sync_enable>0</sync_enable>
+                <close_date>2</close_date>
+                <enable_contact_role>0</enable_contact_role>
+            </wishlist>
         </salesforce_customer>
         <salesforce_product>
             <general>
