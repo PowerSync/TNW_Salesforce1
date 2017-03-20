@@ -158,9 +158,9 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _checkMassAddEntity($_entity)
     {
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed() && $_entity->getBaseTotalDue() === 0) {
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed() && $_entity->getBaseTotalDue() == 0) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPED: Sync for order #{$this->_getEntityNumber($_entity)} as Opportunity, paid");
+                ->saveTrace("Order #{$_entity->getIncrementId()}, paid. Skipped sync Salesforce Opportunity");
 
             return false;
         }
@@ -514,6 +514,15 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
 
         parent::_prepareEntityItemObjCustom($_entityItem);
+    }
+
+    /**
+     * @param $notes Mage_Sales_Model_Order_Status_History
+     * @return mixed
+     */
+    protected function _getNotesParentSalesforceId($notes)
+    {
+        return $notes->getOrder()->getData('opportunity_id');
     }
 
     public function reset()

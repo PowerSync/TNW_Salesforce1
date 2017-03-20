@@ -86,17 +86,10 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
                 return;
             }
 
-            if ($entity->getSalesforceId()) {
-                Mage::dispatchEvent(sprintf('tnw_salesforce_sync_%s_comment_for_website', $entityType), array(
-                    'note' => $note,
-                    'entity' => $entity
-                ));
-            } else {
-                Mage::dispatchEvent(sprintf('tnw_salesforce_sync_%s_for_website', $entityType), array(
-                    'entityIds' => array($entity->getId()),
-                    'syncType' => 'realtime'
-                ));
-            }
+            Mage::dispatchEvent(sprintf('tnw_salesforce_sync_%s_comment_for_website', $entityType), array(
+                'entityIds' => array($entity->getId()),
+                'syncType' => 'realtime',
+            ));
         });
     }
 
@@ -204,14 +197,9 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
      */
     public function entityCommentForWebsite($observer)
     {
-        $note = $observer->getData('note');
-        if (!is_object($note)) {
-            throw new InvalidArgumentException('note argument not object');
-        }
-
-        $entity = $observer->getData('entity');
-        if (!is_object($entity)) {
-            throw new InvalidArgumentException('entity argument not object');
+        $entityIds = $observer->getData('entityIds');
+        if (!is_array($entityIds)) {
+            throw new InvalidArgumentException('entityIds argument not array');
         }
 
         $entityPathPostfix = $observer->getData('entityPathPostfix');
@@ -219,13 +207,33 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
             throw new InvalidArgumentException('entityPathPostfix argument not string');
         }
 
-        // Process Notes
-        /** @var TNW_Salesforce_Helper_Salesforce_Order_Invoice $syncHelper */
-        $syncHelper = Mage::helper(sprintf('tnw_salesforce/salesforce_%s', $entityPathPostfix));
-        if ($syncHelper->reset()) {
-            $syncHelper->createObjNones(array($note));
-            $syncHelper->_cache['upserted' . $syncHelper->getManyParentEntityType()][$entity->getIncrementId()] = $entity->getSalesforceId();
-            $syncHelper->pushDataNotes();
+        switch ($observer->getData('syncType')) {
+            case 'realtime':
+                $syncType = 'salesforce';
+                break;
+
+            case 'bulk':
+            default:
+                $syncType = 'bulk';
+                break;
+        }
+
+        /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Sales $manualSync */
+        $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_%s', $syncType, $entityPathPostfix));
+
+        $isCron = (bool)$observer->getData('isCron');
+        $manualSync->setIsCron($isCron);
+
+        // Add stack
+        $syncObjectStack = $observer->getData('syncObjectStack');
+        if ($syncObjectStack instanceof SplStack) {
+            $syncObjectStack->push($manualSync);
+        }
+
+        if ($manualSync->reset() && $manualSync->massAdd($entityIds, $isCron)) {
+            //TODO: Replace $manualSync->process('notes')
+            $manualSync->prepareNotes();
+            $manualSync->pushDataNotes();
         }
     }
 }

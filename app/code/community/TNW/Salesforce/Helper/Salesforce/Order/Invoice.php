@@ -61,10 +61,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
     {
         // Parent in Salesforce
         $_order = $_entity->getOrder();
-        if (!$this->orderSalesforceId($_order) || !$_order->getData('sf_insync')) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice('SKIPPING: Sync for invoice #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
-
+        if (!$this->checkOrderMassAddEntity($_entity)) {
             return false;
         }
 
@@ -116,6 +113,25 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
 
         $this->_emails[$_customerId]   = $email;
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
+
+        return true;
+    }
+
+    /**
+     * @param $entity Mage_Sales_Model_Order_Invoice
+     * @return bool
+     */
+    protected function checkOrderMassAddEntity($entity)
+    {
+        $order = $entity->getOrder();
+        if (!$this->orderSalesforceId($order) || !$order->getData('sf_insync')) {
+            if (!Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice("SKIPPING: Sync for invoice #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
+            }
+
+            return false;
+        }
 
         return true;
     }
@@ -400,20 +416,30 @@ class TNW_Salesforce_Helper_Salesforce_Order_Invoice extends TNW_Salesforce_Help
      */
     protected function _doesCartItemExist($_entity, $_entityItem)
     {
-        $_sOrderItemId = $this->orderItemSalesforceId($_entityItem->getOrderItem());
+        $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
+        $_sOpportunityItemId = $_entityItem->getOrderItem()->getData('opportunity_id');
         $_entityNumber = $this->_getEntityNumber($_entity);
-        $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
+        $lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $orderField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c';
+        $opportunityField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c';
+        $sMagentoIdField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c';
 
         if (empty($this->_cache[$lookupKey][$_entityNumber]->Items->records)){
             return false;
         }
 
         foreach ($this->_cache[$lookupKey][$_entityNumber]->Items->records as $_cartItem) {
-            if ($_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c'} != $_sOrderItemId) {
-                continue;
+            if (!empty($_cartItem->{$sMagentoIdField}) && $_cartItem->{$sMagentoIdField} == $_entityItem->getId()) {
+                return $_cartItem->Id;
             }
 
-            return $_cartItem->Id;
+            if (!empty($_cartItem->{$opportunityField}) && $_cartItem->{$opportunityField} == $_sOpportunityItemId) {
+                return $_cartItem->Id;
+            }
+
+            if (!empty($_cartItem->{$orderField}) && $_cartItem->{$orderField} == $_sOrderItemId) {
+                return $_cartItem->Id;
+            }
         }
 
         return false;

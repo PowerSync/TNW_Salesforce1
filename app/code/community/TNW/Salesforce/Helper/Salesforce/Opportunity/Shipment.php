@@ -19,6 +19,25 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
     protected $_mappingEntityItemName = 'OpportunityShipmentItem';
 
     /**
+     * @param $entity Mage_Sales_Model_Order_Shipment
+     * @return bool
+     */
+    protected function checkOrderMassAddEntity($entity)
+    {
+        $order = $entity->getOrder();
+        if (!$this->orderSalesforceId($order) || !$order->getData('sf_insync')) {
+            if (!Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice("SKIPPING: Sync for shipment #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @param Mage_Sales_Model_Order $order
      * @return string
      */
@@ -68,31 +87,5 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
             = true;
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $_entityItem->getId()] = $this->_obj;
-    }
-
-    /**
-     * @param $_entity Mage_Sales_Model_Order_Shipment
-     * @param $_entityItem Mage_Sales_Model_Order_Shipment_Item
-     * @return bool
-     */
-    protected function _doesCartItemExist($_entity, $_entityItem)
-    {
-        $_sOrderItemId = $this->orderItemSalesforceId($_entityItem->getOrderItem());
-        $_entityNumber = $this->_getEntityNumber($_entity);
-        $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
-
-        if (empty($this->_cache[$lookupKey][$_entityNumber]->Items->records)){
-            return false;
-        }
-
-        foreach ($this->_cache[$lookupKey][$_entityNumber]->Items->records as $_cartItem) {
-            if ($_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c'} != $_sOrderItemId) {
-                continue;
-            }
-
-            return $_cartItem->Id;
-        }
-
-        return false;
     }
 }

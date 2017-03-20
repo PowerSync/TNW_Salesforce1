@@ -68,10 +68,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
     {
         // Parent in Salesforce
         $_order = $_entity->getOrder();
-        if (!$this->orderSalesforceId($_order) || !$_order->getData('sf_insync')) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice('SKIPPING: Sync for creditmemo #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
-
+        if (!$this->checkOrderMassAddEntity($_entity)) {
             return false;
         }
 
@@ -125,6 +122,30 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
 
         $this->_emails[$_customerId]   = strtolower($customer->getEmail());
         $this->_websites[$_customerId] = $this->_websiteSfIds[$_websiteId];
+
+        return true;
+    }
+
+    /**
+     * @param $entity Mage_Sales_Model_Order_Creditmemo
+     * @return bool
+     */
+    protected function checkOrderMassAddEntity($entity)
+    {
+        $order = $entity->getOrder();
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed() && $order->getBaseTotalDue() > 0) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("Order #{$order->getIncrementId()}, not paid. Skipped sync Salesforce Order CreditMemo");
+
+            return false;
+        }
+
+        if (!$this->orderSalesforceId($order) || !$order->getData('sf_insync')) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveNotice("SKIPPING: Sync for creditmemo #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
+
+            return false;
+        }
 
         return true;
     }

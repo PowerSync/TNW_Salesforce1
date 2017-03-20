@@ -70,7 +70,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     {
         if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed() && $_entity->getBaseTotalDue() > 0) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPED: Sync for order #{$this->_getEntityNumber($_entity)} as Order, not paid");
+                ->saveTrace("Order #{$_entity->getIncrementId()}, not paid. Skipped sync Salesforce Order");
 
             return false;
         }

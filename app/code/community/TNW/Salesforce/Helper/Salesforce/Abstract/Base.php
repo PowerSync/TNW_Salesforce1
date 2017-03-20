@@ -489,8 +489,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
         parent::reset();
 
         // Clean order cache
-        foreach ((array)$this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_orderNumber) {
-            $this->unsetEntityCache($_orderNumber);
+        if (!empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
+            foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_orderNumber) {
+                $this->unsetEntityCache($_orderNumber);
+            }
         }
 
         $this->_cache = array(
@@ -619,6 +621,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
+     * @deprecated
+     */
+    public function prepareNotes()
+    {
+        $this->_prepareNotes();
+    }
+
+    /**
      * @param $_entity
      * @throws Exception
      * @return array
@@ -631,6 +641,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     /**
      * @param Mage_Sales_Model_Order_Status_History[] $notes
      * @return $this
+     * @deprecated
      */
     public function createObjNones($notes)
     {
@@ -643,10 +654,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 continue;
             }
 
+            $parentId = $this->_getNotesParentSalesforceId($_note);
+            if (empty($parentId)) {
+                continue;
+            }
+
             $comment      = utf8_encode($_note->getData('comment'));
 
             $_obj = new stdClass();
-            $_obj->ParentId   = $this->_getNotesParentSalesforceId($_note);
+            $_obj->ParentId   = $parentId;
             $_obj->IsPrivate  = 0;
             $_obj->Body       = $comment;
             $_obj->Title      = (strlen($comment) > 75)
