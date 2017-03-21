@@ -134,4 +134,29 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
         return $this->integrationOnlyOrderAllowed()
             || $this->integrationOnlyOrderAndOpportunityAllowed();
     }
+
+    /**
+     * @return bool
+     */
+    public function showOrderId()
+    {
+        return $this->integrationOrderAllowed();
+    }
+
+    /**
+     * @return bool
+     */
+    public function showOpportunityId()
+    {
+        return $this->integrationOpportunityAllowed();
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @return bool
+     */
+    public function orderSyncAllowed($order)
+    {
+        return $order->getBaseTotalDue() == 0;
+    }
 }

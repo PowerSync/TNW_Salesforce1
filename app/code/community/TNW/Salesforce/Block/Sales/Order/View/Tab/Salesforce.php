@@ -36,7 +36,7 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
         $fieldset->addType('salesforceId', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_salesforceId'));
         $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+        if (Mage::helper('tnw_salesforce/config_sales')->showOrderId()) {
             $fieldset->addField('salesforce_id', 'salesforceId', array(
                 'label' => Mage::helper('tnw_salesforce')->__('Order'),
                 'name' => 'salesforce_id',
@@ -44,14 +44,12 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
             ));
         }
 
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
-            $type = Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOpportunityAllowed()
-                ? 'text' : 'salesforceId';
-            $fieldset->addField('opportunity_id', $type, array(
-                'label' => $this->__('Opportunity'),
-                'name' => 'opportunity_id',
-            ));
-        }
+        $fieldType = Mage::helper('tnw_salesforce/config_sales')->showOpportunityId()
+            ? 'salesforceId' : 'text';
+        $fieldset->addField('opportunity_id', $fieldType, array(
+            'label' => $this->__('Opportunity'),
+            'name' => 'opportunity_id',
+        ));
 
         $fieldset->addField('contact_salesforce_id', 'salesforceId', array(
             'label' => Mage::helper('tnw_salesforce')->__('Contact'),

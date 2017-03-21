@@ -133,16 +133,11 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
     protected function checkOrderMassAddEntity($entity)
     {
         $order = $entity->getOrder();
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed() && $order->getBaseTotalDue() > 0) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace("Order #{$order->getIncrementId()}, not paid. Skipped sync Salesforce Order CreditMemo");
-
-            return false;
-        }
-
         if (!$this->orderSalesforceId($order) || !$order->getData('sf_insync')) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPING: Sync for creditmemo #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
+            if (Mage::helper('tnw_salesforce/config_sales')->orderSyncAllowed($order)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice("SKIPPING: Sync for creditmemo #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
+            }
 
             return false;
         }

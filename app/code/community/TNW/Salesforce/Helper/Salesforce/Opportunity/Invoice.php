@@ -140,7 +140,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
                 continue;
             }
 
-            $_orderItem->setData('salesforce_id', $record->Id);
+            $_orderItem->setData('opportunity_id', $record->Id);
             break;
         }
 

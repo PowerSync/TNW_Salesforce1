@@ -107,8 +107,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     {
         $order = $entity->getOrder();
         if (!$this->orderSalesforceId($order) || !$order->getData('sf_insync')) {
-            //Skip notice
-            if (!Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
+            if (Mage::helper('tnw_salesforce/config_sales')->orderSyncAllowed($order)) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveNotice("SKIPPING: Sync for shipment #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
             }

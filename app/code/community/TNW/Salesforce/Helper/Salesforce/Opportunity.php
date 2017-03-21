@@ -107,6 +107,30 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $this->_magentoEntityName, $this->_magentoEntityName, join(',', $ids)));
     }
 
+    /**
+     * @param array $opportunity
+     */
+    public function deleteOpportunityItems(array $opportunity)
+    {
+        if (empty($opportunity)) {
+            return;
+        }
+
+        $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunity);
+        if (empty($oppItemSet)) {
+            return;
+        }
+
+        $oppItemSetId = array();
+        foreach ($oppItemSet as $item) {
+            $oppItemSetId[] = $item->Id;
+        }
+
+        foreach (array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $oppItemSetId) {
+            $this->getClient()->delete($oppItemSetId);
+        }
+    }
+
     protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default', $item = null)
     {
         /**
@@ -158,7 +182,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _checkMassAddEntity($_entity)
     {
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed() && $_entity->getBaseTotalDue() == 0) {
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed() && !Mage::helper('tnw_salesforce/config_sales')->orderSyncAllowed($_entity)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("Order #{$_entity->getIncrementId()}, paid. Skipped sync Salesforce Opportunity");
 
@@ -478,28 +502,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     {
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
-        }
-
-        // Use existing Opportunity if creating from Quote
-        $modules = Mage::getConfig()->getNode('modules')->children();
-        if (
-            property_exists($modules, 'Ophirah_Qquoteadv')
-            && (string)$modules->Ophirah_Qquoteadv->active == "true"
-            && $_entity->getData('c2q_internal_quote_id')
-        ) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Quote Id: " . $_entity->getData('c2q_internal_quote_id'));
-            $_quote = Mage::getModel('qquoteadv/qqadvcustomer')->load($_entity->getData('c2q_internal_quote_id'));
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Id: " . $_quote->getData('opportunity_id'));
-            if ($_quote && $_quote->getData('opportunity_id')) {
-                $this->_obj->Id = $_quote->getData('opportunity_id');
-                // Delete Products
-                $oppItemSetId = array();
-                $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($this->_obj->Id);
-                foreach ($oppItemSet as $item) {
-                    $oppItemSetId[] = $item->Id;
-                }
-                $this->getClient()->delete($oppItemSetId);
-            }
         }
     }
 

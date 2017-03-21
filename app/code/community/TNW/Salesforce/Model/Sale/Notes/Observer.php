@@ -9,7 +9,9 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
     /**
      * @param Varien_Event_Observer $observer
      * @throws Exception
+     * @deprecated
      */
+    //TODO: Комментарий сохраняеются и синхронизируются при сохранении родителя. Избыточная функциональность!
     public function baseNotesPush(Varien_Event_Observer $observer)
     {
         $event = $observer->getEvent();
@@ -232,6 +234,11 @@ class TNW_Salesforce_Model_Sale_Notes_Observer
 
         if ($manualSync->reset() && $manualSync->massAdd($entityIds, $isCron)) {
             //TODO: Replace $manualSync->process('notes')
+            foreach ($manualSync->_cache[$manualSync::CACHE_KEY_ENTITIES_UPDATING] as $entityNumber) {
+                $entity = $manualSync->getEntityCache($entityNumber);
+                $entity->getResource()->save($entity);
+            }
+
             $manualSync->prepareNotes();
             $manualSync->pushDataNotes();
         }

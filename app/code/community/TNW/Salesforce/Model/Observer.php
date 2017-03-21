@@ -242,6 +242,7 @@ class TNW_Salesforce_Model_Observer
      * @param Varien_Event_Observer $observer
      * @deprecated
      */
+    //TODO: delete this method
     public function pushOrder(Varien_Event_Observer $observer)
     {
         $orderIds = $observer->getEvent()->getData('orderIds');
@@ -275,6 +276,7 @@ class TNW_Salesforce_Model_Observer
      * @param Varien_Event_Observer $observer
      * @deprecated
      */
+    //TODO: delete this method
     public function pushOpportunity(Varien_Event_Observer $observer)
     {
         $_objectType = strtolower($observer->getEvent()->getData('object_type'));
@@ -320,8 +322,11 @@ class TNW_Salesforce_Model_Observer
      * @param Varien_Event_Observer $observer
      * @deprecated
      */
+    //TODO: delete this method
     public function pushInvoice(Varien_Event_Observer $observer)
     {
+        $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
+
         $_invoiceIds = $observer->getEvent()->getData('invoiceIds');
         $_message    = $observer->getEvent()->getMessage();
         $_type       = $observer->getEvent()->getType();
@@ -344,6 +349,7 @@ class TNW_Salesforce_Model_Observer
      * @param Varien_Event_Observer $observer
      * @deprecated
      */
+    //TODO: delete this method
     public function pushCreditMemo(Varien_Event_Observer $observer)
     {
         if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemoForOrder()) {
@@ -363,15 +369,18 @@ class TNW_Salesforce_Model_Observer
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Pushing Credit Memo ... ');
-        $this->_processOrderPush($_creditmemoIds, $_message, 'tnw_salesforce/' . $_type . '_creditmemo', $_queueIds);
+        $this->_processOrderPush($_creditmemoIds, $_message, 'tnw_salesforce/' . $_type . '_order_creditmemo', $_queueIds);
     }
 
     /**
      * @param Varien_Event_Observer $observer
      * @deprecated
      */
+    //TODO: delete this method
     public function pushShipment(Varien_Event_Observer $observer)
     {
+        $orderObject = Mage::helper('tnw_salesforce')->getOrderObject();
+
         $_shipmentIds = $observer->getEvent()->getData('shipmentIds');
         $_message     = $observer->getEvent()->getMessage();
         $_type        = $observer->getEvent()->getType();
@@ -397,6 +406,7 @@ class TNW_Salesforce_Model_Observer
      * @param $_queueIds
      * @deprecated
      */
+    //TODO: delete this method
     protected function _processOrderPush($_orderIds, $_message, $_model, $_queueIds)
     {
         /**
@@ -479,7 +489,7 @@ class TNW_Salesforce_Model_Observer
 
         $observer->setData('entityIds', $entityIds);
         $observer->setData('entityPathPostfix', 'order');
-        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized as Order', count($observer->getData('entityIds'))));
 
         $this->entityForWebsite($observer);
     }
@@ -517,7 +527,7 @@ class TNW_Salesforce_Model_Observer
 
         $observer->setData('entityIds', $entityIds);
         $observer->setData('entityPathPostfix', 'opportunity');
-        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized as Opportunity', count($observer->getData('entityIds'))));
 
         $this->entityForWebsite($observer);
     }

@@ -10,6 +10,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
 
     /**
      * @param $_observer Varien_Event_Observer
+     * @throws Exception
      */
     public function saveAfter($_observer)
     {
@@ -18,7 +19,33 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Invoice #{$_invoice->getIncrementId()} Sync");
 
-        $this->syncInvoice(array($_invoice->getId()));
+        $order = $_invoice->getOrder();
+        $salesHelper = Mage::helper('tnw_salesforce/config_sales');
+        // Sync Full Order
+        if ($salesHelper->showOrderId() && !$order->getData('salesforce_id') && $salesHelper->orderSyncAllowed($order)) {
+            Mage::getSingleton('tnw_salesforce/sale_observer')
+                ->syncOrder(array($order->getId()));
+
+            $invoiceIds = $order->getInvoiceCollection()->walk('getId');
+            if (!empty($invoiceIds)) {
+                Mage::getSingleton('tnw_salesforce/order_invoice_observer')
+                    ->syncInvoice($invoiceIds);
+            }
+
+            $shipmentIds = $order->getShipmentsCollection()->walk('getId');
+            if (!empty($shipmentIds)) {
+                Mage::getSingleton('tnw_salesforce/order_shipment_observer')
+                    ->syncShipment($shipmentIds);
+            }
+
+            $creditMemoIds = $order->getCreditmemosCollection()->walk('getId');
+            if (!empty($creditMemoIds)) {
+                Mage::getSingleton('tnw_salesforce/order_creditmemo_observer')
+                    ->syncCreditMemo($creditMemoIds);
+            }
+        } else {
+            $this->syncInvoice(array($_invoice->getId()));
+        }
     }
 
     /**

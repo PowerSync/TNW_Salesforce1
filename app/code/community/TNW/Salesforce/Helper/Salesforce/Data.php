@@ -616,13 +616,14 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     /**
      * @param $obj
      * @param $field
+     * @param null $default
      * @return null
      */
-    protected function getProperty($obj, $field)
+    protected function getProperty($obj, $field, $default = null)
     {
         foreach (explode('/', $field) as $_field) {
             if (!property_exists($obj, $_field)) {
-                return null;
+                return $default;
             }
 
             $obj = $obj->$_field;

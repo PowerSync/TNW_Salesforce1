@@ -90,7 +90,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
             }
 
             $records = $item['records'];
-            unset($records[reset(array_keys($records, $item['record'], true))]);
+            $searchRecordIds = array_keys($records, $item['record'], true);
+            unset($records[reset($searchRecordIds)]);
             foreach ($records as $record) {
                 if (!empty($record->$_magentoId) && $record->$_magentoId == $item['entity']->getId()) {
                     $upsert = new stdClass();

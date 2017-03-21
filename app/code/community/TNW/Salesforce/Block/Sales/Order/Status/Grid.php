@@ -49,7 +49,7 @@ class TNW_Salesforce_Block_Sales_Order_Status_Grid extends Mage_Adminhtml_Block_
      */
     protected function _prepareColumns()
     {
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+        if (Mage::helper('tnw_salesforce/config_sales')->showOrderId()) {
             $this->addColumnAfter('sf_order_status', array(
                 'header' => $this->__('Order Status'),
                 'type' => 'text',
@@ -60,7 +60,7 @@ class TNW_Salesforce_Block_Sales_Order_Status_Grid extends Mage_Adminhtml_Block_
             ), 'status');
         }
 
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
+        if (Mage::helper('tnw_salesforce/config_sales')->showOpportunityId()) {
             $this->addColumnAfter('sf_opportunity_status_code', array(
                 'header' => $this->__('Opportunity StageName'),
                 'type' => 'text',

@@ -123,7 +123,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
             'filter_index' => 'main_table.created_at',
         ));
 
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+        if (Mage::helper('tnw_salesforce/config_sales')->showOrderId()) {
             $this->addColumn('salesforce_id', array(
                 'header' => Mage::helper('sales')->__('Order ID'),
                 'index' => 'salesforce_id',
@@ -133,7 +133,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
             ));
         }
 
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed()) {
+        if (Mage::helper('tnw_salesforce/config_sales')->showOpportunityId()) {
             $this->addColumn('opportunity_id', array(
                 'header' => Mage::helper('sales')->__('Opportunity ID'),
                 'index' => 'opportunity_id',
