@@ -140,15 +140,19 @@ class TNW_Salesforce_Model_Mapping_Type_Customer extends TNW_Salesforce_Model_Ma
      */
     public function convertSfRecordType($_entity)
     {
+        $customerConfig = Mage::helper('tnw_salesforce');
         $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_customer');
         if (
             $currentHelper instanceof TNW_Salesforce_Helper_Salesforce_Customer
             && isset($currentHelper->_cache['contactsLookup'][$this->convertWebsite($_entity)][$currentHelper->getEntityNumber($_entity)])
         ) {
-            return Mage::helper('tnw_salesforce')->getBusinessAccountRecordType();
+            if (empty($currentHelper->_cache['contactsLookup'][$this->convertWebsite($_entity)][$currentHelper->getEntityNumber($_entity)]->IsPersonAccount)) {
+                return $customerConfig->getBusinessAccountRecordType();
+            } else {
+                return $customerConfig->getPersonAccountRecordType();
+            }
         }
 
-        $customerConfig = Mage::helper('tnw_salesforce');
         switch ($customerConfig->customerTypeRecordType()) {
             case TNW_Salesforce_Model_Config_Account_Recordtypes::B2B_ACCOUNT:
                 return $customerConfig->getBusinessAccountRecordType();

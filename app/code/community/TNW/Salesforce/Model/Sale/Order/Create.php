@@ -11,4 +11,21 @@ class TNW_Salesforce_Model_Sale_Order_Create extends Mage_Adminhtml_Model_Sales_
     {
         $this->_session = Mage::getModel('tnw_salesforce/sale_order_create_session_quote');
     }
+
+    /**
+     * @return $this
+     */
+    protected function _validate()
+    {
+        $customerId = $this->getSession()->getCustomerId();
+        if (null === $customerId && $this->getQuote()->getCustomerIsGuest()) {
+            // Disable Error "Please select a customer."
+            $this->getSession()->setCustomerId(0);
+        }
+
+        parent::_validate();
+
+        $this->getSession()->setCustomerId($customerId);
+        return $this;
+    }
 }
