@@ -78,6 +78,15 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
+     * Try to find order in SF and save in local cache
+     */
+    protected function _prepareOrderLookup()
+    {
+        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')
+            ->opportunityLookup($this->_cache['entitiesUpdating']);
+    }
+
+    /**
      * Remaining Data
      */
     protected function _prepareRemaining()

@@ -516,6 +516,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         if ($type == 'full') {
             $this->_prepareRemaining();
+
             $this->_pushRemainingEntityData();
 
             $this->clearMemory();
@@ -799,11 +800,45 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param array $chunk
-     * @throws Exception
+     * @deprecated
      */
     protected function _pushEntityItems($chunk = array())
     {
-        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
+        throw new Exception(sprintf('Method "_pushItems" must be overridden before use'));
+    }
+
+    /**
+     * @return $this
+     */
+    protected function _pushItems()
+    {
+        $itemKey = sprintf('%sToUpsert', lcfirst($this->getItemsField()));
+        if (empty($this->_cache[$itemKey])) {
+            return $this;
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Items: Start----------');
+
+        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_before', $this->_magentoEntityName), array('data' => $this->_cache[$itemKey]));
+        foreach (array_chunk($this->_cache[$itemKey], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true) as $_itemsToPush) {
+            $this->_pushItemsChunk($_itemsToPush);
+        }
+
+        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_after', $this->_magentoEntityName), array(
+            'data' => $this->_cache[$itemKey],
+            'result' => $this->_cache['responses'][lcfirst($this->getItemsField())]
+        ));
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Items: End----------');
+        return $this;
+    }
+
+    /**
+     * @param array $chunk
+     */
+    protected function _pushItemsChunk(array $chunk)
+    {
+        $this->_pushEntityItems($chunk);
     }
 
     /**
@@ -961,26 +996,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _pushRemainingEntityData()
     {
-        $itemKey = sprintf('%sToUpsert', lcfirst($this->getItemsField()));
-
-        // Push Order Products
-        if (!empty($this->_cache[$itemKey])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
-
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_before', $this->_magentoEntityName), array("data" => $this->_cache[$itemKey]));
-
-            $orderItemsToUpsert = array_chunk($this->_cache[$itemKey], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-            foreach ($orderItemsToUpsert as $_itemsToPush) {
-                $this->_pushEntityItems($_itemsToPush);
-            }
-
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_after', $this->_magentoEntityName), array(
-                "data" => $this->_cache[$itemKey],
-                "result" => $this->_cache['responses'][lcfirst($this->getItemsField())]
-            ));
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');
-        }
+        // Push Items Data
+        $this->_pushItems();
 
         // Push Custom Data
         $this->_pushRemainingCustomEntityData();

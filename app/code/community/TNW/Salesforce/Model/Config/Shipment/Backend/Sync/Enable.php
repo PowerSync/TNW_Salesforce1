@@ -16,11 +16,7 @@ class TNW_Salesforce_Model_Config_Shipment_Backend_Sync_Enable extends Mage_Core
      */
     protected function _beforeSave()
     {
-        if (
-            $this->getValue()
-            && TNW_Salesforce_Model_System_Config_Source_Order_Integration_Type::ORDER == $this->getData('groups/customer_opportunity/fields/integration_type/value')
-            && !$this->_checkShipmentObject()
-        ) {
+        if ($this->getValue() && !$this->_checkShipmentObject()) {
             $this->setValue(0);
         }
 

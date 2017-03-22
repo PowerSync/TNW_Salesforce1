@@ -32,7 +32,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
                 continue;
             }
 
-            $returnArray = array_merge($returnArray, $return);
+            list($entityNumber, $record) = each($return);
+            $returnArray[$entityNumber] = $record;
         }
 
         return $returnArray;
@@ -84,25 +85,23 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
     {
         $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
 
-        $conditions = array();
+        $conditions = $orderIndex = array();
         foreach ($orders as $order) {
             $conditions['OR'][$_magentoId]['IN'][] = $order->getIncrementId();
+            $orderIndex[$order->getQuoteId()] = $order;
         }
 
-        foreach ($orders as $order) {
-            $quote = Mage::getModel('sales/quote')->load($order->getQuoteId());
-            $salesforceId = $quote->getData('salesforce_id');
-            if (!empty($salesforceId)) {
-                $conditions['OR']['Id']['IN'][] = $salesforceId;
-            }
-        }
+        /** @var Mage_Sales_Model_Resource_Quote_Collection $collection */
+        $collection = Mage::getResourceModel('sales/quote_collection');
+        $collection
+            ->addFieldToFilter($collection->getResource()->getIdFieldName(), array('in'=> array_keys($orderIndex)))
+            ->addFieldToFilter('salesforce_id', array('notnull'=>true))
+        ;
 
-        foreach ($orders as $order) {
-            $quote = Mage::getModel('qquoteadv/qqadvcustomer')->load($order->getData('c2q_internal_quote_id'));
-            $salesforceId = $quote->getData('salesforce_id');
-            if (!empty($salesforceId)) {
-                $conditions['OR']['Id']['IN'][] = $salesforceId;
-            }
+        /** @var Mage_Sales_Model_Quote $quote */
+        foreach ($collection as $quote) {
+            $orderIndex[$quote->getId()]->setData('_quote_salesforce_id', $quote->getData('salesforce_id'));
+            $conditions['OR']['Id']['IN'][] = $quote->getData('salesforce_id');
         }
 
         return $conditions;
@@ -123,6 +122,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
             if (!empty($record->$_magentoId)) {
                 $searchIndex['magentoId'][$key] = $record->$_magentoId;
             }
+
+            $searchIndex['salesforceId'][$key] = null;
+            if (!empty($record->Id)) {
+                $searchIndex['salesforceId'][$key] = $record->Id;
+            }
         }
 
         return $searchIndex;
@@ -140,6 +144,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
         // Priority 1
         $recordsIds[10] = array_keys($searchIndex['magentoId'], $entity->getIncrementId());
 
+        $recordsIds[20] = array_keys($searchIndex['salesforceId'], $entity->getData('_quote_salesforce_id'));
+
         return $recordsIds;
     }
 
@@ -150,7 +156,17 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
      */
     protected function filterLookupByPriority(array $recordsPriority, $entity)
     {
+        $findRecord = null;
+        foreach ($recordsPriority as $records) {
+            if (empty($records)) {
+                continue;
+            }
 
+            $findRecord = reset($records);
+            break;
+        }
+
+        return $findRecord;
     }
 
     /**
@@ -160,13 +176,11 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
      */
     public function prepareRecord($customer, $record)
     {
-        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
-
         $tmp = new stdClass();
         $tmp->Id = $record->Id;
         $tmp->AccountId = $this->getProperty($record, 'AccountId');
         $tmp->Pricebook2Id = $this->getProperty($record, 'Pricebook2Id');
-        $tmp->MagentoId = $this->getProperty($record, $_magentoId);
+        $tmp->MagentoId = $this->getProperty($record, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c');
         $tmp->OpportunityContactRoles = $this->getProperty($record, 'OpportunityContactRoles');
         $tmp->OpportunityLineItems = $this->getProperty($record, 'OpportunityLineItems');
         $tmp->Notes = $this->getProperty($record, 'Notes');

@@ -107,30 +107,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
                 $this->_magentoEntityName, $this->_magentoEntityName, join(',', $ids)));
     }
 
-    /**
-     * @param array $opportunity
-     */
-    public function deleteOpportunityItems(array $opportunity)
-    {
-        if (empty($opportunity)) {
-            return;
-        }
-
-        $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunity);
-        if (empty($oppItemSet)) {
-            return;
-        }
-
-        $oppItemSetId = array();
-        foreach ($oppItemSet as $item) {
-            $oppItemSetId[] = $item->Id;
-        }
-
-        foreach (array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $oppItemSetId) {
-            $this->getClient()->delete($oppItemSetId);
-        }
-    }
-
     protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default', $item = null)
     {
         /**
@@ -194,10 +170,54 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     protected function _prepareRemaining()
     {
+        $_lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $opportunityIds = array();
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $entityNumber) {
+            if (empty($this->_cache[$_lookupKey][$entityNumber])) {
+                continue;
+            }
+
+            if (empty($this->_cache[$_lookupKey][$entityNumber]->MagentoId)) {
+                continue;
+            }
+
+            if ($this->_cache[$_lookupKey][$entityNumber]->MagentoId == $entityNumber) {
+                continue;
+            }
+
+            $opportunityIds[] = $this->_cache[$_lookupKey][$entityNumber]->Id;
+        }
+
+        $this->deleteOpportunityItems($opportunityIds);
+
         parent::_prepareRemaining();
 
         if (Mage::helper('tnw_salesforce')->isEnabledCustomerRole()) {
             $this->_prepareContactRoles();
+        }
+    }
+
+    /**
+     * @param array $opportunity
+     */
+    public function deleteOpportunityItems(array $opportunity)
+    {
+        if (empty($opportunity)) {
+            return;
+        }
+
+        $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunity);
+        if (empty($oppItemSet)) {
+            return;
+        }
+
+        $oppItemSetId = array();
+        foreach ($oppItemSet as $item) {
+            $oppItemSetId[] = $item->Id;
+        }
+
+        foreach (array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $oppItemSetId) {
+            $this->getClient()->delete($oppItemSetId);
         }
     }
 
@@ -490,8 +510,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _prepareOrderLookup()
     {
+        $orders = array();
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $entityNumber) {
+            $orders[] = $this->getEntityCache($entityNumber);
+        }
+
         // Salesforce lookup, find all orders by Magento order number
-        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')->opportunityLookup($this->_cache['entitiesUpdating']);
+        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data_opportunity')
+            ->lookup($orders);
     }
 
     /**
