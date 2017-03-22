@@ -222,9 +222,30 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
         $websiteSfId = $this->_websites[$customerId];
 
         return
+            $this->_statisticMappingDefined() ||
             !isset($this->_cache['contactsLookup'][$websiteSfId][$email]) ||
             !isset($this->_cache['accountsLookup'][0][$email]) ||
             (isset($this->_cache['leadsLookup'][$websiteSfId][$email]) && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted);
+    }
+
+    /**
+     * check customer mapping
+     */
+    protected function _statisticMappingDefined()
+    {
+        $statisticFields = Mage::helper('tnw_salesforce/salesforce_customer')->getStatisticFields();
+
+        $statisticFields = array_map(function($item) {
+            return 'Customer : ' . $item;
+        }, $statisticFields);
+
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappingCollection */
+        $mappingCollection = Mage::getModel('tnw_salesforce/mapping')->getCollection();
+        $mappingCollection
+            ->addLocalFieldToFilter($statisticFields)
+            ->addFieldToFilter('magento_sf_enable', 1);
+
+        return (bool)$mappingCollection->getSize();
     }
 
     /**

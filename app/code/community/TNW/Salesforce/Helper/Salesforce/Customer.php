@@ -62,6 +62,33 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected $_websites = array();
 
+    /** @var array  */
+    protected $_statisticFields = array(
+        'last_purchase',
+        'last_login',
+        'last_transaction_id',
+        'total_order_count',
+        'total_order_amount',
+        'first_purchase',
+        'first_transaction_id',
+    );
+
+    /**
+     * @return array
+     */
+    public function getStatisticFields()
+    {
+        return $this->_statisticFields;
+    }
+
+    /**
+     * @param array $statisticFields
+     */
+    public function setStatisticFields($statisticFields)
+    {
+        $this->_statisticFields = $statisticFields;
+    }
+
     /**
      * @return boolean
      */
@@ -1003,9 +1030,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      * @param $ids
      * @return $this
      */
-    protected function _updateCustomerStatistic($ids)
+    protected function _updateCustomerStatistic($customerData)
     {
 
+        $ids = array_keys($customerData);
         /**
          * field names are necessary for customer table updating
          */
@@ -1037,6 +1065,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $fields[] = 'last_transaction_id';
         $salesCollection->addExpressionFieldToSelect('last_transaction_id', 'MAX(increment_id)', array());
 
+        /**
+         * select last_purchase value
+         */
+        $fields[] = 'first_purchase';
+        $salesCollection->addExpressionFieldToSelect('first_purchase', 'MIN(created_at)', array());
+
+        /**
+         * salect last_transaction_id
+         */
+        $fields[] = 'first_transaction_id';
+        $salesCollection->addExpressionFieldToSelect('first_transaction_id', 'MIN(increment_id)', array());
+
 
         /**
          * select total_order_count value
@@ -1066,9 +1106,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         );
         $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
 
+        // 2. Save login date
         $fields = array();
 
-        // 2. Save login date
         /**
          * prepare last login date
          */
@@ -1097,21 +1137,20 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
         $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
 
+        /**
+         * update customers cache data
+         */
+        /** @var Mage_Customer_Model_Resource_Customer_Collection $customersCollection */
+        $customersCollection = Mage::getModel('customer/customer')->getCollection();
+        $customersCollection->addFilter('entity_id', $ids);
+
         foreach ($ids as $customerId) {
-
-            /**
-             * reload customer if it saved in cache
-             */
-            if ($customer = Mage::registry('customer_cached_' . $customerId)) {
-                $updatedCustomer = Mage::getModel('customer/customer');
-                $updatedCustomer->getResource()->load($updatedCustomer, $customerId);
-
-                /**
-                 * If customer exists - just update data, some information can be defined via order sync (order address)
-                 */
-                $customer->addData($updatedCustomer->getData());
+            if ($customerUpdate = $customersCollection->getItemById($customerId)) {
+                $customer = $this->getEntityCache($customerId);
+                $customer->addData($customerUpdate->getData());
             }
         }
+
         return $this;
     }
 
@@ -1141,7 +1180,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected function _massAddBefore($_ids)
     {
         $this->_websites = array();
-        $this->_updateCustomerStatistic($_ids);
     }
 
     /**
@@ -1238,6 +1276,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
 
         $this->_cache['notFoundCustomers'] = $_emailsArray;
+
+        if (!empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
+            $this->_updateCustomerStatistic($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
+        }
+
     }
 
     /**
