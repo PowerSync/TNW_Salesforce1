@@ -7,6 +7,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Form_Field_Visible extends Ma
         $extendedDepends = $element->getData('field_config')->extended_depends;
         if (!empty($extendedDepends)) {
             $visible = true;
+            /** @var Mage_Core_Model_Config_Element $dependent */
             foreach ($extendedDepends->children() as $dependent) {
                 if (empty($dependent->fieldset) || empty($dependent->section)) {
                     continue;
@@ -16,7 +17,12 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Form_Field_Visible extends Ma
                     . '/' . $dependent->fieldset
                     . '/' . $dependent->getName();
 
-                $visible = $visible && (Mage::getStoreConfig($path) == $dependent->value);
+                $separator = $dependent->getAttribute('separator');
+                if (empty($separator)) {
+                    $visible = $visible && (Mage::getStoreConfig($path) == $dependent->value);
+                } else {
+                    $visible = $visible && empty($separator) && in_array(Mage::getStoreConfig($path), explode($separator, $dependent->value));
+                }
             }
 
             return $visible;
