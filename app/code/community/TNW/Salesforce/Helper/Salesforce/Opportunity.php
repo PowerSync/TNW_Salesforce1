@@ -109,18 +109,17 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
 
     protected function _doesCartItemExist($parentEntityNumber, $qty, $productIdentifier, $description = 'default', $item = null)
     {
-        /**
-         * @var $parentEntityCacheKey string  opportunityLookup|$parentEntityCacheKey
-         */
         $parentEntityCacheKey = sprintf('%sLookup', $this->_salesforceEntityName);
-        if (!empty($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()})) {
-            foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}->records as $_cartItem) {
-                if ($_cartItem->Id != $item->getData('opportunity_id')) {
-                    continue;
-                }
+        if (empty($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}->records)) {
+            return null;
+        }
 
-                return $_cartItem->Id;
+        foreach ($this->_cache[$parentEntityCacheKey][$parentEntityNumber]->{$this->getItemsField()}->records as $_cartItem) {
+            if ($_cartItem->Id != $item->getData('opportunity_id')) {
+                continue;
             }
+
+            return $_cartItem->Id;
         }
 
         return null;
@@ -158,7 +157,8 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
      */
     protected function _checkMassAddEntity($_entity)
     {
-        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed() && !Mage::helper('tnw_salesforce/config_sales')->orderSyncAllowed($_entity)) {
+        $salesConfig = Mage::helper('tnw_salesforce/config_sales');
+        if ($salesConfig->showOrderId() && $_entity->getData('opportunity_id') && !$salesConfig->orderSyncAllowed($_entity)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("Order #{$_entity->getIncrementId()}, paid. Skipped sync Salesforce Opportunity");
 
@@ -551,6 +551,14 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     protected function _getNotesParentSalesforceId($notes)
     {
         return $notes->getOrder()->getData('opportunity_id');
+    }
+
+    /**
+     * @return string
+     */
+    protected function _notesTableFieldName()
+    {
+        return 'opportunity_id';
     }
 
     public function reset()

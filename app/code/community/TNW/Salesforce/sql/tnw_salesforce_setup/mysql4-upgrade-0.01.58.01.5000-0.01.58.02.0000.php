@@ -37,4 +37,9 @@ if (!$adapter->tableColumnExists($orderItemTable, 'opportunity_id')) {
     $adapter->addColumn($orderItemTable, 'opportunity_id', 'varchar(50)');
 }
 
+$orderStatusHistoryTable = $installer->getTable('sales/order_status_history');
+if (!$adapter->tableColumnExists($orderStatusHistoryTable, 'opportunity_id')) {
+    $adapter->addColumn($orderStatusHistoryTable, 'opportunity_id', 'varchar(50)');
+}
+
 $installer->endSetup();

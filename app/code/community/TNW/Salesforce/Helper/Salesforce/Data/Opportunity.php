@@ -27,6 +27,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
 
         $returnArray = array();
         foreach ($this->assignLookupToEntity($records, $orders) as $item) {
+            if (empty($item['record'])) {
+                continue;
+            }
+
             $return = $this->prepareRecord($item['entity'], $item['record']);
             if (empty($return)) {
                 continue;
@@ -53,7 +57,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
             $this->generateLookupWhere($conditions));
 
         Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("Contact QUERY:\n{$query}");
+            ->saveTrace("Opportunity QUERY:\n{$query}");
 
         return $this->getClient()->query($query);
     }
@@ -141,9 +145,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
     {
         $recordsIds = array();
 
-        // Priority 1
         $recordsIds[10] = array_keys($searchIndex['magentoId'], $entity->getIncrementId());
-
         $recordsIds[20] = array_keys($searchIndex['salesforceId'], $entity->getData('_quote_salesforce_id'));
 
         return $recordsIds;

@@ -158,7 +158,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 //Report Transaction
                 $this->_cache['responses']['notes'][$_oid]['subObj'][] = json_decode(json_encode($_item), TRUE);
                 if ($_item->success == "true") {
-                    $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history') . "` SET salesforce_id = '" . (string)$_item->id . "' WHERE entity_id = '" . $_noteId . "';";
+                    $sql .= "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order_status_history') . "` SET opportunity_id = '" . (string)$_item->id . "' WHERE entity_id = '" . $_noteId . "';";
 
                     Mage::getSingleton('tnw_salesforce/tool_log')
                         ->saveTrace('Note (id: ' . $_noteId . ') upserted for order #' . $_orderId . ')');
@@ -243,7 +243,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                             ->getItemById(str_replace('cart_','',$_cartItemId));
 
                         if ($_entityItem) {
-                            $_entityItem->setData('salesforce_id', $_item->id);
+                            $_entityItem->setData('opportunity_id', $_item->id);
                             $_entityItem->getResource()->save($_entityItem);
                         }
 
@@ -335,7 +335,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                     $_order->addData(array(
                         'contact_salesforce_id' => $_customer->getData('salesforce_id'),
                         'account_salesforce_id' => $_customer->getData('salesforce_account_id'),
-                        'salesforce_id'         => (string)$_item->id,
+                        'opportunity_id'        => (string)$_item->id,
                         'sf_insync'             => 1,
                         'owner_salesforce_id'   => $_batch[$_oid]->OwnerId
                     ));

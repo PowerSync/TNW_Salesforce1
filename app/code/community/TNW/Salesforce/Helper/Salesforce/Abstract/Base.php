@@ -685,7 +685,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _checkNotesItem($_note)
     {
-        return !$_note->getData('salesforce_id') && $_note->getData('comment');
+        return !$_note->getData($this->_notesTableFieldName()) && $_note->getData('comment');
     }
 
     protected function _getNotesParentSalesforceId($notes)
@@ -1074,8 +1074,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             else {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for '.$this->_magentoEntityName.' #' . $_entityNum . ')');
 
-                $sql = sprintf('UPDATE `%s` SET salesforce_id = "%s" WHERE entity_id = "%s";',
-                    $this->_notesTableName(), $_result->id, $_noteId);
+                $sql = sprintf('UPDATE `%s` SET %s = "%s" WHERE entity_id = "%s";',
+                    $this->_notesTableName(), $this->_notesTableFieldName(), $_result->id, $_noteId);
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
             }
@@ -1083,8 +1083,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @throws Exception
-     * @return mixed
+     * @return string
+     */
+    protected function _notesTableFieldName()
+    {
+        return 'salesforce_id';
+    }
+
+    /**
+     * @return string
      */
     protected function _notesTableName()
     {
