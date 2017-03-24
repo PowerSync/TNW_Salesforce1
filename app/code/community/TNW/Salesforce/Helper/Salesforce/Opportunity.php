@@ -418,6 +418,19 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
         }
     }
 
+    /**
+     * @param Mage_Sales_Model_Order_Item $_entityItem
+     */
+    protected function _prepareEntityItemObjCustom($_entityItem)
+    {
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $this->_obj->$disableSyncField = true;
+        }
+
+        parent::_prepareEntityItemObjCustom($_entityItem);
+    }
+
     public function reset()
     {
         parent::reset();

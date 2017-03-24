@@ -18,4 +18,9 @@ class TNW_Salesforce_Adminhtml_Salesforce_LeadController extends TNW_Salesforce_
      * @var string
      */
     protected $_sfEntity = 'Lead';
+
+    /**
+     * @var string
+     */
+    protected $_blockPath = 'mapping_customer_lead';
 }

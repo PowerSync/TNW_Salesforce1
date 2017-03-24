@@ -101,12 +101,6 @@ class TNW_Salesforce_Controller_Base_Mapping extends Mage_Adminhtml_Controller_A
      */
     protected function _initLayout()
     {
-        if (!Mage::helper('tnw_salesforce')->isWorking()) {
-            Mage::getSingleton('adminhtml/session')->addError("API Integration is disabled.");
-            Mage::app()->getResponse()->setRedirect(Mage::helper('adminhtml')->getUrl("adminhtml/system_config/edit", array('section' => 'salesforce')));
-            Mage::app()->getResponse()->sendResponse();
-        }
-
         $this->loadLayout()
             ->_setActiveMenu('tnw_salesforce')
             ->_addBreadcrumb(Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)), Mage::helper('tnw_salesforce')->__('%s Field Mapping', $this->getLocalEntity(true)));

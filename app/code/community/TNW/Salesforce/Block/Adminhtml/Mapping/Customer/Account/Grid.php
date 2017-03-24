@@ -4,12 +4,12 @@
  * See app/code/community/TNW/TNW_LICENSE.txt for license details.
  */
 
-class TNW_Salesforce_Block_Adminhtml_Lead_Edit extends TNW_Salesforce_Block_Adminhtml_Base_Edit
+class TNW_Salesforce_Block_Adminhtml_Mapping_Customer_Account_Grid extends TNW_Salesforce_Block_Adminhtml_Base_Grid
 {
+
     /**
      * name of  Salesforce object in lower case
      * @var string
      */
-    protected $_sfEntity = 'Lead';
-
+    protected $_sfEntity = 'Account';
 }

@@ -14,4 +14,9 @@ class TNW_Salesforce_Adminhtml_Salesforce_ContactController extends TNW_Salesfor
      * @var string
      */
     protected $_sfEntity = 'Contact';
+
+    /**
+     * @var string
+     */
+    protected $_blockPath = 'mapping_customer_contact';
 }

@@ -17,6 +17,22 @@ class TNW_Salesforce_Model_Cron
     protected $_syncType = self::SYNC_TYPE_OUTGOING;
 
     /**
+     * @return string
+     */
+    public function getSyncType()
+    {
+        return $this->_syncType;
+    }
+
+    /**
+     * @param string $syncType
+     */
+    public function setSyncType($syncType)
+    {
+        $this->_syncType = $syncType;
+    }
+
+    /**
      * @var null
      */
     protected $_serverName = NULL;
@@ -141,12 +157,7 @@ class TNW_Salesforce_Model_Cron
             ->setPath(self::CRON_LAST_RUN_TIMESTAMP_PATH)
             ->save();
 
-        if ($_helperData->getObjectSyncType() == 'sync_type_realtime') {
-            $this->_syncObjectForRealTimeMode();
-        }
-        else {
-            $this->_syncObjectForBulkMode();
-        }
+        $this->_syncObjectForBulkMode();
 
         $this->_deleteSuccessfulRecords();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
@@ -210,6 +221,9 @@ class TNW_Salesforce_Model_Cron
 
         // Sync CatalogRule
         //$this->syncCatalogRule();
+
+        // Sync WishList
+        $this->syncWishlist();
 
         // Sync custom objects
         $this->_syncCustomObjects();
@@ -287,6 +301,9 @@ class TNW_Salesforce_Model_Cron
                 break;
             case 'campaign_catalogrule':
                 $batchSize = $_configHelper->getCatalogRuleBatchSize();
+                break;
+            case 'wishlist':
+                $batchSize = $_configHelper->getWishlistBatchSize();
                 break;
             default:
                 $transport = new Varien_Object(array('batch_size' => null));
@@ -661,6 +678,23 @@ class TNW_Salesforce_Model_Cron
             $this->syncEntity('campaign_catalogrule');
         } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("ERROR: CatalogRule not synced: %s", $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * fetch Wishlist ids from local storage and sync with sf
+     *
+     * @return bool
+     */
+    public function syncWishlist()
+    {
+        try {
+            $this->syncEntity('wishlist');
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf('ERROR: Wishlist not synced: %s', $e->getMessage()));
             return false;
         }
 

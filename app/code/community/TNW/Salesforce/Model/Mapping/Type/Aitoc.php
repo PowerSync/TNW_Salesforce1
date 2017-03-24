@@ -38,4 +38,15 @@ class TNW_Salesforce_Model_Mapping_Type_Aitoc extends TNW_Salesforce_Model_Mappi
 
         return $value;
     }
+
+    /**
+     * Aitoc has custom logic
+     * @param $entity Mage_Core_Model_Abstract
+     * @param $code
+     * @return bool|Mage_Eav_Model_Entity_Attribute_Abstract
+     */
+    protected function _getAttribute($entity, $code)
+    {
+        return false;
+    }
 }

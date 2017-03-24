@@ -599,7 +599,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         $_records = array();
         /** @var stdClass $record */
         foreach ($records as $record) {
-            if (!is_object($record) || !property_exists($record, 'records') || empty($record->records)) {
+            if (empty($record->records)) {
                 continue;
             }
 
@@ -662,9 +662,11 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function describeTable($alias)
     {
         switch ($alias) {
+            case 'WishlistOpportunity':
             case 'Abandoned':
                 $table = 'Opportunity';
                 break;
+            case 'WishlistOpportunityLine':
             case 'Abandoneditem':
             case 'AbandonedItem':
                 $table = 'OpportunityLineItem';
@@ -991,40 +993,20 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return false;
         }
 
-        try {
-            if (!is_object($this->getClient())) {
-                return false;
-            }
-
-            $_results = array();
-            foreach (array_chunk($oid, self::UPDATE_LIMIT) as $_oid) {
-                $result = $this->_queryOpportunityItems($_oid);
-                if (empty($result) || $result->size < 1) {
-                    continue;
-                }
-
-                $_results[] = $result;
-            }
-
-            if (empty($_results)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Opportunity Items lookup returned: no results...");
-                return false;
-            }
-
-            $items = array();
-            foreach ($_results as $result) {
-                foreach ($result->records as $_cartItem) {
-                    $items[] = $_cartItem;
-                }
-            }
-
-            return $items;
+        $_results = array();
+        foreach (array_chunk($oid, self::UPDATE_LIMIT) as $_oid) {
+            $_results[] = $this->_queryOpportunityItems($_oid);
         }
-        catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Could not lookup Opportunity Line Items for Opportunity #" . $oid);
-            return $e->getMessage();
+
+        $records = $this->mergeRecords($_results);
+        if (empty($records)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Opportunity Items lookup returned: no results...');
+
+            return false;
         }
+
+        return $records;
     }
 
     /**
@@ -1035,7 +1017,7 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     {
         $query = "SELECT ID, PricebookEntryId, Quantity, ServiceDate, UnitPrice, Description FROM OpportunityLineItem WHERE OpportunityId IN ('".implode("', '", $oid)."')";
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Lookup Query: " . $query);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("OpportunityLineItem Lookup Query:\n{$query}");
         try {
             $result = $this->getClient()->query($query);
         } catch (Exception $e) {
@@ -1044,5 +1026,144 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         }
 
         return $result;
+    }
+
+    /**
+     * @param array $records
+     * @param array $entities
+     * @return array
+     */
+    public function assignLookupToEntity(array $records, array $entities)
+    {
+        $returnArray = array();
+        $searchIndex = $this->collectLookupIndex($records);
+        foreach ($entities as $entity) {
+            $recordsPriority = $this->searchLookupPriorityOrder($searchIndex, $entity);
+            ksort($recordsPriority, SORT_NUMERIC);
+
+            array_walk_recursive($recordsPriority, function (&$record) use($records) {
+                $record = $records[$record];
+            });
+
+            $returnArray[] = array(
+                'entity' => $entity,
+                'record' => $this->filterLookupByPriority($recordsPriority, $entity),
+                'records' => $records
+            );
+        }
+
+        return $returnArray;
+    }
+
+    /**
+     * @param array $records
+     * @return array
+     */
+    protected function collectLookupIndex(array $records)
+    {
+        return array();
+    }
+
+    /**
+     * @param array $searchIndex
+     * @param $entity
+     * @return array[]
+     */
+    protected function searchLookupPriorityOrder(array $searchIndex, $entity)
+    {
+        return array();
+    }
+
+    /**
+     * @param array[] $recordsPriority
+     * @param $entity
+     * @return stdClass|null
+     */
+    protected function filterLookupByPriority(array $recordsPriority, $entity)
+    {
+        return null;
+    }
+
+    protected function generateLookupSelect(array $columns)
+    {
+        return implode(', ', $columns);
+    }
+
+    /**
+     * @param array $groups
+     * @return string
+     */
+    protected function generateLookupWhere(array $groups)
+    {
+        $this->prepareLookupWhereGroup($groups);
+        return $this->generateLookupWhereGroup($groups);
+    }
+
+    /**
+     * @param array $groups
+     */
+    protected function prepareLookupWhereGroup(array &$groups)
+    {
+        foreach ($groups as &$group) {
+            foreach ($group as $fieldName => &$condition) {
+                switch (true) {
+                    case isset($condition['=']):
+                        $value = $this->soqlQuote($condition['=']);
+                        $condition = "$fieldName={$value}";
+                        break;
+
+                    case isset($condition['LIKE']):
+                        $value = $this->soqlQuote($condition['LIKE']);
+                        $condition = "$fieldName LIKE {$value}";
+                        break;
+
+                    case isset($condition['IN']):
+                        $in = implode(',', array_map(array($this, 'soqlQuote'), $condition['IN']));
+                        $condition = "$fieldName IN ({$in})";
+                        break;
+
+                    default:
+                        if (is_array($condition)) {
+                            $this->prepareLookupWhereGroup($condition);
+                        }
+                        break;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    public function soqlQuote($value)
+    {
+        $value = addslashes($value);
+        return "'$value'";
+    }
+
+    /**
+     * @param array $groups
+     * @return string
+     */
+    protected function generateLookupWhereGroup(array $groups)
+    {
+        $sql = '';
+        $first = true;
+        foreach ($groups as $key => $group) {
+            foreach ($group as $fieldName => $condition) {
+                $sql .= ($first ? '': " $key ");
+
+                if (!is_array($condition)) {
+                    $sql .= $condition;
+                } else {
+                    $sql .= "({$this->generateLookupWhereGroup($condition)})";
+                }
+
+                $first = false;
+            }
+        }
+
+        return $sql;
     }
 }

@@ -448,6 +448,18 @@
                             </depends>
                         </creditmemo_batch_size>
 
+                        <wishlist_batch_size translate="label">
+                            <label>Wishlist Limit</label>
+                            <sort_order>172</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Wishlist batch size limit]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </wishlist_batch_size>
+
                         <page_size_from_salesforce translate="label">
                             <label>Page size from Salesforce</label>
                             <sort_order>180</sort_order>
@@ -962,6 +974,81 @@
                         </opportunity_filter>
                     </fields>
                 </customer_view>
+                <wishlist>
+                    <label>Wishlist</label>
+                    <sort_order>320</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <sync_enable>
+                            <label>Enable Integration</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_yesnopro</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable / Disable automated wishlist synchronization</comment>
+                        </sync_enable>
+                        <close_date>
+                            <label>Close date</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/config_wishlist_closeDate</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Time needed to close the Opportunity</comment>
+                        </close_date>
+                        <stage_name>
+                            <label>Default Stage Name</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/config_opportunity_state</source_model>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default Stage Name for the Wishlist</comment>
+                        </stage_name>
+                        <enable_contact_role>
+                            <label>Enable Contact Roles</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Enable Opportunity Customer Role Integration</comment>
+                        </enable_contact_role>
+                        <default_contact_role>
+                            <label>Default Role Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/config_client_roles</source_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Contact Role of the customer for the Opportunity</comment>
+                            <depends>
+                                <enable_contact_role>1</enable_contact_role>
+                            </depends>
+                        </default_contact_role>
+                        <opportunity_record_type>
+                            <label>Default Record Type</label>
+                            <frontend_type>select</frontend_type>
+                            <frontend_class>chosen-select</frontend_class>
+                            <source_model>tnw_salesforce/system_config_source_recordtype_opportunity</source_model>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Default Record Type of the Opportunity in Salesforce</comment>
+                        </opportunity_record_type>
+                    </fields>
+                </wishlist>
             </groups>
         </salesforce_customer>
         <salesforce_product translate="label" module="tnw_salesforce">

@@ -315,22 +315,27 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         }
 
         $_websiteId = ($_websiteId === false) ? Mage::app()->getWebsite(true)->getId() : $_websiteId;
-        $storeId    = Mage::app()->getWebsite($_websiteId)->getDefaultGroup()->getDefaultStoreId();
+        $storeId    = Mage::app()->getWebsite($_websiteId)
+            ->getDefaultGroup()->getDefaultStoreId();
+
+        $orderCreate->getSession()
+            ->setStoreId((int)$storeId);
 
         // Get Customer
         $customer = $this->_searchCustomer($object->BillToContactId, $_websiteId);
-        if (is_null($customer->getId())) {
-            throw new Exception(sprintf('Trying to create an order, customer not found in Website "%s"',
-                Mage::app()->getWebsite($_websiteId)->getCode()));
+        if (null !== $customer->getId()) {
+            $orderCreate->getSession()
+                ->setCustomer($customer)
+                ->setCustomerId((int) $customer->getId());
+        } else {
+            $orderCreate->getQuote()
+                ->setStoreId((int)$storeId)
+                ->setCustomerId(null)
+                ->setCustomerIsGuest(true)
+                ->setCustomerGroupId(Mage_Customer_Model_Group::NOT_LOGGED_IN_ID)
+                ->setIsActive(false)
+                ->save();
         }
-
-        /**
-         * Identify customer
-         */
-        $orderCreate->getSession()
-            ->setCustomer($customer)
-            ->setCustomerId((int) $customer->getId())
-            ->setStoreId((int) $storeId);
 
         $orderCreate->getQuote()
             ->setData('_salesforce_object', $object);
