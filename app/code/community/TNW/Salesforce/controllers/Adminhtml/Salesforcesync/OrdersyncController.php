@@ -64,6 +64,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
 
     /**
      * Sync All
+     * @throws Exception
      */
     public function syncAllAction()
     {
@@ -76,7 +77,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         }
 
         Mage::getSingleton('tnw_salesforce/sale_observer')
-            ->syncOrder(array($order->getId()));
+            ->syncOrder(array($order->getId()), true);
 
         $invoiceIds = $order->getInvoiceCollection()->walk('getId');
         if (!empty($invoiceIds)) {
