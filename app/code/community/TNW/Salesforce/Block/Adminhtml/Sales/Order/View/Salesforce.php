@@ -62,7 +62,7 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Salesforce extends Mage_Ad
             ->getWebsiteIdForType('sales/order', $this->getOrder()->getId());
 
         $isSkipped = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($orderWebsite, function () {
-            return !Mage::helper('tnw_salesforce')->isEnabled() || !Mage::helper('tnw_salesforce')->isEnabledOrderSync();
+            return !Mage::helper('tnw_salesforce')->isEnabled();
         });
 
         if ($isSkipped) {

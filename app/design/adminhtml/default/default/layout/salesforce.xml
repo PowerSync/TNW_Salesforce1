@@ -289,7 +289,7 @@
     <adminhtml_customer_edit>
         <update handle="tnw_salesforce_select2"/>
         <reference name="customer_edit">
-            <action method="addButton" ifconfig="salesforce_customer/sync/customer_sync_enable">
+            <action method="addButton">
                 <id>sf_sync</id>
                 <data helper="tnw_salesforce/config_customer/getSyncButtonData"/>
                 <level>0</level>
