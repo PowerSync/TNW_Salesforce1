@@ -62,7 +62,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected $_websites = array();
 
-    /** @var array  */
+    /** @var array */
     protected $_statisticFields = array(
         'last_purchase',
         'last_login',
@@ -1026,23 +1026,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
-     * Update customer statistic data for using in mapping
+     * collect Sales statistic for customers
      * @param $ids
      * @return $this
      */
-    protected function _updateCustomerStatistic($customerData)
+    protected function _updateCustomerSalesStatistic($ids)
     {
-
-        $ids = array_keys($customerData);
-        /**
-         * field names are necessary for customer table updating
-         */
-        $fields = array();
 
         // 1. Save sales info
         /**
          * prepare query for sales statistic calculation
          */
+        /** @var Mage_Sales_Model_Resource_Order_Collection $salesCollection */
         $salesCollection = Mage::getModel('sales/order')->getCollection();
         $salesCollection->removeAllFieldsFromSelect();
         $salesCollection->removeFieldFromSelect($salesCollection->getResource()->getIdFieldName());
@@ -1050,64 +1045,79 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         /**
          * add customer_id in result
          */
-        $fields[] = 'entity_id';
-        $salesCollection->addFieldToSelect('customer_id', 'entity_id');
+        $salesCollection->addFieldToSelect('customer_id');
+
+        $salesCollection
+            ->addExpressionFieldToSelect('last_purchase', 'MAX(main_table.created_at)', array())
+            ->addExpressionFieldToSelect('first_purchase', 'MIN(main_table.created_at)', array());
 
         /**
-         * select last_purchase value
+         * The "last sales" statistic
          */
-        $fields[] = 'last_purchase';
-        $salesCollection->addExpressionFieldToSelect('last_purchase', 'MAX(created_at)', array());
+        /** @var Mage_Sales_Model_Resource_Order_Collection $subselect */
+        $subselect = Mage::getModel('sales/order')->getCollection();
+
+        $subselect->removeAllFieldsFromSelect();
+        $subselect->removeFieldFromSelect($salesCollection->getResource()->getIdFieldName());
+
+        $subselect->getSelect()->reset(Zend_Db_Select::FROM);
+        $subselect->getSelect()->from(array('subselect' => $salesCollection->getMainTable()), array('increment_id'));
+
+        $subselect->getSelect()->where('subselect.customer_id = main_table.customer_id');
+        $subselect->getSelect()->order('created_at ' . Varien_Data_Collection_Db::SORT_ORDER_DESC);
+
+        $subselect->getSelect()->limit(1);
+
+        $salesCollection
+            ->getSelect()
+            ->columns(array('last_transaction_id' => new Zend_Db_Expr(sprintf('(%s)', $subselect->getSelect()->__toString()))));
 
         /**
-         * salect last_transaction_id
+         * The "last sales" statistic
          */
-        $fields[] = 'last_transaction_id';
-        $salesCollection->addExpressionFieldToSelect('last_transaction_id', 'MAX(increment_id)', array());
+        /** @var Mage_Sales_Model_Resource_Order_Collection $subselect */
+        $subselect = Mage::getModel('sales/order')->getCollection();
 
-        /**
-         * select last_purchase value
-         */
-        $fields[] = 'first_purchase';
-        $salesCollection->addExpressionFieldToSelect('first_purchase', 'MIN(created_at)', array());
+        $subselect->removeAllFieldsFromSelect();
+        $subselect->removeFieldFromSelect($salesCollection->getResource()->getIdFieldName());
 
-        /**
-         * salect last_transaction_id
-         */
-        $fields[] = 'first_transaction_id';
-        $salesCollection->addExpressionFieldToSelect('first_transaction_id', 'MIN(increment_id)', array());
+        $subselect->getSelect()->reset(Zend_Db_Select::FROM);
+        $subselect->getSelect()->from(array('subselect' => $salesCollection->getMainTable()), array('increment_id'));
 
+        $subselect->getSelect()->where('subselect.customer_id = main_table.customer_id');
+        $subselect->getSelect()->order('created_at ' . Varien_Data_Collection_Db::SORT_ORDER_ASC);
+        $subselect->getSelect()->limit(1);
+
+        $salesCollection
+            ->getSelect()
+            ->columns(array('first_transaction_id' => new Zend_Db_Expr(sprintf('(%s)', $subselect->getSelect()->__toString()))));
 
         /**
          * select total_order_count value
          */
-        $fields[] = 'total_order_count';
         $salesCollection
             ->addExpressionFieldToSelect('total_order_count', "COUNT(*)", array());
 
         /**
          * select total_order_amount value
          */
-        $fields[] = 'total_order_amount';
         $salesCollection
             ->addExpressionFieldToSelect('total_order_amount', 'SUM(base_grand_total)', array());
 
-        $salesCollection->addFieldToFilter('customer_id', array('in' => $ids));
+        $salesCollection->addFieldToFilter('main_table.customer_id', array('in' => $ids));
 
-        $salesCollection->getSelect()->group('customer_id');
+        $salesCollection->getSelect()->group('main_table.customer_id');
 
-        /**
-         * save sales statistic in customer table
-         */
-        $query = $salesCollection->getSelect()->insertFromSelect(
-            Mage::getModel('customer/customer')->getResource()->getEntityTable(),
-            $fields,
-            true
-        );
-        $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
+        return $this->_updateCustomerCacheFromSelect($salesCollection->getSelect());
+    }
 
+    /**
+     * @param $ids
+     *  @return $this
+     */
+    protected function _updateCustomerLoginStatistic($ids)
+    {
         // 2. Save login date
-        $fields = array();
 
         /**
          * prepare last login date
@@ -1115,41 +1125,48 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         $logCustomerResource = Mage::getModel('log/customer')->getResource();
         $select = $logCustomerResource->getReadConnection()->select();
 
-
-        $fields[] = 'entity_id';
-        $fields[] = 'last_login';
-
         $select
             ->from(
                 $logCustomerResource->getMainTable(),
                 array(
-                    'customer_id AS entity_id',
+                    'customer_id',
                     'login_at AS last_login'
                 ));
-
         $select->where('customer_id IN (?)', $ids);
 
-        $query = $select->insertFromSelect(
-            Mage::getModel('customer/customer')->getResource()->getEntityTable(),
-            $fields,
-            true
-        );
+        return $this->_updateCustomerCacheFromSelect($select);
 
-        $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
+    }
 
-        /**
-         * update customers cache data
-         */
-        /** @var Mage_Customer_Model_Resource_Customer_Collection $customersCollection */
-        $customersCollection = Mage::getModel('customer/customer')->getCollection();
-        $customersCollection->addFilter('entity_id', $ids);
-
-        foreach ($ids as $customerId) {
-            if ($customerUpdate = $customersCollection->getItemById($customerId)) {
-                $customer = $this->getEntityCache($customerId);
-                $customer->addData($customerUpdate->getData());
+    /**
+     * update cached data
+     * @param $select
+     * @return $this
+     */
+    protected function _updateCustomerCacheFromSelect($select)
+    {
+        foreach (Mage::getModel('customer/customer')->getResource()->getReadConnection()->fetchAssoc($select) as $item) {
+            $customer = $this->getEntityCache($item['customer_id']);
+            if ($customer) {
+                $customer->addData($item);
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * Update customer statistic data for mapping use
+     * @param $ids
+     * @return $this
+     */
+    protected function _updateCustomerStatistic($customerData)
+    {
+
+        $ids = array_keys($customerData);
+
+        $this->_updateCustomerSalesStatistic($ids);
+        $this->_updateCustomerLoginStatistic($ids);
 
         return $this;
     }
