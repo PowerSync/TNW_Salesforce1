@@ -214,8 +214,16 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
 
         $returnArray = array();
         foreach ($customLookup as $item) {
-            $returnArray = array_merge($returnArray,
-                $this->prepareContactRecord($item['entity'], $item['record'], $field));
+            if (empty($item['record'])) {
+                continue;
+            }
+
+            $return = $this->prepareContactRecord($item['entity'], $item['record'], $field);
+            if (empty($return)) {
+                continue;
+            }
+
+            $returnArray = array_merge($returnArray, $return);
         }
 
         return $returnArray;
