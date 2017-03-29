@@ -43,10 +43,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     {
         // Parent in Salesforce
         $_order = $_entity->getOrder();
-        if (!$_order->getSalesforceId() || !$_order->getData('sf_insync')) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice('SKIPPING: Sync for shipment #' . $_entity->getIncrementId() . ', order #' . $_order->getRealOrderId() . ' needs to be synchronized first!');
-
+        if (!$this->checkOrderMassAddEntity($_entity)) {
             return false;
         }
 
@@ -103,6 +100,43 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     }
 
     /**
+     * @param $entity Mage_Sales_Model_Order_Shipment
+     * @return bool
+     */
+    protected function checkOrderMassAddEntity($entity)
+    {
+        $order = $entity->getOrder();
+        if (!$this->orderSalesforceId($order) || !$order->getData('sf_insync')) {
+            if (Mage::helper('tnw_salesforce/config_sales')->orderSyncAllowed($order)) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice("SKIPPING: Sync for shipment #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @return string
+     */
+    protected function orderSalesforceId($order)
+    {
+        return $order->getData('salesforce_id');
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order_Item $orderItem
+     * @return string
+     */
+    protected function orderItemSalesforceId($orderItem)
+    {
+        return $orderItem->getData('salesforce_id');
+    }
+
+    /**
      * Sync customer w/ SF before creating the order
      *
      * @param $order Mage_Core_Model_Abstract|Mage_Sales_Model_Order|Mage_Sales_Model_Quote
@@ -115,7 +149,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     }
 
     /**
-     *
+     * @throws Exception
      */
     protected function _massAddAfterLookup()
     {
@@ -369,7 +403,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
         $_entityNumber = $this->_getEntityNumber($_entity);
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c'}
-            = $_entityItem->getOrderItem()->getData('salesforce_id');
+            = $this->orderItemSalesforceId($_entityItem->getOrderItem());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Shipment__c'}
             = $this->_getParentEntityId($_entityNumber);
@@ -440,22 +474,29 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     protected function _doesCartItemExist($_entity, $_entityItem)
     {
         $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
+        $_sOpportunityItemId = $_entityItem->getOrderItem()->getData('opportunity_id');
         $_entityNumber = $this->_getEntityNumber($_entity);
-        $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
+        $lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+        $orderField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
+        $opportunityField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c';
+        $sMagentoIdField = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Magento_ID__c';
 
-        if (! ($this->_cache[$lookupKey]
-            && array_key_exists($_entityNumber, $this->_cache[$lookupKey])
-            && $this->_cache[$lookupKey][$_entityNumber]->Items)
-        ){
+        if (empty($this->_cache[$lookupKey][$_entityNumber]->Items->records)){
             return false;
         }
 
         foreach ($this->_cache[$lookupKey][$_entityNumber]->Items->records as $_cartItem) {
-            if ($_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c'} != $_sOrderItemId) {
-                continue;
+            if (!empty($_cartItem->{$sMagentoIdField}) && $_cartItem->{$sMagentoIdField} == $_entityItem->getId()) {
+                return $_cartItem->Id;
             }
 
-            return $_cartItem->Id;
+            if (!empty($_cartItem->{$opportunityField}) && $_cartItem->{$opportunityField} == $_sOpportunityItemId) {
+                return $_cartItem->Id;
+            }
+
+            if (!empty($_cartItem->{$orderField}) && $_cartItem->{$orderField} == $_sOrderItemId) {
+                return $_cartItem->Id;
+            }
         }
 
         return false;

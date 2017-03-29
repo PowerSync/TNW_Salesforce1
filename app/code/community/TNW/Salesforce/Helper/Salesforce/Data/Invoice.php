@@ -5,66 +5,49 @@ class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helpe
     /**
      * @param array $ids
      * @return array|bool
+     * @throws Exception
      */
-    public function lookup($ids = array())
+    public function lookup(array $ids)
     {
-        $ids = !is_array($ids)
-            ? array($ids) : $ids;
+        $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c';
+        $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
 
-        try {
-            if (!is_object($this->getClient())) {
-                return false;
-            }
-
-            $_magentoId = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c';
-            $oiiTable   = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'InvoiceItem__r';
-
-            $_results = array();
-            foreach (array_chunk($ids, self::UPDATE_LIMIT) as $_ids) {
-                $result = $this->_queryInvoice($_magentoId, $oiiTable, $_ids);
-                if (empty($result) || $result->size < 1) {
-                    continue;
-                }
-
-                $_results[] = $result;
-            }
-
-            if (empty($_results)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice lookup returned: no results...");
-                return false;
-            }
-
-            $returnArray = array();
-            foreach ($_results as $result) {
-                foreach ($result->records as $_item) {
-                    $tmp = new stdClass();
-                    $tmp->Id = $_item->Id;
-                    $tmp->Notes = (property_exists($_item, 'Notes')) ? $_item->Notes : NULL;
-                    $tmp->Items = (property_exists($_item, $oiiTable)) ? $_item->$oiiTable : NULL;
-                    $tmp->MagentoId = $_item->$_magentoId;
-
-                    $returnArray[$tmp->MagentoId] = $tmp;
-                }
-            }
-
-            return $returnArray;
+        $_results = array();
+        foreach (array_chunk($ids, self::UPDATE_LIMIT) as $_ids) {
+            $_results[]  = $this->_queryInvoice($_magentoId, $oiiTable, $_ids);
         }
-        catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
+
+        $records = $this->mergeRecords($_results);
+        if (empty($records)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Invoice lookup returned: no results...');
             return false;
         }
+
+        $returnArray = array();
+        foreach ($records as $_item) {
+            $tmp = new stdClass();
+            $tmp->Id = $_item->Id;
+            $tmp->Notes = $this->getProperty($_item, 'Notes');
+            $tmp->Items = $this->getProperty($_item, $oiiTable);
+            $tmp->MagentoId = $_item->$_magentoId;
+
+            $returnArray[$tmp->MagentoId] = $tmp;
+        }
+
+        return $returnArray;
+
     }
 
     protected function _queryInvoice($_magentoId, $oiiTable, $ids)
     {
         $_fields    = array(
             'Id', $_magentoId,
-            sprintf('(SELECT Id, Name, %s, %s, %s, %s FROM %s)',
+            sprintf('(SELECT Id, Name, %s, %s, %s, %s, %s FROM %s)',
                 TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Order_Item__c',
                 TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c',
                 TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Product_Code__c',
                 TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Quantity__c',
+                TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Magento_ID__c',
                 $oiiTable
             ),
             '(SELECT Id, Title, Body FROM Notes)'
@@ -73,14 +56,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helpe
         $query = sprintf('SELECT %s FROM %s WHERE %s IN (\'%s\')',
             implode(', ', $_fields), TNW_Salesforce_Model_Config_Objects::ORDER_INVOICE_OBJECT, $_magentoId, implode('\',\'', $ids));
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
-        try {
-            $_result = $this->getClient()->query($query);
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            $_result = array();
-        }
-
-        return $_result;
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Invoice QUERY:\n$query");
+        return $this->getClient()->query($query);
     }
 }

@@ -16,16 +16,8 @@ class TNW_Salesforce_Model_Config_Invoice_Backend_Sync_Enable extends Mage_Core_
      */
     protected function _beforeSave()
     {
-        if (!$this->getValue()) {
-            return parent::_beforeSave();
-        }
-
-        $_orderType = $this->getData('groups/customer_opportunity/fields/order_or_opportunity/value');
-        if (TNW_Salesforce_Helper_Config_Sales::SYNC_TYPE_ORDER == strtolower($_orderType)
-            && !$this->_checkInvoiceObject()
-        ) {
+        if ($this->getValue() && !$this->_checkInvoiceObject()) {
             $this->setValue(0);
-            return parent::_beforeSave();
         }
 
         return parent::_beforeSave();

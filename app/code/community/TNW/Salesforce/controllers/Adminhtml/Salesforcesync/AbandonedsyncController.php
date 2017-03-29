@@ -24,7 +24,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
     {
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('Manual Sync'))->_title($this->__('Abandoneds'));
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_abandonedsync'));
+            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_synchronize_abandoned'));
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
 
         $this->renderLayout();

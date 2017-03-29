@@ -35,7 +35,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
             ->_title($this->__('Credit Memo'));
 
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_creditmemosync'));
+            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_synchronize_creditmemo'));
 
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
         $this->renderLayout();
