@@ -7,14 +7,6 @@
 class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helper_Salesforce_Data
 {
     /**
-     * Account Name
-     *
-     * @var string
-     */
-    protected $_companyName = null;
-
-
-    /**
      * @param $duplicateData
      * @return $this
      */
@@ -176,6 +168,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     /**
      * @param $_customers Mage_Customer_Model_Customer[]
      * @return array
+     * @throws Exception
      *
      * @comment returns following structure: 0 => "$emails" => account data
      */
@@ -212,6 +205,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      * @param Mage_Customer_Model_Customer[] $_customers
      * @param string $field
      * @return array, key - customerId
+     * @throws Exception
      */
     public function lookupByContact($_customers, $field = 'id')
     {
@@ -221,7 +215,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         $returnArray = array();
         foreach ($customLookup as $item) {
             $returnArray = array_merge($returnArray,
-                $this->prepareContactRecord($item['customer'], $item['record'], $field));
+                $this->prepareContactRecord($item['entity'], $item['record'], $field));
         }
 
         return $returnArray;
@@ -256,17 +250,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      * @param string $hashField
      * @param string $field
      * @return array
+     * @throws Exception
      */
     public function lookupByCriterias($criterias, $hashField = 'Id', $field = 'Name')
     {
         $result = array();
         foreach (array_chunk($criterias, self::UPDATE_LIMIT, true) as $criteriasChunk) {
-            $lookupResults = $this->lookupByCriteria($criteriasChunk, $hashField, $field);
-            if (!is_array($lookupResults)) {
-                continue;
-            }
-
-            $result = array_merge($result, $lookupResults);
+            $result = array_merge($result, $this->lookupByCriteria($criteriasChunk, $hashField, $field));
         }
 
         return $result;
@@ -276,6 +266,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      * @comment find account by domain name
      * @param Mage_Customer_Model_Customer[] $_customers
      * @return array
+     * @throws Exception
      */
     public function lookupByEmailDomain($_customers)
     {
@@ -304,6 +295,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
      * @comment find account force
      * @param Mage_Customer_Model_Customer[] $_customers
      * @return array
+     * @throws Exception
      */
     public function lookupForce($_customers)
     {
@@ -325,22 +317,12 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
     }
 
     /**
-     * @param null $company
-     * @return $this
-     */
-    public function setCompany($company = null)
-    {
-        $this->_companyName = trim($company);
-
-        return $this;
-    }
-
-    /**
      * Find and return accounts by company names
      *
      * @param Mage_Customer_Model_Customer[] $_customers
      *
      * @return array
+     * @throws Exception
      */
     public function lookupByCompanies($_customers)
     {
@@ -392,108 +374,78 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
         
         return $sql;
     }
-    
+
     /**
      * Use the CustomIndex value in $hashField parameter if returned array should use the keys of the $_companies array
      * @param array $criteria
      * @param string $hashField
      * @param string $field
-     * @return array|bool
+     * @return array
+     * @throws Exception
      */
     public function lookupByCriteria($criteria = array(), $hashField = 'Id', $field = 'Name')
     {
-        try {
-            if (empty($criteria)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Account search criteria is not provided, SKIPPING lookup!");
+        if (empty($criteria)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Account search criteria is not provided, SKIPPING lookup!');
 
-                return false;
-            }
-
-            $sql = $this->_prepareCriteriaSql($criteria, $field);
-            $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
-
-            if (empty($result)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Account lookup by " . var_export($criteria, true) . " returned: 0 results...");
-                return false;
-            }
-
-            $returnArray = array();
-            foreach ($result as $_item) {
-                $_returnObject = new stdClass();
-                $_returnObject->Id = (isset($_item['Id'])) ? $_item['Id'] : NULL;
-                $_returnObject->OwnerId = (isset($_item['OwnerId'])) ? $_item['OwnerId'] : NULL;
-                $_returnObject->Name = (isset($_item['Name'])) ? $_item['Name'] : NULL;
-                $_returnObject->RecordTypeId = (isset($_item['RecordTypeId'])) ? $_item['RecordTypeId'] : NULL;
-                $_returnObject->IsPersonAccount = (isset($_item['IsPersonAccount'])) ? $_item['IsPersonAccount'] : false;
-
-                foreach ($criteria as $_customIndex => $_value) {
-                    // Need case insensitive match
-                    if (strtolower($_item[$field]) == strtolower($_value)) {
-                        $_returnObject->$field = $_value;
-                        $_returnObject->CustomIndex = $_customIndex;
-                        break;
-                    }
-                }
-
-                if (isset($_returnObject->$hashField) && $_returnObject->$hashField) {
-                    $_hashKey = $_returnObject->$hashField;
-                } elseif (isset($_item->$hashField) && $_item->$hashField) {
-                    $_hashKey = $_item->$hashField;
-                } else {
-                    $_hashKey = $_returnObject->Id;
-                }
-
-                $returnArray[$_hashKey] = $_returnObject;
-
-                unset($_returnObject);
-            }
-
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find an account by criteria: " . var_export($criteria, true));
-
-            return false;
+            return array();
         }
+
+        $sql = $this->_prepareCriteriaSql($criteria, $field);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Account QUERY:\n{$sql}");
+
+        $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
+        if (empty($result)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Account lookup returned: 0 results...');
+
+            return array();
+        }
+
+        $returnArray = array();
+        foreach ($result as $_item) {
+            $_returnObject = new stdClass();
+            $_returnObject->Id = (isset($_item['Id'])) ? $_item['Id'] : NULL;
+            $_returnObject->OwnerId = (isset($_item['OwnerId'])) ? $_item['OwnerId'] : NULL;
+            $_returnObject->Name = (isset($_item['Name'])) ? $_item['Name'] : NULL;
+            $_returnObject->RecordTypeId = (isset($_item['RecordTypeId'])) ? $_item['RecordTypeId'] : NULL;
+            $_returnObject->IsPersonAccount = (isset($_item['IsPersonAccount'])) ? $_item['IsPersonAccount'] : false;
+
+            foreach ($criteria as $_customIndex => $_value) {
+                // Need case insensitive match
+                if (strtolower($_item[$field]) == strtolower($_value)) {
+                    $_returnObject->$field = $_value;
+                    $_returnObject->CustomIndex = $_customIndex;
+                    break;
+                }
+            }
+
+            if (isset($_returnObject->$hashField) && $_returnObject->$hashField) {
+                $_hashKey = $_returnObject->$hashField;
+            } elseif (!empty($_item[$hashField])) {
+                $_hashKey = $_item[$hashField];
+            } else {
+                $_hashKey = $_returnObject->Id;
+            }
+
+            $returnArray[$_hashKey] = $_returnObject;
+        }
+
         return $returnArray;
     }
 
     /**
-     * @comment Use the "CustomIndex" value in $_hashField parameter if returned array should use the keys of the $_companies array
-     * @return bool|null
+     * @param $where
+     * @return bool
+     * @throws Exception
      */
-    public function lookupByCompany(array $companies = array(), $hashField = 'Id')
-    {
-        try {
-            if (!$this->_companyName && empty($companies)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Company field is not provided, SKIPPING lookup!");
-
-                return false;
-            }
-
-            if (!$companies) {
-                $companies = array($this->_companyName);
-            }
-
-            if (empty($companies)) {
-                return false;
-            }
-
-            $returnArray = $this->lookupByCriteria($companies, $hashField);
-
-            return $returnArray;
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find a contact by Company: " . $this->_companyName);
-        }
-
-        return false;
-    }
-
     public function lookupContactIds($where)
     {
         $sql = "SELECT Id, PersonContactId FROM Account WHERE Id IN ('" . implode("','", array_values($where)) . "')";
-        $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Account QUERY:\n{$sql}");
 
+        $result = Mage::getSingleton('tnw_salesforce/api_client')->query($sql);
         if (empty($result)) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("PersonAccount lookup did not return any results...");
             return false;

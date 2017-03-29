@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.57.10.0002</version>
+            <version>0.01.58.02.0000</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -465,7 +465,121 @@
                 </observers>
             </adminhtml_store_edit_form_prepare_form>
 
-            <!-- Pushing order object into Salesforce post all validation -->
+            <!-- Entity Sync Event -->
+            <tnw_salesforce_sync_order_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityForWebsite</method>
+                    </opportunity>
+                    <order>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderForWebsite</method>
+                    </order>
+                </observers>
+            </tnw_salesforce_sync_order_for_website>
+            <tnw_salesforce_sync_abandoned_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/observer</class>
+                        <method>abandonedForWebsite</method>
+                    </opportunity>
+                </observers>
+            </tnw_salesforce_sync_abandoned_for_website>
+            <tnw_salesforce_sync_invoice_for_website>
+                <observers>
+                    <opportunity_invoice>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityInvoiceForWebsite</method>
+                    </opportunity_invoice>
+                    <order_invoice>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderInvoiceForWebsite</method>
+                    </order_invoice>
+                </observers>
+            </tnw_salesforce_sync_invoice_for_website>
+            <tnw_salesforce_sync_shipment_for_website>
+                <observers>
+                    <opportunity_shipment>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityShipmentForWebsite</method>
+                    </opportunity_shipment>
+                    <order_shipment>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderShipmentForWebsite</method>
+                    </order_shipment>
+                </observers>
+            </tnw_salesforce_sync_shipment_for_website>
+            <tnw_salesforce_sync_creditmemo_for_website>
+                <observers>
+                    <order_creditmemo>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderCreditmemoForWebsite</method>
+                    </order_creditmemo>
+                </observers>
+            </tnw_salesforce_sync_creditmemo_for_website>
+
+            <!-- Comment Sync Event -->
+            <tnw_salesforce_sync_order_comment_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>opportunityCommentForWebsite</method>
+                    </opportunity>
+                    <order>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderCommentForWebsite</method>
+                    </order>
+                </observers>
+            </tnw_salesforce_sync_order_comment_for_website>
+            <tnw_salesforce_sync_invoice_comment_for_website>
+                <observers>
+                    <opportunity_invoice>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>opportunityInvoiceCommentForWebsite</method>
+                    </opportunity_invoice>
+                    <order_invoice>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderInvoiceCommentForWebsite</method>
+                    </order_invoice>
+                </observers>
+            </tnw_salesforce_sync_invoice_comment_for_website>
+            <tnw_salesforce_sync_shipment_comment_for_website>
+                <observers>
+                    <opportunity_shipment>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>opportunityShipmentCommentForWebsite</method>
+                    </opportunity_shipment>
+                    <order_shipment>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderShipmentCommentForWebsite</method>
+                    </order_shipment>
+                </observers>
+            </tnw_salesforce_sync_shipment_comment_for_website>
+            <tnw_salesforce_sync_creditmemo_comment_for_website>
+                <observers>
+                    <order_creditmemo>
+                        <class>tnw_salesforce/sale_notes_observer</class>
+                        <method>orderCreditmemoCommentForWebsite</method>
+                    </order_creditmemo>
+                </observers>
+            </tnw_salesforce_sync_creditmemo_comment_for_website>
+
+            <!-- Order status Update -->
+            <tnw_salesforce_sync_order_status_for_website>
+                <observers>
+                    <opportunity>
+                        <class>tnw_salesforce/observer</class>
+                        <method>opportunityStatusForWebsite</method>
+                    </opportunity>
+                    <order>
+                        <class>tnw_salesforce/observer</class>
+                        <method>orderStatusForWebsite</method>
+                    </order>
+                </observers>
+            </tnw_salesforce_sync_order_status_for_website>
+
+            <!-- Deprecated. Pushing order object into Salesforce post all validation -->
             <tnw_salesforce_order_process>
                 <observers>
                     <tnw_salesforce_push_order>
@@ -474,7 +588,7 @@
                     </tnw_salesforce_push_order>
                 </observers>
             </tnw_salesforce_order_process>
-            <!-- Pushing opportunity object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing opportunity object into Salesforce post all validation -->
             <tnw_salesforce_opportunity_process>
                 <observers>
                     <tnw_salesforce_push_opportunity>
@@ -483,7 +597,7 @@
                     </tnw_salesforce_push_opportunity>
                 </observers>
             </tnw_salesforce_opportunity_process>
-            <!-- Pushing invoice object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing invoice object into Salesforce post all validation -->
             <tnw_salesforce_invoice_process>
                 <observers>
                     <tnw_salesforce_push_invoice>
@@ -492,7 +606,7 @@
                     </tnw_salesforce_push_invoice>
                 </observers>
             </tnw_salesforce_invoice_process>
-            <!-- Pushing shipment object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing shipment object into Salesforce post all validation -->
             <tnw_salesforce_shipment_process>
                 <observers>
                     <tnw_salesforce_push_shipment>
@@ -501,7 +615,7 @@
                     </tnw_salesforce_push_shipment>
                 </observers>
             </tnw_salesforce_shipment_process>
-            <!-- Pushing creditmemo object into Salesforce post all validation -->
+            <!-- Deprecated. Pushing creditmemo object into Salesforce post all validation -->
             <tnw_salesforce_creditmemo_process>
                 <observers>
                     <tnw_salesforce_push_creditmemo>
@@ -510,7 +624,7 @@
                     </tnw_salesforce_push_creditmemo>
                 </observers>
             </tnw_salesforce_creditmemo_process>
-            <!-- Update order status - Opportunity -->
+            <!-- Deprecated. Update order status - Opportunity -->
             <tnw_salesforce_opportunity_status_update>
                 <observers>
                     <tnw_salesforce_update_opportunity>
@@ -519,7 +633,7 @@
                     </tnw_salesforce_update_opportunity>
                 </observers>
             </tnw_salesforce_opportunity_status_update>
-            <!-- Update order status - Order -->
+            <!-- Deprecated. Update order status - Order -->
             <tnw_salesforce_order_status_update>
                 <observers>
                     <tnw_salesforce_update_order>
@@ -591,6 +705,14 @@
                 </observers>
             </eav_entity_attribute_set_save_commit_after>
 
+            <wishlist_product_add_after>
+                <observers>
+                    <tnw_salesforce>
+                        <class>tnw_salesforce/wishlist_observer</class>
+                        <method>productAddAfter</method>
+                    </tnw_salesforce>
+                </observers>
+            </wishlist_product_add_after>
         </events>
     </global>
     <adminhtml>
@@ -774,6 +896,7 @@
                 <invoice_batch_size>500</invoice_batch_size>
                 <shipment_batch_size>500</shipment_batch_size>
                 <creditmemo_batch_size>500</creditmemo_batch_size>
+                <wishlist_batch_size>500</wishlist_batch_size>
                 <page_size_from_salesforce>100</page_size_from_salesforce>
 
                 <db_log_limit>10000</db_log_limit>
@@ -805,6 +928,11 @@
             <newsletter_config>
                 <customer_newsletter_enable_sync>0</customer_newsletter_enable_sync>
             </newsletter_config>
+            <wishlist>
+                <sync_enable>0</sync_enable>
+                <close_date>2</close_date>
+                <enable_contact_role>0</enable_contact_role>
+            </wishlist>
         </salesforce_customer>
         <salesforce_product>
             <general>
@@ -829,7 +957,8 @@
                 <currency_sync>customer</currency_sync>
             </currency>
             <customer_opportunity>
-                <order_or_opportunity>Order</order_or_opportunity>
+                <integration_option>order_and_opportunity</integration_option>
+                <integration_type>order</integration_type>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
                 <order_create_reverse_sync>0</order_create_reverse_sync>
                 <order_opportunity_status>Closed Won</order_opportunity_status>

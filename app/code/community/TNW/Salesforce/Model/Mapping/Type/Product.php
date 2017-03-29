@@ -35,6 +35,9 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
 
             case 'attribute_set_id':
                 return $this->convertAttributeSetId($_entity);
+
+            case 'salesforce_pricebook_id':
+                return $this->convertPriceBook($_entity);
         }
 
         return parent::_prepareValue($_entity);
@@ -157,6 +160,32 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
         $value = $_entity->getAttributeSetId();
         return Mage::getSingleton('catalog/config')
             ->getAttributeSetName(Mage_Catalog_Model_Product::ENTITY, $value);
+    }
+
+    /**
+     * @param $_entity Mage_Catalog_Model_Product
+     * @return mixed
+     */
+    public function convertPriceBook($_entity)
+    {
+        $_currencyCode = $_entity->getStore()->getCurrentCurrencyCode();
+        $priceBookId = null;
+        foreach (explode("\n", $_entity->getData('salesforce_pricebook_id')) as $value) {
+            if (strpos($value, ':') === false) {
+                continue;
+            }
+
+            list($_currency, $_priceBook) = explode(':', $value, 2);
+            if (empty($_currency)) {
+                continue;
+            }
+
+            if (empty($_currencyCode) || strcasecmp($_currency, $_currencyCode) === 0) {
+                $priceBookId = $_priceBook;
+            }
+        }
+
+        return $priceBookId;
     }
 
     /**

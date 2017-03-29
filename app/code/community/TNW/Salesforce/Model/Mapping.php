@@ -94,9 +94,12 @@ class TNW_Salesforce_Model_Mapping extends Mage_Core_Model_Abstract
     {
         parent::_afterLoad();
 
-        list($localFieldType, $localFieldAttributeCode) = array_map('trim', explode(':', $this->getLocalField(), 2));
-        $this->setLocalFieldType($localFieldType);
-        $this->setLocalFieldAttributeCode($localFieldAttributeCode);
+        $localField = array_map('trim', explode(':', $this->getLocalField(), 2));
+        if (count($localField) >= 2) {
+            list($localFieldType, $localFieldAttributeCode) = $localField;
+            $this->setLocalFieldType($localFieldType);
+            $this->setLocalFieldAttributeCode($localFieldAttributeCode);
+        }
 
         return $this;
     }

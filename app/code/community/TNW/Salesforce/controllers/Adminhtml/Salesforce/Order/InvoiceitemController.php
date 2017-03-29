@@ -18,5 +18,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_Order_InvoiceitemController extends TN
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'order_invoiceitem';
+    protected $_blockPath = 'mapping_invoice_orderinvoiceitem';
 }

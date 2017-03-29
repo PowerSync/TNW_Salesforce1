@@ -23,6 +23,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         $this->_mageModels['creditmemo'] = 'sales/order_creditmemo';
         $this->_mageModels['catalogrule'] = 'catalogrule/rule';
         $this->_mageModels['salesrule'] = 'salesrule/rule';
+        $this->_mageModels['wishlist'] = 'wishlist/wishlist';
     }
 
     /**
@@ -355,6 +356,17 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                     ->joinLeft(array('website'=>$resource->getTable('salesrule/website')), 'rule.rule_id = website.rule_id', array('website_id'=>new Zend_Db_Expr('IFNULL(website_id, 0)')))
                     ->group(array('rule.rule_id'))
                     ->where($connection->prepareSqlCondition('rule.rule_id', array('in'=>$idSet)))
+                ;
+
+            case 'wishlist/wishlist':
+                /** @var Mage_Wishlist_Model_Resource_Wishlist $resource */
+                $resource   = Mage::getResourceModel('wishlist/wishlist');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('wishlist'=>$resource->getMainTable()), array('object_id' => 'wishlist_id'))
+                    ->joinInner(array('customer'=>$resource->getTable('customer/entity')), 'customer.entity_id = wishlist.customer_id', array('website_id'=>new Zend_Db_Expr('IFNULL(customer.website_id, 0)')))
+                    ->where($connection->prepareSqlCondition('wishlist.wishlist_id', array('in'=>$idSet)))
                 ;
 
             default:

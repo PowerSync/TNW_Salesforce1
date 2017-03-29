@@ -69,6 +69,24 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     }
 
     /**
+     * @param $ids
+     * Reset Salesforce ID in Magento for the order
+     */
+    public function resetEntity($ids)
+    {
+        TNW_Salesforce_Helper_Salesforce_Abstract_Base::resetEntity($ids);
+    }
+
+    /**
+     * Try to find order in SF and save in local cache
+     */
+    protected function _prepareOrderLookup()
+    {
+        $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')
+            ->opportunityLookup($this->_cache['entitiesUpdating']);
+    }
+
+    /**
      * Remaining Data
      */
     protected function _prepareRemaining()
@@ -85,7 +103,7 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
     protected function _prepareEntity()
     {
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: Start----------');
-        $opportunitiesUpdate = array();
+        $opportunities = array();
         foreach ($this->_cache['entitiesUpdating'] as $_key => $_quoteNumber) {
             $_quote = $this->_loadEntityByCache($_key, $_quoteNumber);
 
@@ -106,32 +124,23 @@ class TNW_Salesforce_Helper_Salesforce_Abandoned_Opportunity extends TNW_Salesfo
                 $this->_cache['opportunitiesToUpsert'][$_quoteNumber] = $this->_obj;
             }
 
-            if ($_quote->getData('salesforce_id')) {
-                $opportunitiesUpdate[] = $_quote->getData('salesforce_id');
+            if (!empty($this->_obj->Id)) {
+                $opportunities[] = $this->_obj->Id;
             }
         }
 
-        do {
-            if (empty($opportunitiesUpdate)) {
-                break;
-            }
-
-            $oppItemSet = Mage::helper('tnw_salesforce/salesforce_data')->getOpportunityItems($opportunitiesUpdate);
-            if (empty($oppItemSet)) {
-                break;
-            }
-
-            $oppItemSetId = array();
-            foreach ($oppItemSet as $item) {
-                $oppItemSetId[] = $item->Id;
-            }
-
-            foreach (array_chunk($oppItemSetId, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $oppItemSetId) {
-                $this->getClient()->delete($oppItemSetId);
-            }
-        } while(false);
-
+        $this->deleteOpportunityItems($opportunities);
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Opportunity Preparation: End----------');
+    }
+
+    /**
+     * @param $_entity
+     * @return mixed
+     * @throws Exception
+     */
+    protected function _getEntitySalesforceId($_entity)
+    {
+        return TNW_Salesforce_Helper_Salesforce_Abstract_Base::_getEntitySalesforceId($_entity);
     }
 
     /**

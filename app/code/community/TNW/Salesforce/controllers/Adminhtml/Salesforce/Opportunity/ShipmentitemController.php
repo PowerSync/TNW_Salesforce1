@@ -18,5 +18,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_Opportunity_ShipmentitemController ext
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'opportunity_shipmentitem';
+    protected $_blockPath = 'mapping_shipment_opportunityshipmentitem';
 }

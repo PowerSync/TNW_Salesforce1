@@ -482,6 +482,27 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
+     * @return bool
+     */
+    public function reset()
+    {
+        parent::reset();
+
+        // Clean order cache
+        if (!empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
+            foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_orderNumber) {
+                $this->unsetEntityCache($_orderNumber);
+            }
+        }
+
+        $this->_cache = array(
+            self::CACHE_KEY_ENTITIES_UPDATING => array(),
+        );
+
+        return $this->check();
+    }
+
+    /**
      * @param $type
      * @throws Exception
      */
@@ -495,6 +516,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
         if ($type == 'full') {
             $this->_prepareRemaining();
+
             $this->_pushRemainingEntityData();
 
             $this->clearMemory();
@@ -600,6 +622,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
+     * @deprecated
+     */
+    public function prepareNotes()
+    {
+        $this->_prepareNotes();
+    }
+
+    /**
      * @param $_entity
      * @throws Exception
      * @return array
@@ -612,6 +642,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     /**
      * @param Mage_Sales_Model_Order_Status_History[] $notes
      * @return $this
+     * @deprecated
      */
     public function createObjNones($notes)
     {
@@ -624,21 +655,24 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 continue;
             }
 
+            $parentId = $this->_getNotesParentSalesforceId($_note);
+            if (empty($parentId)) {
+                continue;
+            }
+
             $comment      = utf8_encode($_note->getData('comment'));
 
             $_obj = new stdClass();
-            $_obj->ParentId   = $this->_getNotesParentSalesforceId($_note);
+            $_obj->ParentId   = $parentId;
             $_obj->IsPrivate  = 0;
             $_obj->Body       = $comment;
             $_obj->Title      = (strlen($comment) > 75)
                 ? sprintf('%s...', mb_substr($comment, 0, 75))
                 : $comment;
 
-            foreach ($_obj as $key => $_value) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf('Note Object: %s = "%s"', $key, $_value));
-            }
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace(sprintf("Note Object:\n%s", print_r($_obj, true)));
 
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('+++++++++++++++++++++++++++++');
             $this->_cache['notesToUpsert'][$_note->getData('entity_id')] = $_obj;
         }
 
@@ -651,7 +685,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _checkNotesItem($_note)
     {
-        return !$_note->getData('salesforce_id') && $_note->getData('comment');
+        return !$_note->getData($this->_notesTableFieldName()) && $_note->getData('comment');
     }
 
     protected function _getNotesParentSalesforceId($notes)
@@ -755,17 +789,59 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @param array $chunk
+     * @param $_entity
+     * @param $type string
      * @return mixed
-     * @throws Exception
      */
-    protected function _pushEntityItems($chunk = array())
+    public function getObjectByEntityType($_entity, $type)
     {
-        throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
+        return $this->_getObjectByEntityType($_entity, $type);
     }
 
     /**
-     * @return mixed
+     * @param array $chunk
+     * @deprecated
+     */
+    protected function _pushEntityItems($chunk = array())
+    {
+        throw new Exception(sprintf('Method "_pushItems" must be overridden before use'));
+    }
+
+    /**
+     * @return $this
+     */
+    protected function _pushItems()
+    {
+        $itemKey = sprintf('%sToUpsert', lcfirst($this->getItemsField()));
+        if (empty($this->_cache[$itemKey])) {
+            return $this;
+        }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Items: Start----------');
+
+        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_before', $this->_magentoEntityName), array('data' => $this->_cache[$itemKey]));
+        foreach (array_chunk($this->_cache[$itemKey], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true) as $_itemsToPush) {
+            $this->_pushItemsChunk($_itemsToPush);
+        }
+
+        Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_after', $this->_magentoEntityName), array(
+            'data' => $this->_cache[$itemKey],
+            'result' => $this->_cache['responses'][lcfirst($this->getItemsField())]
+        ));
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Items: End----------');
+        return $this;
+    }
+
+    /**
+     * @param array $chunk
+     */
+    protected function _pushItemsChunk(array $chunk)
+    {
+        $this->_pushEntityItems($chunk);
+    }
+
+    /**
      * @throws Exception
      */
     protected function _pushEntity()
@@ -899,6 +975,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
     /**
      * @param $_entityItem
+     * @param $_type
+     * @return null
+     */
+    public function getObjectByEntityItemType($_entityItem, $_type)
+    {
+        return $this->_getObjectByEntityItemType($_entityItem, $_type);
+    }
+
+    /**
+     * @param $_entityItem
      */
     protected function _prepareEntityItemObjCustom($_entityItem)
     {
@@ -910,26 +996,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     protected function _pushRemainingEntityData()
     {
-        $itemKey = sprintf('%sToUpsert', lcfirst($this->getItemsField()));
-
-        // Push Order Products
-        if (!empty($this->_cache[$itemKey])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: Start----------');
-
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_before', $this->_magentoEntityName), array("data" => $this->_cache[$itemKey]));
-
-            $orderItemsToUpsert = array_chunk($this->_cache[$itemKey], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT, true);
-            foreach ($orderItemsToUpsert as $_itemsToPush) {
-                $this->_pushEntityItems($_itemsToPush);
-            }
-
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_products_send_after', $this->_magentoEntityName), array(
-                "data" => $this->_cache[$itemKey],
-                "result" => $this->_cache['responses'][lcfirst($this->getItemsField())]
-            ));
-
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Push Cart Items: End----------');
-        }
+        // Push Items Data
+        $this->_pushItems();
 
         // Push Custom Data
         $this->_pushRemainingCustomEntityData();
@@ -1006,8 +1074,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             else {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Note (id: ' . $_noteId . ') upserted for '.$this->_magentoEntityName.' #' . $_entityNum . ')');
 
-                $sql = sprintf('UPDATE `%s` SET salesforce_id = "%s" WHERE entity_id = "%s";',
-                    $this->_notesTableName(), $_result->id, $_noteId);
+                $sql = sprintf('UPDATE `%s` SET %s = "%s" WHERE entity_id = "%s";',
+                    $this->_notesTableName(), $this->_notesTableFieldName(), $_result->id, $_noteId);
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SQL: ' . $sql);
                 Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
             }
@@ -1015,8 +1083,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     }
 
     /**
-     * @throws Exception
-     * @return mixed
+     * @return string
+     */
+    protected function _notesTableFieldName()
+    {
+        return 'salesforce_id';
+    }
+
+    /**
+     * @return string
      */
     protected function _notesTableName()
     {
