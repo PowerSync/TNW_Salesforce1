@@ -193,9 +193,10 @@ class TNW_Salesforce_Model_Sale_Observer
 
     /**
      * @param array $entityIds
+     * @param bool $isManualSync
      * @throws Exception
      */
-    public function syncOrder(array $entityIds)
+    public function syncOrder(array $entityIds, $isManualSync = false)
     {
         $groupWebsite = array();
         foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
@@ -208,19 +209,20 @@ class TNW_Salesforce_Model_Sale_Observer
             }
         }
 
-        foreach ($groupWebsite as $websiteId => $entityIds) {
-            $this->syncOrderForWebsite($entityIds, $websiteId);
+        foreach ($groupWebsite as $websiteId => $_entityIds) {
+            $this->syncOrderForWebsite($_entityIds, $websiteId, $isManualSync);
         }
     }
 
     /**
      * @param array $entityIds
      * @param null $website
+     * @param bool $isManualSync
      * @throws Exception
      */
-    public function syncOrderForWebsite(array $entityIds, $website = null)
+    public function syncOrderForWebsite(array $entityIds, $website = null, $isManualSync = false)
     {
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds, $isManualSync) {
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
@@ -231,7 +233,7 @@ class TNW_Salesforce_Model_Sale_Observer
                 return;
             }
 
-            if (!$helper->isEnabledOrderSync()) {
+            if (!$isManualSync && !$helper->isEnabledOrderSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('SKIPPING: Order Integration is disabled');
 

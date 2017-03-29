@@ -35,7 +35,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     protected $_isPushingGuestData = false;
 
-    /*
+    /**
      * Is Person Account
      */
     protected $_isPerson = NULL;
@@ -61,6 +61,33 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      * @var array
      */
     protected $_websites = array();
+
+    /** @var array */
+    protected $_statisticFields = array(
+        'last_purchase',
+        'last_login',
+        'last_transaction_id',
+        'total_order_count',
+        'total_order_amount',
+        'first_purchase',
+        'first_transaction_id',
+    );
+
+    /**
+     * @return array
+     */
+    public function getStatisticFields()
+    {
+        return $this->_statisticFields;
+    }
+
+    /**
+     * @param array $statisticFields
+     */
+    public function setStatisticFields($statisticFields)
+    {
+        $this->_statisticFields = $statisticFields;
+    }
 
     /**
      * @return boolean
@@ -502,33 +529,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
-     * Create Lead object for sync
-     */
-    protected function _prepareLeads()
-    {
-        // Existing Leads
-        if (!empty($this->_cache['leadLookup'])) {
-            foreach ($this->_cache['leadLookup'] as $_salesforceWebsiteId => $websiteLeads) {
-                $_websiteId = array_search($_salesforceWebsiteId, $this->_websiteSfIds);
-                foreach ($websiteLeads as $_email => $_info) {
-                    $this->_isPerson = NULL;
-                    // Just in case Salesforce did not save Magento ID for some reason
-                    if (!empty($this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId)) {
-                        $_info->MagentoId = $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId;
-                    }
-
-                    if (!$_info->IsConverted) {
-                        $this->_addToQueue($_info->MagentoId, "Lead");
-                    } else {
-                        $this->_toDelete[] = $_info->Id;
-                        unset($this->_cache['leadLookup'][$_salesforceWebsiteId][$_email]);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * @comment create stdClass object for synchronization, see the "_obj" property
      * @param $_id
      * @param string $type
@@ -779,73 +779,151 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         return $_name;
     }
 
-    protected function _prepareContacts()
+    /**
+     * check, shall we push lead or not
+     * @param $email
+     * @return bool|mixed|null|string
+     */
+    protected function _leadShouldBePushed($id)
     {
-        if (!empty($this->_cache['contactsLookup'])) {
-            foreach ($this->_cache['contactsLookup'] as $_salesforceWebsiteId => $_accounts) {
-                $_websiteId = array_search($_salesforceWebsiteId, $this->_websiteSfIds);
-                if ($_websiteId === false) {
-                    $_websiteId = '';
-                }
-                foreach ($_accounts as $_email => $_info) {
-                    $this->_isPerson = NULL;
-                    if (
-                        !$_info->MagentoId &&
-                        is_array($this->_cache['toSaveInMagento']) &&
-                        array_key_exists($_websiteId, $this->_cache['toSaveInMagento']) &&
-                        array_key_exists($_email, $this->_cache['toSaveInMagento'][$_websiteId])
-                    ) {
-                        $_info->MagentoId = $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId;
-                    }
-                    if (
-                        array_key_exists($_websiteId, $this->_cache['toSaveInMagento'])
-                        && array_key_exists($_email, $this->_cache['toSaveInMagento'][$_websiteId])
-                        && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId
-                        && $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId != $_info->MagentoId
-                    ) {
-                        $_info->MagentoId = $this->_cache['toSaveInMagento'][$_websiteId][$_email]->MagentoId;
-                    }
+        $email = $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$id];
 
-                    // Changed order so that we can capture account owner: Account then Contact
-                    $this->_addToQueue($_info->MagentoId, "Account");
-                    $this->_addToQueue($_info->MagentoId, "Contact");
-                }
-            }
+        $websiteId = Mage::app()->getWebsite()->getId();
+        $_salesforceWebsiteId = $this->_websiteSfIds[$websiteId];
+
+        /**
+         * check config flag first
+         */
+        $_leadShouldBePushed = Mage::helper('tnw_salesforce')->isCustomerAsLead();
+
+        /**
+         * if accountLookup has matched record - don't create lead because it's converted already
+         */
+        $_leadShouldBePushed = $_leadShouldBePushed && !isset($this->_cache['accountLookup'][0][$email]);
+
+        /**
+         * if matched lead found - we should update only non-converted Leads
+         */
+        if (isset($this->_cache['leadLookup'][$_salesforceWebsiteId][$email])) {
+            $_info = $this->_cache['leadLookup'][$_salesforceWebsiteId][$email];
+
+            $_leadShouldBePushed = !(bool)$_info->IsConverted;
         }
+
+        return $_leadShouldBePushed;
     }
 
-    protected function _prepareNew()
+    /**
+     * check, shall we push contact or not
+     * @param $email
+     * @return bool|mixed|null|string
+     */
+    protected function _contactShouldBePushed($id)
     {
-        if (!empty($this->_toDelete)) {
-            $this->_deleteLeads();
+        $email = $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$id];
+
+        $websiteId = Mage::app()->getWebsite()->getId();
+        $_salesforceWebsiteId = $this->_websiteSfIds[$websiteId];
+
+        $_contactShouldBePushed = false;
+        /**
+         * Sync as Account/Contact if leads disabled or lead convertation ebabled
+         */
+        if (!Mage::helper('tnw_salesforce')->isCustomerAsLead()
+            || $this->isForceLeadConvertation()
+            || isset($this->_cache['accountLookup'][0][$email])
+            || isset($this->_cache['contactLookup'][$_salesforceWebsiteId][$email])
+        ) {
+            $_contactShouldBePushed = true;
         }
 
-        if (!empty($this->_cache['notFoundCustomers'])) {
-            foreach ($this->_cache['notFoundCustomers'] as $_id => $_email) {
-                $this->_isPerson = NULL;
-                // Check if new customers need to be added as a Lead or Contact
-                if (
-                    Mage::helper('tnw_salesforce')->isCustomerAsLead()
-                    && !isset($this->_cache['accountLookup'][0][$_email])
-                    && !isset($this->_cache['leadLookup'][$this->_cache['customerToWebsite'][$_id]][$_email])
-                ) {
-                    $this->_addToQueue($_id, "Lead");
-                }
+        return $_contactShouldBePushed;
+    }
+    /**
+     * check, shall we push account or not
+     * @param $email
+     * @return bool|mixed|null|string
+     */
+    protected function _accountShouldBePushed($id)
+    {
+        /**
+         * we create account by the same reasons as Contact by default
+         */
+        return $this-> _contactShouldBePushed($id);
+    }
 
-                /**
-                 * Sync as Account/Contact if leads disabled or lead convertation ebabled
-                 */
-                if (!Mage::helper('tnw_salesforce')->isCustomerAsLead() || $this->isForceLeadConvertation() || isset($this->_cache['accountLookup'][0][$_email])) {
-                    // Changed order so that we can capture account owner: Account then Contact
-                    $this->_addToQueue($_id, "Account");
-                    $this->_addToQueue($_id, "Contact");
-                }
+    /**
+     * add Customer to sync as Lead, Contact, Account
+     */
+    protected function _prepareCustomer()
+    {
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_id => $_email) {
+
+            if ($this->_leadShouldBePushed($_id)) {
+                $this->_addToQueue($_id, "Lead");
+            }
+
+            if ($this->_accountShouldBePushed($_id)) {
+                $this->_addToQueue($_id, "Account");
+            }
+
+            if ($this->_contactShouldBePushed($_id)) {
+                $this->_addToQueue($_id, "Contact");
             }
         }
+
+        /**
+         * delete converted leads
+         */
+            $this->_deleteLeads();
+
+    }
+
+    /**
+     * Create Lead object for sync
+     * @deprecated, see _prepareCustomer
+     */
+    protected function _prepareLeads()
+    {
+
+    }
+
+    /**
+     * @deprecated, see _prepareCustomer
+     */
+    protected function _prepareContacts()
+    {
+        $this->_prepareCustomer();
+    }
+
+    /**
+     * @deprecated, see _prepareCustomer
+     */
+    protected function _prepareNew()
+    {
+
     }
 
     protected function _deleteLeads()
     {
+
+        $websiteId = Mage::app()->getWebsite()->getId();
+        $_salesforceWebsiteId = $this->_websiteSfIds[$websiteId];
+
+        foreach ($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING] as $_id => $email) {
+            /**
+             * if matched lead found - we should update only non-converted Leads
+             */
+            if (isset($this->_cache['leadLookup'][$_salesforceWebsiteId][$email])) {
+                $_info = $this->_cache['leadLookup'][$_salesforceWebsiteId][$email];
+
+                if ($_info->IsConverted) {
+                    $this->_toDelete[] = $_info->Id;
+                    unset($this->_cache['leadLookup'][$_salesforceWebsiteId][$email]);
+                }
+            }
+        }
+
         $_ids = array_chunk($this->_toDelete, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
         foreach ($_ids as $_recordIds) {
             $this->getClient()->delete($_recordIds);
@@ -947,13 +1025,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
                     $leadConvert = new stdClass();
 
-                    $force = isset($this->_cache['contactsLookup'][$_websiteId][$_email]) || $this->isForceLeadConvertation();
-                    if (!$force
-                        && Mage::helper('tnw_salesforce')->isCustomerAsLead()
-                    ) {
-                        continue;
-                    }
-
                     if (isset($this->_cache['accountLookup'][0][$_email])) {
                         $leadConvert->accountId = $this->_cache['accountLookup'][0][$_email]->Id;
                     }
@@ -988,6 +1059,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                         }
                     }
 
+                    if (!isset($this->_cache['accountLookup'][0][$_email]) && !isset($this->_cache['contactsLookup'][$_websiteId][$_email])) {
+                        continue;
+                    }
+
                     $leadConvert = $this->_prepareLeadConversionObject($_lead, $leadConvert);
 
                     $this->_cache['leadsToConvert'][$_lead->MagentoId] = $leadConvert;
@@ -999,22 +1074,18 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     }
 
     /**
-     * Update customer statistic data for using in mapping
+     * collect Sales statistic for customers
      * @param $ids
      * @return $this
      */
-    protected function _updateCustomerStatistic($ids)
+    protected function _updateCustomerSalesStatistic($ids)
     {
-
-        /**
-         * field names are necessary for customer table updating
-         */
-        $fields = array();
 
         // 1. Save sales info
         /**
          * prepare query for sales statistic calculation
          */
+        /** @var Mage_Sales_Model_Resource_Order_Collection $salesCollection */
         $salesCollection = Mage::getModel('sales/order')->getCollection();
         $salesCollection->removeAllFieldsFromSelect();
         $salesCollection->removeFieldFromSelect($salesCollection->getResource()->getIdFieldName());
@@ -1022,96 +1093,129 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         /**
          * add customer_id in result
          */
-        $fields[] = 'entity_id';
-        $salesCollection->addFieldToSelect('customer_id', 'entity_id');
+        $salesCollection->addFieldToSelect('customer_id');
+
+        $salesCollection
+            ->addExpressionFieldToSelect('last_purchase', 'MAX(main_table.created_at)', array())
+            ->addExpressionFieldToSelect('first_purchase', 'MIN(main_table.created_at)', array());
 
         /**
-         * select last_purchase value
+         * The "last sales" statistic
          */
-        $fields[] = 'last_purchase';
-        $salesCollection->addExpressionFieldToSelect('last_purchase', 'MAX(created_at)', array());
+        /** @var Mage_Sales_Model_Resource_Order_Collection $subselect */
+        $subselect = Mage::getModel('sales/order')->getCollection();
+
+        $subselect->removeAllFieldsFromSelect();
+        $subselect->removeFieldFromSelect($salesCollection->getResource()->getIdFieldName());
+
+        $subselect->getSelect()->reset(Zend_Db_Select::FROM);
+        $subselect->getSelect()->from(array('subselect' => $salesCollection->getMainTable()), array('increment_id'));
+
+        $subselect->getSelect()->where('subselect.customer_id = main_table.customer_id');
+        $subselect->getSelect()->order('created_at ' . Varien_Data_Collection_Db::SORT_ORDER_DESC);
+
+        $subselect->getSelect()->limit(1);
+
+        $salesCollection
+            ->getSelect()
+            ->columns(array('last_transaction_id' => new Zend_Db_Expr(sprintf('(%s)', $subselect->getSelect()->__toString()))));
 
         /**
-         * salect last_transaction_id
+         * The "last sales" statistic
          */
-        $fields[] = 'last_transaction_id';
-        $salesCollection->addExpressionFieldToSelect('last_transaction_id', 'MAX(increment_id)', array());
+        /** @var Mage_Sales_Model_Resource_Order_Collection $subselect */
+        $subselect = Mage::getModel('sales/order')->getCollection();
 
+        $subselect->removeAllFieldsFromSelect();
+        $subselect->removeFieldFromSelect($salesCollection->getResource()->getIdFieldName());
+
+        $subselect->getSelect()->reset(Zend_Db_Select::FROM);
+        $subselect->getSelect()->from(array('subselect' => $salesCollection->getMainTable()), array('increment_id'));
+
+        $subselect->getSelect()->where('subselect.customer_id = main_table.customer_id');
+        $subselect->getSelect()->order('created_at ' . Varien_Data_Collection_Db::SORT_ORDER_ASC);
+        $subselect->getSelect()->limit(1);
+
+        $salesCollection
+            ->getSelect()
+            ->columns(array('first_transaction_id' => new Zend_Db_Expr(sprintf('(%s)', $subselect->getSelect()->__toString()))));
 
         /**
          * select total_order_count value
          */
-        $fields[] = 'total_order_count';
         $salesCollection
             ->addExpressionFieldToSelect('total_order_count', "COUNT(*)", array());
 
         /**
          * select total_order_amount value
          */
-        $fields[] = 'total_order_amount';
         $salesCollection
             ->addExpressionFieldToSelect('total_order_amount', 'SUM(base_grand_total)', array());
 
-        $salesCollection->addFieldToFilter('customer_id', array('in' => $ids));
+        $salesCollection->addFieldToFilter('main_table.customer_id', array('in' => $ids));
 
-        $salesCollection->getSelect()->group('customer_id');
+        $salesCollection->getSelect()->group('main_table.customer_id');
 
-        /**
-         * save sales statistic in customer table
-         */
-        $query = $salesCollection->getSelect()->insertFromSelect(
-            Mage::getModel('customer/customer')->getResource()->getEntityTable(),
-            $fields,
-            true
-        );
-        $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
+        return $this->_updateCustomerCacheFromSelect($salesCollection->getSelect());
+    }
 
-        $fields = array();
-
+    /**
+     * @param $ids
+     *  @return $this
+     */
+    protected function _updateCustomerLoginStatistic($ids)
+    {
         // 2. Save login date
+
         /**
          * prepare last login date
          */
         $logCustomerResource = Mage::getModel('log/customer')->getResource();
         $select = $logCustomerResource->getReadConnection()->select();
 
-
-        $fields[] = 'entity_id';
-        $fields[] = 'last_login';
-
         $select
             ->from(
                 $logCustomerResource->getMainTable(),
                 array(
-                    'customer_id AS entity_id',
+                    'customer_id',
                     'login_at AS last_login'
                 ));
-
         $select->where('customer_id IN (?)', $ids);
 
-        $query = $select->insertFromSelect(
-            Mage::getModel('customer/customer')->getResource()->getEntityTable(),
-            $fields,
-            true
-        );
+        return $this->_updateCustomerCacheFromSelect($select);
 
-        $result = Mage::getModel('customer/customer')->getResource()->getWriteConnection()->query($query);
+    }
 
-        foreach ($ids as $customerId) {
-
-            /**
-             * reload customer if it saved in cache
-             */
-            if ($customer = Mage::registry('customer_cached_' . $customerId)) {
-                $updatedCustomer = Mage::getModel('customer/customer');
-                $updatedCustomer->getResource()->load($updatedCustomer, $customerId);
-
-                /**
-                 * If customer exists - just update data, some information can be defined via order sync (order address)
-                 */
-                $customer->addData($updatedCustomer->getData());
+    /**
+     * update cached data
+     * @param $select
+     * @return $this
+     */
+    protected function _updateCustomerCacheFromSelect($select)
+    {
+        foreach (Mage::getModel('customer/customer')->getResource()->getReadConnection()->fetchAssoc($select) as $item) {
+            $customer = $this->getEntityCache($item['customer_id']);
+            if ($customer) {
+                $customer->addData($item);
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * Update customer statistic data for mapping use
+     * @param $ids
+     * @return $this
+     */
+    protected function _updateCustomerStatistic($customerData)
+    {
+
+        $ids = array_keys($customerData);
+
+        $this->_updateCustomerSalesStatistic($ids);
+        $this->_updateCustomerLoginStatistic($ids);
+
         return $this;
     }
 
@@ -1141,7 +1245,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     protected function _massAddBefore($_ids)
     {
         $this->_websites = array();
-        $this->_updateCustomerStatistic($_ids);
     }
 
     /**
@@ -1238,6 +1341,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
 
         $this->_cache['notFoundCustomers'] = $_emailsArray;
+
+        if (!empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
+            $this->_updateCustomerStatistic($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
+        }
+
     }
 
     /**

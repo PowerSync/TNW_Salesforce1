@@ -421,9 +421,14 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         }
 
         foreach ($currencyCodes as $currencyCode) {
-            $cacheCode = $priceBookId . ':::' . $magentoProductId . ':::' . $currencyCode;
+
+            $cacheCode = "$priceBookId:::$magentoProductId";
+            if ($this->getHelper()->isMultiCurrency()) {
+                $cacheCode .= ":::$currencyCode";
+            }
+
             if ($priceBookId != $this->_standardPricebookId || $this->_defaultPriceBook == $this->_standardPricebookId) {
-                $this->_cache['pricebookEntryKeyToStore'][$cacheCode][] = $store->getId();
+                $this->_cache['pricebookEntryKeyToStore'][$cacheCode][] = "{$currencyCode}:::{$store->getId()}";
             }
 
             if (isset($this->_cache['pricebookEntryToSync'][$cacheCode])) {
@@ -622,7 +627,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
         foreach ($_responses as $_key => $_response) {
             $cacheKey = $_keys[$_key];
 
-            list($priceBookId, $_magentoId, $currencyCode) = explode(':::', $cacheKey, 3);
+            list($priceBookId, $_magentoId) = explode(':::', $cacheKey, 3);
             $sku = $this->_cache['productIdToSku'][$_magentoId];
 
             //Report Transaction
@@ -638,10 +643,10 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("PRICEBOOK ENTRY: Product SKU ({$sku}) : salesforceID ({$_response->id}){$standard}");
 
-            // Skip standard pricebook
             if (!empty($this->_cache['pricebookEntryKeyToStore'][$cacheKey])) {
-                foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$cacheKey]) as $_storeId) {
-                    $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$_storeId][] = "{$currencyCode}:{$_response->id}";
+                foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$cacheKey]) as $store) {
+                    list($currencyCode, $storeId) = explode(':::', $store, 2);
+                    $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$storeId][] = "{$currencyCode}:{$_response->id}";
                 }
             }
         }

@@ -58,7 +58,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
     public function syncAction()
     {
         $entityId = $this->getRequest()->getParam('order_id');
-        Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder(array($entityId));
+        Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder(array($entityId), true);
 
         $this->_redirectReferer();
     }
@@ -78,7 +78,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         }
 
         Mage::getSingleton('tnw_salesforce/sale_observer')
-            ->syncOrder(array($order->getId()));
+            ->syncOrder(array($order->getId()), true);
 
         $invoiceIds = $order->getInvoiceCollection()->walk('getId');
         if (!empty($invoiceIds)) {
@@ -115,7 +115,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         } elseif (!$helper->isProfessionalEdition()) {
             $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder($itemIds);
+            Mage::getSingleton('tnw_salesforce/sale_observer')->syncOrder($itemIds, true);
         }
 
         $this->_redirect('*/*/index');

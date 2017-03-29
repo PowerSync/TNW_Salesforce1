@@ -44,12 +44,12 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
 
     /**
      * Sync Action
-     *
+     * @throws Exception
      */
     public function syncAction()
     {
         $entityId = $this->getRequest()->getParam('customer_id');
-        Mage::getSingleton('tnw_salesforce/customer_observer')->syncCustomer(array($entityId));
+        Mage::getSingleton('tnw_salesforce/customer_observer')->syncCustomer(array($entityId), true);
 
         $this->_redirectReferer($this->getUrl('*/*/index', array('_current' => true)));
     }
@@ -65,7 +65,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
         } elseif (!$helper->isProfessionalEdition()) {
             $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            Mage::getSingleton('tnw_salesforce/customer_observer')->syncCustomer($itemIds);
+            Mage::getSingleton('tnw_salesforce/customer_observer')->syncCustomer($itemIds, true);
         }
 
         $this->_redirect('*/*/index');

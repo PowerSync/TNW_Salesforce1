@@ -18,10 +18,6 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Edit extends Mage_Adminhtml
 
     public function getBackButtonHtml()
     {
-        if (!Mage::helper('tnw_salesforce/config_product')->isEnabledProductSync()) {
-            return parent::getBackButtonHtml();
-        }
-
         return parent::getBackButtonHtml() . $this->getChildHtml('sf_sync_button');
     }
 }

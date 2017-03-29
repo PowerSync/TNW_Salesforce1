@@ -86,7 +86,7 @@ class TNW_Salesforce_Model_Customer_Observer
      * @param array $entityIds
      * @throws Exception
      */
-    public function syncCustomer(array $entityIds)
+    public function syncCustomer(array $entityIds, $isManualSync = false)
     {
         $groupWebsite = array();
         foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
@@ -99,19 +99,20 @@ class TNW_Salesforce_Model_Customer_Observer
             }
         }
 
-        foreach ($groupWebsite as $websiteId => $entityIds) {
-            $this->syncCustomerForWebsite($entityIds, $websiteId);
+        foreach ($groupWebsite as $websiteId => $_entityIds) {
+            $this->syncCustomerForWebsite($_entityIds, $websiteId, $isManualSync);
         }
     }
 
     /**
      * @param array $entityIds
      * @param null $website
+     * @param bool $isManualSync
      * @throws Exception
      */
-    public function syncCustomerForWebsite(array $entityIds, $website = null)
+    public function syncCustomerForWebsite(array $entityIds, $website = null, $isManualSync = false)
     {
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds, $isManualSync) {
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
@@ -122,7 +123,7 @@ class TNW_Salesforce_Model_Customer_Observer
                 return;
             }
 
-            if (!$helper->isEnabledCustomerSync()) {
+            if (!$isManualSync && !$helper->isEnabledCustomerSync()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('SKIPPING: Customer synchronization disabled');
 
