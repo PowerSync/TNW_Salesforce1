@@ -167,13 +167,13 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
 
         if (extension_loaded('zlib')) {
             unlink($phar->getPath() . '.gz');
-            return $this->_prepareDownloadResponse('dump.tar.gz', array(
+            return $this->_prepareDownloadResponse('dump'.Mage::getSingleton('core/date')->date('Y-m-d_H-i-s').'.tar.gz', array(
                 'value'=>$phar->compress(Phar::GZ)->getPath(),
                 'type'=>'filename'
             ), 'application/x-compressed-tar');
         }
 
-        return $this->_prepareDownloadResponse('dump.tar', array(
+        return $this->_prepareDownloadResponse('dump'.Mage::getSingleton('core/date')->date('Y-m-d_H-i-s').'.tar', array(
             'value'=>$phar->getPath(),
             'type'=>'filename'
         ), 'application/x-tar');
