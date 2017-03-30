@@ -32,6 +32,7 @@ class TNW_Salesforce_Model_System_Config_Backend_Config extends Mage_Core_Model_
         }
 
         fclose($csv);
+        $this->setValue('');
         return $this;
     }
 }
