@@ -131,7 +131,6 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
     public function generateDumpAction()
     {
         $phar = new PharData(sys_get_temp_dir(). DS . 'dump.tar');
-        $phar->startBuffering();
 
         /** @var Mage_Core_Model_Website $website */
         foreach (Mage::app()->getWebsites(true) as $website) {
