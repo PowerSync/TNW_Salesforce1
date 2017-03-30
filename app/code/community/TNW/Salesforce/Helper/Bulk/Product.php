@@ -57,8 +57,12 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
                 //Report Transaction
                 $this->_cache['responses']['pricebooks'][$pricebookEntryKey] = json_decode(json_encode($_result), TRUE);
                 if ($_result->success == "true") {
-                    foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]) as $uStoreId) {
-                        $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$uStoreId][] = "{$currencyCode}:{$_result->id}";
+
+                    if (!empty($this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey])) {
+                        foreach (array_unique((array)$this->_cache['pricebookEntryKeyToStore'][$pricebookEntryKey]) as $store) {
+                            list($currencyCode, $storeId) = explode(':::', $store, 2);
+                            $this->_cache['toSaveInMagento'][$sku]->pricebookEntryIds[$storeId][] = "{$currencyCode}:{$_result->id}";
+                        }
                     }
 
                     $standard = ($priceBookId == $this->_standardPricebookId) ? ' of standard pricebook' : '';
