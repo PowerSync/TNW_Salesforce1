@@ -127,4 +127,56 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
 
         $this->_redirect('*/*/index');
     }
+
+    public function generateDumpAction()
+    {
+        $phar = new PharData(sys_get_temp_dir(). DS . 'dump.tar');
+        $phar->startBuffering();
+
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::app()->getWebsites(true) as $website) {
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($website, $phar) {
+                $wsdlFile = TNW_Salesforce_Model_Connection::createConnection()->getWsdl();
+                if (is_file($wsdlFile)) {
+                    $phar->addFile($wsdlFile, "{$website->getCode()}/soapclient.wsdl");
+                }
+
+                $csv = fopen('php://memory', 'rw+');
+                $config = Mage::getConfig()->loadModulesConfiguration('system.xml')
+                    ->applyExtends();
+
+                /** @var Mage_Core_Model_Config_Element $node */
+                foreach ($config->getXpath('//sections/*[@module="tnw_salesforce"]/groups/*/fields/*') as $node) {
+                    if ($node->config_path) {
+                        $path = (string)$node->config_path;
+                    } else {
+                        $section = $node->getParent()->getParent()->getParent()->getParent()->getName();
+                        $group = $node->getParent()->getParent()->getName();
+                        $path = "$section/$group/{$node->getName()}";
+                    }
+
+                    fputcsv($csv, array($path, Mage::getStoreConfig($path)));
+                }
+
+                rewind($csv);
+                $content = stream_get_contents($csv);
+                fclose($csv);
+
+                $phar->addFromString("{$website->getCode()}/config.csv", $content);
+            });
+        }
+
+        if (extension_loaded('zlib')) {
+            unlink($phar->getPath() . '.gz');
+            return $this->_prepareDownloadResponse('dump.tar.gz', array(
+                'value'=>$phar->compress(Phar::GZ)->getPath(),
+                'type'=>'filename'
+            ), 'application/x-compressed-tar');
+        }
+
+        return $this->_prepareDownloadResponse('dump.tar', array(
+            'value'=>$phar->getPath(),
+            'type'=>'filename'
+        ), 'application/x-tar');
+    }
 }

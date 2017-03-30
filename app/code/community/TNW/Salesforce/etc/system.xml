@@ -549,6 +549,20 @@
                             </depends>
                         </real_time_sync_max_count>
 
+                        <import_config translate="label">
+                            <label>Import Config</label>
+                            <frontend_type>file</frontend_type>
+                            <backend_model>tnw_salesforce/system_config_backend_config</backend_model>
+                            <sort_order>320</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment />
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </import_config>
+
                         <!-- Tool settings end -->
                     </fields>
                 </development_and_debugging>
@@ -1823,7 +1837,7 @@
                 </general>
             </groups>
         </salesforce_contactus>
-        <salesforce_promotion translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
+        <salesforce_promotion translate="label" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Promotions</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1905,7 +1919,7 @@
                 </salesforce_campaigns>
             </groups>
         </salesforce_promotion>
-        <salesforce_invoice translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
+        <salesforce_invoice translate="label" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Invoices</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1946,7 +1960,7 @@
                 </invoice_configuration>
             </groups>
         </salesforce_invoice>
-        <salesforce_shipment translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
+        <salesforce_shipment translate="label" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Shipments</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
@@ -1987,7 +2001,7 @@
                 </shipment_configuration>
             </groups>
         </salesforce_shipment>
-        <salesforce_creditmemo translate="label" ifhelper="tnw_salesforce/config::isProfessionalEdition">
+        <salesforce_creditmemo translate="label" module="tnw_salesforce" ifhelper="tnw_salesforce/config::isProfessionalEdition">
             <label>Credit Memo (BETA)</label>
             <tab>tnw</tab>
             <frontend_type>text</frontend_type>
