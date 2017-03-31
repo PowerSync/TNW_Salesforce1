@@ -120,12 +120,9 @@ class TNW_Salesforce_Model_Abandoned
                             ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                     }
                 } else {
-                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
-                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'orderIds' => $entityIds,
-                        'message' => $helper->__('Total of %d abandoned(s) were synchronized', count($entityIds)),
-                        'type' => 'salesforce',
-                        'object_type' => 'abandoned'
+                    Mage::dispatchEvent('tnw_salesforce_sync_abandoned_for_website', array(
+                        'entityIds' => $entityIds,
+                        'syncType' => 'realtime'
                     ));
                 }
             } catch (Exception $e) {

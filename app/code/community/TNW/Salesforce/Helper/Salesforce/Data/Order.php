@@ -20,54 +20,39 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
         $ids = !is_array($ids)
             ? array($ids) : $ids;
 
-        try {
-            if (!is_object($this->getClient())) {
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
 
-                return false;
-            }
-            $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
-
-            $_results = array();
-            foreach (array_chunk($ids, self::UPDATE_LIMIT) as $_ids) {
-                $result = $this->_queryOrder($_magentoId, $_ids);
-                if (empty($result) || $result->size < 1) {
-                    continue;
-                }
-
-                $_results[] = $result;
-            }
-
-            if (empty($_results)) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order lookup returned: no results...");
-                return false;
-            }
-
-            $returnArray = array();
-            foreach ($_results as $result) {
-                foreach ($result->records as $_item) {
-                    $tmp = new stdClass();
-                    $tmp->Id = $_item->Id;
-                    $tmp->AccountId = (property_exists($_item, "AccountId")) ? $_item->AccountId : NULL;
-                    $tmp->Pricebook2Id = (property_exists($_item, "Pricebook2Id")) ? $_item->Pricebook2Id : NULL;
-                    $tmp->Status = (property_exists($_item, "Status")) ? $_item->Status : NULL;
-                    $tmp->StatusCode = (property_exists($_item, "StatusCode")) ? $_item->StatusCode : self::DISABLED_STATUS_CODE;
-                    $tmp->MagentoId = $_item->$_magentoId;
-                    $tmp->OrderItems = (property_exists($_item, "OrderItems")) ? $_item->OrderItems : NULL;
-                    $tmp->Notes = (property_exists($_item, "Notes")) ? $_item->Notes : NULL;
-                    $tmp->hasReductionOrder = (property_exists($_item, "Orders")) ? $_item->Orders->size > 0 : false;
-                    $tmp->Orders = (property_exists($_item, "Orders")) ? $_item->Orders : false;
-
-                    $returnArray[$tmp->MagentoId] = $tmp;
-                }
-            }
-
-            return $returnArray;
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not find any existing orders in Salesforce matching these IDs (" . implode(",", $ids) . ")");
-            unset($email);
-            return false;
+        $_results = array();
+        foreach (array_chunk($ids, self::UPDATE_LIMIT) as $_ids) {
+            $_results[] = $this->_queryOrder($_magentoId, $_ids);
         }
+
+        $records = $this->mergeRecords($_results);
+        if (empty($records)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Order lookup returned: no results...');
+
+            return array();
+        }
+
+        $returnArray = array();
+        foreach ($records as $_item) {
+            $tmp = new stdClass();
+            $tmp->Id = $_item->Id;
+            $tmp->AccountId = $this->getProperty($_item, 'AccountId');
+            $tmp->Pricebook2Id = $this->getProperty($_item, 'Pricebook2Id');
+            $tmp->Status = $this->getProperty($_item, 'Status');
+            $tmp->StatusCode =  $this->getProperty($_item, 'StatusCode', self::DISABLED_STATUS_CODE);
+            $tmp->MagentoId = $_item->$_magentoId;
+            $tmp->OrderItems = $this->getProperty($_item, 'OrderItems');
+            $tmp->Notes = $this->getProperty($_item, 'Notes');
+            $tmp->hasReductionOrder = (property_exists($_item, "Orders")) ? $_item->Orders->size > 0 : false;
+            $tmp->Orders = $this->getProperty($_item, 'Orders');
+
+            $returnArray[$tmp->MagentoId] = $tmp;
+        }
+
+        return $returnArray;
     }
 
     /**
@@ -100,14 +85,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
 
         $query = "SELECT " . implode(',', $_selectFields) . " FROM Order WHERE " . $_magentoId . " IN ('" . implode("','", $ids) . "')";
 
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("QUERY: " . $query);
-        try {
-            $result = $this->getClient()->query($query);
-        } catch (Exception $e) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("ERROR: " . $e->getMessage());
-            $result = array();
-        }
-
-        return $result;
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Order QUERY:\n$query");
+        return $this->getClient()->query($query);
     }
 }

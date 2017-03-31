@@ -15,5 +15,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_ProductController extends TNW_Salesfor
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'product';
+    protected $_blockPath = 'mapping_product_product';
 }

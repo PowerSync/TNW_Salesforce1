@@ -100,11 +100,9 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
                             ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                     }
                 } else {
-                    $_syncType = strtolower($helper->getCreditmemoObject());
-                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'creditmemoIds' => $entityIds,
-                        'message' => $helper->__('Total of %d creditmemo(s) were synchronized', count($entityIds)),
-                        'type' => 'salesforce'
+                    Mage::dispatchEvent('tnw_salesforce_sync_creditmemo_for_website', array(
+                        'entityIds' => $entityIds,
+                        'syncType' => 'realtime'
                     ));
                 }
             } catch (Exception $e) {

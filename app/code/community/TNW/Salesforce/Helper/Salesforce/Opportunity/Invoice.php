@@ -19,6 +19,43 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
     protected $_mappingEntityItemName = 'OpportunityInvoiceItem';
 
     /**
+     * @param $entity Mage_Sales_Model_Order_Invoice
+     * @return bool
+     */
+    protected function checkOrderMassAddEntity($entity)
+    {
+        $order = $entity->getOrder();
+        if (!$this->orderSalesforceId($order) || !$order->getData('sf_insync')) {
+            if (!Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveNotice("SKIPPING: Sync for invoice #{$entity->getIncrementId()}, order #{$order->getIncrementId()} needs to be synchronized first!");
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @return string
+     */
+    protected function orderSalesforceId($order)
+    {
+        return $order->getData('opportunity_id');
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order_Item $orderItem
+     * @return string
+     */
+    protected function orderItemSalesforceId($orderItem)
+    {
+        return $orderItem->getData('opportunity_id');
+    }
+
+    /**
      *
      */
     protected function _massAddAfterLookup()
@@ -49,7 +86,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
 
         // Link to Order
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity__c'}
-            = $_entity->getOrder()->getData('salesforce_id');
+            = $this->orderSalesforceId($_entity->getOrder());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'disableMagentoSync__c'}
             = true;
@@ -67,7 +104,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
             = $this->_getParentEntityId($_entityNumber);
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c'}
-            = $_entityItem->getOrderItem()->getData('salesforce_id');
+            = $this->orderItemSalesforceId($_entityItem->getOrderItem());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'disableMagentoSync__c'}
             = true;
@@ -83,35 +120,6 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
             : $entityId;
 
         $this->_cache[lcfirst($this->getItemsField()) . 'ToUpsert']['cart_' . $key] = $this->_obj;
-    }
-
-    /**
-     * @param $_entity Mage_Sales_Model_Order_Invoice
-     * @param $_entityItem Mage_Sales_Model_Order_Invoice_Item
-     * @return bool
-     */
-    protected function _doesCartItemExist($_entity, $_entityItem)
-    {
-        $_sOrderItemId = $_entityItem->getOrderItem()->getData('salesforce_id');
-        $_entityNumber = $this->_getEntityNumber($_entity);
-        $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
-
-        if (! ($this->_cache[$lookupKey]
-            && array_key_exists($_entityNumber, $this->_cache[$lookupKey])
-            && $this->_cache[$lookupKey][$_entityNumber]->Items)
-        ){
-            return false;
-        }
-
-        foreach ($this->_cache[$lookupKey][$_entityNumber]->Items->records as $_cartItem) {
-            if ($_cartItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_INVOICE . 'Opportunity_Product__c'} != $_sOrderItemId) {
-                continue;
-            }
-
-            return $_cartItem->Id;
-        }
-
-        return false;
     }
 
     /**
@@ -132,7 +140,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
                 continue;
             }
 
-            $_orderItem->setData('salesforce_id', $record->Id);
+            $_orderItem->setData('opportunity_id', $record->Id);
             break;
         }
 

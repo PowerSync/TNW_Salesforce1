@@ -11,4 +11,10 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrderController extends TNW_Salesforce
      * @var string
      */
     protected $_sfEntity = 'Order';
+
+    /**
+     * path to the blocks which will be rendered by
+     * @var string
+     */
+    protected $_blockPath = 'mapping_order_order';
 }

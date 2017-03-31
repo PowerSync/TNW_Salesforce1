@@ -31,7 +31,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
     {
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('Manual Sync'))->_title($this->__('Invoices'));
         $this->_initLayout()
-            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_invoicesync'));
+            ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_synchronize_invoice'));
         Mage::helper('tnw_salesforce')->addAdminhtmlVersion('TNW_Salesforce');
 
         $this->renderLayout();

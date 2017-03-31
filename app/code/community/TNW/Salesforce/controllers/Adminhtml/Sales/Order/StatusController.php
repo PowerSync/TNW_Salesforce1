@@ -13,16 +13,11 @@ class TNW_Salesforce_Adminhtml_Sales_Order_StatusController extends Mage_Adminht
         $statusCode = $this->getRequest()->getParam('status');
         if ($statusCode) {
             $status = Mage::getModel('sales/order_status')->load($statusCode);
+            $tnwStatus = Mage::getModel('tnw_salesforce/order_status')->load($statusCode, 'status');
 
-            $collection = Mage::getModel('tnw_salesforce/order_status')->getCollection();
-            $collection->getSelect()
-                ->where("main_table.status = ?", $statusCode);
-            foreach ($collection as $_item) {
-                foreach (Mage::getModel('tnw_salesforce/config_order_status')->getAdditionalFields() as $_field) {
-                    $status->setData($_field, $_item->{$_field});
-                }
+            foreach (Mage::getModel('tnw_salesforce/config_order_status')->getAdditionalFields() as $_field) {
+                $status->setData($_field, $tnwStatus->getData($_field));
             }
-
         } else {
             $status = false;
         }

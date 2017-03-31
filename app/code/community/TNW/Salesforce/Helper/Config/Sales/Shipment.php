@@ -25,7 +25,7 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
     public function syncShipmentsForOrder()
     {
         return $this->syncShipments()
-            && self::SYNC_TYPE_ORDER == strtolower($this->_helper()->getOrderObject());
+            && Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed();
     }
 
     /**
@@ -34,6 +34,6 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
     public function syncShipmentsForOpportunity()
     {
         return $this->syncShipments()
-            && self::SYNC_TYPE_OPPORTUNITY == strtolower($this->_helper()->getOrderObject());
+            && Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed();
     }
 }
