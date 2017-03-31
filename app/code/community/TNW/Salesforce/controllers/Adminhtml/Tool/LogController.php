@@ -165,6 +165,21 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
             });
         }
 
+        $csv = fopen('php://memory', 'rw+');
+
+        $collection = Mage::getResourceModel('tnw_salesforce/mapping_collection');
+        fputcsv($csv, array_keys($collection->getFirstItem()->getData()));
+        /** @var TNW_Salesforce_Model_Mapping $mapping */
+        foreach ($collection as $mapping) {
+            fputcsv($csv, $mapping->getData());
+        }
+
+        rewind($csv);
+        $content = stream_get_contents($csv);
+        fclose($csv);
+
+        $phar->addFromString('admin/mapping.csv', $content);
+
         if (extension_loaded('zlib')) {
             unlink($phar->getPath() . '.gz');
             return $this->_prepareDownloadResponse('dump'.Mage::getSingleton('core/date')->date('Y-m-d_H-i-s').'.tar.gz', array(
