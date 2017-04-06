@@ -551,26 +551,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
 
-        // Get Customer Website Id
-        $_websiteId = Mage::getSingleton('tnw_salesforce/mapping_type_customer')
-            ->getWebsiteId($_customer);
-
         //If Lookup returned values add them
         $_email = strtolower($_customer->getEmail());
-        $_sfWebsite = (isset($this->_websiteSfIds[$_websiteId]) && ($type != 'Account'))
-            ? $this->_websiteSfIds[$_websiteId] : 0;
-
         $this->_obj = new stdClass();
 
-        $_cacheLookup = array(
-            'Lead' => 'leadLookup',
-            'Contact' => 'contactsLookup',
-            'Account' => 'accountLookup',
-        );
-
-        $_lookupKey = $_cacheLookup[$type];
-        if (!empty($this->_cache[$_lookupKey][$_sfWebsite][$_email])) {
-            $this->_obj->Id = $this->_cache[$_lookupKey][$_sfWebsite][$_email]->Id;
+        $salesforceId = $this->searchSalesforceIdInLookup($_customer, $type);
+        if (!empty($salesforceId)) {
+            $this->_obj->Id = $salesforceId;
             $_upsertOn = 'Id';
         }
 
@@ -662,6 +649,36 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
 
             $this->_cache['accountsToUpsert']['Id'][$_id] = $this->_obj;
         }
+    }
+
+    /**
+     * @param Mage_Customer_Model_Customer $customer
+     * @param string $type
+     * @return string
+     */
+    protected function searchSalesforceIdInLookup($customer, $type)
+    {
+        // Get Customer Website Id
+        $_websiteId = Mage::getSingleton('tnw_salesforce/mapping_type_customer')
+            ->getWebsiteId($customer);
+
+        //If Lookup returned values add them
+        $_email = strtolower($customer->getEmail());
+        $_sfWebsite = strcasecmp($type, 'Account') !== 0
+            ? $this->_websiteSfIds[$_websiteId] : 0;
+
+        $_cacheLookup = array(
+            'Lead' => 'leadLookup',
+            'Contact' => 'contactsLookup',
+            'Account' => 'accountLookup',
+        );
+
+        $_lookupKey = $_cacheLookup[$type];
+        if (!empty($this->_cache[$_lookupKey][$_sfWebsite][$_email])) {
+            return $this->_cache[$_lookupKey][$_sfWebsite][$_email]->Id;
+        }
+
+        return null;
     }
 
     /**

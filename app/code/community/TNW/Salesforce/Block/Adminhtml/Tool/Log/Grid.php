@@ -78,7 +78,7 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
             array(
                 'header' => $this->__('Message'),
                 'index' => 'message',
-                'renderer' => 'tnw_salesforce/adminhtml_tool_log_grid_column_renderer_message'
+                'frame_callback' => array($this, 'decorateMessage')
             )
         );
 
@@ -97,6 +97,24 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
         $this->addExportType('*/*/exportExcel', $this->__('Excel XML'));
 
         return parent::_prepareColumns();
+    }
+
+    /**
+     * Decorate message column
+     *
+     * @param string $value
+     * @param TNW_Salesforce_Model_Tool_Log $row
+     * @param Mage_Adminhtml_Block_Widget_Grid_Column $column
+     * @param bool $isExport
+     * @return mixed
+     */
+    public function decorateMessage($value, $row, $column, $isExport)
+    {
+        if ($isExport) {
+            return $row->getData('message');
+        }
+
+        return sprintf('<pre style="white-space: pre-wrap">%s</pre>', $this->escapeHtml($row->getData('message')));
     }
 
     /**
@@ -124,5 +142,29 @@ class TNW_Salesforce_Block_Adminhtml_Tool_Log_Grid extends Mage_Adminhtml_Block_
     public function getRowUrl($item)
     {
         return '';
+    }
+
+    /**
+     * @return Mage_Core_Block_Abstract
+     */
+    protected function _prepareLayout()
+    {
+        $this->setChild('export_dump_button',
+            $this->getLayout()->createBlock('adminhtml/widget_button')
+                ->setData(array(
+                    'label'     => Mage::helper('tnw_salesforce')->__('Dump TNW Config'),
+                    'onclick'   => "setLocation('{$this->getUrl('*/*/generateDump')}')",
+                ))
+        );
+
+        return parent::_prepareLayout();
+    }
+
+    /**
+     * @return string
+     */
+    public function getExportButtonHtml()
+    {
+        return parent::getExportButtonHtml() . ' ' . $this->getChildHtml('export_dump_button');
     }
 }
