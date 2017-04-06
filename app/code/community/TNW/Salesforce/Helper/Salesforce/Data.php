@@ -135,16 +135,11 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
                 $allRules = $this->getClient()->query(($query));
             }
 
-            if ($allRules && property_exists($allRules, 'done') && $allRules->done) {
-                if (!property_exists($allRules, 'records') || $allRules->size < 1) {
-                    $_default = new stdClass();
-                    $_default->Id = '';
-                    $_default->Name = 'Use Default';
-                    $allRules->records = array($_default);
-                }
-            }
-            unset($sfObject, $query);
+            $_default = new stdClass();
+            $_default->Id = '';
+            $_default->Name = 'Use Default';
 
+            array_unshift($allRules->records, $_default);
             return $allRules->records;
         } catch (Exception $e) {
             $allRules = new stdClass();

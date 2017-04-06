@@ -127,4 +127,71 @@ class TNW_Salesforce_Adminhtml_Tool_LogController extends Mage_Adminhtml_Control
 
         $this->_redirect('*/*/index');
     }
+
+    public function generateDumpAction()
+    {
+        $phar = new PharData(sys_get_temp_dir(). DS . 'dump.tar');
+
+        /** @var Mage_Core_Model_Website $website */
+        foreach (Mage::app()->getWebsites(true) as $website) {
+            Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($website, $phar) {
+                $wsdlFile = TNW_Salesforce_Model_Connection::createConnection()->getWsdl();
+                if (is_file($wsdlFile)) {
+                    $phar->addFile($wsdlFile, "{$website->getCode()}/soapclient.wsdl");
+                }
+
+                $csv = fopen('php://memory', 'rw+');
+                $config = Mage::getConfig()->loadModulesConfiguration('system.xml')
+                    ->applyExtends();
+
+                /** @var Mage_Core_Model_Config_Element $node */
+                foreach ($config->getXpath('//sections/*[@module="tnw_salesforce"]/groups/*/fields/*') as $node) {
+                    if ($node->config_path) {
+                        $path = (string)$node->config_path;
+                    } else {
+                        $section = $node->getParent()->getParent()->getParent()->getParent()->getName();
+                        $group = $node->getParent()->getParent()->getName();
+                        $path = "$section/$group/{$node->getName()}";
+                    }
+
+                    fputcsv($csv, array($path, Mage::getStoreConfig($path)));
+                }
+
+                rewind($csv);
+                $content = stream_get_contents($csv);
+                fclose($csv);
+
+                $phar->addFromString("{$website->getCode()}/config.csv", $content);
+            });
+        }
+
+        $csv = fopen('php://memory', 'rw+');
+
+        $collection = Mage::getResourceModel('tnw_salesforce/mapping_collection');
+        $collection->setOrder('sf_object');
+        fputcsv($csv, array_keys($collection->getFirstItem()->getData()));
+        /** @var TNW_Salesforce_Model_Mapping $mapping */
+        foreach ($collection as $mapping) {
+            fputcsv($csv, $mapping->getData());
+        }
+
+        rewind($csv);
+        $content = stream_get_contents($csv);
+        fclose($csv);
+
+        $phar->addFromString('admin/mapping.csv', $content);
+
+        if (extension_loaded('zlib')) {
+            unlink($phar->getPath() . '.gz');
+            return $this->_prepareDownloadResponse('dump'.Mage::getSingleton('core/date')->date('Y-m-d_H-i-s').'.tar.gz', array(
+                'value'=>$phar->compress(Phar::GZ)->getPath(),
+                'type'=>'filename'
+            ), 'application/x-compressed-tar');
+        }
+
+        return $this->_prepareDownloadResponse('dump'.Mage::getSingleton('core/date')->date('Y-m-d_H-i-s').'.tar', array(
+            'value'=>$phar->getPath(),
+            'type'=>'filename'
+        ), 'application/x-tar');
+    }
 }
