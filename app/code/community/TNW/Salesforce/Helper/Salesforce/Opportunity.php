@@ -158,7 +158,7 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     protected function _checkMassAddEntity($_entity)
     {
         $salesConfig = Mage::helper('tnw_salesforce/config_sales');
-        if ($salesConfig->showOrderId() && $_entity->getData('opportunity_id') && !$salesConfig->orderSyncAllowed($_entity)) {
+        if ($salesConfig->showOrderId() && $_entity->getData('opportunity_id') && $salesConfig->orderSyncAllowed($_entity)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("Order #{$_entity->getIncrementId()}, paid. Skipped sync Salesforce Opportunity");
 
