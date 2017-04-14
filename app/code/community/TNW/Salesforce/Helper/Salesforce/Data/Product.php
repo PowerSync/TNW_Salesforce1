@@ -107,7 +107,8 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
                 continue;
             }
 
-            $returnArray = array_merge($returnArray, $return);
+            list($entityNumber, $record) = $return;
+            $returnArray[$entityNumber] = $record;
         }
 
         if (!empty($clearToUpsert)) {
