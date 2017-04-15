@@ -107,8 +107,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController
                                 ->saveError('Could not add catalog rule(s) to the queue!');
                         } elseif ($syncBulk) {
                             Mage::getSingleton('tnw_salesforce/tool_log')
-                                ->saveNotice($helper->__('ISSUE: Too many records selected.'));
-                            Mage::getSingleton('tnw_salesforce/tool_log')
                                 ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
                         }
                         else {
