@@ -462,22 +462,22 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      */
     public function addObjectProduct(array $idSet = array(), $sfObType, $mageObType, $syncBulk = false)
     {
-        // we filter grouped and configurable products
-        $productsCollection = Mage::getModel('catalog/product')
-            ->getCollection()
-            ->addAttributeToFilter('entity_id', array('in' => $idSet))
-            ->addAttributeToSelect('salesforce_disable_sync')
-            ->addAttributeToFilter(
-                array(
-                    array('attribute'=> 'salesforce_disable_sync', 'neq' => '1'),
-                    array('attribute'=> 'salesforce_disable_sync', 'null' => true),
-                ),
-                null,
-                'left'
-            );
+        /** @var Mage_Catalog_Model_Resource_Product $productsResource */
+        $productsResource = Mage::getResourceModel('catalog/product');
+        $attribute = $productsResource->getAttribute('salesforce_disable_sync');
 
-        $idSetFiltered = $productsCollection->getAllIds();
+        $connect = $productsResource->getReadConnection();
+        $select = $connect->select()
+            ->from(array('product'=>$productsResource->getEntityTable()), 'entity_id')
+            ->joinLeft(array('disable_sync'=>$attribute->getBackendTable()), "product.entity_id = disable_sync.entity_id AND disable_sync.attribute_id = {$attribute->getId()}", array())
+            ->where($connect->prepareSqlCondition('disable_sync.value', array(
+                array('neq' => '1'),
+                array('null' => true),
+            )))
+            ->where($connect->prepareSqlCondition('product.entity_id', array('in'=>$idSet)))
+        ;
 
+        $idSetFiltered = $connect->fetchCol($select);
         return $this->addObject($idSetFiltered, $sfObType, $mageObType, $syncBulk);
     }
 }
