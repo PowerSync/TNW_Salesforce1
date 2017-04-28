@@ -1007,7 +1007,8 @@ class TNW_Salesforce_Model_Observer
             $connection = $resource->getReadConnection();
             $select = $connection->select()
                 ->from(array('invoice' => $resource->getMainTable()), array('created_at'))
-                ->joinInner(array('order'=>$resource->getTable('sales/order')), 'order.entity_id = invoice.order_id')
+                ->joinInner(array('order'=>$resource->getTable('sales/order')), 'order.entity_id = invoice.order_id', array())
+                ->order('invoice.created_at DESC')
                 ->where('order.increment_id = :order')
             ;
 
