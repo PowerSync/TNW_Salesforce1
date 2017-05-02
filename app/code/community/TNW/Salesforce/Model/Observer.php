@@ -983,10 +983,14 @@ class TNW_Salesforce_Model_Observer
             $opportunityField = 'OpportunityId';
         }
 
-        $abandonedOpportunities = array();
+        $abandonedOpportunities = $closeDateOpportunities = array();
 
         foreach ($orders as $key => $order) {
             if (property_exists($order, $opportunityField)) {
+                if (!empty($order->tnw_mage_basic__Magento_ID__c)) {
+                    $closeDateOpportunities[$order->tnw_mage_basic__Magento_ID__c] = $order->$opportunityField;
+                }
+
                 $abandonedOpportunities[] = $order->$opportunityField;
             }
         }
@@ -997,6 +1001,30 @@ class TNW_Salesforce_Model_Observer
              */
             $collection = Mage::getModel('tnw_salesforce/api_entity_opportunity')->getCollection();
             $collection->addFieldToFilter('Id', array('in' => $abandonedOpportunities));
+
+            /** @var Mage_Sales_Model_Resource_Order_Invoice $resource */
+            $resource = Mage::getResourceModel('sales/order_invoice');
+            $connection = $resource->getReadConnection();
+            $select = $connection->select()
+                ->from(array('invoice' => $resource->getMainTable()), array('created_at'))
+                ->joinInner(array('order'=>$resource->getTable('sales/order')), 'order.entity_id = invoice.order_id', array())
+                ->order('invoice.created_at DESC')
+                ->where('order.increment_id = :order')
+            ;
+
+            foreach ($collection as $opportunity) {
+                $orderIncrementId = array_search($opportunity->getData('Id'), $closeDateOpportunities);
+                if (false === $orderIncrementId) {
+                    continue;
+                }
+
+                $createdAt = $connection->fetchOne($select, array('order' => $orderIncrementId));
+                $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+                $dateTime = new DateTime($createdAt, new DateTimeZone('UTC'));
+                $dateTime->setTimezone(new DateTimeZone($currentTimezone));
+
+                $opportunity->setData('CloseDate', $dateTime->format('c'));
+            }
 
             $collection->setDataToAll('StageName', Mage::helper('tnw_salesforce/config_sales')->getOpportunityToOrderStatus());
             $collection->save();
