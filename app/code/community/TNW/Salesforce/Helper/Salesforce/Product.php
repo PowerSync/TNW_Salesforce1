@@ -613,18 +613,21 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             return;
         }
 
-        $_keys = array_keys($this->_cache['pricebookEntryToSync']);
-        try {
-            $_responses = $this->getClient()->upsert('Id', array_values($this->_cache['pricebookEntryToSync']), 'PricebookEntry');
-        } catch (Exception $e) {
-            $_responses = array_fill(0, count($_keys),
-                $this->_buildErrorResponse($e->getMessage()));
+        $responses = array();
+        foreach (array_chunk($this->_cache['pricebookEntryToSync'], TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $pricebookEntryToSync) {
+            try {
+                $responses[] = $this->getClient()->upsert('Id', $pricebookEntryToSync, 'PricebookEntry');
+            } catch (Exception $e) {
+                $responses[] = array_fill(0, count($pricebookEntryToSync),
+                    $this->_buildErrorResponse($e->getMessage()));
 
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('CRITICAL: Push of products to Salesforce failed' . $e->getMessage());
+            }
         }
 
-        foreach ($_responses as $_key => $_response) {
+        $_keys = array_keys($this->_cache['pricebookEntryToSync']);
+        foreach (call_user_func_array('array_merge', $responses) as $_key => $_response) {
             $cacheKey = $_keys[$_key];
 
             list($priceBookId, $_magentoId) = explode(':::', $cacheKey, 3);
