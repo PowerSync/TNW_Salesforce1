@@ -39,14 +39,36 @@ class TNW_Salesforce_Model_Mapping_Type_Aitoc extends TNW_Salesforce_Model_Mappi
         return $value;
     }
 
+
     /**
-     * Aitoc has custom logic
-     * @param $entity Mage_Core_Model_Abstract
-     * @param $code
-     * @return bool|Mage_Eav_Model_Entity_Attribute_Abstract
+     * return the fake Attribute for Aitoc
+     * @param Mage_Core_Model_Abstract $_entity
+     * @param $attributeCode
+     * @return $attributeCode
      */
-    protected function _getAttribute($entity, $code)
+    protected function _getAttribute($_entity, $attributeCode)
     {
-        return false;
+        $attributeArray = array();
+        foreach ($_entity as $_type => $_object) {
+            if (is_object($_entity[$_type]) && is_array($_entity[$_type]->getData())) {
+                $aitocValueCollection = $_entity[$_type];
+                $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+
+                foreach ($aitocValueCollection->getData() as $_key => $_data) {
+                    if ($_data['code'] == $attributeCode) {
+                        $attributeArray = $_data;
+                        break;
+                    }
+                }
+                if ($attributeArray) {
+                    break;
+                }
+            }
+        }
+        $attribute = new Varien_Object();
+        $attribute->setData($attributeArray);
+        $attribute->setFrontend(new Varien_Object(array('frontend_input' => $attribute->getType())));
+
+        return $attribute;
     }
 }
