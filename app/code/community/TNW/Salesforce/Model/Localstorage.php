@@ -23,6 +23,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         $this->_mageModels['creditmemo'] = 'sales/order_creditmemo';
         $this->_mageModels['catalogrule'] = 'catalogrule/rule';
         $this->_mageModels['salesrule'] = 'salesrule/rule';
+        $this->_mageModels['wishlist'] = 'wishlist/wishlist';
     }
 
     /**
@@ -357,6 +358,17 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                     ->where($connection->prepareSqlCondition('rule.rule_id', array('in'=>$idSet)))
                 ;
 
+            case 'wishlist/wishlist':
+                /** @var Mage_Wishlist_Model_Resource_Wishlist $resource */
+                $resource   = Mage::getResourceModel('wishlist/wishlist');
+                $connection = $resource->getReadConnection();
+
+                return $connection->select()
+                    ->from(array('wishlist'=>$resource->getMainTable()), array('object_id' => 'wishlist_id'))
+                    ->joinInner(array('customer'=>$resource->getTable('customer/entity')), 'customer.entity_id = wishlist.customer_id', array('website_id'=>new Zend_Db_Expr('IFNULL(customer.website_id, 0)')))
+                    ->where($connection->prepareSqlCondition('wishlist.wishlist_id', array('in'=>$idSet)))
+                ;
+
             default:
                 /**
                  * @var $entityModel Mage_Core_Model_Abstract
@@ -450,22 +462,22 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      */
     public function addObjectProduct(array $idSet = array(), $sfObType, $mageObType, $syncBulk = false)
     {
-        // we filter grouped and configurable products
-        $productsCollection = Mage::getModel('catalog/product')
-            ->getCollection()
-            ->addAttributeToFilter('entity_id', array('in' => $idSet))
-            ->addAttributeToSelect('salesforce_disable_sync')
-            ->addAttributeToFilter(
-                array(
-                    array('attribute'=> 'salesforce_disable_sync', 'neq' => '1'),
-                    array('attribute'=> 'salesforce_disable_sync', 'null' => true),
-                ),
-                null,
-                'left'
-            );
+        /** @var Mage_Catalog_Model_Resource_Product $productsResource */
+        $productsResource = Mage::getResourceModel('catalog/product');
+        $attribute = $productsResource->getAttribute('salesforce_disable_sync');
 
-        $idSetFiltered = $productsCollection->getAllIds();
+        $connect = $productsResource->getReadConnection();
+        $select = $connect->select()
+            ->from(array('product'=>$productsResource->getEntityTable()), 'entity_id')
+            ->joinLeft(array('disable_sync'=>$attribute->getBackendTable()), "product.entity_id = disable_sync.entity_id AND disable_sync.attribute_id = {$attribute->getId()}", array())
+            ->where($connect->prepareSqlCondition('disable_sync.value', array(
+                array('neq' => '1'),
+                array('null' => true),
+            )))
+            ->where($connect->prepareSqlCondition('product.entity_id', array('in'=>$idSet)))
+        ;
 
+        $idSetFiltered = $connect->fetchCol($select);
         return $this->addObject($idSetFiltered, $sfObType, $mageObType, $syncBulk);
     }
 }

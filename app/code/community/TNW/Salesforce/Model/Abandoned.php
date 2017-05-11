@@ -110,8 +110,6 @@ class TNW_Salesforce_Model_Abandoned
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveError('Could not add to the queue!');
                     } elseif ($syncBulk) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
 
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
@@ -120,12 +118,9 @@ class TNW_Salesforce_Model_Abandoned
                             ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                     }
                 } else {
-                    $_syncType = strtolower(Mage::helper('tnw_salesforce')->getAbandonedObject());
-                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'orderIds' => $entityIds,
-                        'message' => $helper->__('Total of %d abandoned(s) were synchronized', count($entityIds)),
-                        'type' => 'salesforce',
-                        'object_type' => 'abandoned'
+                    Mage::dispatchEvent('tnw_salesforce_sync_abandoned_for_website', array(
+                        'entityIds' => $entityIds,
+                        'syncType' => 'realtime'
                     ));
                 }
             } catch (Exception $e) {

@@ -18,5 +18,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_Order_ShipmentitemController extends T
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'order_shipmentitem';
+    protected $_blockPath = 'mapping_shipment_ordershipmentitem';
 }

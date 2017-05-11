@@ -18,5 +18,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_Opportunity_InvoiceitemController exte
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'opportunity_invoiceitem';
+    protected $_blockPath = 'mapping_invoice_opportunityinvoiceitem';
 }

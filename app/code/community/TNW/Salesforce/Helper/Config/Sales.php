@@ -79,6 +79,84 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function useProductCampaignAssignment()
     {
-        return (Mage::helper('tnw_salesforce')->getType() == 'PRO') && $this->getUseProductCampaignAssignment();
+        return Mage::helper('tnw_salesforce')->isProfessionalEdition() && $this->getUseProductCampaignAssignment();
+    }
+
+    /**
+     * @return string
+     */
+    public function integrationOption()
+    {
+        return $this->getStoreConfig(self::ORDER_INTEGRATION_OPTION);
+    }
+
+    /**
+     * @return bool
+     */
+    public function integrationOnlyOrderAndOpportunityAllowed()
+    {
+        return $this->isEnabledOrderSync()
+            && strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY, $this->integrationOption()) === 0;
+    }
+
+    /**
+     * @return bool
+     */
+    public function integrationOnlyOpportunityAllowed()
+    {
+        return $this->isEnabledOrderSync()
+            && strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::OPPORTUNITY, $this->integrationOption()) === 0;
+    }
+
+    /**
+     * @return bool
+     */
+    public function integrationOpportunityAllowed()
+    {
+        return $this->integrationOnlyOpportunityAllowed()
+            || $this->integrationOnlyOrderAndOpportunityAllowed();
+    }
+
+    /**
+     * @return bool
+     */
+    public function integrationOnlyOrderAllowed()
+    {
+        return $this->isEnabledOrderSync() &&
+            strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER, $this->integrationOption()) === 0;
+    }
+
+    /**
+     * @return bool
+     */
+    public function integrationOrderAllowed()
+    {
+        return $this->integrationOnlyOrderAllowed()
+            || $this->integrationOnlyOrderAndOpportunityAllowed();
+    }
+
+    /**
+     * @return bool
+     */
+    public function showOrderId()
+    {
+        return $this->integrationOrderAllowed();
+    }
+
+    /**
+     * @return bool
+     */
+    public function showOpportunityId()
+    {
+        return $this->integrationOpportunityAllowed();
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @return bool
+     */
+    public function orderSyncAllowed($order)
+    {
+        return $order->getBaseTotalDue() == 0;
     }
 }

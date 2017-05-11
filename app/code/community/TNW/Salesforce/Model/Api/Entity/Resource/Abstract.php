@@ -193,6 +193,103 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
         return $this;
     }
 
+
+    /**
+     * Get table name for the entity, validated by db adapter
+     *
+     * @param string $entityName
+     * @return string
+     */
+    public function getTable($entityName)
+    {
+        if (is_array($entityName)) {
+            $cacheName    = join('@', $entityName);
+            list($entityName, $entitySuffix) = $entityName;
+        } else {
+            $cacheName    = $entityName;
+            $entitySuffix = null;
+        }
+
+        if (isset($this->_tables[$cacheName])) {
+            return $this->_tables[$cacheName];
+        }
+
+        if (strpos($entityName, '/')) {
+            if (!is_null($entitySuffix)) {
+                $modelEntity = array($entityName, $entitySuffix);
+            } else {
+                $modelEntity = $entityName;
+            }
+            $this->_tables[$cacheName] = $this->getTableName($modelEntity);
+        } else if (!empty($this->_resourceModel)) {
+            $entityName = sprintf('%s/%s', $this->_resourceModel, $entityName);
+            if (!is_null($entitySuffix)) {
+                $modelEntity = array($entityName, $entitySuffix);
+            } else {
+                $modelEntity = $entityName;
+            }
+            $this->_tables[$cacheName] = $this->getTableName($modelEntity);
+        } else {
+            if (!is_null($entitySuffix)) {
+                $entityName .= '_' . $entitySuffix;
+            }
+            $this->_tables[$cacheName] = $entityName;
+        }
+        return $this->_tables[$cacheName];
+    }
+
+
+    /**
+     * Get resource table name, validated by db adapter
+     *
+     * @param   string|array $modelEntity
+     * @return  string
+     */
+    public function getTableName($modelEntity)
+    {
+        $tableSuffix = null;
+        if (is_array($modelEntity)) {
+            list($modelEntity, $tableSuffix) = $modelEntity;
+        }
+
+        $parts = explode('/', $modelEntity);
+        if (isset($parts[1])) {
+            list($model, $entity) = $parts;
+            $entityConfig = false;
+            if (!empty(Mage::getConfig()->getNode()->global->models->{$model}->resourceModel)) {
+                $resourceModel = (string)Mage::getConfig()->getNode()->global->models->{$model}->resourceModel;
+                $entityConfig  = Mage::getSingleton('core/resource')->getEntity($resourceModel, $entity);
+            }
+
+            if ($entityConfig && !empty($entityConfig->table)) {
+                $tableName = (string)$entityConfig->table;
+            } else {
+                Mage::throwException(Mage::helper('core')->__('Can\'t retrieve entity config: %s', $modelEntity));
+            }
+        } else {
+            $tableName = $modelEntity;
+        }
+
+        Mage::dispatchEvent('resource_get_tablename', array(
+            'resource'      => Mage::getSingleton('core/resource'),
+            'model_entity'  => $modelEntity,
+            'table_name'    => $tableName,
+            'table_suffix'  => $tableSuffix
+        ));
+
+        $mappedTableName = Mage::getSingleton('core/resource')->getMappedTableName($tableName);
+        if ($mappedTableName) {
+            $tableName = $mappedTableName;
+        } else {
+            $tableName =  $tableName;
+        }
+
+        if (!is_null($tableSuffix)) {
+            $tableName .= '_' . $tableSuffix;
+        }
+        return Mage::getSingleton('core/resource')->getConnection(Mage_Core_Model_Resource::DEFAULT_READ_RESOURCE)->getTableName($tableName);
+    }
+
     /**
      * is table exists?
      *

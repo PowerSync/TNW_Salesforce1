@@ -29,7 +29,7 @@ class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper
 
     const ABANDONED_CART_ID_PREFIX = 'ac_';
 
-    function __construct()
+    public function __construct()
     {
         $this->_limits = array(
             array(
@@ -73,8 +73,7 @@ class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper
 
     public function isEnabled()
     {
-        return
-            Mage::helper('tnw_salesforce')->getType() == "PRO"
+        return Mage::helper('tnw_salesforce')->isProfessionalEdition()
             && $this->getStoreConfig(self::ABANDONED_CART_ENABLED);
     }
 

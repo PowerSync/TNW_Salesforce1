@@ -63,18 +63,19 @@ class TNW_Salesforce_Model_Sale_Observer
      * order sync event
      *
      * @param $observer Varien_Event_Observer
+     * @throws Exception
      */
     public function orderStatusUpdateTrigger($observer)
     {
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
+
         /**
          * is it order address save event
          */
-        if ($address = $observer->getEvent()->getAddress()) {
-            if ($address instanceof Mage_Sales_Model_Order_Address) {
-                $order = $address->getOrder();
-            }
+        $address = $observer->getEvent()->getAddress();
+        if ($address instanceof Mage_Sales_Model_Order_Address) {
+            $order = $address->getOrder();
         }
 
         if (!$address && $order->getData('status') == $order->getOrigData('status')) {
@@ -87,16 +88,59 @@ class TNW_Salesforce_Model_Sale_Observer
             return;
         }
 
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("###################################### Order Status Update Start ######################################");
-
         Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($order->getStore()->getWebsite(), function () use($order) {
-            $_syncType = strtolower(Mage::helper('tnw_salesforce')->getOrderObject());
-            Mage::dispatchEvent(sprintf('tnw_salesforce_%s_status_update', $_syncType), array('order' => $order));
-        });
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('###################################### Order Status Update Start ######################################');
 
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("###################################### Order Status Update End ########################################");
+            /** @var TNW_Salesforce_Helper_Data $helper */
+            $helper = Mage::helper('tnw_salesforce');
+
+            if (!$helper->isEnabled()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('SKIPPING: API Integration is disabled');
+
+                return;
+            }
+
+            if (!$helper->isEnabledOrderSync()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('SKIPPING: Order Integration is disabled');
+
+                return;
+            }
+
+            if (Mage::getSingleton('core/session')->getFromSalesForce()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace('INFO: Updating from Salesforce, skip synchronization to Salesforce.');
+
+                return;
+            }
+
+            if (!$helper->canPush()) {
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError('ERROR: Salesforce connection could not be established, SKIPPING sync');
+
+                return;
+            }
+
+            if (!$helper->isRealTimeType()) {
+                $success = Mage::getModel('tnw_salesforce/localstorage')
+                    ->addObject(array($order->getId()), 'Order', 'order');
+
+                if (!$success) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveError('Could not add to the queue!');
+                } else {
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveSuccess($helper->__('Records are pending addition into the queue!'));
+                }
+            } else {
+                Mage::dispatchEvent('tnw_salesforce_sync_order_status_for_website', array('order' => $order));
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('###################################### Order Status Update End ########################################');
+        });
     }
 
     /**
@@ -135,6 +179,7 @@ class TNW_Salesforce_Model_Sale_Observer
     /**
      * Order Sync
      * @param $observer Varien_Event_Observer
+     * @throws Exception
      */
     public function salesforcePush($observer)
     {
@@ -231,8 +276,6 @@ class TNW_Salesforce_Model_Sale_Observer
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveError('Could not add to the queue!');
                     } elseif ($syncBulk) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
 
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
@@ -241,11 +284,9 @@ class TNW_Salesforce_Model_Sale_Observer
                             ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                     }
                 } else {
-                    $_syncType = strtolower($helper->getOrderObject());
-                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'orderIds' => $entityIds,
-                        'message' => $helper->__('Total of %d order(s) were synchronized', count($entityIds)),
-                        'type' => 'salesforce'
+                    Mage::dispatchEvent('tnw_salesforce_sync_order_for_website', array(
+                        'entityIds' => $entityIds,
+                        'syncType' => 'realtime'
                     ));
                 }
             } catch (Exception $e) {
@@ -258,24 +299,22 @@ class TNW_Salesforce_Model_Sale_Observer
     /**
      * Order Cancel Event
      * @param $observer Varien_Event_Observer
+     * @throws Exception
+     * @deprecated
      */
     public function orderCancelled($observer)
     {
+        //TODO: BUG method!!! Deleted???
+
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ INVENTORY SYNC: START ================");
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
-        $orderHelperName = $this->orderHelper;
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($order->getStore()->getWebsite(), function () use($order, $orderHelperName) {
-            $orderHelperName = $orderHelperName ?: sprintf('tnw_salesforce/salesforce_%s', strtolower(Mage::helper('tnw_salesforce')->getOrderObject()));
-
-            /** @var TNW_Salesforce_Helper_Salesforce_Abstract_Order $orderHelper */
-            $orderHelper = Mage::helper($orderHelperName);
-
-            // Extract all purchased products and add to local storage for sync
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($order->getStore()->getWebsite(), function () use($order) {
             $_productIds = array();
-            foreach ($orderHelper->getItems($order) as $_item) {
-                $_productIds[] = (int)$orderHelper->getProductIdFromCart($_item);
+            /** @var Mage_Sales_Model_Order_Item $_item */
+            foreach ($order->getAllItems() as $_item) {
+                $_productIds[] = (int)$_item->getProductId();
             }
 
             Mage::getSingleton('tnw_salesforce/product_observer')->syncProductForWebsite($_productIds);
@@ -433,8 +472,6 @@ class TNW_Salesforce_Model_Sale_Observer
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveError('Could not add catalog rule(s) to the queue!');
                     } elseif ($syncBulk) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
 
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));

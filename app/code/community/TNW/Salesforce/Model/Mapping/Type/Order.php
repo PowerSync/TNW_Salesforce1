@@ -206,13 +206,18 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
      */
     public function convertSfStatus($_entity)
     {
-        if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
-            $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_order_status');
-            return ($orderStatus) ? $orderStatus : Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
-        } else {
-            $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_opportunity_status_code');
-            return ($orderStatus)
-                ? $orderStatus : 'Committed';
+        switch ($this->_mapping->getSfObject()) {
+            case 'Order':
+                $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_order_status');
+                return ($orderStatus) ? $orderStatus : Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
+
+            case 'Opportunity':
+                $orderStatus = $this->_getFirstItemStatusMapping($_entity)->getData('sf_opportunity_status_code');
+                return ($orderStatus)
+                    ? $orderStatus : 'Committed';
+
+            default:
+                return null;
         }
     }
 
@@ -222,16 +227,21 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
      */
     public function reverseConvertSfStatus($value)
     {
-        if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
-            $matchedStatuses = Mage::getResourceModel('tnw_salesforce/order_status_collection')
-                ->addFieldToFilter('sf_order_status', $value);
+        switch ($this->_mapping->getSfObject()) {
+            case 'Order':
+                $matchedStatuses = Mage::getResourceModel('tnw_salesforce/order_status_collection')
+                    ->addFieldToFilter('sf_order_status', $value);
 
-            return $matchedStatuses->getFirstItem()->getData('status');
-        } else {
-            $matchedStatuses = Mage::getResourceModel('tnw_salesforce/order_status_collection')
-                ->addFieldToFilter('sf_opportunity_status_code', $value);
+                return $matchedStatuses->getFirstItem()->getData('status');
 
-            return $matchedStatuses->getFirstItem()->getData('status');
+            case 'Opportunity':
+                $matchedStatuses = Mage::getResourceModel('tnw_salesforce/order_status_collection')
+                    ->addFieldToFilter('sf_opportunity_status_code', $value);
+
+                return $matchedStatuses->getFirstItem()->getData('status');
+
+            default:
+                return null;
         }
     }
 
@@ -254,12 +264,16 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
      */
     public function convertSfName($_entity)
     {
-        if ('order' == strtolower(Mage::helper('tnw_salesforce')->getOrderObject())) {
-            return "Magento Order #" . $this->convertNumber($_entity);
-        } else {
-            return "Request #" . $this->convertNumber($_entity);
-        }
+        switch ($this->_mapping->getSfObject()) {
+            case 'Order':
+                return "Magento Order #" . $this->convertNumber($_entity);
 
+            case 'Opportunity':
+                return "Request #" . $this->convertNumber($_entity);
+
+            default:
+                return null;
+        }
     }
 
     /**
@@ -304,7 +318,19 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
         $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
         $availableOwners[] = $_entity->getData($attributeCode);
 
-        $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_' . strtolower(Mage::helper('tnw_salesforce')->getOrderObject()));
+        switch ($this->_mapping->getSfObject()) {
+            case 'Order':
+                $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_order');
+                break;
+
+            case 'Opportunity':
+                $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_opportunity');
+                break;
+
+            default:
+                $currentHelper = null;
+                break;
+        }
 
         if (!empty($currentHelper)) {
 

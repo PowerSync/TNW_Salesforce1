@@ -16,5 +16,5 @@ class TNW_Salesforce_Adminhtml_Salesforce_Abandoned_OpportunityController extend
      * path to the blocks which will be rendered by
      * @var string
      */
-    protected $_blockPath = 'abandoned_opportunity';
+    protected $_blockPath = 'mapping_abandoned_opportunity';
 }

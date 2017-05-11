@@ -63,6 +63,22 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected $_salesforceParentOpportunityField = 'OpportunityId';
 
     /**
+     * @param Mage_Sales_Model_Order $_entity
+     * @return bool
+     */
+    protected function _checkMassAddEntity($_entity)
+    {
+        if (!Mage::helper('tnw_salesforce/config_sales')->orderSyncAllowed($_entity)) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace("Order #{$_entity->getIncrementId()}, not paid. Skipped sync Salesforce Order");
+
+            return false;
+        }
+
+        return parent::_checkMassAddEntity($_entity);
+    }
+
+    /**
      * @param $_entity Mage_Sales_Model_Order
      * @param $key
      */
@@ -352,11 +368,9 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
                 $_object->Id = $this->_cache['upserted'.$this->getManyParentEntityType()][$_orderNum];
 
                 // Check if at least 1 product was added to the order before we try to activate
-                if ((
-                        !($this->_cache['orderLookup'][$_orderNum])
-                        || !property_exists($this->_cache['orderLookup'][$_orderNum], 'OrderItems')
-                        || empty($this->_cache['orderLookup'][$_orderNum]->OrderItems))
-                    && (empty($this->_cache['responses']['orderItems'][$_orderNum]))
+                if (
+                    empty($this->_cache['orderLookup'][$_orderNum]->OrderItems)
+                    && empty($this->_cache['responses']['orderItems'][$_orderNum])
                 ) {
                     unset($this->_cache['orderToActivate'][$_orderNum]);
                     Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');

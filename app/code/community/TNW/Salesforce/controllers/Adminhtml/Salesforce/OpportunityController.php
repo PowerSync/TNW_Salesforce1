@@ -18,4 +18,10 @@ class TNW_Salesforce_Adminhtml_Salesforce_OpportunityController extends TNW_Sale
      * @var string
      */
     protected $_sfEntity = 'Opportunity';
+
+    /**
+     * path to the blocks which will be rendered by
+     * @var string
+     */
+    protected $_blockPath = 'mapping_order_opportunity';
 }

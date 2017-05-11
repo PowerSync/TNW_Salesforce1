@@ -71,22 +71,22 @@
 
     <adminhtml_salesforcesync_ordersync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_ordersync_grid" name="ordersync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_order_grid" name="ordersync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_ordersync_grid>
 
     <adminhtml_salesforcesync_abandonedsync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_abandonedsync_grid" name="abandonedsync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_abandoned_grid" name="abandonedsync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_abandonedsync_grid>
 
     <adminhtml_salesforcesync_productsync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_productsync_grid" name="productsync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_product_grid" name="productsync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_productsync_grid>
 
     <adminhtml_salesforcesync_customersync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_customersync_grid" name="customersync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_customer_grid" name="customersync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_customersync_grid>
 
     <adminhtml_salesforcesync_queue_from_grid>
@@ -96,23 +96,28 @@
 
     <adminhtml_salesforcesync_invoicesync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_invoicesync_grid" name="invoicesync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_invoice_grid" name="invoicesync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_invoicesync_grid>
 
     <adminhtml_salesforcesync_shipmentsync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_shipmentsync_grid" name="shipmentsync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_shipment_grid" name="shipmentsync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_shipmentsync_grid>
 
     <adminhtml_salesforcesync_creditmemosync_grid>
         <update handle="formkey"/>
-        <block type="tnw_salesforce/adminhtml_creditmemosync_grid" name="creditmemosync.grid" output="toHtml"></block>
+        <block type="tnw_salesforce/adminhtml_synchronize_creditmemo_grid" name="creditmemosync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_creditmemosync_grid>
 
     <adminhtml_salesforcesync_campaign_salesrulesync_grid>
         <update handle="formkey"/>
         <block type="tnw_salesforce/adminhtml_campaign_salesrulesync_grid" name="salesrulesync.grid" output="toHtml"></block>
     </adminhtml_salesforcesync_campaign_salesrulesync_grid>
+
+    <adminhtml_salesforcesync_wishlistsync_grid>
+        <update handle="formkey"/>
+        <block type="tnw_salesforce/adminhtml_synchronize_wishlist_grid" name="wishlistsync.grid" output="toHtml"></block>
+    </adminhtml_salesforcesync_wishlistsync_grid>
 
     <!-- Order View Page -->
     <adminhtml_sales_order_view>
@@ -261,6 +266,14 @@
     <adminhtml_salesforce_campaign_member_edit>
         <update handle="tnw_salesforce_chosen"/>
     </adminhtml_salesforce_campaign_member_edit>
+
+    <adminhtml_salesforce_wishlist_opportunity_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_wishlist_opportunity_edit>
+
+    <adminhtml_salesforce_wishlist_opportunityline_edit>
+        <update handle="tnw_salesforce_chosen"/>
+    </adminhtml_salesforce_wishlist_opportunityline_edit>
 
     <adminhtml_tool_log_file_view>
         <reference name="head">

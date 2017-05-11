@@ -90,8 +90,6 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveError('Could not add to the queue!');
                     } elseif ($syncBulk) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveNotice($helper->__('ISSUE: Too many records selected.'));
 
                         Mage::getSingleton('tnw_salesforce/tool_log')
                             ->saveSuccess($helper->__('Selected records were added into <a href="%s">synchronization queue</a> and will be processed in the background.', Mage::helper('adminhtml')->getUrl('*/salesforcesync_queue_to/bulk')));
@@ -100,11 +98,9 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                             ->saveSuccess($helper->__('Records are pending addition into the queue!'));
                     }
                 } else {
-                    $_syncType = strtolower($helper->getShipmentObject());
-                    Mage::dispatchEvent(sprintf('tnw_salesforce_%s_process', $_syncType), array(
-                        'shipmentIds' => $entityIds,
-                        'message' => $helper->__('Total of %d shipment(s) were synchronized', count($entityIds)),
-                        'type' => 'salesforce'
+                    Mage::dispatchEvent('tnw_salesforce_sync_shipment_for_website', array(
+                        'entityIds' => $entityIds,
+                        'syncType' => 'realtime'
                     ));
                 }
             } catch (Exception $e) {
