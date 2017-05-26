@@ -24,8 +24,10 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
      */
     public function syncShipmentsForOrder()
     {
+        /** if Order & Opportunity enabled - OrderShipment will be sync-ed through the OpportunityShipment process in fact */
+
         return $this->syncShipments()
-            && Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed();
+            && Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
     }
 
     /**
