@@ -41,7 +41,7 @@ class TNW_Salesforce_Helper_Magento_Opportunity extends TNW_Salesforce_Helper_Ma
             ->loadByIncrementId($_sMagentoId);
 
         $order->addData(array(
-            'salesforce_id' => $_sSalesforceId,
+            'opportunity_id' => $_sSalesforceId,
             'sf_insync'     => 1
         ));
 
