@@ -28,8 +28,9 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
      */
     public function syncInvoicesForOrder()
     {
+        /** if Order & Opportunity enabled - OrderInvoice will be sync-ed through the OpportunityInvoice process in fact */
         return $this->syncInvoices()
-            && Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed();
+            && Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
     }
 
     /**
