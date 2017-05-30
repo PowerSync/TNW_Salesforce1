@@ -72,6 +72,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
 
         $this->_cache['opportunityLookup'] = Mage::helper('tnw_salesforce/salesforce_data')
             ->opportunityLookup($orders);
+
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+
+            $this->_cache['orderLookup'] = Mage::helper('tnw_salesforce/salesforce_data_order')
+                ->lookup($orders);
+        }
     }
 
     /**
@@ -155,6 +161,22 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Invoice extends TNW_Salesforc
             $_orderItem->setData('opportunity_id', $record->Id);
             break;
         }
+
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+
+            $records = !empty($this->_cache['orderLookup'][$_entity->getOrder()->getRealOrderId()]->OrderItems)
+                ? $this->_cache['orderLookup'][$_entity->getOrder()->getRealOrderId()]->OrderItems->records : array();
+
+            foreach ($records as $record) {
+                if ($record->PricebookEntry->Product2Id != $productSalesforceId) {
+                    continue;
+                }
+
+                $_orderItem->setData('salesforce_id', $record->Id);
+                break;
+            }
+        }
+
 
         //FIX: $item->getOrderItem()->getData('salesforce_id')
         $item->setOrderItem($_orderItem);
