@@ -21,7 +21,7 @@ class TNW_Salesforce_Block_Adminhtml_System_Config_Form_Field_Visible extends Ma
                 if (empty($separator)) {
                     $visible = $visible && (Mage::getStoreConfig($path) == $dependent->value);
                 } else {
-                    $visible = $visible && empty($separator) && in_array(Mage::getStoreConfig($path), explode($separator, $dependent->value));
+                    $visible = $visible && in_array(Mage::getStoreConfig($path), explode($separator, $dependent->value));
                 }
             }
 
