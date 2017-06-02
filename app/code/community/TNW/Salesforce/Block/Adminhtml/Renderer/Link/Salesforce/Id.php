@@ -33,8 +33,8 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id extends Mage_Ad
             return (int)Mage::app()->getStore($row->getData('store_id'))->getWebsiteId();
         }
 
-        if ($row->hasData('website_ids')) {
-            $websites = $row->getData('website_ids');
+        $websites = $row->getData('website_ids');
+        if (!empty($websites)) {
             return (int)reset($websites);
         }
 
