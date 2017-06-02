@@ -34,7 +34,8 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id extends Mage_Ad
         }
 
         if ($row->hasData('website_ids')) {
-            return (int)reset($row->getData('website_ids'));
+            $websites = $row->getData('website_ids');
+            return (int)reset($websites);
         }
 
         return null;
