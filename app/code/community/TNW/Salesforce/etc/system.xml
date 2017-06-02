@@ -1914,6 +1914,10 @@
                             <depends>
                                 <sync_enabled>1</sync_enabled>
                             </depends>
+                            <comment><![CDATA[
+                                <b>YES</b> - new Campaign will be created automatically for every Rule<br />
+                                <b>NO</b> - admin should assign every Rule to some Campaign manually on the Edit page
+                            ]]></comment>
                         </create_campaign_automatic>
                     </fields>
                 </salesforce_campaigns>
