@@ -53,4 +53,12 @@ class TNW_Salesforce_Helper_Magento_Opportunity extends TNW_Salesforce_Helper_Ma
         return $order;
     }
 
+    /**
+     * @param Mage_Sales_Model_Resource_Order_Item_Collection $orderItemCollection
+     * @return array
+     */
+    protected function salesforceIdsByOrderItems($orderItemCollection)
+    {
+        return $orderItemCollection->walk('getOpportunityId');
+    }
 }

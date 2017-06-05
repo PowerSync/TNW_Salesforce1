@@ -253,7 +253,7 @@ abstract class TNW_Salesforce_Helper_Magento_Order_Base extends TNW_Salesforce_H
 
         /** @var Mage_Sales_Model_Resource_Order_Item_Collection $_orderItemCollection */
         $_orderItemCollection = $order->getItemsCollection();
-        $hasSalesforceId = $_orderItemCollection->walk('getSalesforceId');
+        $hasSalesforceId = $this->salesforceIdsByOrderItems($_orderItemCollection);
 
         foreach ($object->{$this->getItemsField()}->records as $record) {
             $orderItemId = array_search($record->Id, $hasSalesforceId);
@@ -293,5 +293,14 @@ abstract class TNW_Salesforce_Helper_Magento_Order_Base extends TNW_Salesforce_H
         }
 
            return $this;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Resource_Order_Item_Collection $orderItemCollection
+     * @return array
+     */
+    protected function salesforceIdsByOrderItems($orderItemCollection)
+    {
+        return $orderItemCollection->walk('getSalesforceId');
     }
 }
