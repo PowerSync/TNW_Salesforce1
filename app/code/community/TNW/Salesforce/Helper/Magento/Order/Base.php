@@ -122,7 +122,7 @@ abstract class TNW_Salesforce_Helper_Magento_Order_Base extends TNW_Salesforce_H
             return $this;
         }
 
-        $salesforceIds = $order->getStatusHistoryCollection()->walk('getSalesforceId');
+        $salesforceIds = $this->salesforceIdsByNotes($order->getStatusHistoryCollection());
         foreach ($object->Notes->records as $record) {
             if (empty($record->Body)) {
                 continue;
@@ -147,6 +147,15 @@ abstract class TNW_Salesforce_Helper_Magento_Order_Base extends TNW_Salesforce_H
 
         $this->addEntityToSave('Order', $order);
         return $this;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Entity_Order_Status_History_Collection $notesCollection
+     * @return array
+     */
+    protected function salesforceIdsByNotes($notesCollection)
+    {
+        return $notesCollection->walk('getSalesforceId');
     }
 
     /**
