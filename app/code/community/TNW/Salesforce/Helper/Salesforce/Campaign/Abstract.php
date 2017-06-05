@@ -25,7 +25,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Campaign_Abstract extends TNW_Sa
     {
         if (!$_entity->getData('salesforce_id') && !Mage::helper('tnw_salesforce')->isCampaignsCreateAutomate()) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('SKIPPED: Automatic creation of prohibited');
+                ->saveNotice('SKIPPED: Automatic Campaign creation disabled. No Campaign assigned manually. Cannot sync this entity.');
 
             return false;
         }
