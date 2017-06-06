@@ -3,11 +3,6 @@
 class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magento_Abstract
 {
     /**
-     * @var bool
-     */
-    protected $isOrder = true;
-
-    /**
      * @param null $object
      * @return mixed
      */
@@ -51,29 +46,33 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             }
         }
 
-        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . "Order__c";
-        $_sOrderId    = (property_exists($object, $_sOrderIdKey) && $object->$_sOrderIdKey)
-            ? $object->$_sOrderIdKey : null;
-
-        if (empty($_sOrderId)) {
-            $_sOpportunityIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . "Opportunity__c";
-            $_sOrderId    = (property_exists($object, $_sOpportunityIdKey) && $object->$_sOpportunityIdKey)
-                ? $object->$_sOpportunityIdKey : null;
-
-            $this->isOrder = false;
-        }
-
-        if (!$_sOrderId) {
+        $_sOrderIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order__c';
+        $_sOpportunityIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity__c';
+        if (empty($object->$_sOrderIdKey) && empty($object->$_sOpportunityIdKey)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError("ERROR Object \"tnw_shipment__Shipment__c\" lost contact with the object \"Order\"");
+                ->saveError('ERROR Object "tnw_shipment__Shipment__c" lost contact with the object "Order"');
+
             return false;
         }
 
-        $sql = "SELECT entity_id FROM `" . Mage::helper('tnw_salesforce')->getTable('sales_flat_order') . "` WHERE salesforce_id = '" . $_sOrderId . "'";
-        $row = $this->_write->query($sql)->fetch();
-        if (!$row) {
+        $row = false;
+        $tableSalesFlatOrder = Mage::helper('tnw_salesforce')->getTable('sales_flat_order');
+        if (empty($row) && !empty($object->$_sOrderIdKey)) {
+            $sql = /** @lang text */
+                "SELECT entity_id FROM `{$tableSalesFlatOrder}` WHERE salesforce_id = '{$object->$_sOrderIdKey}'";
+            $row = $this->_write->query($sql)->fetch();
+        }
+
+        if (empty($row) && !empty($object->$_sOpportunityIdKey)) {
+            $sql = /** @lang text */
+                "SELECT entity_id FROM `{$tableSalesFlatOrder}` WHERE opportunity_id = '{$object->$_sOpportunityIdKey}'";
+            $row = $this->_write->query($sql)->fetch();
+        }
+
+        if (empty($row)) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveError(sprintf("ERROR Object \"Order\" (%s) is not synchronized", $_sOrderId));
+                ->saveError('ERROR Object "Order" is not synchronized');
+
             return false;
         }
 
@@ -120,8 +119,8 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
                 return false;
             }
 
-            $hasSalesforceId = $order->getItemsCollection()
-                ->walk('getSalesforceId');
+            $salesforceIds = array_filter($order->getItemsCollection()->walk('getSalesforceId'));
+            $opportunityIds = array_filter($order->getItemsCollection()->walk('getOpportunityId'));
 
             $_iItemQuantityKey  = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Quantity__c';
             $_iItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
@@ -129,20 +128,16 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
 
             $savedQtys = array();
             foreach ($object->$_shipmentItemKey->records as $record) {
-                $_sItemId    = (property_exists($record, $_iItemOrderItemKey) && $record->$_iItemOrderItemKey)
-                    ? $record->$_iItemOrderItemKey : null;
-
-                if (empty($_sItemId)) {
-                    $_sItemId    = (property_exists($record, $_iItemOpportunityItemKey) && $record->$_iItemOpportunityItemKey)
-                        ? $record->$_iItemOpportunityItemKey : null;
+                $orderItemId = null;
+                if (empty($orderItemId) && !empty($record->$_iItemOrderItemKey)) {
+                    $orderItemId = array_search($record->$_iItemOrderItemKey, $salesforceIds);
                 }
 
-                if (empty($_sItemId)) {
-                    continue;
+                if (empty($orderItemId) && !empty($record->$_iItemOpportunityItemKey)) {
+                    $orderItemId = array_search($record->$_iItemOpportunityItemKey, $opportunityIds);
                 }
 
-                $orderItemId = array_search($_sItemId, $hasSalesforceId);
-                if (false === $orderItemId) {
+                if (empty($orderItemId)) {
                     continue;
                 }
 
@@ -206,7 +201,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
      */
     protected function _updateMappedEntityFields($object, $shipment)
     {
-        $sfObject = $this->isOrder
+        $sfObject = Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()
             ? 'OrderShipment'
             : 'OpportunityShipment';
 
@@ -287,8 +282,8 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
      */
     protected function _updateMappedEntityItemFields($object, $shipment)
     {
-        $hasSalesforceId = $shipment->getOrder()->getItemsCollection()
-            ->walk('getSalesforceId');
+        $salesforceIds = array_filter($shipment->getOrder()->getItemsCollection()->walk('getSalesforceId'));
+        $opportunityIds = array_filter($shipment->getOrder()->getItemsCollection()->walk('getOpportunityId'));
 
         /** @var Mage_Sales_Model_Resource_Order_Invoice_Item_Collection $_shipmentItemCollection */
         $_shipmentItemCollection = $shipment->getItemsCollection();
@@ -299,12 +294,16 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
         $_sItemOrderItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c';
         $_sItemOpportunityItemKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c';
         foreach ($object->$_shipmentItemKey->records as $record) {
-            $_sItemId = $this->isOrder
-                ? $record->$_sItemOrderItemKey
-                : $record->$_sItemOpportunityItemKey;
+            $orderItemId = null;
+            if (empty($orderItemId) && !empty($record->$_sItemOrderItemKey)) {
+                $orderItemId = array_search($record->$_sItemOrderItemKey, $salesforceIds);
+            }
 
-            $orderItemId = array_search($_sItemId, $hasSalesforceId);
-            if (false === $orderItemId) {
+            if (empty($orderItemId) && !empty($record->$_sItemOpportunityItemKey)) {
+                $orderItemId = array_search($record->$_sItemOpportunityItemKey, $opportunityIds);
+            }
+
+            if (empty($orderItemId)) {
                 continue;
             }
 
@@ -316,7 +315,7 @@ class TNW_Salesforce_Helper_Magento_Shipment extends TNW_Salesforce_Helper_Magen
             /** @var Mage_Sales_Model_Order_Invoice_Item $entity */
             $entity = $_shipmentItemCollection->getItemById($shipmentItemId);
 
-            $sfObject = $this->isOrder
+            $sfObject = Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()
                 ? 'OrderShipmentItem'
                 : 'OpportunityShipmentItem';
 
