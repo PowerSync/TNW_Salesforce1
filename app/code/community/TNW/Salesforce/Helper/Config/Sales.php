@@ -95,8 +95,7 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function integrationOnlyOrderAndOpportunityAllowed()
     {
-        return $this->isEnabledOrderSync()
-            && strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY, $this->integrationOption()) === 0;
+        return strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER_AND_OPPORTUNITY, $this->integrationOption()) === 0;
     }
 
     /**
@@ -104,8 +103,7 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function integrationOnlyOpportunityAllowed()
     {
-        return $this->isEnabledOrderSync()
-            && strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::OPPORTUNITY, $this->integrationOption()) === 0;
+        return strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::OPPORTUNITY, $this->integrationOption()) === 0;
     }
 
     /**
@@ -122,8 +120,7 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function integrationOnlyOrderAllowed()
     {
-        return $this->isEnabledOrderSync() &&
-            strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER, $this->integrationOption()) === 0;
+        return strcasecmp(TNW_Salesforce_Model_System_Config_Source_Order_Integration_Option::ORDER, $this->integrationOption()) === 0;
     }
 
     /**
