@@ -131,15 +131,15 @@ class TNW_Salesforce_Helper_Salesforce_Campaign_Member extends TNW_Salesforce_He
      */
     protected function _checkMassAddEntity($_entity)
     {
-        if (!$_entity->getData('salesforce_id')) {
+        if (!$_entity->getData('salesforce_id') && !$_entity->getData('salesforce_lead_id')) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPING: The customer #" . $_entity->getData('email') . " is not synchronized!");
+                ->saveNotice("SKIPPING: The customer email: {$_entity->getData('email')} is not synchronized!");
             return false;
         }
 
         if (!Mage::helper('tnw_salesforce')->getSyncAllGroups() && !Mage::helper('tnw_salesforce')->syncCustomer($_entity->getGroupId())) {
             Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("SKIPPING: Sync for customer group #" . $_entity->getGroupId() . " is disabled!");
+                ->saveNotice("SKIPPING: Sync for customer group #{$_entity->getGroupId()} is disabled!");
             return false;
         }
 

@@ -522,6 +522,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             return;
         }
 
+        /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Member $campaignMember */
         $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
         if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['subscriberToUpsert'])) {
             $campaignMember->process();
