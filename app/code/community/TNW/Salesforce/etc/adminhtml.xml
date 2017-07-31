@@ -424,6 +424,11 @@
                             <action>adminhtml/system_config/edit/section/salesforce_customer</action>
                             <sort_order>30</sort_order>
                         </configuration>
+                        <account_matching>
+                            <title>Account Matching Rules</title>
+                            <action>adminhtml/salesforce_account_matching</action>
+                            <sort_order>40</sort_order>
+                        </account_matching>
                     </children>
                 </tnw_salesforce>
             </children>
