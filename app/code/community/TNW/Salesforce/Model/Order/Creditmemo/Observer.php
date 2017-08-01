@@ -22,7 +22,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
      * @param array $entityIds
      * @throws Exception
      */
-    public function syncCreditMemo(array $entityIds)
+    public function syncCreditMemo(array $entityIds, $isManualSync = false)
     {
         $groupWebsite = array();
         foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
@@ -36,7 +36,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
         }
 
         foreach ($groupWebsite as $websiteId => $entityIds) {
-            $this->syncCreditMemoForWebsite($entityIds, $websiteId);
+            $this->syncCreditMemoForWebsite($entityIds, $websiteId, $isManualSync);
         }
     }
 
@@ -45,9 +45,9 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
      * @param null $website
      * @throws Exception
      */
-    public function syncCreditMemoForWebsite(array $entityIds, $website = null)
+    public function syncCreditMemoForWebsite(array $entityIds, $website = null, $isManualSync = false)
     {
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds, $isManualSync) {
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
@@ -58,7 +58,7 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
                 return;
             }
 
-            if (!Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemo()) {
+            if (!$isManualSync && !Mage::helper('tnw_salesforce/config_sales_creditmemo')->autoSyncCreditMemo()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('SKIPPING: Credit Memo synchronization disabled');
 

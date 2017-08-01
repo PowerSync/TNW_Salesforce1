@@ -31,14 +31,7 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Creditmemos extends Ma
 
     protected function _prepareColumns()
     {
-        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->getWebsiteIdForType('sales/order', $this->getOrder()->getId());
-
-        $syncCreditMemo = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($orderWebsite, function () {
-            return Mage::helper('tnw_salesforce/config_sales_creditmemo')->syncCreditMemo();
-        });
-
-        if ($syncCreditMemo) {
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
             $this->addColumn('sf_insync', array(
                 'header' => Mage::helper('sales')->__('Status'),
                 'width' => '40px',
