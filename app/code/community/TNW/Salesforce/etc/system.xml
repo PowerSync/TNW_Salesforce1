@@ -1223,17 +1223,6 @@
                             <show_in_store>0</show_in_store>
                             <comment>Synchronize all orders regardless of Magento status</comment>
                         </order_status_all>
-                        <order_status_update_customer>
-                            <label>Update Customer Info</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>45</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <comment><![CDATA[ Update customer information in Salesforce each time order status in Magneto changes
-                            ]]></comment>
-                        </order_status_update_customer>
                         <order_status_allow translate="label">
                             <label>Order Statuses</label>
                             <frontend_type>multiselect</frontend_type>
@@ -1241,13 +1230,24 @@
                                 <order_status_all>0</order_status_all>
                             </depends>
                             <source_model>tnw_salesforce/config_order_status</source_model>
-                            <sort_order>50</sort_order>
+                            <sort_order>45</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                             <can_be_empty>0</can_be_empty>
                             <comment>Only synchronize orders with statuses selected above</comment>
                         </order_status_allow>
+                        <order_status_update_customer>
+                            <label>Update Customer Info</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[ Update customer information in Salesforce each time order status in Magneto changes
+                            ]]></comment>
+                        </order_status_update_customer>
 
                         <customer_address translate="label">
                             <label>Customer Address</label>
