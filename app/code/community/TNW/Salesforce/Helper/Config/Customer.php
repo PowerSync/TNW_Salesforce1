@@ -155,4 +155,18 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
             'onclick' => "setLocation('$url')",
         );
     }
+
+    /**
+     * @return bool
+     */
+    public function issetCurrentCustomer()
+    {
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = Mage::registry('current_customer');
+        if ($customer instanceof Mage_Customer_Model_Customer) {
+            return null !== $customer->getId();
+        }
+
+        return false;
+    }
 }

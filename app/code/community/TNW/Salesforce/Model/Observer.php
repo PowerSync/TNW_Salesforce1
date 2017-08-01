@@ -105,6 +105,15 @@ class TNW_Salesforce_Model_Observer
         $this->checkConfigCondition($sections);
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     */
+    public function checkLayout(Varien_Event_Observer $observer)
+    {
+        $node = $observer->getEvent()->getLayout()->getNode();
+        $this->checkConfigCondition($node);
+    }
+
     public function adjustMenu()
     {
         try {

@@ -776,6 +776,15 @@
                 </observers>
             </adminhtml_init_system_config>
 
+            <controller_action_layout_generate_blocks_before>
+                <observers>
+                    <tnw_salesforce>
+                        <class>tnw_salesforce/observer</class>
+                        <method>checkLayout</method>
+                    </tnw_salesforce>
+                </observers>
+            </controller_action_layout_generate_blocks_before>
+
             <adminhtml_cache_flush_system>
                 <observers>
                     <tnw_salesforce_cache_entity_clear>
