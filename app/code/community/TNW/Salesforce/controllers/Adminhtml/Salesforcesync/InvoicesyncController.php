@@ -48,12 +48,12 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
 
     /**
      * Sync Action
-     *
+     * @throws \Exception
      */
     public function syncAction()
     {
         $entityId = $this->getRequest()->getParam('invoice_id');
-        Mage::getSingleton('tnw_salesforce/order_invoice_observer')->syncInvoice(array($entityId));
+        Mage::getSingleton('tnw_salesforce/order_invoice_observer')->syncInvoice(array($entityId), true);
 
         $this->_redirectReferer();
     }
@@ -69,7 +69,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
         } elseif (!$helper->isProfessionalEdition()) {
             $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            Mage::getSingleton('tnw_salesforce/order_invoice_observer')->syncInvoice($itemIds);
+            Mage::getSingleton('tnw_salesforce/order_invoice_observer')->syncInvoice($itemIds, true);
         }
 
         $this->_redirect('*/*/index');

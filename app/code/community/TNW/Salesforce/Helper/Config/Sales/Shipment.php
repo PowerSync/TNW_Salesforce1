@@ -5,10 +5,21 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
     const SHIPMENT_SYNC_ENABLE = 'salesforce_shipment/shipment_configuration/sync_enabled';
     const SHIPMENT_NOTES_SYNC  = 'salesforce_shipment/shipment_configuration/notes_synchronize';
 
-    // Allow Magento to synchronize shipments with Salesforce
+    /**
+     * @return bool
+     * @deprecated
+     */
     public function syncShipments()
     {
-        return (int)$this->getStoreConfig(self::SHIPMENT_SYNC_ENABLE);
+        return $this->autoSyncShipments();
+    }
+
+    /**
+     * @return bool
+     */
+    public function autoSyncShipments()
+    {
+        return (bool)$this->getStoreConfig(self::SHIPMENT_SYNC_ENABLE);
     }
 
     /**
@@ -26,7 +37,7 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
     {
         /** if Order & Opportunity enabled - OrderShipment will be sync-ed through the OpportunityShipment process in fact */
 
-        return $this->syncShipments()
+        return $this->isProfessionalEdition()
             && Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
     }
 
@@ -35,7 +46,7 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
      */
     public function syncShipmentsForOpportunity()
     {
-        return $this->syncShipments()
+        return $this->isProfessionalEdition()
             && Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed();
     }
 }

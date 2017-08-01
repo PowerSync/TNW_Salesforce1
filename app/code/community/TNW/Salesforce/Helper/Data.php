@@ -191,7 +191,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
      */
     final public function isProfessionalEdition()
     {
-        return $this->getType() == 'PRO';
+        return strcasecmp($this->getType(), 'PRO') === 0;
     }
 
     // License Email

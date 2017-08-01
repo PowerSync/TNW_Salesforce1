@@ -20,9 +20,10 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
 
     /**
      * @param array $entityIds
-     * @throws Exception
+     * @param bool $isManualSync
+     * @throws \Exception
      */
-    public function syncShipment(array $entityIds)
+    public function syncShipment(array $entityIds, $isManualSync = false)
     {
         $groupWebsite = array();
         foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
@@ -36,18 +37,19 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
         }
 
         foreach ($groupWebsite as $websiteId => $entityIds) {
-            $this->syncShipmentForWebsite($entityIds, $websiteId);
+            $this->syncShipmentForWebsite($entityIds, $websiteId, $isManualSync);
         }
     }
 
     /**
      * @param array $entityIds
      * @param null $website
-     * @throws Exception
+     * @param bool $isManualSync
+     * @throws \Exception
      */
-    public function syncShipmentForWebsite(array $entityIds, $website = null)
+    public function syncShipmentForWebsite(array $entityIds, $website = null, $isManualSync = false)
     {
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds, $isManualSync) {
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
@@ -58,7 +60,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                 return;
             }
 
-            if (!Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments()) {
+            if (!$isManualSync && !Mage::helper('tnw_salesforce/config_sales_shipment')->autoSyncShipments()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('SKIPING: Shipment synchronization disabled');
 

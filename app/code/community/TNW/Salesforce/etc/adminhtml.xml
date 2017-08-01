@@ -24,12 +24,12 @@
                             <action>adminhtml/salesforcesync_ordersync</action>
                             <sort_order>30</sort_order>
                         </order_sync>
-                        <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                        <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                             <title>Invoices</title>
                             <action>adminhtml/salesforcesync_invoicesync</action>
                             <sort_order>32</sort_order>
                         </invoice_sync>
-                        <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                        <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                             <title>Shipments</title>
                             <action>adminhtml/salesforcesync_shipmentsync</action>
                             <sort_order>34</sort_order>
@@ -130,7 +130,7 @@
                                 </status_mapping>
                             </children>
                         </order_mapping>
-                        <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                        <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                             <title>Invoice Mappings</title>
                             <sort_order>400</sort_order>
                             <children>
@@ -156,7 +156,7 @@
                                 </opportunity_invoice_item>
                             </children>
                         </invoice_mapping>
-                        <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                        <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                             <title>Shipment Mappings</title>
                             <sort_order>500</sort_order>
                             <children>
@@ -443,12 +443,12 @@
                                     <sort_order>10</sort_order>
                                     <action>adminhtml/salesforcesync_ordersync</action>
                                 </order_sync>
-                                <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                     <title>Invoices</title>
                                     <action>adminhtml/salesforcesync_invoicesync</action>
                                     <sort_order>20</sort_order>
                                 </invoice_sync>
-                                <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                     <title>Shipments</title>
                                     <action>adminhtml/salesforcesync_shipmentsync</action>
                                     <sort_order>30</sort_order>
@@ -496,7 +496,7 @@
                                 </status_mapping>
                             </children>
                         </order_mappings>
-                        <invoice_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                        <invoice_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                             <title>Invoice Mappings</title>
                             <sort_order>40</sort_order>
                             <children>
@@ -522,7 +522,7 @@
                                 </opportunity_invoice_item>
                             </children>
                         </invoice_mappings>
-                        <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                        <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                             <title>Shipment Mappings</title>
                             <sort_order>50</sort_order>
                             <children>
@@ -613,11 +613,11 @@
                                                 <title>Orders Synchronization</title>
                                                 <sort_order>10</sort_order>
                                             </orders_sync>
-                                            <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                            <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                                 <title>Invoices Synchronization</title>
                                                 <sort_order>20</sort_order>
                                             </invoice_sync>
-                                            <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                            <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                                 <title>Shipments Synchronization</title>
                                                 <sort_order>30</sort_order>
                                             </shipment_sync>
@@ -661,7 +661,7 @@
                                             </status_mapping>
                                         </children>
                                     </order_mappings>
-                                    <invoice_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                    <invoice_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                         <title>Invoice Mappings</title>
                                         <sort_order>40</sort_order>
                                         <children>
@@ -683,7 +683,7 @@
                                             </opportunity_invoice_item>
                                         </children>
                                     </invoice_mappings>
-                                    <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                    <shipment_mappings translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                         <title>Shipment Mappings</title>
                                         <sort_order>50</sort_order>
                                         <children>
@@ -824,11 +824,11 @@
                                         <title>Synchronize Orders</title>
                                         <sort_order>30</sort_order>
                                     </order_sync>
-                                    <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                    <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                         <title>Invoices</title>
                                         <sort_order>32</sort_order>
                                     </invoice_sync>
-                                    <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                    <shipment_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                         <title>Shipments</title>
                                         <sort_order>34</sort_order>
                                     </shipment_sync>
@@ -890,7 +890,7 @@
                                             </status_mapping>
                                         </children>
                                     </order_mapping>
-                                    <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_invoice::syncInvoices">
+                                    <invoice_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                         <title>Invoice Mappings</title>
                                         <sort_order>400</sort_order>
                                         <children>
@@ -912,7 +912,7 @@
                                             </opportunity_invoice_item>
                                         </children>
                                     </invoice_mapping>
-                                    <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_shipment::syncShipments">
+                                    <shipment_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
                                         <title>Shipment Mappings</title>
                                         <sort_order>500</sort_order>
                                         <children>

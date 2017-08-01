@@ -9,10 +9,21 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
     const INVOICE_SYNC_ENABLE = 'salesforce_invoice/invoice_configuration/sync_enable';
     const INVOICE_NOTES_SYNC  = 'salesforce_invoice/invoice_configuration/notes_synchronize';
 
-    // Allow Magento to synchronize invoices with Salesforce
+    /**
+     * @return bool
+     * @deprecated
+     */
     public function syncInvoices()
     {
-        return (int)$this->getStoreConfig(self::INVOICE_SYNC_ENABLE);
+        return $this->autoSyncInvoices();
+    }
+
+    /**
+     * @return bool
+     */
+    public function autoSyncInvoices()
+    {
+        return (bool)$this->getStoreConfig(self::INVOICE_SYNC_ENABLE);
     }
 
     /**
@@ -29,7 +40,7 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
     public function syncInvoicesForOrder()
     {
         /** if Order & Opportunity enabled - OrderInvoice will be sync-ed through the OpportunityInvoice process in fact */
-        return $this->syncInvoices()
+        return $this->isProfessionalEdition()
             && Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
     }
 
@@ -38,7 +49,7 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
      */
     public function syncInvoicesForOpportunity()
     {
-        return $this->syncInvoices()
+        return $this->isProfessionalEdition()
             && Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed();
     }
 }
