@@ -288,6 +288,15 @@
                 </observers>
             </checkout_submit_all_after>
 
+            <sales_order_creditmemo_refund>
+                <observers>
+                    <tnw_creditmemo>
+                        <class>tnw_salesforce/order_creditmemo_observer</class>
+                        <method>refund</method>
+                    </tnw_creditmemo>
+                </observers>
+            </sales_order_creditmemo_refund>
+
             <!-- Order Save Event: Status update-->
             <sales_order_save_commit_after>
                 <observers>
@@ -295,6 +304,10 @@
                         <class>tnw_salesforce/sale_observer</class>
                         <method>orderStatusUpdateTrigger</method>
                     </tnw_salesforce_sale_observer>
+                    <tnw_creditmemo>
+                        <class>tnw_salesforce/order_creditmemo_observer</class>
+                        <method>saveOrder</method>
+                    </tnw_creditmemo>
                 </observers>
             </sales_order_save_commit_after>
 

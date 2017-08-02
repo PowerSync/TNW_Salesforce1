@@ -4,18 +4,51 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
 {
     const OBJECT_TYPE = 'creditmemo';
 
+    protected $deferredSyncCreditMemo;
+    protected $refund = false;
+
     /**
      * @param Varien_Event_Observer $_observer
      * @return bool|void
+     * @throws \Exception
      */
     public function saveAfter(Varien_Event_Observer $_observer)
     {
         /** @var Mage_Sales_Model_Order_Creditmemo $_creditmemo */
         $_creditmemo = $_observer->getEvent()->getCreditmemo();
+
+        if ($this->refund) {
+            $this->deferredSyncCreditMemo = $_creditmemo->getId();
+            return;
+        }
+
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Credit Memo #{$_creditmemo->getIncrementId()} Sync");
 
         $this->syncCreditMemo(array($_creditmemo->getId()));
+    }
+
+    /**
+     * @param Varien_Event_Observer $_observer
+     */
+    public function refund(Varien_Event_Observer $_observer)
+    {
+        $this->refund = true;
+    }
+
+    /**
+     * @param Varien_Event_Observer $_observer
+     * @throws \Exception
+     */
+    public function saveOrder(Varien_Event_Observer $_observer)
+    {
+        if (empty($this->deferredSyncCreditMemo)) {
+            return;
+        }
+
+        $this->syncCreditMemo(array($this->deferredSyncCreditMemo));
+        $this->deferredSyncCreditMemo = null;
+        $this->refund = false;
     }
 
     /**
