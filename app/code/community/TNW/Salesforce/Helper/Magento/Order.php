@@ -319,7 +319,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ->setStoreId((int)$storeId);
 
         // Get Customer
-        $customer = $this->_searchCustomer($object->BillToContactId, $_websiteId);
+        $customer = $this->_searchCustomer($object->AccountId, $_websiteId);
         if (null !== $customer->getId()) {
             $orderCreate->getSession()
                 ->setCustomer($customer)
@@ -763,7 +763,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     {
         $collection = Mage::getResourceModel('customer/customer_collection')
             ->addNameToSelect()
-            ->addAttributeToFilter('salesforce_id', array('like'=>$contactId));
+            ->addAttributeToFilter('salesforce_account_id', array('like'=>$contactId));
 
         if (Mage::getSingleton('customer/config_share')->isWebsiteScope()) {
             $collection->addAttributeToFilter('website_id', array('eq'=>$websiteId));
