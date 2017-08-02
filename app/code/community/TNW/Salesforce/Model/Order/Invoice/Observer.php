@@ -52,7 +52,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
      * @param array $entityIds
      * @throws Exception
      */
-    public function syncInvoice(array $entityIds)
+    public function syncInvoice(array $entityIds, $isManualSync = false)
     {
         $groupWebsite = array();
         foreach (array_chunk($entityIds, TNW_Salesforce_Helper_Queue::UPDATE_LIMIT) as $_entityIds) {
@@ -66,7 +66,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
         }
 
         foreach ($groupWebsite as $websiteId => $entityIds) {
-            $this->syncInvoiceForWebsite($entityIds, $websiteId);
+            $this->syncInvoiceForWebsite($entityIds, $websiteId, $isManualSync);
         }
     }
 
@@ -75,9 +75,9 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
      * @param null $website
      * @throws Exception
      */
-    public function syncInvoiceForWebsite(array $entityIds, $website = null)
+    public function syncInvoiceForWebsite(array $entityIds, $website = null, $isManualSync = false)
     {
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds) {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds, $isManualSync) {
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 
@@ -88,7 +88,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
                 return;
             }
 
-            if (!Mage::helper('tnw_salesforce/config_sales_invoice')->syncInvoices()) {
+            if (!$isManualSync && !Mage::helper('tnw_salesforce/config_sales_invoice')->autoSyncInvoices()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('Invoice Integration is disabled');
 
