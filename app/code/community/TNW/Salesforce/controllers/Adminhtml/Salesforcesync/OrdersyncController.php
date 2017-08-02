@@ -95,7 +95,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         $creditMemoIds = $order->getCreditmemosCollection()->walk('getId');
         if (!empty($creditMemoIds)) {
             Mage::getSingleton('tnw_salesforce/order_creditmemo_observer')
-                ->syncCreditMemo($creditMemoIds);
+                ->syncCreditMemo($creditMemoIds, true);
         }
 
         $this->_redirectReferer();
