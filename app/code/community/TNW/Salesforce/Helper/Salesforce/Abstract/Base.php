@@ -1097,4 +1097,30 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     {
         throw new Exception(sprintf('Method "%s" must be overridden before use', __METHOD__));
     }
+
+    /**
+     *
+     */
+    public function countSuccessEntityUpsert()
+    {
+        $upsertStatus = [];
+        foreach ($this->getSyncResults() as $_responses) {
+            foreach ($_responses as $entityNumber => $_tmpResponse) {
+                $__response = array_key_exists('subObj', $_tmpResponse)
+                    ? $_tmpResponse['subObj'] : array($_tmpResponse);
+
+                foreach ($__response as $_response) {
+                    if (!isset($upsertStatus[$entityNumber])) {
+                        $upsertStatus[$entityNumber] = true;
+                    }
+
+                    $_response = (array)$_response;
+                    $upsertStatus[$entityNumber] = $upsertStatus[$entityNumber] && isset($_response['success']) &&
+                        (strcasecmp($_response['success'], 'true') === 0 || $_response['success'] === true);
+                }
+            }
+        }
+
+        return count(array_filter($upsertStatus));
+    }
 }

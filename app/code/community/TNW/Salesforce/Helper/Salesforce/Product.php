@@ -634,7 +634,7 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
             $sku = $this->_cache['productIdToSku'][$_magentoId];
 
             //Report Transaction
-            $this->_cache['responses']['pricebooks'][$cacheKey] = $_response;
+            $this->_cache['responses']['pricebooks'][$sku]['subObj'][$cacheKey] = $_response;
             if (!$_response->success) {
                 $this->_cache['toSaveInMagento'][$sku]->SfInSync = 0;
                 $this->_processErrors($_response, 'pricebook', $this->_cache['pricebookEntryToSync'][$cacheKey]);

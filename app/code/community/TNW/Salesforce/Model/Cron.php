@@ -113,9 +113,9 @@ class TNW_Salesforce_Model_Cron
 
                 try {
                     $manualSync = Mage::helper('tnw_salesforce/salesforce_currency');
-                    if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process()) {
+                    if ($manualSync->reset() && $manualSync->massAdd($currencies) && $manualSync->process() && $successCount = $manualSync->countSuccessEntityUpsert()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveTrace($_helperData->__('%d Magento currency entities were successfully synchronized', count($currencies)));
+                            ->saveTrace($_helperData->__('%d Magento currency entities were successfully synchronized', $successCount));
                     }
                 } catch (Exception $e) {
                     Mage::getSingleton('tnw_salesforce/tool_log')
