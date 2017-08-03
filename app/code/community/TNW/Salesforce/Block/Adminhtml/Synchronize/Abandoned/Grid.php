@@ -89,10 +89,10 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Abandoned_Grid extends Mage_Adm
         $collection->addSubtotal($this->_storeIds, $data)
             ->addCustomerData($data);
 
-        $form = $collection->getSelect()->getPart(Zend_Db_Select::FROM);
-        if (isset($form['cust_mname']['joinType'])) {
-            $form['cust_mname']['joinType'] = Zend_Db_Select::LEFT_JOIN;
-            $collection->getSelect()->setPart(Zend_Db_Select::FROM, $form);
+        $from = $collection->getSelect()->getPart(Zend_Db_Select::FROM);
+        if (isset($from['cust_mname']['joinType'])) {
+            $from['cust_mname']['joinType'] = Zend_Db_Select::LEFT_JOIN;
+            $collection->getSelect()->setPart(Zend_Db_Select::FROM, $from);
         }
 
         if (is_array($this->_storeIds) && !empty($this->_storeIds)) {
