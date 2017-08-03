@@ -498,7 +498,7 @@ class TNW_Salesforce_Model_Observer
 
         $observer->setData('entityIds', $entityIds);
         $observer->setData('entityPathPostfix', 'order');
-        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized as Order', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d order(s) were synchronized as Order');
 
         $this->entityForWebsite($observer);
     }
@@ -536,7 +536,7 @@ class TNW_Salesforce_Model_Observer
 
         $observer->setData('entityIds', $entityIds);
         $observer->setData('entityPathPostfix', 'opportunity');
-        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized as Opportunity', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d order(s) were synchronized as Opportunity');
 
         $this->entityForWebsite($observer);
     }
@@ -569,7 +569,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'abandoned_opportunity');
-        $observer->setData('successMessage', sprintf('Total of %d abandoned(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d abandoned(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -585,7 +585,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'order_invoice');
-        $observer->setData('successMessage', sprintf('Total of %d invoice(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d invoice(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -601,7 +601,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'opportunity_invoice');
-        $observer->setData('successMessage', sprintf('Total of %d invoice(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d invoice(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -617,7 +617,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'order_shipment');
-        $observer->setData('successMessage', sprintf('Total of %d shipment(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d shipment(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -633,7 +633,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'opportunity_shipment');
-        $observer->setData('successMessage', sprintf('Total of %d shipment(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d shipment(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -649,7 +649,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'order_creditmemo');
-        $observer->setData('successMessage', sprintf('Total of %d creditmemo(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d creditmemo(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -693,9 +693,13 @@ class TNW_Salesforce_Model_Observer
             $syncObjectStack->push($manualSync);
         }
 
-        if ($manualSync->reset() && $manualSync->massAdd($entityIds, $isCron) && $manualSync->process('full')) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveSuccess($observer->getData('successMessage'));
+        if ($manualSync->reset() && $manualSync->massAdd($entityIds, $isCron) && $manualSync->process('full') && $successCount = $manualSync->countSuccessEntityUpsert()) {
+            $successMessage = $observer->getData('successMessage');
+            if (substr_count($successMessage, '%d') === 1) {
+                $successMessage = sprintf($observer->getData('successMessage'), $successCount);
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveSuccess($successMessage);
         }
     }
 

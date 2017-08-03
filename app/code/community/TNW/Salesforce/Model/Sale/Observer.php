@@ -483,9 +483,9 @@ class TNW_Salesforce_Model_Sale_Observer
                 else {
                     /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Salesrule $campaignMember */
                     $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_salesrule');
-                    if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process()) {
+                    if ($campaignMember->reset() && $campaignMember->massAdd($entityIds) && $campaignMember->process() && $successCount = $campaignMember->countSuccessEntityUpsert()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', $successCount));
                     }
                 }
             } catch (Exception $e) {
