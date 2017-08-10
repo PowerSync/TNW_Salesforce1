@@ -99,9 +99,9 @@ class TNW_Salesforce_Model_Wishlist_Observer
                 } else {
                     /** @var TNW_Salesforce_Helper_Salesforce_Wishlist $manualSync */
                     $manualSync = Mage::helper(sprintf('tnw_salesforce/%s_wishlist', $syncBulk ? 'bulk' : 'salesforce'));
-                    if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process('full')) {
+                    if ($manualSync->reset() && $manualSync->massAdd($entityIds) && $manualSync->process('full') && $successCount = $manualSync->countSuccessEntityUpsert()) {
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', count($entityIds)));
+                            ->saveSuccess($helper->__('Total of %d record(s) were successfully synchronized', $successCount));
                     }
                 }
             } catch (Exception $e) {

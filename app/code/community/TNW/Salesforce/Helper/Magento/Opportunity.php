@@ -25,13 +25,30 @@ class TNW_Salesforce_Helper_Magento_Opportunity extends TNW_Salesforce_Helper_Ma
      */
     public function getMagentoId($object = null, $_sSalesforceId)
     {
-        $_sMagentoId = parent::getMagentoId($object, $_sSalesforceId);
-        if (!$_sMagentoId) {
+        $_mMagentoId = parent::getMagentoId($object, $_sSalesforceId);
+        if (!empty($_sSalesforceId) && is_null($_mMagentoId)) {
+            // Try to find the user by SF Id
+            $orderTable = Mage::helper('tnw_salesforce')->getTable('sales_flat_order');
+            $sql = "SELECT increment_id FROM `$orderTable` WHERE opportunity_id = '$_sSalesforceId'";
+            $row = $this->_write->query($sql)->fetch();
+            if ($row) {
+                $_mMagentoId = $row['increment_id'];
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace("Order #{$_mMagentoId} Loaded by using Opportunity ID: {$_sSalesforceId}");
+            }
+        }
+
+        if (!$_mMagentoId) {
+            $_sMagentoIdKey = TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c';
+            $_sMagentoId    = (property_exists($object, $_sMagentoIdKey) && $object->$_sMagentoIdKey)
+                ? $object->$_sMagentoIdKey : null;
+
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace('SKIPPING: could not find the order by number: '. $_sMagentoId);
             return false;
         }
-        return $_sMagentoId;
+        return $_mMagentoId;
     }
 
     protected function _updateMagento($object, $_sMagentoId, $_sSalesforceId)
@@ -41,7 +58,7 @@ class TNW_Salesforce_Helper_Magento_Opportunity extends TNW_Salesforce_Helper_Ma
             ->loadByIncrementId($_sMagentoId);
 
         $order->addData(array(
-            'salesforce_id' => $_sSalesforceId,
+            'opportunity_id' => $_sSalesforceId,
             'sf_insync'     => 1
         ));
 
@@ -53,4 +70,21 @@ class TNW_Salesforce_Helper_Magento_Opportunity extends TNW_Salesforce_Helper_Ma
         return $order;
     }
 
+    /**
+     * @param Mage_Sales_Model_Resource_Order_Item_Collection $orderItemCollection
+     * @return array
+     */
+    protected function salesforceIdsByOrderItems($orderItemCollection)
+    {
+        return $orderItemCollection->walk('getOpportunityId');
+    }
+
+    /**
+     * @param Mage_Sales_Model_Entity_Order_Status_History_Collection $notesCollection
+     * @return array
+     */
+    protected function salesforceIdsByNotes($notesCollection)
+    {
+        return $notesCollection->walk('getOpportunityId');
+    }
 }

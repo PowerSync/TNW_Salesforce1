@@ -26,14 +26,7 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Shipments extends Mage
 
     protected function _prepareColumns()
     {
-        $orderWebsite = Mage::getSingleton('tnw_salesforce/localstorage')
-            ->getWebsiteIdForType('sales/order', $this->getOrder()->getId());
-
-        $syncShipments = Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($orderWebsite, function () {
-            return Mage::helper('tnw_salesforce/config_sales_shipment')->syncShipments();
-        });
-
-        if ($syncShipments) {
+        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
             $this->addColumn('sf_insync', array(
                 'header' => Mage::helper('sales')->__('Status'),
                 'width' => '40px',

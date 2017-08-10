@@ -65,6 +65,12 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity__c'}
             = $this->orderSalesforceId($_entity->getOrder());
 
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+            // Link to Order
+            $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order__c'}
+                = parent::orderSalesforceId($_entity->getOrder());
+        }
+
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'disableMagentoSync__c'}
             = true;
     }
@@ -79,6 +85,11 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity_Shipment extends TNW_Salesfor
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Opportunity_Product__c'}
             = $this->orderItemSalesforceId($_entityItem->getOrderItem());
+
+        if (Mage::helper('tnw_salesforce/config_sales')->integrationOrderAllowed()) {
+            $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order_Item__c'}
+                = parent::orderItemSalesforceId($_entityItem->getOrderItem());
+        }
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Shipment__c'}
             = $this->_getParentEntityId($_entityNumber);

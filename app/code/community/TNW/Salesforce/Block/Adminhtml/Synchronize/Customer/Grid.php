@@ -30,6 +30,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Admi
             ->addNameToSelect()
             ->addAttributeToSelect('email')
             ->addAttributeToSelect('created_at')
+            ->addAttributeToSelect('updated_at')
             ->addAttributeToSelect('sf_insync')
             ->addAttributeToSelect('salesforce_id')
             ->addAttributeToSelect('salesforce_account_id')
@@ -112,6 +113,20 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Customer_Grid extends Mage_Admi
             'header' => Mage::helper('customer')->__('State/Province'),
             'width' => '100',
             'index' => 'billing_region',
+        ));
+
+        $this->addColumn('created_at', array(
+            'header' => Mage::helper('customer')->__('Created At'),
+            'width' => '100',
+            'type' => 'date',
+            'index' => 'created_at',
+        ));
+
+        $this->addColumn('updated_at', array(
+            'header' => Mage::helper('customer')->__('Updated At'),
+            'width' => '100',
+            'type' => 'date',
+            'index' => 'updated_at',
         ));
 
         $this->addColumn('salesforce_id', array(

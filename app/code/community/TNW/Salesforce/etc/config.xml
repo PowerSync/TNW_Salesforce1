@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.58.02.0005</version>
+            <version>0.01.58.02.0006</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -288,6 +288,15 @@
                 </observers>
             </checkout_submit_all_after>
 
+            <sales_order_creditmemo_refund>
+                <observers>
+                    <tnw_creditmemo>
+                        <class>tnw_salesforce/order_creditmemo_observer</class>
+                        <method>refund</method>
+                    </tnw_creditmemo>
+                </observers>
+            </sales_order_creditmemo_refund>
+
             <!-- Order Save Event: Status update-->
             <sales_order_save_commit_after>
                 <observers>
@@ -295,6 +304,10 @@
                         <class>tnw_salesforce/sale_observer</class>
                         <method>orderStatusUpdateTrigger</method>
                     </tnw_salesforce_sale_observer>
+                    <tnw_creditmemo>
+                        <class>tnw_salesforce/order_creditmemo_observer</class>
+                        <method>saveOrder</method>
+                    </tnw_creditmemo>
                 </observers>
             </sales_order_save_commit_after>
 
@@ -775,6 +788,15 @@
                     </tnw_salesforce_init_system_config>
                 </observers>
             </adminhtml_init_system_config>
+
+            <controller_action_layout_generate_blocks_before>
+                <observers>
+                    <tnw_salesforce>
+                        <class>tnw_salesforce/observer</class>
+                        <method>checkLayout</method>
+                    </tnw_salesforce>
+                </observers>
+            </controller_action_layout_generate_blocks_before>
 
             <adminhtml_cache_flush_system>
                 <observers>

@@ -348,6 +348,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         /** @var $manualSync TNW_Salesforce_Helper_Salesforce_Newslettersubscriber */
         $manualSync = Mage::helper('tnw_salesforce/salesforce_newslettersubscriber');
         if (!empty($this->_cache['productCampaignAssignment']) && $manualSync->validateSync(true)) {
+            /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Member $campaignMember */
             $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
             if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['productCampaignAssignment'])) {
                 $campaignMember->process();
@@ -393,6 +394,7 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         }
 
         if (!empty($this->_cache['userRulesToUpsert'])) {
+            /** @var TNW_Salesforce_Helper_Salesforce_Campaign_Member $campaignMember */
             $campaignMember = Mage::helper('tnw_salesforce/salesforce_campaign_member');
             if ($campaignMember->reset() && $campaignMember->memberAdd($this->_cache['userRulesToUpsert'])) {
                 $campaignMember->process();

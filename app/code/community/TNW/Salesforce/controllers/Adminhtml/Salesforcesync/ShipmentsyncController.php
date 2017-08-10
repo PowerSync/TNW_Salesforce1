@@ -54,7 +54,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
     {
         $entityId = $this->getRequest()->getParam('shipment_id');
         Mage::getSingleton('tnw_salesforce/order_shipment_observer')
-            ->syncShipment(array($entityId));
+            ->syncShipment(array($entityId), true);
 
         $this->_redirectReferer();
     }
@@ -70,7 +70,7 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
         } elseif (!$helper->isProfessionalEdition()) {
             $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
-            Mage::getSingleton('tnw_salesforce/order_shipment_observer')->syncShipment($itemIds);
+            Mage::getSingleton('tnw_salesforce/order_shipment_observer')->syncShipment($itemIds, true);
         }
 
         $this->_redirect('*/*/index');

@@ -105,6 +105,15 @@ class TNW_Salesforce_Model_Observer
         $this->checkConfigCondition($sections);
     }
 
+    /**
+     * @param Varien_Event_Observer $observer
+     */
+    public function checkLayout(Varien_Event_Observer $observer)
+    {
+        $node = $observer->getEvent()->getLayout()->getNode();
+        $this->checkConfigCondition($node);
+    }
+
     public function adjustMenu()
     {
         try {
@@ -489,7 +498,7 @@ class TNW_Salesforce_Model_Observer
 
         $observer->setData('entityIds', $entityIds);
         $observer->setData('entityPathPostfix', 'order');
-        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized as Order', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d order(s) were synchronized as Order');
 
         $this->entityForWebsite($observer);
     }
@@ -527,7 +536,7 @@ class TNW_Salesforce_Model_Observer
 
         $observer->setData('entityIds', $entityIds);
         $observer->setData('entityPathPostfix', 'opportunity');
-        $observer->setData('successMessage', sprintf('Total of %d order(s) were synchronized as Opportunity', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d order(s) were synchronized as Opportunity');
 
         $this->entityForWebsite($observer);
     }
@@ -560,7 +569,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'abandoned_opportunity');
-        $observer->setData('successMessage', sprintf('Total of %d abandoned(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d abandoned(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -576,7 +585,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'order_invoice');
-        $observer->setData('successMessage', sprintf('Total of %d invoice(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d invoice(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -592,7 +601,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'opportunity_invoice');
-        $observer->setData('successMessage', sprintf('Total of %d invoice(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d invoice(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -608,7 +617,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'order_shipment');
-        $observer->setData('successMessage', sprintf('Total of %d shipment(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d shipment(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -624,7 +633,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'opportunity_shipment');
-        $observer->setData('successMessage', sprintf('Total of %d shipment(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d shipment(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -640,7 +649,7 @@ class TNW_Salesforce_Model_Observer
         }
 
         $observer->setData('entityPathPostfix', 'order_creditmemo');
-        $observer->setData('successMessage', sprintf('Total of %d creditmemo(s) were synchronized', count($observer->getData('entityIds'))));
+        $observer->setData('successMessage', 'Total of %d creditmemo(s) were synchronized');
 
         $this->entityForWebsite($observer);
     }
@@ -684,9 +693,13 @@ class TNW_Salesforce_Model_Observer
             $syncObjectStack->push($manualSync);
         }
 
-        if ($manualSync->reset() && $manualSync->massAdd($entityIds, $isCron) && $manualSync->process('full')) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveSuccess($observer->getData('successMessage'));
+        if ($manualSync->reset() && $manualSync->massAdd($entityIds, $isCron) && $manualSync->process('full') && $successCount = $manualSync->countSuccessEntityUpsert()) {
+            $successMessage = $observer->getData('successMessage');
+            if (substr_count($successMessage, '%d') === 1) {
+                $successMessage = sprintf($observer->getData('successMessage'), $successCount);
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveSuccess($successMessage);
         }
     }
 
@@ -983,10 +996,14 @@ class TNW_Salesforce_Model_Observer
             $opportunityField = 'OpportunityId';
         }
 
-        $abandonedOpportunities = array();
+        $abandonedOpportunities = $closeDateOpportunities = array();
 
         foreach ($orders as $key => $order) {
             if (property_exists($order, $opportunityField)) {
+                if (!empty($order->tnw_mage_basic__Magento_ID__c)) {
+                    $closeDateOpportunities[$order->tnw_mage_basic__Magento_ID__c] = $order->$opportunityField;
+                }
+
                 $abandonedOpportunities[] = $order->$opportunityField;
             }
         }
@@ -997,6 +1014,30 @@ class TNW_Salesforce_Model_Observer
              */
             $collection = Mage::getModel('tnw_salesforce/api_entity_opportunity')->getCollection();
             $collection->addFieldToFilter('Id', array('in' => $abandonedOpportunities));
+
+            /** @var Mage_Sales_Model_Resource_Order_Invoice $resource */
+            $resource = Mage::getResourceModel('sales/order_invoice');
+            $connection = $resource->getReadConnection();
+            $select = $connection->select()
+                ->from(array('invoice' => $resource->getMainTable()), array('created_at'))
+                ->joinInner(array('order'=>$resource->getTable('sales/order')), 'order.entity_id = invoice.order_id', array())
+                ->order('invoice.created_at DESC')
+                ->where('order.increment_id = :order')
+            ;
+
+            foreach ($collection as $opportunity) {
+                $orderIncrementId = array_search($opportunity->getData('Id'), $closeDateOpportunities);
+                if (false === $orderIncrementId) {
+                    continue;
+                }
+
+                $createdAt = $connection->fetchOne($select, array('order' => $orderIncrementId));
+                $currentTimezone = Mage::getStoreConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);
+                $dateTime = new DateTime($createdAt, new DateTimeZone('UTC'));
+                $dateTime->setTimezone(new DateTimeZone($currentTimezone));
+
+                $opportunity->setData('CloseDate', $dateTime->format('c'));
+            }
 
             $collection->setDataToAll('StageName', Mage::helper('tnw_salesforce/config_sales')->getOpportunityToOrderStatus());
             $collection->save();

@@ -214,7 +214,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
     {
         // Link to Order
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Order__c'}
-            = $_entity->getOrder()->getData('salesforce_id');
+            = $this->orderSalesforceId($_entity->getOrder());
 
         $this->_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'disableMagentoSync__c'}
             = true;

@@ -83,19 +83,19 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         $invoiceIds = $order->getInvoiceCollection()->walk('getId');
         if (!empty($invoiceIds)) {
             Mage::getSingleton('tnw_salesforce/order_invoice_observer')
-                ->syncInvoice($invoiceIds);
+                ->syncInvoice($invoiceIds, true);
         }
 
         $shipmentIds = $order->getShipmentsCollection()->walk('getId');
         if (!empty($shipmentIds)) {
             Mage::getSingleton('tnw_salesforce/order_shipment_observer')
-                ->syncShipment($shipmentIds);
+                ->syncShipment($shipmentIds, true);
         }
 
         $creditMemoIds = $order->getCreditmemosCollection()->walk('getId');
         if (!empty($creditMemoIds)) {
             Mage::getSingleton('tnw_salesforce/order_creditmemo_observer')
-                ->syncCreditMemo($creditMemoIds);
+                ->syncCreditMemo($creditMemoIds, true);
         }
 
         $this->_redirectReferer();

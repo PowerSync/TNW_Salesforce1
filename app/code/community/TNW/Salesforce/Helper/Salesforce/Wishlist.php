@@ -338,6 +338,8 @@ class TNW_Salesforce_Helper_Salesforce_Wishlist extends TNW_Salesforce_Helper_Sa
                     $_object->getResource()->load($_object, $_object->getId());
                 }
 
+                //FIX: Bundle product generate SKU
+                $_object->setData('sku_type', '1');
                 break;
 
             case 'Product Inventory':
@@ -383,7 +385,7 @@ class TNW_Salesforce_Helper_Salesforce_Wishlist extends TNW_Salesforce_Helper_Sa
             $entity = $this->getEntityCache($entityNum);
 
             //Report Transaction
-            $this->_cache['responses']['opportunityLineItems'][$entityNum]['subObj'][$entityItemNumber] = $result;
+            $this->_cache['responses'][lcfirst($this->getItemsField())][$entityNum]['subObj'][$entityItemNumber] = $result;
 
             if (!$result->success) {
                 // Reset sync status
