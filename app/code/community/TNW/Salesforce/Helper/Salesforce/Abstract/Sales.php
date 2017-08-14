@@ -225,7 +225,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
             $this->_statisticMappingDefined() ||
             !isset($this->_cache['contactsLookup'][$websiteSfId][$email]) ||
             !isset($this->_cache['accountsLookup'][0][$email]) ||
-            (isset($this->_cache['leadsLookup'][$websiteSfId][$email]) && !$this->_cache['leadsLookup'][$websiteSfId][$email]->IsConverted);
+            isset($this->_cache['leadsLookup'][$websiteSfId][$email]);
     }
 
     /**
