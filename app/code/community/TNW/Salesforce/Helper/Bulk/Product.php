@@ -8,17 +8,17 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
 {
     protected function _onComplete()
     {
-        if ($this->_cache['bulkJobs']['product']['Id']) {
+        if (!empty($this->_cache['bulkJobs']['product']['Id'])) {
             $this->_closeJob($this->_cache['bulkJobs']['product']['Id']);
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['product']['Id']);
         }
 
-        if ($this->_cache['bulkJobs']['product'][$this->_magentoId]) {
+        if (!empty($this->_cache['bulkJobs']['product'][$this->_magentoId])) {
             $this->_closeJob($this->_cache['bulkJobs']['product'][$this->_magentoId]);
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['product'][$this->_magentoId]);
         }
 
-        if ($this->_cache['bulkJobs']['pricebookEntry']['Id']) {
+        if (!empty($this->_cache['bulkJobs']['pricebookEntry']['Id'])) {
             $this->_closeJob($this->_cache['bulkJobs']['pricebookEntry']['Id']);
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Closing job: " . $this->_cache['bulkJobs']['pricebookEntry']['Id']);
         }
