@@ -22,6 +22,14 @@ class TNW_Salesforce_Model_Order_Creditmemo_Observer
             return;
         }
 
+        Mage::getSingleton('tnw_salesforce/observer')
+            ->setExportedOpportunity(array(
+                'opportunity' => array(),
+                'abandoned' => array(),
+            ))
+            ->setExportedOrders(array())
+        ;
+
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Credit Memo #{$_creditmemo->getIncrementId()} Sync");
 
