@@ -49,9 +49,11 @@ class TNW_Salesforce_Model_Imports_Bulk
         if (null !== $objectType) {
             $collection->filterObjectType($objectType);
         }
-
         $collection->setPageSize(Mage::helper('tnw_salesforce/config_bulk')->getPageSizeFromSalesforce());
         $lastPageNumber = $collection->getLastPageNumber();
+        if (Mage::helper('tnw_salesforce/config_bulk')->getPageCountFromSalesforce() > 0) {
+            $lastPageNumber = min($lastPageNumber, Mage::helper('tnw_salesforce/config_bulk')->getPageCountFromSalesforce());
+        }
 
         for($i = 1; $i <= $lastPageNumber; $i++) {
             $collection->clear()->setCurPage($i);
