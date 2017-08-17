@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>0.01.58.02.0008</version>
+            <version>0.01.58.02.0009</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -920,6 +920,7 @@
                 <creditmemo_batch_size>500</creditmemo_batch_size>
                 <wishlist_batch_size>500</wishlist_batch_size>
                 <page_size_from_salesforce>100</page_size_from_salesforce>
+                <page_count_from_salesforce>0</page_count_from_salesforce>
 
                 <db_log_limit>10000</db_log_limit>
                 <enable_soql>0</enable_soql>
