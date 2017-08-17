@@ -12,6 +12,7 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     const BULK_CREDIT_MEMO_PATH = 'salesforce/development_and_debugging/creditmemo_batch_size';
     const BULK_WISHLIST_PATH = 'salesforce/development_and_debugging/wishlist_batch_size';
     const PAGE_SIZE_FROM_SALESFORCE_PATH = 'salesforce/development_and_debugging/page_size_from_salesforce';
+    const PAGE_COUNT_FROM_SALESFORCE_PATH = 'salesforce/development_and_debugging/page_count_from_salesforce';
 
     /**
      * @return array
@@ -105,5 +106,13 @@ class TNW_Salesforce_Helper_Config_Bulk extends TNW_Salesforce_Helper_Config
     public function getPageSizeFromSalesforce()
     {
         return (int)$this->getStoreConfig(self::PAGE_SIZE_FROM_SALESFORCE_PATH);
+    }
+
+    /**
+     * @return int
+     */
+    public function getPageCountFromSalesforce()
+    {
+        return (int)$this->getStoreConfig(self::PAGE_COUNT_FROM_SALESFORCE_PATH);
     }
 }

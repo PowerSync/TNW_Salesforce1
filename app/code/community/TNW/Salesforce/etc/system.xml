@@ -472,6 +472,18 @@
                             </depends>
                         </page_size_from_salesforce>
 
+                        <page_count_from_salesforce translate="label">
+                            <label>Pages count from Salesforce per session</label>
+                            <sort_order>180</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment><![CDATA[Pages count will be processed]]></comment>
+                            <depends>
+                                <developer_settings>1</developer_settings>
+                            </depends>
+                        </page_count_from_salesforce>
+
                         <!-- Bulk settings end -->
 
                         <!-- Tool settings start -->
