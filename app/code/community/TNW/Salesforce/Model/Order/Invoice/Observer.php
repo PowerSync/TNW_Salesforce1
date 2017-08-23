@@ -19,6 +19,14 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Invoice #{$_invoice->getIncrementId()} Sync");
 
+        Mage::getSingleton('tnw_salesforce/observer')
+            ->setExportedOpportunity(array(
+                'opportunity' => array(),
+                'abandoned' => array(),
+            ))
+            ->setExportedOrders(array())
+        ;
+
         $order = $_invoice->getOrder();
         $salesHelper = Mage::helper('tnw_salesforce/config_sales');
         // Sync Full Order

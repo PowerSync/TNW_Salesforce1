@@ -37,9 +37,37 @@ class TNW_Salesforce_Model_Observer
     /**
      * @return array
      */
+    public function getExportedOpportunity()
+    {
+        return $this->exportedOpportunity;
+    }
+
+    /**
+     * @param array $exportedOpportunity
+     */
+    public function setExportedOpportunity($exportedOpportunity)
+    {
+        $this->exportedOpportunity = $exportedOpportunity;
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
     public function getExportedOrders()
     {
         return $this->exportedOrders;
+    }
+
+    /**
+     * @return array
+     */
+    public function setExportedOrders($exportedOrders)
+    {
+        $this->exportedOrders = $exportedOrders;
+
+        return $this;
     }
 
     /**
