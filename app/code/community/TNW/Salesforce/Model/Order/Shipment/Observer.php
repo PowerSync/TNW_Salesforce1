@@ -15,6 +15,13 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Shipment #{$_shipment->getIncrementId()} Sync");
 
+        Mage::getSingleton('tnw_salesforce/observer')
+            ->setExportedOpportunity(array(
+                'opportunity' => array(),
+                'abandoned' => array(),
+            ))
+            ->setExportedOrders(array())
+        ;
         $this->syncShipment(array($_shipment->getId()));
     }
 
