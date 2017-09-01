@@ -1648,8 +1648,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     }
 
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountId = $_result->id;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountOwnerId
-                        = $this->_prepareOwnerId($this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    if (property_exists($this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]], 'OwnerId')) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountOwnerId
+                            = $this->_prepareOwnerId($this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    }
 
                     /**
                      * Update lookup for lead convertation
@@ -1736,8 +1738,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $_websiteId = $this->_getWebsiteIdByCustomerId($_contactIds[$_key]);
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SalesforceId = $contactId;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
-                        = $this->_prepareOwnerId($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    if (property_exists($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]], 'OwnerId')) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
+                            = $this->_prepareOwnerId($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    }
 
                     if (
                         !property_exists($this->_cache['toSaveInMagento'][$_websiteId][$_email], 'AccountId') ||
