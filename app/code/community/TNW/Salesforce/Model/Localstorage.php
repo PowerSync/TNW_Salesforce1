@@ -43,16 +43,33 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
         return $return;
     }
 
-    public function getAllDependencies()
+    public function getAllDependencies($types = array())
     {
-        $_dependencies = array();
-        $queueStorageTable = Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage');
-        $websiteId = Mage::app()->getWebsite()->getId();
-        $_sql = "SELECT object_id, sf_object_type FROM {$queueStorageTable} WHERE mage_object_type IN ('{$this->_mageModels['customer']}', '{$this->_mageModels['product']}') AND website_id = {$websiteId}";
+        if (empty($types)) {
+            $types = array('customer', 'product');
+        }
+
+        $mageModels = array();
+        foreach ($types as $type) {
+            if (empty($this->_mageModels[$type])) {
+                continue;
+            }
+
+            $mageModels[] = $this->_mageModels[$type];
+        }
+
+        $_sql = sprintf("SELECT object_id, sf_object_type FROM %s WHERE mage_object_type IN ('%s') AND website_id = %s",
+            Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
+            implode('\', \'', $mageModels),
+            Mage::app()->getWebsite()->getId());
+
         $_results = $this->getDbConnection('read')->query($_sql)->fetchAll();
+
+        $_dependencies = array();
         foreach ($_results as $_result) {
             $_dependencies[$_result['sf_object_type']][] = $_result['object_id'];
         }
+
         return $_dependencies;
     }
 

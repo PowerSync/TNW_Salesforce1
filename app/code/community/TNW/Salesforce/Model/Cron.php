@@ -373,9 +373,21 @@ class TNW_Salesforce_Model_Cron
         $this->_resetStuckRecords();
         $this->_deleteSuccessfulRecords();
 
-        $_dependencies = in_array($type, array('order', 'abandoned'))
-            ? Mage::getModel('tnw_salesforce/localstorage')->getAllDependencies()
-            : array();
+        switch (true) {
+            case in_array($type, array('order', 'abandoned')):
+                $_dependencies = Mage::getModel('tnw_salesforce/localstorage')
+                    ->getAllDependencies(array('customer', 'product'));
+                break;
+
+            case in_array($type, array('invoice', 'shipment', 'creditmemo')):
+                $_dependencies = Mage::getModel('tnw_salesforce/localstorage')
+                    ->getAllDependencies(array('order'));
+                break;
+
+            default:
+                $_dependencies = array();
+                break;
+        }
 
         // get entity id list from local storage
         /** @var TNW_Salesforce_Model_Mysql4_Queue_Storage_Collection $list */
@@ -428,6 +440,26 @@ class TNW_Salesforce_Model_Cron
                                 return false;
                             }
                         }
+                    }
+
+                    return true;
+                });
+
+                $storageItems = array_filter($storageItems, function (TNW_Salesforce_Model_Queue_Storage $storage) use($_dependencies) {
+                    if (!in_array($storage->getMageObjectType(), array('sales/order_invoice', 'sales/order_shipment', 'sales/order_creditmemo'))) {
+                        return true;
+                    }
+
+                    if (!isset($_dependencies['Order'])) {
+                        return true;
+                    }
+
+                    /** @var Mage_Sales_Model_Order_Invoice $_entity */
+                    $_entity = Mage::getModel($storage->getMageObjectType())
+                        ->load($storage->getObjectId());
+
+                    if ($_entity->getOrderId() && in_array($_entity->getOrderId(), $_dependencies['Order'])) {
+                        return false;
                     }
 
                     return true;
