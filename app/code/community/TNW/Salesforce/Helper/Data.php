@@ -33,6 +33,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
     const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
     const REAL_TIME_SYNC_MAX_COUNT = 'salesforce/development_and_debugging/real_time_sync_max_count';
+    const BULK_RESULT_MAX_ATTENTIONS = 'salesforce/development_and_debugging/bulk_result_max_attentions';
 
     /* Product */
     const PRODUCT_SYNC = 'salesforce_product/general/product_enable';
@@ -394,6 +395,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function getRealTimeSyncMaxCount()
     {
         return $this->getStoreConfig(self::REAL_TIME_SYNC_MAX_COUNT);
+    }
+
+    /**
+     * @return int
+     */
+    public function getBulkResultMaxAttentions()
+    {
+        return (int)$this->getStoreConfig(self::BULK_RESULT_MAX_ATTENTIONS);
     }
 
     // Default Customer Opportunity Role

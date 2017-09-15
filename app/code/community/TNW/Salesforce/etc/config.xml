@@ -927,6 +927,7 @@
                 <log_file_read_limit>50</log_file_read_limit>
                 <log_api_call_statistic>0</log_api_call_statistic>
                 <real_time_sync_max_count>50</real_time_sync_max_count>
+                <bulk_result_max_attentions>50</bulk_result_max_attentions>
 
             </development_and_debugging>
 
