@@ -809,7 +809,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         if (
             (
                 !$_result
-                && $_attempt == 50
+                && $_attempt == Mage::helper('tnw_salesforce')->getBulkResultMaxAttentions()
             ) || (
                 !$_jobRecords
                 || empty($_jobRecords)
