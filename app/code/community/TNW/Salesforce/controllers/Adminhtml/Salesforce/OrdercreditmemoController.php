@@ -19,4 +19,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_OrdercreditmemoController extends TNW_
      * @var string
      */
     protected $_blockPath   = 'mapping_creditmemo_ordercreditmemo';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/creditmemo_mapping/order_creditmemo_mapping');
+    }
 }

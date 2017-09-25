@@ -16,4 +16,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_ProductController extends TNW_Salesfor
      * @var string
      */
     protected $_blockPath = 'mapping_product_product';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/product_mapping');
+    }
 }

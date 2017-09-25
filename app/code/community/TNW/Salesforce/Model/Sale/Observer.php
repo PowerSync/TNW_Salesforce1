@@ -514,6 +514,12 @@ class TNW_Salesforce_Model_Sale_Observer
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getData('order');
+
+        $owner = $order->getOrigData('owner_salesforce_id');
+        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner') && !empty($owner)) {
+            return;
+        }
+
         $order->setData('owner_salesforce_id',  $postOrder['owner_salesforce_id']);
     }
 }

@@ -5,11 +5,19 @@
  */
 
 
-class TNW_Salesforce_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Controller_Action {
-
+class TNW_Salesforce_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Controller_Action
+{
 
     protected $_orderId = null;
     protected $_order = null;
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce');
+    }
 
     /**
      * @comment get current order id
@@ -48,9 +56,13 @@ class TNW_Salesforce_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Cont
      */
     public function saveSalesforceAction()
     {
-        $salesforceOrderData = $this->getRequest()->getParam('order');
-
         $order = $this->getOrder();
+
+        $salesforceOrderData = $this->getRequest()->getParam('order');
+        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+            unset($salesforceOrderData['owner_salesforce_id']);
+        }
+
         $order->addData($salesforceOrderData);
         $order->save();
 

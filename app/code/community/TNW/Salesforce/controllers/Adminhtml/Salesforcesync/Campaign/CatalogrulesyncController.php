@@ -6,6 +6,15 @@
 
 class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_CatalogrulesyncController extends Mage_Adminhtml_Controller_Action
 {
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/manual_sync/campaign_sync/catalogrule_sync');
+    }
+
     protected function _initLayout()
     {
         $this->loadLayout()

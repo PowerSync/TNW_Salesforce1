@@ -19,4 +19,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Order_InvoiceController extends TNW_Sa
      * @var string
      */
     protected $_blockPath   = 'mapping_invoice_orderinvoice';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/invoice_mapping/order_invoice');
+    }
 }
