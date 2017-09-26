@@ -56,13 +56,9 @@ class TNW_Salesforce_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Cont
      */
     public function saveSalesforceAction()
     {
-        $order = $this->getOrder();
-
         $salesforceOrderData = $this->getRequest()->getParam('order');
-        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
-            unset($salesforceOrderData['owner_salesforce_id']);
-        }
 
+        $order = $this->getOrder();
         $order->addData($salesforceOrderData);
         $order->save();
 

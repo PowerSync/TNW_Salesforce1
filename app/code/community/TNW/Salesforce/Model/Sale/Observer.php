@@ -514,12 +514,29 @@ class TNW_Salesforce_Model_Sale_Observer
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getData('order');
+        $order->setData('owner_salesforce_id',  $postOrder['owner_salesforce_id']);
+    }
+
+    /**
+     * @param $observer Varien_Event_Observer
+     */
+    public function salesOrderSaveBefore($observer)
+    {
+        $isAllowed = Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/edit_sales_owner');
+
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $observer->getData('data_object');
 
         $owner = $order->getOrigData('owner_salesforce_id');
-        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner') && !empty($owner)) {
-            return;
+        if (!$isAllowed && !empty($owner)) {
+            $order->setData('owner_salesforce_id', $owner);
         }
 
-        $order->setData('owner_salesforce_id',  $postOrder['owner_salesforce_id']);
+        if (!$isAllowed && empty($owner)) {
+            /** @var TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce $orderCreate */
+            $orderCreate = Mage::getBlockSingleton('tnw_salesforce/adminhtml_sales_order_create_salesforce');
+            $order->setData('owner_salesforce_id', $orderCreate->getSalesforceOwner());
+        }
     }
 }

@@ -48,7 +48,7 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
     /**
      * @return string
      */
-    protected function getSalesforceOwner()
+    public function getSalesforceOwner()
     {
         /** @var Mage_Customer_Model_Customer $customer */
         $customer = $this->_getSession()->getQuote()->getCustomer();

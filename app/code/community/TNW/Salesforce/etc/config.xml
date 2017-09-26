@@ -726,6 +726,23 @@
                     </tnw_salesforce>
                 </observers>
             </wishlist_product_add_after>
+
+            <sales_order_save_before>
+                <observers>
+                    <tnw_salesforce>
+                        <class>tnw_salesforce/sale_observer</class>
+                        <method>salesOrderSaveBefore</method>
+                    </tnw_salesforce>
+                </observers>
+            </sales_order_save_before>
+            <customer_save_before>
+                <observers>
+                    <tnw_salesforce>
+                        <class>tnw_salesforce/customer_observer</class>
+                        <method>customerSaveBefore</method>
+                    </tnw_salesforce>
+                </observers>
+            </customer_save_before>
         </events>
     </global>
     <adminhtml>
