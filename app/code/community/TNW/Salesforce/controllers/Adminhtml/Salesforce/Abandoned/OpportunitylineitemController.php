@@ -17,4 +17,12 @@ class TNW_Salesforce_Adminhtml_Salesforce_Abandoned_OpportunitylineitemControlle
      * @var string
      */
     protected $_blockPath = 'mapping_abandoned_opportunitylineitem';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/mappings/abandoned_mapping/order_cart_mapping');
+    }
 }

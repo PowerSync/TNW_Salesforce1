@@ -24,11 +24,15 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Salesforce extends Mage_Ad
 
         $form->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
-        $form->addField('owner_salesforce_id', 'owner', array(
+        $ownerElement = $form->addField('owner_salesforce_id', 'owner', array(
             'name' => 'owner_salesforce_id',
             'selector' => 'tnw-ajax-find-select-owner-info',
             'website' => $orderWebsite
         ));
+
+        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+            $ownerElement->setData('readonly', true);
+        }
 
         $form->setValues($this->getOrder()->getData());
         $this->setForm($form);

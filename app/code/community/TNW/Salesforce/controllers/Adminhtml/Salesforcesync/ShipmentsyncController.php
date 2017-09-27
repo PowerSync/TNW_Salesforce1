@@ -14,6 +14,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
         $this->setUsedModuleName('Mage_Sales');
     }
 
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/manual_sync/shipment_sync');
+    }
+
     protected function _initLayout()
     {
         $this->loadLayout()

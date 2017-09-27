@@ -19,4 +19,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Opportunity_ShipmentitemController ext
      * @var string
      */
     protected $_blockPath = 'mapping_shipment_opportunityshipmentitem';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/shipment_mapping/opportunity_shipment_item');
+    }
 }

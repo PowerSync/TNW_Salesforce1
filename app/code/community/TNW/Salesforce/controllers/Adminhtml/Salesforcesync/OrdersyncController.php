@@ -18,6 +18,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OrdersyncController extends Mage_A
         $this->setUsedModuleName('Mage_Sales');
     }
 
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/manual_sync/order_sync');
+    }
+
     protected function _initLayout()
     {
         $this->loadLayout()

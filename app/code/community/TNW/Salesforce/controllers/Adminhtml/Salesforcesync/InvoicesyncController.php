@@ -14,6 +14,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_InvoicesyncController extends Mage
         $this->setUsedModuleName('Mage_Sales');
     }
 
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/manual_sync/invoice_sync');
+    }
+
     protected function _initLayout()
     {
         $this->loadLayout()

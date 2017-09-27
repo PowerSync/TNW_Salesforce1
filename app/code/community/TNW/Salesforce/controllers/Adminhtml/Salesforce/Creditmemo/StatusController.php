@@ -8,7 +8,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
     protected function _isAllowed()
     {
         return Mage::getSingleton('admin/session')
-            ->isAllowed('system/salesforce/creditmemo_mapping/status_mapping');
+            ->isAllowed('tnw_salesforce/mappings/creditmemo_mapping/status_mapping');
     }
 
     /**

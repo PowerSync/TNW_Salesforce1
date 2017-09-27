@@ -23,4 +23,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_LeadController extends TNW_Salesforce_
      * @var string
      */
     protected $_blockPath = 'mapping_customer_lead';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/customer_mapping/lead_mapping');
+    }
 }

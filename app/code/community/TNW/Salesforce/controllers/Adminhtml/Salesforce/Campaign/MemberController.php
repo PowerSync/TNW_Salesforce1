@@ -18,4 +18,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Campaign_MemberController extends TNW_
      * @var string
      */
     protected $_blockPath = 'campaign_member';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/campaign_mapping/member_mapping');
+    }
 }
