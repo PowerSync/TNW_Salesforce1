@@ -1990,8 +1990,11 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     $_email = $this->_cache['entitiesUpdating'][$_contactIds[$_key]];
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadId = $_result->id;
                     $this->_cache['toSaveInMagento'][$_websiteId][$_email]->SfInSync = 1;
-                    $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
-                        = $this->_prepareOwnerId($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+
+                    if (!empty($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId)) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
+                            = $this->_prepareOwnerId($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    }
 
                     $_customer = $this->getEntityCache($_contactIds[$_key]);
                     $_customer->setSalesforceLeadId($_result->id);
