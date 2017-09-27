@@ -818,15 +818,15 @@
                                 <sort_order>100</sort_order>
                                 <children>
                                     <product_sync>
-                                        <title>Synchronize Products</title>
+                                        <title>Products</title>
                                         <sort_order>10</sort_order>
                                     </product_sync>
                                     <customer_sync>
-                                        <title>Synchronize Customers</title>
+                                        <title>Customers</title>
                                         <sort_order>20</sort_order>
                                     </customer_sync>
                                     <order_sync>
-                                        <title>Synchronize Orders</title>
+                                        <title>Orders</title>
                                         <sort_order>30</sort_order>
                                     </order_sync>
                                     <invoice_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
@@ -837,8 +837,32 @@
                                         <title>Shipments</title>
                                         <sort_order>34</sort_order>
                                     </shipment_sync>
+                                    <creditmemo_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
+                                        <title>Credit Memos</title>
+                                        <sort_order>36</sort_order>
+                                    </creditmemo_sync>
+                                    <wishlist_sync translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
+                                        <title>Wishlists</title>
+                                        <sort_order>38</sort_order>
+                                    </wishlist_sync>
+                                    <campaign_sync>
+                                        <title>Campaign</title>
+                                        <sort_order>40</sort_order>
+                                        <children>
+                                            <!--
+                                           <catalogrule_sync>
+                                               <title>Catalog Price Rules</title>
+                                               <sort_order>10</sort_order>
+                                           </catalogrule_sync>
+                                           -->
+                                            <salesrule_sync>
+                                                <title>Shopping Cart Price Rules</title>
+                                                <sort_order>20</sort_order>
+                                            </salesrule_sync>
+                                        </children>
+                                    </campaign_sync>
                                     <abandoned_sync ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
-                                        <title>Synchronize Abandoned Cart</title>
+                                        <title>Abandoned Carts</title>
                                         <sort_order>50</sort_order>
                                     </abandoned_sync>
                                 </children>
@@ -939,6 +963,58 @@
                                             </opportunity_shipment_item>
                                         </children>
                                     </shipment_mapping>
+                                    <creditmemo_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce::isProfessionalEdition">
+                                        <title>Credit Memo Mappings</title>
+                                        <sort_order>510</sort_order>
+                                        <children>
+                                            <order_creditmemo_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemoForOrder">
+                                                <title>Credit Memo</title>
+                                                <sort_order>100</sort_order>
+                                            </order_creditmemo_mapping>
+                                            <order_creditmemo_item_mapping translate="title" module="tnw_salesforce" ifhelper="tnw_salesforce/config_sales_creditmemo::syncCreditMemoForOrder">
+                                                <title>Credit Memo Items</title>
+                                                <sort_order>120</sort_order>
+                                            </order_creditmemo_item_mapping>
+                                            <status_mapping translate="title" module="tnw_salesforce">
+                                                <title>Statuses</title>
+                                                <sort_order>130</sort_order>
+                                            </status_mapping>
+                                        </children>
+                                    </creditmemo_mapping>
+                                    <wishlist_mapping>
+                                        <title>Wishlist Mappings</title>
+                                        <sort_order>520</sort_order>
+                                        <children>
+                                            <entity translate="title" module="tnw_salesforce">
+                                                <title>Wishlist</title>
+                                                <sort_order>70</sort_order>
+                                            </entity>
+                                            <entity_item translate="title" module="tnw_salesforce">
+                                                <title>Wishlist Products</title>
+                                                <sort_order>80</sort_order>
+                                            </entity_item>
+                                        </children>
+                                    </wishlist_mapping>
+                                    <campaign_mapping>
+                                        <title>Campaign Mappings</title>
+                                        <sort_order>530</sort_order>
+                                        <children>
+                                            <!--
+                                            <catalogrule_mapping translate="title" module="tnw_salesforce">
+                                                <title>Catalog Price Rules</title>
+                                                <sort_order>70</sort_order>
+                                            </catalogrule_mapping>
+                                            -->
+                                            <salesrule_mapping translate="title" module="tnw_salesforce">
+                                                <title>Shopping Cart Price Rules</title>
+                                                <sort_order>80</sort_order>
+                                            </salesrule_mapping>
+                                            <member_mapping translate="title" module="tnw_salesforce">
+                                                <title>Member</title>
+                                                <sort_order>90</sort_order>
+                                            </member_mapping>
+                                        </children>
+                                    </campaign_mapping>
                                     <abandoned_mapping ifhelper="tnw_salesforce/config_sales_abandoned::isEnabled">
                                         <title>Abandoned Cart Mappings</title>
                                         <sort_order>600</sort_order>
@@ -975,7 +1051,7 @@
                             </queue_sync>
                             <setup>
                                 <title>Integration Setup</title>
-                                <sort_order>1000</sort_order>
+                                <sort_order>310</sort_order>
                                 <children>
                                     <api_config>
                                         <title>API Configuration</title>
@@ -999,6 +1075,28 @@
                                     </account_matching>
                                 </children>
                             </setup>
+                            <tools translate="title" module="tnw_salesforce">
+                                <title>Tools</title>
+                                <sort_order>320</sort_order>
+                                <children>
+                                    <console translate="title" module="tnw_salesforce" ifconfig="salesforce/development_and_debugging/enable_soql">
+                                        <title>SOQL Console</title>
+                                        <sort_order>100</sort_order>
+                                    </console>
+                                    <sync_log translate="title" module="tnw_salesforce">
+                                        <title>Transaction Logs</title>
+                                        <sort_order>200</sort_order>
+                                    </sync_log>
+                                    <sync_log_file translate="title" module="tnw_salesforce">
+                                        <title>Download Log Files</title>
+                                        <sort_order>300</sort_order>
+                                    </sync_log_file>
+                                </children>
+                            </tools>
+                            <edit_sales_owner>
+                                <title>Edit Sales Rep (Owner) filed</title>
+                                <sort_order>330</sort_order>
+                            </edit_sales_owner>
                         </children>
                     </tnw_salesforce>
                     <system>

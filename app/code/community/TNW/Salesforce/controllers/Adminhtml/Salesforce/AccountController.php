@@ -20,4 +20,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_AccountController extends TNW_Salesfor
      * @var string
      */
     protected $_blockPath = 'mapping_customer_account';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/customer_mapping/account_mapping');
+    }
 }

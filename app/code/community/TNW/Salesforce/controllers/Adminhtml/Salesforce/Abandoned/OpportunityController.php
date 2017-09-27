@@ -17,4 +17,12 @@ class TNW_Salesforce_Adminhtml_Salesforce_Abandoned_OpportunityController extend
      * @var string
      */
     protected $_blockPath = 'mapping_abandoned_opportunity';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/mappings/abandoned_mapping/order_mapping');
+    }
 }

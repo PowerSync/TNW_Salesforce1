@@ -234,4 +234,21 @@ class TNW_Salesforce_Model_Customer_Observer
             $customer->setData('salesforce_lead_owner_id', $account['salesforce_sales_person']);
         }
     }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     */
+    public function customerSaveBefore($observer)
+    {
+        $isAllowed = Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/edit_sales_owner');
+
+        if (!$isAllowed) {
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer = $observer->getData('data_object');
+            $customer->setData('salesforce_account_owner_id', $customer->getOrigData('salesforce_account_owner_id'));
+            $customer->setData('salesforce_contact_owner_id', $customer->getOrigData('salesforce_contact_owner_id'));
+            $customer->setData('salesforce_lead_owner_id', $customer->getOrigData('salesforce_lead_owner_id'));
+        }
+    }
 }

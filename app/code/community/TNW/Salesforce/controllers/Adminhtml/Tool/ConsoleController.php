@@ -9,6 +9,15 @@
  */
 class TNW_Salesforce_Adminhtml_Tool_ConsoleController extends Mage_Adminhtml_Controller_Action
 {
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/tools/console');
+    }
+
     /**
      * Log list action
      */

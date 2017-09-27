@@ -19,4 +19,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_ContactController extends TNW_Salesfor
      * @var string
      */
     protected $_blockPath = 'mapping_customer_contact';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/customer_mapping/contact_mapping');
+    }
 }

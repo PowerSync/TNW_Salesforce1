@@ -11,6 +11,14 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
 {
 
     /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/tools/sync_log_file');
+    }
+
+    /**
      * load log file
      *
      * @return TNW_Salesforce_Model_Tool_Log_File
