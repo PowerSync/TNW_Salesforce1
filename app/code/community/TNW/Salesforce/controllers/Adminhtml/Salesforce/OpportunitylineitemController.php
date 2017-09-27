@@ -17,4 +17,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_OpportunitylineitemController extends 
      * @var string
      */
     protected $_blockPath = 'mapping_order_opportunitylineitem';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/order_mapping/opportunity_cart_mapping');
+    }
 }

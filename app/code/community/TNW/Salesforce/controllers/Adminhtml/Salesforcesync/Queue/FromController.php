@@ -6,6 +6,15 @@
 
 class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_FromController extends Mage_Adminhtml_Controller_Action
 {
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/queue_sync/from_salesforce');
+    }
+
     /**
      * @return $this
      */

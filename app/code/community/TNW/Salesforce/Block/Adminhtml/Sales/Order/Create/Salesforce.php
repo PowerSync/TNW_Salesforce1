@@ -12,12 +12,16 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
         $form->setFieldNameSuffix('order');
         $form->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
 
-        $form->addField('owner_salesforce_id', 'owner', array(
+        $ownerElement = $form->addField('owner_salesforce_id', 'owner', array(
             'name'      => 'owner_salesforce_id',
             'selector'  => 'tnw-ajax-find-select-owner-info',
             'value'     => $this->getSalesforceOwner(),
             'website'   => $this->getQuoteWebsiteId()
         ));
+
+        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+            $ownerElement->setData('readonly', true);
+        }
 
         $this->setForm($form);
     }
@@ -44,7 +48,7 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
     /**
      * @return string
      */
-    protected function getSalesforceOwner()
+    public function getSalesforceOwner()
     {
         /** @var Mage_Customer_Model_Customer $customer */
         $customer = $this->_getSession()->getQuote()->getCustomer();

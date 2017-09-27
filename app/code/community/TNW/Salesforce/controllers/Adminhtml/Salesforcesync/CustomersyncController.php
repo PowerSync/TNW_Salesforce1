@@ -13,6 +13,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CustomersyncController extends Mag
      */
     protected $_publicActions = array('grid', 'index');
 
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/manual_sync/customer_sync');
+    }
+
     protected function _initLayout()
     {
         $this->loadLayout()

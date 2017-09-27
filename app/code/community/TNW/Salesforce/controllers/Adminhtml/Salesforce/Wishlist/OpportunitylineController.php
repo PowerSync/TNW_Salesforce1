@@ -22,4 +22,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Wishlist_OpportunitylineController ext
      * @var string
      */
     protected $_blockPath = 'mapping_wishlist_opportunityLine';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/wishlist_mapping/entity_item');
+    }
 }

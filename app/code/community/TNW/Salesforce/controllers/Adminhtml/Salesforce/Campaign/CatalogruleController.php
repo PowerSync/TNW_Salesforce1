@@ -24,4 +24,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Campaign_CatalogruleController extends
      * @var string
      */
     protected $_blockPath = 'campaign_catalogrule';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/campaign_mapping/catalogrule_mapping');
+    }
 }

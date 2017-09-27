@@ -9,6 +9,14 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_CreditmemosyncController extends M
      */
     protected $_publicActions = array('grid', 'index');
 
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/manual_sync/creditmemo_sync');
+    }
+
     protected function _construct()
     {
         $this->setUsedModuleName('Mage_Sales');

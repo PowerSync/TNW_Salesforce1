@@ -2,6 +2,16 @@
 
 class TNW_Salesforce_Adminhtml_Salesforce_SearchController extends Mage_Adminhtml_Controller_Action
 {
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce');
+    }
+
     public function accountAction()
     {
         $website = $this->getRequest()->getParam('website');

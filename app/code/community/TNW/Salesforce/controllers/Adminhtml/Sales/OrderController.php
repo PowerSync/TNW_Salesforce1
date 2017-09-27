@@ -5,11 +5,19 @@
  */
 
 
-class TNW_Salesforce_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Controller_Action {
-
+class TNW_Salesforce_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Controller_Action
+{
 
     protected $_orderId = null;
     protected $_order = null;
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce');
+    }
 
     /**
      * @comment get current order id

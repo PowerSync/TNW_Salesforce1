@@ -19,4 +19,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Opportunity_InvoiceitemController exte
      * @var string
      */
     protected $_blockPath = 'mapping_invoice_opportunityinvoiceitem';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/invoice_mapping/opportunity_invoice_item');
+    }
 }

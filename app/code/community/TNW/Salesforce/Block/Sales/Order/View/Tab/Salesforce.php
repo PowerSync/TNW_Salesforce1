@@ -63,12 +63,16 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
             'website' => $orderWebsite
         ));
 
-        $fieldset->addField('owner_salesforce_id', 'owner', array(
+        $ownerElement = $fieldset->addField('owner_salesforce_id', 'owner', array(
             'label' => Mage::helper('tnw_salesforce')->__('Owner'),
             'name' => 'owner_salesforce_id',
             'selector'  => 'tnw-ajax-find-select-owner',
             'website' => $orderWebsite
         ));
+
+        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+            $ownerElement->setData('readonly', true);
+        }
 
         $button = $this->getLayout()->createBlock('adminhtml/widget_button')
             ->setData(array(

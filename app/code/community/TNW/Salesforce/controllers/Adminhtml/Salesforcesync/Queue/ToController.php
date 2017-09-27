@@ -13,6 +13,15 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
      */
     protected $_publicActions = array('grid', 'index');
 
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/queue_sync/to_salesforce') ||
+            Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/queue_sync/to_salesforce_background');
+    }
+
     protected function _initLayout()
     {
         $this->loadLayout()

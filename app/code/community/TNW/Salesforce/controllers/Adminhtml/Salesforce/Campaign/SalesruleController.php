@@ -24,4 +24,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Campaign_SalesruleController extends T
      * @var string
      */
     protected $_blockPath = 'campaign_salesrule';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/campaign_mapping/salesrule_mapping');
+    }
 }

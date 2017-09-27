@@ -19,4 +19,13 @@ class TNW_Salesforce_Adminhtml_Salesforce_Order_ShipmentController extends TNW_S
      * @var string
      */
     protected $_blockPath = 'mapping_shipment_ordershipment';
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce/mappings/shipment_mapping/order_shipment');
+    }
 }

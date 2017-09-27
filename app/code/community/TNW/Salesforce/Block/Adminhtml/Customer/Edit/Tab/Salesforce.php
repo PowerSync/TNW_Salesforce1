@@ -42,12 +42,16 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
         $data = $customer->getData();
         if (!empty($data['salesforce_account_id']) && !$customer->getData('salesforce_is_person')) {
             $fieldset->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
-            $fieldset->addField('salesforce_account_owner_id', 'owner', array(
+            $ownerElement = $fieldset->addField('salesforce_account_owner_id', 'owner', array(
                 'label' => Mage::helper('tnw_salesforce')->__('Account Owner'),
                 'name' => 'salesforce_account_owner_id',
                 'selector'  => 'tnw-ajax-find-select-account-owner',
                 'website' => $customerWebsite
             ));
+
+            if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+                $ownerElement->setData('readonly', true);
+            }
         }
 
         $form->setValues($data);
