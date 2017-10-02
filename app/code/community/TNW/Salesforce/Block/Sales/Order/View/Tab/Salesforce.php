@@ -46,10 +46,29 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
 
         $fieldType = Mage::helper('tnw_salesforce/config_sales')->showOpportunityId()
             ? 'salesforceId' : 'text';
-        $fieldset->addField('opportunity_id', $fieldType, array(
+        $opportunityElement = $fieldset->addField('opportunity_id', $fieldType, array(
             'label' => $this->__('Opportunity'),
             'name' => 'opportunity_id',
         ));
+
+        /**
+         * check user ACL: can he update or define initial value of the Owner field
+         */
+        $isAllowed =
+            (
+                $this->getOrder()->getId() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/edit_opportunity')
+            ) ||
+            (
+                !$this->getOrder() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/init_opportunity')
+            );
+
+        if (!$isAllowed) {
+            $opportunityElement->setData('readonly', true);
+        }
 
         $fieldset->addField('contact_salesforce_id', 'salesforceId', array(
             'label' => Mage::helper('tnw_salesforce')->__('Contact'),

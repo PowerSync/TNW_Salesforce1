@@ -19,7 +19,7 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
             'website'   => $this->getQuoteWebsiteId()
         ));
 
-        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/init_sales_owner')) {
             $ownerElement->setData('readonly', true);
         }
 

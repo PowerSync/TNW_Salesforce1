@@ -522,11 +522,25 @@ class TNW_Salesforce_Model_Sale_Observer
      */
     public function salesOrderSaveBefore($observer)
     {
-        $isAllowed = Mage::getSingleton('admin/session')
-            ->isAllowed('tnw_salesforce/edit_sales_owner');
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getData('data_object');
+
+        /**
+         * check user ACL: can he update or define initial value of the Owner field
+         */
+        $isAllowed =
+            (
+                $order->getId() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/edit_sales_owner')
+            ) ||
+            (
+                !$order->getId() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/init_sales_owner')
+            )
+        ;
 
         $owner = $order->getOrigData('owner_salesforce_id');
         if (!$isAllowed && !empty($owner)) {
@@ -539,6 +553,27 @@ class TNW_Salesforce_Model_Sale_Observer
 
             $order->setData('owner_salesforce_id', $createOwner);
             $order->setOrigData('owner_salesforce_id', $createOwner);
+        }
+
+
+        /**
+         * check user ACL: can he update or define initial value of the Owner field
+         */
+        $isAllowed =
+            (
+                $order->getId() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/edit_opportunity')
+            ) ||
+            (
+                !$order &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/init_opportunity')
+            );
+
+        $opportunityId = $order->getOrigData('owner_salesforce_id');
+        if (!$isAllowed && !empty($opportunityId)) {
+            $order->setData('opportunity_id', $opportunityId);
         }
     }
 }
