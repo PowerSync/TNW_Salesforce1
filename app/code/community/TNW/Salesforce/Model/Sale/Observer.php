@@ -10,6 +10,12 @@ class TNW_Salesforce_Model_Sale_Observer
     protected $orderHelper      = null;
     protected $assignToCampaign = null;
 
+
+    /**
+     * @var bool
+     */
+    protected $_isNew = array();
+
     /**
      * Shipment Sync Event
      * @param $observer
@@ -518,15 +524,45 @@ class TNW_Salesforce_Model_Sale_Observer
     }
 
     /**
+     * @param $quote
+     * @return bool
+     */
+    protected function isNew($order)
+    {
+        $hash = spl_object_hash($order);
+
+        if (!isset($this->_isNew[$hash])) {
+            $origData = $order->getOrigData();
+            $this->_isNew[$hash] = empty($order->getId()) || empty($origData);
+        }
+
+        return $this->_isNew[$hash];
+    }
+
+    /**
      * @param $observer Varien_Event_Observer
      */
     public function salesOrderSaveBefore($observer)
     {
-        $isAllowed = Mage::getSingleton('admin/session')
-            ->isAllowed('tnw_salesforce/edit_sales_owner');
 
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getData('data_object');
+
+        /**
+         * check user ACL: can he update or define initial value of the Owner field
+         */
+        $isAllowed =
+            (
+                !$this->isNew($order) &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/edit_sales_owner')
+            ) ||
+            (
+                $this->isNew($order) &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/init_sales_owner')
+            )
+        ;
 
         $owner = $order->getOrigData('owner_salesforce_id');
         if (!$isAllowed && !empty($owner)) {
@@ -539,6 +575,26 @@ class TNW_Salesforce_Model_Sale_Observer
 
             $order->setData('owner_salesforce_id', $createOwner);
             $order->setOrigData('owner_salesforce_id', $createOwner);
+        }
+
+        /**
+         * check user ACL: can he update or define initial value of the Owner field
+         */
+        $isAllowed =
+            (
+                !$this->isNew($order) &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/edit_opportunity')
+            ) ||
+            (
+                $this->isNew($order) &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/init_opportunity')
+            );
+
+        $opportunityId = $order->getOrigData('opportunity_id');
+        if (!$isAllowed && !empty($opportunityId)) {
+            $order->setData('opportunity_id', $opportunityId);
         }
     }
 }

@@ -240,8 +240,23 @@ class TNW_Salesforce_Model_Customer_Observer
      */
     public function customerSaveBefore($observer)
     {
-        $isAllowed = Mage::getSingleton('admin/session')
-            ->isAllowed('tnw_salesforce/edit_sales_owner');
+        $customer = $observer->getCustomer();
+
+        /**
+         * check user ACL: can he update or define initial value of the Owner field
+         */
+        $isAllowed =
+            (
+                $customer->getId() &&
+                Mage::getSingleton('admin/session')
+                ->isAllowed('tnw_salesforce/edit_sales_owner')
+            ) ||
+            (
+                !$customer->getId() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/init_sales_owner')
+            )
+        ;
 
         if (!$isAllowed) {
             /** @var Mage_Customer_Model_Customer $customer */

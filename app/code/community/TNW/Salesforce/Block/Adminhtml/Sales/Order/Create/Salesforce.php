@@ -2,6 +2,15 @@
 
 class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_Adminhtml_Block_Widget_Form
 {
+
+    /**
+     * @return bool
+     */
+    protected function isNew()
+    {
+        return true;
+    }
+
     /**
      *
      */
@@ -19,7 +28,23 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
             'website'   => $this->getQuoteWebsiteId()
         ));
 
-        if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+        /**
+         * check user ACL: can he update or define initial value of the Owner field
+         */
+        $isAllowed =
+            (
+                !$this->isNew() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/edit_sales_owner')
+            ) ||
+            (
+                $this->isNew() &&
+                Mage::getSingleton('admin/session')
+                    ->isAllowed('tnw_salesforce/init_sales_owner')
+            )
+        ;
+
+        if (!$isAllowed) {
             $ownerElement->setData('readonly', true);
         }
 

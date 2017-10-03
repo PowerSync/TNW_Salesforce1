@@ -1093,10 +1093,27 @@
                                     </sync_log_file>
                                 </children>
                             </tools>
-                            <edit_sales_owner>
-                                <title>Edit Sales Rep (Owner) filed</title>
+
+                            <init_sales_owner>
+                                <title>Defined initial Sales Rep (Owner) filed value</title>
                                 <sort_order>330</sort_order>
+                            </init_sales_owner>
+
+                            <edit_sales_owner>
+                                <title>Update Sales Rep (Owner) filed</title>
+                                <sort_order>340</sort_order>
                             </edit_sales_owner>
+
+                            <init_opportunity>
+                                <title>Defined initial Opportunity filed value</title>
+                                <sort_order>350</sort_order>
+                            </init_opportunity>
+
+                            <edit_opportunity>
+                                <title>Update Opportunity filed</title>
+                                <sort_order>360</sort_order>
+                            </edit_opportunity>
+
                         </children>
                     </tnw_salesforce>
                     <system>
