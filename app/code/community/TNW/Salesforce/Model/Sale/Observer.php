@@ -533,7 +533,8 @@ class TNW_Salesforce_Model_Sale_Observer
 
         if (!isset($this->_isNew[$hash])) {
             $origData = $order->getOrigData();
-            $this->_isNew[$hash] = empty($order->getId()) || empty($origData);
+            $id = $order->getId();
+            $this->_isNew[$hash] = empty($id) || empty($origData);
         }
 
         return $this->_isNew[$hash];
