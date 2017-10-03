@@ -59,11 +59,6 @@ class TNW_Salesforce_Block_Sales_Order_View_Tab_Salesforce
                 $this->getOrder()->getId() &&
                 Mage::getSingleton('admin/session')
                     ->isAllowed('tnw_salesforce/edit_opportunity')
-            ) ||
-            (
-                !$this->getOrder() &&
-                Mage::getSingleton('admin/session')
-                    ->isAllowed('tnw_salesforce/init_opportunity')
             );
 
         if (!$isAllowed) {
