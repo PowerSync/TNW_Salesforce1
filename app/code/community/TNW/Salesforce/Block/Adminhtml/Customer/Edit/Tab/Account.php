@@ -6,6 +6,8 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Account extends Mage_Admi
     {
         parent::initForm();
 
+        $customer = Mage::registry('current_customer');
+
         /** @var Varien_Data_Form_Element_Fieldset $baseFieldSet */
         $baseFieldSet = $this->getForm()->getElement('base_fieldset');
         if (!$baseFieldSet) {
@@ -36,7 +38,10 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Account extends Mage_Admi
                 'value'    => $customer->getData($attributeName)
             ));
 
-            if (!Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) {
+            if (
+                ($customer->getId() && !Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/edit_sales_owner')) ||
+                (!$customer->getId() && !Mage::getSingleton('admin/session')->isAllowed('tnw_salesforce/init_sales_owner'))
+            ) {
                 $ownerElement->setData('readonly', true);
             }
         }
