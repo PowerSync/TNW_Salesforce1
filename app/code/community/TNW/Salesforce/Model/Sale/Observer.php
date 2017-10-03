@@ -10,6 +10,12 @@ class TNW_Salesforce_Model_Sale_Observer
     protected $orderHelper      = null;
     protected $assignToCampaign = null;
 
+
+    /**
+     * @var bool
+     */
+    protected $_isNew = array();
+
     /**
      * Shipment Sync Event
      * @param $observer
@@ -518,6 +524,22 @@ class TNW_Salesforce_Model_Sale_Observer
     }
 
     /**
+     * @param $quote
+     * @return bool
+     */
+    protected function isNew($order)
+    {
+        $hash = spl_object_hash($order);
+
+        if (!isset($this->_isNew[$hash])) {
+            $origData = $order->getOrigData();
+            $this->_isNew[$hash] = empty($order->getId()) || empty($origData);
+        }
+
+        return $this->_isNew[$hash];
+    }
+
+    /**
      * @param $observer Varien_Event_Observer
      */
     public function salesOrderSaveBefore($observer)
@@ -531,12 +553,12 @@ class TNW_Salesforce_Model_Sale_Observer
          */
         $isAllowed =
             (
-                $order->getId() &&
+                !$this->isNew($order) &&
                 Mage::getSingleton('admin/session')
                     ->isAllowed('tnw_salesforce/edit_sales_owner')
             ) ||
             (
-                !$order->getId() &&
+                $this->isNew($order) &&
                 Mage::getSingleton('admin/session')
                     ->isAllowed('tnw_salesforce/init_sales_owner')
             )
@@ -555,23 +577,22 @@ class TNW_Salesforce_Model_Sale_Observer
             $order->setOrigData('owner_salesforce_id', $createOwner);
         }
 
-
         /**
          * check user ACL: can he update or define initial value of the Owner field
          */
         $isAllowed =
             (
-                $order->getId() &&
+                !$this->isNew($order) &&
                 Mage::getSingleton('admin/session')
                     ->isAllowed('tnw_salesforce/edit_opportunity')
             ) ||
             (
-                !$order &&
+                $this->isNew($order) &&
                 Mage::getSingleton('admin/session')
                     ->isAllowed('tnw_salesforce/init_opportunity')
             );
 
-        $opportunityId = $order->getOrigData('owner_salesforce_id');
+        $opportunityId = $order->getOrigData('opportunity_id');
         if (!$isAllowed && !empty($opportunityId)) {
             $order->setData('opportunity_id', $opportunityId);
         }
