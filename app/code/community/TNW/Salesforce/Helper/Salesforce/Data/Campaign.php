@@ -12,7 +12,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Campaign extends TNW_Salesforce_Help
             ? array($ids) : $ids;
 
         try {
-            if (!is_object($this->getClient())) {
+
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
 
