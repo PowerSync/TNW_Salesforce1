@@ -478,7 +478,16 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
             }
 
             if (empty($pricebookEntryId)) {
-                throw new Exception("NOTICE: Product w/ SKU ({$_entityItem->getSku()}) is not synchronized, could not add to {$this->_salesforceEntityName}!");
+
+                $error = "NOTICE: Product w/ SKU (" . $_entityItem->getSku() . ") is not synchronized, could not add to $this->_salesforceEntityName!";
+
+                $this->_cache['responses']['orderProducts'][$_entityNumber]['subObj'][] = json_decode(json_encode([
+                    'success' => false,
+                    'errors' => ['message' => $error]
+                ]), TRUE);
+
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveError($error);
+                return;
             }
 
             $this->_obj->PricebookEntryId = $pricebookEntryId;
