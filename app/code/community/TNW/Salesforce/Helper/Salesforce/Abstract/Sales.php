@@ -394,10 +394,21 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
         // Sync Products
         $this->syncProducts($syncProduct);
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf('----------Prepare Std objects----------'));
+
         //Prepare entity items
         foreach ($prepareEntity as $_key => $_entityNumber) {
+
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace(sprintf('Parent Entity: %s', $_entityNumber));
+
             $_entity = $this->getEntityCache($_entityNumber);
             foreach ($this->getItems($_entity) as $_entityItem) {
+
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveTrace(sprintf('Child Entity: %s', $_entityItem->getId()));
+
                 if ($this->isFeeEntityItem($_entityItem)) {
                     $this->_prepareAdditionalFees($_entity, $_entityItem);
                 }
