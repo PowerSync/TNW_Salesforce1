@@ -199,7 +199,9 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             return false;
         }
 
-        if (!$this->getClient()) {
+        try {
+            $this->getClient();
+        } catch (Exception $e) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice("SKIPPING: Salesforce connection failed!");
             return false;
         }

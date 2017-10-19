@@ -52,9 +52,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Website extends TNW_Salesforce_Helpe
     public function websiteLookup($_codes, $_ids) {
         $_howMany = 50;
         try {
-            if (!is_object($this->getClient())) {
+
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $_results = array();
 
             $_idsChunk   = array_chunk($_ids, $_howMany, true);
