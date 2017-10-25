@@ -255,7 +255,8 @@ class TNW_Salesforce_Model_Customer_Observer
                 !$customer->getId() &&
                 Mage::getSingleton('admin/session')
                     ->isAllowed('tnw_salesforce/init_sales_owner')
-            )
+            ) ||
+            Mage::getSingleton('core/session')->getFromSalesForce()
         ;
 
         if (!$isAllowed) {
