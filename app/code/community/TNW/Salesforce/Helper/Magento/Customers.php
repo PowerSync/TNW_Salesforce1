@@ -460,6 +460,9 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
 
             $_entity->setData('sf_insync', 1);
 
+            // Event change
+            $this->fieldUpdateEvent($_entity);
+
             // Save Customer
             $_entity->save();
 
@@ -639,6 +642,9 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                         }
 
                         try {
+                            // Event change
+                            $this->fieldUpdateEvent($_address);
+
                             $_address->save();
 
                             if (!$_addressesIsDifferent) {

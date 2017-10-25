@@ -39,7 +39,7 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      *
      * @param string|Zend_Db_Select $sql An SQL SELECT statement.
      * @param mixed $bind Data to bind into SELECT placeholders.
-     * @param mixed                 $fetchMode Override current fetch mode.
+     * @param mixed $fetchMode Override current fetch mode.
      * @return array
      */
     public function fetchRow($sql, $bind = array(), $fetchMode = null)
@@ -48,10 +48,14 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
             $sql = $sql->assemble();
         }
 
-        if (!$this->isQueryAll()) {
-            $response = $this->_getClient()->query($sql);
-        } else {
-            $response = $this->_getClient()->queryAll($sql);
+        try {
+            if (!$this->isQueryAll()) {
+                $response = $this->_getClient()->query($sql);
+            } else {
+                $response = $this->_getClient()->queryAll($sql);
+            }
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Salesforce connection failed: " . $e->getMessage());
         }
 
         if (isset($response[0])) {
@@ -65,17 +69,22 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      * Fetches all SQL result rows as a sequential array.
      * Uses the current fetchMode for the adapter.
      *
-     * @param string|Zend_Db_Select $sql  An SQL SELECT statement.
-     * @param mixed                 $bind Data to bind into SELECT placeholders.
-     * @param mixed                 $fetchMode Override current fetch mode.
+     * @param string|Zend_Db_Select $sql An SQL SELECT statement.
+     * @param mixed $bind Data to bind into SELECT placeholders.
+     * @param mixed $fetchMode Override current fetch mode.
      * @return array
      */
     public function fetchAll($sql, $bind = array(), $fetchMode = null)
     {
-        if (!$this->isQueryAll()) {
-            $response = $this->_getClient()->query($sql);
-        } else {
-            $response = $this->_getClient()->queryAll($sql);
+        try {
+            if (!$this->isQueryAll()) {
+                $response = $this->_getClient()->query($sql);
+            } else {
+                $response = $this->_getClient()->queryAll($sql);
+            }
+        } catch (Exception $e) {
+            $response = array();
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Salesforce connect failed: " . $e->getMessage());
         }
 
         return $response;
@@ -120,10 +129,10 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      *
      * @return array
      */
-     public function listTables()
-     {
-         return array();
-     }
+    public function listTables()
+    {
+        return array();
+    }
 
     public function describeTable($tableName, $schemaName = null)
     {
@@ -189,8 +198,8 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
      * returns the last value generated for such a column, and the table name
      * argument is disregarded.
      *
-     * @param string $tableName   OPTIONAL Name of table.
-     * @param string $primaryKey  OPTIONAL Name of primary key column.
+     * @param string $tableName OPTIONAL Name of table.
+     * @param string $primaryKey OPTIONAL Name of primary key column.
      * @return string
      */
     public function lastInsertId($tableName = null, $primaryKey = null)
@@ -336,23 +345,23 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
     public function prepareSqlCondition($fieldName, $condition)
     {
         $conditionKeyMap = array(
-            'eq'            => "{{fieldName}} = ?",
-            'neq'           => "{{fieldName}} != ?",
-            'like'          => "{{fieldName}} LIKE ?",
-            'nlike'         => "{{fieldName}} NOT LIKE ?",
-            'in'            => "{{fieldName}} IN(?)",
-            'nin'           => "{{fieldName}} NOT IN(?)",
-            'is'            => "{{fieldName}} IS ?",
-            'notnull'       => "{{fieldName}} IS NOT NULL",
-            'null'          => "{{fieldName}} IS NULL",
-            'gt'            => "{{fieldName}} > ?",
-            'lt'            => "{{fieldName}} < ?",
-            'gteq'          => "{{fieldName}} >= ?",
-            'lteq'          => "{{fieldName}} <= ?",
-            'finset'        => "FIND_IN_SET(?, {{fieldName}})",
-            'regexp'        => "{{fieldName}} REGEXP ?",
-            'from'          => "{{fieldName}} >= ?",
-            'to'            => "{{fieldName}} <= ?",
+            'eq' => "{{fieldName}} = ?",
+            'neq' => "{{fieldName}} != ?",
+            'like' => "{{fieldName}} LIKE ?",
+            'nlike' => "{{fieldName}} NOT LIKE ?",
+            'in' => "{{fieldName}} IN(?)",
+            'nin' => "{{fieldName}} NOT IN(?)",
+            'is' => "{{fieldName}} IS ?",
+            'notnull' => "{{fieldName}} IS NOT NULL",
+            'null' => "{{fieldName}} IS NULL",
+            'gt' => "{{fieldName}} > ?",
+            'lt' => "{{fieldName}} < ?",
+            'gteq' => "{{fieldName}} >= ?",
+            'lteq' => "{{fieldName}} <= ?",
+            'finset' => "FIND_IN_SET(?, {{fieldName}})",
+            'regexp' => "{{fieldName}} REGEXP ?",
+            'from' => "{{fieldName}} >= ?",
+            'to' => "{{fieldName}} <= ?",
         );
 
         $query = '';
@@ -365,13 +374,13 @@ class TNW_Salesforce_Model_Api_Entity_Adapter
 
             if (isset($condition['from']) || isset($condition['to'])) {
                 if (isset($condition['from'])) {
-                    $from  = $this->_prepareSqlDateCondition($condition, 'from');
+                    $from = $this->_prepareSqlDateCondition($condition, 'from');
                     $query = $this->_prepareQuotedSqlCondition($conditionKeyMap['from'], $from, $fieldName);
                 }
 
                 if (isset($condition['to'])) {
                     $query .= empty($query) ? '' : ' AND ';
-                    $to     = $this->_prepareSqlDateCondition($condition, 'to');
+                    $to = $this->_prepareSqlDateCondition($condition, 'to');
                     $query = $this->_prepareQuotedSqlCondition($query . $conditionKeyMap['to'], $to, $fieldName);
                 }
             } elseif (array_key_exists($key, $conditionKeyMap)) {
