@@ -12,10 +12,13 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order_Status extends TNW_Salesforce_
     public function getAll()
     {
         try {
-            if (!is_object($this->getClient())) {
 
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             // Not implemented by Salesforce yet
             //TODO: change when they do
 

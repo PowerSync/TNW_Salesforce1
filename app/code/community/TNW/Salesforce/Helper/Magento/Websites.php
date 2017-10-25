@@ -62,6 +62,10 @@ class TNW_Salesforce_Helper_Magento_Websites extends TNW_Salesforce_Helper_Magen
                 Mage::getSingleton('core/session')->setFromSalesForce(true);
                 $_flag = true;
             }
+
+            // Event change
+            $this->fieldUpdateEvent($_website);
+
             // Save Product
             $_website->save();
             if ($_flag) {

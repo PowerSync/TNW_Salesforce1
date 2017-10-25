@@ -349,10 +349,17 @@ class TNW_Salesforce_Model_Connection
 
     /**
      * @return TNW_Salesforce_Model_Sforce_Client
+     * @throws Exception
      */
     public function getClient()
     {
-        $this->getConnection();
+        try {
+            $this->getConnection();
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("Salesforce connection failed! " . $e->getMessage());
+            throw $e;
+        }
+
         return $this->_client;
     }
 

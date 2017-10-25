@@ -86,10 +86,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getAccountPersonRecordType()
     {
         try {
-            if (!is_object($this->getClient())) {
 
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return $this->_noConnectionArray;
             }
+
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $query = "SELECT Id, Name, SobjectType, IsPersonType FROM RecordType WHERE SobjectType='Account' AND IsPersonType=True";
                 $allRules = $this->getClient()->query(($query));
@@ -124,9 +127,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getAccountBusinessRecordType()
     {
         try {
-            if (!is_object($this->getClient())) {
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return $this->_noConnectionArray;
             }
+
             if (Mage::helper('tnw_salesforce')->usePersonAccount()) {
                 $query = "SELECT Id, Name, IsPersonType FROM RecordType WHERE SobjectType='Account' AND IsPersonType=False";
                 $allRules = $this->getClient()->query(($query));
@@ -191,10 +197,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getStatus($type = 'Lead')
     {
         try {
-            if (!is_object($this->getClient())) {
-
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return $this->_noConnectionArray;
             }
+
             $sfObject = ($type == 'Opportunity') ? 'OpportunityStage' : 'LeadStatus';
             $extraWhere = ($type == 'Lead') ? ' WHERE IsConverted=True ' : NULL;
             $query = "SELECT ID, MasterLabel FROM " . $sfObject . $extraWhere . " ORDER BY SortOrder";
@@ -221,10 +229,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             ? array($ids) : $ids;
 
         try {
-            if (!is_object($this->getClient())) {
 
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $_results = array();
@@ -308,9 +319,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function productLookupAdvanced($sku = NULL, $name = null)
     {
         try {
-            if (!is_object($this->getClient())) {
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $pricebookId = Mage::helper('tnw_salesforce')->getDefaultPricebook();
             if (!$pricebookId) {
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not proceed with product lookup because Default Pricebook is not set.");
@@ -364,7 +378,9 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
      */
     protected function _pricebookEntryLookup($prodId = NULL, $pricebookId = NULL)
     {
-        if (!is_object($this->getClient())) {
+        try {
+            $this->getClient();
+        } catch (Exception $e) {
             return false;
         }
 
@@ -472,9 +488,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
         }
 
         try {
-            if (!is_object($this->getClient())) {
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . "Magento_ID__c";
 
             $_results = array();
@@ -546,9 +565,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             $_users = array();
             if (Mage::helper('tnw_salesforce')->isWorking()) {
                 $query = "SELECT Id, Name FROM User WHERE IsActive = true AND UserType != 'CsnOnly'";
-                if (!is_object($this->getClient())) {
+
+                try {
+                    $this->getClient();
+                } catch (Exception $e) {
                     return $this->_noConnectionArray;
                 }
+
                 $result = $this->getClient()->query(($query));
                 unset($query);
 
@@ -753,9 +776,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function recordExists($obj = NULL, $id = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $list = $this->getClient()->retrieve("Id, Name", $obj, array($id));
             unset($obj, $id);
             return (count($list) > 0) ? true : false;
@@ -803,7 +829,9 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function isPersonAccount($id = NULL)
     {
         try {
-            if (!is_object($this->getClient())) {
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
             $list = $this->getClient()->retrieve("Id, isPersonAccount", 'Account', array($id));
@@ -823,9 +851,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getObjectId($email = NULL, $obj = "Lead", $fields = array("ID"))
     {
         try {
-            if (!is_object($this->getClient())) {
+
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return NULL;
             }
+
             $query = "SELECT " . join(",", $fields) . " FROM " . $obj . " WHERE Email='" . $email . "'";
             $list = $this->getClient()->query(($query));
             $return = (is_object($list) && property_exists($list, "records") && is_array($list->records)) ? $list->records[0] : NULL;
@@ -844,9 +876,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getRules()
     {
         try {
-            if (!is_object($this->getClient())) {
+
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return $this->_noConnectionArray;
             }
+
             $query = "SELECT ID, Name FROM AssignmentRule";
             $allRules = $this->getClient()->query(($query));
 
@@ -866,9 +902,16 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getQuery($obj = NULL)
     {
         try {
-            if (!$obj || !is_object($this->getClient())) {
+            if (!$obj) {
                 return false;
             }
+
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
+                return false;
+            }
+
             $sortedList = array();
             $query = "SELECT ID, Name FROM " . $obj;
             $result = $this->getClient()->query(($query));
@@ -903,9 +946,12 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
             return false;
         }
         try {
-            if (!is_object($this->getClient())) {
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $query = "SELECT ID FROM OpportunityContactRole WHERE OpportunityId = '" . $oid . "' AND ContactId='" . $cid . "'";
             $result = $this->getClient()->query(($query));
 
@@ -929,10 +975,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getStandardPricebookId()
     {
         try {
-            if (!is_object($this->getClient())) {
 
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $query = "SELECT ID FROM Pricebook2 WHERE IsStandard = TRUE";
             $result = $this->getClient()->query(($query));
             if (!$result || $result->size < 1) {
@@ -954,9 +1003,13 @@ class TNW_Salesforce_Helper_Salesforce_Data extends TNW_Salesforce_Helper_Salesf
     public function getNotStandardPricebooks()
     {
         try {
-            if (!is_object($this->getClient())) {
+
+            try {
+                $this->getClient();
+            } catch (Exception $e) {
                 return false;
             }
+
             $query = "SELECT ID, Name FROM Pricebook2 WHERE IsStandard = FALSE";
             $result = $this->getClient()->query(($query));
             foreach ($result->records as $_item) {

@@ -193,6 +193,9 @@ class TNW_Salesforce_Helper_Magento_Products extends TNW_Salesforce_Helper_Magen
                 $_product->setData('created_at', $_currentTime);
             }
 
+            // Event change
+            $this->fieldUpdateEvent($_product);
+
             // Save Product
             $_product->save();
 

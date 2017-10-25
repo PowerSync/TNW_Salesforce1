@@ -15,7 +15,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Queue extends TNW_Salesforce_Helper_
             $_data = array();
             if (Mage::helper('tnw_salesforce')->isWorking()) {
                 $query = "SELECT Id, Name, OwnerId, Type FROM Group WHERE type = 'Queue'";
-                if (!is_object($this->getClient())) {
+
+                try {
+                    $this->getClient();
+                } catch (Exception $e) {
                     return $this->_noConnectionArray;
                 }
 
