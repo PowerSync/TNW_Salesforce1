@@ -562,7 +562,8 @@ class TNW_Salesforce_Model_Sale_Observer
                 $this->isNew($order) &&
                 Mage::getSingleton('admin/session')
                     ->isAllowed('tnw_salesforce/init_sales_owner')
-            )
+            ) ||
+            Mage::getSingleton('core/session')->getFromSalesForce()
         ;
 
         $owner = $order->getOrigData('owner_salesforce_id');

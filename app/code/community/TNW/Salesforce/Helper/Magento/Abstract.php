@@ -287,6 +287,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         if (!empty($this->_entitiesToSave)) {
             $transaction = Mage::getModel('core/resource_transaction');
             foreach ($this->_entitiesToSave as $key => $entityToSave) {
+                $this->fieldUpdateEvent($entityToSave);
                 $transaction->addObject($entityToSave);
             }
             $transaction->save();
@@ -331,5 +332,38 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         }
 
         return null;
+    }
+
+    /**
+     * @param Mage_Core_Model_Abstract $entity
+     */
+    protected function fieldUpdateEvent($entity)
+    {
+        $resource = $entity->getResource();
+        switch (true) {
+            case $resource instanceof Mage_Core_Model_Resource_Db_Abstract:
+                $fields = array_keys($resource->getReadConnection()->describeTable($resource->getMainTable()));
+                break;
+
+            case $resource instanceof Mage_Eav_Model_Entity_Abstract:
+                $fields = array_keys($resource->loadAllAttributes($entity)->getAttributesByCode());
+                break;
+
+            default:
+                return;
+        }
+
+        foreach ($fields as $field) {
+            if (!$entity->dataHasChangedFor($field)) {
+                continue;
+            }
+
+            Mage::dispatchEvent('tnw_salesforce_magento_field_update', array(
+                'entity' => $entity,
+                'field' => $field,
+                'new_value' => $entity->getData($field),
+                'old_value' => $entity->getOrigData($field),
+            ));
+        }
     }
 }
