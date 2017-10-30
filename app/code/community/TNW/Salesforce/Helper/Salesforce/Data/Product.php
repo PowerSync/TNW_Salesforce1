@@ -9,6 +9,7 @@
  */
 class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helper_Salesforce_Data
 {
+    const MAGENTOID_PRIORITY = 15;
     /**
      * @var array
      */
@@ -29,7 +30,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
          */
         if (!isset($this->_productsPricebookEntry[$salesforceProductId])
             || !isset($this->_productsPricebookEntry[$salesforceProductId][$pricebookId])
-            || ( !(is_null($currencyCode))
+            || (!(is_null($currencyCode))
                 && !isset($this->_productsPricebookEntry[$salesforceProductId][$pricebookId][$currencyCode])
                 && !isset($this->_productsPricebookEntry[$salesforceProductId][$pricebookId][0])
             )
@@ -85,15 +86,21 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
 
         $returnArray = $clearToUpsert = array();
         foreach ($this->assignLookupToEntity($records, $products) as $item) {
-            if (empty($item['record'])) {
-                continue;
-            }
 
             $records = $item['records'];
-            $searchRecordIds = array_keys($records, $item['record'], true);
-            unset($records[reset($searchRecordIds)]);
+
             foreach ($records as $record) {
-                if (!empty($record->$_magentoId) && $record->$_magentoId == $item['entity']->getId()) {
+                /**
+                 * should not clean it because we'll update this record.
+                 */
+                if (!empty($item['record']) && $item['record']->Id == $record->Id) {
+                    continue;
+                }
+
+                if (
+                    !empty($record->$_magentoId) &&
+                    $record->$_magentoId == $item['entity']->getId()
+                ) {
                     $upsert = new stdClass();
                     $upsert->Id = $record->Id;
                     $upsert->$_magentoId = ' ';
@@ -158,7 +165,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
 
         return array(
             'ID', 'ProductCode', 'Name', $_magentoId,
-            '(SELECT '.implode(', ', $pbFields).' FROM PricebookEntries)'
+            '(SELECT ' . implode(', ', $pbFields) . ' FROM PricebookEntries)'
         );
     }
 
@@ -187,11 +194,19 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
     protected function collectLookupIndex(array $records)
     {
         $searchIndex = array();
+
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+
         foreach ($records as $key => $record) {
             // Index SKU
             $searchIndex['sku'][$key] = null;
             if (!empty($record->ProductCode)) {
                 $searchIndex['sku'][$key] = strtolower($record->ProductCode);
+            }
+
+            $searchIndex['magentoId'][$key] = null;
+            if (!empty($record->$_magentoId)) {
+                $searchIndex['magentoId'][$key] = $record->$_magentoId;
             }
         }
 
@@ -209,6 +224,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
 
         // Priority 1
         $recordsIds[10] = array_keys($searchIndex['sku'], strtolower($entity->getSku()));
+        $recordsIds[self::MAGENTOID_PRIORITY] = array_keys($searchIndex['magentoId'], strtolower($entity->getId()));
 
         return $recordsIds;
     }
@@ -223,12 +239,20 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
         $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
 
         $findRecord = null;
-        foreach ((array)reset($recordsPriority) as $record) {
-
-            $findRecord = $record;
-
-            if (!empty($record->$_magentoId) && $record->$_magentoId == $entity->getId()) {
-                break;
+        foreach ($recordsPriority as $priorityCode => $records) {
+            /**
+             * if record found by MagentoId only - skip,
+             * we should clean MagentoId of this duplicate and create correct SF entity
+             * @see PMSI-466
+             */
+            if ($priorityCode == self::MAGENTOID_PRIORITY) {
+                continue;
+            }
+            foreach ($records as $record) {
+                if (empty($record->$_magentoId) || $record->$_magentoId == $entity->getId()) {
+                    $findRecord = $record;
+                    break 2;
+                }
             }
         }
 
@@ -242,6 +266,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
      */
     public function prepareRecord($customer, $record)
     {
+        if (empty($record)) {
+            return;
+        }
+
         $record->PriceBooks = array();
         if (property_exists($record, 'PricebookEntries')) {
             foreach ($record->PricebookEntries->records as $k => $pricebookEntry) {
