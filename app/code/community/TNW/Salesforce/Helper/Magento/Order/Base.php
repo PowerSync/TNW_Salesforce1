@@ -197,6 +197,10 @@ abstract class TNW_Salesforce_Helper_Magento_Order_Base extends TNW_Salesforce_H
                 case 'Billing':
                     $method = sprintf('get%sAddress', $entityName);
                     $entity = $order->$method();
+                    if (!$entity instanceof Mage_Core_Model_Abstract) {
+                        continue 2;
+                    }
+
                     Mage::getModel('tnw_salesforce/mapping_type_address')
                         ->setMapping($mapping)
                         ->setValue($entity, $newValue);
