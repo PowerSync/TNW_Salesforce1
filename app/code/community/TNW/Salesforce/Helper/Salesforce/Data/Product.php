@@ -181,7 +181,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
         /** @var Mage_Catalog_Model_Product $product */
         foreach ($products as $product) {
             $conditions['OR'][$_magentoId]['IN'][] = $product->getId();
-            $conditions['OR']['ProductCode']['IN'][] = $product->getSku();
+            $conditions['OR']['ProductCode']['IN'][] = trim($product->getSku());
         }
 
         return $conditions;
@@ -201,7 +201,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
             // Index SKU
             $searchIndex['sku'][$key] = null;
             if (!empty($record->ProductCode)) {
-                $searchIndex['sku'][$key] = strtolower($record->ProductCode);
+                $searchIndex['sku'][$key] = strtolower(trim($record->ProductCode));
             }
 
             $searchIndex['magentoId'][$key] = null;
@@ -223,7 +223,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
         $recordsIds = array();
 
         // Priority 1
-        $recordsIds[10] = array_keys($searchIndex['sku'], strtolower($entity->getSku()));
+        $recordsIds[10] = array_keys($searchIndex['sku'], strtolower(trim($entity->getSku())));
         $recordsIds[self::MAGENTOID_PRIORITY] = array_keys($searchIndex['magentoId'], strtolower($entity->getId()));
 
         return $recordsIds;
