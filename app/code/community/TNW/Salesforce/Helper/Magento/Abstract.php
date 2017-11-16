@@ -358,12 +358,18 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
                 continue;
             }
 
-            Mage::dispatchEvent('tnw_salesforce_magento_field_update', array(
-                'entity' => $entity,
-                'field' => $field,
-                'new_value' => $entity->getData($field),
-                'old_value' => $entity->getOrigData($field),
-            ));
+            try {
+                Mage::dispatchEvent('tnw_salesforce_magento_field_update', array(
+                    'entity' => $entity,
+                    'field' => $field,
+                    'new_value' => $entity->getData($field),
+                    'old_value' => $entity->getOrigData($field),
+                ));
+            } catch (Exception $e) {
+                $className = get_class($entity);
+                Mage::getSingleton('tnw_salesforce/tool_log')
+                    ->saveError("Error field update. Entity: \"{$className}\", field \"{$field}\", error message:\n{$e->getMessage()}");
+            }
         }
     }
 }
