@@ -58,4 +58,39 @@ class TNW_Salesforce_Model_Sforce_Client extends Salesforce_SforceEnterpriseClie
             ->saveTrace(sprintf("UPSERT Result: %s (%s) \n%s", $type, $ext_Id, print_r($return, true)));
         return $return;
     }
+
+    /**
+     * @param string $sql
+     *
+     * @return stdClass
+     */
+    public function query($sql)
+    {
+        $response = parent::query((string)$sql);
+
+        $result = array();
+        if (isset($response->records) && !empty($response->records)) {
+            foreach ($response->records as $_row) {
+                $result[] = $_row;
+            }
+        }
+
+        while (!$response->done) {
+            $response = $this->queryMore($response->queryLocator);
+            if (isset($response->records) && !empty($response->records)) {
+                foreach ($response->records as $_row) {
+                    $result[] = $_row;
+                }
+            }
+        }
+
+        $return = (object)array(
+            'done' => true,
+            'queryLocator' => null,
+            'size' => count($result),
+            'records' => $result
+            );
+
+        return $return;
+    }
 }
