@@ -73,8 +73,7 @@ class TNW_Salesforce_Helper_Config_Sales_Abandoned extends TNW_Salesforce_Helper
 
     public function isEnabled()
     {
-        return Mage::helper('tnw_salesforce')->isProfessionalEdition()
-            && $this->getStoreConfig(self::ABANDONED_CART_ENABLED);
+        return $this->getStoreConfig(self::ABANDONED_CART_ENABLED);
     }
 
     // is Customer Opportunity Role Enabled

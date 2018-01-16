@@ -363,10 +363,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     public function pushContactUs($_formData)
     {
-        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("IMPORTANT: Skipping form synchronization, please upgrade to Enterprise version!");
-            return false;
-        }
         if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
             return false;
@@ -591,10 +587,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         if ($type == "Lead") {
             $this->_cache['leadsToUpsert'][$_upsertOn][$_id] = $this->_obj;
         } else if ($type == "Contact") {
-            if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-                $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
-                $this->_obj->$syncParam = true;
-            }
+            $syncParam = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix('enterprise') . "disableMagentoSync__c";
+            $this->_obj->$syncParam = true;
 
             // Set Contact AccountId as suggested by Advanced Lookup
             if (!$this->_isPerson) {

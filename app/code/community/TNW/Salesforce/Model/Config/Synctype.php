@@ -22,10 +22,7 @@ class TNW_Salesforce_Model_Config_Synctype
     public function __construct()
     {
         $this->_syncType['sync_type_realtime'] = Mage::helper('tnw_salesforce')->__('Realtime');
-
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->_syncType['sync_type_system_scheduled'] = Mage::helper('tnw_salesforce')->__('System Scheduled');
-        }
+        $this->_syncType['sync_type_system_scheduled'] = Mage::helper('tnw_salesforce')->__('System Scheduled');
     }
 
     /**

@@ -79,7 +79,7 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function useProductCampaignAssignment()
     {
-        return Mage::helper('tnw_salesforce')->isProfessionalEdition() && $this->getUseProductCampaignAssignment();
+        return $this->getUseProductCampaignAssignment();
     }
 
     /**

@@ -32,14 +32,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_FromController extends Mage_
      */
     public function indexAction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')
-                ->addError("Please upgrade Powersync module to the enterprise version in order to use queue.");
-
-            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
-            return;
-        }
-
         $this->_title($this->__('System'))->_title($this->__('Salesforce API'))->_title($this->__('Manual Sync'))->_title($this->__('Queue Objects Synchronization'));
         $this->_initLayout()
             ->_addContent($this->getLayout()->createBlock('tnw_salesforce/adminhtml_queue_from'));

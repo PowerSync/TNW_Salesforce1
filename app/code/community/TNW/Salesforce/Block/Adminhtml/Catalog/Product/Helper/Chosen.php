@@ -26,19 +26,4 @@ class TNW_Salesforce_Block_Adminhtml_Catalog_Product_Helper_Chosen extends Varie
 
     }
 
-    /**
-     * hide salesforce_campaign_id for non-Enterprise version
-     * @return mixed|string
-     */
-    public function getAfterElementHtml()
-    {
-        $html = parent::getAfterElementHtml();
-        if ($this->getName() == 'salesforce_campaign_id' && Mage::helper('tnw_salesforce')->getType() != 'PRO') {
-            $html .= "  <script>
-        				$('" . $this->getHtmlId() . "').up().up().hide();
-        				</script>";
-        }
-        return $html;
-    }
-
 }

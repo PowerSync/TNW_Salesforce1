@@ -75,8 +75,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ShipmentsyncController extends Mag
         $itemIds = $this->getRequest()->getParam('shipment_ids');
         if (!is_array($itemIds)) {
             $this->_getSession()->addError($helper->__('Please select shipment(s)'));
-        } elseif (!$helper->isProfessionalEdition()) {
-            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             Mage::getSingleton('tnw_salesforce/order_shipment_observer')->syncShipment($itemIds, true);
         }

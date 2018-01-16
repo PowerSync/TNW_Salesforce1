@@ -85,10 +85,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     protected function _prepareEntityObjCustom($_entity, $key)
     {
         $_entityNumber = $this->_getEntityNumber($_entity);
-        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
-            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
-            $this->_obj->$disableSyncField = true;
-        }
+        $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+        $this->_obj->$disableSyncField = true;
 
         if (Mage::helper('tnw_salesforce')->isMultiCurrency()) {
             $this->_obj->CurrencyIsoCode = $this->getCurrencyCode($_entity);
@@ -121,11 +119,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             $_toActivate = new stdClass();
             $_toActivate->Status = $_currentStatus;
             $_toActivate->Id = NULL;
-
-            if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
-                $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
-                $_toActivate->$disableSyncField = true;
-            }
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $_toActivate->$disableSyncField = true;
 
             $this->_cache['orderToActivate'][$_entityNumber] = $_toActivate;
         }
@@ -136,10 +131,8 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
      */
     protected function _prepareEntityItemObjCustom($_entityItem)
     {
-        if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
-            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
-            $this->_obj->$disableSyncField = true;
-        }
+        $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+        $this->_obj->$disableSyncField = true;
 
         parent::_prepareEntityItemObjCustom($_entityItem);
     }

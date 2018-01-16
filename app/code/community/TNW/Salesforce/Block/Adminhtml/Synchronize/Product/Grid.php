@@ -231,22 +231,20 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Product_Grid extends Mage_Admin
      */
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
-            $this
-                ->setMassactionIdField('entity_id');
-            $this->getMassactionBlock()->setFormFieldName('products');
+        $this
+            ->setMassactionIdField('entity_id');
+        $this->getMassactionBlock()->setFormFieldName('products');
 
-            $url = '*/*/massSync';
-            if (Mage::helper('tnw_salesforce')->getStoreId() != 0) {
-                $url .= '/store/' . Mage::helper('tnw_salesforce')->getStoreId();
-            }
-
-            $this->getMassactionBlock()->addItem('sync', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Synchronize'),
-                'url' => $this->getUrl($url),
-                'confirm' => Mage::helper('tnw_salesforce')->__('This will ovewrite any mapped data in Salesforce. Are you sure?')
-            ));
+        $url = '*/*/massSync';
+        if (Mage::helper('tnw_salesforce')->getStoreId() != 0) {
+            $url .= '/store/' . Mage::helper('tnw_salesforce')->getStoreId();
         }
+
+        $this->getMassactionBlock()->addItem('sync', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Synchronize'),
+            'url' => $this->getUrl($url),
+            'confirm' => Mage::helper('tnw_salesforce')->__('This will ovewrite any mapped data in Salesforce. Are you sure?')
+        ));
 
         return $this;
     }

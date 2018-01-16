@@ -101,7 +101,7 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
                 Mage::helper('tnw_salesforce')->getLicenseEmail() . $this->_separator .
                 $this->_serverName . $this->_separator .
                 json_encode($this->_logData) . $this->_separator .
-                Mage::helper('tnw_salesforce')->getType() . $this->_separator .
+                'PRO' . $this->_separator .
                 Mage::helper('tnw_salesforce')->getExtensionVersion()
             ;
 

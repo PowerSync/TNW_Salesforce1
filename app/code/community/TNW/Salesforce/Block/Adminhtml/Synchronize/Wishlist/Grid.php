@@ -158,16 +158,15 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
      */
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
-            $this->setMassactionIdField('wishlist_id');
-            $this->getMassactionBlock()->setFormFieldName('wishlist_ids');
+        $this->setMassactionIdField('wishlist_id');
+        $this->getMassactionBlock()->setFormFieldName('wishlist_ids');
 
-            $this->getMassactionBlock()->addItem('sync', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Synchronize'),
-                'url' => $this->getUrl('*/*/massSync'),
-                'confirm' => Mage::helper('tnw_salesforce')->__('This will ovewrite any mapped data in Salesforce. Are you sure?')
-            ));
-        }
+        $this->getMassactionBlock()->addItem('sync', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Synchronize'),
+            'url' => $this->getUrl('*/*/massSync'),
+            'confirm' => Mage::helper('tnw_salesforce')->__('This will ovewrite any mapped data in Salesforce. Are you sure?')
+        ));
+
         return $this;
     }
 
