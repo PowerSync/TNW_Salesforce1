@@ -133,15 +133,6 @@ class TNW_Salesforce_Helper_Magento_Customers extends TNW_Salesforce_Helper_Mage
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Could not upsert " . $_type . " into Magento, see Magento log for details");
                 $_entity = false;
             }
-
-            if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-                $logger = Mage::helper('tnw_salesforce/report');
-                $logger->reset();
-
-                $logger->add('Magento', 'Customer', array($this->_salesforceObject->Id => $this->_salesforceObject), array($this->_salesforceObject->Id => $this->_response));
-
-                $logger->send();
-            }
         }
 
         return $_entity;
