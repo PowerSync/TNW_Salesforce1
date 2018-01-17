@@ -8,7 +8,6 @@ js/tnw-salesforce js/tnw-salesforce
 lib/Salesforce lib/Salesforce
 # These files don't like to be symlinked
 @shell cp -f $MODULE/powersync/import.php $PROJECT/powersync/import.php
-powersync/sf-sync.php powersync/sf-sync.php
 skin/adminhtml/default/default/images/preloader-sm.gif skin/adminhtml/default/default/images/preloader-sm.gif
 skin/adminhtml/default/default/images/sf-logo.png skin/adminhtml/default/default/images/sf-logo.png
 js/lib/jquery/jquery-1.10.2.min.js js/lib/jquery/jquery-1.10.2.min.js
