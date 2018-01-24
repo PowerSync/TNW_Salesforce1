@@ -83,14 +83,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
     {
         parent::_onComplete();
 
-        if ($this->getHelper()->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-            $logger->add('Salesforce', 'Product2', $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))], $this->_cache['responses']['products']);
-            $logger->add('Salesforce', 'PricebookEntry', $this->_cache['pricebookEntryToSync'], $this->_cache['responses']['pricebooks']);
-            $logger->send();
-        }
-
         $this->reset();
         $this->clearMemory();
     }

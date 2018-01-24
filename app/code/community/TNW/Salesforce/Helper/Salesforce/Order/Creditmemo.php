@@ -857,28 +857,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
     {
         parent::_onComplete();
 
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            /** @var TNW_Salesforce_Helper_Report $logger */
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
-            $logger->add('Salesforce', ucwords($this->_magentoEntityName),
-                $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))],
-                $this->_cache['responses'][strtolower($this->getManyParentEntityType())]);
-
-            if (!empty($this->_cache['responses'][lcfirst($this->getItemsField())])) {
-                $logger->add('Salesforce', ucwords($this->_magentoEntityName) . 'Item',
-                    $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))],
-                    $this->_cache['responses'][lcfirst($this->getItemsField())]);
-            }
-
-            if (!empty($this->_cache['responses']['notes'])) {
-                $logger->add('Salesforce', 'Note', $this->_cache['notesToUpsert'], $this->_cache['responses']['notes']);
-            }
-
-            $logger->send();
-        }
-
         // Logout
         $this->reset();
         $this->clearMemory();

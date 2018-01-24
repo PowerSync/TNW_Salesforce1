@@ -224,18 +224,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     {
         parent::_onComplete();
 
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
-            $logger->add('Salesforce', 'leadsToConvert', $this->_cache['leadsToConvert'], $this->_cache['responses']['leadsToConvert']);
-            $logger->add('Salesforce', 'Order', $this->_cache['ordersToUpsert'], $this->_cache['responses']['orders']);
-            $logger->add('Salesforce', 'OrderItem', $this->_cache['orderItemsToUpsert'], $this->_cache['responses']['orderItems']);
-            $logger->add('Salesforce', 'Note', $this->_cache['notesToUpsert'], $this->_cache['responses']['notes']);
-
-            $logger->send();
-        }
-
         // Logout
         $this->reset();
         $this->clearMemory();

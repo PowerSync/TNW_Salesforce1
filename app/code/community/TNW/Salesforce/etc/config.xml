@@ -920,7 +920,6 @@
             </syncronization>
             <development_and_debugging>
                 <log_enable>1</log_enable>
-                <remote_log>0</remote_log>
                 <bulk>
                     <max_execution_time>0</max_execution_time>
                     <set_time_limit>0</set_time_limit>
