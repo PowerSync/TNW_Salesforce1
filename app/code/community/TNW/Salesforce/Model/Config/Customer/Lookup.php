@@ -11,10 +11,7 @@ class TNW_Salesforce_Model_Config_Customer_Lookup
     public function toOptionArray()
     {
         $this->_data['id_only'] = 'By Magento Id Only';
-
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->_data['email_and_id'] = 'By Email and Magento Id';
-        }
+        $this->_data['email_and_id'] = 'By Email and Magento Id';
 
         return $this->_getOptions();
     }

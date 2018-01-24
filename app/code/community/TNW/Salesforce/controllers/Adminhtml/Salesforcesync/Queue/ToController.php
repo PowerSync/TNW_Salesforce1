@@ -36,13 +36,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
      */
     public function outgoingAction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')
-                ->addError("Please upgrade Powersync module to the enterprise version in order to use queue.");
-
-            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
-            return;
-        }
         if (Mage::getModel('tnw_salesforce/queue')->getCollection()->count() > 0) {
             Mage::getSingleton('adminhtml/session')->addNotice("One or more records are still pending to be added to the synchronization queue. Check back later if you don't see records you are looking for...");
         }
@@ -65,13 +58,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
      */
     public function bulkAction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            Mage::getSingleton('adminhtml/session')
-                ->addError("Please upgrade Powersync module to the enterprise version in order to use queue.");
-
-            $this->_redirect("adminhtml/system_config/edit", array('section' => 'salesforce'));
-            return;
-        }
         if (Mage::getModel('tnw_salesforce/queue')->getCollection()->count() > 0) {
             Mage::getSingleton('adminhtml/session')->addNotice("One or more records are still pending to be added to the synchronization queue. Check back later if you don't see records you are looking for...");
         }

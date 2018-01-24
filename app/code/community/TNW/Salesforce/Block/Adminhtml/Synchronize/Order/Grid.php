@@ -183,38 +183,38 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Order_Grid extends Mage_Adminht
 
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
-            $this
-                ->setMassactionIdField('entity_id')
-                ->setMassactionIdFilter('main_table.entity_id')
-            ;
-            $this->getMassactionBlock()->setFormFieldName('orders');
 
-            if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {
-                $this->getMassactionBlock()->addItem(
-                    'sync', array(
-                        'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
-                        'url' => $this->getUrl('*/*/massSyncForce'),
-                        'confirm' => Mage::helper('tnw_salesforce')->__('This may duplicate any existing Opportunity Products / Notes / Contact Roles. For best results please delete existing Opportunity for this order in Salesforce!')
-                    )
-                );
-            }
-//        $this->getMassactionBlock()->addItem(
-//            'forceSync', array(
-//                'label' => Mage::helper('tnw_salesforce')->__('Synchronize Shopping Carts'),
-//                'url' => $this->getUrl('*/*/massCartSync'),
-//                'confirm' => Mage::helper('tnw_salesforce')->__('Please make sure Opportunity for this order already exists in Salesforce. For best results we suggest you remove all Opportunity Products from Orders you about to synchronize!')
-//            )
-//        );
+        $this
+            ->setMassactionIdField('entity_id')
+            ->setMassactionIdFilter('main_table.entity_id')
+        ;
+        $this->getMassactionBlock()->setFormFieldName('orders');
 
-//        $this->getMassactionBlock()->addItem(
-//            'forceSync', array(
-//                'label' => Mage::helper('tnw_salesforce')->__('Synchronize Order Notes'),
-//                'url' => $this->getUrl('*/*/massNotesSync'),
-//                'confirm' => Mage::helper('tnw_salesforce')->__('Please make sure Opportunity for this order already exists in Salesforce. For best results we suggest you remove all Notes from Orders you about to synchronize!')
-//            )
-//        );
+        if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {
+            $this->getMassactionBlock()->addItem(
+                'sync', array(
+                    'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
+                    'url' => $this->getUrl('*/*/massSyncForce'),
+                    'confirm' => Mage::helper('tnw_salesforce')->__('This may duplicate any existing Opportunity Products / Notes / Contact Roles. For best results please delete existing Opportunity for this order in Salesforce!')
+                )
+            );
         }
+//    $this->getMassactionBlock()->addItem(
+//        'forceSync', array(
+//            'label' => Mage::helper('tnw_salesforce')->__('Synchronize Shopping Carts'),
+//            'url' => $this->getUrl('*/*/massCartSync'),
+//            'confirm' => Mage::helper('tnw_salesforce')->__('Please make sure Opportunity for this order already exists in Salesforce. For best results we suggest you remove all Opportunity Products from Orders you about to synchronize!')
+//        )
+//    );
+
+//    $this->getMassactionBlock()->addItem(
+//        'forceSync', array(
+//            'label' => Mage::helper('tnw_salesforce')->__('Synchronize Order Notes'),
+//            'url' => $this->getUrl('*/*/massNotesSync'),
+//            'confirm' => Mage::helper('tnw_salesforce')->__('Please make sure Opportunity for this order already exists in Salesforce. For best results we suggest you remove all Notes from Orders you about to synchronize!')
+//        )
+//    );
+
         return $this;
     }
 

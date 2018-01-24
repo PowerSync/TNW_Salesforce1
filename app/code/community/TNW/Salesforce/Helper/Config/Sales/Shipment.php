@@ -37,8 +37,7 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
     {
         /** if Order & Opportunity enabled - OrderShipment will be sync-ed through the OpportunityShipment process in fact */
 
-        return $this->isProfessionalEdition()
-            && Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
+        return Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
     }
 
     /**
@@ -46,7 +45,6 @@ class TNW_Salesforce_Helper_Config_Sales_Shipment extends TNW_Salesforce_Helper_
      */
     public function syncShipmentsForOpportunity()
     {
-        return $this->isProfessionalEdition()
-            && Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed();
+        return Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed();
     }
 }

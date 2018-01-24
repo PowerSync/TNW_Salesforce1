@@ -40,8 +40,7 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
     public function syncInvoicesForOrder()
     {
         /** if Order & Opportunity enabled - OrderInvoice will be sync-ed through the OpportunityInvoice process in fact */
-        return $this->isProfessionalEdition()
-            && Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
+        return Mage::helper('tnw_salesforce/config_sales')->integrationOnlyOrderAllowed();
     }
 
     /**
@@ -49,7 +48,6 @@ class TNW_Salesforce_Helper_Config_Sales_Invoice extends TNW_Salesforce_Helper_C
      */
     public function syncInvoicesForOpportunity()
     {
-        return $this->isProfessionalEdition()
-            && Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed();
+        return Mage::helper('tnw_salesforce/config_sales')->integrationOpportunityAllowed();
     }
 }

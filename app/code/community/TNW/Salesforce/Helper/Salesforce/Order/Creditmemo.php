@@ -225,11 +225,8 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
             $_toActivate = new stdClass();
             $_toActivate->Status = $_currentStatus;
             $_toActivate->Id = NULL;
-
-            if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
-                $_toActivate->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'}
-                    = true;
-            }
+            $_toActivate->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'}
+                = true;
 
             $_entityNumber = $this->_getEntityNumber($_entity);
             $this->_cache['orderToActivate'][$_entityNumber] = $_toActivate;

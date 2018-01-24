@@ -67,8 +67,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_AbandonedsyncController extends Ma
         $itemIds = $this->getRequest()->getParam('abandoneds');
         if (!is_array($itemIds)) {
             $this->_getSession()->addError($helper->__('Please select abandoneds(s)'));
-        } elseif (!$helper->isProfessionalEdition()) {
-            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             Mage::getSingleton('tnw_salesforce/abandoned')->syncAbandoned($itemIds, true);
         }

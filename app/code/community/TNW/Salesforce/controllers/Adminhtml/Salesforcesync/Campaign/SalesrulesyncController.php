@@ -66,8 +66,6 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Campaign_SalesrulesyncController e
         $itemIds = $this->getRequest()->getParam('salesrules');
         if (!is_array($itemIds)) {
             $this->_getSession()->addError($helper->__('Please select catalog rule(s)'));
-        } elseif (!$helper->isProfessionalEdition()) {
-            $this->_getSession()->addError($helper->__('Mass syncronization is not allowed using Basic version. Please visit <a href="http://powersync.biz" target="_blank">http://powersync.biz</a> to request an upgrade.'));
         } else {
             Mage::getSingleton('tnw_salesforce/sale_observer')->syncSalesRule($itemIds);
         }

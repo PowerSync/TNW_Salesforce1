@@ -118,7 +118,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const SALESFORCE_DEVELOPER    = 'Developer Edition';
 
     /* Defaults */
-    const MODULE_TYPE = 'PRO';
     protected $_types = array("Enterprise", "Partner");
     protected $_clientTypes = NULL;
     protected $_pricebooks = array(0 => "Select Pricebook");
@@ -131,7 +130,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = array();
 
-    //const MODULE_TYPE = 'BASIC';
     /**
      * @comment this variable contains parameter name used in SalesForce
      * @var null
@@ -180,18 +178,23 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CATALOG_PRICE_SCOPE);
     }
 
-    //Extension Type: Enterprise or Professional
+    /**
+     * Extension Type: Enterprise or Professional
+     * @deprecated
+     * @return string
+     */
     final public function getType()
     {
-        return self::MODULE_TYPE;
+        return 'PRO';
     }
 
     /**
+     * @deprecated
      * @return bool
      */
     final public function isProfessionalEdition()
     {
-        return strcasecmp($this->getType(), 'PRO') === 0;
+        return true;
     }
 
     // License Email

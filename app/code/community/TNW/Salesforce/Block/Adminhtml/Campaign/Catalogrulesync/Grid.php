@@ -130,19 +130,18 @@ class TNW_Salesforce_Block_Adminhtml_Campaign_Catalogrulesync_Grid extends Mage_
 
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this
-                ->setMassactionIdField('entity_id')
-                ->setMassactionIdFilter('main_table.entity_id')
-            ;
-            $this->getMassactionBlock()->setFormFieldName('catalogrules');
+        $this
+            ->setMassactionIdField('entity_id')
+            ->setMassactionIdFilter('main_table.entity_id')
+        ;
+        $this->getMassactionBlock()->setFormFieldName('catalogrules');
 
-            $this->getMassactionBlock()->addItem('sync', array(
-                'label' => Mage::helper('tnw_salesforce')->__('Synchronize'),
-                'url' => $this->getUrl('*/*/massSync'),
-                'confirm' => Mage::helper('tnw_salesforce')->__('This will ovewrite any mapped data in Salesforce. Are you sure?')
-            ));
-        }
+        $this->getMassactionBlock()->addItem('sync', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Synchronize'),
+            'url' => $this->getUrl('*/*/massSync'),
+            'confirm' => Mage::helper('tnw_salesforce')->__('This will ovewrite any mapped data in Salesforce. Are you sure?')
+        ));
+
         return $this;
     }
 

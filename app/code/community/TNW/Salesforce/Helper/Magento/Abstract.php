@@ -170,10 +170,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         $_obj = new stdClass();
         $_obj->Id = $_data['salesforce_id'];
         $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = $_data['magento_id'];
-
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'} = true;
-        }
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'} = true;
 
         return $_obj;
     }

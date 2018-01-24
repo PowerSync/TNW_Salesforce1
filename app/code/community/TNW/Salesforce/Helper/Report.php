@@ -26,6 +26,7 @@ class TNW_Salesforce_Helper_Report extends TNW_Salesforce_Helper_Abstract
      * @deprecated
      * @return bool
      */
+
     public function send()
     {
         return true;

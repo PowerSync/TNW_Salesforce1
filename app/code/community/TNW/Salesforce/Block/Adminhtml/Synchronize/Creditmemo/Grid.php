@@ -150,23 +150,22 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Creditmemo_Grid extends Mage_Ad
 
     protected function _prepareMassaction()
     {
-        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
-            $this
-                ->setMassactionIdField('entity_id')
-                ->setMassactionIdFilter('main_table.entity_id')
-            ;
-            $this->getMassactionBlock()->setFormFieldName('creditmemo_ids');
+        $this
+            ->setMassactionIdField('entity_id')
+            ->setMassactionIdFilter('main_table.entity_id')
+        ;
+        $this->getMassactionBlock()->setFormFieldName('creditmemo_ids');
 
-            if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {
-                $this->getMassactionBlock()->addItem(
-                    'sync', array(
-                        'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
-                        'url' => $this->getUrl('*/*/massSyncForce'),
-                        'confirm' => Mage::helper('tnw_salesforce')->__('Are you sure?')
-                    )
-                );
-            }
+        if (Mage::helper('tnw_salesforce')->getMagentoVersion() > 1500) {
+            $this->getMassactionBlock()->addItem(
+                'sync', array(
+                    'label' => Mage::helper('tnw_salesforce')->__('Full Synchronization'),
+                    'url' => $this->getUrl('*/*/massSyncForce'),
+                    'confirm' => Mage::helper('tnw_salesforce')->__('Are you sure?')
+                )
+            );
         }
+
         return $this;
     }
 
