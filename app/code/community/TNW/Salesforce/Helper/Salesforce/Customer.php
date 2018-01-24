@@ -120,31 +120,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         parent::_onComplete();
 
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-            if (array_key_exists('Id', $this->_cache['leadsToUpsert'])) {
-                $logger->add('Salesforce', 'Lead', $this->_cache['leadsToUpsert']['Id'], $this->_cache['responses']['leads']);
-            }
-            if (array_key_exists($this->_magentoId, $this->_cache['leadsToUpsert'])) {
-                $logger->add('Salesforce', 'Lead', $this->_cache['leadsToUpsert'][$this->_magentoId], $this->_cache['responses']['leads']);
-            }
-            if (array_key_exists('Id', $this->_cache['accountsToUpsert'])) {
-                $logger->add('Salesforce', 'Account', $this->_cache['accountsToUpsert']['Id'], $this->_cache['responses']['accounts']);
-            }
-            if (array_key_exists('Id', $this->_cache['contactsToUpsert'])) {
-                $logger->add('Salesforce', 'Contact', $this->_cache['contactsToUpsert']['Id'], $this->_cache['responses']['contacts']);
-            }
-            if (array_key_exists($this->_magentoId, $this->_cache['contactsToUpsert'])) {
-                $logger->add('Salesforce', 'Contact', $this->_cache['contactsToUpsert'][$this->_magentoId], $this->_cache['responses']['contacts']);
-            }
-            if (!empty($this->_cache['campaignsToUpsert'])) {
-                $logger->add('Salesforce', 'CampaignMember', $this->_cache['campaignsToUpsert'], $this->_cache['responses']['campaigns']);
-            }
-
-            $logger->send();
-        }
-
         $this->reset();
         $this->clearMemory();
     }
@@ -314,9 +289,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     {
         if ($_id) {
 
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
             // Create a Task
             $this->_obj = new stdClass();
             $this->_obj->WhoId = $_id;
@@ -346,13 +318,6 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 } else {
                     $this->_processErrors($_result, 'task', $this->_obj);
                 }
-            }
-
-            $logger->add('Salesforce', 'Note', array('note' => $this->_obj), $_sfResult);
-
-            //Send Transaction Data
-            if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-                $logger->send();
             }
         }
     }

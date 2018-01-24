@@ -31,7 +31,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_LOG = 'salesforce/development_and_debugging/log_enable';
     const FAIL_EMAIL = 'salesforce/developer/fail_order';
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
-    const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
     const REAL_TIME_SYNC_MAX_COUNT = 'salesforce/development_and_debugging/real_time_sync_max_count';
     const BULK_RESULT_MAX_ATTENTIONS = 'salesforce/development_and_debugging/bulk_result_max_attentions';
 
@@ -344,11 +343,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::FAIL_EMAIL_SUBJECT);
     }
 
-    // Integration debug email subject prefix
-
+    /**
+     * Integration debug email subject prefix
+     * @deprecated
+     * @return bool
+     */
     public function isRemoteLogEnabled()
     {
-        return $this->getStoreConfig(self::REMOTE_LOG);
+        return false;
     }
 
     // Push data to idealdata.io for debugging

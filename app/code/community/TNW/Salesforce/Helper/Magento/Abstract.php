@@ -93,14 +93,6 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
             $_entity = false;
         }
 
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            /** @var TNW_Salesforce_Helper_Report $logger */
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-            $logger->add('Magento', $_type, array($_object->Id => $_object), array($_object->Id => $this->_response));
-            $logger->send();
-        }
-
         return $_entity;
     }
 
