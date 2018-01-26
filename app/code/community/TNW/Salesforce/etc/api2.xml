@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<config>
+    <api2>
+        <resource_groups>
+            <tnw_salesforce translate="title" module="tnw_salesforce">
+                <title>Salesforce</title>
+                <sort_order>130</sort_order>
+            </tnw_salesforce>
+        </resource_groups>
+        <resources>
+            <tnw_salesforce_import translate="title" module="tnw_salesforce">
+                <group>tnw_salesforce</group>
+                <model>tnw_salesforce/api2_import</model>
+                <title>Import</title>
+                <sort_order>10</sort_order>
+                <versions>1</versions>
+                <privileges>
+                    <admin>
+                        <create>1</create>
+                    </admin>
+                </privileges>
+                <!--<attributes translate="sf" module="tnw_salesforce">
+                    <sf>Salesforce Objects</sf>
+                </attributes>-->
+                <force_attributes>
+                    <admin>
+                        <sf>1</sf>
+                    </admin>
+                </force_attributes>
+                <routes>
+                    <route_collection>
+                        <route>/tnw_import</route>
+                        <action_type>collection</action_type>
+                    </route_collection>
+                </routes>
+            </tnw_salesforce_import>
+        </resources>
+    </api2>
+</config>
