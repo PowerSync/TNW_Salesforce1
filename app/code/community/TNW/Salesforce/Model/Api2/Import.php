@@ -15,6 +15,7 @@ class TNW_Salesforce_Model_Api2_Import extends Mage_Api2_Model_Resource
         }
 
         try {
+            $filteredData['sf'] = urldecode($filteredData['sf']);
             $objects = Zend_Json::decode($filteredData['sf'], Zend_Json::TYPE_OBJECT);
 
             $formatJson = defined('JSON_PRETTY_PRINT')
