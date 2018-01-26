@@ -32,45 +32,43 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_View_Tab_Invoices extends Mage_
 
     protected function _prepareColumns()
     {
-        if (Mage::helper('tnw_salesforce')->isProfessionalEdition()) {
-            $this->addColumn('sf_insync', array(
-                'header' => Mage::helper('sales')->__('Status'),
-                'width' => '40px',
-                'type' => 'options',
-                'options' => array(
-                    0 => 'No',
-                    1 => 'Yes',
-                ),
-                'index' => 'sf_insync',
-                'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status()
-            ));
+        $this->addColumn('sf_insync', array(
+            'header' => Mage::helper('sales')->__('Status'),
+            'width' => '40px',
+            'type' => 'options',
+            'options' => array(
+                0 => 'No',
+                1 => 'Yes',
+            ),
+            'index' => 'sf_insync',
+            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Status()
+        ));
 
-            $this->addColumn('salesforce_id', array(
-                'header' => Mage::helper('sales')->__('Salesforce ID'),
-                'index' => 'salesforce_id',
-                'type' => 'text',
-                'width' => '140px',
-                'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
-            ));
+        $this->addColumn('salesforce_id', array(
+            'header' => Mage::helper('sales')->__('Salesforce ID'),
+            'index' => 'salesforce_id',
+            'type' => 'text',
+            'width' => '140px',
+            'renderer' => new TNW_Salesforce_Block_Adminhtml_Renderer_Link_Salesforce_Id(),
+        ));
 
-            $this->addColumnAfter('singleAction', array(
-                'header' => Mage::helper('sales')->__('Action'),
-                'width' => '50px',
-                'type' => 'action',
-                'getter' => 'getId',
-                'actions' => array(
-                    array(
-                        'caption' => Mage::helper('sales')->__('Sync'),
-                        'url' => array('base' => '*/salesforcesync_invoicesync/sync'),
-                        'field' => 'invoice_id'
-                    )
-                ),
-                'filter' => false,
-                'sortable' => false,
-                'index' => 'stores',
-                'is_system' => true,
-            ), 'base_grand_total');
-        }
+        $this->addColumnAfter('singleAction', array(
+            'header' => Mage::helper('sales')->__('Action'),
+            'width' => '50px',
+            'type' => 'action',
+            'getter' => 'getId',
+            'actions' => array(
+                array(
+                    'caption' => Mage::helper('sales')->__('Sync'),
+                    'url' => array('base' => '*/salesforcesync_invoicesync/sync'),
+                    'field' => 'invoice_id'
+                )
+            ),
+            'filter' => false,
+            'sortable' => false,
+            'index' => 'stores',
+            'is_system' => true,
+        ), 'base_grand_total');
 
         return parent::_prepareColumns();
     }

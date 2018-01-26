@@ -29,12 +29,10 @@ class TNW_Salesforce_Model_Config_Contactus
                 'label' => 'No',
                 'value' => '0'
             );
-            if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-                $this->_cache[] = array(
-                    'label' => 'Yes',
-                    'value' => '1'
-                );
-            }
+            $this->_cache[] = array(
+                'label' => 'Yes',
+                'value' => '1'
+            );
         }
 
         return $this->_cache;

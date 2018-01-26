@@ -225,11 +225,8 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
             $_toActivate = new stdClass();
             $_toActivate->Status = $_currentStatus;
             $_toActivate->Id = NULL;
-
-            if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
-                $_toActivate->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'}
-                    = true;
-            }
+            $_toActivate->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'}
+                = true;
 
             $_entityNumber = $this->_getEntityNumber($_entity);
             $this->_cache['orderToActivate'][$_entityNumber] = $_toActivate;
@@ -856,28 +853,6 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
     protected function _onComplete()
     {
         parent::_onComplete();
-
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            /** @var TNW_Salesforce_Helper_Report $logger */
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
-            $logger->add('Salesforce', ucwords($this->_magentoEntityName),
-                $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))],
-                $this->_cache['responses'][strtolower($this->getManyParentEntityType())]);
-
-            if (!empty($this->_cache['responses'][lcfirst($this->getItemsField())])) {
-                $logger->add('Salesforce', ucwords($this->_magentoEntityName) . 'Item',
-                    $this->_cache[sprintf('%sToUpsert', lcfirst($this->getItemsField()))],
-                    $this->_cache['responses'][lcfirst($this->getItemsField())]);
-            }
-
-            if (!empty($this->_cache['responses']['notes'])) {
-                $logger->add('Salesforce', 'Note', $this->_cache['notesToUpsert'], $this->_cache['responses']['notes']);
-            }
-
-            $logger->send();
-        }
 
         // Logout
         $this->reset();

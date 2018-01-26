@@ -44,15 +44,6 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_View_Opportunities extend
         return parent::_prepareCollection();
     }
 
-    protected function _beforeToHtml()
-    {
-        if (Mage::helper('tnw_salesforce')->getType() != "PRO") {
-            return $this;
-        }
-
-        return parent::_beforeToHtml();
-    }
-
     protected function _afterLoadCollection()
     {
         $timezone = Mage::app()->getStore()->getConfig(Mage_Core_Model_Locale::XML_PATH_DEFAULT_TIMEZONE);

@@ -1007,21 +1007,19 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         );
 
         // add inventory field list
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $this->_cache[$type]['inventory'] = array(
-                'label' => 'Product Inventory',
-                'value' => array(),
+        $this->_cache[$type]['inventory'] = array(
+            'label' => 'Product Inventory',
+            'value' => array(),
+        );
+
+        $collection = $this->getDbConnection('read')
+            ->describeTable(Mage::helper('tnw_salesforce')->getTable('cataloginventory_stock_item'));
+
+        foreach ($collection as $one) {
+            $this->_cache[$type]['inventory']['value'][] = array(
+                'value' => "Product Inventory : {$one['COLUMN_NAME']}",
+                'label' => 'Product Inventory : '.$this->toName($one['COLUMN_NAME']),
             );
-
-            $collection = $this->getDbConnection('read')
-                ->describeTable(Mage::helper('tnw_salesforce')->getTable('cataloginventory_stock_item'));
-
-            foreach ($collection as $one) {
-                $this->_cache[$type]['inventory']['value'][] = array(
-                    'value' => "Product Inventory : {$one['COLUMN_NAME']}",
-                    'label' => 'Product Inventory : '.$this->toName($one['COLUMN_NAME']),
-                );
-            }
         }
 
         unset($collection, $_attribute);

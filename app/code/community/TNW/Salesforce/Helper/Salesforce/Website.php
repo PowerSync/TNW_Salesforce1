@@ -49,15 +49,6 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
     {
         parent::_onComplete();
 
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-
-            $logger->add('Salesforce', Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject(), $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'], $this->_cache['responses']['websites']);
-
-            $logger->send();
-        }
-
         $this->reset();
         $this->clearMemory();
     }
@@ -133,10 +124,8 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Code__c'} = $_website->code;
             $_object->{Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Sort_Order__c'} = (int) $_website->sort_order;
 
-            if (Mage::helper('tnw_salesforce')->getType() == 'PRO') {
-                $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
-                $_object->$disableSyncField = true;
-            }
+            $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
+            $_object->$disableSyncField = true;
 
             if (!array_key_exists(Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c', $this->_cache['websitesToUpsert'])) {
                 $this->_cache['websitesToUpsert'][Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Website_ID__c'] = array();

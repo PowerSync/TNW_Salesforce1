@@ -93,14 +93,6 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
             $_entity = false;
         }
 
-        if (Mage::helper('tnw_salesforce')->isRemoteLogEnabled()) {
-            /** @var TNW_Salesforce_Helper_Report $logger */
-            $logger = Mage::helper('tnw_salesforce/report');
-            $logger->reset();
-            $logger->add('Magento', $_type, array($_object->Id => $_object), array($_object->Id => $this->_response));
-            $logger->send();
-        }
-
         return $_entity;
     }
 
@@ -178,10 +170,7 @@ abstract class TNW_Salesforce_Helper_Magento_Abstract
         $_obj = new stdClass();
         $_obj->Id = $_data['salesforce_id'];
         $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_PROFESSIONAL . 'Magento_ID__c'} = $_data['magento_id'];
-
-        if (Mage::helper('tnw_salesforce')->getType() == "PRO") {
-            $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'} = true;
-        }
+        $_obj->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_ENTERPRISE . 'disableMagentoSync__c'} = true;
 
         return $_obj;
     }

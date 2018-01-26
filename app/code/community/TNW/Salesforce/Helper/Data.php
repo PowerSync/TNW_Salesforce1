@@ -31,7 +31,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const API_LOG = 'salesforce/development_and_debugging/log_enable';
     const FAIL_EMAIL = 'salesforce/developer/fail_order';
     const FAIL_EMAIL_SUBJECT = 'salesforce/developer/email_prefix';
-    const REMOTE_LOG = 'salesforce/development_and_debugging/remote_log';
     const REAL_TIME_SYNC_MAX_COUNT = 'salesforce/development_and_debugging/real_time_sync_max_count';
     const BULK_RESULT_MAX_ATTENTIONS = 'salesforce/development_and_debugging/bulk_result_max_attentions';
 
@@ -119,7 +118,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     const SALESFORCE_DEVELOPER    = 'Developer Edition';
 
     /* Defaults */
-    const MODULE_TYPE = 'PRO';
     protected $_types = array("Enterprise", "Partner");
     protected $_clientTypes = NULL;
     protected $_pricebooks = array(0 => "Select Pricebook");
@@ -132,7 +130,6 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     protected $_businessAccountRecordTypes = array();
     protected $_leadStates = array();
 
-    //const MODULE_TYPE = 'BASIC';
     /**
      * @comment this variable contains parameter name used in SalesForce
      * @var null
@@ -181,18 +178,23 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::CATALOG_PRICE_SCOPE);
     }
 
-    //Extension Type: Enterprise or Professional
+    /**
+     * Extension Type: Enterprise or Professional
+     * @deprecated
+     * @return string
+     */
     final public function getType()
     {
-        return self::MODULE_TYPE;
+        return 'PRO';
     }
 
     /**
+     * @deprecated
      * @return bool
      */
     final public function isProfessionalEdition()
     {
-        return strcasecmp($this->getType(), 'PRO') === 0;
+        return true;
     }
 
     // License Email
@@ -341,11 +343,14 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
         return $this->getStoreConfig(self::FAIL_EMAIL_SUBJECT);
     }
 
-    // Integration debug email subject prefix
-
+    /**
+     * Integration debug email subject prefix
+     * @deprecated
+     * @return bool
+     */
     public function isRemoteLogEnabled()
     {
-        return $this->getStoreConfig(self::REMOTE_LOG);
+        return false;
     }
 
     // Push data to idealdata.io for debugging
