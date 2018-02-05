@@ -283,14 +283,6 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
     }
 
     /**
-     * Print output
-     */
-    public function output()
-    {
-        echo $this->read(null)->getContent();
-    }
-
-    /**
      * read content
      * if $length is empty - try to load all file
      * @param $page

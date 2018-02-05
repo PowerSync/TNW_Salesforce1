@@ -214,7 +214,7 @@ abstract class TNW_Salesforce_Model_Api_Entity_Resource_Abstract extends Mage_Co
             return $this->_tables[$cacheName];
         }
 
-        if (strpos($entityName, '/')) {
+        if (strpos($entityName, '/') !== false) {
             if (!is_null($entitySuffix)) {
                 $modelEntity = array($entityName, $entitySuffix);
             } else {
