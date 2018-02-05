@@ -126,4 +126,13 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_OpportunitysyncController extends 
     {
         $this->_redirect('*/*/index');
     }
+
+    /**
+     * @return mixed
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')
+            ->isAllowed('tnw_salesforce');
+    }
 }

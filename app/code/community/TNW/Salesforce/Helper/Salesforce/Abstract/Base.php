@@ -1103,7 +1103,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     public function countSuccessEntityUpsert()
     {
-        $upsertStatus = [];
+        $upsertStatus = array();
         foreach ($this->getSyncResults() as $_responses) {
             foreach ($_responses as $entityNumber => $_tmpResponse) {
                 $__response = array_key_exists('subObj', $_tmpResponse)
