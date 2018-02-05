@@ -481,10 +481,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
 
                 $error = "NOTICE: Product w/ SKU (" . $_entityItem->getSku() . ") is not synchronized, could not add to $this->_salesforceEntityName!";
 
-                $this->_cache['responses']['orderProducts'][$_entityNumber]['subObj'][] = json_decode(json_encode([
+                $this->_cache['responses']['orderProducts'][$_entityNumber]['subObj'][] = json_decode(json_encode(array(
                     'success' => false,
-                    'errors' => ['message' => $error]
-                ]), TRUE);
+                    'errors' => array('message' => $error)
+				)), TRUE);
 
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveError($error);
                 return;

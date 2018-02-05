@@ -197,7 +197,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
             }
             else {
                 $text = implode("\n", self::$notificationList);
-                echo $text;
+                throw new Exception($text);
             }
         }
 

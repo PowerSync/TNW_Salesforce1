@@ -24,7 +24,7 @@ class TNW_Salesforce_Model_Sforce_Client extends Salesforce_SforceEnterpriseClie
         // We don't need to parse out any subversion suffix - e.g. "-01" since
         // PHP type conversion will ignore it
         if (phpversion() < 5.2) {
-            die("PHP versions older than 5.2 are no longer supported. Please upgrade!");
+            throw new Exception("PHP versions older than 5.2 are no longer supported. Please upgrade!");
         }
 
         if ($proxy != null) {
