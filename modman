@@ -7,7 +7,7 @@ app/locale/en_US/template/email/tnw_salesforce app/locale/en_US/template/email/t
 js/tnw-salesforce js/tnw-salesforce
 lib/Salesforce lib/Salesforce
 # These files don't like to be symlinked
-@shell cp -f $MODULE/powersync/import.php $PROJECT/powersync/import.php
+@shell cp -f $MODULE/shell/sfimport.php $PROJECT/shell/sfimport.php
 skin/adminhtml/default/default/images/preloader-sm.gif skin/adminhtml/default/default/images/preloader-sm.gif
 skin/adminhtml/default/default/images/sf-logo.png skin/adminhtml/default/default/images/sf-logo.png
 js/lib/jquery/jquery-1.10.2.min.js js/lib/jquery/jquery-1.10.2.min.js
