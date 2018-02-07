@@ -18,12 +18,12 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
             try {
                 $this->processLock(self::LOCK_INCOMING);
                 Mage::getModel('tnw_salesforce/cron')->backgroundProcess();
-                echo "Import successfully finished\n";
+                print("Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-                echo $e->getMessage() . "\n";
+                print($e->getMessage() . "\n");
             } catch (Exception $e) {
-                echo "Compilation unknown error:\n\n";
-                echo $e . "\n";
+                print("Compilation unknown error:\n\n");
+                print($e . "\n");
             }
 
             $this->processUnlock(self::LOCK_INCOMING);
@@ -44,12 +44,12 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
                     });
                 }
 
-                echo "Import successfully finished\n";
+                print("Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-                echo $e->getMessage() . "\n";
+                print($e->getMessage() . "\n");
             } catch (Exception $e) {
-                echo "Compilation unknown error:\n\n";
-                echo $e . "\n";
+                print("Compilation unknown error:\n\n");
+                print($e . "\n");
             }
 
             $this->processUnlock(self::LOCK_OUTGOING);
@@ -70,18 +70,18 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
                     });
                 }
 
-                echo "Import successfully finished\n";
+                print("Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-                echo $e->getMessage() . "\n";
+                print($e->getMessage() . "\n");
             } catch (Exception $e) {
-                echo "Compilation unknown error:\n\n";
-                echo $e . "\n";
+                print("Compilation unknown error:\n\n");
+                print($e . "\n");
             }
 
             $this->processUnlock(self::LOCK_BULK);
         }
         else {
-            echo $this->usageHelp();
+            print($this->usageHelp());
         }
     }
 
