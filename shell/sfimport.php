@@ -13,17 +13,19 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
      *
      */
     public function run()
-    {
+	{
+		$stdout = fopen('php://stdout', 'w');
+
         if (isset($this->_args['incoming'])) {
             try {
                 $this->processLock(self::LOCK_INCOMING);
                 Mage::getModel('tnw_salesforce/cron')->backgroundProcess();
-                print("Import successfully finished\n");
+               fwrite($stdout, "Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-                print($e->getMessage() . "\n");
+               fwrite($stdout, $e->getMessage() . "\n");
             } catch (Exception $e) {
-                print("Compilation unknown error:\n\n");
-                print($e . "\n");
+               fwrite($stdout, "Compilation unknown error:\n\n");
+               fwrite($stdout, $e . "\n");
             }
 
             $this->processUnlock(self::LOCK_INCOMING);
@@ -44,12 +46,12 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
                     });
                 }
 
-                print("Import successfully finished\n");
+               fwrite($stdout, "Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-                print($e->getMessage() . "\n");
+               fwrite($stdout, $e->getMessage() . "\n");
             } catch (Exception $e) {
-                print("Compilation unknown error:\n\n");
-                print($e . "\n");
+               fwrite($stdout, "Compilation unknown error:\n\n");
+               fwrite($stdout, $e . "\n");
             }
 
             $this->processUnlock(self::LOCK_OUTGOING);
@@ -70,18 +72,18 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
                     });
                 }
 
-                print("Import successfully finished\n");
+               fwrite($stdout, "Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-                print($e->getMessage() . "\n");
+               fwrite($stdout, $e->getMessage() . "\n");
             } catch (Exception $e) {
-                print("Compilation unknown error:\n\n");
-                print($e . "\n");
+               fwrite($stdout, "Compilation unknown error:\n\n");
+               fwrite($stdout, $e . "\n");
             }
 
             $this->processUnlock(self::LOCK_BULK);
         }
         else {
-            print($this->usageHelp());
+           fwrite($stdout, $this->usageHelp());
         }
     }
 
@@ -120,6 +122,7 @@ Usage:  php -f import.php -- [options]
 USAGE;
     }
 }
+
 
 $shell = new Powersync_Shell_Sfimport();
 $shell->run();
