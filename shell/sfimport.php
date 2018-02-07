@@ -82,6 +82,8 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
         } else {
             fwrite($stdout, $this->usageHelp());
         }
+
+        fclose($stdout);
     }
 
     /**
