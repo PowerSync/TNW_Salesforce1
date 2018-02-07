@@ -13,24 +13,23 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
      *
      */
     public function run()
-	{
-		$stdout = fopen('php://stdout', 'w');
+    {
+        $stdout = fopen('php://stdout', 'w');
 
         if (isset($this->_args['incoming'])) {
             try {
                 $this->processLock(self::LOCK_INCOMING);
                 Mage::getModel('tnw_salesforce/cron')->backgroundProcess();
-               fwrite($stdout, "Import successfully finished\n");
+                fwrite($stdout, "Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-               fwrite($stdout, $e->getMessage() . "\n");
+                fwrite($stdout, $e->getMessage() . "\n");
             } catch (Exception $e) {
-               fwrite($stdout, "Compilation unknown error:\n\n");
-               fwrite($stdout, $e . "\n");
+                fwrite($stdout, "Compilation unknown error:\n\n");
+                fwrite($stdout, $e . "\n");
             }
 
             $this->processUnlock(self::LOCK_INCOMING);
-        }
-        else if (isset($this->_args['outgoing'])) {
+        } else if (isset($this->_args['outgoing'])) {
             try {
                 $websites = Mage::app()->getWebsites(true);
                 if (isset($this->_args['website'])) {
@@ -46,17 +45,16 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
                     });
                 }
 
-               fwrite($stdout, "Import successfully finished\n");
+                fwrite($stdout, "Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-               fwrite($stdout, $e->getMessage() . "\n");
+                fwrite($stdout, $e->getMessage() . "\n");
             } catch (Exception $e) {
-               fwrite($stdout, "Compilation unknown error:\n\n");
-               fwrite($stdout, $e . "\n");
+                fwrite($stdout, "Compilation unknown error:\n\n");
+                fwrite($stdout, $e . "\n");
             }
 
             $this->processUnlock(self::LOCK_OUTGOING);
-        }
-        else if (isset($this->_args['bulk'])) {
+        } else if (isset($this->_args['bulk'])) {
             try {
                 $websites = Mage::app()->getWebsites(true);
                 if (isset($this->_args['website'])) {
@@ -72,18 +70,17 @@ class Powersync_Shell_Sfimport extends Mage_Shell_Abstract
                     });
                 }
 
-               fwrite($stdout, "Import successfully finished\n");
+                fwrite($stdout, "Import successfully finished\n");
             } catch (Mage_Core_Exception $e) {
-               fwrite($stdout, $e->getMessage() . "\n");
+                fwrite($stdout, $e->getMessage() . "\n");
             } catch (Exception $e) {
-               fwrite($stdout, "Compilation unknown error:\n\n");
-               fwrite($stdout, $e . "\n");
+                fwrite($stdout, "Compilation unknown error:\n\n");
+                fwrite($stdout, $e . "\n");
             }
 
             $this->processUnlock(self::LOCK_BULK);
-        }
-        else {
-           fwrite($stdout, $this->usageHelp());
+        } else {
+            fwrite($stdout, $this->usageHelp());
         }
     }
 
