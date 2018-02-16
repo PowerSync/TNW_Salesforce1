@@ -169,6 +169,19 @@ class TNW_Salesforce_Model_Sale_Observer
     }
 
     /**
+     * order sync event
+     *
+     * @param $observer
+     */
+    public function salesOrderItemSave($observer)
+    {
+        // Triggers TNW event that pushes to SF
+        $orderItem = $observer->getEvent()->getItem();
+
+        $this->syncOrder(array($orderItem->getOrderId()), true);
+    }
+
+    /**
      * order sync event for aitoc
      *
      * @param $observer
