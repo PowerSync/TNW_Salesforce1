@@ -67,7 +67,7 @@ class TNW_Salesforce_Model_Order_Shipment_Observer
                 return;
             }
 
-            if (!$isManualSync && !Mage::helper('tnw_salesforce/config_sales_shipment')->autoSyncShipments()) {
+            if (!Mage::helper('tnw_salesforce/config_sales_shipment')->autoSyncShipments()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('SKIPING: Shipment synchronization disabled');
 
