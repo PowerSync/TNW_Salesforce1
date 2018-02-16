@@ -96,7 +96,7 @@ class TNW_Salesforce_Model_Order_Invoice_Observer
                 return;
             }
 
-            if (!$isManualSync && !Mage::helper('tnw_salesforce/config_sales_invoice')->autoSyncInvoices()) {
+            if (!Mage::helper('tnw_salesforce/config_sales_invoice')->autoSyncInvoices()) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveTrace('Invoice Integration is disabled');
 
