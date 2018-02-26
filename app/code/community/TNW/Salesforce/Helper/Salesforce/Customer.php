@@ -866,12 +866,13 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         }
     }
 
+    /**
+     * Avoid leads delete
+     * @return bool
+     */
     protected function _deleteLeads()
     {
-        $_ids = array_chunk($this->_toDelete, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT);
-        foreach ($_ids as $_recordIds) {
-            $this->getClient()->delete($_recordIds);
-        }
+        return false;
     }
 
     /**
