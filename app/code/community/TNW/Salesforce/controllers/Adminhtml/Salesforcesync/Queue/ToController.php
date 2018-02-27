@@ -131,9 +131,28 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_Queue_ToController extends Mage_Ad
     public function processAction()
     {
         if ($this->getRequest()->getParam('queue_id') > 0) {
-            if (Mage::helper("tnw_salesforce/queue")->processItems(array($this->getRequest()->getParam('queue_id')))){
+            if (Mage::helper("tnw_salesforce/queue")->processItems(array($this->getRequest()->getParam('queue_id')))) {
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper("tnw_salesforce")->__("Item where processed"));
             }
+        }
+
+        $this->_redirectReferer();
+    }
+
+    /**
+     *
+     */
+    public function massSyncAction()
+    {
+        $itemIds = $this->getRequest()->getParam('queue');
+        try {
+            if (!empty($itemIds)) {
+                if (Mage::helper("tnw_salesforce/queue")->processItems($itemIds)) {
+                    Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper("tnw_salesforce")->__("Item where processed"));
+                }
+            }
+        } catch (Exception $e) {
+            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
         }
 
         $this->_redirectReferer();
