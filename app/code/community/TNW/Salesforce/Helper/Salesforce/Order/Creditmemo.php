@@ -61,6 +61,56 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
     }
 
     /**
+     * @param array $_ids
+     */
+    protected function _massAddBefore($_ids)
+    {
+        /**
+         * check and mark to skip CreditMemo without items
+         */
+        if (!empty($_ids)) {
+
+            /** @var Mage_Sales_Model_Resource_Order_Creditmemo_Collection $creditmemoCollection */
+            $creditmemoCollection = Mage::getModel('sales/order_creditmemo')->getCollection();
+
+            $creditmemoCollection->addFieldToSelect('entity_id');
+
+            $creditmemoCollection
+                ->getSelect()
+                ->joinLeft(
+                    array('creditmemo_item' => Mage::getResourceModel('sales/order_creditmemo_item')->getMainTable()),
+                    'main_table.entity_id = creditmemo_item.parent_id',
+                    array('items_count' => new Zend_Db_Expr('COUNT(creditmemo_item.entity_id)'))
+                );
+
+            $creditmemoCollection
+                ->getSelect()
+                ->group('main_table.entity_id')
+                ->having('items_count = 0');
+
+            foreach (array_chunk($_ids, TNW_Salesforce_Helper_Data::BASE_UPDATE_LIMIT) as $entityIds) {
+                $creditmemoCollection->getSelect()->reset(Varien_Db_Select::WHERE);
+                $creditmemoCollection->getSelect()->where('main_table.entity_id IN (?)', $entityIds);
+
+                $creditmemoWithoutItems = $creditmemoCollection->getResource()->getReadConnection()->fetchCol($creditmemoCollection->getSelect());
+
+                if (!empty($creditmemoWithoutItems)) {
+                    foreach ($creditmemoWithoutItems as $creditmemoId) {
+                        $this->_skippedEntity[$creditmemoId] = $creditmemoId;
+                    }
+
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveNotice(sprintf('SKIPPED: Sync for %1$s #%2$s skipped, %1$s has not items!',
+                            $this->_magentoEntityName, implode(', ', $creditmemoWithoutItems)));
+                }
+            }
+        }
+
+        return parent::_massAddBefore($_ids);
+    }
+
+
+    /**
      * @param $_entity Mage_Sales_Model_Order_Creditmemo
      * @return bool
      */
