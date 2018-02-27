@@ -150,6 +150,14 @@ class TNW_Salesforce_Block_Adminhtml_Queue_To_Grid extends Mage_Adminhtml_Block_
             'confirm' => Mage::helper('tnw_salesforce')->__('This will reset all selected items in the queue. Are you sure?')
         ));
 
+        $url = '*/*/massSync';
+
+        $this->getMassactionBlock()->addItem('sync', array(
+            'label' => Mage::helper('tnw_salesforce')->__('Force sync'),
+            'url' => $this->getUrl($url),
+            'confirm' => Mage::helper('tnw_salesforce')->__('This will force sync process for the selected items. Are you sure?')
+        ));
+
         return $this;
     }
 
