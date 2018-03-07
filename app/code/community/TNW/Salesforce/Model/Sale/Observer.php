@@ -157,14 +157,17 @@ class TNW_Salesforce_Model_Sale_Observer
     public function triggerSalesforceEvent($observer)
     {
         // Triggers TNW event that pushes to SF
-        $order = $observer->getEvent()->getOrder();
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Order #' . $order->getRealOrderId() . ' Sync');
+        $orders = $observer->getEvent()->getOrders()? $observer->getEvent()->getOrders(): array($observer->getEvent()->getOrder());
 
-        // Check if AITOC is installed
         $modules = Mage::getConfig()->getNode('modules')->children();
-        // Only dispatch event if AITOC is not installed, otherwise we use different event
-        if (!property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
-            Mage::dispatchEvent('tnw_salesforce_order_save', array('order' => $order));
+
+        foreach($orders as $order) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Order #' . $order->getRealOrderId() . ' Sync');
+
+            // Only dispatch event if AITOC is not installed, otherwise we use different event
+            if (!property_exists($modules, 'Aitoc_Aitcheckoutfields')) {
+                Mage::dispatchEvent('tnw_salesforce_order_save', array('order' => $order));
+            }
         }
     }
 
