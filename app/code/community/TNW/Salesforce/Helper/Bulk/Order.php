@@ -114,8 +114,8 @@ class TNW_Salesforce_Helper_Bulk_Order extends TNW_Salesforce_Helper_Salesforce_
 
                     // Check if at least 1 product was added to the order before we try to activate
                     if (
-                        !array_key_exists($_object->Id, $this->_cache['orderItemsProductsToSync'])
-                        || empty($this->_cache['orderItemsProductsToSync'][$_object->Id])
+                        empty($this->_cache['orderLookup'][$_orderNum]->OrderItems)
+                        && empty($this->_cache['responses']['orderProducts'][$_orderNum])
                     ) {
                         unset($this->_cache['orderToActivate'][$_orderNum]);
                         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('SKIPPING ACTIVATION: Order (' . $_orderNum . ') Products did not make it into Salesforce.');

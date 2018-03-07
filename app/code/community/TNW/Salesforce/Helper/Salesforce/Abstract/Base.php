@@ -358,6 +358,11 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             $this->_massAddBefore($_ids);
 
             foreach ($_ids as $_id) {
+
+                if (!empty($this->_skippedEntity[$_id])) {
+                    continue;
+                }
+
                 $_entity        = $this->_loadEntityByCache($_id);
                 $_entityNumber  = $this->_getEntityNumber($_entity);
 
