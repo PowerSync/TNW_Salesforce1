@@ -13,6 +13,12 @@ document.observe('dom:loaded', function () {
     $$('#product_info_tabs > li > a[title="Salesforce"] > span').each(function(s){
         s.addClassName('tnw-salesforce-secondary-menu-icon');
     });
+    $$('#sales_order_view_tabs > li > a[title="Salesforce"] > span').each(function(s){
+        s.addClassName('tnw-salesforce-secondary-menu-icon');
+    });
+    $$('#customer_info_tabs > li > a[title="Salesforce"] > span').each(function(s){
+        s.addClassName('tnw-salesforce-secondary-menu-icon');
+    });
     $$('#promo_catalog_edit_tabs > li > a[title="Salesforce"] > span').each(function(s){
         s.addClassName('tnw-salesforce-secondary-menu-icon');
     });

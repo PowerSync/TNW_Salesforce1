@@ -65,7 +65,7 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Salesforce
      */
     public function getTabLabel()
     {
-        return '<img height="20" src="'.$this->getJsUrl('tnw-salesforce/admin/images/sf-logo-small.png').'" class="tnw-salesforce-tab-icon"><label class="tnw-salesforce-tab-label">' . Mage::helper('tnw_salesforce')->__('Salesforce').'</label>';
+        return Mage::helper('tnw_salesforce')->__('Salesforce');
     }
 
     /**
