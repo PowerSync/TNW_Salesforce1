@@ -19,6 +19,9 @@ document.observe('dom:loaded', function () {
     $$('#customer_info_tabs > li > a[title="Salesforce"] > span').each(function(s){
         s.addClassName('tnw-salesforce-secondary-menu-icon');
     });
+    $$('#qquote_tabs > li > a[title="Salesforce"] > span').each(function(s){
+        s.addClassName('tnw-salesforce-secondary-menu-icon');
+    });
     $$('#promo_catalog_edit_tabs > li > a[title="Salesforce"] > span').each(function(s){
         s.addClassName('tnw-salesforce-secondary-menu-icon');
     });
