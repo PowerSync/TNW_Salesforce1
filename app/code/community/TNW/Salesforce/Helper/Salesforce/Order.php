@@ -306,22 +306,6 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('----------Order Push: End----------');
     }
 
-    protected function _checkPrepareEntityItem($_key)
-    {
-        $_orderNumber   = $this->_cache['entitiesUpdating'][$_key];
-        $_orderStatuses = $this->_cache['upsertedOrderStatuses'];
-
-        $_draftStatus = Mage::helper('tnw_salesforce/config_sales')->getOrderDraftStatus();
-        if (array_key_exists($_orderNumber, $_orderStatuses) && $_orderStatuses[$_orderNumber] != $_draftStatus) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('ORDER (' . $_orderNumber . '): Skip order items sync, order is already Active!');
-
-            return false;
-        }
-
-        return true;
-    }
-
     protected function _pushRemainingCustomEntityData()
     {
         parent::_pushRemainingCustomEntityData();
