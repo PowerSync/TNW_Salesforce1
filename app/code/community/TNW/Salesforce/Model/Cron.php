@@ -325,7 +325,7 @@ class TNW_Salesforce_Model_Cron
     }
 
     /**
-     *
+     * Delete synced items from the Queue
      */
     public function deleteSuccessfulRecords()
     {
@@ -333,7 +333,7 @@ class TNW_Salesforce_Model_Cron
     }
 
     /**
-     *
+     * Reset stucked items of the Queue
      */
     public function resetStuckRecords()
     {
