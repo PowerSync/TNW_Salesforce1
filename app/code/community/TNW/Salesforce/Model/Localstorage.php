@@ -445,8 +445,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             ));
 
             try {
-                $recordsToInsert = $select->getAdapter()->fetchAll($select);
-                Mage::helper('tnw_salesforce')->getDbConnection('read')->fetchAll($select);
+                $recordsToInsert = Mage::helper('tnw_salesforce')->getDbConnection('read')->fetchAll($select);
 
                 Mage::helper('tnw_salesforce')->getDbConnection('write')->insertOnDuplicate(
                     Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
