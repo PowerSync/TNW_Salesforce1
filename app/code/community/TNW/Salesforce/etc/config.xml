@@ -896,11 +896,11 @@
     <crontab>
         <jobs>
             <tnw_salesforce_queue_success_cleanup>
-                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
+                <schedule><cron_expr>1 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::deleteSuccessfulRecords</model></run>
             </tnw_salesforce_queue_success_cleanup>
             <tnw_salesforce_queue_stuck_reset>
-                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
+                <schedule><cron_expr>5 * * * *</cron_expr></schedule>
                 <run><model>tnw_salesforce/cron::resetStuckRecords</model></run>
             </tnw_salesforce_queue_stuck_reset>
             <tnw_salesforce_abandoned>
