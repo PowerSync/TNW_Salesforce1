@@ -155,7 +155,6 @@ class TNW_Salesforce_Model_Cron
 
         $this->_syncObjectForBulkMode();
 
-        $this->_deleteSuccessfulRecords();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce queue END ===");
     }
@@ -325,6 +324,25 @@ class TNW_Salesforce_Model_Cron
         //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
     }
 
+    /**
+     *
+     */
+    public function deleteSuccessfulRecords()
+    {
+        $this->_deleteSuccessfulRecords();
+    }
+
+    /**
+     *
+     */
+    public function resetStuckRecords()
+    {
+        $this->_resetStuckRecords();
+    }
+
+    /**
+     *
+     */
     protected function _resetStuckRecords()
     {
         $_whenToReset = Mage::helper('tnw_salesforce')->getTime() - self::INTERVAL_BUFFER;
@@ -356,9 +374,6 @@ class TNW_Salesforce_Model_Cron
                 $_pendingItem->delete();
             }
         }
-
-        $this->_resetStuckRecords();
-        $this->_deleteSuccessfulRecords();
     }
 
     /**
@@ -370,8 +385,6 @@ class TNW_Salesforce_Model_Cron
      */
     public function syncEntity($type)
     {
-        $this->_resetStuckRecords();
-        $this->_deleteSuccessfulRecords();
 
         switch (true) {
             case in_array($type, array('order', 'abandoned')):
