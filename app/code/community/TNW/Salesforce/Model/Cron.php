@@ -348,7 +348,9 @@ class TNW_Salesforce_Model_Cron
         $_whenToReset = Mage::helper('tnw_salesforce')->getTime() - self::INTERVAL_BUFFER;
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < '" . Mage::helper('tnw_salesforce')->getDate($_whenToReset) . "';";
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($sql);
+
     }
 
     /**
