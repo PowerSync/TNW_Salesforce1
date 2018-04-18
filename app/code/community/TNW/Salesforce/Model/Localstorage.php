@@ -140,11 +140,6 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("SQL: " . $_sql);
             $this->getDbConnection()->query($_sql);
         }
-
-        // Delete Successful
-        $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
-        Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
     }
 
     /**
@@ -449,12 +444,14 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 'sync_type'         => new Zend_Db_Expr('"' . $syncType . '"')
             ));
 
-            $query = $select->insertFromSelect(
-                Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
-                array('object_id', 'website_id',  'mage_object_type', 'sf_object_type', 'date_created', 'sync_type'));
-
             try {
-                Mage::helper('tnw_salesforce')->getDbConnection('write')->query($query);
+                $recordsToInsert = Mage::helper('tnw_salesforce')->getDbConnection('read')->fetchAll($select);
+
+                Mage::helper('tnw_salesforce')->getDbConnection('write')->insertOnDuplicate(
+                    Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
+                    $recordsToInsert,
+                    array('object_id', 'website_id', 'mage_object_type', 'sf_object_type', 'date_created', 'sync_type')
+                );
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
                     ->saveError("ERROR add object from queue: " . $e->getMessage());
