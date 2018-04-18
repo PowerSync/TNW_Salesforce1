@@ -62,7 +62,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
     public function syncAction()
     {
         $productId = $this->getRequest()->getParam('product_id');
-        Mage::getSingleton('tnw_salesforce/product_observer')->syncProduct(array($productId),true);
+        Mage::dispatchEvent('tnw_salesforce_product_save', array(
+            'product_ids' => array($productId),
+            'is_manual_sync' => true
+        ));
 
         $this->_redirectReferer($this->getUrl('*/*/index', array('_current' => true)));
     }
@@ -76,7 +79,10 @@ class TNW_Salesforce_Adminhtml_Salesforcesync_ProductsyncController extends Mage
         if (!is_array($itemIds)) {
             $this->_getSession()->addError($helper->__('Please select products(s)'));
         } else {
-            Mage::getSingleton('tnw_salesforce/product_observer')->syncProduct($itemIds, true);
+            Mage::dispatchEvent('tnw_salesforce_product_save', array(
+                'product_ids' => $itemIds,
+                'is_manual_sync' => true
+            ));
         }
         $url = '*/*/index';
         if ($helper->getStoreId() != 0) {
