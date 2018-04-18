@@ -6,9 +6,6 @@
 
 class TNW_Salesforce_Model_Product_Observer
 {
-    public function __construct()
-    {
-    }
 
     /**
      * @param $observer
@@ -20,6 +17,20 @@ class TNW_Salesforce_Model_Product_Observer
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . $_product->getId() . ' Sync');
 
         Mage::dispatchEvent('tnw_salesforce_product_save', array('product' => $_product));
+
+        return;
+    }
+
+    /**
+     * @param $observer
+     */
+    public function updateAttributesAfter($observer)
+    {
+       $_productIds = $observer->getEvent()->getData('product_ids');
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . implode(', ', $_productIds) . ' Sync');
+
+        $this->syncProduct($_productIds);
 
         return;
     }
