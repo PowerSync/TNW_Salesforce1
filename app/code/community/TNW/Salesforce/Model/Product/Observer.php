@@ -39,7 +39,7 @@ class TNW_Salesforce_Model_Product_Observer
     /**
      * @return bool
      */
-    public function isSyncIsInProgress()
+    private function isSyncIsInProgress()
     {
         return $this->syncIsInProgress;
     }
@@ -47,7 +47,7 @@ class TNW_Salesforce_Model_Product_Observer
     /**
      * @param bool $syncIsInProgress
      */
-    public function setSyncIsInProgress($syncIsInProgress)
+    private function setSyncIsInProgress($syncIsInProgress)
     {
         $this->syncIsInProgress = $syncIsInProgress;
     }
