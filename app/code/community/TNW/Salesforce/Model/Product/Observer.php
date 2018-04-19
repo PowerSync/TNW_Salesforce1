@@ -29,6 +29,10 @@ class TNW_Salesforce_Model_Product_Observer
      */
     public function setProductIds($productIds)
     {
+        if ($this->isSyncIsInProgress()) {
+            return;
+        }
+
         $this->_productIds = $productIds;
     }
 
@@ -53,6 +57,10 @@ class TNW_Salesforce_Model_Product_Observer
      */
     public function addProductId($productId)
     {
+        if ($this->isSyncIsInProgress()) {
+            return;
+        }
+
         if (is_array($productId)) {
             foreach ($productId as $id) {
                 $this->_productIds[$id] = $id;
@@ -157,7 +165,7 @@ class TNW_Salesforce_Model_Product_Observer
             $productIds = $this->getProductIds();
         }
 
-        if (empty($productIds) || $this->isSyncIsInProgress()) {
+        if (empty($productIds)) {
             return;
         }
 
