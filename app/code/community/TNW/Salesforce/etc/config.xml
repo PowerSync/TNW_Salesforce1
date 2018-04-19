@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>01.59.09</version>
+            <version>01.59.10</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -198,6 +198,11 @@
                         <class>tnw_salesforce/tool_observer</class>
                         <method>logAvailableAPICalls</method>
                     </tnw_salesforce_sync_after>
+
+                    <tnw_salesforce_product_sync_observer>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>postDispatch</method>
+                    </tnw_salesforce_product_sync_observer>
                 </observers>
             </controller_action_postdispatch>
 
@@ -434,6 +439,42 @@
                     </tnw_salesforce_product_observer>
                 </observers>
             </catalog_product_save_commit_after>
+
+            <catalog_product_attribute_update_after>
+                <observers>
+                    <tnw_salesforce_product_attribute_update_observer>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>updateAttributesAfter</method>
+                    </tnw_salesforce_product_attribute_update_observer>
+                </observers>
+            </catalog_product_attribute_update_after>
+
+            <catalog_product_website_update>
+                <observers>
+                    <tnw_salesforce_product_attribute_update_observer>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>updateAttributesAfter</method>
+                    </tnw_salesforce_product_attribute_update_observer>
+                </observers>
+            </catalog_product_website_update>
+
+            <catalog_product_stock_item_mass_change>
+                <observers>
+                    <tnw_salesforce_product_attribute_update_observer>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>stockItemMassChange</method>
+                    </tnw_salesforce_product_attribute_update_observer>
+                </observers>
+            </catalog_product_stock_item_mass_change>
+
+            <cataloginventory_stock_item_save_commit_after>
+                <observers>
+                    <tnw_salesforce_product_attribute_update_observer>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>updateStockItemAfter</method>
+                    </tnw_salesforce_product_attribute_update_observer>
+                </observers>
+            </cataloginventory_stock_item_save_commit_after>
 
             <tnw_salesforce_product_save>
                 <observers>
@@ -1015,6 +1056,7 @@
             </currency>
             <customer_opportunity>
                 <integration_option>order_and_opportunity</integration_option>
+                <create_order>paid</create_order>
                 <integration_type>order</integration_type>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
                 <order_create_reverse_sync>0</order_create_reverse_sync>
