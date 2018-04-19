@@ -6,20 +6,139 @@
 
 class TNW_Salesforce_Model_Product_Observer
 {
-    public function __construct()
+
+    /**
+     * @var array
+     */
+    protected $_productIds = array();
+    /**
+     * @var boolean
+     */
+    protected $syncIsInProgress = false;
+
+    /**
+     * @return array
+     */
+    public function getProductIds()
     {
+        return $this->_productIds;
+    }
+
+    /**
+     * @param array $productIds
+     */
+    public function setProductIds($productIds)
+    {
+        if ($this->isSyncIsInProgress()) {
+            return;
+        }
+
+        $this->_productIds = $productIds;
+    }
+
+    /**
+     * @return bool
+     */
+    private function isSyncIsInProgress()
+    {
+        return $this->syncIsInProgress;
+    }
+
+    /**
+     * @param bool $syncIsInProgress
+     */
+    private function setSyncIsInProgress($syncIsInProgress)
+    {
+        $this->syncIsInProgress = $syncIsInProgress;
+    }
+
+    /**
+     * @param int $productId
+     */
+    public function addProductId($productId)
+    {
+        if ($this->isSyncIsInProgress()) {
+            return;
+        }
+
+        if (is_array($productId)) {
+            foreach ($productId as $id) {
+                $this->_productIds[$id] = $id;
+            }
+        } else {
+            $this->_productIds[$productId] = $productId;
+        }
     }
 
     /**
      * @param $observer
      */
+    public function postDispatch($observer)
+    {
+        Mage::dispatchEvent('tnw_salesforce_product_save');
+        return;
+    }
+
+    /**
+     * @param $observer
+     * @throws Varien_Exception
+     */
     public function salesforceTriggerEvent($observer)
     {
-       $_product = $observer->getEvent()->getProduct();
+        $_product = $observer->getEvent()->getProduct();
 
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . $_product->getId() . ' Sync');
 
-        Mage::dispatchEvent('tnw_salesforce_product_save', array('product' => $_product));
+        if ($_product->getIsDuplicate()) {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('SKIPING: Product duplicate process');
+
+            return;
+        }
+
+        $this->addProductId($_product->getId());
+
+
+        return;
+    }
+
+    /**
+     * @param $observer
+     */
+    public function updateAttributesAfter($observer)
+    {
+        $_productIds = $observer->getEvent()->getData('product_ids');
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . implode(', ', $_productIds) . ' Sync');
+
+        $this->addProductId($_productIds);
+
+        return;
+    }
+
+    /**
+     * @param $observer
+     */
+    public function updateStockItemAfter($observer)
+    {
+        $item = $observer->getEvent()->getItem();
+        $productId = $item->getProductId();
+
+        $this->addProductId($productId);
+
+        return;
+    }
+
+    /**
+     * @param $observer
+     */
+    public function stockItemMassChange($observer)
+    {
+        $_productIds = $observer->getEvent()->getData('products');
+
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . implode(', ', $_productIds) . ' Sync');
+
+        $this->addProductId($_productIds);
 
         return;
     }
@@ -31,17 +150,35 @@ class TNW_Salesforce_Model_Product_Observer
     {
         /** @var Mage_Catalog_Model_Product $_product */
         $_product = $observer->getEvent()->getProduct();
-        Mage::getSingleton('tnw_salesforce/tool_log')
-            ->saveTrace("TNW EVENT: Product #{$_product->getId()} Sync");
 
-        if ($_product->getIsDuplicate()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveTrace('SKIPING: Product duplicate process');
+        $productIds = $observer->getEvent()->getProductIds();
 
+        $isManualSync = (bool)$observer->getEvent()->getIsManualSync();
+
+        if (!empty($_product)) {
+            $productIds[] = $_product->getId();
+        }
+
+        $syncCollected = false;
+        if (empty($productIds)) {
+            $syncCollected = true;
+            $productIds = $this->getProductIds();
+        }
+
+        if (empty($productIds)) {
             return;
         }
 
-        $this->syncProduct(array($_product->getId()));
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace("TNW EVENT: Product(s) #" . implode(', ', $productIds) . " Sync");
+
+        $this->setSyncIsInProgress(true);
+        $this->syncProduct($productIds, $isManualSync);
+        $this->setSyncIsInProgress(false);
+
+        if ($syncCollected) {
+            $this->setProductIds(array());
+        }
     }
 
     /**
@@ -75,7 +212,7 @@ class TNW_Salesforce_Model_Product_Observer
      */
     public function syncProductForWebsite(array $entityIds, $website = null, $isManualSync = false)
     {
-        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($entityIds, $isManualSync) {
+        Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use ($entityIds, $isManualSync) {
             /** @var TNW_Salesforce_Helper_Data $helper */
             $helper = Mage::helper('tnw_salesforce');
 

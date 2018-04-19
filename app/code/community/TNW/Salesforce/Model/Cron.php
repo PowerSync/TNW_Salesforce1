@@ -155,7 +155,6 @@ class TNW_Salesforce_Model_Cron
 
         $this->_syncObjectForBulkMode();
 
-        $this->_deleteSuccessfulRecords();
         Mage::dispatchEvent('tnw_salesforce_cron_after', array('observer' => $this, 'method' => 'processQueue'));
         Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("=== Magento 2 Salesforce queue END ===");
     }
@@ -325,12 +324,33 @@ class TNW_Salesforce_Model_Cron
         //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
     }
 
+    /**
+     * Delete synced items from the Queue
+     */
+    public function deleteSuccessfulRecords()
+    {
+        $this->_deleteSuccessfulRecords();
+    }
+
+    /**
+     * Reset stucked items of the Queue
+     */
+    public function resetStuckRecords()
+    {
+        $this->_resetStuckRecords();
+    }
+
+    /**
+     *
+     */
     protected function _resetStuckRecords()
     {
         $_whenToReset = Mage::helper('tnw_salesforce')->getTime() - self::INTERVAL_BUFFER;
         $sql = "UPDATE `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` SET status = '' WHERE status = 'sync_running' AND date_created < '" . Mage::helper('tnw_salesforce')->getDate($_whenToReset) . "';";
         Mage::helper('tnw_salesforce')->getDbConnection()->query($sql);
-        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Trying to reset any stuck records ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($sql);
+
     }
 
     /**
@@ -356,9 +376,6 @@ class TNW_Salesforce_Model_Cron
                 $_pendingItem->delete();
             }
         }
-
-        $this->_resetStuckRecords();
-        $this->_deleteSuccessfulRecords();
     }
 
     /**
@@ -370,8 +387,6 @@ class TNW_Salesforce_Model_Cron
      */
     public function syncEntity($type)
     {
-        $this->_resetStuckRecords();
-        $this->_deleteSuccessfulRecords();
 
         switch (true) {
             case in_array($type, array('order', 'abandoned')):
