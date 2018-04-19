@@ -7,7 +7,14 @@
 class TNW_Salesforce_Model_Product_Observer
 {
 
+    /**
+     * @var array
+     */
     protected $_productIds = array();
+    /**
+     * @var boolean
+     */
+    protected $syncIsInProgress = false;
 
     /**
      * @return array
@@ -25,6 +32,21 @@ class TNW_Salesforce_Model_Product_Observer
         $this->_productIds = $productIds;
     }
 
+    /**
+     * @return bool
+     */
+    public function isSyncIsInProgress()
+    {
+        return $this->syncIsInProgress;
+    }
+
+    /**
+     * @param bool $syncIsInProgress
+     */
+    public function setSyncIsInProgress($syncIsInProgress)
+    {
+        $this->syncIsInProgress = $syncIsInProgress;
+    }
 
     /**
      * @param int $productId
@@ -135,14 +157,16 @@ class TNW_Salesforce_Model_Product_Observer
             $productIds = $this->getProductIds();
         }
 
-        if (empty($productIds)) {
+        if (empty($productIds) || $this->isSyncIsInProgress()) {
             return;
         }
 
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Product(s) #" . implode(', ', $productIds) . " Sync");
 
+        $this->setSyncIsInProgress(true);
         $this->syncProduct($productIds, $isManualSync);
+        $this->setSyncIsInProgress(false);
 
         if ($syncCollected) {
             $this->setProductIds(array());
