@@ -156,11 +156,11 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     /**
      * @return bool
      */
-    public function isPaidCreateOrder()
+    public function alwaysCreateOrder()
     {
-        return !$this->integrationOnlyOrderAllowed() || 0 === strcasecmp(
+        return $this->integrationOnlyOrderAllowed() && 0 === strcasecmp(
             $this->getStoreConfig(self::ORDER_CREATE),
-            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Create::PAID
+            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Create::ALWAYS
         );
     }
 
@@ -170,6 +170,6 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
      */
     public function orderSyncAllowed($order)
     {
-        return !$this->isPaidCreateOrder() || $order->getBaseTotalDue() == 0;
+        return $this->alwaysCreateOrder() || $order->getBaseTotalDue() == 0;
     }
 }
