@@ -1369,6 +1369,22 @@
                                 <b>Opportunity & Order</b> - When Magento order is placed, Salesforce will record that transaction as an Opportunity in Salesforce. As soon as Magento order will be paid in full, Salesforce Order will be created in Salesforce to capture a sales transaction.<br>
                             ]]></comment>
                         </integration_option>
+                        <create_order>
+                            <label>Create Order</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/system_config_source_order_integration_create</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <depends>
+                                <integration_option>order</integration_option>
+                            </depends>
+                            <comment><![CDATA[
+                                <b>Always</b> - Salesforce Order will be created as soon as Magento Order is placed (regardless of the Order status in Magento).<br>
+                                <b>PAID Order</b> - Salesforce Order will be created as soon as Magento Order is fully PAID.<br>
+                            ]]></comment>
+                        </create_order>
                     </fields>
                 </customer_opportunity>
                 <order_configuration>

@@ -25,6 +25,11 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     const ORDER_DRAFT_STATUS = 'salesforce_order/customer_opportunity/draft_order_status';
 
     /**
+     * @comment create order
+     */
+    const ORDER_CREATE = 'salesforce_order/customer_opportunity/create_order';
+
+    /**
      * @comment config path
      */
     const XML_PATH_ORDERS_BUNDLE_ITEM_SYNC = 'salesforce_order/shopping_cart/orders_bundle_item_sync';
@@ -149,11 +154,22 @@ class TNW_Salesforce_Helper_Config_Sales extends TNW_Salesforce_Helper_Config
     }
 
     /**
+     * @return bool
+     */
+    public function alwaysCreateOrder()
+    {
+        return $this->integrationOnlyOrderAllowed() && 0 === strcasecmp(
+            $this->getStoreConfig(self::ORDER_CREATE),
+            TNW_Salesforce_Model_System_Config_Source_Order_Integration_Create::ALWAYS
+        );
+    }
+
+    /**
      * @param Mage_Sales_Model_Order $order
      * @return bool
      */
     public function orderSyncAllowed($order)
     {
-        return $order->getBaseTotalDue() == 0;
+        return $this->alwaysCreateOrder() || $order->getBaseTotalDue() == 0;
     }
 }
