@@ -126,22 +126,27 @@ class TNW_Salesforce_Model_Product_Observer
         $isManualSync = (bool)$observer->getEvent()->getIsManualSync();
 
         if (!empty($_product)) {
-            $this->addProductId($_product->getId());
+            $productIds[] = $_product->getId();
         }
 
-        if (!empty($productIds)) {
-            $this->addProductId($productIds);
+        $syncCollected = false;
+        if (empty($productIds)) {
+            $syncCollected = true;
+            $productIds = $this->getProductIds();
         }
-
-        $productIds = $this->getProductIds();
 
         if (empty($productIds)) {
             return;
         }
+
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace("TNW EVENT: Product(s) #" . implode(', ', $productIds) . " Sync");
 
         $this->syncProduct($productIds, $isManualSync);
+
+        if ($syncCollected) {
+            $this->setProductIds(array());
+        }
     }
 
     /**
