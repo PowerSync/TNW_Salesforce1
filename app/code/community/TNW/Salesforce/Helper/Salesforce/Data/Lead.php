@@ -451,7 +451,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
         }
 
         if ($leadSource) {
-            $conditions['AND']['LeadSource'] = $leadSource;
+            $conditions['AND']['LeadSource']['='] = $leadSource;
         }
 
         return $conditions;
