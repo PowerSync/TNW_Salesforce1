@@ -24,8 +24,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 $this->_cache['bulkJobs']['opportunityProducts']['Id'] = $this->_createJob('OpportunityLineItem', 'upsert', 'Id');
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Opportunity Products, created job: ' . $this->_cache['bulkJobs']['opportunityProducts']['Id']);
             }
-
-            Mage::dispatchEvent("tnw_salesforce_order_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_products_send_before",array("data" => $this->_cache['opportunityLineItemsToUpsert']));
 
             $this->_pushChunked($this->_cache['bulkJobs']['opportunityProducts']['Id'], 'opportunityProducts', $this->_cache['opportunityLineItemsToUpsert']);
 
@@ -74,7 +73,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
 
         if (strval($_resultProducts) != 'exception') {
-            Mage::dispatchEvent("tnw_salesforce_order_products_send_after",array(
+            Mage::dispatchEvent("tnw_salesforce_opportunity_products_send_after",array(
                 "data" => $this->_cache['opportunityLineItemsToUpsert'],
                 "result" => $this->_cache['responses']['opportunityLineItems'],
                 'mode' => 'bulk'
@@ -95,7 +94,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Notes, created job: ' . $this->_cache['bulkJobs']['notes']['Id']);
             }
 
-            Mage::dispatchEvent("tnw_salesforce_order_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_notes_send_before",array("data" => $this->_cache['notesToUpsert']));
 
             $this->_pushChunked($this->_cache['bulkJobs']['notes']['Id'], 'notes', $this->_cache['notesToUpsert']);
 
@@ -115,7 +114,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             if (strval($_result) != 'exception') {
                 $this->_checkNotesData();
 
-                Mage::dispatchEvent("tnw_salesforce_order_notes_send_after",array(
+                Mage::dispatchEvent("tnw_salesforce_opportunity_notes_send_after",array(
                     "data" => $this->_cache['notesToUpsert'],
                     "result" => $this->_cache['responses']['notes']
                 ));
@@ -123,7 +122,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
         }
 
         // Kick off the event to allow additional data to be pushed into salesforce
-        Mage::dispatchEvent("tnw_salesforce_order_sync_after_final",array(
+        Mage::dispatchEvent("tnw_salesforce_opportunity_sync_after_final",array(
             "all" => $this->_cache['entitiesUpdating'],
             "failed" => $this->_cache['failedOpportunities']
         ));
@@ -187,7 +186,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
                 Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Syncronizing Opportunities, created job: ' . $this->_cache['bulkJobs']['opportunity']['Id']);
             }
 
-            Mage::dispatchEvent("tnw_salesforce_order_send_before",array("data" => $this->_cache['opportunitiesToUpsert']));
+            Mage::dispatchEvent("tnw_salesforce_opportunity_send_before",array("data" => $this->_cache['opportunitiesToUpsert']));
 
             $this->_pushChunked($this->_cache['bulkJobs']['opportunity']['Id'], 'opportunities', $this->_cache['opportunitiesToUpsert']);
 
@@ -352,7 +351,7 @@ class TNW_Salesforce_Helper_Bulk_Opportunity extends TNW_Salesforce_Helper_Sales
             }
         }
 
-        Mage::dispatchEvent("tnw_salesforce_order_send_after",array(
+        Mage::dispatchEvent("tnw_salesforce_opportunity_send_after",array(
             "data" => $this->_cache['opportunitiesToUpsert'],
             "result" => $this->_cache['responses']['opportunities']
         ));
