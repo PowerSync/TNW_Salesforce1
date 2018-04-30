@@ -58,7 +58,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             $mageModels[] = $this->_mageModels[$type];
         }
 
-        $_sql = sprintf("SELECT object_id, sf_object_type FROM %s WHERE mage_object_type IN ('%s') AND website_id = %s",
+        $_sql = sprintf("SELECT object_id, sf_object_type FROM %s WHERE status != 'success' AND mage_object_type IN ('%s') AND website_id = %s",
             Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
             implode('\', \'', $mageModels),
             Mage::app()->getWebsite()->getId());
