@@ -441,7 +441,8 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 'mage_object_type'  => new Zend_Db_Expr('"' . $entityModelAlias .'"'),
                 'sf_object_type'    => new Zend_Db_Expr('"' . $sfObType . '"'),
                 'date_created'      => new Zend_Db_Expr('"' . Mage::helper('tnw_salesforce')->getDate() . '"'),
-                'sync_type'         => new Zend_Db_Expr('"' . $syncType . '"')
+                'sync_type'         => new Zend_Db_Expr('"' . $syncType . '"'),
+                'status'            => new Zend_Db_Expr('"new"')
             ));
 
             try {
@@ -450,7 +451,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
                 Mage::helper('tnw_salesforce')->getDbConnection('write')->insertOnDuplicate(
                     Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage'),
                     $recordsToInsert,
-                    array('object_id', 'website_id', 'mage_object_type', 'sf_object_type', 'date_created', 'sync_type')
+                    array('object_id', 'website_id', 'mage_object_type', 'sf_object_type', 'date_created', 'sync_type', 'status')
                 );
             } catch (Exception $e) {
                 Mage::getSingleton('tnw_salesforce/tool_log')
