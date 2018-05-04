@@ -321,7 +321,7 @@ class TNW_Salesforce_Model_Cron
     {
         $sql = "DELETE FROM `" . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . "` WHERE status = 'success';";
         Mage::helper('tnw_salesforce')->getDbConnection('delete')->query($sql);
-        //Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Synchronized records removed from the queue ...");
     }
 
     /**
