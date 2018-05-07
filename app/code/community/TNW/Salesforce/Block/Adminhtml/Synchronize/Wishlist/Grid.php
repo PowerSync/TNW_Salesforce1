@@ -10,8 +10,6 @@
 class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
 
-    protected $_massactionBlockName = 'tnw_salesforce/adminhtml_synchronize_wishlist_grid_massaction';
-
     /**
      * TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid constructor.
      */
@@ -30,19 +28,10 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
      */
     protected function _prepareCollection()
     {
-        /** @var Mage_Customer_Model_Resource_Customer_Collection $collection */
-        $collection = Mage::getResourceModel('customer/customer_collection');
-        $collection->getSelect()->reset(Zend_Db_Select::COLUMNS);
-        $collection
-            ->addNameToSelect()
-            ->addAttributeToSelect('email')
-            ->joinTable(array('wishlist'=>'wishlist/wishlist'), 'customer_id=entity_id', array(
-                'wishlist_id',
-                'customer_id',
-                'wishlist_updated_at' => 'updated_at',
-                'wishlist_sf_insync' => 'sf_insync',
-                'wishlist_salesforce_id' => 'salesforce_id',
-            ));
+        /** @var TNW_Salesforce_Model_Mysql4_Wishlist_Collection $collection */
+
+        $collection = Mage::getResourceModel('tnw_salesforce/wishlist_collection');
+        $collection->addCustomerInfo();
 
         $this->setCollection($collection);
 
@@ -80,7 +69,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                             'active_tab' => 'wishlist'
                         )
                     ),
-                    'field' => 'wishlist_id',
+                    'field' => 'id',
                     'getter' => 'getCustomerId',
                 )
             ),
@@ -131,29 +120,6 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
         ));
 
         return parent::_prepareColumns();
-    }
-
-    /**
-     * Sets sorting order by some column
-     *
-     * @param Mage_Adminhtml_Block_Widget_Grid_Column $column
-     * @return Mage_Adminhtml_Block_Widget_Grid
-     */
-    protected function _setCollectionOrder($column)
-    {
-        switch ($column->getId()) {
-            case 'entity_id':
-                $this->getCollection()->getSelect()
-                    ->order('wishlist.wishlist_id '.strtoupper($column->getDir()));
-                break;
-
-            case 'salesforce_id':
-                $this->getCollection()->getSelect()
-                    ->order('wishlist.salesforce_id '.strtoupper($column->getDir()));
-                break;
-        }
-
-        return parent::_setCollectionOrder($column);
     }
 
     /**
