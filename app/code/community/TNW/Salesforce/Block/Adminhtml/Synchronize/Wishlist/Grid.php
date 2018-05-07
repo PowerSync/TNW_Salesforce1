@@ -10,6 +10,8 @@
 class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
 
+    protected $_massactionBlockName = 'tnw_salesforce/adminhtml_synchronize_wishlist_grid_massaction';
+
     /**
      * TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid constructor.
      */
@@ -30,16 +32,17 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
     {
         /** @var Mage_Customer_Model_Resource_Customer_Collection $collection */
         $collection = Mage::getResourceModel('customer/customer_collection');
+        $collection->getSelect()->reset(Zend_Db_Select::COLUMNS);
         $collection
             ->addNameToSelect()
             ->addAttributeToSelect('email')
             ->joinTable(array('wishlist'=>'wishlist/wishlist'), 'customer_id=entity_id', array(
                 'wishlist_id',
+                'customer_id',
                 'wishlist_updated_at' => 'updated_at',
                 'wishlist_sf_insync' => 'sf_insync',
                 'wishlist_salesforce_id' => 'salesforce_id',
-            ))
-        ;
+            ));
 
         $this->setCollection($collection);
 
@@ -77,8 +80,8 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                             'active_tab' => 'wishlist'
                         )
                     ),
-                    'field' => 'id',
-                    'getter' => 'getId',
+                    'field' => 'wishlist_id',
+                    'getter' => 'getCustomerId',
                 )
             ),
         ));
