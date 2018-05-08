@@ -35,7 +35,7 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
 
         $this->setCollection($collection);
 
-        return parent::_prepareCollection();
+       return parent::_prepareCollection();
     }
 
     /**
@@ -77,28 +77,32 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
 
         $this->addColumn('customer_name', array(
             'header' => Mage::helper('customer')->__('Customer Name'),
-            'index' => 'name'
+            'index' => 'name',
+            'filter_index' => 'customer.name'
         ));
 
-        $this->addColumn('customer_email', array(
+        $this->addColumn('email', array(
             'header' => Mage::helper('customer')->__('Customer Email'),
             'width' => '150',
-            'index' => 'email'
+            'index' => 'email',
+            'filter_index' => 'customer.email'
         ));
 
         $this->addColumn('salesforce_id', array(
             'header' => Mage::helper('sales')->__('Salesforce ID'),
-            'index' => 'wishlist_salesforce_id',
             'type' => 'varchar',
             'width' => '140',
+            'index' => 'salesforce_id',
+            'filter_index' => 'main_table.salesforce_id',
             'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
 
         $this->addColumn('updated_at', array(
             'header' => Mage::helper('sales')->__('Updated At'),
-            'index' => 'wishlist_updated_at',
             'type' => 'datetime',
             'width' => '200',
+            'index' => 'updated_at',
+            'filter_index' => 'main_table.updated_at',
         ));
 
         $this->addColumn('singleAction', array(
