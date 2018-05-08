@@ -28,22 +28,14 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
      */
     protected function _prepareCollection()
     {
-        /** @var Mage_Customer_Model_Resource_Customer_Collection $collection */
-        $collection = Mage::getResourceModel('customer/customer_collection');
-        $collection
-            ->addNameToSelect()
-            ->addAttributeToSelect('email')
-            ->joinTable(array('wishlist'=>'wishlist/wishlist'), 'customer_id=entity_id', array(
-                'wishlist_id',
-                'wishlist_updated_at' => 'updated_at',
-                'wishlist_sf_insync' => 'sf_insync',
-                'wishlist_salesforce_id' => 'salesforce_id',
-            ))
-        ;
+        /** @var TNW_Salesforce_Model_Mysql4_Wishlist_Collection $collection */
+
+        $collection = Mage::getResourceModel('tnw_salesforce/wishlist_collection');
+        $collection->addCustomerInfo();
 
         $this->setCollection($collection);
 
-        return parent::_prepareCollection();
+       return parent::_prepareCollection();
     }
 
     /**
@@ -59,7 +51,8 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                 0 => 'No',
                 1 => 'Yes',
             ),
-            'index' => 'wishlist_sf_insync',
+            'index' => 'sf_insync',
+            'filter_index' => 'main_table.sf_insync',
             'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
@@ -78,35 +71,39 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                         )
                     ),
                     'field' => 'id',
-                    'getter' => 'getId',
+                    'getter' => 'getCustomerId',
                 )
             ),
         ));
 
         $this->addColumn('customer_name', array(
             'header' => Mage::helper('customer')->__('Customer Name'),
-            'index' => 'name'
+            'index' => 'name',
+            'filter_index' => 'customer.name'
         ));
 
-        $this->addColumn('customer_email', array(
+        $this->addColumn('email', array(
             'header' => Mage::helper('customer')->__('Customer Email'),
             'width' => '150',
-            'index' => 'email'
+            'index' => 'email',
+            'filter_index' => 'customer.email'
         ));
 
         $this->addColumn('salesforce_id', array(
             'header' => Mage::helper('sales')->__('Salesforce ID'),
-            'index' => 'wishlist_salesforce_id',
             'type' => 'varchar',
             'width' => '140',
+            'index' => 'salesforce_id',
+            'filter_index' => 'main_table.salesforce_id',
             'renderer' => 'tnw_salesforce/adminhtml_renderer_link_salesforce_id',
         ));
 
         $this->addColumn('updated_at', array(
             'header' => Mage::helper('sales')->__('Updated At'),
-            'index' => 'wishlist_updated_at',
             'type' => 'datetime',
             'width' => '200',
+            'index' => 'updated_at',
+            'filter_index' => 'main_table.updated_at',
         ));
 
         $this->addColumn('singleAction', array(
@@ -128,29 +125,6 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
         ));
 
         return parent::_prepareColumns();
-    }
-
-    /**
-     * Sets sorting order by some column
-     *
-     * @param Mage_Adminhtml_Block_Widget_Grid_Column $column
-     * @return Mage_Adminhtml_Block_Widget_Grid
-     */
-    protected function _setCollectionOrder($column)
-    {
-        switch ($column->getId()) {
-            case 'entity_id':
-                $this->getCollection()->getSelect()
-                    ->order('wishlist.wishlist_id '.strtoupper($column->getDir()));
-                break;
-
-            case 'salesforce_id':
-                $this->getCollection()->getSelect()
-                    ->order('wishlist.salesforce_id '.strtoupper($column->getDir()));
-                break;
-        }
-
-        return parent::_setCollectionOrder($column);
     }
 
     /**
