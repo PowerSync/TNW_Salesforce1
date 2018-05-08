@@ -51,7 +51,8 @@ class TNW_Salesforce_Block_Adminhtml_Synchronize_Wishlist_Grid extends Mage_Admi
                 0 => 'No',
                 1 => 'Yes',
             ),
-            'index' => 'wishlist_sf_insync',
+            'index' => 'sf_insync',
+            'filter_index' => 'main_table.sf_insync',
             'renderer' => 'tnw_salesforce/adminhtml_renderer_entity_status'
         ));
 
