@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>01.59.14</version>
+            <version>01.59.15</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -180,6 +180,15 @@
             </modules>
         </translate>
         <events>
+
+            <catalog_product_import_finish_before>
+                <observers>
+                    <tnw_salesforce_product_import_finish_before>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>importFinishBefore</method>
+                    </tnw_salesforce_product_import_finish_before>
+                </observers>
+            </catalog_product_import_finish_before>
 
             <tnw_salesforce_cron_after>
                 <observers>
