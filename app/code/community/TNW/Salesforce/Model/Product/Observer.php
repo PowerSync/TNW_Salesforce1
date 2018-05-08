@@ -116,6 +116,22 @@ class TNW_Salesforce_Model_Product_Observer
         return;
     }
 
+
+    /**
+     * @param $observer
+     * @throws Varien_Exception
+     */
+    public function importFinishBefore($observer)
+    {
+        $adapter = $observer->getEvent()->getAdapter();
+
+        $_productIds = $adapter->getAffectedEntityIds();
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('MAGENTO EVENT: Product #' . implode(', ', $_productIds) . ' Sync');
+
+        $this->addProductId($_productIds);
+
+    }
+
     /**
      * @param $observer
      */

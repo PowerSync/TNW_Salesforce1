@@ -181,6 +181,15 @@
         </translate>
         <events>
 
+            <catalog_product_import_finish_before>
+                <observers>
+                    <tnw_salesforce_product_import_finish_before>
+                        <class>tnw_salesforce/product_observer</class>
+                        <method>importFinishBefore</method>
+                    </tnw_salesforce_product_import_finish_before>
+                </observers>
+            </catalog_product_import_finish_before>
+
             <tnw_salesforce_cron_after>
                 <observers>
                     <tnw_salesforce_sync_after>
