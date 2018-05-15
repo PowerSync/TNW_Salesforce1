@@ -507,10 +507,6 @@ class TNW_Salesforce_Helper_Salesforce_Product extends TNW_Salesforce_Helper_Sal
      */
     protected function _prepareEntityObjCustom($_entity, $key)
     {
-        if (property_exists($this->_obj, 'IsActive')) {
-            $this->_obj->IsActive = ($this->_obj->IsActive == "Enabled") ? 1 : 0;
-        }
-
         $disableSyncField = Mage::helper('tnw_salesforce/config')->getDisableSyncField();
         $this->_obj->$disableSyncField = true;
     }
