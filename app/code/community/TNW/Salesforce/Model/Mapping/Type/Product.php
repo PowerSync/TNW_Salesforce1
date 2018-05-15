@@ -35,9 +35,11 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
 
             case 'attribute_set_id':
                 return $this->convertAttributeSetId($_entity);
-
+            case 'status':
+                return $this->convertStatus($_entity);
             case 'salesforce_pricebook_id':
                 return $this->convertPriceBook($_entity);
+
         }
 
         return parent::_prepareValue($_entity);
@@ -75,7 +77,25 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
      */
     public function reverseConvertStatus($value)
     {
-        return ($value === 1 || $value === true) ? 1 : 2;
+        return ($value === 1 || $value === true) ? Mage_Catalog_Model_Product_Status::STATUS_ENABLED : Mage_Catalog_Model_Product_Status::STATUS_DISABLED;
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    public function convertStatus($_entity)
+    {
+        $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+
+        // Other
+        $value = $_entity->getData($attributeCode);
+        if (!$value) {
+            $method = 'get' . str_replace(" ", "", ucwords(str_replace("_", " ", $attributeCode)));
+            $value = call_user_func(array($_entity, $method));
+        }
+
+        return $value == Mage_Catalog_Model_Product_Status::STATUS_ENABLED ? 1 : 0;
     }
 
     /**
