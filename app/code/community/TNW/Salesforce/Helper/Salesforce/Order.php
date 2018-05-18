@@ -79,6 +79,16 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
     }
 
     /**
+     * @inheritdoc
+     */
+    protected function resetSkippedEntity(array $skippedIds)
+    {
+        /** @var tnw_salesforce_model_observer $observer */
+        $observer = Mage::getSingleton('tnw_salesforce/observer');
+        $observer->setExportedOrders(array_diff($observer->getExportedOrders(), $skippedIds));
+    }
+
+    /**
      * @param $_entity Mage_Sales_Model_Order
      * @param $key
      */

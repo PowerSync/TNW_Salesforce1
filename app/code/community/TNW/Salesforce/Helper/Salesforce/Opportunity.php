@@ -84,6 +84,18 @@ class TNW_Salesforce_Helper_Salesforce_Opportunity extends TNW_Salesforce_Helper
     );
 
     /**
+     * @inheritdoc
+     */
+    protected function resetSkippedEntity(array $skippedIds)
+    {
+        /** @var tnw_salesforce_model_observer $observer */
+        $observer = Mage::getSingleton('tnw_salesforce/observer');
+        $exportedOpportunity = $observer->getExportedOpportunity();
+        $exportedOpportunity['opportunity'] = array_diff($exportedOpportunity['opportunity'], $skippedIds);
+        $observer->setExportedOpportunity($exportedOpportunity);
+    }
+
+    /**
      * @param $ids
      * Reset Salesforce ID in Magento for the order
      */
