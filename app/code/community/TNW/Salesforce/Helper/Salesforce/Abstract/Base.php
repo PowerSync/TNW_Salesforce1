@@ -384,6 +384,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
                 $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING][$_id] = $_entityNumber;
             }
 
+            $this->resetSkippedEntity($this->_skippedEntity);
+
             if (empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
                 return false;
             }
@@ -420,6 +422,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      *
      */
     protected function _massAddAfter()
+    {
+        return;
+    }
+
+    /**
+     * @param array $skippedIds
+     */
+    protected function resetSkippedEntity(array $skippedIds)
     {
         return;
     }

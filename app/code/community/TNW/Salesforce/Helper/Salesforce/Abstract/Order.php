@@ -571,6 +571,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     {
         $_entityNumber = $this->_getEntityNumber($_entity);
 
+        if (null === $_entity->getStatus()) {
+            return false;
+        }
+
         /** @comment check zero orders sync */
         if (!Mage::helper('tnw_salesforce/config_sales_order')->isEnabledZeroOrderSync() && $_entity->getGrandTotal() == 0) {
             $this->logNotice('SKIPPED: Sync for order #' . $_entityNumber . ', grand total is zero and synchronization for these order is disabled in configuration!');
