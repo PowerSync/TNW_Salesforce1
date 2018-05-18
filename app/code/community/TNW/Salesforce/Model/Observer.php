@@ -596,6 +596,7 @@ class TNW_Salesforce_Model_Observer
             return;
         }
 
+        $observer->setData('entityIds', $entityIds);
         $observer->setData('entityPathPostfix', 'abandoned_opportunity');
         $observer->setData('successMessage', 'Total of %d abandoned(s) were synchronized');
 
