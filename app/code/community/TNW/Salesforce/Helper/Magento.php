@@ -559,6 +559,10 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 'label' => 'Custom : Todays Date + Time'
             ),
             array(
+                'value' => 'Custom : todays_plus_day',
+                'label' => 'Custom : Today + # of Days'
+            ),
+            array(
                 'value' => 'Custom : end_of_month',
                 'label' => 'Custom : End of Month Date'
             ),
