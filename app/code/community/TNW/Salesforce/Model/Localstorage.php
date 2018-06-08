@@ -93,18 +93,16 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
                     if (
                         array_key_exists('success', $_response)
-                        && ((string)$_response['success'] == "false" || $_response['success'] === false)
+                        && ((string)$_response['success'] === "false" || $_response['success'] === false)
                         && array_key_exists('errors', $_response)
                     ) {
-                        if (!array_key_exists($_key, $_errorsSet)) {
-                            $_errorsSet[$_key] = array();
-                        }
+                        $errors = (array)$_response['errors'];
 
                         $errorMessage = '';
-                        if (is_array($_response['errors']) && isset($_response['errors']['message'])) {
-                            $errorMessage = $_response['errors']['message'];
-                        } elseif (is_array($_response['errors'])) {
-                            foreach ($_response['errors'] as $errorStdClass) {
+                        if (isset($errors['message'])) {
+                            $errorMessage = $errors['message'];
+                        } elseif (is_array($errors)) {
+                            foreach ($errors as $errorStdClass) {
                                 if (is_object($errorStdClass)) {
                                     $errorMessage .= $errorStdClass->message;
                                 }
