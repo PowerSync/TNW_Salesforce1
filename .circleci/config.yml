@@ -1,7 +1,7 @@
 version: 2
 
 jobs:
-  "test-php-5.6-mage-1.9.2.2":
+  "test-php-5.6-mage-1.9.1.0":
     docker:
       - image: circleci/php:5.6-apache-node-browsers
       - image: circleci/mysql:5.7
@@ -11,7 +11,7 @@ jobs:
           MYSQL_DATABASE: magento
           MYSQL_ROOT_PASSWORD: docker
     environment:
-      MAGENTO_VERSION: "1.9.2.2"
+      MAGENTO_VERSION: "1.9.1.0"
     working_directory: ~/tnw_extension
     steps:
       - checkout
