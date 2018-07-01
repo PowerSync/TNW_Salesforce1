@@ -49,7 +49,7 @@ jobs:
           name: Installing Magento
           command: |
             cd /var/www/html/
-            composer init
+            composer config -g repositories.firegento composer https://packages.firegento.com
             composer require magento-hackathon/magento-composer-installer ~3.0
             composer require aydin-hassan/magento-core-composer-installer ~1.2
             composer require firegento/magento ~$MAGENTO_VERSION
