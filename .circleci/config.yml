@@ -50,10 +50,11 @@ jobs:
           command: |
             cd /var/www/html/
             wget https://github.com/bragento/magento-core/archive/$MAGENTO_VERSION.tar.gz -O - | tar -xz
-            tar -zxvf $MAGENTO_VERSION.tar.gz
-            mv magento/* magento/.htaccess .
-            chmod -R o+w media var
-            chmod o+w app/etc
+            ls -al
+            #tar -zxvf $MAGENTO_VERSION.tar.gz
+            #mv magento/* magento/.htaccess .
+            #chmod -R o+w media var
+            #chmod o+w app/etc
 workflows:
   version: 2
   build:
