@@ -49,7 +49,8 @@ jobs:
           name: Installing Magento
           command: |
             cd /var/www/html/
-            wget https://github.com/bragento/magento-core/archive/$MAGENTO_VERSION.tar.gz -O - | tar -xz
+            wget https://github.com/bragento/magento-core/archive/$MAGENTO_VERSION.tar.gz -O - | tar -xzvf
+            cd magento-core-$MAGENTO_VERSION
             ls -al
             #tar -zxvf $MAGENTO_VERSION.tar.gz
             #mv magento/* magento/.htaccess .
