@@ -1,7 +1,7 @@
 version: 2
 
 jobs:
-  "test-php-5.6-mage-1.9.1.0":
+  "test-php-5.6-mage-1.9.3.9":
     docker:
       - image: circleci/php:5.6-apache-node-browsers
       - image: circleci/mysql:5.7
@@ -11,7 +11,7 @@ jobs:
           MYSQL_DATABASE: magento
           MYSQL_ROOT_PASSWORD: docker
     environment:
-      MAGENTO_VERSION: "1.9.1.0"
+      MAGENTO_VERSION: "1.9.3.9"
     working_directory: ~/tnw_extension
     steps:
       - checkout
@@ -49,8 +49,8 @@ jobs:
           name: Installing Magento
           command: |
             cd /var/www/html/
-            wget http://www.magentocommerce.com/downloads/assets/$MAGENTO_VERSION/magento-$MAGENTO_VERSION.tar.gz
-            tar -zxvf magento-$MAGENTO_VERSION.tar.gz
+            wget wget https://github.com/bragento/magento-core/archive/$MAGENTO_VERSION.tar.gz -O - | tar -xz
+            tar -zxvf $MAGENTO_VERSION.tar.gz
             mv magento/* magento/.htaccess .
             chmod -R o+w media var
             chmod o+w app/etc
@@ -58,4 +58,4 @@ workflows:
   version: 2
   build:
     jobs:
-      - "test-php-5.6-mage-1.9.2.2"
+      - "test-php-5.6-mage-1.9.3.9"
