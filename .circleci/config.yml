@@ -46,16 +46,17 @@ jobs:
           name: Wait for DB
           command: dockerize -wait tcp://127.0.0.1:3306 -timeout 120s
       - run:
-          name: Installing Magento
+          name: Download Magento
           command: |
             cd /var/www/html/
             wget https://github.com/bragento/magento-core/archive/$MAGENTO_VERSION.tar.gz -O - | tar -xz
-            cd magento-core-$MAGENTO_VERSION
-            ls -al
-            #tar -zxvf $MAGENTO_VERSION.tar.gz
-            #mv magento/* magento/.htaccess .
-            #chmod -R o+w media var
-            #chmod o+w app/etc
+            mv magento-core-$MAGENTO_VERSION/* magento-core-$MAGENTO_VERSION/.htaccess .
+            chmod -R o+w media var
+            chmod o+w app/etc
+      - run:
+          name: Installing Magento
+          command: |
+            php-cli -f install.php -- --license_agreement_accepted "yes" --locale "en_US" --timezone "America/Los_Angeles" --default_currency "USD" --db_host "127.0.0.1" --db_name "magento" --db_user "mage" --db_pass "mage" --url "http://magento-qa.box/" --use_rewrites "yes" --use_secure "no" --secure_base_url "" --use_secure_admin "no" --admin_firstname "FIRST_NAME" --admin_lastname "LAST_NAME" --admin_email "email@mailcatch.com" --admin_username "USERNAME" --admin_password "PASSWORD"       
 workflows:
   version: 2
   build:
