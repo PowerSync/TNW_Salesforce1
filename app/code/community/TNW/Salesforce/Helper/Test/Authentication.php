@@ -191,9 +191,11 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
         // and then change that session variable to No to hide the message on every page.
         // TODO implement / discuss logic described above
         if (!empty(self::$notificationList)) {
-            if (!$fromCli && Mage::helper('tnw_salesforce')->displayErrors()) {
-                $text = implode("<br />", self::$notificationList);
-                Mage::getSingleton('core/session')->addNotice($text);
+            if (!$fromCli) {
+                if (Mage::helper('tnw_salesforce')->displayErrors()) {
+                    $text = implode("<br />", self::$notificationList);
+                    Mage::getSingleton('core/session')->addNotice($text);
+                }
             }
             else {
                 $text = implode("\n", self::$notificationList);

@@ -1,0 +1,65 @@
+version: 2
+
+jobs:
+  "test-php-5.6-mage-1.9.3.9":
+    docker:
+      - image: circleci/php:5.6-apache-node-browsers
+      - image: circleci/mysql:5.7
+        environment:
+          MYSQL_PASSWORD: mage
+          MYSQL_USER: mage
+          MYSQL_DATABASE: magento
+          MYSQL_ROOT_PASSWORD: docker
+    environment:
+      MAGENTO_VERSION: "1.9.3.9"
+    working_directory: ~/tnw_extension
+    steps:
+      - checkout
+      - run:
+          name: Install System Package
+          command: |
+            sudo apt-get update
+            sudo apt install -y libicu-dev libxml2-dev libxslt1-dev zlib1g-dev libmcrypt-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev
+      - run:
+          name: Install PHP extension
+          command: |
+            sudo docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/
+            sudo docker-php-ext-install -j$(nproc) intl soap xsl zip mcrypt pdo pdo_mysql gd gettext mbstring bcmath
+      - run:
+          name: Configure PHP
+          command: |
+            echo "memory_limit = 2G" | sudo tee --append /usr/local/etc/php/conf.d/memory.ini
+            php -i
+      - run:
+          name: Permissions
+          command: |
+            cd /var/www/
+            sudo chown -R circleci:circleci html
+      - run:
+          name: Get Magento Code Quality Tool
+          command: |
+            cd /var/www/html/
+            git clone https://github.com/magento/marketplace-eqp magento-coding-standard
+            cd magento-coding-standard
+            composer install
+      - run:
+          name: Wait for DB
+          command: dockerize -wait tcp://127.0.0.1:3306 -timeout 120s
+      - run:
+          name: Download Magento
+          command: |
+            cd /var/www/html/
+            wget https://github.com/bragento/magento-core/archive/$MAGENTO_VERSION.tar.gz -O - | tar -xz
+            mv magento-core-$MAGENTO_VERSION/* magento-core-$MAGENTO_VERSION/.htaccess .
+            chmod -R o+w media var
+            chmod o+w app/etc
+      - run:
+          name: Installing Magento
+          command: |
+            cd /var/www/html/
+            php -f install.php -- --license_agreement_accepted "yes" --locale "en_US" --timezone "America/Los_Angeles" --default_currency "USD" --db_host "127.0.0.1" --db_name "magento" --db_user "mage" --db_pass "mage" --url "127.0.0.1" --use_rewrites "yes" --use_secure "no" --secure_base_url "" --use_secure_admin "no" --admin_firstname "FIRST_NAME" --admin_lastname "LAST_NAME" --admin_email "email@mailcatch.com" --admin_username "USERNAME" --admin_password "PASSWORD"       
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "test-php-5.6-mage-1.9.3.9"
