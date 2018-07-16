@@ -57,7 +57,7 @@ jobs:
           name: Installing Magento
           command: |
             cd /var/www/html/
-            php -f install.php -- --license_agreement_accepted "yes" --locale "en_US" --timezone "America/Los_Angeles" --default_currency "USD" --db_host "127.0.0.1" --db_name "magento" --db_user "mage" --db_pass "mage" --url "127.0.0.1" --use_rewrites "yes" --use_secure "no" --secure_base_url "" --use_secure_admin "no" --admin_firstname "FIRST_NAME" --admin_lastname "LAST_NAME" --admin_email "email@mailcatch.com" --admin_username "USERNAME" --admin_password "PASSWORD"       
+            php -f install.php -- --license_agreement_accepted "yes" --locale "en_US" --timezone "America/Los_Angeles" --default_currency "USD" --db_host "127.0.0.1" --db_name "magento" --db_user "mage" --db_pass "mage" --url "http://127.0.0.1/" --skip_url_validation --use_rewrites "yes" --secure_base_url "" --use_secure "no"  --use_secure_admin "no" --admin_firstname "FIRST_NAME" --admin_lastname "LAST_NAME" --admin_email "email@mailcatch.com" --admin_username "admin" --admin_password "admin123"       
 workflows:
   version: 2
   build:

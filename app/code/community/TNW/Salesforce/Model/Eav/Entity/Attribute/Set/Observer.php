@@ -114,7 +114,10 @@ class TNW_Salesforce_Model_Eav_Entity_Attribute_Set_Observer
         $attributes->setAttributeSetFilter($attributeSet->getId());
 
         $attributes->addFieldToFilter('main_table.entity_type_id', $attributeSet->getEntityTypeId());
-        $attributes->addFieldToFilter('main_table.attribute_code', array_keys($ourAttributes));
+
+        if (!empty($ourAttributes)) {
+            $attributes->addFieldToFilter('main_table.attribute_code', array_keys($ourAttributes));
+        }
 
         $ourAttributes = $this->removeExistingAttributes($attributes, $ourAttributes);
 
