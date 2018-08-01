@@ -585,15 +585,19 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                 $this->_fixPersonAccountFields($this->_cache['accountsToUpsert']['Id'][$_id]);
             }
         } else if ($type == "Account") {
+            switch (true) {
+                case !empty($this->_obj->RecordTypeId):
+                    $this->_isPerson = strcasecmp($this->_obj->RecordTypeId, Mage::helper('tnw_salesforce')->getPersonAccountRecordType()) === 0;
+                    break;
 
-            $_personType = null;
-            if (!empty($this->_obj->RecordTypeId)) {
-                $_personType = $this->_obj->RecordTypeId;
-            } elseif (!empty($this->_cache['accountLookup'][0][$_email]->RecordTypeId)) {
-                $_personType = $this->_cache['accountLookup'][0][$_email]->RecordTypeId;
+                case isset($this->_cache['accountLookup'][0][$_email]->IsPersonAccount):
+                    $this->_isPerson = $this->_cache['accountLookup'][0][$_email]->IsPersonAccount;
+                    break;
+
+                default:
+                    $this->_isPerson = false;
+                    break;
             }
-
-            $this->_isPerson = (!empty($_personType) && $_personType == Mage::helper('tnw_salesforce')->getPersonAccountRecordType());
 
             if (property_exists($this->_obj, 'Id')) {
                 $this->_cache['accountsToContactLink'][$_id] = $this->_obj->Id;
