@@ -1597,6 +1597,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     if (property_exists($this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]], 'OwnerId')) {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountOwnerId
                             = $this->_prepareOwnerId($this->_cache['accountsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    } elseif (!empty($this->_cache['accountLookup'][0][$_email]->OwnerId)) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->AccountOwnerId
+                            = $this->_prepareOwnerId($this->_cache['accountLookup'][0][$_email]->OwnerId);
                     }
 
                     /**
@@ -1687,6 +1690,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     if (property_exists($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]], 'OwnerId')) {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
                             = $this->_prepareOwnerId($this->_cache['contactsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    } elseif (!empty($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId)) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
+                            = $this->_prepareOwnerId($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId);
                     }
 
                     if (
@@ -1785,6 +1791,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     if (!empty($this->_cache['contactsToUpsert'][$this->_magentoId][$_contactIds[$_key]]->OwnerId)) {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
                             = $this->_prepareOwnerId($this->_cache['contactsToUpsert'][$this->_magentoId][$_contactIds[$_key]]->OwnerId);
+                    } elseif (!empty($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId)) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->ContactOwnerId
+                            = $this->_prepareOwnerId($this->_cache['contactsLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId);
                     }
 
                     /**
@@ -1861,6 +1870,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     if (!empty($this->_cache['leadsToUpsert'][$this->_magentoId][$_contactIds[$_key]]->OwnerId)) {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
                             = $this->_prepareOwnerId($this->_cache['leadsToUpsert'][$this->_magentoId][$_contactIds[$_key]]->OwnerId);
+                    } elseif (!empty($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId)) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
+                            = $this->_prepareOwnerId($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId);
                     }
 
                     $_customer = $this->getEntityCache($_contactIds[$_key]);
@@ -1946,6 +1958,9 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
                     if (!empty($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId)) {
                         $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
                             = $this->_prepareOwnerId($this->_cache['leadsToUpsert']['Id'][$_contactIds[$_key]]->OwnerId);
+                    } elseif (!empty($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId)) {
+                        $this->_cache['toSaveInMagento'][$_websiteId][$_email]->LeadOwnerId
+                            = $this->_prepareOwnerId($this->_cache['leadLookup'][$this->_websiteSfIds[$_websiteId]][$_email]->OwnerId);
                     }
 
                     $_customer = $this->getEntityCache($_contactIds[$_key]);
