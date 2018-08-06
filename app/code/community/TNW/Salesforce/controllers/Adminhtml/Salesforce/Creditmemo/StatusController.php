@@ -118,7 +118,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
             $isDuplicate = $model
                 ->getResource()
                 ->getReadConnection()
-                ->fetchAll($select, $bind);
+                ->fetchOne($select, $bind);
 
             if ($isDuplicate) {
                 throw new Exception($this->__('Mapping with the same Magento Stage or Salesforce Status already exists.'));
@@ -143,7 +143,7 @@ class TNW_Salesforce_Adminhtml_Salesforce_Creditmemo_StatusController extends Ma
                 ->addError($e->getMessage())
                 ->setCreditMemoStatusMappingData($data);
 
-            $this->_redirect('*/*/edit', array('status_id' => $this->getRequest()->getParam('id')));
+            $this->_redirect('*/*/edit', array('status_id' => $this->getRequest()->getParam('status_id')));
             return;
         }
     }
