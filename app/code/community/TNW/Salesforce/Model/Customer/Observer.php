@@ -229,7 +229,7 @@ class TNW_Salesforce_Model_Customer_Observer
             $customer->setData('salesforce_contact_owner_id', $account['salesforce_sales_person']);
             $customer->setData('salesforce_lead_owner_id', $account['salesforce_sales_person']);
 
-            if ($customer->isObjectNew()) {
+            if ($customer->isObjectNew() || $customer->getData('salesforce_is_person')) {
                 $customer->setData('salesforce_account_owner_id', $account['salesforce_sales_person']);
             }
         }
