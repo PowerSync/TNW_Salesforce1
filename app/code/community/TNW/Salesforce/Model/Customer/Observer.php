@@ -225,13 +225,13 @@ class TNW_Salesforce_Model_Customer_Observer
         $customer = $observer->getData('customer');
         $account  = $observer->getData('request')->getPost('account', array());
 
-        if (!empty($account['salesforce_account_owner_id']) && empty($account['salesforce_contact_owner_id'])) {
-            $customer->setData('salesforce_contact_owner_id', $account['salesforce_account_owner_id']);
-        }
-
         if (!empty($account['salesforce_sales_person'])) {
             $customer->setData('salesforce_contact_owner_id', $account['salesforce_sales_person']);
             $customer->setData('salesforce_lead_owner_id', $account['salesforce_sales_person']);
+
+            if ($customer->isObjectNew() || $customer->getData('salesforce_is_person')) {
+                $customer->setData('salesforce_account_owner_id', $account['salesforce_sales_person']);
+            }
         }
     }
 
