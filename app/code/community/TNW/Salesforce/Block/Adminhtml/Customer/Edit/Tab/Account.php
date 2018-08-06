@@ -37,9 +37,9 @@ class TNW_Salesforce_Block_Adminhtml_Customer_Edit_Tab_Account extends Mage_Admi
             }
 
             $baseFieldSet->addType('owner', Mage::getConfig()->getBlockClassName('tnw_salesforce/adminhtml_widget_form_element_owner'));
-            $ownerElement = $baseFieldSet->addField($attributeName, 'owner', array(
+            $ownerElement = $baseFieldSet->addField('salesforce_sales_person', 'owner', array(
                 'label'    => Mage::helper('customer')->__('Sales Person'),
-                'name'     => $attributeName,
+                'name'     => 'salesforce_sales_person',
                 'selector' => 'tnw-sales-person',
                 'value'    => $customer->getData($attributeName)
             ));
