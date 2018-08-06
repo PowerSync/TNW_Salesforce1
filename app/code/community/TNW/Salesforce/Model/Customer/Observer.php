@@ -232,6 +232,10 @@ class TNW_Salesforce_Model_Customer_Observer
         if (!empty($account['salesforce_sales_person'])) {
             $customer->setData('salesforce_contact_owner_id', $account['salesforce_sales_person']);
             $customer->setData('salesforce_lead_owner_id', $account['salesforce_sales_person']);
+
+            if ($customer->isObjectNew()) {
+                $customer->setData('salesforce_account_owner_id', $account['salesforce_sales_person']);
+            }
         }
     }
 
