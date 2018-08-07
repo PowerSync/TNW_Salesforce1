@@ -8,6 +8,7 @@
  * Class TNW_Salesforce_Model_Mysql4_Mapping_Collection
  *
  * @method TNW_Salesforce_Model_Mapping getItemById($idValue)
+ * @method TNW_Salesforce_Model_Mysql4_Mapping_Collection addFieldToFilter($field, $condition = null)
  */
 class TNW_Salesforce_Model_Mysql4_Mapping_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
 {

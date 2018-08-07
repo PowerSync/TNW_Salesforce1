@@ -78,11 +78,19 @@ class TNW_Salesforce_Block_Adminhtml_Sales_Order_Create_Salesforce extends Mage_
         /** @var Mage_Customer_Model_Customer $customer */
         $customer = $this->_getSession()->getQuote()->getCustomer();
         return Mage::helper('tnw_salesforce/config')->wrapEmulationWebsiteDifferentConfig($this->getQuoteWebsiteId(), function () use($customer) {
-            $mapping  = Mage::getModel('tnw_salesforce/mapping_type_customer');
+            /** @var tnw_salesforce_model_mysql4_mapping_collection $_mappingCollection */
+            $mappingCollection = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter('Order')
+                ->addFieldToFilter('sf_field', 'OwnerId')
+                ->firstSystem();
 
-            return $customer->getData('salesforce_id')
-                ? $mapping->convertSalesforceContactOwnerId($customer)
-                : $mapping->convertSalesforceLeadOwnerId($customer);
+            /** @var tnw_salesforce_model_mapping $mapping */
+            $mapping = $mappingCollection->getFirstItem();
+
+            $objectMappings['Order'] = Mage::getModel('sales/order');
+            $objectMappings['Customer'] = $customer;
+
+            return $mapping->getValue($objectMappings);
         });
     }
 
