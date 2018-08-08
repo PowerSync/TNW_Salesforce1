@@ -489,8 +489,14 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
                 $children = $entityItem->getChildrenItems();
                 if (empty($children)) {
                     Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveWarning(sprintf('Child %s Item (Name: "%s") wasn\'t found',
+                        ->saveTrace(sprintf('Child %s Item (Name: "%s") wasn\'t found',
                             ucfirst($this->_magentoEntityName), $entityItem->getName()));
+
+                    // Hack
+                    if (strcasecmp($fieldName, 'sku') === 0) {
+                        $field = $entityItem->getSku();
+                    }
+
                     break;
                 }
 
