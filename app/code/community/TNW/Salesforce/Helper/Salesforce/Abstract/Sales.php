@@ -488,7 +488,15 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
             case Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE:
                 $children = $entityItem->getChildrenItems();
                 if (empty($children)) {
-                    $productId = null;
+                    Mage::getSingleton('tnw_salesforce/tool_log')
+                        ->saveTrace(sprintf('Child %s Item (Name: "%s") wasn\'t found',
+                            ucfirst($this->_magentoEntityName), $entityItem->getName()));
+
+                    // Hack
+                    if (strcasecmp($fieldName, 'sku') === 0) {
+                        $field = $entityItem->getSku();
+                    }
+
                     break;
                 }
 

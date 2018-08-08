@@ -416,6 +416,20 @@ class TNW_Salesforce_Helper_Salesforce_Order extends TNW_Salesforce_Helper_Sales
             else {
                 $_item = $_entity->getItemsCollection()->getItemById(str_replace('cart_', '', $_cartItemId));
                 if ($_item instanceof Mage_Core_Model_Abstract) {
+
+                    /** @var Mage_Sales_Model_Order_Item  $_item */
+                    if (($product = $this->getProductByEntityItem($_item)) && $product->getId()) {
+                        if (strcasecmp($_item->getProductType(), Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE) === 0) {
+                            $children = $_item->getChildrenItems();
+                            if (!empty($children)) {
+                                $childItem = reset($children)->setData('product_id', $product->getId());
+                                $childItem->getResource()->save($childItem);
+                            }
+                        } else {
+                            $_item->setData('product_id', $product->getId());
+                        }
+                    }
+
                     $_item->setData('salesforce_id', $_result->id);
                     $_item->getResource()->save($_item);
                 }
