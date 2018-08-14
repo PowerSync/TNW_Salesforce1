@@ -40,6 +40,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Opportunity extends TNW_Salesforce_H
             $returnArray[$entityNumber] = $record;
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Opportunity lookup returned:\n%s", print_r($returnArray, true)));
+
         return $returnArray;
     }
 

@@ -587,14 +587,6 @@ class TNW_Salesforce_Model_Sale_Observer
             $order->setData('owner_salesforce_id', $owner);
         }
 
-        $salesforceBlock = Mage::getBlockSingleton('tnw_salesforce/adminhtml_sales_order_create_salesforce');
-        if (!$isAllowed && empty($owner) && $salesforceBlock) {
-            $createOwner = $salesforceBlock->getSalesforceOwner();
-
-            $order->setData('owner_salesforce_id', $createOwner);
-            $order->setOrigData('owner_salesforce_id', $createOwner);
-        }
-
         /**
          * check user ACL: can he update or define initial value of the Owner field
          */

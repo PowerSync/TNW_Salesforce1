@@ -36,6 +36,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Shipment extends TNW_Salesforce_Help
             $returnArray[$tmp->MagentoId] = $tmp;
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Shipment lookup returned:\n%s", print_r($returnArray, true)));
+
         return $returnArray;
     }
 

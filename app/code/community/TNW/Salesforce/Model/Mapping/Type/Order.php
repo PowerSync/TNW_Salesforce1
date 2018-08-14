@@ -334,11 +334,14 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
 
         if (!empty($currentHelper)) {
 
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer = $currentHelper->_cache['orderCustomers'][$currentHelper->getEntityNumber($_entity)];
+
             /**
              * Account owner from lookup
              */
-            if (isset($currentHelper->_cache['accountsLookup'][0][$_entity->getCustomerEmail()]->OwnerId)) {
-                $availableOwners[] = $currentHelper->_cache['accountsLookup'][0][$_entity->getCustomerEmail()]->OwnerId;
+            if (isset($currentHelper->_cache['accountsLookup'][0][strtolower($customer->getEmail())]->OwnerId)) {
+                $availableOwners[] = $currentHelper->_cache['accountsLookup'][0][strtolower($customer->getEmail())]->OwnerId;
 
             }
         }
