@@ -73,6 +73,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
             $this->getClient()->upsert('Id', $clearToUpsert, 'Lead');
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Lead lookup returned:\n%s", print_r($returnArray, true)));
+
         return $returnArray;
     }
 

@@ -500,6 +500,10 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 break;
             }
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf('Find available owner. Owners list: %s. Chosen: %s', implode(', ', $availableOwners), $result));
+
         return $result;
     }
 }

@@ -34,8 +34,10 @@ class TNW_Salesforce_Helper_Salesforce_Data_Invoice extends TNW_Salesforce_Helpe
             $returnArray[$tmp->MagentoId] = $tmp;
         }
 
-        return $returnArray;
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Invoice lookup returned:\n%s", print_r($returnArray, true)));
 
+        return $returnArray;
     }
 
     protected function _queryInvoice($_magentoId, $oiiTable, $ids)

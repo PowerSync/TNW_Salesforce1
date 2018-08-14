@@ -123,6 +123,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Product extends TNW_Salesforce_Helpe
             $this->getClient()->upsert('Id', $clearToUpsert, 'Product2');
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Product lookup returned:\n%s", print_r($returnArray, true)));
+
         return $returnArray;
     }
 

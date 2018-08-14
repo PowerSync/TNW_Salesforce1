@@ -52,6 +52,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Order extends TNW_Salesforce_Helper_
             $returnArray[$tmp->MagentoId] = $tmp;
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Order lookup returned:\n%s", print_r($returnArray, true)));
+
         return $returnArray;
     }
 
