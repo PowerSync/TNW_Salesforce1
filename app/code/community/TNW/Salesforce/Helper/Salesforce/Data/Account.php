@@ -197,6 +197,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Account extends TNW_Salesforce_Helpe
                 = $_accounts['_'.$_customer->getId()];
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Account lookup returned:\n%s", print_r($_accountsLookup, true)));
+
         return $_accountsLookup;
     }
 

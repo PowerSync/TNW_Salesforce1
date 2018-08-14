@@ -18,7 +18,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Creditmemo extends TNW_Salesforce_He
 
         $records = $this->mergeRecords($_results);
         if (empty($records)) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Invoice lookup returned: no results...');
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('CreditMemo lookup returned: no results...');
             return false;
         }
 
@@ -32,6 +32,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Creditmemo extends TNW_Salesforce_He
 
             $returnArray[$tmp->MagentoId] = $tmp;
         }
+
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("CreditMemo lookup returned:\n%s", print_r($returnArray, true)));
 
         return $returnArray;
     }

@@ -338,6 +338,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Contact extends TNW_Salesforce_Helpe
             $this->getClient()->upsert('Id', $clearAccountToUpsert, 'Account');
         }
 
+        Mage::getSingleton('tnw_salesforce/tool_log')
+            ->saveTrace(sprintf("Contact lookup returned:\n%s", print_r($returnArray, true)));
+
         return $returnArray;
     }
 
