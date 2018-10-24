@@ -606,8 +606,10 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             $nameCompare = !empty($this->_cache['accountLookup'][0][$_email]->Name)
                 && strcasecmp(TNW_Salesforce_Model_Mapping_Type_Customer::generateCompanyByCustomer($_customer), trim($this->_cache['accountLookup'][0][$_email]->Name)) == 0;
 
+            $isOverrideTemporaryName = Mage::helper('tnw_salesforce/config_customer')->isOverrideTemporaryName();
             $company = TNW_Salesforce_Model_Mapping_Type_Customer::getCompanyByCustomer($_customer);
-            if ($nameCompare && !empty($company)) {
+
+            if ($nameCompare && !empty($company) && $isOverrideTemporaryName) {
                 $this->_obj->Name = $company;
             }
 

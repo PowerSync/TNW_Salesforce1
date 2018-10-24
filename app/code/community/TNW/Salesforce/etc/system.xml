@@ -735,6 +735,16 @@
                                 ]]></comment>
                             <tooltip>Limitation described for this field related to the restrictions of Salesforce API query</tooltip>
                         </merge_duplicates>
+                        <override_temporary_name translate="label">
+                            <label>Allow override temporary Account name</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>The temporary name is value computed by the concatenate the customer Firstname+Lastname</comment>
+                        </override_temporary_name>
                     </fields>
                 </account>
                 <contact>
