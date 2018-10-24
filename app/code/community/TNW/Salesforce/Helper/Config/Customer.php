@@ -14,6 +14,7 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     const CONFIG_MERGE_LEAD_DUPLICATES = 'salesforce_customer/lead_config/merge_duplicates';
     const CONFIG_ACCOUNT_SYNC_CUSTOMER = 'salesforce_customer/account/single_account_sync_customer';
     const CONFIG_ACCOUNT_SELECT = 'salesforce_customer/account/single_account_select';
+    const CONFIG_OVERRIDE_TEMPORARY_NAME = 'salesforce_customer/account/override_temporary_name';
     const CONFIG_ACCOUNT_PICKLIST = 'salesforce_customer/sync/use_address_picklist';
     const CONFIG_OPPORTUNITY_VIEW = 'salesforce_customer/customer_view/opportunity_display';
     const CONFIG_OPPORTUNITY_FILTER = 'salesforce_customer/customer_view/opportunity_filter';
@@ -98,6 +99,14 @@ class TNW_Salesforce_Helper_Config_Customer extends TNW_Salesforce_Helper_Config
     public function getAccountSelect()
     {
         return $this->getStoreConfig(self::CONFIG_ACCOUNT_SELECT);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isOverrideTemporaryName()
+    {
+        return (bool)$this->getStoreConfig(self::CONFIG_OVERRIDE_TEMPORARY_NAME);
     }
 
     /**
