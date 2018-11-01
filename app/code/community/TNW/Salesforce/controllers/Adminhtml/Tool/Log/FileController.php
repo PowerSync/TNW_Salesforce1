@@ -54,8 +54,8 @@ class TNW_Salesforce_Adminhtml_Tool_Log_FileController extends Mage_Adminhtml_Co
         }
 
         $pageSize   = Mage::helper('tnw_salesforce/config_tool')->getLogFileReadLimit();
-        $pageSize   = max(intval($pageSize), 0);
-        $page       = max(intval($page), 1);
+        $pageSize   = max((int)$pageSize, 0);
+        $page       = max((int)$page, 1);
 
         return $logFile->read($page, $pageSize, SEEK_END);
     }

@@ -16,6 +16,40 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
     {
         $value = $this->_prepareValue($_entity);
 
+        try {
+            $value = $this->applyFieldsLimits($value, $additional);
+
+            $value = $this->_prepareDefaultValue($value);
+
+            //For Attribute
+            $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
+            $attribute = $this->_getAttribute($_entity, $attributeCode);
+            if ($value === null && $attribute && $attribute->getFrontend()->getConfigField('input') === 'multiselect') {
+                $value = ' ';
+            }
+        }
+        catch (TNW_Salesforce_Model_Sforce_FieldNotFoundException $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveNotice($e->getMessage());
+            $value = null;
+        }
+        catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
+            $value = null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param $value
+     * @param null $additional
+     *
+     * @return string
+     * @throws TNW_Salesforce_Model_Sforce_FieldNotFoundException
+     * @throws Exception
+     */
+    protected function applyFieldsLimits($value, $additional = null)
+    {
         $describe = Mage::helper('tnw_salesforce/salesforce_data')
             ->describeTable($this->_mapping->getSfObject());
 
@@ -25,59 +59,36 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
         $appropriatedField = false;
         if (!empty($describe->fields)) {
             foreach ($describe->fields as $field) {
-                if (strtolower($field->name) == strtolower($this->_mapping->getSfField())) {
+                if (strcasecmp($field->name, $this->_mapping->getSfField()) === 0) {
                     $appropriatedField = $field;
                     break;
                 }
             }
         }
 
-        /**
-         * apply field limits
-         */
-        if ($appropriatedField) {
-            try {
-
-                if (!$appropriatedField->createable && ($additional instanceof stdClass) && empty($additional->Id)) {
-                   throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not creatable, value sync skipped');
-                }
-
-                if (!$appropriatedField->updateable && ($additional instanceof stdClass) && !empty($additional->Id)) {
-                    throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not updateable, value sync skipped');
-                }
-
-                if (
-                    is_string($value)
-                    && $appropriatedField->length
-                    && $appropriatedField->length < strlen($value)
-                ) {
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncating a long value for an ' . $this->_mapping->getSfObject() . ': ' . $this->_mapping->getSfField());
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Limit is ' . $appropriatedField->length . ' value length is ' . strlen($value));
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Initial value: ' . $value);
-                    $limit = $appropriatedField->length;
-                    $value = mb_substr($value, 0, $limit - 3) . '...';
-                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncated value: ' . $value);
-                }
-
-                $value = $this->_prepareDefaultValue($value);
-
-                //For Attribute
-                $attributeCode = $this->_mapping->getLocalFieldAttributeCode();
-                $attribute = $this->_getAttribute($_entity, $attributeCode);
-                if (is_null($value) && $attribute && $attribute->getFrontend()->getConfigField('input') == 'multiselect') {
-                    $value = ' ';
-                }
-            } catch (Exception $e) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
-                $value = null;
-            }
-        } else {
-            Mage::getSingleton('tnw_salesforce/tool_log')
-                ->saveNotice("Field \"{$this->_mapping->getSfObject()}::{$this->_mapping->getSfField()}\" not found in SF! Skipped field.");
-
-            $value = null;
+        if (!$appropriatedField) {
+            throw new TNW_Salesforce_Model_Sforce_FieldNotFoundException("Field \"{$this->_mapping->getSfObject()}::{$this->_mapping->getSfField()}\" not found in SF! Skipped field.");
         }
 
+        if (!$appropriatedField->createable && ($additional instanceof stdClass) && empty($additional->Id)) {
+            throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not creatable, value sync skipped');
+        }
+
+        if (!$appropriatedField->updateable && ($additional instanceof stdClass) && !empty($additional->Id)) {
+            throw new Exception($this->_mapping->getSfField() . ' Salesforce field is not updateable, value sync skipped');
+        }
+
+        if (
+            is_string($value)
+            && $appropriatedField->length
+            && $appropriatedField->length < strlen($value)
+        ) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncating a long value for an ' . $this->_mapping->getSfObject() . ': ' . $this->_mapping->getSfField());
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Limit is ' . $appropriatedField->length . ' value length is ' . strlen($value));
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Initial value: ' . $value);
+            $value = mb_substr($value, 0, $appropriatedField->length - 3) . '...';
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace('Truncated value: ' . $value);
+        }
 
         return $value;
     }

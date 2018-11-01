@@ -17,7 +17,17 @@ var tnwSalesforceLoadMore = (function() {
 
             new Ajax.Updater(config.get('container'), config.get('url'), {
                 parameters: { page: page },
-                insertion: config.get('insertion'),
+                insertion: function(receiver, responseText) {
+                    var insertion = {};
+                    insertion[config.get('insertion')] = responseText
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+
+                    receiver.insert(insertion);
+                },
                 onComplete: function (response, json) {
                     if (response.responseText.empty()) {
                         alert('End of file');
