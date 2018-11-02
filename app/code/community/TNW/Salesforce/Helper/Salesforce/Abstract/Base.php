@@ -57,6 +57,24 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
     protected $_alternativeKeys = array();
 
     /**
+     * @var \Exception
+     */
+    protected $lastException;
+
+    /**
+     * @return Exception
+     */
+    public function lastException()
+    {
+        return $this->lastException;
+    }
+
+    public function cleanLastException()
+    {
+        $this->lastException = null;
+    }
+
+    /**
      * @return string
      */
     public function getSalesforceEntityName()
@@ -345,6 +363,8 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     public function massAdd($_ids = array(), $_isCron = false)
     {
+        $this->cleanLastException();
+
         $_ids           = !is_array($_ids) ? array($_ids) : $_ids;
         $this->_isCron  = $_isCron;
 
@@ -395,6 +415,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
 
             return !empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING]);
         } catch (Exception $e) {
+            $this->lastException = $e;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }
@@ -464,22 +485,18 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
      */
     public function process($type = 'soft')
     {
+        $this->cleanLastException();
+
         try {
             if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
-                if (!$this->isFromCLI() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                    Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
-                }
-                return false;
+                throw new Exception('Connection to Salesforce could not be established! Check API limits and/or login info.');
             }
 
             $_syncType = stripos(get_class($this), '_bulk_') !== false ? 'MASS' : 'REALTIME';
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("================ %s SYNC: START ================", $_syncType));
 
             if (!is_array($this->_cache) || empty($this->_cache[self::CACHE_KEY_ENTITIES_UPDATING])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("WARNING: Sync %s, cache is empty!", $this->getManyParentEntityType()));
-                $this->_dumpObjectToLog($this->_cache, "Cache", true);
-                return false;
+                throw new Exception(sprintf('Sync %s, cache is empty!', $this->getManyParentEntityType()));
             }
 
             $this->_alternativeKeys = $this->_cache[self::CACHE_KEY_ENTITIES_UPDATING];
@@ -491,6 +508,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Base extends TNW_Salesf
             return true;
         }
         catch (Exception $e) {
+            $this->lastException = $e;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }

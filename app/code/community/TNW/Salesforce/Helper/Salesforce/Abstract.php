@@ -239,23 +239,57 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         $_data .= '<contentType>XML</contentType>
             </jobInfo>';
 
+        $url = "{$this->getSalesforceServerDomain()}/services/async/{$this->_salesforceApiVersion}/job";
+        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Create Job use url: {$url}");
+
         $_client = $this->getHttpClient()
-            ->setUri($this->getSalesforceServerDomain() . '/services/async/' . $this->_salesforceApiVersion . '/job')
+            ->setUri($url)
             ->setMethod('POST')
             ->setHeaders('Content-Type: application/xml')
             ->setHeaders('X-SFDC-Session', $this->getSalesforceSessionId())
             ->setRawData($_data);
 
         $response = $_client->request()->getBody();
-        $_jobInfo = simplexml_load_string($response);
-
+        $_jobInfo = $this->parseXml($response);
         if (isset($_jobInfo->exceptionMessage)) {
-            throw new Exception('Cannot find job id:' . (string)$_jobInfo->exceptionMessage);
-        } elseif (!isset($_jobInfo->id)) {
+            throw new Exception('Cannot find job id:' . $_jobInfo->exceptionMessage);
+        }
+
+        if (!isset($_jobInfo->id)) {
             throw new Exception('Cannot find job id');
         }
 
         return substr($_jobInfo->id, 0, -3);
+    }
+
+    /**
+     * @param $xml
+     *
+     * @return SimpleXMLElement
+     * @throws Exception
+     */
+    protected function parseXml($xml)
+    {
+        $use_errors = libxml_use_internal_errors(true);
+
+        try {
+            $object = simplexml_load_string($xml);
+            if (false === $object) {
+                /** @var LibXMLError $error */
+                foreach (libxml_get_errors() as $error) {
+                    throw new Exception("XML parse error message: \"{$error->message}\"");
+                }
+            }
+        } catch (Exception $e) {
+            libxml_clear_errors();
+            libxml_use_internal_errors($use_errors);
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveError($e->getMessage());
+            throw $e;
+        }
+
+        libxml_clear_errors();
+        libxml_use_internal_errors($use_errors);
+        return $object;
     }
 
     /**
@@ -321,7 +355,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         $_state = false;
         try {
-            $response = simplexml_load_string($_client->request()->getBody());
+            $response = $this->parseXml($_client->request()->getBody());
 
             if ((string)$response->state == "Closed") {
                 $_state = true;
@@ -377,7 +411,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         try {
             $response = $_client->request()->getBody();
-            $_batchInfo = simplexml_load_string($response);
+            $_batchInfo = $this->parseXml($response);
 
             $_batchId = substr($_batchInfo->id, 0, -3);
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(ucwords($_batchType) . ' batch was created, batch number: ' . $_batchId);
@@ -418,7 +452,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace(sprintf("Bulk. Processing result. Reply received on url: %s \nData: %s", $_client->getUri(true), $response));
 
-        return simplexml_load_string($response);
+        return $this->parseXml($response);
     }
 
     /**
@@ -442,7 +476,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         Mage::getSingleton('tnw_salesforce/tool_log')
             ->saveTrace(sprintf("Bulk. Processing result. Reply received on url: %s \nData: %s", $_client->getUri(true), $response));
 
-        return simplexml_load_string($response);
+        return $this->parseXml($response);
     }
 
     /**
@@ -471,7 +505,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace(sprintf("Bulk. Reply received on url: %s \nData: %s", $client->getUri(true), $response));
 
-            $response = simplexml_load_string($response);
+            $response = $this->parseXml($response);
             foreach ($response as $_responseRow) {
                 if (property_exists($_responseRow, 'state')) {
                     if ('Failed' == $_responseRow->state) {
@@ -683,7 +717,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         try {
             $response = $client->request()->getBody();
-            $_batchInfo = simplexml_load_string($response);
+            $_batchInfo = $this->parseXml($response);
 
             $_batchId = substr($_batchInfo->id, 0, -3);
             return $_batchId;
@@ -716,7 +750,7 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
 
         try {
             $response = $client->request()->getBody();
-            $_jobInfo = simplexml_load_string($response);
+            $_jobInfo = $this->parseXml($response);
             return substr($_jobInfo->id, 0, -3);
         } catch (Exception $e) {
             // TODO:  Log error, quit

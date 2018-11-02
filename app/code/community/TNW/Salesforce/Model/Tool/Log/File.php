@@ -29,7 +29,7 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
     /**
      * @var string
      */
-    protected $_salesforceLogDirName = 'salesforce';
+    protected $_salesforceLogDirName = '';
 
     /**
      * @return TNW_Salesforce_Model_Varien_Io_File
@@ -46,7 +46,8 @@ class TNW_Salesforce_Model_Tool_Log_File  extends Varien_Object
     public function getLogDir()
     {
         if (!$this->_logDir) {
-            $this->_logDir = Mage::getBaseDir('log') . DS . $this->getSalesforceLogDirName();
+            $this->_logDir = realpath(Mage::getBaseDir('log') . DS . $this->getSalesforceLogDirName());
+
             // check for valid base dir
             self::_createIoFile()->mkdir($this->_baseDir);
         }

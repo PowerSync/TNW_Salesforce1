@@ -32,7 +32,7 @@ class TNW_Salesforce_Model_Tool_Log_File_Collection extends Varien_Data_Collecti
             $ioProxy->write('.htaccess', 'deny from all', 0644);
         }
 
-        $this
+        $this->setCollectRecursively(false)
             ->setOrder('time', self::SORT_ORDER_DESC)
             ->addTargetDir($this->_baseDir);
     }

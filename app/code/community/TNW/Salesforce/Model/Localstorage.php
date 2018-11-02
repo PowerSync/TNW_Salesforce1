@@ -184,9 +184,11 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
      *
      * @param array $idSet
      * @param string $status
+     * @param string $message
+     *
      * @return mixed
      */
-    public function updateObjectStatusById($idSet = array(), $status = 'sync_running')
+    public function updateObjectStatusById($idSet = array(), $status = 'sync_running', $message = null)
     {
         if (empty($idSet)) {
             return false;
@@ -196,19 +198,28 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
             $idSet = array($idSet);
         }
 
-        $idLine = empty($idSet) ? "" : "'" . join("', '", $idSet) . "'";
+        $bind = [
+            'status' => $status,
+            'date_sync' => Mage::getModel('core/date')->date('c')
+        ];
 
-        $additinalUpdate = '';
-        if ($status == 'sync_running') {
-            $additinalUpdate = ', sync_attempt = sync_attempt + 1 ';
-        } elseif ($status == 'new') {
-            $additinalUpdate = ', sync_attempt = 1 ';
+        switch ($status) {
+            case 'sync_running':
+                $bind['sync_attempt'] = new Zend_Db_Expr('sync_attempt + 1');
+                break;
+
+            case 'new':
+                $bind['sync_attempt'] = '1';
+                break;
         }
 
-        $sql = "UPDATE " . Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage') . " SET status = '" . $status . "' $additinalUpdate where id in (" . $idLine . ")";
-        $res = $this->getDbConnection()->query($sql);
+        if ($message !== null) {
+            $bind['message'] = urlencode(serialize([$message]));
+        }
 
-        return $res;
+        $connection = $this->getDbConnection();
+        $tableName = Mage::helper('tnw_salesforce')->getTable('tnw_salesforce_queue_storage');
+        return $connection->update($tableName, $bind, $connection->prepareSqlCondition('id', ['in' => $idSet]));
     }
 
     /**
