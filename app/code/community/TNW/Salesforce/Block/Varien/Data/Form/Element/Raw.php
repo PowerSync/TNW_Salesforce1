@@ -12,6 +12,6 @@ class TNW_Salesforce_Block_Varien_Data_Form_Element_Raw extends Varien_Data_Form
     public function getElementHtml()
     {
         $id = !$this->getData('id') ? $this->getId() : $this->getData('id');
-        return sprintf('<pre id="%s">%s</pre>', $id, $this->getValue());
+        return sprintf('<pre id="%s">%s</pre>', $id, htmlspecialchars($this->getValue()));
     }
 }

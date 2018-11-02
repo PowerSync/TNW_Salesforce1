@@ -149,7 +149,12 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
             $opt[] = '</tbody></table>';
         }
 
-        return implode('', $opt);
+        try {
+            return $this->applyFieldsLimits(implode('', $opt));
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -221,7 +226,6 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
             }
         }
 
-
         /**
          * add parent SKU to Description for Bundle items
          */
@@ -229,6 +233,11 @@ class TNW_Salesforce_Model_Mapping_Type_Order_Item extends TNW_Salesforce_Model_
             $_summary[] = $_entity->getBundleItemToSync();
         }
 
-        return join(", ", $_summary);
+        try {
+            return $this->applyFieldsLimits(implode(', ', $_summary));
+        } catch (Exception $e) {
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace($e->getMessage());
+            return null;
+        }
     }
 }
