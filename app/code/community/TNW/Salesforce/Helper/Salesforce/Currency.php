@@ -9,6 +9,8 @@ class TNW_Salesforce_Helper_Salesforce_Currency extends TNW_Salesforce_Helper_Sa
      */
     public function massAdd($currencyCodes = array(), $_isCron = false)
     {
+        $this->cleanLastException();
+
         $this->_isCron  = $_isCron;
 
         $this->_skippedEntity = array();
@@ -43,6 +45,7 @@ class TNW_Salesforce_Helper_Salesforce_Currency extends TNW_Salesforce_Helper_Sa
 
             return !empty($this->_cache['currencyToUpsert']);
         } catch (Exception $e) {
+            $this->lastException = $e;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }
@@ -54,21 +57,18 @@ class TNW_Salesforce_Helper_Salesforce_Currency extends TNW_Salesforce_Helper_Sa
      */
     public function process($type = 'soft')
     {
+        $this->cleanLastException();
+
         try {
             if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
-
-                return false;
+                throw new Exception('Connection to Salesforce could not be established! Check API limits and/or login info.');
             }
 
             Mage::getSingleton('tnw_salesforce/tool_log')
                 ->saveTrace("================ REALTIME SYNC: START ================");
 
             if (!is_array($this->_cache) || empty($this->_cache['currencyToUpsert'])) {
-                Mage::getSingleton('tnw_salesforce/tool_log')->saveError(sprintf("WARNING: Sync %s, cache is empty!", $this->getManyParentEntityType()));
-                $this->_dumpObjectToLog($this->_cache, "Cache", true);
-                return false;
+                throw new Exception(sprintf('WARNING: Sync %s, cache is empty!', $this->getManyParentEntityType()));
             }
 
             $_keys = array_keys($this->_cache['currencyToUpsert']);
@@ -103,6 +103,7 @@ class TNW_Salesforce_Helper_Salesforce_Currency extends TNW_Salesforce_Helper_Sa
             return true;
         }
         catch (Exception $e) {
+            $this->lastException = $e;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }
