@@ -205,7 +205,7 @@ class TNW_Salesforce_Model_Localstorage extends TNW_Salesforce_Helper_Abstract
 
         switch ($status) {
             case 'sync_running':
-                $bind['sync_attempt'] = 'sync_attempt + 1';
+                $bind['sync_attempt'] = new Zend_Db_Expr('sync_attempt + 1');
                 break;
 
             case 'new':
