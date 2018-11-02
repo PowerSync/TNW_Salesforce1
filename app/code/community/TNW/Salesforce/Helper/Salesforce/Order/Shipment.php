@@ -424,17 +424,24 @@ class TNW_Salesforce_Helper_Salesforce_Order_Shipment extends TNW_Salesforce_Hel
             $_tracks = array($_tracks);
         }
 
+        $uniqueNumber = [];
+        $_tracks = array_filter($_tracks, function (Mage_Sales_Model_Order_Shipment_Track $track) use (&$uniqueNumber) {
+            if (in_array($track->getNumber(), $uniqueNumber, true)) {
+                return false;
+            }
+
+            $uniqueNumber[] = $track->getNumber();
+            return true;
+        });
+
         /** @var Mage_Sales_Model_Order_Shipment_Track $_track */
         foreach ($_tracks as $_track) {
             $_entityNumber = $this->_getEntityNumber($_track->getShipment());
 
             $this->_obj = new stdClass();
 
-            $lookupKey     = sprintf('%sLookup', $this->_salesforceEntityName);
-            if ($this->_cache[$lookupKey]
-                && array_key_exists($_entityNumber, $this->_cache[$lookupKey])
-                && $this->_cache[$lookupKey][$_entityNumber]->Tracks
-            ){
+            $lookupKey = sprintf('%sLookup', $this->_salesforceEntityName);
+            if (isset($this->_cache[$lookupKey][$_entityNumber]->Tracks->records)) {
                 foreach ($this->_cache[$lookupKey][$_entityNumber]->Tracks->records as $_trackItem) {
                     if (
                         $_trackItem->{TNW_Salesforce_Helper_Config::SALESFORCE_PREFIX_SHIPMENT . 'Number__c'} == $_track->getNumber()

@@ -11,20 +11,19 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
      */
     public function process($type = 'soft')
     {
-        if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: Connection to Salesforce could not be established! Check API limits and/or login info.");
-            if (!$this->isFromCLI() && !$this->isCron() && Mage::helper('tnw_salesforce')->displayErrors()) {
-                Mage::getSingleton('adminhtml/session')->addWarning('WARNING: SKIPPING synchronization, could not establish Salesforce connection.');
-            }
-            return false;
-        }
-        Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
-        if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
-            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("WARNING: Sync websites, cache is empty!");
-            return false;
-        }
+        $this->cleanLastException();
 
         try {
+            if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
+                throw new Exception('Connection to Salesforce could not be established! Check API limits and/or login info.');
+            }
+
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================ MASS SYNC: START ================");
+
+            if (!is_array($this->_cache) || empty($this->_cache['entitiesUpdating'])) {
+                throw new Exception('Sync websites, cache is empty!');
+            }
+
             // Prepare Data
             $this->_prepareWebsites();
             $this->clearMemory();
@@ -40,6 +39,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("================= MASS SYNC: END =================");
             return true;
         } catch (Exception $e) {
+            $this->lastException = $e;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }
@@ -141,6 +141,8 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
      */
     public function massAdd($ids = array(), $_isCron = false)
     {
+        $this->cleanLastException();
+
         try {
             $_websitesArray = array();
 
@@ -162,6 +164,7 @@ class TNW_Salesforce_Helper_Salesforce_Website extends TNW_Salesforce_Helper_Sal
             return true;
         }
         catch (Exception $e) {
+            $this->lastException = $e;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
             return false;
         }

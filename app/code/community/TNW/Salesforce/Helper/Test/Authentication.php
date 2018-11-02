@@ -93,6 +93,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
                 continue;
             }
 
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Test \"{$testName}\" failed");
             return false;
         }
 
@@ -109,6 +110,7 @@ class TNW_Salesforce_Helper_Test_Authentication extends Mage_Core_Helper_Abstrac
                 continue;
             }
 
+            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Test \"{$testName}\" failed");
             return false;
         }
 
