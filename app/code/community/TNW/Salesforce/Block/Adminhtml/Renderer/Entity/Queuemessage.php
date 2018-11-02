@@ -16,7 +16,7 @@ class TNW_Salesforce_Block_Adminhtml_Renderer_Entity_Queuemessage extends Mage_A
     {
         $_errors = unserialize(urldecode($row->getData('message')));
         if (!empty($_errors)) {
-            $_html = '<ul><li>' . join('</li><li>', $_errors) . '</li></ul>';
+            $_html = '<ul><li>' . implode('</li><li>', (array)$_errors) . '</li></ul>';
         } else {
             $_html = 'N/A';
         }

@@ -505,15 +505,17 @@ class TNW_Salesforce_Model_Cron
 
         foreach ($websiteStorage as $website => $typeStorage) {
             Mage::helper('tnw_salesforce/config')->wrapEmulationWebsite($website, function () use($typeStorage) {
+                $localStorage = Mage::getModel('tnw_salesforce/localstorage');
+                $toolLog = Mage::getSingleton('tnw_salesforce/tool_log');
+
                 foreach ($typeStorage as $type => $queueStorage) {
                     $idSet = $queueStorage['storageId'];
                     $objectIdSet = $queueStorage['objectId'];
 
-                    Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet);
+                    $localStorage->updateObjectStatusById($idSet);
 
                     if (in_array($type, array('order', 'abandoned', 'invoice', 'shipment', 'creditmemo'))) {
-                        Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveTrace(sprintf('Processing %s: %s records', $type, count($objectIdSet)));
+                        $toolLog->saveTrace(sprintf('Processing %s: %s records', $type, count($objectIdSet)));
 
                         $syncObjStack = new SplStack();
                         Mage::dispatchEvent(sprintf('tnw_salesforce_sync_%s_for_website', $type), array(
@@ -533,53 +535,64 @@ class TNW_Salesforce_Model_Cron
                                     $objectId[] = @$idSet[array_search($entity_id, $objectIdSet)];
                                 }
 
-                                Mage::getModel('tnw_salesforce/localstorage')
-                                    ->deleteObject($objectId, true);
+                                $localStorage->deleteObject($objectId, true);
+                            }
+
+                            if ($manualSync->lastException() instanceof \Exception) {
+                                $localStorage->updateObjectStatusById(
+                                    $idSet,
+                                    'sync_error',
+                                    $manualSync->lastException()->getMessage()
+                                );
+
+                                continue 2;
                             }
 
                             // Update Queue
-                            Mage::getModel('tnw_salesforce/localstorage')
-                                ->updateQueue($objectIdSet, $idSet, $manualSync->getSyncResults(), $manualSync->getAlternativeKeys());
+                            $localStorage->updateQueue($objectIdSet, $idSet, $manualSync->getSyncResults(), $manualSync->getAlternativeKeys());
                         }
                     } else {
                         /**
                          * @var $manualSync TNW_Salesforce_Helper_Bulk_Product|TNW_Salesforce_Helper_Bulk_Customer|TNW_Salesforce_Helper_Bulk_Website
                          */
                         $manualSync = Mage::helper('tnw_salesforce/bulk_' . $type);
-                        if ($manualSync->reset()) {
+                        if (!$manualSync->reset()) {
+                            $localStorage->updateObjectStatusById($idSet, 'new');
+                            $toolLog->saveError('Salesforce connection failed');
+                            continue;
+                        }
 
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type started ##################################");
-                            // sync products with sf
-                            $checkAdd = $manualSync->massAdd($objectIdSet);
+                        $toolLog->saveTrace("################################## synchronization $type started ##################################");
+                        // sync products with sf
+                        $checkAdd = $manualSync->massAdd($objectIdSet);
 
-                            // Delete Skipped Entity
-                            $skipped  = $manualSync->getSkippedEntity();
-                            if (!empty($skipped)) {
-                                $objectId = array();
-                                foreach ($skipped as $entity_id) {
-                                    $objectId[] = @$idSet[array_search($entity_id, $objectIdSet)];
-                                }
-
-                                Mage::getModel('tnw_salesforce/localstorage')
-                                    ->deleteObject($objectId, true);
+                        // Delete Skipped Entity
+                        $skipped  = $manualSync->getSkippedEntity();
+                        if (!empty($skipped)) {
+                            $objectId = array();
+                            foreach ($skipped as $entity_id) {
+                                $objectId[] = @$idSet[array_search($entity_id, $objectIdSet)];
                             }
 
-                            if ($checkAdd) {
-                                $manualSync->setIsCron(true);
-                                $manualSync->process();
+                            $localStorage->deleteObject($objectId, true);
+                        }
+
+                        $manualSync->setIsCron(true);
+                        if (!$checkAdd || !$manualSync->process()) {
+                            if ($manualSync->lastException() instanceof \Exception) {
+                                $localStorage->updateObjectStatusById(
+                                    $idSet,
+                                    'sync_error',
+                                    $manualSync->lastException()->getMessage()
+                                );
                             }
-
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("################################## synchronization $type finished ##################################");
-
-                            // Update Queue
-                            Mage::getModel('tnw_salesforce/localstorage')
-                                ->updateQueue($objectIdSet, $idSet, $manualSync->getSyncResults(), $manualSync->getAlternativeKeys());
+                            continue;
                         }
-                        else {
-                            Mage::getModel('tnw_salesforce/localstorage')->updateObjectStatusById($idSet, 'new');
-                            Mage::getSingleton('tnw_salesforce/tool_log')->saveError("error: salesforce connection failed");
-                            return;
-                        }
+
+                        $toolLog->saveTrace("################################## synchronization $type finished ##################################");
+
+                        // Update Queue
+                        $localStorage->updateQueue($objectIdSet, $idSet, $manualSync->getSyncResults(), $manualSync->getAlternativeKeys());
                     }
                 }
             });

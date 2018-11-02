@@ -387,6 +387,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
      */
     public function process($type = 'soft')
     {
+        $this->cleanLastException();
+
         try {
 
             if (!Mage::helper('tnw_salesforce/salesforce_data')->isLoggedIn()) {
@@ -431,8 +433,8 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
             Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace(sprintf("================= %s SYNC: END =================", $_syncType));
             return true;
         } catch (Exception $e) {
+            $this->lastException = $e;
             Mage::getSingleton('tnw_salesforce/tool_log')->saveError("CRITICAL: " . $e->getMessage());
-
             return false;
         }
     }
