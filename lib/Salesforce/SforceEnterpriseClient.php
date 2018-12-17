@@ -39,7 +39,7 @@ class Salesforce_SforceEnterpriseClient extends Salesforce_SforceBaseClient
 {
     const ENTERPRISE_NAMESPACE = 'urn:enterprise.soap.sforce.com';
 
-    function Salesforce_SforceEnterpriseClient()
+    public function __construct()
     {
         $this->namespace = self::ENTERPRISE_NAMESPACE;
     }
