@@ -1943,9 +1943,9 @@
                             </depends>
                         </default_owner>
                         <create_campaign_automatic>
-                            <label>Create new Campaign automatic</label>
+                            <label>New Campaigns</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <source_model>tnw_salesforce/config_campaign_automatic</source_model>
                             <sort_order>140</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -1954,8 +1954,8 @@
                                 <sync_enabled>1</sync_enabled>
                             </depends>
                             <comment><![CDATA[
-                                <b>YES</b> - new Campaign will be created automatically for every Rule<br />
-                                <b>NO</b> - admin should assign every Rule to some Campaign manually on the Edit page
+                                <b>Create automatically</b> - New campaigns will be automatically created in Salesforce for each Shopping Cart Price Rule<br />
+                                <b>Create manually</b> - Shopping cart rules must be linked to existing Salesforce campaigns manually
                             ]]></comment>
                         </create_campaign_automatic>
                     </fields>
