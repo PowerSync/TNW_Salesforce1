@@ -63,7 +63,7 @@ class TNW_Salesforce_Helper_Salesforce_Order_Creditmemo extends TNW_Salesforce_H
     /**
      * @param array $_ids
      */
-    protected function _massAddBefore($_ids)
+    protected function _massAddBefore(&$_ids)
     {
         /**
          * check and mark to skip CreditMemo without items
