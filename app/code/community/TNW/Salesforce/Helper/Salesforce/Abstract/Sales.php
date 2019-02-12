@@ -92,7 +92,7 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Sales extends TNW_Sales
     /**
      * @param array $_ids
      */
-    protected function _massAddBefore($_ids)
+    protected function _massAddBefore(&$_ids)
     {
         $this->_guestCount = 0;
         $this->_emails = $this->_websites = array();
