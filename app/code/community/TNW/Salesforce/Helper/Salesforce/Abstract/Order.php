@@ -557,8 +557,10 @@ abstract class TNW_Salesforce_Helper_Salesforce_Abstract_Order extends TNW_Sales
     /**
      * @param array $_ids
      */
-    protected function _massAddBefore($_ids)
+    protected function _massAddBefore(&$_ids)
     {
+        $_ids = array_filter($_ids);
+
         parent::_massAddBefore($_ids);
         $this->_quotes = array();
     }

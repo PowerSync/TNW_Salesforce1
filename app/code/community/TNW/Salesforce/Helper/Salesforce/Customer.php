@@ -1210,7 +1210,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
     /**
      * @param array $_ids
      */
-    protected function _massAddBefore($_ids)
+    protected function _massAddBefore(&$_ids)
     {
         $this->_websites = array();
     }
