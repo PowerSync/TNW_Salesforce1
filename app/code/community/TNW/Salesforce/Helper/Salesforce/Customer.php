@@ -834,7 +834,7 @@ class TNW_Salesforce_Helper_Salesforce_Customer extends TNW_Salesforce_Helper_Sa
         /**
          * we create account by the same reasons as Contact by default
          */
-        return $this-> _contactShouldBePushed($id);
+        return $this->_contactShouldBePushed($id);
     }
 
     /**
