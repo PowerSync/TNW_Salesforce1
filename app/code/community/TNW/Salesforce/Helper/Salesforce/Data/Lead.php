@@ -112,12 +112,18 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
     protected function collectLookupIndex(array $records)
     {
         $searchIndex = array();
+        $_magentoId = Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . 'Magento_ID__c';
+
         foreach ($records as $key => $record) {
             // Index Email
             $searchIndex['email'][$key] = null;
             if (!empty($record->Email)) {
                 $searchIndex['email'][$key] = strtolower($record->Email);
             }
+            if (!empty($record->$_magentoId)) {
+                $searchIndex['magentoId'][$key] = strtolower($record->$_magentoId);
+            }
+
         }
 
         return $searchIndex;
@@ -134,7 +140,9 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
         // Priority 1
         $recordsIds[10] = array_keys($searchIndex['email'], strtolower($entity->getData('email')));
-
+        if (!empty($entity->getId())) {
+            $recordsIds[20] = array_keys($searchIndex['magentoId'], strtolower($entity->getId()));
+        }
         return $recordsIds;
     }
 
