@@ -68,21 +68,7 @@ class TNW_Salesforce_Model_Sforce_Client extends Salesforce_SforceEnterpriseClie
     {
         $response = parent::query((string)$sql);
 
-        $result = array();
-        if (isset($response->records) && !empty($response->records)) {
-            foreach ($response->records as $_row) {
-                $result[] = $_row;
-            }
-        }
-
-        while (!$response->done) {
-            $response = $this->queryMore($response->queryLocator);
-            if (isset($response->records) && !empty($response->records)) {
-                foreach ($response->records as $_row) {
-                    $result[] = $_row;
-                }
-            }
-        }
+        $result = $this->processResponse($response);
 
         $return = (object)array(
             'done' => true,
@@ -92,5 +78,62 @@ class TNW_Salesforce_Model_Sforce_Client extends Salesforce_SforceEnterpriseClie
             );
 
         return $return;
+    }
+
+    /**
+     * @param $response
+     * @return array
+     */
+    public function processResponse($response)
+    {
+        $result = $this->processRecords($response);
+
+        foreach ($this->processMore($response) as $_row) {
+            $result[] = $_row;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param $response
+     * @return array
+     */
+    public function processMore($response)
+    {
+        $result = array();
+
+        if (property_exists($response, 'done') && !$response->done) {
+            $response = $this->queryMore($response->queryLocator);
+            $result = $this->processResponse($response);
+        }
+
+        return $result;
+    }
+
+
+    /**
+     * @param $response
+     * @return array
+     */
+    public function processRecords($response)
+    {
+        $result = array();
+
+        if (isset($response->records) && !empty($response->records)) {
+            foreach ($response->records as $_row) {
+                $result[] = $_row;
+
+                foreach ($_row as $propertyName => $propertyValue) {
+                    if (is_object($propertyValue)) {
+                        foreach ($this->processMore($propertyValue) as $record) {
+                            $propertyValue->records[] = $record;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $result;
     }
 }
