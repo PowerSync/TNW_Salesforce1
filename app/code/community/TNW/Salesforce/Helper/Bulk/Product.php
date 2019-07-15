@@ -120,59 +120,64 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
      */
     protected function _preparePriceBooks($jobId = NULL)
     {
-        // Get upserted product ID's and create a batches for Pricebooks
-        foreach ($this->_cache['batchCache']['product']['Id'] as $_key => $_batchId) {
-            $_batch = &$this->_cache['batch']['product']['Id'][$_key];
+        if (!empty($this->_cache['batchCache']['product']['Id']) || !is_array($this->_cache['batchCache']['product']['Id'])) {
+            // Get upserted product ID's and create a batches for Pricebooks
+            foreach ($this->_cache['batchCache']['product']['Id'] as $_key => $_batchId) {
+                $_batch = &$this->_cache['batch']['product']['Id'][$_key];
 
-            try {
-                $response = $this->getBatch($jobId, $_batchId);
-            } catch (Exception $e) {
-                $response = array_fill(0, count($_batch), $this->_buildErrorResponse($e->getMessage()));
-
-                Mage::getSingleton('tnw_salesforce/tool_log')
-                    ->saveError('Prepare batch #'. $_batchId .' Error: ' . $e->getMessage());
-            }
-
-            $_i = 0;
-            $_batchKeys = array_keys($_batch);
-            foreach ($response as $_result) {
-                $_sku = $_batchKeys[$_i++];
-
-                //Report Transaction
-                $this->_cache['responses']['products'][$_sku] = json_decode(json_encode($_result), TRUE);
-                if ($_result->success == "true") {
-                    $_product = new stdClass();
-                    $_product->salesforceId = (string)$_result->id;
-                    $_product->SfInSync = 1;
-
-                    $this->_cache['toSaveInMagento'][$_sku] = $_product;
-                    $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_sku] = (string)$_result->id;
+                try {
+                    $response = $this->getBatch($jobId, $_batchId);
+                } catch (Exception $e) {
+                    $response = array_fill(0, count($_batch), $this->_buildErrorResponse($e->getMessage()));
 
                     Mage::getSingleton('tnw_salesforce/tool_log')
-                        ->saveTrace('PRODUCT SKU (' . $_sku . '): salesforceID (' . (string)$_result->id . ')');
-                    continue;
+                        ->saveError('Prepare batch #' . $_batchId . ' Error: ' . $e->getMessage());
                 }
 
-                // Hide errors when product has been archived
-                foreach ($_result->errors as $_error) {
-                    if ($_error->statusCode == 'ENTITY_IS_DELETED'){
+                $_i = 0;
+                $_batchKeys = array_keys($_batch);
+                foreach ($response as $_result) {
+                    $_sku = $_batchKeys[$_i++];
+
+                    //Report Transaction
+                    $this->_cache['responses']['products'][$_sku] = json_decode(json_encode($_result), TRUE);
+                    if ($_result->success == "true") {
+                        $_product = new stdClass();
+                        $_product->salesforceId = (string)$_result->id;
+                        $_product->SfInSync = 1;
+
+                        $this->_cache['toSaveInMagento'][$_sku] = $_product;
+                        $this->_cache[sprintf('upserted%s', $this->getManyParentEntityType())][$_sku] = (string)$_result->id;
+
                         Mage::getSingleton('tnw_salesforce/tool_log')
-                            ->saveWarning('Product w/ SKU "'
-                                . $_batch[$_sku]->ProductCode
-                                . '" have not been synchronized. Entity is deleted or archived.');
-
-                        continue 2;
+                            ->saveTrace('PRODUCT SKU (' . $_sku . '): salesforceID (' . (string)$_result->id . ')');
+                        continue;
                     }
+
+                    // Hide errors when product has been archived
+                    foreach ($_result->errors as $_error) {
+                        if ($_error->statusCode == 'ENTITY_IS_DELETED') {
+                            Mage::getSingleton('tnw_salesforce/tool_log')
+                                ->saveWarning('Product w/ SKU "'
+                                    . $_batch[$_sku]->ProductCode
+                                    . '" have not been synchronized. Entity is deleted or archived.');
+
+                            continue 2;
+                        }
+                    }
+
+                    $this->_processErrors($_result, 'product', $_batch[$_sku]);
                 }
-
-                $this->_processErrors($_result, 'product', $_batch[$_sku]);
             }
-        }
 
-        Mage::dispatchEvent("tnw_salesforce_product_send_after",array(
-            "data" => $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))],
-            "result" => $this->_cache['responses']['products']
-        ));
+            Mage::dispatchEvent("tnw_salesforce_product_send_after", array(
+                "data" => $this->_cache[sprintf('%sToUpsert', strtolower($this->getManyParentEntityType()))],
+                "result" => $this->_cache['responses']['products']
+            ));
+        } else {
+            Mage::getSingleton('tnw_salesforce/tool_log')
+                ->saveTrace('Batch cache is empty. Type is : ' . gettype($this->_cache['batchCache']['product']['Id']));
+        }
     }
 
     /**

@@ -334,8 +334,12 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
 
         if (!empty($currentHelper)) {
 
-            /** @var Mage_Customer_Model_Customer $customer */
-            $customer = $currentHelper->_cache['orderCustomers'][$currentHelper->getEntityNumber($_entity)];
+            if (!empty($currentHelper->_cache['orderCustomers'][$currentHelper->getEntityNumber($_entity)])) {
+                /** @var Mage_Customer_Model_Customer $customer */
+                $customer = $currentHelper->_cache['orderCustomers'][$currentHelper->getEntityNumber($_entity)];
+            } else {
+                Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("No customer in the cache. Order #" . $currentHelper->getEntityNumber($_entity));
+            }
 
             /**
              * Account owner from lookup

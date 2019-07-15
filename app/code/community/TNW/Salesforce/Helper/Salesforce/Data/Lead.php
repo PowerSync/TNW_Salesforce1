@@ -140,7 +140,7 @@ class TNW_Salesforce_Helper_Salesforce_Data_Lead extends TNW_Salesforce_Helper_S
 
         // Priority 1
         $recordsIds[10] = array_keys($searchIndex['email'], strtolower($entity->getData('email')));
-        if (!empty($entity->getId())) {
+        if (!empty($entity->getId()) && !empty($searchIndex['magentoId'])) {
             $recordsIds[20] = array_keys($searchIndex['magentoId'], strtolower($entity->getId()));
         }
         return $recordsIds;
