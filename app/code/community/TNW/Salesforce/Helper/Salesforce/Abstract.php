@@ -392,6 +392,10 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
         foreach ($chunk as $_item) {
             $_data .= "\t<sObject>";
             foreach ($_item as $_tag => $_value) {
+                if (is_array($_value)) {
+                    Mage::getSingleton('tnw_salesforce/tool_log')->saveTrace("Valid value for the '$_tag' property is string. An array defined. Skip property.");
+                    continue;
+                }
                 $_data .= '<' . $_tag . '><![CDATA[' . str_replace( array('<![CDATA[', ']]>'), '', $_value) . ']]></' . $_tag . '>';
             }
             $_data .= "</sObject>\n";
