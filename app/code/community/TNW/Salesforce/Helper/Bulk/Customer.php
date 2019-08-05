@@ -696,10 +696,11 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
         $_collections = array('leadsToUpsert', 'contactsToUpsert', 'accountsToUpsert');
         foreach ($_collections as $_collection) {
             $this->_cache[$_collection . 'Duplicates'] = array();
-            $_compiledKey = null;
             if (array_key_exists('Id', $this->_cache[$_collection]) && is_array($this->_cache[$_collection]['Id']) && !empty($this->_cache[$_collection]['Id'])) {
                 $_salesforceIds = array();
                 foreach ($this->_cache[$_collection]['Id'] as $_magentoId => $_object) {
+                    $_compiledKey = null;
+
                     if ($_collection == 'accountsToUpsert') {
 
                         $contact = null;
@@ -739,7 +740,7 @@ class TNW_Salesforce_Helper_Bulk_Customer extends TNW_Salesforce_Helper_Salesfor
                             $_compiledKey = $_object->Name;
                         } elseif ($this->_getAccountName(NULL, $_email, $_sfWebsite)) {
                             $_compiledKey = $this->_getAccountName(NULL, $_email, $_sfWebsite);
-                        } else {
+                        } elseif (property_exists($_object, 'PersonEmail')) {
                             // B2C account
                             $_compiledKey = $_object->PersonEmail;
                             if (property_exists($_object, Mage::helper('tnw_salesforce/config')->getSalesforcePrefix() . Mage::helper('tnw_salesforce/config_website')->getSalesforceObject('_pc'))) {
