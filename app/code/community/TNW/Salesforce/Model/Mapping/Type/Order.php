@@ -344,7 +344,7 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
             /**
              * Account owner from lookup
              */
-            if (isset($currentHelper->_cache['accountsLookup'][0][strtolower($customer->getEmail())]->OwnerId)) {
+            if (!empty($customer) && isset($currentHelper->_cache['accountsLookup'][0][strtolower($customer->getEmail())]->OwnerId)) {
                 $availableOwners[] = $currentHelper->_cache['accountsLookup'][0][strtolower($customer->getEmail())]->OwnerId;
 
             }
