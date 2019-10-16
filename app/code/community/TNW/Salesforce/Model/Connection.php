@@ -166,6 +166,10 @@ class TNW_Salesforce_Model_Connection
             $user  = Mage::helper('tnw_salesforce')->getApiUsername();
             $pass  = Mage::helper('tnw_salesforce')->getApiPassword();
             $token = Mage::helper('tnw_salesforce')->getApiToken();
+            $isEnabled = Mage::helper('tnw_salesforce')->isEnabled();
+            if (!$isEnabled) {
+                Mage::throwException('Api disabled!');
+            }
 
             // log in to salesforce
             $this->_loggedIn = $this->_client->login($user, $pass . $token);
