@@ -7,19 +7,6 @@
         </tnw>
     </tabs>
     <sections>
-        <dev>
-            <groups>
-                <template>
-                    <show_in_default>1</show_in_default>
-                    <fields>
-                        <allow_symlink>
-                            <show_in_default>1</show_in_default>
-                            <backend_model>core/config_data</backend_model>
-                        </allow_symlink>
-                    </fields>
-                </template>
-            </groups>
-        </dev>
         <salesforce translate="label" module="tnw_salesforce">
             <label>API Configuration</label>
             <tab>tnw</tab>
