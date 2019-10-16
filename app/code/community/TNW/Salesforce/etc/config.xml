@@ -971,6 +971,11 @@
         </jobs>
     </crontab>
     <default>
+        <dev>
+        <template>
+            <allow_symlink>1</allow_symlink>
+        </template>
+        </dev>
         <salesforce>
             <api_config>
                 <api_enable>0</api_enable>
