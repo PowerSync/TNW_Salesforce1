@@ -756,7 +756,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
 
             foreach ($collection as $_attribute) {
                 $key = $_attribute['COLUMN_NAME'];
-                if (in_array($key, array('item_id', 'order_id', 'parent_item_id', 'quote_item_id', 'product_options'))) {
+                if (in_array($key, array('order_id', 'parent_item_id', 'quote_item_id', 'product_options'))) {
                     continue;
                 }
 
