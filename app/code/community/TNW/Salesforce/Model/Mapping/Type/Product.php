@@ -113,7 +113,7 @@ class TNW_Salesforce_Model_Mapping_Type_Product extends TNW_Salesforce_Model_Map
      */
     public function reverseConvertWebsiteIds($value)
     {
-        return explode(',', $value);
+        return !empty($value)? explode(',', $value): null;
     }
 
     /**
