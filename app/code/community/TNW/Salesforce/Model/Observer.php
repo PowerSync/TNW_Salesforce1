@@ -925,7 +925,7 @@ class TNW_Salesforce_Model_Observer
                 }
                 foreach ($states as $field) {
                     $sfFields[] = array(
-                        'value' => $field->label,
+                        'value' => $field->value,
                         'label' => $field->label
                     );
                 }

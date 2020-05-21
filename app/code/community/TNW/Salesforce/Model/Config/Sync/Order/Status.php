@@ -30,7 +30,7 @@ class TNW_Salesforce_Model_Config_Sync_Order_Status
         }
         foreach ($states as $key => $field) {
             $_options[] = array(
-                'value' => $field->label,
+                'value' => $field->value,
                 'label' => $field->label
             );
         }
