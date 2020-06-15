@@ -651,8 +651,8 @@ class TNW_Salesforce_Helper_Salesforce_Abstract
                 'keepalive' => false,
                 'storeresponse' => true,
             ));
-            $this->_client->resetParameters();
         }
+        $this->_client->resetParameters();
 
         return $this->_client;
     }
