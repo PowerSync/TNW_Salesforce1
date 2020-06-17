@@ -40,6 +40,9 @@
                 <file>lib/jquery/jquery-1.10.2.min.js</file>
             </action>
             <action method="addJs">
+                <file>lib/jquery/jquery-1.12.1.min.js</file>
+            </action>
+            <action method="addJs">
                 <file>lib/jquery/noconflict.js</file>
             </action>
             <action method="addJs">
