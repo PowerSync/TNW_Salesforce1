@@ -320,11 +320,16 @@ class TNW_Salesforce_Model_Mapping_Type_Order extends TNW_Salesforce_Model_Mappi
 
         switch ($this->_mapping->getSfObject()) {
             case 'Order':
-                $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_order');
+                $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_order')?
+                    $this->getHelperInstance('tnw_salesforce/salesforce_order'):
+                    $this->getHelperInstance('tnw_salesforce/bulk_order');
                 break;
 
             case 'Opportunity':
-                $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_opportunity');
+                $currentHelper = $this->getHelperInstance('tnw_salesforce/salesforce_opportunity')?
+                    $this->getHelperInstance('tnw_salesforce/salesforce_opportunity'):
+                    $this->getHelperInstance('tnw_salesforce/bulk_opportunity')
+                ;
                 break;
 
             default:
