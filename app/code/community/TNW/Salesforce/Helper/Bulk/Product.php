@@ -51,7 +51,7 @@ class TNW_Salesforce_Helper_Bulk_Product extends TNW_Salesforce_Helper_Salesforc
             $_i = 0;
             foreach ($response as $_result) {
                 $pricebookEntryKey = $_keys[$_i++];
-                list($priceBookId, $_magentoId, $currencyCode) = explode(':::', $pricebookEntryKey, 3);
+                list($priceBookId, $_magentoId) = explode(':::', $pricebookEntryKey, 3);
                 $sku  = $this->_cache['productIdToSku'][$_magentoId];
 
                 //Report Transaction
