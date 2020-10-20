@@ -350,7 +350,9 @@ abstract class TNW_Salesforce_Model_Mapping_Type_Abstract
                 break;
 
             default:
-                $value = $attribute->getFrontend()->getValue($entity);
+                if (!is_null($value)) {
+                    $value = $attribute->getFrontend()->getValue($entity);
+                }
                 break;
         }
 
