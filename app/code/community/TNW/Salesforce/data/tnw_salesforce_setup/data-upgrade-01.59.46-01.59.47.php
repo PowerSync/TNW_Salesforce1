@@ -7,9 +7,18 @@ $entityTypeCode = 'catalog_product';
 
 $groupName = 'General';
 
-$groups = Mage::getModel('eav/entity_attribute_group')->getCollection()
-    ->addFieldToFilter('attribute_group_name', array('eq', $groupName))
-    ->getItems();
+$groups = Mage::getModel('eav/entity_attribute_group')->getCollection();
+$groups->getSelect()
+    ->joinLeft(
+        'eav_attribute_set',
+        'main_table.attribute_set_id = eav_attribute_set.entity_type_id',
+        array('eav_attribute_set.entity_type_id')
+    )->joinLeft(
+        'eav_entity_type',
+        'eav_attribute_set.entity_type_id = eav_entity_type.entity_type_id',
+        array('entity_type_code')
+    )->where("main_table.attribute_group_name = 'General' AND eav_entity_type.entity_type_code = 'catalog_product'");
+$currentGroup = $groups->getFirstItem();
 
 $subquery = new \Zend_Db_Expr('SELECT `attribute_group_id` FROM `eav_attribute_group`');
 
@@ -32,10 +41,6 @@ $attributes->getSelect()->distinct(true)
 $items = $attributes->addFieldToFilter('entity_type_code', ['eq' => $entityTypeCode])->getItems();
 
 foreach ($items as $item) {
-    foreach ($groups as $group) {
-        if ($item->getAttributeSetId() == $group->getAttributeSetId()) {
-            $item->setData('attribute_group_id', $group->getAttributeGroupId());
-            $item->save();
-        }
-    }
+    $item->setData('attribute_group_id', $currentGroup->getAttributeGroupId());
+    $item->save();
 }
