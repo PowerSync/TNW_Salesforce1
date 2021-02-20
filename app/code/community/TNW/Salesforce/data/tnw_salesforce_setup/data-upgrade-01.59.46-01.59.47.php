@@ -24,7 +24,9 @@ $groups->getSelect()
         'eav_entity_type',
         'eav_attribute_set.entity_type_id = eav_entity_type.entity_type_id',
         array('entity_type_code')
-    )->where("main_table.attribute_group_name = 'General' AND eav_entity_type.entity_type_code = 'catalog_product'");
+    )->where("main_table.attribute_group_name = 'General' AND eav_entity_type.entity_type_code = 'catalog_product'")
+    ->limit(1)
+;
 $currentGroup = $groups->getFirstItem();
 
 $attributes = Mage::getModel('eav/entity_attribute')->getCollection();
