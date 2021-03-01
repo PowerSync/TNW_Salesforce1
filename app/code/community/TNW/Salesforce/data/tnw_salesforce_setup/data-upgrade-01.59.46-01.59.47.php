@@ -25,8 +25,7 @@ $groups->getSelect()
         'eav_attribute_set.entity_type_id = eav_entity_type.entity_type_id',
         array('entity_type_code')
     )->where("main_table.attribute_group_name = 'General' AND eav_entity_type.entity_type_code = 'catalog_product'")
-    ->limit(1)
-;
+    ->limit(1);
 $currentGroup = $groups->getFirstItem();
 
 $attributes = Mage::getModel('eav/entity_attribute')->getCollection();
@@ -51,9 +50,15 @@ $attributes->getSelect()
 
 $itemIds = $attributes->addFieldToFilter('entity_type_code', ['eq' => $entityTypeCode])->getAllIds();
 
-$installer->getConnection()->update('eav_entity_attribute', array(
-    'attribute_group_id' => $currentGroup->getId()
-), array('attribute_id' => $itemIds));
+if (!empty($itemIds)) {
+    $installer->getConnection()->update(
+        'eav_entity_attribute',
+        array(
+            'attribute_group_id' => $currentGroup->getId()
+        ),
+        array('attribute_id IN (?)' => $itemIds)
+    );
+}
 
 
 $installer->endSetup();
