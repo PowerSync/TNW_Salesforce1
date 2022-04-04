@@ -61,6 +61,7 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
 
     /* Order Customer Role */
     const ORDER_CREATE_REVERSE_SYNC = 'salesforce_order/customer_opportunity/order_create_reverse_sync';
+    const ORDER_CREATE_REVERSE_SYNC_PAYMENT = 'salesforce_order/customer_opportunity/order_create_reverse_sync_payment';
     const CUSTOMER_ROLE_ENABLED = 'salesforce_order/customer_opportunity/customer_opportunity_role_enable';
     const CUSTOMER_ROLE = 'salesforce_order/customer_opportunity/customer_integration_opp';
 
@@ -363,6 +364,11 @@ class TNW_Salesforce_Helper_Data extends TNW_Salesforce_Helper_Abstract
     public function isOrderCreateReverseSync()
     {
         return $this->getStoreConfig(self::ORDER_CREATE_REVERSE_SYNC);
+    }
+
+    public function getOrderCreateReverseSyncPayment()
+    {
+        return $this->getStoreConfig(self::ORDER_CREATE_REVERSE_SYNC_PAYMENT);
     }
 
     // Is order synchronization enabled

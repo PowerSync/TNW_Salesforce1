@@ -451,10 +451,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         // Shipping Method
         $this->_setShippingMethod($orderCreate);
 
+        $payment = $this->_getPaymentMappedEntityFields($object);
+
         // Payment
-        $orderCreate->setPaymentData(array(
-            'method' => 'tnw_import'
-        ));
+        $orderCreate->setPaymentData($payment);
 
         try {
             $orderCreate->getSession()->unsetData('order_id');
@@ -484,6 +484,58 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         }
 
         return $order;
+    }
+
+    /**
+     * @param $type
+     * @return Varien_Data_Collection_Db
+     */
+    public function getPaymentMappingByType($type)
+    {
+        return
+            $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter($type)
+                ->firstSystem();
+    }
+
+    /**
+     * @param $object
+     * @param $payment
+     * @return mixed
+     */
+    public function _getPaymentMappedEntityFields($object)
+    {
+
+        $payment = array(
+            'method' => Mage::helper('tnw_salesforce')->getOrderCreateReverseSyncPayment()
+        );
+
+
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
+        $mappings = $this->getPaymentMappingByType($this->_mappingEntityName);
+
+        $updateFieldsLog = array();
+        /** @var $mapping TNW_Salesforce_Model_Mapping */
+        foreach ($mappings as $mapping) {
+            $newValue = property_exists($object, $mapping->getSfField())
+                ? $object->{$mapping->getSfField()} : null;
+
+            if (empty($newValue)) {
+                $newValue = $mapping->getDefaultValue();
+            }
+
+            $entityName = $mapping->getLocalFieldType();
+
+            if ($entityName == 'Payment') {
+                $field = $mapping->getLocalFieldAttributeCode();
+                $payment[$field] = $newValue;
+
+                $updateFieldsLog[] = sprintf('%s entity, field: %s = "%s"',
+                    $entityName, $mapping->getLocalField(), $newValue);
+            }
+        }
+
+        return $payment;
     }
 
     /**

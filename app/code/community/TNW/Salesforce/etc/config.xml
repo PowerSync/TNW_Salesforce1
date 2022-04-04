@@ -2,7 +2,7 @@
 <config>
     <modules>
         <TNW_Salesforce>
-            <version>01.59.50</version>
+            <version>01.59.51</version>
         </TNW_Salesforce>
     </modules>
     <global>
@@ -1066,12 +1066,14 @@
                 <multi_currency>0</multi_currency>
                 <currency_sync>customer</currency_sync>
             </currency>
+
             <customer_opportunity>
                 <integration_option>order_and_opportunity</integration_option>
                 <create_order>paid</create_order>
                 <integration_type>order</integration_type>
                 <customer_opportunity_role_enable>0</customer_opportunity_role_enable>
                 <order_create_reverse_sync>0</order_create_reverse_sync>
+                <order_create_reverse_sync_payment>tnw_import</order_create_reverse_sync_payment>
                 <order_opportunity_status>Closed Won</order_opportunity_status>
                 <opportunity_to_order_status>Closed Won</opportunity_to_order_status>
                 <order_default_record_type backend_model="tnw_salesforce/system_config_backend_recordType">default</order_default_record_type>
