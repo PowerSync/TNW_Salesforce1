@@ -1424,6 +1424,22 @@
                                 </integration_option>
                             </depends>
                         </order_create_reverse_sync>
+
+                        <order_create_reverse_sync_payment translate="label">
+                            <label>Use the following payment method to create a new Orders by Reverce sync</label>
+                            <config_path>salesforce_order/customer_opportunity/order_create_reverse_sync_payment</config_path>
+                            <frontend_type>select</frontend_type>
+                            <source_model>tnw_salesforce/system_config_source_payment_offlinemethods</source_model>
+                            <sort_order>100</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>0</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Payment methods only</comment>
+                            <depends>
+                                <order_create_reverse_sync>1</order_create_reverse_sync>
+                            </depends>
+                        </order_create_reverse_sync_payment>
+
                         <draft_order_status translate="label">
                             <label>Draft Status</label>
                             <config_path>salesforce_order/customer_opportunity/draft_order_status</config_path>
