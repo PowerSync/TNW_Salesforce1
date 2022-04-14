@@ -142,8 +142,13 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
         if ($importProcessor instanceof TNW_Salesforce_Helper_Magento_Abstract) {
             Mage::getSingleton('core/session')->setFromSalesForce(true);
 
+            Mage::dispatchEvent('tnw_salesforce_reverse_sync_before', array('import' => $this));
+
             $importProcessor->process($this->getObject());
+
             $_association = $importProcessor->getSalesforceAssociationAndClean();
+
+            Mage::dispatchEvent('tnw_salesforce_reverse_sync_after', array('import' => $this));
 
             Mage::getSingleton('core/session')->setFromSalesForce(false);
         }

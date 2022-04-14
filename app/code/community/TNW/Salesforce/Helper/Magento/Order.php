@@ -449,7 +449,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ), $address['Shipping']));
 
         // Shipping Method
-        $this->_setShippingMethod($orderCreate);
+        $this->_setShippingMethod($orderCreate, $object);
 
         $payment = $this->_getPaymentMappedEntityFields($object);
 
@@ -677,7 +677,7 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
         }
 
         if (!$isVirtual && !$orderCreate->getQuote()->getShippingAddress()->requestShippingRates()) {
-            $this->_setShippingMethod($orderCreate);
+            $this->_setShippingMethod($orderCreate, $object);
         }
         $orderCreate->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
 
@@ -716,17 +716,10 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
     /**
      * @param Mage_Adminhtml_Model_Sales_Order_Create $orderCreate
      */
-    protected function _setShippingMethod($orderCreate)
+    protected function _setShippingMethod($orderCreate, $object)
     {
-        // Add Shipping Rate
-        $shippingRate = new Mage_Shipping_Model_Rate_Result_Method(array(
-            'carrier'            => 'tnw',
-            'carrier_title'      => 'TNW',
-            'method'             => 'import',
-            'method_title'       => 'Import',
-            'method_description' => 'Custom method for Import',
-            'price'              => 0,
-        ));
+
+        $shippingRate = $this->_getShippingMappedEntityFields($object);
 
         $rate = Mage::getModel('sales/quote_address_rate')
             ->importShippingRate($shippingRate);
@@ -735,8 +728,98 @@ class TNW_Salesforce_Helper_Magento_Order extends TNW_Salesforce_Helper_Magento_
             ->getShippingAddress()
             ->addShippingRate($rate);
 
+        $shippingMethod = $shippingRate->getShippingMethod();
         // Shipping Method
-        $orderCreate->setShippingMethod('tnw_import');
+        $orderCreate->setShippingMethod($shippingMethod);
+    }
+
+    /**
+     * @param $object
+     * @return array
+     */
+    public function _getShippingMappedEntityFields($object)
+    {
+        $defaultShipping = Mage::helper('tnw_salesforce')->getOrderCreateReverseSyncShipping();
+        if (strpos($defaultShipping, ':::') !== false) {
+            list($carrier, $method) = explode(':::', $defaultShipping);
+        } else {
+            $carrier = 'tnw';
+            $method = 'import';
+        }
+
+        // Add Shipping Rate
+        $shippingRate = new Mage_Shipping_Model_Rate_Result_Method(array(
+            'carrier'            => $carrier,
+            'carrier_title'      => 'TNW',
+            'method'             => $method,
+            'method_title'       => 'Import',
+            'shipping_method'    => sprintf('%s_%s', $carrier, $method),
+            'method_description' => 'Custom method for Import',
+            'price'              => 0,
+        ));
+
+        /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
+        $mappings = $this->getShippingMappingByType($this->_mappingEntityName);
+
+        $updateFieldsLog = array();
+        /** @var $mapping TNW_Salesforce_Model_Mapping */
+        foreach ($mappings as $mapping) {
+            $newValue = property_exists($object, $mapping->getSfField())
+                ? $object->{$mapping->getSfField()} : null;
+
+            if (empty($newValue)) {
+                $newValue = $mapping->getDefaultValue();
+            }
+
+            $entityName = $mapping->getLocalFieldType();
+
+            if ($entityName == 'Shipping Rate') {
+                $field = $mapping->getLocalFieldAttributeCode();
+                $shippingRate->setData($field, $newValue);
+
+                $updateFieldsLog[] = sprintf('%s entity, field: %s = "%s"',
+                    $entityName, $mapping->getLocalField(), $newValue);
+            }
+        }
+        $this->correctShippingTitle($shippingRate);
+
+        return $shippingRate;
+    }
+
+    /**
+     * @param $shippingRate
+     * @return void
+     */
+    public function correctShippingTitle($shippingRate)
+    {
+        $carriers = Mage::getSingleton('shipping/config')->getActiveCarriers();
+        $carrierCode = $shippingRate->getCarrier();
+        if (isset($carriers[$carrierCode])) {
+            $carrierMethods = $carriers[$carrierCode]->getAllowedMethods();
+            if (!$carrierMethods) {
+                return;
+            }
+
+            foreach ($carrierMethods as $methodCode => $methodTitle) {
+
+                $shippingRate->addData(array(
+                    'carrier_title' =>  Mage::getStoreConfig('carriers/' . $carrierCode . '/title'),
+                    'method_title' => $methodTitle
+                ));
+            }
+        }
+    }
+
+    /**
+     * @param $type
+     * @return Varien_Data_Collection_Db
+     */
+    public function getShippingMappingByType($type)
+    {
+        return
+            $mappings = Mage::getResourceModel('tnw_salesforce/mapping_collection')
+                ->addObjectToFilter($type)
+                ->firstSystem();
     }
 
     /**
