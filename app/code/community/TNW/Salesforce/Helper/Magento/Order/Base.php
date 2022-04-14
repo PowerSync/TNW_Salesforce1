@@ -179,7 +179,7 @@ abstract class TNW_Salesforce_Helper_Magento_Order_Base extends TNW_Salesforce_H
     protected function _updateMappedEntityFields($object, $order)
     {
         /** @var TNW_Salesforce_Model_Mysql4_Mapping_Collection $mappings */
-        $mappings =$this->getMappingByType($order, $this->_mappingEntityName);
+        $mappings = $this->getMappingByType($order, $this->_mappingEntityName);
 
         $updateFieldsLog = array();
         /** @var $mapping TNW_Salesforce_Model_Mapping */

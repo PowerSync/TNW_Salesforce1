@@ -183,6 +183,7 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
         if (in_array($type, $this->_acl['order'])) {
             $this->_populateOrderAttributes($type);
             $this->_populatePaymentAttributes($type);
+//            $this->_populateShippingRateAttributes($type);
         }
 
         if (in_array($type, $this->_acl['orderItem'])) {
@@ -537,6 +538,51 @@ class TNW_Salesforce_Helper_Magento extends TNW_Salesforce_Helper_Abstract
                 );
             }
         }
+    }
+
+    /**
+     * @param $type
+     * @return void
+     */
+    protected function _populateShippingRateAttributes($type)
+    {
+        /**
+         * This mapping used to fill the Mage_Sales_Model_Quote_Address_Rate object.
+         * It used for new Magento order creation only!
+         */
+        $this->_cache[$type]['shipping_rate'] = array(
+            'label' => 'Shipping Rate [for reverse sync only!]',
+            'value' => array(
+                array(
+                    'value' => 'Shipping Rate : code',
+                    'label' => 'Shipping Rate : Code'
+                ),
+                array(
+                    'value' => 'Shipping Rate : carrier',
+                    'label' => 'Shipping Rate : carrier'
+                ),
+                array(
+                    'value' => 'Shipping Rate : carrier_title',
+                    'label' => 'Shipping Rate : Carrier Title'
+                ),
+                array(
+                    'value' => 'Shipping Rate : method',
+                    'label' => 'Shipping Rate : Method'
+                ),
+                array(
+                    'value' => 'Shipping Rate : method_title',
+                    'label' => 'Shipping Rate : Method Title'
+                ),
+                array(
+                    'value' => 'Shipping Rate : method_description',
+                    'label' => 'Shipping Rate : Method Description'
+                ),
+                array(
+                    'value' => 'Shipping Rate : price',
+                    'label' => 'Shipping Rate : Price'
+                )
+            )
+        );
     }
 
     protected function _populateCustomAttributes($type)
