@@ -95,7 +95,7 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
      * @return TNW_Salesforce_Helper_Magento_Abstract
      * @throws Exception
      */
-    protected function getProcessor()
+    public function getProcessor()
     {
         switch ($this->getObjectType()) {
             case 'Account':
@@ -148,9 +148,9 @@ class TNW_Salesforce_Model_Import extends Mage_Core_Model_Abstract
 
             $_association = $importProcessor->getSalesforceAssociationAndClean();
 
-            Mage::dispatchEvent('tnw_salesforce_reverse_sync_after', array('import' => $this));
-
             Mage::getSingleton('core/session')->setFromSalesForce(false);
+
+            Mage::dispatchEvent('tnw_salesforce_reverse_sync_after', array('import' => $this, 'association' => $_association));
         }
 
         return $_association;
