@@ -57,7 +57,7 @@ foreach ($groups as $group) {
             'eav_attribute_group',
             'eav_entity_attribute.attribute_group_id = eav_attribute_group.attribute_group_id'
         )
-        ->where("eav_attribute_group.attribute_group_id IS NULL ")
+        ->where("eav_attribute_group.attribute_group_id != ? ", $group->getId())
         ->where("main_table.attribute_code IN (?)", $attributeCodes);
 
     $attributes->addFieldToFilter('eav_entity_attribute.attribute_set_id', ['eq' => $group->getAttributeSetId()]);
